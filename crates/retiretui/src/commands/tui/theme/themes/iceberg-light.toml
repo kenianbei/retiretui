@@ -1,0 +1,19 @@
+family = "iceberg"
+variant = "light"
+bg = "#e8e9ec"
+fg = "#33374c"
+dim = "#6b7089"
+border = "#adb1c4"
+accent = "#2d539e"
+selection_bg = "#cad0de"
+stripe = "#dcdfe7"
+over = "#cc517a"
+
+series = [
+  "#2d539e",
+  "#668e3d",
+  "#7759b4",
+  "#c57339",
+  "#3f83a6",
+  "#cc517a",
+]

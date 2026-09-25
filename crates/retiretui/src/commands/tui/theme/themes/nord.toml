@@ -1,0 +1,19 @@
+family = "nord"
+variant = "dark"
+bg = "#2e3440"
+fg = "#d8dee9"
+dim = "#7b88a1"
+border = "#4c566a"
+accent = "#88c0d0"
+selection_bg = "#434c5e"
+stripe = "#343b48"
+over = "#bf616a"
+
+series = [
+  "#88c0d0",
+  "#a3be8c",
+  "#b48ead",
+  "#d08770",
+  "#81a1c1",
+  "#ebcb8b",
+]

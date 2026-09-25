@@ -1,0 +1,115 @@
+# Taylor, 40, in South Dakota: what the accounts are invested in, and how the
+# plan fares across many markets. The 401(k) follows a glide path from stocks
+# toward bonds; the Monte Carlo and historical runs draw on the [market] table.
+#
+# try: retiretui project examples/market-mix.toml
+# try: retiretui monte-carlo examples/market-mix.toml
+# try: retiretui historical examples/market-mix.toml
+
+schema = 1
+
+[plan]
+name = "Market mix"
+start_year = 2026
+horizon_age = 95
+inflation = 0.025
+
+[household]
+filing = "single"
+
+[[household.people]]
+id = "taylor"
+name = "Taylor"
+birth = 1986-08-08
+
+[[residency]]
+country = "us"
+state = "sd"
+
+# Every field is optional. A run counts as a success only if it ends with at
+# least this much, and a saved seed draws the same markets each time.
+[market]
+leave_at_least = 100000
+
+[market.monte_carlo]
+seed = 7
+
+[[accounts]]
+id = "checking"
+name = "Checking"
+kind = "cash"
+owner = "taylor"
+balance = 15000
+
+# 90/10 now, 60/40 from 55, 40/50/10 from 65; each step holds until the next.
+[[accounts]]
+id = "401k-taylor"
+name = "Taylor's 401(k)"
+kind = "401k"
+owner = "taylor"
+balance = 180000
+allocation = [
+    { from = { date = 2026-01-01 }, stocks = 0.9, bonds = 0.1 },
+    { from = { age = 55, owner = "taylor" }, stocks = 0.6, bonds = 0.4 },
+    { from = { age = 65, owner = "taylor" }, stocks = 0.4, bonds = 0.5, cash = 0.1 },
+]
+
+[[accounts]]
+id = "brokerage"
+name = "Brokerage"
+kind = "brokerage"
+owner = "taylor"
+balance = 60000
+basis = 45000
+allocation = { stocks = 0.8, bonds = 0.2 }
+
+[[accounts]]
+id = "roth-ira-taylor"
+name = "Taylor's Roth IRA"
+kind = "ira"
+roth = true
+owner = "taylor"
+balance = 30000
+allocation = { stocks = 1.0 }
+
+[[income]]
+id = "salary-taylor"
+name = "Taylor's salary"
+kind = "salary"
+owner = "taylor"
+amount = 110000
+end = { age = 59, owner = "taylor" }
+
+[[income]]
+id = "ss-taylor"
+name = "Taylor's Social Security"
+kind = "social-security"
+owner = "taylor"
+# A figure from the SSA statement: with no earnings record in the plan, a
+# computed benefit would count only the salary paid inside it.
+amount = 34000
+start = { age = 67, owner = "taylor" }
+
+[[contributions]]
+id = "deferral-taylor"
+name = "Taylor's 401(k) deferral"
+to = "401k-taylor"
+max = true
+end = { age = 59, owner = "taylor" }
+
+[[contributions]]
+id = "roth-ira-taylor"
+name = "Taylor's Roth IRA contribution"
+to = "roth-ira-taylor"
+max = true
+end = { age = 59, owner = "taylor" }
+
+[[expenses]]
+id = "housing"
+name = "Housing"
+amount = 24000
+
+[[expenses]]
+id = "living"
+name = "Living expenses"
+amount = 40000

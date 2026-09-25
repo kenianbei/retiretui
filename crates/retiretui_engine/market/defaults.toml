@@ -1,0 +1,44 @@
+# What the market tools assume where a plan's [market] states nothing.
+#
+# These are RetireTui's own round figures, deliberately more modest than
+# the long-run historical record: forward-looking assumptions of the kind
+# planners use today, not a forecast and not any institution's published
+# set. `mean` is the compound yearly return, the median year's; volatility
+# is its yearly standard deviation. Inflation's mean is the plan's own
+# `inflation`; its volatility is the yearly shock, and persistence carries
+# that share of each year's deviation into the next.
+
+[stocks]
+mean = 0.06
+volatility = 0.16
+
+[bonds]
+mean = 0.04
+volatility = 0.06
+
+[cash]
+mean = 0.025
+volatility = 0.01
+
+[inflation]
+volatility = 0.015
+persistence = 0.6
+
+[correlation]
+stocks_bonds = 0.1
+stocks_cash = 0.0
+stocks_inflation = -0.1
+bonds_cash = 0.0
+bonds_inflation = -0.2
+cash_inflation = 0.5
+
+[monte_carlo]
+draw = "assumptions"
+trials = 1000
+seed = 42
+block_years = 1
+
+[historical]
+from = 1871
+to = 2025
+wrap = true

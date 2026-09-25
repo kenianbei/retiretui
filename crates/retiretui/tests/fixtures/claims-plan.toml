@@ -1,0 +1,32 @@
+schema = 1
+
+[plan]
+name = "claims"
+start_year = 2026
+horizon_age = 90
+inflation = 0.0
+
+[household]
+filing = "single"
+
+[[household.people]]
+id = "me"
+birth = 1964-06-15
+earnings = { 2000 = 60000, 2005 = 70000, 2010 = 80000, 2015 = 90000, 2020 = 100000, 2025 = 110000 }
+
+[[accounts]]
+id = "cash"
+kind = "cash"
+owner = "me"
+balance = 600000
+
+[[income]]
+id = "ss"
+kind = "social-security"
+owner = "me"
+start = { age = 67, owner = "me" }
+
+[[expenses]]
+id = "living"
+amount = 40000
+cola = false

@@ -1,0 +1,46 @@
+schema = 1
+
+[plan]
+name = "opt-base"
+start_year = 2026
+horizon_age = 75
+inflation = 0.0
+
+[household]
+filing = "single"
+
+[[household.people]]
+id = "me"
+birth = 1980-06-15
+
+[[accounts]]
+id = "cash"
+kind = "cash"
+owner = "me"
+balance = 200000
+
+[[accounts]]
+id = "k"
+kind = "401k"
+owner = "me"
+balance = 300000
+
+[[accounts]]
+id = "r"
+kind = "ira"
+roth = true
+owner = "me"
+balance = 0
+
+[[income]]
+id = "salary"
+kind = "salary"
+owner = "me"
+amount = 50000
+cola = false
+end = { age = 60, owner = "me" }
+
+[[expenses]]
+id = "living"
+amount = 40000
+cola = false

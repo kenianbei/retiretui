@@ -1,0 +1,37 @@
+---
+source: crates/retiretui/src/commands/tui/frames.rs
+assertion_line: 26
+expression: composed_frame(app)
+---
+╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                              
+│1 Overview││2 Ledger││3 Compare││4 Tools││5 Plan│                                                                  full.toml ● 
+┴──────────┴┴────────┴┴─────────┴┴───────┴╯      ╰──────────────────────────────────────────────────────────────────────────────
+╭ Plan ─────────────╮╭ People ──────────────────────────────────────────────────────────────╮ ╭ Person ────────────────────────╮
+│  Accounts       7 ││  Person         Birth date         Earnings                          │ │                                │
+│  Income         4 ││▏ jordan         1975-06-14         -                                 │ │▏ ID          jordan            │
+│  Expenses       2 ││  alex           1979-02-01         -                                 │ │  Name                          │
+│  Cliffs         0 ││                                                                      │ │  Birth date  1975-06-14        │
+│  Transfers      1 ││                                                                      │ │  Earnings                      │
+│  Conversions    1 ││                                                                      │ │                                │
+│  Contributions  3 ││                                                                      │ │                                │
+│  Events         1 ││          ╭ Import earnings from ────────────────────────────────────────╮                               │
+│▏ People         2 ││          │>                                                             │                               │
+│  Residency      1 ││          │  ../                                                         │                               │
+│  Household        ││          │▌ tax-override/                                               │                               │
+│  Settings         ││          │  statement.xml                                               │                               │
+│  Market           ││          │                                                              │                               │
+│                   ││          │                                                              │                               │
+│                   ││          │                                                              │                               │
+│                   ││          │                                                              │                               │
+│                   ││          │                                                              │                               │
+│                   ││          │                                                              │                               │
+│                   ││          │                                                              │                               │
+│                   ││          ╰──────────────────────────────────────────────────────────────╯                               │
+│                   ││                                                                      │ │                                │
+│                   ││                                                                      │ │                                │
+│                   ││                                                                      │ │                                │
+│                   ││                                                                      │ │                                │
+│                   ││                                                                      │ │                                │
+│                   ││  [ + Add Person ]                                                    │ │                                │
+╰───────────────────╯╰──────────────────────────────────────────────────────────────────────╯ ╰────────────────────────────────╯
+ ↑↓ move  ⏎ pick  ⇥ complete  ← parent  esc close

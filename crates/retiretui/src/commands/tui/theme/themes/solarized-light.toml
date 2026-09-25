@@ -1,0 +1,19 @@
+family = "solarized"
+variant = "light"
+bg = "#fdf6e3"
+fg = "#586e75"
+dim = "#657b83"
+border = "#93a1a1"
+accent = "#268bd2"
+selection_bg = "#eee8d5"
+stripe = "#f7f0dc"
+over = "#dc322f"
+
+series = [
+  "#268bd2",
+  "#859900",
+  "#d33682",
+  "#cb4b16",
+  "#2aa198",
+  "#b58900",
+]

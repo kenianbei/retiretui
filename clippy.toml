@@ -1,0 +1,18 @@
+too-many-lines-threshold = 50
+too-many-arguments-threshold = 5
+excessive-nesting-threshold = 5
+
+disallowed-names = [
+    "..",
+    "data",
+    "data1",
+    "info",
+    "obj",
+    "result",
+    "temp",
+    "tmp",
+    "val",
+]
+
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true

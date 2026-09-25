@@ -1,0 +1,37 @@
+---
+source: crates/retiretui/src/commands/tui/frames.rs
+assertion_line: 26
+expression: composed_frame(app)
+---
+╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                              
+│1 Overview││2 Ledger││3 Compare││4 Tools││5 Plan│                                                                 no document  
+┴──────────┴┴────────┴┴─────────┴┴───────┴╯      ╰──────────────────────────────────────────────────────────────────────────────
+                                                                                                                                
+                                                                                                                                
+                                                                                                                                
+                                                                                                                                
+                                                                                                                                
+                                                                                                                                
+                                                                                                                                
+                                                                                                                                
+                                ╭ Open ────────────────────────────────────────────────────────╮                                
+                                │>                                                             │                                
+                                │  ../                                                         │                                
+                                │▌ broken.toml                                         invalid │                                
+                                │  plan.toml                                              plan │                                
+                                │  variant.toml                                       scenario │                                
+                                │                                                              │                                
+                                │                                                              │                                
+                                │                                                              │                                
+                                │                                                              │                                
+                                │                                                              │                                
+                                │                                                              │                                
+                                ╰──────────────────────────────────────────────────────────────╯                                
+                                                                                                                                
+                                                                                                                                
+                                                                                                                                
+                                                                                                                                
+                                                                                                                                
+                                                                                                                                
+                                                                                                                                
+ ↑↓ move  ⏎ pick  ⇥ complete  ← parent  esc close

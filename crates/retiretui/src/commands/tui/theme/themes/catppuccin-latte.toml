@@ -1,0 +1,19 @@
+family = "catppuccin"
+variant = "light"
+bg = "#eff1f5"
+fg = "#4c4f69"
+dim = "#6c6f85"
+border = "#acb0be"
+accent = "#8839ef"
+selection_bg = "#ccd0da"
+stripe = "#e6e9ef"
+over = "#d20f39"
+
+series = [
+  "#1e66f5",
+  "#40a02b",
+  "#ea76cb",
+  "#fe640b",
+  "#179299",
+  "#df8e1d",
+]

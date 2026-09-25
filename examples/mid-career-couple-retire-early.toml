@@ -1,0 +1,20 @@
+# What if Priya and Marcus both retire at 57 instead of 62? A scenario states
+# only what differs from its base plan; everything else is read from it.
+#
+# try: retiretui project examples/mid-career-couple-retire-early.toml
+# try: retiretui compare examples/mid-career-couple.toml examples/mid-career-couple-retire-early.toml --metric net-worth
+
+schema = 1
+base = "mid-career-couple.toml"
+
+[plan]
+name = "Mid-career couple, retiring early"
+
+# Items match the base by id; the stated trigger replaces the base's.
+[[events]]
+id = "retire-priya"
+trigger = { age = 57, owner = "priya" }
+
+[[events]]
+id = "retire-marcus"
+trigger = { age = 57, owner = "marcus" }

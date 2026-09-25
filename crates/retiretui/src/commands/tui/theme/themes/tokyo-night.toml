@@ -1,0 +1,19 @@
+family = "tokyo-night"
+variant = "dark"
+bg = "#1a1b26"
+fg = "#c0caf5"
+dim = "#737aa2"
+border = "#3b4261"
+accent = "#7aa2f7"
+selection_bg = "#283457"
+stripe = "#1f202e"
+over = "#f7768e"
+
+series = [
+  "#7aa2f7",
+  "#9ece6a",
+  "#bb9af7",
+  "#ff9e64",
+  "#2ac3de",
+  "#e0af68",
+]

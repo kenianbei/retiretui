@@ -1,0 +1,124 @@
+# Gloria, 55, in Tennessee, with a rental house she sells at 65 and an
+# annuity that starts the same year. The sale proceeds arrive as a windfall.
+#
+# try: retiretui project examples/landlord.toml
+# try: retiretui actions examples/landlord.toml --year 2036
+
+schema = 1
+
+[plan]
+name = "Landlord"
+start_year = 2026
+horizon_age = 95
+inflation = 0.025
+
+[household]
+filing = "single"
+
+[[household.people]]
+id = "gloria"
+name = "Gloria"
+birth = 1971-10-05
+
+[[residency]]
+country = "us"
+state = "tn"
+
+[[events]]
+id = "house-sale"
+name = "Rental house sold"
+trigger = { age = 65, owner = "gloria" }
+
+[[accounts]]
+id = "checking"
+name = "Checking"
+kind = "cash"
+owner = "gloria"
+balance = 40000
+
+[[accounts]]
+id = "brokerage"
+name = "Brokerage"
+kind = "brokerage"
+owner = "gloria"
+balance = 200000
+basis = 150000
+expected_return = 0.05
+
+[[accounts]]
+id = "ira-gloria"
+name = "Gloria's IRA"
+kind = "ira"
+owner = "gloria"
+balance = 350000
+expected_return = 0.05
+
+[[accounts]]
+id = "roth-ira-gloria"
+name = "Gloria's Roth IRA"
+kind = "ira"
+roth = true
+owner = "gloria"
+balance = 50000
+expected_return = 0.05
+
+[[income]]
+id = "salary-gloria"
+name = "Gloria's salary"
+kind = "salary"
+owner = "gloria"
+amount = 80000
+end = { age = 61, owner = "gloria" }
+
+[[income]]
+id = "rent"
+name = "Rental income"
+kind = "rental"
+owner = "gloria"
+amount = 24000
+end = { event = "house-sale", offset = -1 }
+
+# A windfall is untaxed; state the net proceeds after any tax on the gain.
+[[income]]
+id = "sale-proceeds"
+name = "House sale proceeds"
+kind = "windfall"
+owner = "gloria"
+amount = 300000
+on = { event = "house-sale" }
+
+# A fixed nominal payment, bought years ago.
+[[income]]
+id = "annuity"
+name = "Annuity"
+kind = "annuity"
+owner = "gloria"
+amount = 12000
+cola = false
+start = { event = "house-sale" }
+
+[[income]]
+id = "ss-gloria"
+name = "Gloria's Social Security"
+kind = "social-security"
+owner = "gloria"
+# A figure from the SSA statement: with no earnings record in the plan, a
+# computed benefit would count only the salary paid inside it.
+amount = 26000
+start = { age = 67, owner = "gloria" }
+
+[[expenses]]
+id = "rental-upkeep"
+name = "Rental upkeep and taxes"
+amount = 6000
+end = { event = "house-sale", offset = -1 }
+
+[[expenses]]
+id = "housing"
+name = "Housing"
+amount = 18000
+
+[[expenses]]
+id = "living"
+name = "Living expenses"
+amount = 45000

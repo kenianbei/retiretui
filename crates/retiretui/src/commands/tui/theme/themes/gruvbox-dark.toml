@@ -1,0 +1,19 @@
+family = "gruvbox"
+variant = "dark"
+bg = "#282828"
+fg = "#ebdbb2"
+dim = "#928374"
+border = "#504945"
+accent = "#fabd2f"
+selection_bg = "#3c3836"
+stripe = "#32302f"
+over = "#fb4934"
+
+series = [
+  "#83a598",
+  "#b8bb26",
+  "#d3869b",
+  "#fe8019",
+  "#8ec07c",
+  "#fabd2f",
+]

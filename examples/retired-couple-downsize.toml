@@ -1,0 +1,30 @@
+# Ruth and Walter sell the house in 2027 and move into a smaller condo: the
+# sale adds a windfall, the old housing expense ends, and a smaller one begins.
+#
+# try: retiretui compare examples/retired-couple.toml examples/retired-couple-downsize.toml
+# try: retiretui actions examples/retired-couple-downsize.toml --year 2027
+
+schema = 1
+base = "retired-couple.toml"
+
+[plan]
+name = "Retired couple, downsized"
+
+[[income]]
+id = "house-sale"
+name = "House sale proceeds"
+kind = "windfall"
+owner = "ruth"
+amount = 200000
+on = { date = 2027-06-01 }
+
+# Matched by id: only the stated end changes; the amount stays the base's.
+[[expenses]]
+id = "housing"
+end = { date = 2027-12-31 }
+
+[[expenses]]
+id = "condo"
+name = "Condo"
+amount = 15000
+start = { date = 2028-01-01 }

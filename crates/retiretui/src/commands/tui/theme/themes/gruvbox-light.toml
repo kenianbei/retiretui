@@ -1,0 +1,19 @@
+family = "gruvbox"
+variant = "light"
+bg = "#fbf1c7"
+fg = "#3c3836"
+dim = "#7c6f64"
+border = "#d5c4a1"
+accent = "#b57614"
+selection_bg = "#ebdbb2"
+stripe = "#f2e5bc"
+over = "#9d0006"
+
+series = [
+  "#076678",
+  "#79740e",
+  "#8f3f71",
+  "#af3a03",
+  "#427b58",
+  "#b57614",
+]

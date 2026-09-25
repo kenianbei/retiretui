@@ -1,0 +1,3609 @@
+{
+  "years": [
+    {
+      "year": 2026,
+      "ages": {
+        "alex": 47,
+        "jordan": 51
+      },
+      "deflator": 1.0,
+      "income": {
+        "salary": 150000
+      },
+      "total_income": 150000,
+      "expenses": 90000,
+      "medicare": 0,
+      "contributions_employee": 32000,
+      "contributions_employer": 8000,
+      "rmds": 0,
+      "conversions": 0,
+      "withdrawals": {},
+      "growth": {
+        "brokerage": 15000,
+        "fid-401k": 27000,
+        "hsa": 1250,
+        "pension-dc": 3000,
+        "roth-ira": 5400
+      },
+      "actions": [
+        {
+          "kind": "contribution",
+          "account": "fid-401k",
+          "employee": 24000,
+          "employer": 8000,
+          "notes": []
+        },
+        {
+          "kind": "contribution",
+          "account": "hsa",
+          "employee": 8000,
+          "employer": 0,
+          "notes": []
+        },
+        {
+          "kind": "surplus",
+          "account": "cash",
+          "amount": 9020
+        }
+      ],
+      "taxes": {
+        "ordinary": 9800,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 9180,
+        "taxable_social_security": 0,
+        "ordinary_taxable": 85800,
+        "magi": 118000,
+        "total": 18980
+      },
+      "surplus": 9020,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 315000,
+        "cash": 49020,
+        "fid-401k": 509000,
+        "hsa": 34250,
+        "pension-dc": 63000,
+        "rollover-ira": 0,
+        "roth-ira": 95400
+      },
+      "class_totals": {
+        "taxable": 364020,
+        "deferred": 572000,
+        "roth": 95400,
+        "hsa": 34250
+      },
+      "net_worth": 1065670
+    },
+    {
+      "year": 2027,
+      "ages": {
+        "alex": 48,
+        "jordan": 52
+      },
+      "deflator": 1.025,
+      "income": {
+        "salary": 153750
+      },
+      "total_income": 153750,
+      "expenses": 92250,
+      "medicare": 0,
+      "contributions_employee": 32800,
+      "contributions_employer": 8200,
+      "rmds": 0,
+      "conversions": 0,
+      "withdrawals": {},
+      "growth": {
+        "brokerage": 15750,
+        "fid-401k": 30540,
+        "hsa": 1713,
+        "pension-dc": 3150,
+        "roth-ira": 5724
+      },
+      "actions": [
+        {
+          "kind": "contribution",
+          "account": "fid-401k",
+          "employee": 24600,
+          "employer": 8200,
+          "notes": []
+        },
+        {
+          "kind": "contribution",
+          "account": "hsa",
+          "employee": 8200,
+          "employer": 0,
+          "notes": []
+        },
+        {
+          "kind": "surplus",
+          "account": "cash",
+          "amount": 9246
+        }
+      ],
+      "taxes": {
+        "ordinary": 10045,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 9409,
+        "taxable_social_security": 0,
+        "ordinary_taxable": 87945,
+        "magi": 120950,
+        "total": 19454
+      },
+      "surplus": 9246,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 330750,
+        "cash": 58266,
+        "fid-401k": 572340,
+        "hsa": 44163,
+        "pension-dc": 66150,
+        "rollover-ira": 0,
+        "roth-ira": 101124
+      },
+      "class_totals": {
+        "taxable": 389016,
+        "deferred": 638490,
+        "roth": 101124,
+        "hsa": 44163
+      },
+      "net_worth": 1172793
+    },
+    {
+      "year": 2028,
+      "ages": {
+        "alex": 49,
+        "jordan": 53
+      },
+      "deflator": 1.050625,
+      "income": {
+        "salary": 157594
+      },
+      "total_income": 157594,
+      "expenses": 94556,
+      "medicare": 0,
+      "contributions_employee": 33620,
+      "contributions_employer": 8405,
+      "rmds": 0,
+      "conversions": 0,
+      "withdrawals": {},
+      "growth": {
+        "brokerage": 16538,
+        "fid-401k": 34340,
+        "hsa": 2208,
+        "pension-dc": 3308,
+        "roth-ira": 6067
+      },
+      "actions": [
+        {
+          "kind": "contribution",
+          "account": "fid-401k",
+          "employee": 25215,
+          "employer": 8405,
+          "notes": []
+        },
+        {
+          "kind": "contribution",
+          "account": "hsa",
+          "employee": 8405,
+          "employer": 0,
+          "notes": []
+        },
+        {
+          "kind": "surplus",
+          "account": "cash",
+          "amount": 9478
+        }
+      ],
+      "taxes": {
+        "ordinary": 10296,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 9644,
+        "taxable_social_security": 0,
+        "ordinary_taxable": 90144,
+        "magi": 123974,
+        "total": 19940
+      },
+      "surplus": 9478,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 347288,
+        "cash": 67744,
+        "fid-401k": 640300,
+        "hsa": 54776,
+        "pension-dc": 69458,
+        "rollover-ira": 0,
+        "roth-ira": 107191
+      },
+      "class_totals": {
+        "taxable": 415032,
+        "deferred": 709758,
+        "roth": 107191,
+        "hsa": 54776
+      },
+      "net_worth": 1286757
+    },
+    {
+      "year": 2029,
+      "ages": {
+        "alex": 50,
+        "jordan": 54
+      },
+      "deflator": 1.0768906249999999,
+      "income": {
+        "salary": 161534
+      },
+      "total_income": 161534,
+      "expenses": 96920,
+      "medicare": 0,
+      "contributions_employee": 34460,
+      "contributions_employer": 8615,
+      "rmds": 0,
+      "conversions": 0,
+      "withdrawals": {},
+      "growth": {
+        "brokerage": 17364,
+        "fid-401k": 38418,
+        "hsa": 2739,
+        "pension-dc": 3473,
+        "roth-ira": 6431
+      },
+      "actions": [
+        {
+          "kind": "contribution",
+          "account": "fid-401k",
+          "employee": 25845,
+          "employer": 8615,
+          "notes": []
+        },
+        {
+          "kind": "contribution",
+          "account": "hsa",
+          "employee": 8615,
+          "employer": 0,
+          "notes": []
+        },
+        {
+          "kind": "surplus",
+          "account": "cash",
+          "amount": 9715
+        }
+      ],
+      "taxes": {
+        "ordinary": 10554,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 9885,
+        "taxable_social_security": 0,
+        "ordinary_taxable": 92398,
+        "magi": 127074,
+        "total": 20439
+      },
+      "surplus": 9715,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 364652,
+        "cash": 77459,
+        "fid-401k": 713178,
+        "hsa": 66130,
+        "pension-dc": 72931,
+        "rollover-ira": 0,
+        "roth-ira": 113622
+      },
+      "class_totals": {
+        "taxable": 442111,
+        "deferred": 786109,
+        "roth": 113622,
+        "hsa": 66130
+      },
+      "net_worth": 1407972
+    },
+    {
+      "year": 2030,
+      "ages": {
+        "alex": 51,
+        "jordan": 55
+      },
+      "deflator": 1.1038128906249998,
+      "income": {
+        "salary": 165572
+      },
+      "total_income": 165572,
+      "expenses": 99343,
+      "medicare": 0,
+      "contributions_employee": 35323,
+      "contributions_employer": 8831,
+      "rmds": 0,
+      "conversions": 0,
+      "withdrawals": {},
+      "growth": {
+        "brokerage": 18233,
+        "fid-401k": 42791,
+        "hsa": 3307,
+        "pension-dc": 3647,
+        "roth-ira": 6817
+      },
+      "actions": [
+        {
+          "kind": "contribution",
+          "account": "fid-401k",
+          "employee": 26492,
+          "employer": 8831,
+          "notes": []
+        },
+        {
+          "kind": "contribution",
+          "account": "hsa",
+          "employee": 8831,
+          "employer": 0,
+          "notes": []
+        },
+        {
+          "kind": "surplus",
+          "account": "cash",
+          "amount": 9957
+        }
+      ],
+      "taxes": {
+        "ordinary": 10817,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 10132,
+        "taxable_social_security": 0,
+        "ordinary_taxable": 94706,
+        "magi": 130249,
+        "total": 20949
+      },
+      "surplus": 9957,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 382885,
+        "cash": 87416,
+        "fid-401k": 791292,
+        "hsa": 78268,
+        "pension-dc": 76578,
+        "rollover-ira": 0,
+        "roth-ira": 120439
+      },
+      "class_totals": {
+        "taxable": 470301,
+        "deferred": 867870,
+        "roth": 120439,
+        "hsa": 78268
+      },
+      "net_worth": 1536878
+    },
+    {
+      "year": 2031,
+      "ages": {
+        "alex": 52,
+        "jordan": 56
+      },
+      "deflator": 1.1314082128906247,
+      "income": {
+        "salary": 169711
+      },
+      "total_income": 169711,
+      "expenses": 101827,
+      "medicare": 0,
+      "contributions_employee": 36205,
+      "contributions_employer": 9051,
+      "rmds": 0,
+      "conversions": 0,
+      "withdrawals": {},
+      "growth": {
+        "brokerage": 19144,
+        "fid-401k": 47478,
+        "hsa": 3913,
+        "pension-dc": 3829,
+        "roth-ira": 7226
+      },
+      "actions": [
+        {
+          "kind": "contribution",
+          "account": "fid-401k",
+          "employee": 27154,
+          "employer": 9051,
+          "notes": []
+        },
+        {
+          "kind": "contribution",
+          "account": "hsa",
+          "employee": 9051,
+          "employer": 0,
+          "notes": []
+        },
+        {
+          "kind": "surplus",
+          "account": "cash",
+          "amount": 10205
+        }
+      ],
+      "taxes": {
+        "ordinary": 11088,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 10386,
+        "taxable_social_security": 0,
+        "ordinary_taxable": 97075,
+        "magi": 133506,
+        "total": 21474
+      },
+      "surplus": 10205,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 402029,
+        "cash": 97621,
+        "fid-401k": 874975,
+        "hsa": 91232,
+        "pension-dc": 80407,
+        "rollover-ira": 0,
+        "roth-ira": 127665
+      },
+      "class_totals": {
+        "taxable": 499650,
+        "deferred": 955382,
+        "roth": 127665,
+        "hsa": 91232
+      },
+      "net_worth": 1673929
+    },
+    {
+      "year": 2032,
+      "ages": {
+        "alex": 53,
+        "jordan": 57
+      },
+      "deflator": 1.1596934182128902,
+      "income": {
+        "inheritance": 115969,
+        "salary": 173954
+      },
+      "total_income": 289923,
+      "expenses": 104372,
+      "medicare": 0,
+      "contributions_employee": 37111,
+      "contributions_employer": 9278,
+      "rmds": 0,
+      "conversions": 0,
+      "withdrawals": {},
+      "growth": {
+        "brokerage": 20101,
+        "fid-401k": 52499,
+        "hsa": 4562,
+        "pension-dc": 4020,
+        "roth-ira": 7660
+      },
+      "actions": [
+        {
+          "kind": "contribution",
+          "account": "fid-401k",
+          "employee": 27833,
+          "employer": 9278,
+          "notes": []
+        },
+        {
+          "kind": "contribution",
+          "account": "hsa",
+          "employee": 9278,
+          "employer": 0,
+          "notes": []
+        },
+        {
+          "kind": "surplus",
+          "account": "cash",
+          "amount": 126430
+        }
+      ],
+      "taxes": {
+        "ordinary": 11365,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 10645,
+        "taxable_social_security": 0,
+        "ordinary_taxable": 99501,
+        "magi": 136843,
+        "total": 22010
+      },
+      "surplus": 126430,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 422130,
+        "cash": 224051,
+        "fid-401k": 964585,
+        "hsa": 105072,
+        "pension-dc": 84427,
+        "rollover-ira": 0,
+        "roth-ira": 135325
+      },
+      "class_totals": {
+        "taxable": 646181,
+        "deferred": 1049012,
+        "roth": 135325,
+        "hsa": 105072
+      },
+      "net_worth": 1935590
+    },
+    {
+      "year": 2033,
+      "ages": {
+        "alex": 54,
+        "jordan": 58
+      },
+      "deflator": 1.1886857536682125,
+      "income": {
+        "salary": 178303
+      },
+      "total_income": 178303,
+      "expenses": 106982,
+      "medicare": 0,
+      "contributions_employee": 38037,
+      "contributions_employer": 9509,
+      "rmds": 0,
+      "conversions": 0,
+      "withdrawals": {},
+      "growth": {
+        "brokerage": 21107,
+        "fid-401k": 57875,
+        "hsa": 5254,
+        "pension-dc": 4221,
+        "roth-ira": 8120
+      },
+      "actions": [
+        {
+          "kind": "contribution",
+          "account": "fid-401k",
+          "employee": 28528,
+          "employer": 9509,
+          "notes": []
+        },
+        {
+          "kind": "contribution",
+          "account": "hsa",
+          "employee": 9509,
+          "employer": 0,
+          "notes": []
+        },
+        {
+          "kind": "surplus",
+          "account": "cash",
+          "amount": 10723
+        }
+      ],
+      "taxes": {
+        "ordinary": 11649,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 10912,
+        "taxable_social_security": 0,
+        "ordinary_taxable": 101990,
+        "magi": 140266,
+        "total": 22561
+      },
+      "surplus": 10723,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 443237,
+        "cash": 234774,
+        "fid-401k": 1060497,
+        "hsa": 119835,
+        "pension-dc": 88648,
+        "rollover-ira": 0,
+        "roth-ira": 143445
+      },
+      "class_totals": {
+        "taxable": 678011,
+        "deferred": 1149145,
+        "roth": 143445,
+        "hsa": 119835
+      },
+      "net_worth": 2090436
+    },
+    {
+      "year": 2034,
+      "ages": {
+        "alex": 55,
+        "jordan": 59
+      },
+      "deflator": 1.2184028975099177,
+      "income": {
+        "salary": 182760
+      },
+      "total_income": 182760,
+      "expenses": 109656,
+      "medicare": 0,
+      "contributions_employee": 38989,
+      "contributions_employer": 9747,
+      "rmds": 0,
+      "conversions": 0,
+      "withdrawals": {},
+      "growth": {
+        "brokerage": 22162,
+        "fid-401k": 63630,
+        "hsa": 5992,
+        "pension-dc": 4432,
+        "roth-ira": 8607
+      },
+      "actions": [
+        {
+          "kind": "contribution",
+          "account": "fid-401k",
+          "employee": 29242,
+          "employer": 9747,
+          "notes": []
+        },
+        {
+          "kind": "contribution",
+          "account": "hsa",
+          "employee": 9747,
+          "employer": 0,
+          "notes": []
+        },
+        {
+          "kind": "surplus",
+          "account": "cash",
+          "amount": 10991
+        }
+      ],
+      "taxes": {
+        "ordinary": 11940,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 11184,
+        "taxable_social_security": 0,
+        "ordinary_taxable": 104538,
+        "magi": 143771,
+        "total": 23124
+      },
+      "surplus": 10991,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 465399,
+        "cash": 245765,
+        "fid-401k": 1163116,
+        "hsa": 135574,
+        "pension-dc": 93080,
+        "rollover-ira": 0,
+        "roth-ira": 152052
+      },
+      "class_totals": {
+        "taxable": 711164,
+        "deferred": 1256196,
+        "roth": 152052,
+        "hsa": 135574
+      },
+      "net_worth": 2254986
+    },
+    {
+      "year": 2035,
+      "ages": {
+        "alex": 56,
+        "jordan": 60
+      },
+      "deflator": 1.2488629699476654,
+      "income": {
+        "salary": 187329
+      },
+      "total_income": 187329,
+      "expenses": 112398,
+      "medicare": 0,
+      "contributions_employee": 39964,
+      "contributions_employer": 9991,
+      "rmds": 0,
+      "conversions": 0,
+      "withdrawals": {},
+      "growth": {
+        "brokerage": 23270,
+        "fid-401k": 69787,
+        "hsa": 6779,
+        "pension-dc": 4654,
+        "roth-ira": 9123
+      },
+      "actions": [
+        {
+          "kind": "contribution",
+          "account": "fid-401k",
+          "employee": 29973,
+          "employer": 9991,
+          "notes": []
+        },
+        {
+          "kind": "contribution",
+          "account": "hsa",
+          "employee": 9991,
+          "employer": 0,
+          "notes": []
+        },
+        {
+          "kind": "surplus",
+          "account": "cash",
+          "amount": 11264
+        }
+      ],
+      "taxes": {
+        "ordinary": 12239,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 11464,
+        "taxable_social_security": 0,
+        "ordinary_taxable": 107152,
+        "magi": 147365,
+        "total": 23703
+      },
+      "surplus": 11264,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 488669,
+        "cash": 257029,
+        "fid-401k": 1272867,
+        "hsa": 152344,
+        "pension-dc": 97734,
+        "rollover-ira": 0,
+        "roth-ira": 161175
+      },
+      "class_totals": {
+        "taxable": 745698,
+        "deferred": 1370601,
+        "roth": 161175,
+        "hsa": 152344
+      },
+      "net_worth": 2429818
+    },
+    {
+      "year": 2036,
+      "ages": {
+        "alex": 57,
+        "jordan": 61
+      },
+      "deflator": 1.280084544196357,
+      "income": {
+        "salary": 192013
+      },
+      "total_income": 192013,
+      "expenses": 115208,
+      "medicare": 0,
+      "contributions_employee": 40963,
+      "contributions_employer": 10241,
+      "rmds": 0,
+      "conversions": 0,
+      "withdrawals": {},
+      "growth": {
+        "brokerage": 24433,
+        "fid-401k": 76372,
+        "hsa": 7617,
+        "pension-dc": 4887,
+        "roth-ira": 9671
+      },
+      "actions": [
+        {
+          "kind": "contribution",
+          "account": "fid-401k",
+          "employee": 30722,
+          "employer": 10241,
+          "notes": []
+        },
+        {
+          "kind": "contribution",
+          "account": "hsa",
+          "employee": 10241,
+          "employer": 0,
+          "notes": []
+        },
+        {
+          "kind": "surplus",
+          "account": "cash",
+          "amount": 11546
+        }
+      ],
+      "taxes": {
+        "ordinary": 12545,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 11751,
+        "taxable_social_security": 0,
+        "ordinary_taxable": 109831,
+        "magi": 151050,
+        "total": 24296
+      },
+      "surplus": 11546,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 513102,
+        "cash": 268575,
+        "fid-401k": 1390202,
+        "hsa": 170202,
+        "pension-dc": 102621,
+        "rollover-ira": 0,
+        "roth-ira": 170846
+      },
+      "class_totals": {
+        "taxable": 781677,
+        "deferred": 1492823,
+        "roth": 170846,
+        "hsa": 170202
+      },
+      "net_worth": 2615548
+    },
+    {
+      "year": 2037,
+      "ages": {
+        "alex": 58,
+        "jordan": 62
+      },
+      "deflator": 1.312086657801266,
+      "income": {
+        "db-pension": 30000
+      },
+      "total_income": 30000,
+      "expenses": 118088,
+      "medicare": 0,
+      "contributions_employee": 41987,
+      "contributions_employer": 10497,
+      "rmds": 0,
+      "conversions": 39363,
+      "withdrawals": {
+        "cash": 131170
+      },
+      "growth": {
+        "brokerage": 25655,
+        "fid-401k": 83412,
+        "hsa": 8510,
+        "pension-dc": 5131,
+        "roth-ira": 10251
+      },
+      "actions": [
+        {
+          "kind": "transfer",
+          "from": "pension-dc",
+          "to": "rollover-ira",
+          "amount": 107752
+        },
+        {
+          "kind": "contribution",
+          "account": "fid-401k",
+          "employee": 31490,
+          "employer": 10497,
+          "notes": []
+        },
+        {
+          "kind": "contribution",
+          "account": "hsa",
+          "employee": 10497,
+          "employer": 0,
+          "notes": []
+        },
+        {
+          "kind": "conversion",
+          "from": "fid-401k",
+          "to": "roth-ira",
+          "amount": 39363
+        },
+        {
+          "kind": "withdrawal",
+          "account": "cash",
+          "amount": 131170
+        }
+      ],
+      "taxes": {
+        "ordinary": 0,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 1095,
+        "taxable_social_security": 0,
+        "ordinary_taxable": 0,
+        "magi": 27376,
+        "total": 1095
+      },
+      "surplus": 0,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 538757,
+        "cash": 137405,
+        "fid-401k": 1476238,
+        "hsa": 189209,
+        "pension-dc": 0,
+        "rollover-ira": 107752,
+        "roth-ira": 220460
+      },
+      "class_totals": {
+        "taxable": 676162,
+        "deferred": 1583990,
+        "roth": 220460,
+        "hsa": 189209
+      },
+      "net_worth": 2669821
+    },
+    {
+      "year": 2038,
+      "ages": {
+        "alex": 59,
+        "jordan": 63
+      },
+      "deflator": 1.3448888242462975,
+      "income": {
+        "db-pension": 30000
+      },
+      "total_income": 30000,
+      "expenses": 141213,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 0,
+      "conversions": 40347,
+      "withdrawals": {
+        "cash": 118532
+      },
+      "growth": {
+        "brokerage": 26938,
+        "fid-401k": 88574,
+        "hsa": 9460,
+        "rollover-ira": 5388,
+        "roth-ira": 13228
+      },
+      "actions": [
+        {
+          "kind": "conversion",
+          "from": "fid-401k",
+          "to": "roth-ira",
+          "amount": 40347
+        },
+        {
+          "kind": "withdrawal",
+          "account": "cash",
+          "amount": 118532
+        }
+      ],
+      "taxes": {
+        "ordinary": 2704,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 4615,
+        "taxable_social_security": 0,
+        "ordinary_taxable": 27042,
+        "magi": 70347,
+        "total": 7319
+      },
+      "surplus": 0,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 565695,
+        "cash": 18873,
+        "fid-401k": 1524465,
+        "hsa": 198669,
+        "pension-dc": 0,
+        "rollover-ira": 113140,
+        "roth-ira": 274035
+      },
+      "class_totals": {
+        "taxable": 584568,
+        "deferred": 1637605,
+        "roth": 274035,
+        "hsa": 198669
+      },
+      "net_worth": 2694877
+    },
+    {
+      "year": 2039,
+      "ages": {
+        "alex": 60,
+        "jordan": 64
+      },
+      "deflator": 1.378511044852455,
+      "income": {
+        "db-pension": 30000
+      },
+      "total_income": 30000,
+      "expenses": 144744,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 0,
+      "conversions": 41355,
+      "withdrawals": {
+        "brokerage": 109251,
+        "cash": 18873
+      },
+      "growth": {
+        "brokerage": 28285,
+        "fid-401k": 91468,
+        "hsa": 9933,
+        "rollover-ira": 5657,
+        "roth-ira": 16442
+      },
+      "actions": [
+        {
+          "kind": "conversion",
+          "from": "fid-401k",
+          "to": "roth-ira",
+          "amount": 41355
+        },
+        {
+          "kind": "withdrawal",
+          "account": "cash",
+          "amount": 18873
+        },
+        {
+          "kind": "withdrawal",
+          "account": "brokerage",
+          "amount": 109251
+        }
+      ],
+      "taxes": {
+        "ordinary": 2697,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 10683,
+        "taxable_social_security": 0,
+        "ordinary_taxable": 26967,
+        "magi": 140142,
+        "total": 13380
+      },
+      "surplus": 0,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 484729,
+        "cash": 0,
+        "fid-401k": 1574578,
+        "hsa": 208602,
+        "pension-dc": 0,
+        "rollover-ira": 118797,
+        "roth-ira": 331832
+      },
+      "class_totals": {
+        "taxable": 484729,
+        "deferred": 1693375,
+        "roth": 331832,
+        "hsa": 208602
+      },
+      "net_worth": 2718538
+    },
+    {
+      "year": 2040,
+      "ages": {
+        "alex": 61,
+        "jordan": 65
+      },
+      "deflator": 1.4129738209737661,
+      "income": {
+        "db-pension": 30000
+      },
+      "total_income": 30000,
+      "expenses": 148363,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 0,
+      "conversions": 42389,
+      "withdrawals": {
+        "brokerage": 133318
+      },
+      "growth": {
+        "brokerage": 24236,
+        "fid-401k": 94475,
+        "hsa": 10430,
+        "rollover-ira": 5940,
+        "roth-ira": 19910
+      },
+      "actions": [
+        {
+          "kind": "conversion",
+          "from": "fid-401k",
+          "to": "roth-ira",
+          "amount": 42389
+        },
+        {
+          "kind": "withdrawal",
+          "account": "brokerage",
+          "amount": 133318
+        }
+      ],
+      "taxes": {
+        "ordinary": 2689,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 12266,
+        "taxable_social_security": 0,
+        "ordinary_taxable": 26891,
+        "magi": 158678,
+        "total": 14955
+      },
+      "surplus": 0,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 375647,
+        "cash": 0,
+        "fid-401k": 1626664,
+        "hsa": 219032,
+        "pension-dc": 0,
+        "rollover-ira": 124737,
+        "roth-ira": 394131
+      },
+      "class_totals": {
+        "taxable": 375647,
+        "deferred": 1751401,
+        "roth": 394131,
+        "hsa": 219032
+      },
+      "net_worth": 2740211
+    },
+    {
+      "year": 2041,
+      "ages": {
+        "alex": 62,
+        "jordan": 66
+      },
+      "deflator": 1.4482981664981105,
+      "income": {
+        "db-pension": 30000
+      },
+      "total_income": 30000,
+      "expenses": 152071,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 0,
+      "conversions": 43449,
+      "withdrawals": {
+        "brokerage": 137510
+      },
+      "growth": {
+        "brokerage": 18782,
+        "fid-401k": 97600,
+        "hsa": 10952,
+        "rollover-ira": 6237,
+        "roth-ira": 23648
+      },
+      "actions": [
+        {
+          "kind": "conversion",
+          "from": "fid-401k",
+          "to": "roth-ira",
+          "amount": 43449
+        },
+        {
+          "kind": "withdrawal",
+          "account": "brokerage",
+          "amount": 137510
+        }
+      ],
+      "taxes": {
+        "ordinary": 2681,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 12758,
+        "taxable_social_security": 0,
+        "ordinary_taxable": 26814,
+        "magi": 164763,
+        "total": 15439
+      },
+      "surplus": 0,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 256919,
+        "cash": 0,
+        "fid-401k": 1680815,
+        "hsa": 229984,
+        "pension-dc": 0,
+        "rollover-ira": 130974,
+        "roth-ira": 461228
+      },
+      "class_totals": {
+        "taxable": 256919,
+        "deferred": 1811789,
+        "roth": 461228,
+        "hsa": 229984
+      },
+      "net_worth": 2759920
+    },
+    {
+      "year": 2042,
+      "ages": {
+        "alex": 63,
+        "jordan": 67
+      },
+      "deflator": 1.4845056206605631,
+      "income": {
+        "db-pension": 30000,
+        "ss-jordan": 34638
+      },
+      "total_income": 64638,
+      "expenses": 155874,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 0,
+      "conversions": 44535,
+      "withdrawals": {
+        "brokerage": 108520
+      },
+      "growth": {
+        "brokerage": 12846,
+        "fid-401k": 100849,
+        "hsa": 11499,
+        "rollover-ira": 6549,
+        "roth-ira": 27674
+      },
+      "actions": [
+        {
+          "kind": "conversion",
+          "from": "fid-401k",
+          "to": "roth-ira",
+          "amount": 44535
+        },
+        {
+          "kind": "withdrawal",
+          "account": "brokerage",
+          "amount": 108520
+        }
+      ],
+      "taxes": {
+        "ordinary": 6005,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 11279,
+        "taxable_social_security": 29442,
+        "ordinary_taxable": 56176,
+        "magi": 177775,
+        "total": 17284
+      },
+      "surplus": 0,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 161245,
+        "cash": 0,
+        "fid-401k": 1737129,
+        "hsa": 241483,
+        "pension-dc": 0,
+        "rollover-ira": 137523,
+        "roth-ira": 533437
+      },
+      "class_totals": {
+        "taxable": 161245,
+        "deferred": 1874652,
+        "roth": 533437,
+        "hsa": 241483
+      },
+      "net_worth": 2810817
+    },
+    {
+      "year": 2043,
+      "ages": {
+        "alex": 64,
+        "jordan": 68
+      },
+      "deflator": 1.521618261177077,
+      "income": {
+        "db-pension": 30000,
+        "ss-jordan": 60865
+      },
+      "total_income": 90865,
+      "expenses": 159770,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 0,
+      "conversions": 45649,
+      "withdrawals": {
+        "brokerage": 87773
+      },
+      "growth": {
+        "brokerage": 8062,
+        "fid-401k": 104228,
+        "hsa": 12074,
+        "rollover-ira": 6876,
+        "roth-ira": 32006
+      },
+      "actions": [
+        {
+          "kind": "conversion",
+          "from": "fid-401k",
+          "to": "roth-ira",
+          "amount": 45649
+        },
+        {
+          "kind": "withdrawal",
+          "account": "brokerage",
+          "amount": 87773
+        }
+      ],
+      "taxes": {
+        "ordinary": 8652,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 10216,
+        "taxable_social_security": 51735,
+        "ordinary_taxable": 78388,
+        "magi": 188412,
+        "total": 18868
+      },
+      "surplus": 0,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 81534,
+        "cash": 0,
+        "fid-401k": 1795708,
+        "hsa": 253557,
+        "pension-dc": 0,
+        "rollover-ira": 144399,
+        "roth-ira": 611092
+      },
+      "class_totals": {
+        "taxable": 81534,
+        "deferred": 1940107,
+        "roth": 611092,
+        "hsa": 253557
+      },
+      "net_worth": 2886290
+    },
+    {
+      "year": 2044,
+      "ages": {
+        "alex": 65,
+        "jordan": 69
+      },
+      "deflator": 1.559658717706504,
+      "income": {
+        "db-pension": 30000,
+        "ss-jordan": 62386
+      },
+      "total_income": 92386,
+      "expenses": 163764,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 0,
+      "conversions": 46790,
+      "withdrawals": {
+        "brokerage": 85611,
+        "fid-401k": 6050
+      },
+      "growth": {
+        "brokerage": 4077,
+        "fid-401k": 107742,
+        "hsa": 12678,
+        "rollover-ira": 7220,
+        "roth-ira": 36666
+      },
+      "actions": [
+        {
+          "kind": "conversion",
+          "from": "fid-401k",
+          "to": "roth-ira",
+          "amount": 46790
+        },
+        {
+          "kind": "withdrawal",
+          "account": "brokerage",
+          "amount": 85611
+        },
+        {
+          "kind": "withdrawal",
+          "account": "fid-401k",
+          "amount": 6050
+        }
+      ],
+      "taxes": {
+        "ordinary": 9504,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 10779,
+        "taxable_social_security": 53028,
+        "ordinary_taxable": 85647,
+        "magi": 196635,
+        "total": 20283
+      },
+      "surplus": 0,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 0,
+        "cash": 0,
+        "fid-401k": 1850610,
+        "hsa": 266235,
+        "pension-dc": 0,
+        "rollover-ira": 151619,
+        "roth-ira": 694548
+      },
+      "class_totals": {
+        "taxable": 0,
+        "deferred": 2002229,
+        "roth": 694548,
+        "hsa": 266235
+      },
+      "net_worth": 2963012
+    },
+    {
+      "year": 2045,
+      "ages": {
+        "alex": 66,
+        "jordan": 70
+      },
+      "deflator": 1.5986501856491666,
+      "income": {
+        "db-pension": 30000,
+        "ss-jordan": 63946
+      },
+      "total_income": 93946,
+      "expenses": 167859,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 0,
+      "conversions": 47960,
+      "withdrawals": {
+        "fid-401k": 115206
+      },
+      "growth": {
+        "fid-401k": 111037,
+        "hsa": 13312,
+        "rollover-ira": 7581,
+        "roth-ira": 41673
+      },
+      "actions": [
+        {
+          "kind": "conversion",
+          "from": "fid-401k",
+          "to": "roth-ira",
+          "amount": 47960
+        },
+        {
+          "kind": "withdrawal",
+          "account": "fid-401k",
+          "amount": 115206
+        }
+      ],
+      "taxes": {
+        "ordinary": 26222,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 15071,
+        "taxable_social_security": 54354,
+        "ordinary_taxable": 196043,
+        "magi": 247520,
+        "total": 41293
+      },
+      "surplus": 0,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 0,
+        "cash": 0,
+        "fid-401k": 1798481,
+        "hsa": 279547,
+        "pension-dc": 0,
+        "rollover-ira": 159200,
+        "roth-ira": 784181
+      },
+      "class_totals": {
+        "taxable": 0,
+        "deferred": 1957681,
+        "roth": 784181,
+        "hsa": 279547
+      },
+      "net_worth": 3021409
+    },
+    {
+      "year": 2046,
+      "ages": {
+        "alex": 67,
+        "jordan": 71
+      },
+      "deflator": 1.6386164402903955,
+      "income": {
+        "db-pension": 30000,
+        "ss-jordan": 65545
+      },
+      "total_income": 95545,
+      "expenses": 172054,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 0,
+      "conversions": 49158,
+      "withdrawals": {
+        "fid-401k": 118833
+      },
+      "growth": {
+        "fid-401k": 107909,
+        "hsa": 13977,
+        "rollover-ira": 7960,
+        "roth-ira": 47051
+      },
+      "actions": [
+        {
+          "kind": "conversion",
+          "from": "fid-401k",
+          "to": "roth-ira",
+          "amount": 49158
+        },
+        {
+          "kind": "withdrawal",
+          "account": "fid-401k",
+          "amount": 118833
+        }
+      ],
+      "taxes": {
+        "ordinary": 26877,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 15447,
+        "taxable_social_security": 55713,
+        "ordinary_taxable": 200941,
+        "magi": 253704,
+        "total": 42324
+      },
+      "surplus": 0,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 0,
+        "cash": 0,
+        "fid-401k": 1738399,
+        "hsa": 293524,
+        "pension-dc": 0,
+        "rollover-ira": 167160,
+        "roth-ira": 880390
+      },
+      "class_totals": {
+        "taxable": 0,
+        "deferred": 1905559,
+        "roth": 880390,
+        "hsa": 293524
+      },
+      "net_worth": 3079473
+    },
+    {
+      "year": 2047,
+      "ages": {
+        "alex": 68,
+        "jordan": 72
+      },
+      "deflator": 1.6795818512976552,
+      "income": {
+        "db-pension": 30000,
+        "ss-jordan": 67183
+      },
+      "total_income": 97183,
+      "expenses": 176356,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 0,
+      "conversions": 50387,
+      "withdrawals": {
+        "fid-401k": 122555
+      },
+      "growth": {
+        "fid-401k": 104304,
+        "hsa": 14676,
+        "rollover-ira": 8358,
+        "roth-ira": 52823
+      },
+      "actions": [
+        {
+          "kind": "conversion",
+          "from": "fid-401k",
+          "to": "roth-ira",
+          "amount": 50387
+        },
+        {
+          "kind": "withdrawal",
+          "account": "fid-401k",
+          "amount": 122555
+        }
+      ],
+      "taxes": {
+        "ordinary": 27549,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 15833,
+        "taxable_social_security": 57106,
+        "ordinary_taxable": 205965,
+        "magi": 260048,
+        "total": 43382
+      },
+      "surplus": 0,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 0,
+        "cash": 0,
+        "fid-401k": 1669761,
+        "hsa": 308200,
+        "pension-dc": 0,
+        "rollover-ira": 175518,
+        "roth-ira": 983600
+      },
+      "class_totals": {
+        "taxable": 0,
+        "deferred": 1845279,
+        "roth": 983600,
+        "hsa": 308200
+      },
+      "net_worth": 3137079
+    },
+    {
+      "year": 2048,
+      "ages": {
+        "alex": 69,
+        "jordan": 73
+      },
+      "deflator": 1.7215713975800966,
+      "income": {
+        "db-pension": 30000,
+        "ss-jordan": 68863
+      },
+      "total_income": 98863,
+      "expenses": 180765,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 0,
+      "conversions": 0,
+      "withdrawals": {
+        "fid-401k": 108104
+      },
+      "growth": {
+        "fid-401k": 100186,
+        "hsa": 15410,
+        "rollover-ira": 8776,
+        "roth-ira": 59016
+      },
+      "actions": [
+        {
+          "kind": "withdrawal",
+          "account": "fid-401k",
+          "amount": 108104
+        }
+      ],
+      "taxes": {
+        "ordinary": 16090,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 10112,
+        "taxable_social_security": 58534,
+        "ordinary_taxable": 141203,
+        "magi": 196638,
+        "total": 26202
+      },
+      "surplus": 0,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 0,
+        "cash": 0,
+        "fid-401k": 1661843,
+        "hsa": 323610,
+        "pension-dc": 0,
+        "rollover-ira": 184294,
+        "roth-ira": 1042616
+      },
+      "class_totals": {
+        "taxable": 0,
+        "deferred": 1846137,
+        "roth": 1042616,
+        "hsa": 323610
+      },
+      "net_worth": 3212363
+    },
+    {
+      "year": 2049,
+      "ages": {
+        "alex": 70,
+        "jordan": 74
+      },
+      "deflator": 1.764610682519599,
+      "income": {
+        "db-pension": 30000,
+        "ss-jordan": 70584
+      },
+      "total_income": 100584,
+      "expenses": 185284,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 0,
+      "conversions": 0,
+      "withdrawals": {
+        "fid-401k": 111558
+      },
+      "growth": {
+        "fid-401k": 99711,
+        "hsa": 16181,
+        "rollover-ira": 9215,
+        "roth-ira": 62557
+      },
+      "actions": [
+        {
+          "kind": "withdrawal",
+          "account": "fid-401k",
+          "amount": 111558
+        }
+      ],
+      "taxes": {
+        "ordinary": 16493,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 10365,
+        "taxable_social_security": 59996,
+        "ordinary_taxable": 144734,
+        "magi": 201554,
+        "total": 26858
+      },
+      "surplus": 0,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 0,
+        "cash": 0,
+        "fid-401k": 1649996,
+        "hsa": 339791,
+        "pension-dc": 0,
+        "rollover-ira": 193509,
+        "roth-ira": 1105173
+      },
+      "class_totals": {
+        "taxable": 0,
+        "deferred": 1843505,
+        "roth": 1105173,
+        "hsa": 339791
+      },
+      "net_worth": 3288469
+    },
+    {
+      "year": 2050,
+      "ages": {
+        "alex": 71,
+        "jordan": 75
+      },
+      "deflator": 1.808725949582589,
+      "income": {
+        "db-pension": 30000,
+        "ss-jordan": 72349
+      },
+      "total_income": 102349,
+      "expenses": 189916,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 74939,
+      "conversions": 0,
+      "withdrawals": {
+        "fid-401k": 107230,
+        "rollover-ira": 7866
+      },
+      "growth": {
+        "fid-401k": 99000,
+        "hsa": 16990,
+        "rollover-ira": 9675,
+        "roth-ira": 66310
+      },
+      "actions": [
+        {
+          "kind": "rmd",
+          "account": "fid-401k",
+          "amount": 67073
+        },
+        {
+          "kind": "rmd",
+          "account": "rollover-ira",
+          "amount": 7866
+        },
+        {
+          "kind": "withdrawal",
+          "account": "fid-401k",
+          "amount": 40157
+        }
+      ],
+      "taxes": {
+        "ordinary": 16905,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 10624,
+        "taxable_social_security": 61497,
+        "ordinary_taxable": 148352,
+        "magi": 206593,
+        "total": 27529
+      },
+      "surplus": 0,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 0,
+        "cash": 0,
+        "fid-401k": 1641766,
+        "hsa": 356781,
+        "pension-dc": 0,
+        "rollover-ira": 195318,
+        "roth-ira": 1171483
+      },
+      "class_totals": {
+        "taxable": 0,
+        "deferred": 1837084,
+        "roth": 1171483,
+        "hsa": 356781
+      },
+      "net_worth": 3365348
+    },
+    {
+      "year": 2051,
+      "ages": {
+        "alex": 72,
+        "jordan": 76
+      },
+      "deflator": 1.8539440983221533,
+      "income": {
+        "db-pension": 30000,
+        "ss-jordan": 74158
+      },
+      "total_income": 104158,
+      "expenses": 194664,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 77514,
+      "conversions": 0,
+      "withdrawals": {
+        "fid-401k": 110483,
+        "rollover-ira": 8241
+      },
+      "growth": {
+        "fid-401k": 98506,
+        "hsa": 17839,
+        "rollover-ira": 9766,
+        "roth-ira": 70289
+      },
+      "actions": [
+        {
+          "kind": "rmd",
+          "account": "fid-401k",
+          "amount": 69273
+        },
+        {
+          "kind": "rmd",
+          "account": "rollover-ira",
+          "amount": 8241
+        },
+        {
+          "kind": "withdrawal",
+          "account": "fid-401k",
+          "amount": 41210
+        }
+      ],
+      "taxes": {
+        "ordinary": 17328,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 10890,
+        "taxable_social_security": 63034,
+        "ordinary_taxable": 152061,
+        "magi": 211758,
+        "total": 28218
+      },
+      "surplus": 0,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 0,
+        "cash": 0,
+        "fid-401k": 1629789,
+        "hsa": 374620,
+        "pension-dc": 0,
+        "rollover-ira": 196843,
+        "roth-ira": 1241772
+      },
+      "class_totals": {
+        "taxable": 0,
+        "deferred": 1826632,
+        "roth": 1241772,
+        "hsa": 374620
+      },
+      "net_worth": 3443024
+    },
+    {
+      "year": 2052,
+      "ages": {
+        "alex": 73,
+        "jordan": 77
+      },
+      "deflator": 1.900292700780207,
+      "income": {
+        "db-pension": 30000,
+        "ss-jordan": 76012
+      },
+      "total_income": 106012,
+      "expenses": 199530,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 79766,
+      "conversions": 0,
+      "withdrawals": {
+        "fid-401k": 113845,
+        "rollover-ira": 8596
+      },
+      "growth": {
+        "fid-401k": 97787,
+        "hsa": 18731,
+        "rollover-ira": 9842,
+        "roth-ira": 74506
+      },
+      "actions": [
+        {
+          "kind": "rmd",
+          "account": "fid-401k",
+          "amount": 71170
+        },
+        {
+          "kind": "rmd",
+          "account": "rollover-ira",
+          "amount": 8596
+        },
+        {
+          "kind": "withdrawal",
+          "account": "fid-401k",
+          "amount": 42675
+        }
+      ],
+      "taxes": {
+        "ordinary": 17761,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 11162,
+        "taxable_social_security": 64610,
+        "ordinary_taxable": 155862,
+        "magi": 217051,
+        "total": 28923
+      },
+      "surplus": 0,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 0,
+        "cash": 0,
+        "fid-401k": 1613731,
+        "hsa": 393351,
+        "pension-dc": 0,
+        "rollover-ira": 198089,
+        "roth-ira": 1316278
+      },
+      "class_totals": {
+        "taxable": 0,
+        "deferred": 1811820,
+        "roth": 1316278,
+        "hsa": 393351
+      },
+      "net_worth": 3521449
+    },
+    {
+      "year": 2053,
+      "ages": {
+        "alex": 74,
+        "jordan": 78
+      },
+      "deflator": 1.9478000182997122,
+      "income": {
+        "db-pension": 30000,
+        "ss-jordan": 77912
+      },
+      "total_income": 107912,
+      "expenses": 204519,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 82355,
+      "conversions": 0,
+      "withdrawals": {
+        "fid-401k": 117249,
+        "rollover-ira": 9004
+      },
+      "growth": {
+        "fid-401k": 96824,
+        "hsa": 19668,
+        "rollover-ira": 9904,
+        "roth-ira": 78977
+      },
+      "actions": [
+        {
+          "kind": "rmd",
+          "account": "fid-401k",
+          "amount": 73351
+        },
+        {
+          "kind": "rmd",
+          "account": "rollover-ira",
+          "amount": 9004
+        },
+        {
+          "kind": "withdrawal",
+          "account": "fid-401k",
+          "amount": 43898
+        }
+      ],
+      "taxes": {
+        "ordinary": 18205,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 11441,
+        "taxable_social_security": 66225,
+        "ordinary_taxable": 159759,
+        "magi": 222478,
+        "total": 29646
+      },
+      "surplus": 0,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 0,
+        "cash": 0,
+        "fid-401k": 1593306,
+        "hsa": 413019,
+        "pension-dc": 0,
+        "rollover-ira": 198989,
+        "roth-ira": 1395255
+      },
+      "class_totals": {
+        "taxable": 0,
+        "deferred": 1792295,
+        "roth": 1395255,
+        "hsa": 413019
+      },
+      "net_worth": 3600569
+    },
+    {
+      "year": 2054,
+      "ages": {
+        "alex": 75,
+        "jordan": 79
+      },
+      "deflator": 1.9964950187572048,
+      "income": {
+        "db-pension": 30000,
+        "ss-jordan": 79860
+      },
+      "total_income": 109860,
+      "expenses": 209632,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 84943,
+      "conversions": 0,
+      "withdrawals": {
+        "fid-401k": 120728,
+        "rollover-ira": 9431
+      },
+      "growth": {
+        "fid-401k": 95598,
+        "hsa": 20651,
+        "rollover-ira": 9949,
+        "roth-ira": 83715
+      },
+      "actions": [
+        {
+          "kind": "rmd",
+          "account": "fid-401k",
+          "amount": 75512
+        },
+        {
+          "kind": "rmd",
+          "account": "rollover-ira",
+          "amount": 9431
+        },
+        {
+          "kind": "withdrawal",
+          "account": "fid-401k",
+          "amount": 45216
+        }
+      ],
+      "taxes": {
+        "ordinary": 18660,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 11727,
+        "taxable_social_security": 67881,
+        "ordinary_taxable": 163753,
+        "magi": 228040,
+        "total": 30387
+      },
+      "surplus": 0,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 0,
+        "cash": 0,
+        "fid-401k": 1568176,
+        "hsa": 433670,
+        "pension-dc": 0,
+        "rollover-ira": 199507,
+        "roth-ira": 1478970
+      },
+      "class_totals": {
+        "taxable": 0,
+        "deferred": 1767683,
+        "roth": 1478970,
+        "hsa": 433670
+      },
+      "net_worth": 3680323
+    },
+    {
+      "year": 2055,
+      "ages": {
+        "alex": 76,
+        "jordan": 80
+      },
+      "deflator": 2.046407394226135,
+      "income": {
+        "db-pension": 30000,
+        "ss-jordan": 81856
+      },
+      "total_income": 111856,
+      "expenses": 214873,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 87509,
+      "conversions": 0,
+      "withdrawals": {
+        "fid-401k": 124287,
+        "rollover-ira": 9877
+      },
+      "growth": {
+        "fid-401k": 94091,
+        "hsa": 21684,
+        "rollover-ira": 9975,
+        "roth-ira": 88738
+      },
+      "actions": [
+        {
+          "kind": "rmd",
+          "account": "fid-401k",
+          "amount": 77632
+        },
+        {
+          "kind": "rmd",
+          "account": "rollover-ira",
+          "amount": 9877
+        },
+        {
+          "kind": "withdrawal",
+          "account": "fid-401k",
+          "amount": 46655
+        }
+      ],
+      "taxes": {
+        "ordinary": 19127,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 12020,
+        "taxable_social_security": 69578,
+        "ordinary_taxable": 167848,
+        "magi": 233742,
+        "total": 31147
+      },
+      "surplus": 0,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 0,
+        "cash": 0,
+        "fid-401k": 1537980,
+        "hsa": 455354,
+        "pension-dc": 0,
+        "rollover-ira": 199605,
+        "roth-ira": 1567708
+      },
+      "class_totals": {
+        "taxable": 0,
+        "deferred": 1737585,
+        "roth": 1567708,
+        "hsa": 455354
+      },
+      "net_worth": 3760647
+    },
+    {
+      "year": 2056,
+      "ages": {
+        "alex": 77,
+        "jordan": 81
+      },
+      "deflator": 2.097567579081788,
+      "income": {
+        "db-pension": 30000,
+        "ss-jordan": 83903
+      },
+      "total_income": 113903,
+      "expenses": 188781,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 89566,
+      "conversions": 0,
+      "withdrawals": {
+        "fid-401k": 88277,
+        "rollover-ira": 10289
+      },
+      "growth": {
+        "fid-401k": 92279,
+        "hsa": 22768,
+        "rollover-ira": 9980,
+        "roth-ira": 94062
+      },
+      "actions": [
+        {
+          "kind": "rmd",
+          "account": "fid-401k",
+          "amount": 79277
+        },
+        {
+          "kind": "rmd",
+          "account": "rollover-ira",
+          "amount": 10289
+        },
+        {
+          "kind": "withdrawal",
+          "account": "fid-401k",
+          "amount": 9000
+        }
+      ],
+      "taxes": {
+        "ordinary": 14841,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 8847,
+        "taxable_social_security": 71318,
+        "ordinary_taxable": 132342,
+        "magi": 199884,
+        "total": 23688
+      },
+      "surplus": 0,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 0,
+        "cash": 0,
+        "fid-401k": 1541982,
+        "hsa": 478122,
+        "pension-dc": 0,
+        "rollover-ira": 199296,
+        "roth-ira": 1661770
+      },
+      "class_totals": {
+        "taxable": 0,
+        "deferred": 1741278,
+        "roth": 1661770,
+        "hsa": 478122
+      },
+      "net_worth": 3881170
+    },
+    {
+      "year": 2057,
+      "ages": {
+        "alex": 78,
+        "jordan": 82
+      },
+      "deflator": 2.1500067685588333,
+      "income": {
+        "db-pension": 30000,
+        "ss-jordan": 86000
+      },
+      "total_income": 116000,
+      "expenses": 193501,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 94123,
+      "conversions": 0,
+      "withdrawals": {
+        "fid-401k": 91008,
+        "rollover-ira": 10773
+      },
+      "growth": {
+        "fid-401k": 92519,
+        "hsa": 23906,
+        "rollover-ira": 9965,
+        "roth-ira": 99706
+      },
+      "actions": [
+        {
+          "kind": "rmd",
+          "account": "fid-401k",
+          "amount": 83350
+        },
+        {
+          "kind": "rmd",
+          "account": "rollover-ira",
+          "amount": 10773
+        },
+        {
+          "kind": "withdrawal",
+          "account": "fid-401k",
+          "amount": 7658
+        }
+      ],
+      "taxes": {
+        "ordinary": 15212,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 9068,
+        "taxable_social_security": 73100,
+        "ordinary_taxable": 135651,
+        "magi": 204881,
+        "total": 24280
+      },
+      "surplus": 0,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 0,
+        "cash": 0,
+        "fid-401k": 1543493,
+        "hsa": 502028,
+        "pension-dc": 0,
+        "rollover-ira": 198488,
+        "roth-ira": 1761476
+      },
+      "class_totals": {
+        "taxable": 0,
+        "deferred": 1741981,
+        "roth": 1761476,
+        "hsa": 502028
+      },
+      "net_worth": 4005485
+    },
+    {
+      "year": 2058,
+      "ages": {
+        "alex": 79,
+        "jordan": 83
+      },
+      "deflator": 2.2037569377728037,
+      "income": {
+        "db-pension": 30000,
+        "ss-jordan": 88150
+      },
+      "total_income": 118150,
+      "expenses": 198338,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 98417,
+      "conversions": 0,
+      "withdrawals": {
+        "fid-401k": 93861,
+        "rollover-ira": 11214
+      },
+      "growth": {
+        "fid-401k": 92610,
+        "hsa": 25101,
+        "rollover-ira": 9924,
+        "roth-ira": 105689
+      },
+      "actions": [
+        {
+          "kind": "rmd",
+          "account": "fid-401k",
+          "amount": 87203
+        },
+        {
+          "kind": "rmd",
+          "account": "rollover-ira",
+          "amount": 11214
+        },
+        {
+          "kind": "withdrawal",
+          "account": "fid-401k",
+          "amount": 6658
+        }
+      ],
+      "taxes": {
+        "ordinary": 15592,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 9295,
+        "taxable_social_security": 74928,
+        "ordinary_taxable": 139042,
+        "magi": 210003,
+        "total": 24887
+      },
+      "surplus": 0,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 0,
+        "cash": 0,
+        "fid-401k": 1542242,
+        "hsa": 527129,
+        "pension-dc": 0,
+        "rollover-ira": 197198,
+        "roth-ira": 1867165
+      },
+      "class_totals": {
+        "taxable": 0,
+        "deferred": 1739440,
+        "roth": 1867165,
+        "hsa": 527129
+      },
+      "net_worth": 4133734
+    },
+    {
+      "year": 2059,
+      "ages": {
+        "alex": 80,
+        "jordan": 84
+      },
+      "deflator": 2.2588508612171236,
+      "income": {
+        "db-pension": 30000,
+        "ss-jordan": 90354
+      },
+      "total_income": 120354,
+      "expenses": 203297,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 103538,
+      "conversions": 0,
+      "withdrawals": {
+        "fid-401k": 96714,
+        "rollover-ira": 11738
+      },
+      "growth": {
+        "fid-401k": 92535,
+        "hsa": 26356,
+        "rollover-ira": 9860,
+        "roth-ira": 112030
+      },
+      "actions": [
+        {
+          "kind": "rmd",
+          "account": "fid-401k",
+          "amount": 91800
+        },
+        {
+          "kind": "rmd",
+          "account": "rollover-ira",
+          "amount": 11738
+        },
+        {
+          "kind": "withdrawal",
+          "account": "fid-401k",
+          "amount": 4914
+        }
+      ],
+      "taxes": {
+        "ordinary": 15982,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 9527,
+        "taxable_social_security": 76801,
+        "ordinary_taxable": 142518,
+        "magi": 215253,
+        "total": 25509
+      },
+      "surplus": 0,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 0,
+        "cash": 0,
+        "fid-401k": 1538063,
+        "hsa": 553485,
+        "pension-dc": 0,
+        "rollover-ira": 195320,
+        "roth-ira": 1979195
+      },
+      "class_totals": {
+        "taxable": 0,
+        "deferred": 1733383,
+        "roth": 1979195,
+        "hsa": 553485
+      },
+      "net_worth": 4266063
+    },
+    {
+      "year": 2060,
+      "ages": {
+        "alex": 81,
+        "jordan": 85
+      },
+      "deflator": 2.3153221327475517,
+      "income": {
+        "db-pension": 30000,
+        "ss-jordan": 92613
+      },
+      "total_income": 122613,
+      "expenses": 208379,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 108337,
+      "conversions": 0,
+      "withdrawals": {
+        "fid-401k": 99704,
+        "rollover-ira": 12208
+      },
+      "growth": {
+        "fid-401k": 92284,
+        "hsa": 27674,
+        "rollover-ira": 9766,
+        "roth-ira": 118752
+      },
+      "actions": [
+        {
+          "kind": "rmd",
+          "account": "fid-401k",
+          "amount": 96129
+        },
+        {
+          "kind": "rmd",
+          "account": "rollover-ira",
+          "amount": 12208
+        },
+        {
+          "kind": "withdrawal",
+          "account": "fid-401k",
+          "amount": 3575
+        }
+      ],
+      "taxes": {
+        "ordinary": 16381,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 9765,
+        "taxable_social_security": 78721,
+        "ordinary_taxable": 146080,
+        "magi": 220633,
+        "total": 26146
+      },
+      "surplus": 0,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 0,
+        "cash": 0,
+        "fid-401k": 1530643,
+        "hsa": 581159,
+        "pension-dc": 0,
+        "rollover-ira": 192878,
+        "roth-ira": 2097947
+      },
+      "class_totals": {
+        "taxable": 0,
+        "deferred": 1723521,
+        "roth": 2097947,
+        "hsa": 581159
+      },
+      "net_worth": 4402627
+    },
+    {
+      "year": 2061,
+      "ages": {
+        "alex": 82,
+        "jordan": 86
+      },
+      "deflator": 2.37320518606624,
+      "income": {
+        "db-pension": 30000,
+        "ss-jordan": 94928
+      },
+      "total_income": 124928,
+      "expenses": 213588,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 113389,
+      "conversions": 0,
+      "withdrawals": {
+        "fid-401k": 102771,
+        "rollover-ira": 12689
+      },
+      "growth": {
+        "fid-401k": 91839,
+        "hsa": 29058,
+        "rollover-ira": 9644,
+        "roth-ira": 125877
+      },
+      "actions": [
+        {
+          "kind": "rmd",
+          "account": "fid-401k",
+          "amount": 100700
+        },
+        {
+          "kind": "rmd",
+          "account": "rollover-ira",
+          "amount": 12689
+        },
+        {
+          "kind": "withdrawal",
+          "account": "fid-401k",
+          "amount": 2071
+        }
+      ],
+      "taxes": {
+        "ordinary": 16791,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 10009,
+        "taxable_social_security": 80689,
+        "ordinary_taxable": 149732,
+        "magi": 226149,
+        "total": 26800
+      },
+      "surplus": 0,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 0,
+        "cash": 0,
+        "fid-401k": 1519711,
+        "hsa": 610217,
+        "pension-dc": 0,
+        "rollover-ira": 189833,
+        "roth-ira": 2223824
+      },
+      "class_totals": {
+        "taxable": 0,
+        "deferred": 1709544,
+        "roth": 2223824,
+        "hsa": 610217
+      },
+      "net_worth": 4543585
+    },
+    {
+      "year": 2062,
+      "ages": {
+        "alex": 83,
+        "jordan": 87
+      },
+      "deflator": 2.4325353157178964,
+      "income": {
+        "db-pension": 30000,
+        "ss-jordan": 97301
+      },
+      "total_income": 127301,
+      "expenses": 218928,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 118718,
+      "conversions": 0,
+      "withdrawals": {
+        "fid-401k": 105913,
+        "rollover-ira": 13183
+      },
+      "growth": {
+        "fid-401k": 91183,
+        "hsa": 30511,
+        "rollover-ira": 9492,
+        "roth-ira": 133429
+      },
+      "actions": [
+        {
+          "kind": "rmd",
+          "account": "fid-401k",
+          "amount": 105535
+        },
+        {
+          "kind": "rmd",
+          "account": "rollover-ira",
+          "amount": 13183
+        },
+        {
+          "kind": "withdrawal",
+          "account": "fid-401k",
+          "amount": 378
+        }
+      ],
+      "taxes": {
+        "ordinary": 17210,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 10259,
+        "taxable_social_security": 82706,
+        "ordinary_taxable": 153474,
+        "magi": 231802,
+        "total": 27469
+      },
+      "surplus": 0,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 0,
+        "cash": 0,
+        "fid-401k": 1504981,
+        "hsa": 640728,
+        "pension-dc": 0,
+        "rollover-ira": 186142,
+        "roth-ira": 2357253
+      },
+      "class_totals": {
+        "taxable": 0,
+        "deferred": 1691123,
+        "roth": 2357253,
+        "hsa": 640728
+      },
+      "net_worth": 4689104
+    },
+    {
+      "year": 2063,
+      "ages": {
+        "alex": 84,
+        "jordan": 88
+      },
+      "deflator": 2.4933486986108435,
+      "income": {
+        "db-pension": 30000,
+        "ss-jordan": 99734
+      },
+      "total_income": 129734,
+      "expenses": 224401,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 123440,
+      "conversions": 0,
+      "withdrawals": {
+        "fid-401k": 109853,
+        "rollover-ira": 13587
+      },
+      "growth": {
+        "fid-401k": 90299,
+        "hsa": 32036,
+        "rollover-ira": 9307,
+        "roth-ira": 141435
+      },
+      "actions": [
+        {
+          "kind": "rmd",
+          "account": "fid-401k",
+          "amount": 109853
+        },
+        {
+          "kind": "rmd",
+          "account": "rollover-ira",
+          "amount": 13587
+        },
+        {
+          "kind": "surplus",
+          "account": "cash",
+          "amount": 488
+        }
+      ],
+      "taxes": {
+        "ordinary": 17715,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 10570,
+        "taxable_social_security": 84774,
+        "ordinary_taxable": 157928,
+        "magi": 238214,
+        "total": 28285
+      },
+      "surplus": 488,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 0,
+        "cash": 488,
+        "fid-401k": 1485427,
+        "hsa": 672764,
+        "pension-dc": 0,
+        "rollover-ira": 181862,
+        "roth-ira": 2498688
+      },
+      "class_totals": {
+        "taxable": 488,
+        "deferred": 1667289,
+        "roth": 2498688,
+        "hsa": 672764
+      },
+      "net_worth": 4839229
+    },
+    {
+      "year": 2064,
+      "ages": {
+        "alex": 85,
+        "jordan": 89
+      },
+      "deflator": 2.555682416076114,
+      "income": {
+        "db-pension": 30000,
+        "ss-jordan": 102227
+      },
+      "total_income": 132227,
+      "expenses": 230011,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 129247,
+      "conversions": 0,
+      "withdrawals": {
+        "fid-401k": 115149,
+        "rollover-ira": 14098
+      },
+      "growth": {
+        "fid-401k": 89126,
+        "hsa": 33638,
+        "rollover-ira": 9093,
+        "roth-ira": 149921
+      },
+      "actions": [
+        {
+          "kind": "rmd",
+          "account": "fid-401k",
+          "amount": 115149
+        },
+        {
+          "kind": "rmd",
+          "account": "rollover-ira",
+          "amount": 14098
+        },
+        {
+          "kind": "surplus",
+          "account": "cash",
+          "amount": 2062
+        }
+      ],
+      "taxes": {
+        "ordinary": 18394,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 11007,
+        "taxable_social_security": 86893,
+        "ordinary_taxable": 163847,
+        "magi": 246140,
+        "total": 29401
+      },
+      "surplus": 2062,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 0,
+        "cash": 2550,
+        "fid-401k": 1459404,
+        "hsa": 706402,
+        "pension-dc": 0,
+        "rollover-ira": 176857,
+        "roth-ira": 2648609
+      },
+      "class_totals": {
+        "taxable": 2550,
+        "deferred": 1636261,
+        "roth": 2648609,
+        "hsa": 706402
+      },
+      "net_worth": 4993822
+    },
+    {
+      "year": 2065,
+      "ages": {
+        "alex": 86,
+        "jordan": 90
+      },
+      "deflator": 2.619574476478017,
+      "income": {
+        "db-pension": 30000,
+        "ss-jordan": 104783
+      },
+      "total_income": 134783,
+      "expenses": 235762,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 134119,
+      "conversions": 0,
+      "withdrawals": {
+        "fid-401k": 119623,
+        "rollover-ira": 14496
+      },
+      "growth": {
+        "fid-401k": 87564,
+        "hsa": 35320,
+        "rollover-ira": 8843,
+        "roth-ira": 158917
+      },
+      "actions": [
+        {
+          "kind": "rmd",
+          "account": "fid-401k",
+          "amount": 119623
+        },
+        {
+          "kind": "rmd",
+          "account": "rollover-ira",
+          "amount": 14496
+        },
+        {
+          "kind": "surplus",
+          "account": "cash",
+          "amount": 2819
+        }
+      ],
+      "taxes": {
+        "ordinary": 18961,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 11360,
+        "taxable_social_security": 89066,
+        "ordinary_taxable": 168835,
+        "magi": 253185,
+        "total": 30321
+      },
+      "surplus": 2819,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 0,
+        "cash": 5369,
+        "fid-401k": 1427345,
+        "hsa": 741722,
+        "pension-dc": 0,
+        "rollover-ira": 171204,
+        "roth-ira": 2807526
+      },
+      "class_totals": {
+        "taxable": 5369,
+        "deferred": 1598549,
+        "roth": 2807526,
+        "hsa": 741722
+      },
+      "net_worth": 5153166
+    },
+    {
+      "year": 2066,
+      "ages": {
+        "alex": 87,
+        "jordan": 91
+      },
+      "deflator": 2.685063838389967,
+      "income": {
+        "db-pension": 30000,
+        "ss-jordan": 107403
+      },
+      "total_income": 137403,
+      "expenses": 241656,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 139004,
+      "conversions": 0,
+      "withdrawals": {
+        "fid-401k": 124117,
+        "rollover-ira": 14887
+      },
+      "growth": {
+        "fid-401k": 85641,
+        "hsa": 37086,
+        "rollover-ira": 8560,
+        "roth-ira": 168452
+      },
+      "actions": [
+        {
+          "kind": "rmd",
+          "account": "fid-401k",
+          "amount": 124117
+        },
+        {
+          "kind": "rmd",
+          "account": "rollover-ira",
+          "amount": 14887
+        },
+        {
+          "kind": "surplus",
+          "account": "cash",
+          "amount": 3510
+        }
+      ],
+      "taxes": {
+        "ordinary": 19529,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 11712,
+        "taxable_social_security": 91293,
+        "ordinary_taxable": 173838,
+        "magi": 260297,
+        "total": 31241
+      },
+      "surplus": 3510,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 0,
+        "cash": 8879,
+        "fid-401k": 1388869,
+        "hsa": 778808,
+        "pension-dc": 0,
+        "rollover-ira": 164877,
+        "roth-ira": 2975978
+      },
+      "class_totals": {
+        "taxable": 8879,
+        "deferred": 1553746,
+        "roth": 2975978,
+        "hsa": 778808
+      },
+      "net_worth": 5317411
+    },
+    {
+      "year": 2067,
+      "ages": {
+        "alex": 88,
+        "jordan": 92
+      },
+      "deflator": 2.7521904343497163,
+      "income": {
+        "db-pension": 30000,
+        "ss-jordan": 110088
+      },
+      "total_income": 140088,
+      "expenses": 247697,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 143865,
+      "conversions": 0,
+      "withdrawals": {
+        "fid-401k": 128599,
+        "rollover-ira": 15266
+      },
+      "growth": {
+        "fid-401k": 83332,
+        "hsa": 38940,
+        "rollover-ira": 8244,
+        "roth-ira": 178559
+      },
+      "actions": [
+        {
+          "kind": "rmd",
+          "account": "fid-401k",
+          "amount": 128599
+        },
+        {
+          "kind": "rmd",
+          "account": "rollover-ira",
+          "amount": 15266
+        },
+        {
+          "kind": "surplus",
+          "account": "cash",
+          "amount": 4102
+        }
+      ],
+      "taxes": {
+        "ordinary": 20093,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 12061,
+        "taxable_social_security": 93575,
+        "ordinary_taxable": 178819,
+        "magi": 267440,
+        "total": 32154
+      },
+      "surplus": 4102,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 0,
+        "cash": 12981,
+        "fid-401k": 1343602,
+        "hsa": 817748,
+        "pension-dc": 0,
+        "rollover-ira": 157855,
+        "roth-ira": 3154537
+      },
+      "class_totals": {
+        "taxable": 12981,
+        "deferred": 1501457,
+        "roth": 3154537,
+        "hsa": 817748
+      },
+      "net_worth": 5486723
+    },
+    {
+      "year": 2068,
+      "ages": {
+        "alex": 89,
+        "jordan": 93
+      },
+      "deflator": 2.820995195208459,
+      "income": {
+        "db-pension": 30000,
+        "ss-jordan": 112840
+      },
+      "total_income": 142840,
+      "expenses": 253890,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 148659,
+      "conversions": 0,
+      "withdrawals": {
+        "fid-401k": 133030,
+        "rollover-ira": 15629
+      },
+      "growth": {
+        "fid-401k": 80616,
+        "hsa": 40887,
+        "rollover-ira": 7893,
+        "roth-ira": 189272
+      },
+      "actions": [
+        {
+          "kind": "rmd",
+          "account": "fid-401k",
+          "amount": 133030
+        },
+        {
+          "kind": "rmd",
+          "account": "rollover-ira",
+          "amount": 15629
+        },
+        {
+          "kind": "surplus",
+          "account": "cash",
+          "amount": 4559
+        }
+      ],
+      "taxes": {
+        "ordinary": 20649,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 12401,
+        "taxable_social_security": 95914,
+        "ordinary_taxable": 183737,
+        "magi": 274573,
+        "total": 33050
+      },
+      "surplus": 4559,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 0,
+        "cash": 17540,
+        "fid-401k": 1291188,
+        "hsa": 858635,
+        "pension-dc": 0,
+        "rollover-ira": 150119,
+        "roth-ira": 3343809
+      },
+      "class_totals": {
+        "taxable": 17540,
+        "deferred": 1441307,
+        "roth": 3343809,
+        "hsa": 858635
+      },
+      "net_worth": 5661291
+    },
+    {
+      "year": 2069,
+      "ages": {
+        "alex": 90,
+        "jordan": 94
+      },
+      "deflator": 2.8915200750886707,
+      "income": {
+        "db-pension": 30000,
+        "ss-jordan": 115661
+      },
+      "total_income": 145661,
+      "expenses": 260237,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 151717,
+      "conversions": 0,
+      "withdrawals": {
+        "fid-401k": 135915,
+        "rollover-ira": 15802
+      },
+      "growth": {
+        "fid-401k": 77471,
+        "hsa": 42932,
+        "rollover-ira": 7506,
+        "roth-ira": 200629
+      },
+      "actions": [
+        {
+          "kind": "rmd",
+          "account": "fid-401k",
+          "amount": 135915
+        },
+        {
+          "kind": "rmd",
+          "account": "rollover-ira",
+          "amount": 15802
+        },
+        {
+          "kind": "surplus",
+          "account": "cash",
+          "amount": 3557
+        }
+      ],
+      "taxes": {
+        "ordinary": 20996,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 12588,
+        "taxable_social_security": 98312,
+        "ordinary_taxable": 186922,
+        "magi": 280029,
+        "total": 33584
+      },
+      "surplus": 3557,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 0,
+        "cash": 21097,
+        "fid-401k": 1232744,
+        "hsa": 901567,
+        "pension-dc": 0,
+        "rollover-ira": 141823,
+        "roth-ira": 3544438
+      },
+      "class_totals": {
+        "taxable": 21097,
+        "deferred": 1374567,
+        "roth": 3544438,
+        "hsa": 901567
+      },
+      "net_worth": 5841669
+    },
+    {
+      "year": 2070,
+      "ages": {
+        "alex": 91,
+        "jordan": 95
+      },
+      "deflator": 2.9638080769658868,
+      "income": {
+        "db-pension": 30000,
+        "ss-jordan": 118552
+      },
+      "total_income": 148552,
+      "expenses": 266743,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 154446,
+      "conversions": 0,
+      "withdrawals": {
+        "fid-401k": 138511,
+        "rollover-ira": 15935
+      },
+      "growth": {
+        "fid-401k": 73965,
+        "hsa": 45078,
+        "rollover-ira": 7091,
+        "roth-ira": 212666
+      },
+      "actions": [
+        {
+          "kind": "rmd",
+          "account": "fid-401k",
+          "amount": 138511
+        },
+        {
+          "kind": "rmd",
+          "account": "rollover-ira",
+          "amount": 15935
+        },
+        {
+          "kind": "surplus",
+          "account": "cash",
+          "amount": 2207
+        }
+      ],
+      "taxes": {
+        "ordinary": 21304,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 12744,
+        "taxable_social_security": 100769,
+        "ordinary_taxable": 189780,
+        "magi": 285215,
+        "total": 34048
+      },
+      "surplus": 2207,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 0,
+        "cash": 23304,
+        "fid-401k": 1168198,
+        "hsa": 946645,
+        "pension-dc": 0,
+        "rollover-ira": 132979,
+        "roth-ira": 3757104
+      },
+      "class_totals": {
+        "taxable": 23304,
+        "deferred": 1301177,
+        "roth": 3757104,
+        "hsa": 946645
+      },
+      "net_worth": 6028230
+    },
+    {
+      "year": 2071,
+      "ages": {
+        "alex": 92,
+        "jordan": 96
+      },
+      "deflator": 3.037903278890034,
+      "income": {
+        "db-pension": 30000,
+        "ss-jordan": 121516
+      },
+      "total_income": 151516,
+      "expenses": 273411,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 154902,
+      "conversions": 0,
+      "withdrawals": {
+        "cash": 1030,
+        "fid-401k": 139071,
+        "rollover-ira": 15831
+      },
+      "growth": {
+        "fid-401k": 70092,
+        "hsa": 47332,
+        "rollover-ira": 6649,
+        "roth-ira": 225426
+      },
+      "actions": [
+        {
+          "kind": "rmd",
+          "account": "fid-401k",
+          "amount": 139071
+        },
+        {
+          "kind": "rmd",
+          "account": "rollover-ira",
+          "amount": 15831
+        },
+        {
+          "kind": "withdrawal",
+          "account": "cash",
+          "amount": 1030
+        }
+      ],
+      "taxes": {
+        "ordinary": 21338,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 12699,
+        "taxable_social_security": 103289,
+        "ordinary_taxable": 190371,
+        "magi": 288191,
+        "total": 34037
+      },
+      "surplus": 0,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 0,
+        "cash": 22274,
+        "fid-401k": 1099219,
+        "hsa": 993977,
+        "pension-dc": 0,
+        "rollover-ira": 123797,
+        "roth-ira": 3982530
+      },
+      "class_totals": {
+        "taxable": 22274,
+        "deferred": 1223016,
+        "roth": 3982530,
+        "hsa": 993977
+      },
+      "net_worth": 6221797
+    },
+    {
+      "year": 2072,
+      "ages": {
+        "alex": 93,
+        "jordan": 97
+      },
+      "deflator": 3.1138508608622844,
+      "income": {
+        "db-pension": 30000,
+        "ss-jordan": 124554
+      },
+      "total_income": 154554,
+      "expenses": 280247,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 156797,
+      "conversions": 0,
+      "withdrawals": {
+        "cash": 3218,
+        "fid-401k": 140926,
+        "rollover-ira": 15871
+      },
+      "growth": {
+        "fid-401k": 65953,
+        "hsa": 49699,
+        "rollover-ira": 6190,
+        "roth-ira": 238952
+      },
+      "actions": [
+        {
+          "kind": "rmd",
+          "account": "fid-401k",
+          "amount": 140926
+        },
+        {
+          "kind": "rmd",
+          "account": "rollover-ira",
+          "amount": 15871
+        },
+        {
+          "kind": "withdrawal",
+          "account": "cash",
+          "amount": 3218
+        }
+      ],
+      "taxes": {
+        "ordinary": 21544,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 12778,
+        "taxable_social_security": 105871,
+        "ordinary_taxable": 192402,
+        "magi": 292668,
+        "total": 34322
+      },
+      "surplus": 0,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 0,
+        "cash": 19056,
+        "fid-401k": 1024246,
+        "hsa": 1043676,
+        "pension-dc": 0,
+        "rollover-ira": 114116,
+        "roth-ira": 4221482
+      },
+      "class_totals": {
+        "taxable": 19056,
+        "deferred": 1138362,
+        "roth": 4221482,
+        "hsa": 1043676
+      },
+      "net_worth": 6422576
+    },
+    {
+      "year": 2073,
+      "ages": {
+        "alex": 94,
+        "jordan": 98
+      },
+      "deflator": 3.191697132383842,
+      "income": {
+        "db-pension": 30000,
+        "ss-jordan": 127668
+      },
+      "total_income": 157668,
+      "expenses": 287253,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 155940,
+      "conversions": 0,
+      "withdrawals": {
+        "cash": 7678,
+        "fid-401k": 140308,
+        "rollover-ira": 15632
+      },
+      "growth": {
+        "fid-401k": 61455,
+        "hsa": 52184,
+        "rollover-ira": 5706,
+        "roth-ira": 253289
+      },
+      "actions": [
+        {
+          "kind": "rmd",
+          "account": "fid-401k",
+          "amount": 140308
+        },
+        {
+          "kind": "rmd",
+          "account": "rollover-ira",
+          "amount": 15632
+        },
+        {
+          "kind": "withdrawal",
+          "account": "cash",
+          "amount": 7678
+        }
+      ],
+      "taxes": {
+        "ordinary": 21419,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 12614,
+        "taxable_social_security": 108518,
+        "ordinary_taxable": 191685,
+        "magi": 294458,
+        "total": 34033
+      },
+      "surplus": 0,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 0,
+        "cash": 11378,
+        "fid-401k": 945393,
+        "hsa": 1095860,
+        "pension-dc": 0,
+        "rollover-ira": 104190,
+        "roth-ira": 4474771
+      },
+      "class_totals": {
+        "taxable": 11378,
+        "deferred": 1049583,
+        "roth": 4474771,
+        "hsa": 1095860
+      },
+      "net_worth": 6631592
+    },
+    {
+      "year": 2074,
+      "ages": {
+        "alex": 95,
+        "jordan": 99
+      },
+      "deflator": 3.2714895606934378,
+      "income": {
+        "db-pension": 30000,
+        "ss-jordan": 130860
+      },
+      "total_income": 160860,
+      "expenses": 294434,
+      "medicare": 0,
+      "contributions_employee": 0,
+      "contributions_employer": 0,
+      "rmds": 154350,
+      "conversions": 0,
+      "withdrawals": {
+        "cash": 11378,
+        "fid-401k": 140838,
+        "rollover-ira": 15322
+      },
+      "growth": {
+        "fid-401k": 56724,
+        "hsa": 54793,
+        "rollover-ira": 5210,
+        "roth-ira": 268486
+      },
+      "actions": [
+        {
+          "kind": "rmd",
+          "account": "fid-401k",
+          "amount": 139028
+        },
+        {
+          "kind": "rmd",
+          "account": "rollover-ira",
+          "amount": 15322
+        },
+        {
+          "kind": "withdrawal",
+          "account": "cash",
+          "amount": 11378
+        },
+        {
+          "kind": "withdrawal",
+          "account": "fid-401k",
+          "amount": 1810
+        }
+      ],
+      "taxes": {
+        "ordinary": 21423,
+        "ltcg": 0,
+        "penalty": 0,
+        "state": 12541,
+        "taxable_social_security": 111231,
+        "ordinary_taxable": 192049,
+        "magi": 297391,
+        "total": 33964
+      },
+      "surplus": 0,
+      "unfunded": 0,
+      "balances": {
+        "brokerage": 0,
+        "cash": 0,
+        "fid-401k": 861279,
+        "hsa": 1150653,
+        "pension-dc": 0,
+        "rollover-ira": 94078,
+        "roth-ira": 4743257
+      },
+      "class_totals": {
+        "taxable": 0,
+        "deferred": 955357,
+        "roth": 4743257,
+        "hsa": 1150653
+      },
+      "net_worth": 6849267
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+schema = 1
+year = 2027
+
+[deductions.standard]
+single = 16500
+married-joint = 33000
+
+[brackets]
+single = [{ over = 0, rate = 0.10 }, { over = 12700, rate = 0.12 }]
+married-joint = [{ over = 0, rate = 0.10 }, { over = 25400, rate = 0.12 }]
+
+[ltcg]
+middle-rate = 0.15
+top-rate = 0.20
+
+[ltcg.zero-until]
+single = 50700
+married-joint = 101400
+
+[ltcg.fifteen-until]
+single = 559100
+married-joint = 629000
+
+[social-security.provisional-base]
+single = 25000
+married-joint = 32000
+
+[social-security.provisional-upper]
+single = 34000
+married-joint = 44000
+
+[early-withdrawal]
+penalty = 0.10
+
+[limits]
+employer-plan = 25000
+employer-plan-catch-up-50 = 8000
+employer-plan-catch-up-60 = 11250
+overall-plan = 72000
+simple = 17500
+simple-catch-up-50 = 4000
+simple-catch-up-60 = 5250
+ira = 7500
+ira-catch-up-50 = 1100
+hsa-self = 4500
+hsa-family = 9000
+hsa-catch-up-55 = 1000
+
+[limits.roth-ira-phase-out]
+single = { from = 153000, to = 168000 }
+married-joint = { from = 242000, to = 252000 }
+
+[limits.ira-deduction-phase-out]
+single = { from = 81000, to = 91000 }
+married-joint = { from = 129000, to = 149000 }
+
+[rmd]
+divisors = [{ age = 73, divisor = 26.5 }, { age = 120, divisor = 2.0 }]
+
+# Carried from 2026: a year's file holds every state lived in.
+[states.or.deduction]
+single = 2900
+married-joint = 5800
+
+[states.or.brackets]
+single = [
+  { over = 0, rate = 0.0475 },
+  { over = 4550, rate = 0.0675 },
+  { over = 11400, rate = 0.0875 },
+  { over = 125000, rate = 0.099, unindexed = true },
+]
+married-joint = [
+  { over = 0, rate = 0.0475 },
+  { over = 9100, rate = 0.0675 },
+  { over = 22800, rate = 0.0875 },
+  { over = 250000, rate = 0.099, unindexed = true },
+]

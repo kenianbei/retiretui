@@ -1,0 +1,13 @@
+{
+  "gitignore": true,
+  "ignores": [
+    "target",
+    "node_modules",
+    "tests/fixtures"
+  ],
+  "config": {
+    "MD024": {
+      "siblings_only": true
+    }
+  }
+}

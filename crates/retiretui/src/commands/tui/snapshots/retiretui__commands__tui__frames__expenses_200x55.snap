@@ -1,0 +1,60 @@
+---
+source: crates/retiretui/src/commands/tui/frames.rs
+assertion_line: 26
+expression: composed_frame(app)
+---
+╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                                                                                                      
+│1 Overview││2 Ledger││3 Compare││4 Tools││5 Plan│                                                                                                                                          full.toml ● 
+┴──────────┴┴────────┴┴─────────┴┴───────┴╯      ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭ Plan ─────────────╮╭ Expenses ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮ ╭ Expense ───────────────────────╮
+│  Accounts       7 ││  Expense          Amount From                      Until                   Growth                                                            │ │                                │
+│  Income         4 ││▌ living          $90,000 Plan start                Plan end                Inflation                                                         │ │▏ ID             living         │
+│▏ Expenses       2 ││  travel          $15,000 1 yr after retire         age 80 (jordan)         Inflation                                                         │ │  Name                          │
+│  Cliffs         0 ││                                                                                                                                              │ │  Annual amount  $90,000        │
+│  Transfers      1 ││                                                                                                                                              │ │  Happens        Every year     │
+│  Conversions    1 ││                                                                                                                                              │ │  Starts         Plan start     │
+│  Contributions  3 ││                                                                                                                                              │ │  Ends           Plan end       │
+│  Events         1 ││                                                                                                                                              │ │  Growth         Inflation      │
+│  People         2 ││                                                                                                                                              │ │                                │
+│  Residency      1 ││                                                                                                                                              │ │                                │
+│  Household        ││                                                                                                                                              │ │                                │
+│  Settings         ││                                                                                                                                              │ │                                │
+│  Market           ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││                                                                                                                                              │ │                                │
+│                   ││  [ + Add Expense ]                                                                                                                           │ │                                │
+╰───────────────────╯╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯ ╰────────────────────────────────╯
+ ⏎ edit  ← domains  ⇥ pane  a add  d delete  ctrl-s save  r reload  q quit  ctrl-↓ tab  n toggle dollars                                                                             : commands  ? help

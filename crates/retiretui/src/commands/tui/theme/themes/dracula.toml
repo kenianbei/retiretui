@@ -1,0 +1,19 @@
+family = "dracula"
+variant = "dark"
+bg = "#282a36"
+fg = "#f8f8f2"
+dim = "#6272a4"
+border = "#44475a"
+accent = "#bd93f9"
+selection_bg = "#44475a"
+stripe = "#2e303e"
+over = "#ff5555"
+
+series = [
+  "#8be9fd",
+  "#50fa7b",
+  "#ff79c6",
+  "#ffb86c",
+  "#bd93f9",
+  "#f1fa8c",
+]

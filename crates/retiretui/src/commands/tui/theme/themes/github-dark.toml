@@ -1,0 +1,19 @@
+family = "github"
+variant = "dark"
+bg = "#0d1117"
+fg = "#c9d1d9"
+dim = "#8b949e"
+border = "#30363d"
+accent = "#58a6ff"
+selection_bg = "#21262d"
+stripe = "#131922"
+over = "#f85149"
+
+series = [
+  "#58a6ff",
+  "#3fb950",
+  "#bc8cff",
+  "#ff7b72",
+  "#39c5cf",
+  "#d29922",
+]

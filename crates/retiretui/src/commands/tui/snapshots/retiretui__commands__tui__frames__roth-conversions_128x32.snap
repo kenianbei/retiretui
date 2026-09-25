@@ -1,0 +1,37 @@
+---
+source: crates/retiretui/src/commands/tui/frames.rs
+assertion_line: 26
+expression: composed_frame(app)
+---
+╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                              
+│1 Overview││2 Ledger││3 Compare││4 Tools││5 Plan│                                                                  full.toml ● 
+┴──────────┴┴────────┴┴─────────┴╯       ╰┴──────┴──────────────────────────────────────────────────────────────────────────────
+╭ Tools ────────────╮╭ Constraints ───────────────────────────────────╮╭ Ladder Options ───────────────────────────────────────╮
+│▏ Roth Conversions ││                                                ││Ranked here once Convert to names a Roth account.      │
+│  SSA Benefits     ││▌ Convert from  Every deferred account          ││                                                       │
+│  Monte Carlo      ││  Convert to                                    ││                                                       │
+│  Historical       ││  Fill bracket                                  ││                                                       │
+│                   ││  First year                                    ││                                                       │
+│                   ││  Last year                                     ││                                                       │
+│                   ││  Annual cap                                    ││                                                       │
+│                   ││  Total cap                                     ││                                                       │
+│                   ││  Headroom                                      │╰───────────────────────────────────────────────────────╯
+│                   ││  IRMAA tier                                    │╭ Conversions ──────────────────────────────────────────╮
+│                   ││  MAGI cap                                      ││The highlighted option's conversions, year by year.    │
+│                   ││                                                ││                                                       │
+│                   ││                                                ││                                                       │
+│                   ││                                                ││                                                       │
+│                   ││                                                ││                                                       │
+│                   ││                                                ││                                                       │
+│                   ││                                                ││                                                       │
+│                   ││                                                ││                                                       │
+│                   ││                                                ││                                                       │
+│                   ││                                                ││                                                       │
+│                   ││                                                ││                                                       │
+│                   ││                                                ││                                                       │
+│                   ││                                                ││                                                       │
+│                   ││                                                ││                                                       │
+│                   ││                                                ││                                                       │
+│                   │╰────────────────────────────────────────────────╯╰───────────────────────────────────────────────────────╯
+╰───────────────────╯Pick the Roth account to convert to under Constraints, and every bracket's ladder is searched.             
+ ⏎ edit  ⇥ pane  w write  t take  ctrl-s save  r reload  q quit  ctrl-↓ tab  n toggle dollars                : commands  ? help

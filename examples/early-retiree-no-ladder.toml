@@ -1,0 +1,15 @@
+# The early retiree without the Roth conversion ladder, to compare what the
+# conversions buy.
+#
+# try: retiretui compare examples/early-retiree.toml examples/early-retiree-no-ladder.toml
+# try: retiretui compare examples/early-retiree.toml examples/early-retiree-no-ladder.toml --metric taxes
+
+schema = 1
+base = "early-retiree.toml"
+
+[plan]
+name = "Early retiree, no conversions"
+
+[[conversions]]
+id = "roth-ladder"
+remove = true

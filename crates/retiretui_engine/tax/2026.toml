@@ -1,0 +1,278 @@
+schema = 1
+year = 2026
+
+[deductions.standard]
+single = 16100
+married-joint = 32200
+
+[brackets]
+single = [
+  { over = 0, rate = 0.10 },
+  { over = 12400, rate = 0.12 },
+  { over = 50400, rate = 0.22 },
+  { over = 105700, rate = 0.24 },
+  { over = 201775, rate = 0.32 },
+  { over = 256225, rate = 0.35 },
+  { over = 640600, rate = 0.37 },
+]
+married-joint = [
+  { over = 0, rate = 0.10 },
+  { over = 24800, rate = 0.12 },
+  { over = 100800, rate = 0.22 },
+  { over = 211400, rate = 0.24 },
+  { over = 403550, rate = 0.32 },
+  { over = 512450, rate = 0.35 },
+  { over = 768700, rate = 0.37 },
+]
+
+[ltcg]
+middle-rate = 0.15
+top-rate = 0.20
+
+[ltcg.zero-until]
+single = 49450
+married-joint = 98900
+
+[ltcg.fifteen-until]
+single = 545500
+married-joint = 613700
+
+# Statutory, not inflation-indexed.
+[social-security.provisional-base]
+single = 25000
+married-joint = 32000
+
+[social-security.provisional-upper]
+single = 34000
+married-joint = 44000
+
+# ssa.gov/oact/cola/AWI.html. The wage base and the bend points of any year
+# derive from the index; past its last published year it grows at the 2025
+# Trustees Report's intermediate assumption (2.4% CPI-W, 1.13% real).
+[social-security.benefit]
+wage-growth = 0.036
+
+[social-security.benefit.wage-index]
+1951 = 2799.16
+1952 = 2973.32
+1953 = 3139.44
+1954 = 3155.64
+1955 = 3301.44
+1956 = 3532.36
+1957 = 3641.72
+1958 = 3673.80
+1959 = 3855.80
+1960 = 4007.12
+1961 = 4086.76
+1962 = 4291.40
+1963 = 4396.64
+1964 = 4576.32
+1965 = 4658.72
+1966 = 4938.36
+1967 = 5213.44
+1968 = 5571.76
+1969 = 5893.76
+1970 = 6186.24
+1971 = 6497.08
+1972 = 7133.80
+1973 = 7580.16
+1974 = 8030.76
+1975 = 8630.92
+1976 = 9226.48
+1977 = 9779.44
+1978 = 10556.03
+1979 = 11479.46
+1980 = 12513.46
+1981 = 13773.10
+1982 = 14531.34
+1983 = 15239.24
+1984 = 16135.07
+1985 = 16822.51
+1986 = 17321.82
+1987 = 18426.51
+1988 = 19334.04
+1989 = 20099.55
+1990 = 21027.98
+1991 = 21811.60
+1992 = 22935.42
+1993 = 23132.67
+1994 = 23753.53
+1995 = 24705.66
+1996 = 25913.90
+1997 = 27426.00
+1998 = 28861.44
+1999 = 30469.84
+2000 = 32154.82
+2001 = 32921.92
+2002 = 33252.09
+2003 = 34064.95
+2004 = 35648.55
+2005 = 36952.94
+2006 = 38651.41
+2007 = 40405.48
+2008 = 41334.97
+2009 = 40711.61
+2010 = 41673.83
+2011 = 42979.61
+2012 = 44321.67
+2013 = 44888.16
+2014 = 46481.52
+2015 = 48098.63
+2016 = 48642.15
+2017 = 50321.89
+2018 = 52145.80
+2019 = 54099.99
+2020 = 55628.60
+2021 = 60575.07
+2022 = 63795.13
+2023 = 66621.80
+2024 = 69846.57
+
+[early-withdrawal]
+penalty = 0.10
+
+[limits]
+employer-plan = 24500
+employer-plan-catch-up-50 = 8000
+employer-plan-catch-up-60 = 11250
+overall-plan = 72000
+simple = 17000
+simple-catch-up-50 = 4000
+simple-catch-up-60 = 5250
+ira = 7500
+ira-catch-up-50 = 1100
+hsa-self = 4400
+hsa-family = 8750
+hsa-catch-up-55 = 1000
+
+[limits.roth-ira-phase-out]
+single = { from = 153000, to = 168000 }
+married-joint = { from = 242000, to = 252000 }
+
+[limits.ira-deduction-phase-out]
+single = { from = 81000, to = 91000 }
+married-joint = { from = 129000, to = 149000 }
+
+# Uniform Lifetime Table.
+[rmd]
+divisors = [
+  { age = 72, divisor = 27.4 },
+  { age = 73, divisor = 26.5 },
+  { age = 74, divisor = 25.5 },
+  { age = 75, divisor = 24.6 },
+  { age = 76, divisor = 23.7 },
+  { age = 77, divisor = 22.9 },
+  { age = 78, divisor = 22.0 },
+  { age = 79, divisor = 21.1 },
+  { age = 80, divisor = 20.2 },
+  { age = 81, divisor = 19.4 },
+  { age = 82, divisor = 18.5 },
+  { age = 83, divisor = 17.7 },
+  { age = 84, divisor = 16.8 },
+  { age = 85, divisor = 16.0 },
+  { age = 86, divisor = 15.2 },
+  { age = 87, divisor = 14.4 },
+  { age = 88, divisor = 13.7 },
+  { age = 89, divisor = 12.9 },
+  { age = 90, divisor = 12.2 },
+  { age = 91, divisor = 11.5 },
+  { age = 92, divisor = 10.8 },
+  { age = 93, divisor = 10.1 },
+  { age = 94, divisor = 9.5 },
+  { age = 95, divisor = 8.9 },
+  { age = 96, divisor = 8.4 },
+  { age = 97, divisor = 7.8 },
+  { age = 98, divisor = 7.3 },
+  { age = 99, divisor = 6.8 },
+  { age = 100, divisor = 6.4 },
+  { age = 101, divisor = 6.0 },
+  { age = 102, divisor = 5.6 },
+  { age = 103, divisor = 5.2 },
+  { age = 104, divisor = 4.9 },
+  { age = 105, divisor = 4.6 },
+  { age = 106, divisor = 4.3 },
+  { age = 107, divisor = 4.1 },
+  { age = 108, divisor = 3.9 },
+  { age = 109, divisor = 3.7 },
+  { age = 110, divisor = 3.5 },
+  { age = 111, divisor = 3.4 },
+  { age = 112, divisor = 3.3 },
+  { age = 113, divisor = 3.1 },
+  { age = 114, divisor = 3.0 },
+  { age = 115, divisor = 2.9 },
+  { age = 116, divisor = 2.8 },
+  { age = 117, divisor = 2.7 },
+  { age = 118, divisor = 2.5 },
+  { age = 119, divisor = 2.3 },
+  { age = 120, divisor = 2.0 },
+]
+
+[[irmaa]]
+part-b = 888
+part-d = 168
+
+[irmaa.magi-over]
+single = 109000
+married-joint = 218000
+
+[[irmaa]]
+part-b = 2220
+part-d = 434
+
+[irmaa.magi-over]
+single = 137000
+married-joint = 274000
+
+[[irmaa]]
+part-b = 3552
+part-d = 700
+
+[irmaa.magi-over]
+single = 171000
+married-joint = 342000
+
+[[irmaa]]
+part-b = 4884
+part-d = 967
+
+[irmaa.magi-over]
+single = 205000
+married-joint = 410000
+
+[[irmaa]]
+part-b = 5328
+part-d = 1056
+
+[irmaa.magi-over]
+single = 500000
+married-joint = 750000
+
+# No income tax. Washington's excise on long-term gains is not modeled.
+[states.ak]
+[states.fl]
+[states.nv]
+[states.nh]
+[states.sd]
+[states.tn]
+[states.tx]
+[states.wa]
+[states.wy]
+
+# Oregon Publication OR-ESTIMATE, 2026. The top bracket's floor is statutory.
+[states.or.deduction]
+single = 2900
+married-joint = 5800
+
+[states.or.brackets]
+single = [
+  { over = 0, rate = 0.0475 },
+  { over = 4550, rate = 0.0675 },
+  { over = 11400, rate = 0.0875 },
+  { over = 125000, rate = 0.099, unindexed = true },
+]
+married-joint = [
+  { over = 0, rate = 0.0475 },
+  { over = 9100, rate = 0.0675 },
+  { over = 22800, rate = 0.0875 },
+  { over = 250000, rate = 0.099, unindexed = true },
+]

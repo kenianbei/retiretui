@@ -1,0 +1,60 @@
+---
+source: crates/retiretui/src/commands/tui/frames.rs
+assertion_line: 26
+expression: composed_frame(app)
+---
+╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                                                                                                      
+│1 Overview││2 Ledger││3 Compare││4 Tools││5 Plan│                                                                                                                                          full.toml ● 
+┴──────────┴┴────────┴┴─────────┴┴───────┴╯      ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭ Plan ─────────────╮╭ Market ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│  Accounts       7 ││                                                                                                                                                                                 │
+│  Income         4 ││▌ Leave at least                                                                                                                                                                 │
+│  Expenses       2 ││  Stocks                                                                                                                                                                         │
+│  Cliffs         0 ││    spread                                                                                                                                                                       │
+│  Transfers      1 ││  Bonds                                                                                                                                                                          │
+│  Conversions    1 ││    spread                                                                                                                                                                       │
+│  Contributions  3 ││  Cash                                                                                                                                                                           │
+│  Events         1 ││    spread                                                                                                                                                                       │
+│  People         2 ││  Inflation spread                                                                                                                                                               │
+│  Residency      1 ││    persistence                                                                                                                                                                  │
+│  Household        ││  Stocks, bonds                                                                                                                                                                  │
+│  Settings         ││  Stocks, inflation                                                                                                                                                              │
+│▏ Market           ││  Bonds, inflation                                                                                                                                                               │
+│                   ││  Cash, inflation                                                                                                                                                                │
+│                   ││  Monte Carlo draws  The assumptions                                                                                                                                             │
+│                   ││    trials                                                                                                                                                                       │
+│                   ││    seed                                                                                                                                                                         │
+│                   ││  Historical from                                                                                                                                                                │
+│                   ││    to                                                                                                                                                                           │
+│                   ││    wrap             ✓                                                                                                                                                           │
+│                   ││                                                                                                                                                                                 │
+│                   ││                                                                                                                                                                                 │
+│                   ││                                                                                                                                                                                 │
+│                   ││                                                                                                                                                                                 │
+│                   ││                                                                                                                                                                                 │
+│                   ││                                                                                                                                                                                 │
+│                   ││                                                                                                                                                                                 │
+│                   ││                                                                                                                                                                                 │
+│                   ││                                                                                                                                                                                 │
+│                   ││                                                                                                                                                                                 │
+│                   ││                                                                                                                                                                                 │
+│                   ││                                                                                                                                                                                 │
+│                   ││                                                                                                                                                                                 │
+│                   ││                                                                                                                                                                                 │
+│                   ││                                                                                                                                                                                 │
+│                   ││                                                                                                                                                                                 │
+│                   ││                                                                                                                                                                                 │
+│                   ││                                                                                                                                                                                 │
+│                   ││                                                                                                                                                                                 │
+│                   ││                                                                                                                                                                                 │
+│                   ││                                                                                                                                                                                 │
+│                   ││                                                                                                                                                                                 │
+│                   ││                                                                                                                                                                                 │
+│                   ││                                                                                                                                                                                 │
+│                   ││                                                                                                                                                                                 │
+│                   ││                                                                                                                                                                                 │
+│                   ││                                                                                                                                                                                 │
+│                   ││                                                                                                                                                                                 │
+│                   ││                                                                                                                                                                                 │
+╰───────────────────╯╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ ⏎ edit  esc domains  ⇥ pane  ctrl-s save  r reload  q quit  ctrl-↓ tab  n toggle dollars                                                                                            : commands  ? help

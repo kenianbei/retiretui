@@ -1,0 +1,15 @@
+[files]
+# Terminal frames, whose rows are cut mid-word at a box's edge, and the ISO
+# country codes, any two letters of which may be a misspelt word.
+extend-exclude = [
+    "crates/retiretui/src/commands/tui/snapshots/*.snap",
+    "crates/retiretui_engine/src/plan/places.rs",
+]
+
+[default.extend-words]
+ratatui = "ratatui"
+bui = "bui"
+Bui = "Bui"
+hsa = "hsa"
+Hsa = "Hsa"
+HSA = "HSA"

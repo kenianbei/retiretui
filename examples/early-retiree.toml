@@ -1,0 +1,116 @@
+# Morgan, 45, retires at 50 and lives on a brokerage account until the
+# retirement accounts open at 59 and a half, converting to Roth meanwhile, in
+# the low-income years, and claiming Social Security at 62.
+#
+# try: retiretui project examples/early-retiree.toml
+# try: retiretui optimize conversions examples/early-retiree.toml --from 401k-morgan --to roth-ira-morgan --bracket 12
+# try: retiretui compare examples/early-retiree.toml examples/early-retiree-no-ladder.toml
+
+schema = 1
+
+[plan]
+name = "Early retiree"
+start_year = 2026
+horizon_age = 95
+inflation = 0.025
+# The default order, stated: shortfalls draw the brokerage first, then the
+# 401(k), then the Roth.
+withdrawal_order = ["taxable", "deferred", "roth", "hsa"]
+
+[household]
+filing = "single"
+
+[[household.people]]
+id = "morgan"
+name = "Morgan"
+birth = 1981-01-15
+
+[[residency]]
+country = "us"
+state = "nv"
+
+[[events]]
+id = "retire"
+name = "Morgan retires"
+trigger = { age = 50, owner = "morgan" }
+
+[[accounts]]
+id = "checking"
+name = "Checking"
+kind = "cash"
+owner = "morgan"
+balance = 30000
+
+[[accounts]]
+id = "brokerage"
+name = "Brokerage"
+kind = "brokerage"
+owner = "morgan"
+balance = 900000
+basis = 500000
+expected_return = 0.06
+
+[[accounts]]
+id = "401k-morgan"
+name = "Morgan's 401(k)"
+kind = "401k"
+owner = "morgan"
+balance = 600000
+expected_return = 0.06
+
+[[accounts]]
+id = "roth-ira-morgan"
+name = "Morgan's Roth IRA"
+kind = "ira"
+roth = true
+owner = "morgan"
+balance = 80000
+expected_return = 0.06
+
+[[income]]
+id = "salary-morgan"
+name = "Morgan's salary"
+kind = "salary"
+owner = "morgan"
+amount = 150000
+end = { event = "retire", offset = -1 }
+
+[[income]]
+id = "ss-morgan"
+name = "Morgan's Social Security"
+kind = "social-security"
+owner = "morgan"
+# A figure from the SSA statement: with no earnings record in the plan, a
+# computed benefit would count only the salary paid inside it.
+amount = 25000
+start = { age = 62, owner = "morgan" }
+
+[[contributions]]
+id = "deferral-morgan"
+name = "Morgan's 401(k) deferral"
+to = "401k-morgan"
+max = true
+end = { event = "retire", offset = -1 }
+
+[[expenses]]
+id = "living"
+name = "Living expenses"
+amount = 60000
+
+[[expenses]]
+id = "health-bridge"
+name = "Health insurance until Medicare"
+amount = 12000
+start = { event = "retire" }
+end = { age = 64, owner = "morgan" }
+
+# A fixed yearly conversion in the years between the salary and Social Security.
+[[conversions]]
+id = "roth-ladder"
+name = "Roth conversion ladder"
+from = "401k-morgan"
+to = "roth-ira-morgan"
+amount = 40000
+cola = false
+start = { event = "retire" }
+end = { age = 61, owner = "morgan" }

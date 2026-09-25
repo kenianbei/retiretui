@@ -1,0 +1,151 @@
+schema = 1
+
+[plan]
+name = "base"
+start_year = 2026
+horizon_age = 95
+inflation = 0.025
+withdrawal_order = ["taxable", "deferred", "roth", "hsa"]
+surplus_to = "cash"
+
+[household]
+filing = "married-joint"
+
+[[household.people]]
+id = "jordan"
+birth = 1975-06-14
+
+[[household.people]]
+id = "alex"
+birth = 1979-02-01
+
+[[residency]]
+country = "us"
+state = "or"
+
+[[events]]
+id = "retire"
+trigger = { age = 62, owner = "jordan" }
+
+[[accounts]]
+id = "cash"
+kind = "cash"
+owner = "jordan"
+balance = 40000
+
+[[accounts]]
+id = "brokerage"
+kind = "brokerage"
+owner = "jordan"
+balance = 300000
+basis = 220000
+expected_return = 0.05
+
+[[accounts]]
+id = "fid-401k"
+kind = "401k"
+owner = "jordan"
+balance = 450000
+expected_return = 0.06
+
+[[accounts]]
+id = "roth-ira"
+kind = "ira"
+roth = true
+owner = "jordan"
+balance = 90000
+expected_return = 0.06
+
+[[accounts]]
+id = "rollover-ira"
+kind = "ira"
+owner = "jordan"
+balance = 0
+expected_return = 0.05
+
+[[accounts]]
+id = "hsa"
+kind = "hsa"
+owner = "alex"
+balance = 25000
+expected_return = 0.05
+
+[[accounts]]
+id = "pension-dc"
+kind = "414k"
+owner = "jordan"
+balance = 60000
+expected_return = 0.05
+locked_until = { income = "db-pension" }
+
+[[income]]
+id = "salary"
+kind = "salary"
+owner = "jordan"
+amount = 150000
+end = { event = "retire", offset = -1 }
+
+[[income]]
+id = "db-pension"
+kind = "pension"
+owner = "jordan"
+amount = 30000
+start = { event = "retire" }
+cola = false
+
+[[income]]
+id = "ss-jordan"
+kind = "social-security"
+owner = "jordan"
+amount = 40000
+start = { age = 67, owner = "jordan" }
+
+[[income]]
+id = "inheritance"
+kind = "windfall"
+owner = "alex"
+amount = 100000
+on = { date = 2032-01-01 }
+
+[[expenses]]
+id = "living"
+amount = 90000
+
+[[expenses]]
+id = "travel"
+amount = 15000
+start = { event = "retire", offset = 1 }
+end = { age = 80, owner = "jordan" }
+
+[[transfers]]
+id = "dc-rollover"
+from = "pension-dc"
+to = "rollover-ira"
+on = { income = "db-pension" }
+
+[[conversions]]
+id = "roth-ladder"
+from = "fid-401k"
+to = "roth-ira"
+amount = 30000
+start = { event = "retire" }
+end = { age = 72, owner = "jordan" }
+
+[[contributions]]
+id = "401k-deferral"
+to = "fid-401k"
+amount = 24000
+end = { event = "retire" }
+
+[[contributions]]
+id = "401k-match"
+to = "fid-401k"
+by = "employer"
+amount = 8000
+end = { event = "retire" }
+
+[[contributions]]
+id = "hsa-deferral"
+to = "hsa"
+amount = 8000
+end = { event = "retire" }
