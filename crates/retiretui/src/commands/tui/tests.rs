@@ -51,7 +51,8 @@ fn shell_draws_the_active_page_and_the_hint_row() {
 
 #[test]
 fn a_directory_launches_the_shell_empty() {
-    let mut app = headless_app_at(std::env::temp_dir(), SIZE);
+    let plan = support::scratch_plan();
+    let mut app = headless_app_at(plan.parent().unwrap().to_path_buf(), SIZE);
     assert!(is_browsing(&app), "asking which file to open");
     press_key(&mut app, KeyCode::Esc);
     let frame = composed_frame(&app);
@@ -100,7 +101,7 @@ fn a_directory_launches_the_shell_empty() {
 
 #[test]
 fn every_command_that_needs_a_document_refuses_without_one() {
-    let mut app = headless_app_at(std::env::temp_dir(), SIZE);
+    let mut app = headless_app_at(support::scratch_dir(), SIZE);
     let setup = None;
     let refused: Vec<_> = command::all()
         .filter(|command| !command.spec().scope.covers(setup))

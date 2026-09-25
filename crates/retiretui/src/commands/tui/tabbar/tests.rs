@@ -9,7 +9,7 @@ use crate::commands::tui::layout::TAB_ROW_ROWS;
 use crate::commands::tui::nav::{ActivePage, Group, Page, TAB_COUNT, tab_digit, tab_title};
 use crate::commands::tui::support::{
     ROOMY, SIZE, active_page, cell_style, click, commit_edit, headless_app, headless_app_at,
-    press_key, redrawn, run_command, scratch_plan,
+    press_key, redrawn, run_command, scratch_dir, scratch_plan,
 };
 
 #[test]
@@ -126,7 +126,7 @@ fn the_baseline_runs_under_the_status_to_the_edge() {
 
 #[test]
 fn without_a_document_only_the_plan_tab_is_live() {
-    let mut app = headless_app_at(std::env::temp_dir(), SIZE);
+    let mut app = headless_app_at(scratch_dir(), SIZE);
     press_key(&mut app, KeyCode::Esc);
     app.update();
     let dead = dead_tabs(&mut app);
@@ -174,7 +174,7 @@ fn tab_column(tab: usize) -> u16 {
 
 #[test]
 fn without_a_document_the_status_drops_the_mark_and_keeps_the_count() {
-    let mut app = headless_app_at(std::env::temp_dir(), SIZE);
+    let mut app = headless_app_at(scratch_dir(), SIZE);
     press_key(&mut app, KeyCode::Esc);
     let frame = redrawn(&mut app);
     let row = status_row(&frame);

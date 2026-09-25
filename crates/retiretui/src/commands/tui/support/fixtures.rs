@@ -76,14 +76,20 @@ pub fn projected_from(plan_text: &str) -> Projected {
 
 static NEXT_SCRATCH: AtomicUsize = AtomicUsize::new(0);
 
+/// An empty directory of its own, so a picker opened in or beside it
+/// lists only what its test put there rather than the whole temp dir.
+pub fn scratch_dir() -> PathBuf {
+    let ordinal = NEXT_SCRATCH.fetch_add(1, Ordering::Relaxed);
+    let dir = std::env::temp_dir().join(format!("retiretui-tui-{}-{ordinal}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    dir
+}
+
 /// A unique on-disk copy of the test plan, so parallel tests never share a
 /// file.
 pub fn scratch_plan() -> PathBuf {
-    let ordinal = NEXT_SCRATCH.fetch_add(1, Ordering::Relaxed);
-    let path = std::env::temp_dir().join(format!(
-        "retiretui-tui-{}-{ordinal}.toml",
-        std::process::id()
-    ));
+    let dir = scratch_dir();
+    let path = dir.join(dir.file_name().unwrap()).with_extension("toml");
     std::fs::write(&path, TEST_PLAN).unwrap();
     path
 }
@@ -115,9 +121,7 @@ pub fn scratch_scenario() -> PathBuf {
 /// A directory of its own holding `plan_text` as plan.toml, a scenario
 /// over it, a broken file, and one that is not TOML.
 pub fn scratch_workspace(plan_text: &str) -> PathBuf {
-    let ordinal = NEXT_SCRATCH.fetch_add(1, Ordering::Relaxed);
-    let dir = std::env::temp_dir().join(format!("retiretui-tui-{}-{ordinal}", std::process::id()));
-    std::fs::create_dir_all(&dir).unwrap();
+    let dir = scratch_dir();
     std::fs::write(dir.join("plan.toml"), plan_text).unwrap();
     std::fs::write(dir.join("variant.toml"), scenario_over("plan.toml")).unwrap();
     std::fs::write(dir.join("broken.toml"), "schema = 1\n").unwrap();
