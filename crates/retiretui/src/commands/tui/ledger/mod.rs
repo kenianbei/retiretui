@@ -151,7 +151,7 @@ impl RowInputs<'_, '_> {
             || self.shown.basis.is_changed()
             || self.theme.is_changed()
             || is_refitted;
-        let rebuilding = *self.is_stale && self.active.0 == Page::Ledger;
+        let rebuilding = *self.is_stale && self.active.page() == Page::Ledger;
         *self.is_stale &= !rebuilding;
         rebuilding
     }
@@ -215,7 +215,7 @@ fn follow_cursor(
     rows: Query<(Entity, &RowYear, &ChildOf)>,
 ) {
     *is_stale |= shown.is_changed();
-    if !*is_stale || active.0 != Page::Ledger {
+    if !*is_stale || active.page() != Page::Ledger {
         return;
     }
     *is_stale = false;

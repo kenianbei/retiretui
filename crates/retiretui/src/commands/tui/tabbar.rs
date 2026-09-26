@@ -4,10 +4,10 @@
 pub mod status;
 
 use bevy_app::{App, Startup, Update};
-use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
+use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{
-    Commands, Component, Entity, Has, IntoScheduleConfigs, On, Query, Res, ResMut, With,
+    Commands, Component, Entity, Has, IntoScheduleConfigs, On, Query, Res, With,
 };
 use bevy_ecs::system::EntityCommands;
 use bevy_ui::{Node, Val};
@@ -19,7 +19,7 @@ use plurimus::widgets::ratatui_widgets::borders::BorderType;
 use plurimus::widgets::{TabBarActiveStyle, TabBarLook, tab_bar, tab_item};
 
 use super::layout::{self, TabRow, placed};
-use super::nav::{self, ActivePage, LastShown, TAB_COUNT};
+use super::nav::{self, LastShown, Page, ShownSurface, TAB_COUNT, Turn};
 use super::session::Session;
 use super::theme::{Repainted, Theme};
 
@@ -60,9 +60,9 @@ const fn tabs_cols() -> u16 {
 struct ShellTabs;
 
 /// Which tab an item of the bar stands for. The bar's items are
-/// positional: [`ActivePage`] is what a tab means, both ways.
+/// positional: [`nav::ActivePage`] is what a tab means, both ways.
 #[derive(Component, Clone, Copy, Debug)]
-struct BarTab(usize);
+pub(super) struct BarTab(pub(super) usize);
 
 /// Each tab boxed, the active box opening onto a baseline drawn along the
 /// row's foot.
@@ -127,16 +127,18 @@ fn repaint_tabs(
     }
 }
 
-/// The bar shows which tab the page on show is reached through.
+/// The bar shows which tab the surface on show is reached through: the
+/// `Plan` tab while there is no document, where the new plan's form
+/// stands.
 fn light_the_active_tab(
-    active: Res<ActivePage>,
+    shown: ShownSurface,
     items: Query<(Entity, &BarTab, Has<Checked>)>,
     mut commands: Commands,
 ) {
-    if !active.is_changed() {
+    if !shown.is_changed() {
         return;
     }
-    let lit = active.0.tab();
+    let lit = shown.surface().map_or(nav::Group::Plan.tab(), Page::tab);
     for (entity, tab, is_marked) in &items {
         mark(commands.entity(entity), Checked, tab.0 == lit, is_marked);
     }
@@ -182,7 +184,7 @@ fn handle_tab_chosen(
     bars: Query<(), With<ShellTabs>>,
     items: Query<&BarTab>,
     last: Res<LastShown>,
-    mut active: ResMut<ActivePage>,
+    mut turn: Turn,
 ) {
     if !bars.contains(chosen.source) {
         return;
@@ -190,7 +192,7 @@ fn handle_tab_chosen(
     let Ok(tab) = items.get(chosen.value) else {
         return;
     };
-    active.set_if_neq(ActivePage(nav::entering(tab.0, *last)));
+    turn.to(nav::entering(tab.0, *last));
 }
 
 #[cfg(test)]

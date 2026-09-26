@@ -11,7 +11,7 @@ use crate::commands::tui::nav::Page;
 use crate::commands::tui::session::Session;
 use crate::commands::tui::support::{
     self, SETTLING_TICKS, SIZE, active_page, cell_of, click, commit_edit, composed_frame,
-    headless_app_at, is_asking, press_ctrl, press_key, press_shift, run_command, said,
+    headless_app_at, is_asking, lit_tab, press_ctrl, press_key, press_shift, run_command, said,
     scratch_workspace, type_text,
 };
 
@@ -86,8 +86,8 @@ fn without_a_document_the_form_is_all_there_is_and_cannot_be_left() {
     assert!(!frame.contains(CANCEL), "nothing to go back to: {frame}");
     assert!(!frame.contains("╭ Plan "), "no page of a plan: {frame}");
     assert_eq!(
-        active_page(&app).tab(),
-        crate::commands::tui::nav::Group::Plan.tab()
+        lit_tab(&mut app),
+        Some(crate::commands::tui::nav::Group::Plan.tab())
     );
     press_key(&mut app, KeyCode::Esc);
     settle(&mut app);

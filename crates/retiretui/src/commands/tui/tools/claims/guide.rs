@@ -181,7 +181,7 @@ fn say_help(
     let (draft, cursor, active) = state;
     let is_moved = draft.is_changed() || cursor.is_changed() || keyboard.focus.is_changed();
     let is_restyled = theme.is_changed();
-    if active.0 != Page::SsaBenefits || !(is_moved || is_restyled || active.is_changed()) {
+    if active.page() != Page::SsaBenefits || !(is_moved || is_restyled || active.is_changed()) {
         return;
     }
     let text = help_line(&draft, cursor.person(&draft.plan), keyboard.place());

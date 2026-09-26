@@ -60,7 +60,7 @@ fn a_clean_switch_reseeds_every_page() {
     open(&mut app, &full);
     assert!(!is_asking(&app), "a clean draft asks nothing");
     assert_eq!(document(&app), full);
-    assert_eq!(app.world().resource::<ActivePage>().0, Page::Overview);
+    assert_eq!(app.world().resource::<ActivePage>().page(), Page::Overview);
     assert_eq!(*app.world().resource::<YearCursor>(), YearCursor::default());
     assert!(!draft(&app).is_dirty());
     let projected = app.world().resource::<Projected>();

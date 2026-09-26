@@ -118,7 +118,7 @@ fn estimate(
     mut estimates: ResMut<Estimates>,
 ) {
     let is_moved = draft.is_changed() || active.is_changed();
-    if !is_moved || active.0 != Page::SsaBenefits || !draft.issues().is_empty() {
+    if !is_moved || active.page() != Page::SsaBenefits || !draft.issues().is_empty() {
         return;
     }
     if last_plan.as_ref() == Some(&draft.plan) {

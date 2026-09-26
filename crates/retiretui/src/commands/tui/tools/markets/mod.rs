@@ -33,7 +33,7 @@ use super::options::spawn_table;
 use super::{Found, HelpLine, ResultPane, Tool, count_text, show_help};
 use crate::commands::tui::edit::Draft;
 use crate::commands::tui::hints::Hints;
-use crate::commands::tui::nav::{ActivePage, FocusStop, Page};
+use crate::commands::tui::nav::{ActivePage, FocusStop, Page, Turn};
 use crate::commands::tui::pane::{Framed, Pane};
 use crate::commands::tui::present::{self, compact_dollars};
 use crate::commands::tui::session::Session;
@@ -146,7 +146,7 @@ fn search_by_itself<R: MarketTool>(
     mut searched: Local<Option<Plan>>,
     mut tool: ResMut<Tool<R>>,
 ) {
-    let is_ready = (draft.is_changed() || active.is_changed()) && active.0 == R::PAGE;
+    let is_ready = (draft.is_changed() || active.is_changed()) && active.page() == R::PAGE;
     if !is_ready || !super::is_due(&draft, searched.as_ref(), |plan| *plan == draft.plan) {
         return;
     }
@@ -186,7 +186,7 @@ fn say_help<R: MarketTool>(
     theme: Res<Theme>,
     mut lines: Query<(&mut UiWidget, &HelpLine)>,
 ) {
-    if (active.is_changed() || theme.is_changed()) && active.0 == R::PAGE {
+    if (active.is_changed() || theme.is_changed()) && active.page() == R::PAGE {
         show_help(&mut lines, R::PAGE, R::HELP, &theme);
     }
 }
@@ -270,7 +270,7 @@ fn highlighted<R: MarketTool>(tool: &Tool<R>) -> Option<(String, &Run)> {
 pub(crate) fn open_run<R: MarketTool>(
     (tool, draft, session, history): (Res<Tool<R>>, Res<Draft>, Res<Session>, Res<MarketHistory>),
     mut run: ResMut<crate::commands::tui::session::LedgerRun>,
-    mut active: ResMut<ActivePage>,
+    mut turn: Turn,
 ) -> crate::commands::tui::command::Outcome {
     use crate::commands::tui::command::Outcome;
     if tool.found().is_none() {
@@ -278,7 +278,7 @@ pub(crate) fn open_run<R: MarketTool>(
     }
     let Some((label, chosen)) = highlighted(&*tool) else {
         run.0 = None;
-        active.0 = Page::Ledger;
+        turn.to(Page::Ledger);
         return Outcome::Done;
     };
     let replayed: Option<Projection> =
@@ -291,6 +291,6 @@ pub(crate) fn open_run<R: MarketTool>(
         projection,
     };
     run.0 = Some((R::ledger_label(&label), projected));
-    active.0 = Page::Ledger;
+    turn.to(Page::Ledger);
     Outcome::Done
 }

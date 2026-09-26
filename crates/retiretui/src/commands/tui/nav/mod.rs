@@ -4,8 +4,9 @@
 //! form a new plan is composed in rather than a page.
 
 use bevy_app::{App, Update};
-use bevy_ecs::change_detection::DetectChanges;
-use bevy_ecs::prelude::{IntoScheduleConfigs, Res, ResMut, Resource, SystemSet};
+use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
+use bevy_ecs::prelude::{IntoScheduleConfigs, Res, ResMut, Resource, SystemSet, World};
+use bevy_ecs::system::SystemParam;
 
 pub(super) mod surface;
 
@@ -351,8 +352,40 @@ pub const fn tab_title(tab: usize) -> &'static str {
     }
 }
 
+/// The page on show, turned only through [`Turn`] and [`turn_in`].
 #[derive(Resource, Clone, Copy, PartialEq, Eq, Debug)]
-pub struct ActivePage(pub Page);
+pub struct ActivePage(Page);
+
+impl ActivePage {
+    #[must_use]
+    pub const fn page(self) -> Page {
+        self.0
+    }
+}
+
+/// The one way a system turns the page.
+#[derive(SystemParam)]
+pub struct Turn<'w> {
+    active: ResMut<'w, ActivePage>,
+}
+
+impl Turn<'_> {
+    #[must_use]
+    pub fn page(&self) -> Page {
+        self.active.0
+    }
+
+    pub fn to(&mut self, page: Page) {
+        self.active.set_if_neq(ActivePage(page));
+    }
+}
+
+/// Turns the page for a caller holding the world.
+pub fn turn_in(world: &mut World, page: Page) {
+    world
+        .resource_mut::<ActivePage>()
+        .set_if_neq(ActivePage(page));
+}
 
 /// The page each group's tab shows: the one last shown through it, and
 /// the first of them until one has been.

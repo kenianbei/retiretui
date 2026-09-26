@@ -37,7 +37,7 @@ fn say_help(
     mut lines: Query<(&mut UiWidget, &HelpLine)>,
 ) {
     let is_moved = draft.is_changed() || focus.is_changed() || active.is_changed();
-    if active.0 != Page::RothConversions || !(is_moved || theme.is_changed()) {
+    if active.page() != Page::RothConversions || !(is_moved || theme.is_changed()) {
         return;
     }
     let (options, conversions) = places;

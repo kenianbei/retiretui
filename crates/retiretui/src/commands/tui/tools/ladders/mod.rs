@@ -234,7 +234,7 @@ fn mark_applied(mut ladders: ResMut<Ladders>) {
 /// on show and the form names none, so the first look is already ranked.
 fn aim_at_only_roth(active: Res<ActivePage>, mut draft: ResMut<Draft>) {
     let is_moved = draft.is_changed() || active.is_changed();
-    if !is_moved || active.0 != Page::RothConversions {
+    if !is_moved || active.page() != Page::RothConversions {
         return;
     }
     if draft.answers::<Constraints>().contains_key(DESTINATION) {
@@ -257,7 +257,7 @@ fn search_by_itself(
     mut ladders: ResMut<Ladders>,
 ) {
     let is_moved = draft.is_changed() || active.is_changed() || ladders.is_changed();
-    if !is_moved || active.0 != Page::RothConversions || ladders.is_running() {
+    if !is_moved || active.page() != Page::RothConversions || ladders.is_running() {
         return;
     }
     let answers = draft.answers::<Constraints>();

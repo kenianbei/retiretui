@@ -14,7 +14,7 @@ use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::Plan;
 
 use crate::commands::tui::compare::Compared;
-use crate::commands::tui::nav::{ActivePage, Page};
+use crate::commands::tui::nav::{Page, ShownSurface};
 use crate::commands::tui::present::{self, SAME};
 use crate::commands::tui::session::{Projected, Session};
 use crate::commands::tui::theme::Repainted;
@@ -173,10 +173,10 @@ fn count_runs(successes: &mut ResMut<Successes>) {
 /// How many of the document and the compared plans, in that order, the
 /// page on show wants run: every one on Compare, the document on the
 /// Overview while it runs its searches.
-fn wanted(active: Page, searches: Searches, plans: usize) -> usize {
-    match active {
-        Page::Compare => plans,
-        Page::Overview if searches.0 => 1,
+fn wanted(shown: Option<Page>, searches: Searches, plans: usize) -> usize {
+    match shown {
+        Some(Page::Compare) => plans,
+        Some(Page::Overview) if searches.0 => 1,
         _ => 0,
     }
 }
@@ -185,7 +185,7 @@ fn wanted(active: Page, searches: Searches, plans: usize) -> usize {
 /// first unanswered one whenever a plan changes; a page that wants none
 /// stops the run under way, so nothing runs behind another page.
 pub(crate) fn work_through(
-    (projected, compared, active): (Res<Projected>, Res<Compared>, Res<ActivePage>),
+    (projected, compared, shown): (Res<Projected>, Res<Compared>, ShownSurface),
     (session, history, searches): (Res<Session>, Res<MarketHistory>, Res<Searches>),
     mut successes: ResMut<Successes>,
 ) {
@@ -195,7 +195,7 @@ pub(crate) fn work_through(
     }
     let is_moved = projected.is_changed()
         || compared.is_changed()
-        || active.is_changed()
+        || shown.is_changed()
         || searches.is_changed();
     if !has_answered && !is_moved {
         count_runs(&mut successes);
@@ -203,6 +203,6 @@ pub(crate) fn work_through(
     }
     let document = std::iter::once(&projected.plan);
     let kept: Vec<&Plan> = document.chain(compared.plans()).collect();
-    let wanted = wanted(active.0, *searches, kept.len());
+    let wanted = wanted(shown.surface(), *searches, kept.len());
     successes.queue((&kept, &kept[..wanted]), &session.tables, &history.0);
 }

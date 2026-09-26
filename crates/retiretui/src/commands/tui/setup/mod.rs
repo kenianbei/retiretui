@@ -10,7 +10,7 @@ pub use examples::EXAMPLES;
 use std::path::PathBuf;
 
 use bevy_app::{App, Update};
-use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
+use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::prelude::{Commands, Entity, In, IntoScheduleConfigs, Res, ResMut, Resource, World};
 use retiretui_engine::plan::{Dollars, FilingStatus, Plan};
 use serde::Deserialize;
@@ -23,17 +23,14 @@ use super::edit::{
     self, Draft, EditSession, FieldSpec, FormButton, Ops, Row, Slot, ToolAnswers, Vocabulary,
 };
 use super::journal;
-use super::nav::{ActivePage, Group, LastShown, PageSystems};
+use super::nav::{Group, LastShown, PageSystems};
 use super::overlay;
 use super::session::{Session, Today};
 use super::sidebar;
 
 pub fn plugin(app: &mut App) {
     app.init_resource::<Composed>();
-    app.add_systems(
-        Update,
-        (hold_the_plan_tab, land_in_the_plan).in_set(PageSystems::Turn),
-    );
+    app.add_systems(Update, land_in_the_plan.in_set(PageSystems::Turn));
     app.add_systems(Update, keep_the_form_up.before(edit::EditSystems::Seed));
 }
 
@@ -360,14 +357,6 @@ fn land_in_the_plan(
     commands.queue(|world: &mut World| {
         let _ = sidebar::enter(world, Group::Plan);
     });
-}
-
-/// The form stands where the plan's own tab would be, so that is the tab
-/// a shell holding no document is on.
-fn hold_the_plan_tab(session: Res<Session>, mut active: ResMut<ActivePage>) {
-    if session.is_changed() && session.is_empty() {
-        active.set_if_neq(ActivePage(Group::Plan.first()));
-    }
 }
 
 #[cfg(test)]

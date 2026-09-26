@@ -133,7 +133,7 @@ fn search_by_itself(
 ) {
     let is_moved =
         draft.is_changed() || active.is_changed() || claims.is_changed() || held.is_changed();
-    let is_ready = is_moved && active.0 == Page::SsaBenefits && !claims.is_running();
+    let is_ready = is_moved && active.page() == Page::SsaBenefits && !claims.is_running();
     let is_same = |(plan, ids): &(Plan, BTreeSet<String>)| *plan == draft.plan && *ids == held.0;
     if !is_ready || !super::is_due(&draft, searched.as_ref(), is_same) {
         return;

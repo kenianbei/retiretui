@@ -17,7 +17,7 @@ use retiretui_engine::project::Projection;
 
 use super::rows::{Entry, Tone};
 use crate::commands::tui::edit::Draft;
-use crate::commands::tui::nav::{ActivePage, Page};
+use crate::commands::tui::nav::{Page, ShownSurface};
 use crate::commands::tui::present::signed_money;
 use crate::commands::tui::session::{Projected, Session};
 use crate::commands::tui::tools::claims::HeldClaims;
@@ -175,7 +175,7 @@ fn roth_owners(plan: &Plan) -> impl Iterator<Item = (&str, &str)> {
 /// Takes the answer as it lands, and searches the plan shown while the
 /// Overview is, dropping an answer that describes another.
 pub(super) fn work(
-    (projected, active, searches): (Res<Projected>, Res<ActivePage>, Res<Searches>),
+    (projected, shown, searches): (Res<Projected>, ShownSurface, Res<Searches>),
     (session, history, held): (Res<Session>, Res<MarketHistory>, Res<HeldClaims>),
     (draft, mut better): (Res<Draft>, ResMut<Better>),
 ) {
@@ -187,14 +187,14 @@ pub(super) fn work(
         better.receive();
     }
     let is_moved = projected.is_changed()
-        || active.is_changed()
+        || shown.is_changed()
         || searches.is_changed()
         || held.is_changed()
         || draft.is_changed();
     if !is_moved {
         return;
     }
-    if active.0 != Page::Overview || !searches.0 {
+    if shown.surface() != Some(Page::Overview) || !searches.0 {
         better.running = None;
         return;
     }

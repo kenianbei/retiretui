@@ -6,10 +6,10 @@ use plurimus::term::KeyCode;
 use super::{DIGIT_COLS, TAB_DECORATION, TABS_COLS, look};
 use crate::commands::tui::edit::Draft;
 use crate::commands::tui::layout::TAB_ROW_ROWS;
-use crate::commands::tui::nav::{ActivePage, Group, Page, TAB_COUNT, tab_digit, tab_title};
+use crate::commands::tui::nav::{self, Group, Page, TAB_COUNT, tab_digit, tab_title};
 use crate::commands::tui::support::{
     ROOMY, SIZE, active_page, cell_style, click, commit_edit, headless_app, headless_app_at,
-    press_key, redrawn, run_command, scratch_dir, scratch_plan,
+    lit_tab, press_key, redrawn, run_command, scratch_dir, scratch_plan,
 };
 
 #[test]
@@ -52,7 +52,7 @@ fn a_digit_selects_the_tab_it_names() {
 fn the_bar_lights_the_tab_the_page_on_show_is_reached_through() {
     let mut app = headless_app(SIZE);
     assert_eq!(lit_tab(&mut app), Some(Page::Overview.tab()));
-    app.insert_resource(ActivePage(Page::Expenses));
+    nav::turn_in(app.world_mut(), Page::Expenses);
     app.update();
     app.update();
     assert_eq!(
@@ -136,15 +136,12 @@ fn without_a_document_only_the_plan_tab_is_live() {
     let dead = dead_tabs(&mut app);
     assert_eq!(dead.len(), TAB_COUNT - 1, "every tab but Plan: {dead:?}");
     assert!(!dead.contains(&Group::Plan.tab()), "{dead:?}");
-    assert_eq!(active_page(&app), Page::Accounts);
+    assert_eq!(lit_tab(&mut app), Some(Group::Plan.tab()));
 
+    let before = active_page(&app);
     let ledger = Page::Ledger.tab();
     click(&mut app, tab_column(ledger), TAB_ROW_ROWS / 2);
-    assert_eq!(
-        active_page(&app),
-        Page::Accounts,
-        "a dead tab answers to nothing"
-    );
+    assert_eq!(active_page(&app), before, "a dead tab answers to nothing");
 }
 
 /// The tabs the bar will not act on.
@@ -164,12 +161,6 @@ fn status_row(frame: &str) -> &str {
 }
 
 /// The tab the bar draws as active, read back off its items.
-fn lit_tab(app: &mut App) -> Option<usize> {
-    let world = app.world_mut();
-    let mut items = world.query_filtered::<&super::BarTab, With<plurimus::ui::Checked>>();
-    items.iter(world).map(|tab| tab.0).next()
-}
-
 /// A column inside the `tab`th box, counted off the labels before it.
 fn tab_column(tab: usize) -> u16 {
     let boxed = |at: usize| tab_title(at).chars().count() as u16 + DIGIT_COLS + TAB_DECORATION;

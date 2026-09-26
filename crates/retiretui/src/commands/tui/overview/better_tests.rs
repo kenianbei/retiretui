@@ -10,12 +10,13 @@ use retiretui_engine::project::Projection;
 use super::better::Better;
 use super::tests::hold;
 use crate::commands::tui::edit::Draft;
-use crate::commands::tui::nav::{ActivePage, Page};
+use crate::commands::tui::nav::{self, Page};
 use crate::commands::tui::present::{compact_dollars, signed_money};
 use crate::commands::tui::session::{Projected, Session};
+use crate::commands::tui::success::Success;
 use crate::commands::tui::support::{
-    Headless, SIZE, TEST_PLAN, active_page, commit_edit, press_key, redrawn, scratch_plan,
-    searched_app, show,
+    Headless, SETTLING_TICKS, SIZE, TEST_PLAN, active_page, commit_edit, press_key, redrawn,
+    scratch_plan, searched_app, show,
 };
 use crate::commands::tui::tools::ladders::tests::table_rows;
 use crate::commands::tui::tools::ladders::{self, rate_label};
@@ -353,7 +354,7 @@ fn the_searches_run_only_while_the_overview_is_shown() {
     commit_edit(&mut app, |plan: &mut Plan| plan.expenses[0].amount = 50_000);
     app.update();
     assert!(is_running(&app), "a changed plan is searched again");
-    app.insert_resource(ActivePage(Page::Ledger));
+    nav::turn_in(app.world_mut(), Page::Ledger);
     app.update();
     assert!(!is_running(&app), "leaving the page stops the search");
     commit_edit(&mut app, |plan: &mut Plan| plan.expenses[0].amount = 55_000);
@@ -376,4 +377,23 @@ fn a_failing_historical_start_leads_to_the_historical_page() {
     assert!(frame.contains("▌ Fails from a "), "{frame}");
     press_key(&mut app, KeyCode::Enter);
     assert_eq!(active_page(&app), Page::Historical);
+}
+
+#[test]
+fn the_empty_shell_searches_nothing() {
+    let mut app = crate::commands::tui::support::headless_app_at(
+        crate::commands::tui::support::scratch_dir(),
+        SIZE,
+    );
+    app.insert_resource(crate::commands::tui::tools::Searches(true));
+    for _ in 0..SETTLING_TICKS {
+        app.update();
+        let better = app.world().resource::<Better>();
+        assert!(!better.is_running() && better.found().is_none());
+        let plan = &app.world().resource::<Projected>().plan;
+        let successes = app
+            .world()
+            .resource::<crate::commands::tui::success::Successes>();
+        assert_eq!(successes.of(plan), Success::Waiting);
+    }
 }

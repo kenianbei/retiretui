@@ -28,7 +28,7 @@ use crate::commands::tui::confirm::Confirm;
 use crate::commands::tui::documents::Browsing;
 use crate::commands::tui::edit::DraftEditor;
 use crate::commands::tui::journal::{self, Inbox, Journal};
-use crate::commands::tui::nav::{ActivePage, Page};
+use crate::commands::tui::nav::{self, ActivePage, Page};
 use crate::commands::tui::session::{Session, Today};
 use crate::commands::tui::settings::Settings;
 use crate::commands::tui::tools::Searches;
@@ -167,13 +167,21 @@ fn headless_app_on(
 /// draws it.
 pub const SETTLING_TICKS: usize = 3;
 
+/// The tab the bar has lit.
+pub fn lit_tab(app: &mut App) -> Option<usize> {
+    let world = app.world_mut();
+    let mut items = world
+        .query_filtered::<&super::tabbar::BarTab, bevy_ecs::prelude::With<plurimus::ui::Checked>>();
+    items.iter(world).map(|tab| tab.0).next()
+}
+
 pub fn active_page(app: &App) -> Page {
-    app.world().resource::<ActivePage>().0
+    app.world().resource::<ActivePage>().page()
 }
 
 /// Shows `page`, then ticks until it has settled.
 pub fn show(app: &mut App, page: Page) {
-    app.insert_resource(ActivePage(page));
+    nav::turn_in(app.world_mut(), page);
     for _ in 0..SETTLING_TICKS {
         app.update();
     }

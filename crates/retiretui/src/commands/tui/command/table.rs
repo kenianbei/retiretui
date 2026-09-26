@@ -1,7 +1,6 @@
 use std::sync::LazyLock;
 
 use bevy_app::AppExit;
-use bevy_ecs::change_detection::DetectChangesMut;
 use bevy_ecs::prelude::{MessageWriter, Res, ResMut, World};
 use bevy_ecs::system::SystemId;
 use bevy_input::keyboard::Key;
@@ -19,7 +18,7 @@ use crate::commands::tui::focus;
 use crate::commands::tui::issues;
 use crate::commands::tui::ledger;
 use crate::commands::tui::motion;
-use crate::commands::tui::nav::{self, ActivePage, Group, LastShown, Page};
+use crate::commands::tui::nav::{self, Group, LastShown, Page, Turn};
 use crate::commands::tui::overview;
 use crate::commands::tui::session::Basis;
 use crate::commands::tui::setup;
@@ -427,17 +426,17 @@ fn reload(
     }
 }
 
-fn tab_next(active: ResMut<ActivePage>, last: Res<LastShown>) -> Outcome {
-    step_tab(active, *last, 1)
+fn tab_next(turn: Turn, last: Res<LastShown>) -> Outcome {
+    step_tab(turn, *last, 1)
 }
 
-fn tab_previous(active: ResMut<ActivePage>, last: Res<LastShown>) -> Outcome {
-    step_tab(active, *last, -1)
+fn tab_previous(turn: Turn, last: Res<LastShown>) -> Outcome {
+    step_tab(turn, *last, -1)
 }
 
-fn step_tab(mut active: ResMut<ActivePage>, last: LastShown, step: isize) -> Outcome {
-    let tab = nav::neighbor_tab(active.0.tab(), step);
-    active.set_if_neq(ActivePage(nav::entering(tab, last)));
+fn step_tab(mut turn: Turn, last: LastShown, step: isize) -> Outcome {
+    let tab = nav::neighbor_tab(turn.page().tab(), step);
+    turn.to(nav::entering(tab, last));
     Outcome::Done
 }
 
@@ -453,8 +452,8 @@ fn tab_keys(page: Page) -> Vec<KeyBinding> {
 
 /// The system behind a page's own command.
 pub fn register_show(world: &mut World, page: Page) -> SystemId<(), Outcome> {
-    world.register_system(move |mut active: ResMut<ActivePage>| {
-        active.set_if_neq(ActivePage(page));
+    world.register_system(move |mut turn: Turn| {
+        turn.to(page);
         Outcome::Done
     })
 }
