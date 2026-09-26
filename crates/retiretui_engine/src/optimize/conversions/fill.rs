@@ -152,3 +152,38 @@ fn year_metrics(projection: &Projection, year: i16) -> YearFill {
         })
         .unwrap_or_default()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::optimize::conversions::with_default_sources;
+
+    fn settled(progress: &Progress) -> Vec<LadderStep> {
+        let plan = Plan::from_toml_str(include_str!("../../../tests/fixtures/full.toml")).unwrap();
+        let tables = TaxTables::embedded();
+        let options = with_default_sources(
+            &plan,
+            &OptimizeOptions {
+                sources: Vec::new(),
+                destination: "roth-ira".to_owned(),
+                start_year: None,
+                end_year: None,
+                annual_max: None,
+                total_max: None,
+                headroom: 0,
+                irmaa_tier: None,
+                max_magi: None,
+            },
+        );
+        let baseline = project(&plan, &tables);
+        search_ladder(&plan, &tables, (&options, 0.22), &baseline, progress).0
+    }
+
+    #[test]
+    fn a_cancelled_search_settles_no_step() {
+        assert!(!settled(&Progress::default()).is_empty());
+        let cancelled = Progress::default();
+        cancelled.cancel();
+        assert_eq!(settled(&cancelled), []);
+    }
+}
