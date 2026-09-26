@@ -12,7 +12,8 @@ mod worker;
 mod write;
 
 use std::marker::PhantomData;
-use std::time::{Duration, Instant};
+use std::sync::Arc;
+use std::time::Duration;
 
 use bevy_app::{App, Startup, Update};
 use bevy_ecs::change_detection::DetectChanges;
@@ -34,8 +35,8 @@ use retiretui_engine::plan::{Issue, Plan};
 
 pub use claims::Claims;
 pub use ladders::Ladders;
+pub(crate) use worker::Keyed;
 pub use worker::Searches;
-pub(crate) use worker::Worker;
 pub use write::OVERLAY_OVER;
 
 use super::command;
@@ -130,16 +131,9 @@ pub(crate) fn show_help(
 }
 const ENTER_KEYS: &[(KeyBinding, ())] = &[(KeyBinding::new(Key::Enter), ())];
 
-/// What a search's thread sends back: the plan it searched, and what it
-/// found there.
-struct Answer<R> {
-    plan: Plan,
-    found: Result<R, Vec<Issue>>,
-}
-
 struct Running<R> {
-    worker: Worker<Answer<R>>,
-    since: Instant,
+    /// What the search found over the plan it is keyed by.
+    search: Keyed<Arc<Plan>, Result<R, Vec<Issue>>>,
     /// How many steps the search takes, where it counts them.
     total: Option<usize>,
 }
@@ -149,7 +143,8 @@ struct Running<R> {
 #[derive(Resource)]
 pub struct Tool<R: Found> {
     running: Option<Running<R>>,
-    found: Option<(R, Duration)>,
+    /// What was found, and how long the search took where it ran here.
+    found: Option<(R, Option<Duration>)>,
     /// Why the last search found nothing, which the pane says in its place.
     refused: Option<String>,
     /// Zero is the plan's own row.
@@ -189,7 +184,19 @@ impl<R: Found> Tool<R> {
         work: impl FnOnce(&Plan) -> Result<R, Vec<Issue>> + Send + 'static,
     ) {
         self.spawn(plan, None, move |plan, _| work(plan));
-        self.found = None;
+        self.show(None);
+    }
+
+    /// Takes what another search already found over the plan, in place of
+    /// searching it again.
+    fn take(&mut self, found: R) {
+        self.running = None;
+        self.show(Some((found, None)));
+    }
+
+    /// Shows `found` from its first row, dropping any refusal.
+    fn show(&mut self, found: Option<(R, Option<Duration>)>) {
+        self.found = found;
         self.refused = None;
         self.highlighted = 0;
     }
@@ -212,15 +219,10 @@ impl<R: Found> Tool<R> {
         total: Option<usize>,
         work: impl FnOnce(&Plan, &Progress) -> Result<R, Vec<Issue>> + Send + 'static,
     ) {
-        let worker = Worker::spawn(move |progress| {
-            let found = work(&plan, progress);
-            Answer { plan, found }
-        });
-        self.running = Some(Running {
-            worker,
-            since: Instant::now(),
-            total,
-        });
+        let plan = Arc::new(plan);
+        let searched = Arc::clone(&plan);
+        let search = Keyed::spawn(plan, move |progress| work(&searched, progress));
+        self.running = Some(Running { search, total });
     }
 
     fn has_answered(&self) -> bool {
@@ -229,7 +231,7 @@ impl<R: Found> Tool<R> {
             return false;
         }
         let running = self.running.as_ref();
-        running.is_some_and(|running| running.worker.is_finished())
+        running.is_some_and(|running| running.search.is_finished())
     }
 
     /// Takes the answer: one describing a plan the draft has since left
@@ -238,15 +240,15 @@ impl<R: Found> Tool<R> {
         let Some(running) = self.running.take() else {
             return;
         };
-        let took = running.since.elapsed();
-        let Some(answer) = running.worker.join() else {
+        let (plan, found, took) = running.search.join();
+        let Some(found) = found else {
             return;
         };
-        if answer.plan != draft.plan {
+        if *plan != draft.plan {
             return;
         }
-        match answer.found {
-            Ok(found) => self.found = Some((found, took)),
+        match found {
+            Ok(found) => self.found = Some((found, Some(took))),
             Err(issues) => self.refused = issues.first().map(|issue| issue.message.clone()),
         }
     }
@@ -265,12 +267,12 @@ impl<R: Found> Tool<R> {
     fn note(&self) -> String {
         match (&self.running, &self.found) {
             (Some(running), _) => match running.total {
-                Some(total) => running_text(running.worker.progress.done(), total),
-                None => format!("searching… {}s", running.since.elapsed().as_secs()),
+                Some(total) => running_text(running.search.progress().done(), total),
+                None => format!("searching… {}s", running.search.elapsed().as_secs()),
             },
             (None, Some(_)) if R::IS_COUNTED => String::new(),
-            (None, Some((_, took))) => format!("{:.1}s", took.as_secs_f32()),
-            (None, None) => String::new(),
+            (None, Some((_, Some(took)))) => format!("{:.1}s", took.as_secs_f32()),
+            (None, _) => String::new(),
         }
     }
 
@@ -282,7 +284,7 @@ impl<R: Found> Tool<R> {
             .unwrap_or_else(|| R::NOTHING_SEARCHED.to_owned())
     }
 
-    fn is_running(&self) -> bool {
+    pub(crate) fn is_running(&self) -> bool {
         self.running.is_some()
     }
 }
@@ -401,7 +403,7 @@ pub fn hold<R: Found>(app: &mut bevy_app::App, is_held: bool) {
 #[cfg(test)]
 fn settle<R: Found>(app: &mut bevy_app::App) {
     settle_until_idle(app, |app| app.world().resource::<Tool<R>>().is_running());
-    if let Some((_, took)) = &mut app.world_mut().resource_mut::<Tool<R>>().found {
+    if let Some((_, Some(took))) = &mut app.world_mut().resource_mut::<Tool<R>>().found {
         *took = Duration::ZERO;
     }
     app.update();

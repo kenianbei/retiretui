@@ -187,9 +187,12 @@ impl Plans<'_> {
     }
 
     /// Whether anything the views show moved: a plan, the basis, the year
-    /// or what is charted.
+    /// or what is charted - never a run the Ledger opened.
     fn is_changed(&self) -> bool {
-        self.is_plan_changed() || self.shown.is_changed() || self.charted.is_changed()
+        self.is_plan_changed()
+            || self.shown.basis.is_changed()
+            || self.shown.is_year_changed()
+            || self.charted.is_changed()
     }
 
     /// The cursor's year among every year a plan reaches.

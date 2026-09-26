@@ -1,11 +1,10 @@
 //! The pickers the command table opens: commands by name, commands by what
 //! they do, and pages.
 
-use bevy_ecs::change_detection::DetectChangesMut;
 use bevy_ecs::prelude::{In, Res, ResMut, Resource, World};
 
 use super::{CommandId, Outcome, Pending};
-use crate::commands::tui::nav::{ActivePage, Page};
+use crate::commands::tui::nav::{Page, Turn};
 use crate::commands::tui::picker::{Offered, Picker, Picking, ranked};
 
 /// The pickers, registered once the world can hold their systems.
@@ -67,8 +66,8 @@ fn list_pages(In(query): In<String>) -> Vec<Offered> {
     ranked(&query, offered)
 }
 
-fn show_chosen(In(index): In<usize>, mut active: ResMut<ActivePage>) {
+fn show_chosen(In(index): In<usize>, mut turn: Turn) {
     if let Some(&page) = Page::ALL.get(index) {
-        active.set_if_neq(ActivePage(page));
+        turn.to(page);
     }
 }

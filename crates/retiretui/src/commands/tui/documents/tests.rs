@@ -18,6 +18,7 @@ use crate::commands::tui::support::{
     headless_app_at, is_asking, is_browsing, let_pass, press_ctrl, press_key, said, scenario_over,
     scratch_full_plan, scratch_workspace, show, type_text,
 };
+use crate::commands::tui::tools::claims::HeldClaims;
 
 fn open(app: &mut App, path: &Path) {
     app.world_mut()
@@ -56,11 +57,15 @@ fn a_clean_switch_reseeds_every_page() {
     press_ctrl(&mut app, KeyCode::Char('s'));
     *app.world_mut().resource_mut::<YearCursor>() = YearCursor(Some(2030));
     show(&mut app, Page::Accounts);
+    let held = &mut app.world_mut().resource_mut::<HeldClaims>().0;
+    held.insert("self".to_owned());
     let full = scratch_full_plan();
     open(&mut app, &full);
     assert!(!is_asking(&app), "a clean draft asks nothing");
+    let held = &app.world().resource::<HeldClaims>().0;
+    assert!(held.is_empty(), "no claim held in another document");
     assert_eq!(document(&app), full);
-    assert_eq!(app.world().resource::<ActivePage>().0, Page::Overview);
+    assert_eq!(app.world().resource::<ActivePage>().page(), Page::Overview);
     assert_eq!(*app.world().resource::<YearCursor>(), YearCursor::default());
     assert!(!draft(&app).is_dirty());
     let projected = app.world().resource::<Projected>();

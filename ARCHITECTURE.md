@@ -161,17 +161,18 @@ never depends on UI.
   or as their difference from the baseline, ⏎ on one taking it into the
   document's place with the others kept - and the tools, each panes of its own
   over a line of help and a search on a thread of its own that runs by itself
-  whenever what it would search changes, its options ranked best first in one
-  shared table under a row for the plan as it stands - the conversion search's
-  beside what it runs under, read out and edited as a domain's one item is, and
-  over the highlighted ladder year by year, the claim search's beside a table of
-  each person's record, income and estimated benefit, ⏎ on a person offering
-  what can be done for them, and the claims held out of the search among what it
-  watches, and the market tools' runs - the plan through random markets, or from
-  every historical start year worst first - beside what they run under and how
-  the plan fared, over a chart of the runs' spread that `v` turns to other
-  views, a newer search stopping one under way and ⏎ on a run opening it in the
-  ledger, and on the plan's own row the plan's own projection - the searches'
+  whenever what it would search changes, taking instead what the overview has
+  already found over the same plan, its options ranked best first in one shared
+  table under a row for the plan as it stands - the conversion search's beside
+  what it runs under, read out and edited as a domain's one item is, and over
+  the highlighted ladder year by year, the claim search's beside a table of each
+  person's record, income and estimated benefit, ⏎ on a person offering what can
+  be done for them, and the claims held out of the search among what it watches,
+  and the market tools' runs - the plan through random markets, or from every
+  historical start year worst first - beside what they run under and how the
+  plan fared, over a chart of the runs' spread that `v` turns to other views, a
+  newer search stopping one under way and ⏎ on a run opening it in the ledger,
+  and on the plan's own row the plan's own projection - the searches'
   highlighted option written as a scenario over the document into the workspace
   and compared at once, or taken into the draft, after asking, as one applied
   item - a Roth conversion ladder as conversions of its own, in place of the

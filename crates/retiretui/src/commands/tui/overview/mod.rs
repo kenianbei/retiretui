@@ -35,7 +35,7 @@ use super::hints::Hints;
 use super::layout::{self, Body};
 use super::nav::{self, Page};
 use super::pane::Pane;
-use super::session::{Projected, Today, YearCursor, span};
+use super::session::{Projected, Today, YearCursor, cursor_year, span};
 
 pub fn plugin(app: &mut App) {
     app.init_resource::<charts::ChartView>();
@@ -109,7 +109,7 @@ fn step_year(
     step: i16,
 ) -> Outcome {
     let planned = span(&projected.projection.years);
-    let year = cursor.resolve(today, planned, planned);
+    let year = cursor_year(projected, today, **cursor);
     let stepped = (year + step).clamp(planned.0, planned.1);
     if stepped != year {
         cursor.set_if_neq(YearCursor(Some(stepped)));

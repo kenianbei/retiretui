@@ -4,7 +4,7 @@
 //! moving either moves the other.
 
 use bevy_app::{App, Startup, Update};
-use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
+use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{
     Changed, Commands, Component, Entity, IntoScheduleConfigs, On, Query, Res, ResMut, With, World,
@@ -24,7 +24,7 @@ use super::edit::{self, Draft};
 use super::focus::{self, PageFocus, SidebarLed};
 use super::hints::Hints;
 use super::layout::{self, Body, filling, placed};
-use super::nav::{self, ActivePage, Group, LastShown, Page, PageSystems, ShownSurface};
+use super::nav::{self, Group, LastShown, Page, PageSystems, ShownSurface, Turn};
 use super::pane::Pane;
 use super::theme::{Repainted, Theme};
 
@@ -60,7 +60,9 @@ pub fn plugin(app: &mut App) {
         Update,
         (
             show_the_sidebar,
-            point_at_the_page.after(focus::settle_focus),
+            point_at_the_page
+                .after(focus::settle_focus)
+                .run_if(is_pointing_due),
         )
             .in_set(PageSystems::Show),
     );
@@ -177,16 +179,16 @@ impl SidebarCursor<'_, '_> {
 fn turn_to_the_cursor(
     moved: Query<(&Sidebar, &ActiveDescendant), Changed<ActiveDescendant>>,
     rows: Query<&SidebarRow>,
-    mut active: ResMut<ActivePage>,
+    mut turn: Turn,
     mut led: ResMut<SidebarLed>,
 ) {
     for (sidebar, cursor) in &moved {
         // A sidebar that is not shown had its cursor moved by no one.
-        if active.0.group() != Some(sidebar.0) {
+        if turn.page().group() != Some(sidebar.0) {
             continue;
         }
         if let Some(row) = cursor.0.and_then(|row| rows.get(row).ok()) {
-            active.set_if_neq(ActivePage(row.0));
+            turn.to(row.0);
             led.0 = true;
         }
     }
@@ -199,6 +201,15 @@ fn point_at_the_page(shown: ShownSurface, mut cursor: SidebarCursor) {
     if let Some(page) = shown.surface() {
         cursor.point_at(page);
     }
+}
+
+/// The page or a sidebar's cursor moved, which is all a cursor is pointed
+/// back from.
+fn is_pointing_due(
+    shown: ShownSurface,
+    moved: Query<(), (With<Sidebar>, Changed<ActiveDescendant>)>,
+) -> bool {
+    shown.is_changed() || !moved.is_empty()
 }
 
 fn show_the_sidebar(shown: ShownSurface, mut panes: Query<(&SidebarPane, &mut Node)>) {
@@ -246,9 +257,7 @@ fn handle_page_entered(
 /// with the keyboard on the sidebar that chooses between them.
 pub fn enter(world: &mut World, group: Group) -> Outcome {
     let last = *world.resource::<LastShown>();
-    world
-        .resource_mut::<ActivePage>()
-        .set_if_neq(ActivePage(nav::entering(group.tab(), last)));
+    nav::turn_in(world, nav::entering(group.tab(), last));
     world.resource_mut::<SidebarLed>().0 = true;
     let _ = world.run_system_cached(focus::enter_sidebar);
     Outcome::Done

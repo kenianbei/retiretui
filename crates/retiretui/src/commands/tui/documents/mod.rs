@@ -16,8 +16,9 @@ use super::compare::Compared;
 use super::confirm::{Answer, Confirm};
 use super::edit::{self, Draft};
 use super::journal;
-use super::nav::{ActivePage, Page};
+use super::nav::{self, ActivePage, Page};
 use super::session::{Projected, Session, YearCursor};
+use super::tools::claims::HeldClaims;
 use super::tools::{Claims, Ladders};
 use super::watch::{self, Watch};
 
@@ -133,7 +134,7 @@ pub fn land(opening: Opening, world: &mut World) -> bool {
     if let Some(held) = held {
         let swapped = held.swapped(&opening.path, left, &world.resource::<Session>().tables);
         world.insert_resource(swapped);
-        world.insert_resource(ActivePage(Page::Compare));
+        nav::turn_in(world, Page::Compare);
     }
     journal::say(format!(
         "opened {}",
@@ -153,4 +154,5 @@ fn reset_session(world: &mut World, projected: Projected, watch: Watch) {
     world.insert_resource(Compared::default());
     world.insert_resource(Ladders::default());
     world.insert_resource(Claims::default());
+    world.insert_resource(HeldClaims::default());
 }

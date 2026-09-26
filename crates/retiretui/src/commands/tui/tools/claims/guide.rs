@@ -19,14 +19,18 @@ use super::super::{HelpLine, show_help};
 use super::people::{HeldClaims, NOBODY, PeopleTable, PersonCursor, benefit};
 use crate::commands::tui::command::{self, Outcome};
 use crate::commands::tui::edit::Draft;
-use crate::commands::tui::nav::{ActivePage, Page};
+use crate::commands::tui::nav::{self, Page, ShownSurface};
 use crate::commands::tui::picker::{Offered, Picker, Picking, ranked};
 use crate::commands::tui::present::compact_money;
 use crate::commands::tui::theme::{Repainted, Theme};
 
 pub fn plugin(app: &mut App) {
-    app.add_systems(Startup, register)
-        .add_systems(Update, say_help.before(Repainted));
+    app.add_systems(Startup, register).add_systems(
+        Update,
+        say_help
+            .run_if(nav::shows(Page::SsaBenefits))
+            .before(Repainted),
+    );
 }
 
 /// The command ⏎ on a person runs.
@@ -172,16 +176,16 @@ impl Keyboard<'_, '_> {
 }
 
 fn say_help(
-    state: (Res<Draft>, Res<PersonCursor>, Res<ActivePage>),
+    state: (Res<Draft>, Res<PersonCursor>, ShownSurface),
     keyboard: Keyboard,
     theme: Res<Theme>,
     mut said: Local<String>,
     mut lines: Query<(&mut UiWidget, &HelpLine)>,
 ) {
-    let (draft, cursor, active) = state;
+    let (draft, cursor, shown) = state;
     let is_moved = draft.is_changed() || cursor.is_changed() || keyboard.focus.is_changed();
     let is_restyled = theme.is_changed();
-    if active.0 != Page::SsaBenefits || !(is_moved || is_restyled || active.is_changed()) {
+    if !(is_moved || is_restyled || shown.is_changed()) {
         return;
     }
     let text = help_line(&draft, cursor.person(&draft.plan), keyboard.place());

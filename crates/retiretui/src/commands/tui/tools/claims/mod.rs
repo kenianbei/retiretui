@@ -31,7 +31,8 @@ use crate::commands::tui::confirm::{Answer, Confirm};
 use crate::commands::tui::documents::{Browsing, Pickers};
 use crate::commands::tui::edit::{Draft, DraftEditor};
 use crate::commands::tui::journal;
-use crate::commands::tui::nav::{ActivePage, Page};
+use crate::commands::tui::nav::{self, Page, ShownSurface};
+use crate::commands::tui::overview::Better;
 use crate::commands::tui::session::Session;
 pub(crate) use people::HeldClaims;
 
@@ -46,7 +47,9 @@ pub fn plugin(app: &mut App) {
     super::install::<ClaimSearch>(app, &PAGE);
     app.add_systems(
         Update,
-        search_by_itself.before(super::poll_search::<ClaimSearch>),
+        search_by_itself
+            .run_if(nav::shows(Page::SsaBenefits))
+            .before(super::poll_search::<ClaimSearch>),
     );
     people::plugin(app);
     super::options::plugin::<ClaimSearch>(app);
@@ -123,22 +126,27 @@ impl Tool<ClaimSearch> {
 }
 
 /// Searches again whenever the page is on show over a valid draft whose plan
-/// differs from the last it searched, so the ranking is never asked for.
+/// differs from the last it searched, so the ranking is never asked for;
+/// what the Overview already found over it is taken instead.
 fn search_by_itself(
     (draft, held): (Res<Draft>, Res<HeldClaims>),
-    session: Res<Session>,
-    active: Res<ActivePage>,
+    (session, better): (Res<Session>, Res<Better>),
+    shown: ShownSurface,
     mut searched: Local<Option<(Plan, BTreeSet<String>)>>,
     mut claims: ResMut<Claims>,
 ) {
     let is_moved =
-        draft.is_changed() || active.is_changed() || claims.is_changed() || held.is_changed();
-    let is_ready = is_moved && active.0 == Page::SsaBenefits && !claims.is_running();
+        draft.is_changed() || shown.is_changed() || claims.is_changed() || held.is_changed();
+    let is_ready = is_moved && !claims.is_running();
     let is_same = |(plan, ids): &(Plan, BTreeSet<String>)| *plan == draft.plan && *ids == held.0;
     if !is_ready || !super::is_due(&draft, searched.as_ref(), is_same) {
         return;
     }
     *searched = Some((draft.plan.clone(), held.0.clone()));
+    if let Some(found) = better.claims(&draft.plan, &held.0) {
+        claims.take(found.clone());
+        return;
+    }
     let tables = session.tables.clone();
     let held: Vec<String> = held.0.iter().cloned().collect();
     claims.start(draft.plan.clone(), move |plan| {

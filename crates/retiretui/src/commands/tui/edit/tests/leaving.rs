@@ -41,7 +41,7 @@ pub(super) fn answer(app: &mut bevy_app::App, which: Answers) {
 }
 
 fn active_page(app: &bevy_app::App) -> Page {
-    app.world().resource::<ActivePage>().0
+    app.world().resource::<ActivePage>().page()
 }
 
 #[test]

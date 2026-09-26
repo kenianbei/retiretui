@@ -206,6 +206,12 @@ impl LedgerRun {
     }
 }
 
+/// The cursor's year among `projected`'s years.
+pub fn cursor_year(projected: &Projected, today: Today, cursor: YearCursor) -> i16 {
+    let planned = span(&projected.projection.years);
+    cursor.resolve(today, planned, planned)
+}
+
 /// What the views of the projection draw from.
 #[derive(SystemParam)]
 pub struct Shown<'w> {
@@ -239,8 +245,7 @@ impl Shown<'_> {
     /// The cursor's year among the plan's years, which a run opened in
     /// the Ledger shares.
     pub fn year(&self) -> i16 {
-        let planned = span(&self.projected.projection.years);
-        self.cursor.resolve(*self.today, planned, planned)
+        cursor_year(&self.projected, *self.today, *self.cursor)
     }
 
     /// The cursor's year among `shows`, years that run past the plan's.

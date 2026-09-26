@@ -2,7 +2,7 @@ use bevy_app::App;
 use plurimus::term::KeyCode;
 
 use super::*;
-use crate::commands::tui::session::Today;
+use crate::commands::tui::session::{LedgerRun, Today};
 use crate::commands::tui::support::{
     SIZE, TEST_PLAN, TODAY, assert_at_rest, headless_app_in, ledger_year, overview_year, redrawn,
 };
@@ -71,4 +71,27 @@ fn today_past_the_document_is_its_last_year_in_compare_too() {
     let frame = redrawn(&mut app);
     assert!(frame.contains("dollars · 2050 ─"), "{frame}");
     assert_eq!(overview_year(&mut app), 2050);
+}
+
+#[test]
+fn a_run_opened_in_the_ledger_redraws_nothing_here() {
+    let mut app = comparing_longer(TODAY);
+    let drawn = |app: &mut App| {
+        let world = app.world_mut();
+        let mut charts = world.query_filtered::<
+            bevy_ecs::change_detection::Ref<SeriesChart>,
+            bevy_ecs::prelude::With<views::CompareChart>,
+        >();
+        charts.single(world).unwrap().last_changed()
+    };
+    let before = drawn(&mut app);
+    let shown = app.world().resource::<Projected>();
+    let projected = Projected {
+        plan: shown.plan.clone(),
+        projection: shown.projection.clone(),
+    };
+    let run = &mut app.world_mut().resource_mut::<LedgerRun>().0;
+    *run = Some(("a run".to_owned(), projected));
+    app.update();
+    assert_eq!(drawn(&mut app), before);
 }

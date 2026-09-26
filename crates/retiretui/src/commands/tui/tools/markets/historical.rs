@@ -9,6 +9,7 @@ use retiretui_engine::plan::Plan;
 use super::assumptions::Assumption;
 use super::{MarketTool, count_text};
 use crate::commands::tui::nav::Page;
+use crate::commands::tui::overview::Better;
 use crate::commands::tui::tools::Found;
 use crate::commands::tui::tools::options::Laid;
 
@@ -54,6 +55,10 @@ impl MarketTool for Runs {
 
     fn runs(&self) -> &Runs {
         self
+    }
+
+    fn found_by(better: &Better, plan: &Plan) -> Option<Self> {
+        better.historical(plan).cloned()
     }
 
     fn listed(&self) -> Vec<(String, &Run)> {

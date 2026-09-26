@@ -29,7 +29,8 @@ use crate::commands::tui::confirm::{Answer, Confirm};
 use crate::commands::tui::documents::{Browsing, Pickers};
 use crate::commands::tui::edit::{self, Draft, DraftEditor, FieldSpec, FormButton, Ops, RefSource};
 use crate::commands::tui::journal;
-use crate::commands::tui::nav::{ActivePage, Page};
+use crate::commands::tui::nav::{self, Page, ShownSurface};
+use crate::commands::tui::overview::Better;
 use crate::commands::tui::present::compact_dollars;
 use crate::commands::tui::session::Session;
 
@@ -42,6 +43,7 @@ pub fn plugin(app: &mut App) {
         Update,
         (aim_at_only_roth, search_by_itself)
             .chain()
+            .run_if(nav::shows(Page::RothConversions))
             .before(super::poll_search::<Swept>),
     );
     panes::plugin(app);
@@ -166,9 +168,30 @@ fn held(draft: &Draft) -> Result<(OptimizeOptions, Option<f64>), String> {
 }
 
 /// What a search found, and what it was searched under.
+#[derive(Clone)]
 pub struct Swept {
     sweep: BracketSweep,
     options: OptimizeOptions,
+}
+
+impl Swept {
+    /// The best bracket's ladder, where any bracket was searched.
+    pub(crate) fn best(&self) -> Option<&SweptBracket> {
+        self.sweep.brackets.first()
+    }
+}
+
+/// The ladders into `destination` under the `held` answers, searched as
+/// the page searches them; none where the answers do not make a search.
+pub(crate) fn sweep_into(
+    plan: &Plan,
+    tables: &TaxTables,
+    held: &toml::Table,
+    destination: &str,
+) -> Option<Swept> {
+    let (options, rate) = options_into(plan, held, destination)?;
+    let sweep = search(plan, tables, &options, rate).ok()?;
+    Some(Swept { sweep, options })
 }
 
 impl Found for Swept {
@@ -232,9 +255,9 @@ fn mark_applied(mut ladders: ResMut<Ladders>) {
 
 /// Names the plan's one Roth account as the destination while the page is
 /// on show and the form names none, so the first look is already ranked.
-fn aim_at_only_roth(active: Res<ActivePage>, mut draft: ResMut<Draft>) {
-    let is_moved = draft.is_changed() || active.is_changed();
-    if !is_moved || active.0 != Page::RothConversions {
+fn aim_at_only_roth(shown: ShownSurface, mut draft: ResMut<Draft>) {
+    let is_moved = draft.is_changed() || shown.is_changed();
+    if !is_moved {
         return;
     }
     if draft.answers::<Constraints>().contains_key(DESTINATION) {
@@ -249,15 +272,16 @@ fn aim_at_only_roth(active: Res<ActivePage>, mut draft: ResMut<Draft>) {
 
 /// Searches again whenever the page is on show over a valid draft whose
 /// plan or constraints differ from the last it searched, once they name a
-/// destination, so the ranking is never asked for.
+/// destination, so the ranking is never asked for; what the Overview
+/// already found over them is taken instead.
 fn search_by_itself(
-    (draft, session): (Res<Draft>, Res<Session>),
-    active: Res<ActivePage>,
+    (draft, session, better): (Res<Draft>, Res<Session>, Res<Better>),
+    shown: ShownSurface,
     mut searched: Local<Option<(Plan, toml::Table)>>,
     mut ladders: ResMut<Ladders>,
 ) {
-    let is_moved = draft.is_changed() || active.is_changed() || ladders.is_changed();
-    if !is_moved || active.0 != Page::RothConversions || ladders.is_running() {
+    let is_moved = draft.is_changed() || shown.is_changed() || ladders.is_changed();
+    if !is_moved || ladders.is_running() {
         return;
     }
     let answers = draft.answers::<Constraints>();
@@ -271,7 +295,17 @@ fn search_by_itself(
     let Ok((options, rate)) = held(&draft) else {
         return;
     };
+    let mut rest = answers.clone();
+    let destination = rest.remove(DESTINATION);
+    let taken = destination
+        .as_ref()
+        .and_then(toml::Value::as_str)
+        .and_then(|to| better.ladders(&draft.plan, &rest, to));
     *searched = Some((draft.plan.clone(), answers));
+    if let Some(swept) = taken {
+        ladders.take(swept.clone());
+        return;
+    }
     let tables = session.tables.clone();
     ladders.start(draft.plan.clone(), move |plan| {
         search(plan, &tables, &options, rate).map(|sweep| Swept { sweep, options })

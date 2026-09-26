@@ -12,11 +12,16 @@ use super::super::{HelpLine, show_help};
 use super::panes::ConversionsTable;
 use super::{Swept, held};
 use crate::commands::tui::edit::Draft;
-use crate::commands::tui::nav::{ActivePage, Page};
+use crate::commands::tui::nav::{self, Page, ShownSurface};
 use crate::commands::tui::theme::{Repainted, Theme};
 
 pub fn plugin(app: &mut App) {
-    app.add_systems(Update, say_help.before(Repainted));
+    app.add_systems(
+        Update,
+        say_help
+            .run_if(nav::shows(Page::RothConversions))
+            .before(Repainted),
+    );
 }
 
 const PICK_DESTINATION: &str = "Pick the Roth account to convert to under Constraints, and every bracket's ladder is searched.";
@@ -28,7 +33,7 @@ const ON_CONVERSIONS: &str =
     "t takes this ladder into the plan, after asking; w writes it as a scenario.";
 
 fn say_help(
-    (draft, focus, active, theme): (Res<Draft>, Res<InputFocus>, Res<ActivePage>, Res<Theme>),
+    (draft, focus, shown, theme): (Res<Draft>, Res<InputFocus>, ShownSurface, Res<Theme>),
     places: (
         Query<(), With<OptionsTable<Swept>>>,
         Query<(), With<ConversionsTable>>,
@@ -36,8 +41,8 @@ fn say_help(
     mut said: Local<&'static str>,
     mut lines: Query<(&mut UiWidget, &HelpLine)>,
 ) {
-    let is_moved = draft.is_changed() || focus.is_changed() || active.is_changed();
-    if active.0 != Page::RothConversions || !(is_moved || theme.is_changed()) {
+    let is_moved = draft.is_changed() || focus.is_changed() || shown.is_changed();
+    if !(is_moved || theme.is_changed()) {
         return;
     }
     let (options, conversions) = places;

@@ -69,16 +69,13 @@ fn a_directory_launches_the_shell_empty() {
         "the new plan's form takes the keyboard"
     );
     assert_eq!(
-        active(&app).tab(),
-        nav::Group::Plan.tab(),
+        support::lit_tab(&mut app),
+        Some(nav::Group::Plan.tab()),
         "the one tab with anything to say"
     );
+    let before = active(&app);
     support::invoke(&mut app, "tab-next");
-    assert_eq!(
-        active(&app).tab(),
-        nav::Group::Plan.tab(),
-        "and the others refuse to be shown"
-    );
+    assert_eq!(active(&app), before, "and the others refuse to be shown");
     assert_eq!(said(&app).last().map(String::as_str), Some(NO_DOCUMENT));
     show(&mut app, Page::Accounts);
     assert!(

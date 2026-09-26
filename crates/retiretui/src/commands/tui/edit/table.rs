@@ -25,7 +25,7 @@ use super::sort::{self, Sort};
 use super::widths::Laid;
 use crate::commands::tui::layout;
 use crate::commands::tui::motion::{Cues, Play};
-use crate::commands::tui::nav::{ActivePage, Page, ShownSurface};
+use crate::commands::tui::nav::{self, Page, ShownSurface};
 use crate::commands::tui::theme::Theme;
 
 #[derive(Component)]
@@ -48,13 +48,13 @@ pub struct Row(pub usize);
 /// Turns to a page, the cursor on the item of its table at `index`.
 #[derive(SystemParam)]
 pub struct Turn<'w, 's> {
-    active: ResMut<'w, ActivePage>,
+    turn: nav::Turn<'w>,
     tables: Query<'w, 's, &'static mut DomainTable>,
 }
 
 impl Turn<'_, '_> {
     pub fn to(&mut self, page: Page, index: Option<usize>) {
-        self.active.0 = page;
+        self.turn.to(page);
         let Some(index) = index else {
             return;
         };

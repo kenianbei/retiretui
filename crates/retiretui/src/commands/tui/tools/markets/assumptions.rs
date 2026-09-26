@@ -5,7 +5,7 @@
 use bevy_app::{App, Update};
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::ChildOf;
-use bevy_ecs::prelude::{Commands, Component, Entity, IntoScheduleConfigs, Query, Res, ResMut};
+use bevy_ecs::prelude::{Commands, Component, Entity, IntoScheduleConfigs, Query, Res};
 use plurimus::ui::ScrollArea;
 use plurimus::widgets::{ActiveDescendant, WidgetSystems};
 use retiretui_engine::plan::{Account, AssetClass, Plan};
@@ -15,7 +15,7 @@ use crate::commands::tui::command::Outcome;
 use crate::commands::tui::edit::{Draft, table_bundle};
 use crate::commands::tui::hints::Hints;
 use crate::commands::tui::layout::{self, filling, placed};
-use crate::commands::tui::nav::{ActivePage, FocusStop, Page};
+use crate::commands::tui::nav::{FocusStop, Page, Turn};
 use crate::commands::tui::pane::Pane;
 use crate::commands::tui::present::{money, rate};
 use crate::commands::tui::tabulate;
@@ -153,7 +153,7 @@ fn refresh<R: MarketTool>(
 pub(crate) fn edit_assumption<R: MarketTool>(
     tables: Query<(&AssumptionsTable, &ActiveDescendant)>,
     rows: Query<&EditedOn>,
-    mut active: ResMut<ActivePage>,
+    mut turn: Turn,
 ) -> Outcome {
     let row = tables
         .iter()
@@ -162,6 +162,6 @@ pub(crate) fn edit_assumption<R: MarketTool>(
     let Some(&EditedOn(page)) = row.and_then(|row| rows.get(row).ok()) else {
         return Outcome::Done;
     };
-    active.0 = page;
+    turn.to(page);
     Outcome::Done
 }

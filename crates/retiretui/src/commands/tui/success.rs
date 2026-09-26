@@ -14,12 +14,12 @@ use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::Plan;
 
 use crate::commands::tui::compare::Compared;
-use crate::commands::tui::nav::{ActivePage, Page};
+use crate::commands::tui::nav::{Page, ShownSurface};
 use crate::commands::tui::present::{self, SAME};
 use crate::commands::tui::session::{Projected, Session};
 use crate::commands::tui::theme::Repainted;
 use crate::commands::tui::tools::markets::MarketHistory;
-use crate::commands::tui::tools::{Searches, Worker, running_text};
+use crate::commands::tui::tools::{Keyed, Searches, running_text};
 
 pub fn plugin(app: &mut App) {
     app.init_resource::<Successes>();
@@ -43,8 +43,8 @@ pub struct Successes {
 }
 
 struct Running {
-    plan: Arc<Plan>,
-    worker: Worker<Result<f64, RunError>>,
+    /// The plan's share of successful runs.
+    run: Keyed<Arc<Plan>, Result<f64, RunError>>,
     total: usize,
     /// How many runs the table last said were done.
     shown: usize,
@@ -52,16 +52,15 @@ struct Running {
 
 impl Running {
     fn start(plan: &Plan, tables: TaxTables, history: History) -> Self {
+        let total = usize::try_from(plan.market().trials()).unwrap_or_default();
         let plan = Arc::new(plan.clone());
         let ran = Arc::clone(&plan);
-        let worker = Worker::spawn(move |progress| {
+        let run = Keyed::spawn(plan, move |progress| {
             let found = monte_carlo(&ran, &tables, &history, progress)?;
             Ok(found.runs.success_rate())
         });
-        let total = usize::try_from(plan.market().trials()).unwrap_or_default();
         Self {
-            plan,
-            worker,
+            run,
             total,
             shown: 0,
         }
@@ -107,7 +106,7 @@ impl Successes {
             return answer.map_or(Success::Failed, Success::Rate);
         }
         match &self.running {
-            Some(running) if *running.plan == *plan => Success::Running {
+            Some(running) if *running.run.key == *plan => Success::Running {
                 done: running.shown,
                 total: running.total,
             },
@@ -122,7 +121,7 @@ impl Successes {
 
     fn has_answered(&self) -> bool {
         let running = self.running.as_ref();
-        running.is_some_and(|running| running.worker.is_finished())
+        running.is_some_and(|running| running.run.is_finished())
     }
 
     /// Keeps the finished run's answer; a cancelled one has none.
@@ -130,12 +129,13 @@ impl Successes {
         let Some(running) = self.running.take() else {
             return;
         };
-        let answer = match running.worker.join() {
+        let (plan, answer, _) = running.run.join();
+        let answer = match answer {
             Some(Ok(rate)) => Some(rate),
             Some(Err(RunError::Cancelled)) => return,
             Some(Err(RunError::Refused(_))) | None => None,
         };
-        self.answered.push((running.plan, answer));
+        self.answered.push((plan, answer));
     }
 
     /// Forgets what is not `kept`, and runs the first of `wanted` without
@@ -150,7 +150,12 @@ impl Successes {
             .retain(|(plan, _)| kept.contains(&plan.as_ref()));
         let is_answered = |plan: &Plan| self.answered.iter().any(|(held, _)| **held == *plan);
         let next = wanted.iter().copied().find(|plan| !is_answered(plan));
-        if self.running.as_ref().map(|running| running.plan.as_ref()) == next {
+        if self
+            .running
+            .as_ref()
+            .map(|running| running.run.key.as_ref())
+            == next
+        {
             return;
         }
         self.running = next.map(|plan| Running::start(plan, tables.clone(), history.clone()));
@@ -162,7 +167,7 @@ impl Successes {
 fn count_runs(successes: &mut ResMut<Successes>) {
     let running = successes.bypass_change_detection().running.as_mut();
     let is_counted = running.is_some_and(|running| {
-        let done = running.worker.progress.done();
+        let done = running.run.progress().done();
         std::mem::replace(&mut running.shown, done) != done
     });
     if is_counted {
@@ -173,10 +178,10 @@ fn count_runs(successes: &mut ResMut<Successes>) {
 /// How many of the document and the compared plans, in that order, the
 /// page on show wants run: every one on Compare, the document on the
 /// Overview while it runs its searches.
-fn wanted(active: Page, searches: Searches, plans: usize) -> usize {
-    match active {
-        Page::Compare => plans,
-        Page::Overview if searches.0 => 1,
+fn wanted(shown: Option<Page>, searches: Searches, plans: usize) -> usize {
+    match shown {
+        Some(Page::Compare) => plans,
+        Some(Page::Overview) if searches.0 => 1,
         _ => 0,
     }
 }
@@ -185,7 +190,7 @@ fn wanted(active: Page, searches: Searches, plans: usize) -> usize {
 /// first unanswered one whenever a plan changes; a page that wants none
 /// stops the run under way, so nothing runs behind another page.
 pub(crate) fn work_through(
-    (projected, compared, active): (Res<Projected>, Res<Compared>, Res<ActivePage>),
+    (projected, compared, shown): (Res<Projected>, Res<Compared>, ShownSurface),
     (session, history, searches): (Res<Session>, Res<MarketHistory>, Res<Searches>),
     mut successes: ResMut<Successes>,
 ) {
@@ -195,7 +200,7 @@ pub(crate) fn work_through(
     }
     let is_moved = projected.is_changed()
         || compared.is_changed()
-        || active.is_changed()
+        || shown.is_changed()
         || searches.is_changed();
     if !has_answered && !is_moved {
         count_runs(&mut successes);
@@ -203,6 +208,6 @@ pub(crate) fn work_through(
     }
     let document = std::iter::once(&projected.plan);
     let kept: Vec<&Plan> = document.chain(compared.plans()).collect();
-    let wanted = wanted(active.0, *searches, kept.len());
+    let wanted = wanted(shown.surface(), *searches, kept.len());
     successes.queue((&kept, &kept[..wanted]), &session.tables, &history.0);
 }

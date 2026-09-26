@@ -10,20 +10,20 @@ use std::collections::BTreeSet;
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::prelude::{Res, ResMut, Resource};
 use retiretui_engine::market::{History, Progress, RunError, Runs, historical};
-use retiretui_engine::optimize::{ClaimSearch, SweptBracket, optimize_claims, rank_key};
+use retiretui_engine::optimize::{ClaimSearch, optimize_claims, rank_key};
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::{Plan, TreatmentClass};
 use retiretui_engine::project::Projection;
 
 use super::rows::{Entry, Tone};
 use crate::commands::tui::edit::Draft;
-use crate::commands::tui::nav::{ActivePage, Page};
+use crate::commands::tui::nav::{Page, ShownSurface};
 use crate::commands::tui::present::signed_money;
 use crate::commands::tui::session::{Projected, Session};
 use crate::commands::tui::tools::claims::HeldClaims;
-use crate::commands::tui::tools::ladders::{self, rate_label};
+use crate::commands::tui::tools::ladders::{self, Swept, rate_label};
 use crate::commands::tui::tools::markets::MarketHistory;
-use crate::commands::tui::tools::{Searches, Worker};
+use crate::commands::tui::tools::{Keyed, Searches};
 
 const NO_LADDER: &str = "no conversion ladder beats the plan";
 const REFUSED: &str = "not searchable under the Roth Conversions answers";
@@ -38,7 +38,7 @@ type Searched = (Plan, BTreeSet<String>, toml::Table);
 #[derive(Resource, Default)]
 pub struct Better {
     answered: Option<(Searched, Found)>,
-    running: Option<(Searched, Worker<Option<Found>>)>,
+    running: Option<Keyed<Searched, Option<Found>>>,
 }
 
 pub(crate) struct Found {
@@ -49,12 +49,12 @@ pub(crate) struct Found {
     ladders: Vec<Ladder>,
 }
 
-/// A Roth owner's best ladder into their Roth account, `None` where the
-/// search is refused under the page's answers.
+/// A Roth owner's ladders into their Roth account, `None` where the search
+/// is refused under the page's answers.
 struct Ladder {
     owner: String,
     destination: String,
-    best: Option<SweptBracket>,
+    swept: Option<Swept>,
 }
 
 impl Better {
@@ -64,16 +64,56 @@ impl Better {
         self.answered.as_ref().map(|(_, found)| found)
     }
 
+    /// What was found over `plan`, whatever else it was searched under.
+    fn found_over(&self, plan: &Plan) -> Option<(&Searched, &Found)> {
+        let (searched, found) = self.answered.as_ref()?;
+        (searched.0 == *plan).then_some((searched, found))
+    }
+
+    /// The claim search over `plan` with the `held` claims, where it is
+    /// answered.
+    pub(crate) fn claims(&self, plan: &Plan, held: &BTreeSet<String>) -> Option<&ClaimSearch> {
+        let (searched, found) = self.found_over(plan)?;
+        if searched.1 != *held {
+            return None;
+        }
+        found.claims.as_ref()
+    }
+
+    /// The plan from every start year, where it is answered.
+    pub(crate) fn historical(&self, plan: &Plan) -> Option<&Runs> {
+        self.found_over(plan)?.1.historical.as_ref()
+    }
+
+    /// The ladders into `destination` over `plan` under the `held`
+    /// conversion answers, where they are answered.
+    pub(crate) fn ladders(
+        &self,
+        plan: &Plan,
+        held: &toml::Table,
+        destination: &str,
+    ) -> Option<&Swept> {
+        let (searched, found) = self.found_over(plan)?;
+        if searched.2 != *held {
+            return None;
+        }
+        let mut ladders = found.ladders.iter();
+        ladders
+            .find(|ladder| ladder.destination == destination)?
+            .swept
+            .as_ref()
+    }
+
     #[cfg(test)]
     pub(crate) fn is_running(&self) -> bool {
         self.running.is_some()
     }
 
     fn receive(&mut self) {
-        let Some((searched, worker)) = self.running.take() else {
+        let Some(running) = self.running.take() else {
             return;
         };
-        if let Some(Some(found)) = worker.join() {
+        if let (searched, Some(Some(found)), _) = running.join() {
             self.answered = Some((searched, found));
         }
     }
@@ -100,7 +140,7 @@ impl Better {
         if self
             .running
             .as_ref()
-            .is_some_and(|(searched, _)| is_wanted(searched))
+            .is_some_and(|running| is_wanted(&running.key))
         {
             return;
         }
@@ -108,9 +148,9 @@ impl Better {
         let wanted: Searched = (plan.clone(), held.clone(), answers);
         let (tables, history) = (tables.clone(), history.clone());
         let searched = wanted.clone();
-        let worker =
-            Worker::spawn(move |progress| search(&searched, (&tables, &history), progress));
-        self.running = Some((wanted, worker));
+        self.running = Some(Keyed::spawn(wanted, move |progress| {
+            search(&searched, (&tables, &history), progress)
+        }));
     }
 }
 
@@ -152,13 +192,10 @@ fn best_ladder(
     answers: &toml::Table,
     (owner, destination): (&str, &str),
 ) -> Ladder {
-    let best = ladders::options_into(plan, answers, destination)
-        .and_then(|(options, rate)| ladders::search(plan, tables, &options, rate).ok())
-        .and_then(|sweep| sweep.brackets.into_iter().next());
     Ladder {
         owner: owner.to_owned(),
         destination: destination.to_owned(),
-        best,
+        swept: ladders::sweep_into(plan, tables, answers, destination),
     }
 }
 
@@ -175,26 +212,22 @@ fn roth_owners(plan: &Plan) -> impl Iterator<Item = (&str, &str)> {
 /// Takes the answer as it lands, and searches the plan shown while the
 /// Overview is, dropping an answer that describes another.
 pub(super) fn work(
-    (projected, active, searches): (Res<Projected>, Res<ActivePage>, Res<Searches>),
+    (projected, shown, searches): (Res<Projected>, ShownSurface, Res<Searches>),
     (session, history, held): (Res<Session>, Res<MarketHistory>, Res<HeldClaims>),
     (draft, mut better): (Res<Draft>, ResMut<Better>),
 ) {
-    if better
-        .running
-        .as_ref()
-        .is_some_and(|(_, worker)| worker.is_finished())
-    {
+    if better.running.as_ref().is_some_and(Keyed::is_finished) {
         better.receive();
     }
     let is_moved = projected.is_changed()
-        || active.is_changed()
+        || shown.is_changed()
         || searches.is_changed()
         || held.is_changed()
         || draft.is_changed();
     if !is_moved {
         return;
     }
-    if active.0 != Page::Overview || !searches.0 {
+    if shown.surface() != Some(Page::Overview) || !searches.0 {
         better.running = None;
         return;
     }
@@ -214,7 +247,7 @@ pub(super) fn entries(better: &Better, projected: &Projected, nominal: bool) -> 
         .ladders
         .iter()
         .map(|ladder| {
-            let said = match &ladder.best {
+            let said = match ladder.swept.as_ref().and_then(Swept::best) {
                 None => REFUSED.to_owned(),
                 Some(best) if beats(&best.optimized, current) => {
                     let rate = rate_label(best.rate);

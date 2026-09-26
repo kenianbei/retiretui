@@ -33,7 +33,8 @@ use super::options::spawn_table;
 use super::{Found, HelpLine, ResultPane, Tool, count_text, show_help};
 use crate::commands::tui::edit::Draft;
 use crate::commands::tui::hints::Hints;
-use crate::commands::tui::nav::{ActivePage, FocusStop, Page};
+use crate::commands::tui::nav::{self, FocusStop, Page, ShownSurface, Turn};
+use crate::commands::tui::overview::Better;
 use crate::commands::tui::pane::{Framed, Pane};
 use crate::commands::tui::present::{self, compact_dollars};
 use crate::commands::tui::session::Session;
@@ -115,6 +116,12 @@ pub(crate) trait MarketTool: Found + Sized {
     /// What the tool runs under, as rows of the Assumptions pane after
     /// the verdict.
     fn settings(plan: &Plan) -> Vec<assumptions::Assumption>;
+
+    /// What the Overview already found over `plan`, taken in place of a
+    /// search.
+    fn found_by(_better: &Better, _plan: &Plan) -> Option<Self> {
+        None
+    }
 }
 
 /// The engine's refusals as the tool says them; a search cancelled for a
@@ -131,7 +138,11 @@ fn install<R: MarketTool>(app: &mut App) {
     super::options::plugin::<R>(app);
     app.add_systems(
         Update,
-        (search_by_itself::<R>, title_runs::<R>, say_help::<R>).after(super::poll_search::<R>),
+        (
+            (search_by_itself::<R>, say_help::<R>).run_if(nav::shows(R::PAGE)),
+            title_runs::<R>,
+        )
+            .after(super::poll_search::<R>),
     );
     assumptions::install::<R>(app);
     chart::install::<R>(app);
@@ -142,15 +153,19 @@ fn install<R: MarketTool>(app: &mut App) {
 /// a search under way.
 fn search_by_itself<R: MarketTool>(
     (draft, session, history): (Res<Draft>, Res<Session>, Res<MarketHistory>),
-    active: Res<ActivePage>,
+    (shown, better): (ShownSurface, Res<Better>),
     mut searched: Local<Option<Plan>>,
     mut tool: ResMut<Tool<R>>,
 ) {
-    let is_ready = (draft.is_changed() || active.is_changed()) && active.0 == R::PAGE;
+    let is_ready = draft.is_changed() || shown.is_changed();
     if !is_ready || !super::is_due(&draft, searched.as_ref(), |plan| *plan == draft.plan) {
         return;
     }
     *searched = Some(draft.plan.clone());
+    if let Some(found) = R::found_by(&better, &draft.plan) {
+        tool.take(found);
+        return;
+    }
     let tables = session.tables.clone();
     let history = history.0.clone();
     let total = R::total(&draft.plan);
@@ -182,11 +197,11 @@ fn title_runs<R: MarketTool>(
 }
 
 fn say_help<R: MarketTool>(
-    active: Res<ActivePage>,
+    shown: ShownSurface,
     theme: Res<Theme>,
     mut lines: Query<(&mut UiWidget, &HelpLine)>,
 ) {
-    if (active.is_changed() || theme.is_changed()) && active.0 == R::PAGE {
+    if shown.is_changed() || theme.is_changed() {
         show_help(&mut lines, R::PAGE, R::HELP, &theme);
     }
 }
@@ -270,7 +285,7 @@ fn highlighted<R: MarketTool>(tool: &Tool<R>) -> Option<(String, &Run)> {
 pub(crate) fn open_run<R: MarketTool>(
     (tool, draft, session, history): (Res<Tool<R>>, Res<Draft>, Res<Session>, Res<MarketHistory>),
     mut run: ResMut<crate::commands::tui::session::LedgerRun>,
-    mut active: ResMut<ActivePage>,
+    mut turn: Turn,
 ) -> crate::commands::tui::command::Outcome {
     use crate::commands::tui::command::Outcome;
     if tool.found().is_none() {
@@ -278,7 +293,7 @@ pub(crate) fn open_run<R: MarketTool>(
     }
     let Some((label, chosen)) = highlighted(&*tool) else {
         run.0 = None;
-        active.0 = Page::Ledger;
+        turn.to(Page::Ledger);
         return Outcome::Done;
     };
     let replayed: Option<Projection> =
@@ -291,6 +306,6 @@ pub(crate) fn open_run<R: MarketTool>(
         projection,
     };
     run.0 = Some((R::ledger_label(&label), projected));
-    active.0 = Page::Ledger;
+    turn.to(Page::Ledger);
     Outcome::Done
 }
