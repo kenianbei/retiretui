@@ -380,6 +380,13 @@ impl Turn<'_> {
     }
 }
 
+/// A run condition: whether `page` is on show. A system it skips keeps its
+/// last run, so on the page's return what moved while it was away reads as
+/// changed.
+pub fn shows(page: Page) -> impl FnMut(ShownSurface) -> bool + Clone {
+    move |shown: ShownSurface| shown.surface() == Some(page)
+}
+
 /// Turns the page for a caller holding the world.
 pub fn turn_in(world: &mut World, page: Page) {
     world

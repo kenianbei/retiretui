@@ -21,7 +21,7 @@ use super::guide;
 use crate::commands::tui::edit::{Draft, table_bundle};
 use crate::commands::tui::hints::Hints;
 use crate::commands::tui::layout::{self, filling, placed};
-use crate::commands::tui::nav::{ActivePage, FocusStop, Page};
+use crate::commands::tui::nav::{self, FocusStop, Page, ShownSurface};
 use crate::commands::tui::pane::Pane;
 use crate::commands::tui::present::compact_money;
 use crate::commands::tui::session::Session;
@@ -34,7 +34,11 @@ pub fn plugin(app: &mut App) {
         .init_resource::<HeldClaims>()
         .add_systems(
             Update,
-            (estimate, refresh_people, follow_cursor)
+            (
+                estimate.run_if(nav::shows(Page::SsaBenefits)),
+                refresh_people,
+                follow_cursor,
+            )
                 .chain()
                 .before(Repainted)
                 .before(WidgetSystems::Layout),
@@ -113,12 +117,12 @@ pub fn spawn_pane(commands: &mut Commands, row: Entity) {
 fn estimate(
     draft: Res<Draft>,
     session: Res<Session>,
-    active: Res<ActivePage>,
+    shown: ShownSurface,
     mut last_plan: Local<Option<Plan>>,
     mut estimates: ResMut<Estimates>,
 ) {
-    let is_moved = draft.is_changed() || active.is_changed();
-    if !is_moved || active.page() != Page::SsaBenefits || !draft.issues().is_empty() {
+    let is_moved = draft.is_changed() || shown.is_changed();
+    if !is_moved || !draft.issues().is_empty() {
         return;
     }
     if last_plan.as_ref() == Some(&draft.plan) {

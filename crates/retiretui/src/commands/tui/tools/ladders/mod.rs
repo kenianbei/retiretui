@@ -29,7 +29,7 @@ use crate::commands::tui::confirm::{Answer, Confirm};
 use crate::commands::tui::documents::{Browsing, Pickers};
 use crate::commands::tui::edit::{self, Draft, DraftEditor, FieldSpec, FormButton, Ops, RefSource};
 use crate::commands::tui::journal;
-use crate::commands::tui::nav::{ActivePage, Page};
+use crate::commands::tui::nav::{self, Page, ShownSurface};
 use crate::commands::tui::present::compact_dollars;
 use crate::commands::tui::session::Session;
 
@@ -42,6 +42,7 @@ pub fn plugin(app: &mut App) {
         Update,
         (aim_at_only_roth, search_by_itself)
             .chain()
+            .run_if(nav::shows(Page::RothConversions))
             .before(super::poll_search::<Swept>),
     );
     panes::plugin(app);
@@ -232,9 +233,9 @@ fn mark_applied(mut ladders: ResMut<Ladders>) {
 
 /// Names the plan's one Roth account as the destination while the page is
 /// on show and the form names none, so the first look is already ranked.
-fn aim_at_only_roth(active: Res<ActivePage>, mut draft: ResMut<Draft>) {
-    let is_moved = draft.is_changed() || active.is_changed();
-    if !is_moved || active.page() != Page::RothConversions {
+fn aim_at_only_roth(shown: ShownSurface, mut draft: ResMut<Draft>) {
+    let is_moved = draft.is_changed() || shown.is_changed();
+    if !is_moved {
         return;
     }
     if draft.answers::<Constraints>().contains_key(DESTINATION) {
@@ -252,12 +253,12 @@ fn aim_at_only_roth(active: Res<ActivePage>, mut draft: ResMut<Draft>) {
 /// destination, so the ranking is never asked for.
 fn search_by_itself(
     (draft, session): (Res<Draft>, Res<Session>),
-    active: Res<ActivePage>,
+    shown: ShownSurface,
     mut searched: Local<Option<(Plan, toml::Table)>>,
     mut ladders: ResMut<Ladders>,
 ) {
-    let is_moved = draft.is_changed() || active.is_changed() || ladders.is_changed();
-    if !is_moved || active.page() != Page::RothConversions || ladders.is_running() {
+    let is_moved = draft.is_changed() || shown.is_changed() || ladders.is_changed();
+    if !is_moved || ladders.is_running() {
         return;
     }
     let answers = draft.answers::<Constraints>();
