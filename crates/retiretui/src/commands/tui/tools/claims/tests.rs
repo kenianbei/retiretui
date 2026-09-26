@@ -140,6 +140,10 @@ fn the_page_searches_by_itself_beside_the_people() {
         said(&app)
     );
     assert!(frame.contains("↑↓ person  ⏎ actions"), "{frame}");
+    assert!(
+        frame.contains("w write") && frame.contains("t take"),
+        "{frame}"
+    );
     let people_left_of_options = frame.lines().any(|line| {
         line.find("╭ People ")
             .zip(line.find("╭ Claim Options "))
@@ -237,11 +241,12 @@ fn the_pane_says_why_nothing_could_be_searched_and_an_edit_drops_a_search() {
         .replace("start = { age = 67", "amount = 24000\nstart = { age = 67");
     let (_, app) = workspace_app(&unsearchable);
     assert!(app.world().resource::<Claims>().found().is_none());
+    let frame = composed_frame(&app);
     assert!(
-        composed_frame(&app).contains("no social-security income computes its benefit"),
-        "{}",
-        composed_frame(&app)
+        frame.contains("no social-security income computes its benefit"),
+        "{frame}"
     );
+    assert!(!frame.contains("w write"), "nothing to write: {frame}");
     assert!(said(&app).is_empty(), "the page's own search says nothing");
 
     let (_, mut app) = workspace_app(&fixture());

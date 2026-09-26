@@ -21,6 +21,7 @@ use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{
     Commands, Component, Entity, IntoScheduleConfigs, On, Query, Res, ResMut, Resource, With,
 };
+use bevy_ecs::system::SystemParam;
 use bevy_input::keyboard::{Key, KeyboardInput};
 use bevy_input_focus::FocusedInput;
 use bevy_ui::{FlexDirection, Node};
@@ -55,6 +56,25 @@ pub fn plugin(app: &mut App) {
 }
 
 const NOTHING_SEARCHED_YET: &str = "nothing searched yet";
+
+/// Which tool commands have nothing to act on yet, so the key row leaves
+/// their hints out; the keys still run and say why they refuse.
+#[derive(SystemParam)]
+pub struct Idle<'w> {
+    ladders: Res<'w, Ladders>,
+    claims: Res<'w, Claims>,
+}
+
+impl Idle<'_> {
+    /// Whether the command named `name` would refuse for want of a result.
+    pub fn is_idle(&self, name: &str) -> bool {
+        match name {
+            "write-ladder" | "take-ladder" => self.ladders.highlighted_bracket().is_none(),
+            "write-claims" | "take-claims" => self.claims.found().is_none(),
+            _ => false,
+        }
+    }
+}
 
 /// What a tool's search found, as its options pane lists it: the plan's
 /// own row, then an option per result, best first.

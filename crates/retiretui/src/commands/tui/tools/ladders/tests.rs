@@ -350,15 +350,26 @@ fn the_highlighted_option_lists_its_ladder_as_the_engine_searched_it() {
 }
 
 #[test]
-fn w_on_the_frame_writes_and_the_key_row_says_so() {
+fn w_and_t_are_hinted_once_there_is_a_ladder_and_refuse_in_words_before() {
     let (_, mut app) = workspace_app(SIZE);
     show(&mut app, Page::RothConversions);
-    assert!(composed_frame(&app).contains("w write"));
+    let frame = redrawn(&mut app);
+    assert!(
+        !frame.contains("w write") && !frame.contains("t take"),
+        "{frame}"
+    );
     press_key(&mut app, KeyCode::Char('w'));
     app.update();
     assert_eq!(
         said(&app).last().map(String::as_str),
         Some(NOTHING_SEARCHED_YET)
+    );
+    constrain(&mut app, "to", Value::String("roth-ira".to_owned()));
+    settle(&mut app);
+    let frame = redrawn(&mut app);
+    assert!(
+        frame.contains("w write") && frame.contains("t take"),
+        "{frame}"
     );
 }
 
@@ -379,7 +390,7 @@ fn highlighted_steps(app: &App) -> usize {
 fn t_and_enter_ask_then_take_the_ladder_in_place_of_the_last_one() {
     let mut app = headless_app_at(scratch_full_plan(), SIZE);
     show(&mut app, Page::RothConversions);
-    assert!(composed_frame(&app).contains("t take"));
+    assert!(!composed_frame(&app).contains("t take"), "nothing to take");
     press_key(&mut app, KeyCode::Char('t'));
     app.update();
     assert_eq!(

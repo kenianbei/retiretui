@@ -34,4 +34,4 @@ expression: composed_frame(app)
 │                   ││                                                    ││                                                   │
 │                   │╰────────────────────────────────────────────────────╯╰───────────────────────────────────────────────────╯
 ╰───────────────────╯alex has no earnings record: ⏎ on alex to import a statement or estimate one from their salary.            
- ↑↓ person  ⏎ actions  ⇥ pane  w write  t take  e statement  c career  k compute  ctrl-s save  r reload      : commands  ? help
+ ↑↓ person  ⏎ actions  ⇥ pane  e statement  c career  k compute  ctrl-s save  r reload  q quit  ctrl-↓ tab   : commands  ? help

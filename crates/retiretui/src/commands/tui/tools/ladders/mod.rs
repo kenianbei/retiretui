@@ -202,7 +202,7 @@ impl Found for Swept {
 impl Tool<Swept> {
     /// The highlighted bracket, or the best while the plan's own row is
     /// highlighted.
-    fn highlighted_bracket(&self) -> Option<&SweptBracket> {
+    pub(super) fn highlighted_bracket(&self) -> Option<&SweptBracket> {
         let brackets = &self.found()?.sweep.brackets;
         let highlighted = self.highlighted().and_then(|at| brackets.get(at));
         highlighted.or_else(|| brackets.first())

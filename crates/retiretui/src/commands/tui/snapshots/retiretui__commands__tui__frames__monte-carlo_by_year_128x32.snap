@@ -34,4 +34,4 @@ expression: composed_frame(app)
 │                   ││                                ││  2039   1.72M  1.83M  1.98M  2.14M  2.32M    100%                    ▼│
 │                   │╰────────────────────────────────╯╰───────────────────────────────────────────────────────────────────────╯
 ╰───────────────────╯Random markets from the assumptions or from history; the same seed draws the same markets. Today's dollars.
- ↑↓ assumption  ⏎ edit  ⇥ pane  v view  ctrl-s save  r reload  q quit  ctrl-↓ tab  n toggle dollars          : commands  ? help
+ ↑↓ assumption  ⏎ edit  ⇥ pane  v view  ctrl-s save  r reload  q quit  ctrl-↓ tab  n dollars                 : commands  ? help

@@ -153,11 +153,17 @@ pub fn arrows_bound_on(page: Page) -> impl Iterator<Item = &'static Key> {
         })
 }
 
-/// The hinted commands that act on `shown`, each with its first key: the
-/// ones particular to the page first, since a narrow row drops hints from
-/// the end, then table order.
-pub fn page_hints(shown: Option<Page>) -> impl Iterator<Item = (&'static str, &'static str)> {
-    let live = move |command: &CommandId| command.spec().scope.covers(shown);
+/// The hinted commands that act on `shown` and are not `idle`, each with
+/// its first key: the ones particular to the page first, since a narrow
+/// row drops hints from the end, then table order.
+pub fn page_hints(
+    shown: Option<Page>,
+    idle: impl Fn(&str) -> bool,
+) -> impl Iterator<Item = (&'static str, &'static str)> {
+    let live = move |command: &CommandId| {
+        let spec = command.spec();
+        spec.scope.covers(shown) && !idle(spec.name)
+    };
     let is_particular =
         |command: &CommandId| matches!(command.spec().scope, Scope::Lists | Scope::On(_));
     let particular = all().filter(is_particular);
@@ -421,11 +427,14 @@ mod tests {
 
     #[test]
     fn a_page_is_hinted_the_commands_that_act_on_it() {
-        let words =
-            |page: Page| -> Vec<&str> { page_hints(Some(page)).map(|(_, word)| word).collect() };
+        let words = |page: Page| -> Vec<&str> {
+            page_hints(Some(page), |_| false)
+                .map(|(_, word)| word)
+                .collect()
+        };
         let viewing = words(Page::Overview);
         assert!(viewing.contains(&"save"), "{viewing:?}");
-        let composing: Vec<&str> = page_hints(None).map(|(_, word)| word).collect();
+        let composing: Vec<&str> = page_hints(None, |_| false).map(|(_, word)| word).collect();
         assert_eq!(composing, ["quit"], "nothing to save without a document");
         assert!(!viewing.contains(&"add"), "nothing to add to: {viewing:?}");
         assert!(words(Page::Accounts).contains(&"add"));
@@ -433,7 +442,7 @@ mod tests {
             !words(Page::Settings).contains(&"add"),
             "a form, not a list"
         );
-        let keyed = page_hints(Some(Page::Accounts)).all(|(key, _)| !key.is_empty());
+        let keyed = page_hints(Some(Page::Accounts), |_| false).all(|(key, _)| !key.is_empty());
         assert!(keyed, "a hinted command names its key");
     }
 }

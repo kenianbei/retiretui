@@ -1,5 +1,6 @@
 ---
 source: crates/retiretui/src/commands/tui/frames.rs
+assertion_line: 44
 expression: composed_frame(app)
 ---
 ╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                              
@@ -33,4 +34,4 @@ expression: composed_frame(app)
 │  hsa             $25,000 +$8,000 yours                                        +$1,250  $34,250█││  Penalties             $0 █│
 │  pension-dc      $60,000                                                      +$3,000  $63,000▼││  Medicare              $0 ▼│
 ╰────────────────────────────────────────────────────────────────────────────────────────────────╯╰────────────────────────────╯
- ⇥ pane  ctrl-s save  r reload  q quit  ctrl-↓ tab  n toggle dollars                                         : commands  ? help
+ ⇥ pane  ctrl-s save  r reload  q quit  ctrl-↓ tab  n dollars                                                : commands  ? help

@@ -133,7 +133,7 @@ pub static COMMANDS: LazyLock<Vec<CommandSpec>> = LazyLock::new(|| {
             scope: Scope::Anywhere,
             doc: "toggle today's and nominal dollars",
             keys: vec![character("n")],
-            hint: Some("toggle dollars"),
+            hint: Some("dollars"),
             register: Box::new(|world| world.register_system(toggle_basis)),
         },
         CommandSpec {
@@ -285,7 +285,7 @@ pub static COMMANDS: LazyLock<Vec<CommandSpec>> = LazyLock::new(|| {
         scope: Scope::On(Page::Compare),
         doc: "compare the document with a workspace file, or stop",
         keys: vec![character("c")],
-        hint: Some("add plan"),
+        hint: Some("add"),
         register: Box::new(|world| world.register_system(documents::compare_with)),
     });
     commands.push(CommandSpec {
@@ -317,7 +317,7 @@ pub static COMMANDS: LazyLock<Vec<CommandSpec>> = LazyLock::new(|| {
         scope: Scope::On(Page::Compare),
         doc: "show each plan as its difference from the baseline, or as it is",
         keys: vec![character("d")],
-        hint: Some("difference"),
+        hint: Some("diff"),
         register: Box::new(|world| world.register_system(compare::toggle_difference)),
     });
     commands.push(CommandSpec {
@@ -382,7 +382,7 @@ pub static COMMANDS: LazyLock<Vec<CommandSpec>> = LazyLock::new(|| {
         scope: Scope::On(Page::People),
         doc: "record a Social Security statement's earnings on the highlighted person",
         keys: vec![character("e")],
-        hint: Some("earnings"),
+        hint: Some("import"),
         register: Box::new(|world| world.register_system(edit::import_earnings)),
     });
     commands
