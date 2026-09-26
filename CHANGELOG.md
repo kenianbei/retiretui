@@ -6,6 +6,20 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- The minimum versions of the engine's and the binary's dependencies are now the
+  versions they are built and checked against.
+
+### Fixed
+
+- Taking a searched Roth conversion ladder no longer removes a conversion of
+  your own whose id happens to start with `opt-`; only the optimizer's own
+  `opt-<account>-<year>` conversions are replaced.
+- After a reload fails, the planner and the Compare page watch the files the
+  plan now reads, so fixing a newly named base plan is picked up without
+  pressing `r`.
+
 ## [0.1.0] - 2026-09-25
 
 ### Added
