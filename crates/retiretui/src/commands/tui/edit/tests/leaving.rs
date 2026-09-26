@@ -16,10 +16,9 @@ use crate::commands::tui::nav::{ActivePage, Page};
 use crate::commands::tui::session::Session;
 use crate::commands::tui::support::{
     self, SIZE, answer_back, cell_of, cell_style, click, composed_frame, headless_app, is_asking,
-    let_pass, press_ctrl, press_key, press_shift, said, show, type_text,
+    press_ctrl, press_key, press_shift, said, show, type_text,
 };
 use crate::commands::tui::theme::Theme;
-use crate::commands::tui::watch::POLL_SECONDS;
 
 /// A cell inside the first tab's box, which is how a page is chosen with
 /// the pointer.
@@ -165,13 +164,8 @@ fn a_disk_change_waits_behind_an_item_being_edited() {
     clear_field(&mut app);
     type_text(&mut app, "80");
     let plan_path = app.world().resource::<Session>().plan_path.clone().unwrap();
-    std::thread::sleep(std::time::Duration::from_millis(50));
-    std::fs::write(
-        &plan_path,
-        support::TEST_PLAN.replace("horizon_age = 70", "horizon_age = 75"),
-    )
-    .unwrap();
-    let_pass(&mut app, std::time::Duration::from_secs_f32(POLL_SECONDS));
+    let changed = support::TEST_PLAN.replace("horizon_age = 70", "horizon_age = 75");
+    support::change_on_disk(&mut app, &plan_path, &changed);
     assert!(is_editing(&app), "the item stays open");
     assert!(composed_frame(&app).contains("80"), "with its edit");
     assert!(

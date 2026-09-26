@@ -63,16 +63,11 @@ pub const LADDER_ID_PREFIX: &str = "opt-";
 /// `opt-<source>-<year>`, as a ladder names what it puts there.
 #[must_use]
 pub fn is_ladder(conversion: &Conversion) -> bool {
-    let Some(year) = conversion
+    conversion
         .id
-        .strip_prefix(LADDER_ID_PREFIX)
-        .and_then(|rest| rest.strip_prefix(conversion.from.as_str()))
-        .and_then(|rest| rest.strip_prefix('-'))
-    else {
-        return false;
-    };
-    year.parse::<i16>()
-        .is_ok_and(|year| ladder_id(&conversion.from, year) == conversion.id)
+        .rsplit_once('-')
+        .and_then(|(_, year)| year.parse::<i16>().ok())
+        .is_some_and(|year| ladder_id(&conversion.from, year) == conversion.id)
 }
 
 fn ladder_id(source: &str, year: i16) -> String {

@@ -14,6 +14,7 @@ use crate::commands::tui::support::{
     Headless, SIZE, commit_edit, composed_frame, headless_app_at, press_ctrl, press_key, redrawn,
     said, scratch_workspace, show, type_text,
 };
+use crate::commands::tui::tools::hold;
 
 const PARTNER: &str = r#"
 [[household.people]]
@@ -151,10 +152,10 @@ fn the_page_searches_by_itself_beside_the_people() {
 fn a_search_arrives_ranked_best_first_and_arrows_step_over_the_plan_s_own_row() {
     let (_, mut app) = workspace_app(&fixture());
     commit_edit(&mut app, |plan| plan.plan.name = Some("changed".to_owned()));
+    hold::<ClaimSearch>(&mut app, true);
     app.update();
-    if app.world().resource::<Claims>().is_running() {
-        assert!(composed_frame(&app).contains("Claim Options · searching… "));
-    }
+    assert!(composed_frame(&app).contains("Claim Options · searching… "));
+    hold::<ClaimSearch>(&mut app, false);
     settle(&mut app);
     let frame = composed_frame(&app);
     assert!(frame.contains("s ─"), "the title says how long: {frame}");
@@ -245,11 +246,13 @@ fn the_pane_says_why_nothing_could_be_searched_and_an_edit_drops_a_search() {
 
     let (_, mut app) = workspace_app(&fixture());
     commit_edit(&mut app, |plan| plan.plan.name = Some("changed".to_owned()));
+    hold::<ClaimSearch>(&mut app, true);
     app.update();
     assert!(app.world().resource::<Claims>().is_running());
     commit_edit(&mut app, |plan| {
         plan.plan.name = Some("changed again".to_owned());
     });
+    hold::<ClaimSearch>(&mut app, false);
     settle(&mut app);
     assert!(said(&app).is_empty(), "a dropped search says nothing");
     assert!(

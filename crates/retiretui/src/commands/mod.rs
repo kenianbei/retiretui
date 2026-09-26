@@ -74,8 +74,8 @@ fn validated_plan_with_files(
     path: &Path,
     tables: &TaxTables,
 ) -> (Result<Plan, Invalid>, Vec<PathBuf>) {
-    let (loaded, files) = load_plan_with_files(path);
-    let validated = loaded
+    let mut files = Vec::new();
+    let validated = load_plan_with_files(path, &mut files)
         .map_err(|error| Invalid::Load(error.to_string()))
         .and_then(|plan| {
             let issues = validate_plan(&plan, tables);
@@ -136,13 +136,7 @@ pub(crate) fn overlay_base(out: &Path, plan_path: &Path) -> std::io::Result<Stri
 /// Loads a plan or scenario file, resolving `base` chains relative to each
 /// referring file, and returns every file the resolution read - the document
 /// and its whole base chain - for callers that watch them.
-fn load_plan_with_files(path: &Path) -> (anyhow::Result<Plan>, Vec<PathBuf>) {
-    let mut files = Vec::new();
-    let plan = resolve_with_files(path, &mut files);
-    (plan, files)
-}
-
-fn resolve_with_files(path: &Path, files: &mut Vec<PathBuf>) -> anyhow::Result<Plan> {
+fn load_plan_with_files(path: &Path, files: &mut Vec<PathBuf>) -> anyhow::Result<Plan> {
     let start = path
         .canonicalize()
         .with_context(|| format!("failed to open {}", path.display()))?;

@@ -12,6 +12,7 @@ use crate::commands::tui::support::{
     press_ctrl, press_key, press_shift, redrawn, said, scratch_full_plan, scratch_scenario,
     scratch_workspace, show, type_text,
 };
+use crate::commands::tui::tools::hold;
 use crate::commands::tui::tools::write::SAVE_FIRST;
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::Scenario;
@@ -205,12 +206,12 @@ fn a_search_arrives_ranked_best_first_and_arrows_step_over_the_plan_s_own_row() 
     let mut app = headless_app_at(scratch_full_plan(), SIZE);
     show(&mut app, Page::RothConversions);
     constrain(&mut app, "to", Value::String("roth-ira".to_owned()));
+    hold::<Swept>(&mut app, true);
     app.update();
     app.update();
-    if app.world().resource::<Ladders>().is_running() {
-        let frame = composed_frame(&app);
-        assert!(frame.contains("Ladder Options · searching… "), "{frame}");
-    }
+    let frame = composed_frame(&app);
+    assert!(frame.contains("Ladder Options · searching… "), "{frame}");
+    hold::<Swept>(&mut app, false);
     settle(&mut app);
     let frame = redrawn(&mut app);
     assert!(frame.contains("s ─"), "the title says how long: {frame}");

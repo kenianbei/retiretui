@@ -283,8 +283,7 @@ pub fn write_new(In(path): In<PathBuf>, world: &mut World) {
         journal::warn(refusal);
         return;
     }
-    documents::switch(In(path.clone().into()), world);
-    if world.resource::<Session>().plan_path.as_ref() == Some(&path) {
+    if documents::land(path.clone().into(), world) {
         world.resource_mut::<Composed>().written = Some(path);
     }
 }

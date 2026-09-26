@@ -19,8 +19,8 @@ use super::nav::{self, Page};
 use super::picker_tests::is_palette_open;
 use super::session::{NO_DOCUMENT, Session, YearCursor};
 use super::support::{
-    self, ROOMY, SIZE, active_page as active, commit_edit, composed_frame, headless_app,
-    headless_app_at, is_browsing, let_pass, press_ctrl, press_key, said, show,
+    self, ROOMY, SIZE, active_page as active, change_on_disk, commit_edit, composed_frame,
+    headless_app, headless_app_at, is_browsing, let_pass, press_ctrl, press_key, said, show,
 };
 
 /// The pages whose root takes room in the body.
@@ -276,14 +276,6 @@ fn r_reloads_edits_and_keeps_the_view_on_failure() {
     let frame = composed_frame(&app);
     assert!(frame.contains("reload failed"), "{frame}");
     assert_eq!(plan_name(&app), "edited-plan", "last good view survives");
-}
-
-/// Writes `text` over `path` a moment after its last write, so its mtime
-/// moves, and lets the watch's beat come round.
-fn change_on_disk(app: &mut App, path: &std::path::Path, text: &str) {
-    std::thread::sleep(Duration::from_millis(50));
-    std::fs::write(path, text).unwrap();
-    let_pass(app, Duration::from_secs_f32(super::watch::POLL_SECONDS));
 }
 
 #[test]

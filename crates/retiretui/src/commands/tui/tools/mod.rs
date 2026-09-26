@@ -125,6 +125,10 @@ pub struct Tool<R: Found> {
     refused: Option<String>,
     /// Zero is the plan's own row.
     highlighted: usize,
+    /// A test's hold on the answer, so what shows while a search runs can
+    /// be looked at however fast it answers.
+    #[cfg(test)]
+    is_held: bool,
 }
 
 impl<R: Found> Default for Tool<R> {
@@ -134,6 +138,8 @@ impl<R: Found> Default for Tool<R> {
             found: None,
             refused: None,
             highlighted: 0,
+            #[cfg(test)]
+            is_held: false,
         }
     }
 }
@@ -189,6 +195,10 @@ impl<R: Found> Tool<R> {
     }
 
     fn has_answered(&self) -> bool {
+        #[cfg(test)]
+        if self.is_held {
+            return false;
+        }
         let running = self.running.as_ref();
         running.is_some_and(|running| running.worker.is_finished())
     }
@@ -349,6 +359,12 @@ pub fn settle_all(app: &mut bevy_app::App) {
             .resource::<super::overview::Better>()
             .is_running()
     });
+}
+
+/// Holds a tool's answer back until released, or releases it.
+#[cfg(test)]
+pub fn hold<R: Found>(app: &mut bevy_app::App, is_held: bool) {
+    app.world_mut().resource_mut::<Tool<R>>().is_held = is_held;
 }
 
 #[cfg(test)]

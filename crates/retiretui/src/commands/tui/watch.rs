@@ -177,8 +177,8 @@ mod tests {
         let overlay =
             super::super::support::scenario_over(&base.file_name().unwrap().to_string_lossy());
         let scenario = scratch("chain-overlay", &overlay);
-        let (plan, files) = crate::commands::load_plan_with_files(&scenario);
-        let plan = plan.unwrap();
+        let mut files = Vec::new();
+        let plan = crate::commands::load_plan_with_files(&scenario, &mut files).unwrap();
         assert_eq!(plan.plan.name.as_deref(), Some("variant"));
         assert_eq!(files.len(), 2, "{files:?}");
         assert_eq!(files[1], base.canonicalize().unwrap());

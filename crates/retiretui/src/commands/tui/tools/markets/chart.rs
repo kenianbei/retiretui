@@ -85,7 +85,9 @@ fn redraw<R: MarketTool>(
     mut panes: Query<&mut Framed>,
 ) {
     let at = tool.highlighted;
-    let is_new_chart = charts.iter_mut().any(|(chart, ..)| chart.is_added());
+    let is_new_chart = charts
+        .iter_mut()
+        .any(|(chart, part, _)| chart.is_added() && part.0 == R::PAGE && part.1 == View::Bands);
     if !(tool.is_changed()
         || theme.is_changed()
         || view.is_changed()

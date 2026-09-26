@@ -82,6 +82,17 @@ pub fn let_pass(app: &mut App, by: Duration) {
     app.update();
 }
 
+/// Writes `text` over `path` a moment after its last write, so its mtime
+/// moves, and lets the watch's beat come round.
+pub fn change_on_disk(app: &mut App, path: &std::path::Path, text: &str) {
+    std::thread::sleep(Duration::from_millis(50));
+    std::fs::write(path, text).unwrap();
+    let_pass(
+        app,
+        Duration::from_secs_f32(crate::commands::tui::watch::POLL_SECONDS),
+    );
+}
+
 /// Types `text` one key press per character.
 pub fn type_text(app: &mut App, text: &str) {
     for character in text.chars() {
