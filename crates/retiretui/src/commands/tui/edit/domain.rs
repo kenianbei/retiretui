@@ -1,7 +1,5 @@
-use std::collections::BTreeSet;
-
 use bevy_ecs::prelude::Commands;
-use retiretui_engine::plan::{ID_KEY, Plan};
+use retiretui_engine::plan::{ID_KEY, Plan, fresh_id};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use toml::{Table, Value};
@@ -459,22 +457,16 @@ fn blank<D: Domain>(plan: &Plan) -> Table {
 /// The lowest `{kind}-{n}` no item of the domain holds, `kind` the first
 /// word of its singular.
 fn free_id<D: Domain>(plan: &Plan) -> String {
-    let taken: BTreeSet<String> = D::items(plan)
+    let taken: Vec<Table> = D::items(plan).iter().map(to_table).collect();
+    let ids = taken
         .iter()
-        .filter_map(|item| match to_table(item).remove(D::IDENTITY) {
-            Some(Value::String(id)) => Some(id),
-            _ => None,
-        })
-        .collect();
+        .filter_map(|item| item.get(D::IDENTITY).and_then(Value::as_str));
     let kind = D::SINGULAR
         .split(' ')
         .next()
         .unwrap_or_default()
         .to_lowercase();
-    (1..=taken.len() + 1)
-        .map(|n| format!("{kind}-{n}"))
-        .find(|id| !taken.contains(id))
-        .unwrap_or(kind)
+    fresh_id(&kind, ids)
 }
 
 fn remove<D: Domain>(plan: &mut Plan, index: usize) {

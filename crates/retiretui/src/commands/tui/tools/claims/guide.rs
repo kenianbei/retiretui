@@ -11,7 +11,7 @@ use bevy_ecs::system::SystemParam;
 use bevy_input_focus::InputFocus;
 use plurimus::core::UiWidget;
 use retiretui_engine::optimize::ClaimSearch;
-use retiretui_engine::plan::{Dollars, Person, Plan};
+use retiretui_engine::plan::{Dollars, Item, Person, Plan};
 use retiretui_engine::tax::MONTHS_PER_YEAR;
 
 use super::super::options::OptionsTable;

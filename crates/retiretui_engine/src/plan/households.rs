@@ -50,13 +50,6 @@ pub struct Person {
 }
 
 impl Person {
-    /// What the person is called where they are shown: their name, or
-    /// their id where they have none.
-    #[must_use]
-    pub fn display_name(&self) -> &str {
-        self.name.as_deref().unwrap_or(&self.id)
-    }
-
     /// The age this person reaches during the given calendar year.
     #[must_use]
     pub fn age_in_year(&self, year: i16) -> i16 {

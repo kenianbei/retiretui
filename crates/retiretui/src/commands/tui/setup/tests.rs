@@ -170,8 +170,8 @@ fn the_plan_is_built_from_the_answers_as_they_stand_at_create() {
     answer(&mut app, FilingStatus::Single, "name = \"Pat\"\n");
     create_as(&mut app, "pat");
     let plan = &app.world().resource::<Draft>().plan;
-    assert_eq!(plan.household.people[0].id, "pat", "the corrected name");
-    assert!(plan.accounts.iter().all(|account| account.owner == "pat"));
+    assert_eq!(plan.household.people[0].id, "pat-1", "the corrected name");
+    assert!(plan.accounts.iter().all(|account| account.owner == "pat-1"));
 }
 
 #[test]
@@ -214,7 +214,7 @@ fn an_unsaved_document_is_asked_about_before_the_new_plan_is_named() {
     let second = path.with_file_name("second.toml");
     assert_eq!(document(&app), Some(second), "and then the new plan opens");
     let people = &app.world().resource::<Draft>().plan.household.people;
-    assert_eq!(people[0].id, "sam", "as the plan the answers made");
+    assert_eq!(people[0].id, "sam-1", "as the plan the answers made");
     assert_eq!(
         std::fs::read_to_string(&path).expect("the document"),
         saved,

@@ -1,7 +1,7 @@
 //! The Milestones pane: the plan's key years in order, each beside the
 //! item it comes from.
 
-use retiretui_engine::plan::{Allocation, IncomeKind, Plan, TreatmentClass};
+use retiretui_engine::plan::{Allocation, IncomeKind, Item, Plan, TreatmentClass};
 use retiretui_engine::project::{Timeline, YearRow};
 use retiretui_engine::tax::{MEDICARE_AGE, rmd_start_age};
 
@@ -124,8 +124,7 @@ fn contributions_ending(plan: &Plan, timeline: &Timeline) -> Vec<Entry> {
     let each = plan.contributions.iter().enumerate();
     each.filter_map(|(at, contribution)| {
         let year = timeline.contributions.get(&contribution.id)?.end?;
-        let name = contribution.name.as_deref().unwrap_or(&contribution.id);
-        let text = format!("{name} ends");
+        let text = format!("{} ends", contribution.display_name());
         Some(Entry::dated(year, text, (Page::Contributions, Some(at))))
     })
     .collect()

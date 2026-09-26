@@ -2,6 +2,7 @@
 //! file's own grammar and the schema's own error messages. A bare word that
 //! is not a TOML value is a string, which is what most identifiers are.
 
+use retiretui_engine::plan::{self, PlanError};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use toml::{Table, Value};
@@ -183,13 +184,9 @@ fn set_in_list(items: &mut Vec<Value>, key: &str, value: Option<Value>) -> bool 
     items.is_empty()
 }
 
-/// An item as the table its fields edit. Both directions go through TOML
-/// text: the in-memory value (de)serializers do not carry native dates.
+/// An item as the table its fields edit.
 pub fn to_table<T: Serialize>(item: &T) -> Table {
-    toml::to_string(item)
-        .ok()
-        .and_then(|text| text.parse().ok())
-        .unwrap_or_default()
+    plan::to_table(item).unwrap_or_default()
 }
 
 /// The item a table describes, or the schema's complaint.
@@ -198,14 +195,14 @@ pub fn to_table<T: Serialize>(item: &T) -> Table {
 ///
 /// The deserialization message, trimmed of its TOML position prefix.
 pub fn from_table<T: DeserializeOwned>(table: Table) -> Result<T, String> {
-    let text = toml::to_string(&table).map_err(|error| error.to_string())?;
-    toml::from_str(&text).map_err(|error: toml::de::Error| {
-        error
+    plan::from_table(&table).map_err(|error| match error {
+        PlanError::Parse(error) => error
             .message()
             .lines()
             .next()
             .unwrap_or("invalid value")
-            .to_owned()
+            .to_owned(),
+        PlanError::Serialize(error) => error.to_string(),
     })
 }
 

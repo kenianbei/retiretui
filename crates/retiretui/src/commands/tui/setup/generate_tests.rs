@@ -1,5 +1,5 @@
 use retiretui_engine::params::TaxTables;
-use retiretui_engine::plan::{FilingStatus, Plan, PlanDate, Trigger};
+use retiretui_engine::plan::{FilingStatus, Item, Plan, PlanDate, Trigger};
 use retiretui_engine::project::{project, validate_plan};
 
 use super::tests::as_table;
@@ -132,7 +132,7 @@ fn a_salary_stops_where_the_person_retires_and_a_retiree_has_none() {
     let salary = working
         .income
         .iter()
-        .find(|income| income.id == "salary-jordanexample")
+        .find(|income| income.id == "salary-jordanexample-1")
         .expect("the salary");
     assert!(salary.end.is_some(), "it ends at the retirement");
 
@@ -169,7 +169,7 @@ fn a_working_person_with_no_figure_typed_gets_a_benefit_computed_from_a_career()
     let tables = TaxTables::embedded();
     let untyped = ANSWERED.replace("social_security = 40000\n", "");
     let plan = generated(FilingStatus::MarriedJoint, LifeStage::Working, &untyped);
-    let computed = benefit_of(&plan, "jordanexample");
+    let computed = benefit_of(&plan, "jordanexample-1");
     assert_eq!(computed.amount, None, "left for the engine");
     assert!(computed.is_derived());
     assert_eq!(
@@ -189,7 +189,7 @@ fn a_working_person_with_no_figure_typed_gets_a_benefit_computed_from_a_career()
         "scaled down by the wage index"
     );
 
-    let typed = benefit_of(&plan, "alex");
+    let typed = benefit_of(&plan, "alex-1");
     assert_eq!(typed.amount, Some(30_000), "the partner's figure stands");
     assert!(plan.household.people[1].earnings.is_empty());
 
@@ -197,7 +197,7 @@ fn a_working_person_with_no_figure_typed_gets_a_benefit_computed_from_a_career()
     let found = retiretui_engine::optimize::optimize_claims(&plan, &tables, &[], &[]).unwrap();
     assert_eq!(
         found.incomes,
-        ["ss-jordanexample"],
+        ["ss-jordanexample-1"],
         "and the claim search takes it"
     );
     assert_eq!(found.candidates.len(), 9);
@@ -212,7 +212,7 @@ fn a_retiree_s_benefit_is_computed_from_what_they_last_earned() {
         "retirement_age = 45\nworking_since = 1998",
     );
     let retired = generated(FilingStatus::Single, LifeStage::Retired, &stopped);
-    let computed = benefit_of(&retired, "jordanexample");
+    let computed = benefit_of(&retired, "jordanexample-1");
     assert_eq!(computed.amount, None, "a retiree's is computed too");
     let record = &retired.household.people[0].earnings;
     assert_eq!(record.keys().next(), Some(&1998), "from when they started");
@@ -244,7 +244,7 @@ fn a_name_that_writes_nothing_down_still_gets_an_id_of_its_own() {
         .iter()
         .map(|person| person.id.as_str())
         .collect();
-    assert_eq!(ids, ["person", "person2"], "{ids:?}");
+    assert_eq!(ids, ["person-1", "person-2"], "{ids:?}");
 }
 
 #[test]
@@ -260,7 +260,7 @@ fn two_people_spelt_the_same_are_still_two_people() {
         .iter()
         .map(|person| person.id.as_str())
         .collect();
-    assert_eq!(ids, ["samlee", "samlee2"], "{ids:?}");
+    assert_eq!(ids, ["samlee-1", "samlee-2"], "{ids:?}");
     let issues = validate_plan(&plan, &TaxTables::embedded());
     assert!(issues.is_empty(), "{issues:?}");
 }
@@ -271,5 +271,5 @@ fn a_typed_name_is_kept_as_the_person_s_name_beside_the_id_made_of_it() {
     let partner = &plan.household.people[1];
     assert_eq!(partner.name.as_deref(), Some("Alex"));
     assert_eq!(partner.display_name(), "Alex");
-    assert_eq!(partner.id, "alex");
+    assert_eq!(partner.id, "alex-1");
 }

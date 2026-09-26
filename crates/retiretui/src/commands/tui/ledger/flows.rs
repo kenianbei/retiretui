@@ -13,7 +13,7 @@ use plurimus::core::ratatui_core::text::Line;
 use plurimus::ui::ScrollArea;
 use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
 use plurimus::widgets::{TableColumns, WidgetSystems};
-use retiretui_engine::plan::{Dollars, Plan};
+use retiretui_engine::plan::{Dollars, Item, Plan};
 use retiretui_engine::project::{Action, ContributionNote, YearRow};
 
 use crate::commands::actions::{collect_warnings, note_phrase};
