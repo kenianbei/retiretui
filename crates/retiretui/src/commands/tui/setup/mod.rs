@@ -10,6 +10,7 @@ use bevy_app::{App, Update};
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
 use bevy_ecs::prelude::{Commands, Entity, In, IntoScheduleConfigs, Res, ResMut, Resource, World};
 use retiretui_engine::plan::{Dollars, FilingStatus, Plan};
+use retiretui_engine::project::validate_plan;
 use serde::Deserialize;
 
 use super::command::Outcome;
@@ -279,7 +280,12 @@ pub fn write_new(In(path): In<PathBuf>, world: &mut World) {
     let Some(plan) = world.resource_mut::<Composed>().plan.take() else {
         return;
     };
-    if let Err(refusal) = edit::write_draft(&Draft::new(plan, false), &path) {
+    let tables = &world.resource::<Session>().tables;
+    let written = match validate_plan(&plan, tables).first() {
+        Some(issue) => Err(format!("not saved: {issue}")),
+        None => crate::commands::write_plan(&path, &plan),
+    };
+    if let Err(refusal) = written {
         journal::warn(refusal);
         return;
     }

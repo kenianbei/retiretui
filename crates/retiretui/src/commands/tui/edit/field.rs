@@ -295,10 +295,7 @@ impl Fields<'_, '_> {
     pub fn show_rates(&mut self, form: Entity, editing: &Editing, focused: Option<Entity>) {
         let widgets: Vec<Entity> = self.tree.children.iter_descendants(form).collect();
         for widget in widgets {
-            if let Ok((field, mut value)) = self.sliders.get_mut(widget) {
-                let rate = get_path(&editing.snapshot, field.spec.key).and_then(Value::as_float);
-                *value = SliderValue(rate.unwrap_or(0.0) as f32);
-            }
+            self.show_slider_at(widget, editing);
             let is_rate = |(field, _): (&FormField, _)| {
                 matches!(field.spec.kind, FieldKind::Rate | FieldKind::Share)
             };
@@ -308,12 +305,19 @@ impl Fields<'_, '_> {
         }
     }
 
+    fn show_slider_at(&mut self, widget: Entity, editing: &Editing) {
+        if let Ok((field, mut value)) = self.sliders.get_mut(widget) {
+            let rate = get_path(&editing.snapshot, field.spec.key).and_then(Value::as_float);
+            *value = SliderValue(rate.unwrap_or(0.0) as f32);
+        }
+    }
+
     pub fn show(&mut self, form: Entity, editing: &Editing, plan: &Plan, focused: Option<Entity>) {
-        self.show_texts(form, editing, focused);
-        self.show_rates(form, editing, focused);
         let table = &editing.snapshot;
         let widgets: Vec<Entity> = self.tree.children.iter_descendants(form).collect();
         for widget in widgets {
+            self.show_text_at(widget, editing, focused == Some(widget));
+            self.show_slider_at(widget, editing);
             if let Ok((field, mut select)) = self.selects.get_mut(widget) {
                 let value = get_path(table, field.spec.key);
                 // An order's place is offered every word again, since what

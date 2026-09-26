@@ -4,11 +4,10 @@
 use plurimus::term::KeyCode;
 
 use super::{
-    clear_field, draft_plan, fixture_app, focused, is_editing, open, open_travel, shows_row,
-    tab_to_field,
+    clear_field, draft_plan, fixture_app, is_editing, open, open_travel, shows_row, tab_to_field,
+    tab_to_key,
 };
 use crate::commands::tui::edit::Draft;
-use crate::commands::tui::edit::build::FormField;
 use crate::commands::tui::nav::Page;
 use crate::commands::tui::support::{
     composed_frame, press_key, press_shift, said, show, type_text,
@@ -127,10 +126,7 @@ fn a_value_with_no_use_cleared_by_hand_leaves_with_the_keyboard() {
     let mut app = fixture_app();
     app.world_mut().resource_mut::<Draft>().plan.accounts[0].basis = Some(1_000);
     open(&mut app, Page::Accounts);
-    super::fields::tab_until(&mut app, "basis", |app| {
-        let field = app.world().get::<FormField>(focused(app));
-        field.is_some_and(|field| field.spec.key == "basis")
-    });
+    tab_to_key(&mut app, "basis");
     clear_field(&mut app);
     assert!(
         shows_row(&composed_frame(&app), "Basis"),
