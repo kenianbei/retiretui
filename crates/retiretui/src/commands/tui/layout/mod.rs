@@ -1,6 +1,5 @@
 //! The frame every view is laid out in: one `bevy_ui` tree the terminal's
-//! size fills, and the notice that stands in for it below the size the
-//! shell needs.
+//! size fills.
 
 use bevy_app::{App, PostUpdate, Startup, Update};
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
@@ -13,15 +12,13 @@ use plurimus::bui::{BuiPlugin, ComputedNodeRect};
 use plurimus::core::ratatui_core::layout::{Position, Rect};
 use plurimus::core::ratatui_core::style::{Modifier, Style};
 use plurimus::core::{
-    DefaultCamera, ResolvedViewport, TerminalCamera, TerminalSize, UiArea, UiHidden, UiWidget,
-    local_area,
+    DefaultCamera, ResolvedViewport, TerminalCamera, UiArea, UiWidget, local_area,
 };
 use plurimus::ui::{
     ComputedWidgetArea, ScrollArea, ScrollOffset, UiStyle, apply_offset, max_offset,
 };
 use plurimus::widgets::ratatui_widgets::block::Block;
 use plurimus::widgets::ratatui_widgets::borders::Borders;
-use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
 
 mod clip;
 mod cursor;
@@ -32,28 +29,9 @@ pub use cursor::{CURSOR_COLS, Rests, list_cursor, table_cursor};
 pub use list::{fill_wrapped, row_width, spawn_scrolled_list};
 
 use super::theme::{Repainted, Theme};
-use super::{edit, tabbar};
-
-/// The smallest terminal anything here is laid out for. What the shell
-/// derives it needs only ever raises the minimum above this, never below.
-const FLOOR: TerminalSize = TerminalSize::new(128, 32);
-
-/// The smallest terminal the shell lays itself out in: what the tab row
-/// and the least form, one field over its foot, need, or the floor where
-/// they need less; a taller form scrolls.
-/// Derived so that a renamed tab or a domain that gains a field cannot
-/// leave it silently stale.
-pub const MIN_SIZE: TerminalSize = TerminalSize::new(
-    raised(FLOOR.cols, tabbar::TABS_COLS + tabbar::status::MIN_COLS),
-    raised(FLOOR.rows, CHROME_ROWS + edit::SHORTEST_FORM_ROWS),
-);
 
 /// Rows the frame spends on chrome: the tab row and the hint row.
-const CHROME_ROWS: u16 = TAB_ROW_ROWS + HINT_ROWS;
-
-const fn raised(floor: u16, needed: u16) -> u16 {
-    if needed > floor { needed } else { floor }
-}
+pub const CHROME_ROWS: u16 = TAB_ROW_ROWS + HINT_ROWS;
 
 /// Rows the tab row takes: a boxed tab is its label between the two rows
 /// of its border. `tabbar` asserts its look against this.
@@ -84,20 +62,12 @@ pub struct Body;
 #[derive(Component, Debug)]
 pub struct HintRow;
 
-/// The line shown in place of the frame below [`MIN_SIZE`].
-#[derive(Component, Debug)]
-struct Notice;
-
 pub fn plugin(app: &mut App) {
     app.add_plugins((BuiPlugin, cursor::plugin));
     app.add_systems(Startup, spawn_frame);
     app.add_systems(
         Update,
-        (
-            guard_size,
-            hold_offsets,
-            (draw_rules, emphasise).in_set(Repainted),
-        ),
+        (hold_offsets, (draw_rules, emphasise).in_set(Repainted)),
     );
     app.add_systems(PostUpdate, sync_areas.after(UiSystems::PostLayout));
 }
@@ -296,43 +266,6 @@ pub fn spawn_frame(mut commands: Commands) {
         placed(),
         ChildOf(root),
     ));
-    let notice = format!(
-        "terminal too small (minimum {}x{})",
-        MIN_SIZE.cols, MIN_SIZE.rows
-    );
-    commands.spawn((
-        Notice,
-        UiWidget::new(Paragraph::new(notice)),
-        UiArea::Fill,
-        UiHidden,
-    ));
-}
-
-#[must_use]
-pub fn fits(size: TerminalSize) -> bool {
-    size.cols >= MIN_SIZE.cols && size.rows >= MIN_SIZE.rows
-}
-
-fn guard_size(
-    size: Res<TerminalSize>,
-    mut roots: Query<&mut Node, With<Root>>,
-    notices: Query<Entity, With<Notice>>,
-    mut commands: Commands,
-) {
-    if !size.is_changed() {
-        return;
-    }
-    let is_fitting = fits(*size);
-    for mut root in &mut roots {
-        set_display(&mut root, is_fitting);
-    }
-    for notice in &notices {
-        if is_fitting {
-            commands.entity(notice).insert(UiHidden);
-        } else {
-            commands.entity(notice).remove::<UiHidden>();
-        }
-    }
 }
 
 // Layout speaks in screen cells and `UiArea::Fixed` in camera-local ones.
@@ -353,17 +286,5 @@ fn sync_areas(
     };
     for (node, mut area) in &mut widgets {
         area.set_if_neq(UiArea::Fixed(local_area(node.visible, viewport)));
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn the_frame_needs_the_minimum_size() {
-        assert!(!fits(TerminalSize::new(127, 32)));
-        assert!(!fits(TerminalSize::new(128, 31)));
-        assert!(fits(MIN_SIZE));
     }
 }

@@ -31,7 +31,7 @@ pub fn plugin(app: &mut App) {
 const TITLE: &str = "Confirm";
 const WIDTH: u16 = 48;
 /// What the question has of the width, inside the frame.
-const TEXT_COLS: u16 = WIDTH - 2;
+const TEXT_COLS: u16 = WIDTH - overlay::CHROME;
 /// Past the question's rows: a blank one, and the one the answers sit on.
 const ANSWER_ROWS: u16 = 2;
 #[derive(Component, Default, Debug)]

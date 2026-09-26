@@ -258,9 +258,11 @@ fn spawn_year_rows(
 
 const YEAR_COLS: u16 = 5;
 const AGE_COLS: u16 = 6;
-/// Columns of the terminal the rows never get: the pane's borders, the
-/// cursor mark, and the scroll bar.
-const LEDGER_CHROME: u16 = 5;
+/// The pane's left and right borders.
+const BORDER_COLS: u16 = 2;
+const SCROLL_BAR_COLS: u16 = 1;
+/// Columns of the terminal the rows never get.
+const LEDGER_CHROME: u16 = BORDER_COLS + layout::CURSOR_COLS + SCROLL_BAR_COLS;
 /// Income, spending, tax, withdrawn and net worth, which every width shows.
 const CORE_MONEY_COLUMNS: usize = 5;
 

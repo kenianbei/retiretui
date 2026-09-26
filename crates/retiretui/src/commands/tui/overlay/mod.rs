@@ -32,7 +32,7 @@ pub fn plugin(app: &mut App) {
     app.add_systems(PostUpdate, centre_boxes.before(UiSystems::Layout));
 }
 
-/// The border and the cell kept clear inside it, on each side.
+/// Cells a centred box's frame takes across either axis: one on each side.
 pub const CHROME: u16 = 2;
 
 /// The share of the body a panel drawn up from its bottom covers, per

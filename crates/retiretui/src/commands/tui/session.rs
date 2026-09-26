@@ -26,18 +26,26 @@ pub const NO_DOCUMENT: &str = "no document is open";
 
 const NO_DOCUMENT_NAME: &str = "no document";
 
+/// The account a household starts with, which is also where unspent
+/// income sweeps.
+pub const CASH_ID: &str = "cash";
+
+/// The age every starting plan runs to.
+pub const HORIZON_AGE: u8 = 95;
+
+/// The inflation every starting plan assumes.
+pub const INFLATION: f64 = 0.025;
+
 /// The smallest plan that validates: one person and the cash account
 /// surplus lands in, starting `start_year`.
 pub fn blank_plan(start_year: i16) -> String {
-    BLANK_PLAN.replacen("START_YEAR", &start_year.to_string(), 1)
-}
-
-const BLANK_PLAN: &str = r#"schema = 1
+    format!(
+        r#"schema = 1
 
 [plan]
-start_year = START_YEAR
-horizon_age = 95
-inflation = 0.025
+start_year = {start_year}
+horizon_age = {HORIZON_AGE}
+inflation = {INFLATION}
 
 [household]
 filing = "single"
@@ -47,11 +55,13 @@ id = "me"
 birth = 1970-01-01
 
 [[accounts]]
-id = "cash"
+id = "{CASH_ID}"
 kind = "cash"
 owner = "me"
 balance = 0
-"#;
+"#
+    )
+}
 
 /// The projected plan every view derives from; replaced wholesale on reload.
 #[derive(Resource)]
