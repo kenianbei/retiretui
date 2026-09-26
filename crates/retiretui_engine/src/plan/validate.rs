@@ -323,13 +323,10 @@ impl<'a> Checker<'a> {
                 "at most two pre-plan years are looked back to",
             );
         }
-        for (i, _) in medicare
-            .prior_magi
-            .iter()
-            .enumerate()
-            .filter(|(_, magi)| **magi < 0)
-        {
-            self.push(format!("medicare.prior_magi[{i}]"), "must not be negative");
+        for (i, &magi) in medicare.prior_magi.iter().enumerate() {
+            if magi < 0 {
+                self.push(format!("medicare.prior_magi[{i}]"), "must not be negative");
+            }
         }
     }
 

@@ -196,16 +196,10 @@ fn holds_place(spec: &FieldSpec, place: usize, item: Option<&Table>) -> bool {
         FieldKind::Listed(back) => {
             let list = item.and_then(|item| codec::get_path(item, spec.key));
             list.and_then(Value::as_array)
-                .is_some_and(|list| list.len() == place + back + 1)
+                .is_some_and(|list| list.len().checked_sub(back + 1) == Some(place))
         }
         _ => true,
     }
-}
-
-/// The place `path` names in the list at `key`, where it ends in one.
-fn list_place(path: &str, key: &str) -> Option<usize> {
-    let (list, digits) = path.strip_suffix(']')?.rsplit_once('[')?;
-    list.ends_with(key).then(|| digits.parse().ok())?
 }
 
 /// The longest root wins, so `household.people` is not the household. A
@@ -225,7 +219,7 @@ fn locate(path: &str) -> Option<Located> {
     let keyed_root = root.rsplit('.').next().map_or(0, str::len);
     let field = field_at(ops.fields, within.trim_start_matches('.'))
         .or_else(|| field_at(ops.fields, &path[root.len() - keyed_root..]));
-    let place = field.and_then(|spec| list_place(path, spec.key));
+    let place = field.and_then(|spec| codec::list_place(path, spec.key));
     Some(Located {
         ops,
         index,

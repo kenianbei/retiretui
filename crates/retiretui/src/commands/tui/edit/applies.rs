@@ -153,6 +153,16 @@ impl Editing {
         !newly.is_empty()
     }
 
+    /// Whether the field `key` is on show: used by its own rule, or stale
+    /// and not yet cleared and left.
+    pub(super) fn is_on_show(&self, key: &str) -> bool {
+        let spec = super::cells::field_of(self.ops.fields, key);
+        spec.is_none_or(|spec| {
+            spec.shown.is_none_or(|shown| shown(&self.snapshot))
+                || (self.stale.contains(&spec.key) && !self.cleared.contains(&spec.key))
+        })
+    }
+
     fn applies(&self, spec: &FieldSpec) -> bool {
         spec.shown.is_none_or(|shown| shown(&self.snapshot)) || self.stale.contains(&spec.key)
     }

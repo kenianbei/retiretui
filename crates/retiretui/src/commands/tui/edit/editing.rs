@@ -26,8 +26,9 @@ use crate::commands::tui::pane::Framed;
 use crate::commands::tui::scope::KeyScope;
 use crate::commands::tui::session::Session;
 
-/// Where an item is stored: where it sits in the plan, or, while a new one
-/// is composed, the list it is to join.
+/// Where an item is stored: where it sat in the plan when opened - the
+/// first place it is looked for - or, while a new one is composed, the
+/// list it is to join.
 #[derive(Clone, Copy)]
 pub enum Slot {
     At(Row),
@@ -58,8 +59,8 @@ pub(super) struct Editing {
     /// Fields the item had no use for as it was opened, yet held: they stay
     /// on show, to be seen and cleared by hand rather than by the form.
     pub(super) stale: Vec<&'static str>,
-    /// Stale fields cleared by hand and left: hidden, and still written as
-    /// cleared.
+    /// Stale fields cleared by hand and left: no longer kept on show for
+    /// being stale, though still stale, so applying writes them cleared.
     pub(super) cleared: Vec<&'static str>,
     /// What is wrong with each field whose widgets do not yet make a value,
     /// by its key: what they hold is in no table the snapshot could.

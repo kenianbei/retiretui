@@ -26,7 +26,7 @@ use retiretui_engine::plan::Plan;
 use toml::Value;
 
 use super::build::FormField;
-use super::cells::field_text;
+use super::cells::{field_text, parse_field};
 use super::codec::get_path;
 use super::domain::{FieldKind, FieldSpec};
 use super::editing::Editing;
@@ -34,7 +34,6 @@ use super::group::{nth, nth_back};
 use super::select::{Select, spawn_select};
 use super::trigger::Slot;
 use crate::commands::tui::layout::{placed, sized};
-use crate::commands::tui::present;
 use crate::commands::tui::theme::Theme;
 
 /// A widget activated by space alone, leaving Enter to apply the item.
@@ -275,9 +274,11 @@ impl Fields<'_, '_> {
             return;
         };
         if editing.incomplete.contains_key(field.spec.key) {
-            let is_money = matches!(field.spec.kind, FieldKind::Money | FieldKind::Listed(_));
-            if let Some(amount) = present::parse_money(text.value()).filter(|_| is_money) {
-                let own = field_text(field.spec.kind, Some(&Value::Integer(amount)), is_focused);
+            // A trigger's operand is typed as the file states it.
+            let kind = field.spec.kind;
+            let read = parse_field(kind, text.value()).filter(|_| kind != FieldKind::Trigger);
+            if let Some(read) = read {
+                let own = field_text(kind, Some(&read), is_focused);
                 show_text(&mut text, own);
             }
             return;

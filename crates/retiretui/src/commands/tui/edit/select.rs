@@ -251,11 +251,8 @@ pub fn sync_selects(
         let emptying = blank.map(|blank| (Choice(None), blank));
         // What only the menu empties - a trigger's kind - is empty first,
         // where what it stands for comes before any when.
-        let (first, last) = if select.skips_blank {
-            (emptying, None)
-        } else {
-            (None, emptying)
-        };
+        let first = emptying.filter(|_| select.skips_blank);
+        let last = emptying.filter(|_| !select.skips_blank);
         for (choice, text) in first.into_iter().chain(rows).chain(last) {
             commands
                 .spawn((menu_item(text.to_owned()), choice, ChildOf(popup)))

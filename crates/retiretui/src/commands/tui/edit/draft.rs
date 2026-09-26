@@ -4,6 +4,7 @@ use std::path::Path;
 
 use bevy_ecs::prelude::{Res, ResMut, Resource};
 use bevy_ecs::system::SystemParam;
+use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::{Issue, Plan};
 use retiretui_engine::project::{project, validate_plan};
 use toml::{Table, Value};
@@ -57,6 +58,16 @@ impl Draft {
             is_dirty: false,
             is_read_only,
             issues: Vec::new(),
+        }
+    }
+
+    /// `plan` as a draft of its own, its issues found against `tables`, for
+    /// a write with no session behind it.
+    pub fn validated(plan: Plan, tables: &TaxTables) -> Self {
+        let issues = validate_plan(&plan, tables);
+        Self {
+            issues,
+            ..Self::new(plan, false)
         }
     }
 

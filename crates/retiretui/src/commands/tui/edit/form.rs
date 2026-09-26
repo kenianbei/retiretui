@@ -125,6 +125,9 @@ impl FormIssues<'_, '_> {
         form: Entity,
         spec: &FieldSpec,
     ) -> Option<&'a str> {
+        if located.is_empty() {
+            return None;
+        }
         let ops = self.targets.forms.get(form).ok()?.ops;
         let index = match (ops.list, self.shown()) {
             (None, _) => None,

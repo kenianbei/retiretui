@@ -42,6 +42,16 @@ const KEY_SEPARATOR: char = '.';
 /// What opens an index into a list, in an issue's path.
 const INDEX_OPEN: char = '[';
 
+/// What closes an index into a list, in an issue's path.
+const INDEX_CLOSE: char = ']';
+
+/// The place `path` names in the list at `key`, where it ends in one:
+/// `2` of `plan.withdrawal_order[2]`.
+pub fn list_place(path: &str, key: &str) -> Option<usize> {
+    let (list, digits) = path.strip_suffix(INDEX_CLOSE)?.rsplit_once(INDEX_OPEN)?;
+    list.ends_with(key).then(|| digits.parse().ok())?
+}
+
 /// Whether `key` reaches into the table - or, in an issue's path, the
 /// list - at `outer`.
 pub fn is_within(key: &str, outer: &str) -> bool {
