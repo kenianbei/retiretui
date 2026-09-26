@@ -10,6 +10,8 @@ use bevy_ui::{FlexDirection, Node, Val};
 use plurimus::ui::ScrollArea;
 use plurimus::widgets::WidgetSystems;
 
+use crate::commands::tui::pane;
+
 pub fn plugin(app: &mut App) {
     app.add_systems(
         Update,
@@ -20,8 +22,6 @@ pub fn plugin(app: &mut App) {
 /// The most of the page's height the detail takes, the table keeping the
 /// rest.
 const DETAIL_MOST: f32 = 50.0;
-/// A pane's top and bottom borders.
-const PANE_BORDERS: u16 = 2;
 
 /// Where the detail's panes are filled for the cursor year, ahead of the
 /// detail being fitted to them.
@@ -69,7 +69,7 @@ fn fit_detail(
             })
             .max()
             .unwrap_or(0)
-            .saturating_add(PANE_BORDERS);
+            .saturating_add(pane::BORDERS);
         let height = Val::Px(f32::from(wanted));
         if node.height != height {
             node.height = height;

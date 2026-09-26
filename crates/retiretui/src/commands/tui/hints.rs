@@ -15,7 +15,7 @@ use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
 use super::command;
 use super::focus::Ring;
 use super::layout::HintRow;
-use super::scope::KeyScope;
+use super::scope::{KeyScope, Scoped};
 use super::theme::{Repainted, Theme};
 use super::tools::Idle;
 
@@ -58,15 +58,8 @@ fn fitted(mut leading: Vec<Hint>, trailing: &[Hint], cols: usize) -> Vec<Hint> {
 struct Held<'w, 's> {
     focus: Res<'w, InputFocus>,
     parents: Query<'w, 's, &'static ChildOf>,
-    chain: Query<
-        'w,
-        's,
-        (
-            Option<&'static Hints>,
-            Has<ModalOpen>,
-            Option<&'static KeyScope>,
-        ),
-    >,
+    hinted: Query<'w, 's, (Option<&'static Hints>, Has<ModalOpen>)>,
+    scoped: Scoped<'w, 's>,
 }
 
 impl Held<'_, '_> {
@@ -78,19 +71,17 @@ impl Held<'_, '_> {
         let Some(held) = self.focus.get() else {
             return (found, false);
         };
-        let mut widest = None;
-        let mut is_below_modal = true;
+        let owns_keys = self.scoped.of(held) == Some(KeyScope::All);
         for entity in std::iter::once(held).chain(self.parents.iter_ancestors(held)) {
-            let Ok((hints, is_modal, scope)) = self.chain.get(entity) else {
+            let Ok((hints, is_modal)) = self.hinted.get(entity) else {
                 continue;
             };
-            widest = widest.max(scope.copied());
-            if is_below_modal {
-                found.extend(hints.into_iter().flat_map(|hints| hints.0));
-                is_below_modal = !is_modal;
+            found.extend(hints.into_iter().flat_map(|hints| hints.0));
+            if is_modal {
+                break;
             }
         }
-        (found, widest == Some(KeyScope::All))
+        (found, owns_keys)
     }
 }
 

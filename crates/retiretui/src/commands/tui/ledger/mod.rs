@@ -20,7 +20,7 @@ use crate::commands::table::{Column, ages_text, basis_amount, present_classes, y
 
 use super::layout::{self, Body, filling, placed};
 use super::nav::{self, ActivePage, FocusStop, Page};
-use super::pane::{Framed, Pane};
+use super::pane::{self, Framed, Pane};
 use super::present;
 use super::session::{LedgerRun, Projected, RowYear, Shown, track_cursor};
 use super::theme::Theme;
@@ -258,11 +258,9 @@ fn spawn_year_rows(
 
 const YEAR_COLS: u16 = 5;
 const AGE_COLS: u16 = 6;
-/// The pane's left and right borders.
-const BORDER_COLS: u16 = 2;
 const SCROLL_BAR_COLS: u16 = 1;
 /// Columns of the terminal the rows never get.
-const LEDGER_CHROME: u16 = BORDER_COLS + layout::CURSOR_COLS + SCROLL_BAR_COLS;
+const LEDGER_CHROME: u16 = pane::BORDERS + layout::CURSOR_COLS + SCROLL_BAR_COLS;
 /// Income, spending, tax, withdrawn and net worth, which every width shows.
 const CORE_MONEY_COLUMNS: usize = 5;
 

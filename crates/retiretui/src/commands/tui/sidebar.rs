@@ -25,14 +25,13 @@ use super::focus::{self, PageFocus, SidebarLed};
 use super::hints::Hints;
 use super::layout::{self, Body, filling, placed};
 use super::nav::{self, Group, LastShown, Page, PageSystems, ShownSurface, Turn};
-use super::pane::Pane;
+use super::pane::{self, Pane};
 use super::theme::{Repainted, Theme};
 
 /// The cells a sidebar takes of the body: its border, the cursor, and the
 /// widest row.
-pub const SIDEBAR_COLS: u16 = BORDER_COLS + layout::CURSOR_COLS + widest_row();
+pub const SIDEBAR_COLS: u16 = pane::BORDERS + layout::CURSOR_COLS + widest_row();
 
-const BORDER_COLS: u16 = 2;
 /// A count of two digits, with the cell a list keeps clear either side of
 /// one.
 const COUNT_COLS: usize = 4;

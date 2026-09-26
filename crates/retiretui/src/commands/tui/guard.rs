@@ -19,7 +19,7 @@ const FLOOR: TerminalSize = TerminalSize::new(128, 32);
 /// they need less; a taller form scrolls.
 /// Derived so that a renamed tab or a domain that gains a field cannot
 /// leave it silently stale.
-pub const MIN_SIZE: TerminalSize = TerminalSize::new(
+const MIN_SIZE: TerminalSize = TerminalSize::new(
     raised(FLOOR.cols, tabbar::TABS_COLS + tabbar::status::MIN_COLS),
     raised(FLOOR.rows, layout::CHROME_ROWS + edit::SHORTEST_FORM_ROWS),
 );
@@ -50,8 +50,7 @@ fn spawn_notice(mut commands: Commands) {
     ));
 }
 
-#[must_use]
-pub fn fits(size: TerminalSize) -> bool {
+fn fits(size: TerminalSize) -> bool {
     size.cols >= MIN_SIZE.cols && size.rows >= MIN_SIZE.rows
 }
 
