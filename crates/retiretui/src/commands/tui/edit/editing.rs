@@ -2,6 +2,7 @@
 //! was when it was opened, and what is asked before an edit is dropped.
 
 use std::collections::BTreeMap;
+use std::iter;
 
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut, Mut};
 use bevy_ecs::prelude::{Commands, Component, Entity, In, Query, Res, ResMut, Resource, World};
@@ -101,11 +102,18 @@ impl Editing {
         }
     }
 
-    fn stored_at(&self, draft: &Draft) -> usize {
-        match self.slot {
-            Slot::At(Row(index)) => index,
-            Slot::New(list) => (list.count)(&draft.plan),
-        }
+    /// Where the item is stored: where it now sits, followed by what it was
+    /// when opened, so an item moved underneath is still found; `None` once
+    /// nothing is what was opened.
+    fn stored_at(&self, draft: &Draft) -> Option<usize> {
+        let held = match self.slot {
+            Slot::At(Row(held)) => held,
+            Slot::New(list) => return Some((list.count)(&draft.plan)),
+        };
+        let count = self.ops.list.map_or(1, |list| (list.count)(&draft.plan));
+        let is_opened =
+            |index: &usize| (self.ops.item)(draft, *index).as_ref() == Some(&self.pristine);
+        iter::once(held).chain(0..count).find(is_opened)
     }
 
     pub(super) fn is_dirty(&self) -> bool {
@@ -131,9 +139,9 @@ impl Editing {
 #[derive(Component, Default, Debug)]
 pub struct ItemForm;
 
-/// An item is addressed by where it sits in the plan, so one that is no
-/// longer what was opened there may be another item altogether.
-const MOVED_UNDERNEATH: &str =
+/// An item is followed by what it was when opened, so one changed or
+/// renamed underneath may be another item altogether.
+const CHANGED_UNDERNEATH: &str =
     "the plan changed under this edit; discard it and open the item again";
 
 pub(super) const ITEM_HINTS: Hints = Hints(&[("⇥", "next"), ("⏎", "apply"), ("esc", "close")]);
@@ -315,13 +323,10 @@ impl SessionFocus<'_, '_> {
             return false;
         }
         let draft = editor.draft.bypass_change_detection();
-        if let Slot::At(Row(index)) = editing.slot
-            && (editing.ops.item)(draft, index).as_ref() != Some(&editing.pristine)
-        {
-            journal::warn(format!("{}: {MOVED_UNDERNEATH}", editing.title()));
+        let Some(index) = editing.stored_at(draft) else {
+            journal::warn(format!("{}: {CHANGED_UNDERNEATH}", editing.title()));
             return false;
-        }
-        let index = editing.stored_at(draft);
+        };
         let written = editing.written();
         if let Err(message) = (editing.ops.store)(draft, index, written.clone()) {
             let ops = editing.ops;
