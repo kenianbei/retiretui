@@ -10,6 +10,12 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - The minimum versions of the engine's and the binary's dependencies are now the
   versions they are built and checked against.
+- Validation names the entry at fault in a list: a negative prior-year MAGI is
+  reported at `medicare.prior_magi[i]` and a repeated withdrawal class at
+  `plan.withdrawal_order[i]`, rather than at the whole list.
+- An item open in a form while the plan changes underneath is followed to
+  wherever it now sits: applying no longer refuses because an undo or a reload
+  moved it. It is still refused when the item itself was changed or renamed.
 
 ### Fixed
 
@@ -19,6 +25,15 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - After a reload fails, the planner and the Compare page watch the files the
   plan now reads, so fixing a newly named base plan is picked up without
   pressing `r`.
+- An issue against one place of a list in a form - one year's prior income -
+  marks and names that row alone, not every row of the list.
+- A list a form refuses keeps its amounts written as money once the keyboard
+  leaves them, rather than as bare digits.
+- A value an item has no use for, cleared by hand, leaves the form once the
+  keyboard leaves its row.
+- A trigger's kind menu lists its blank - the plan's start, say - first.
+- The new-plan form refuses to write a plan that does not validate, as every
+  save does.
 
 ## [0.1.0] - 2026-09-25
 
