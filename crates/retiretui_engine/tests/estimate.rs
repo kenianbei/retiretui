@@ -55,8 +55,10 @@ fn the_estimates_are_the_formula_monthly_and_rise_with_the_claim() {
         .benefit
         .unwrap();
     let earnings = &plan.person("me").unwrap().earnings;
-    let expected =
-        [62, 67, 70].map(|age| Some(social_security_benefit(&params, 1964, age, earnings) / 12));
+    // Born on the 15th, 62 is first held throughout the month after the
+    // birthday's: a claim at 62 is a month older than 62.
+    let expected = [62 * 12 + 1, 67 * 12, 70 * 12]
+        .map(|months| Some(social_security_benefit(&params, 1964, months, earnings) / 12));
     assert_eq!(estimates, expected);
     let [early, full, late] = estimates.map(Option::unwrap);
     assert!(early < full && full < late, "{estimates:?}");

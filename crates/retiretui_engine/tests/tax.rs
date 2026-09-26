@@ -294,7 +294,7 @@ fn benefit_params() -> retiretui_engine::params::BenefitParams {
 fn social_security_benefit_matches_ssa_case_a() {
     let params = benefit_params();
     let earnings = std::collections::BTreeMap::from(CASE_A_EARNINGS);
-    let at = |age| tax::social_security_benefit(&params, 1964, age, &earnings);
+    let at = |age| tax::social_security_benefit(&params, 1964, age * 12, &earnings);
     // 60 months early: 20% for the first 36, 10% for the rest of 2,609.80.
     assert_eq!(at(62), 1_826 * 12);
     assert_eq!(at(67), 2_609 * 12);
@@ -308,14 +308,17 @@ fn social_security_benefit_caps_and_pads_the_record() {
     let params = benefit_params();
     let one_year = |amount| {
         let earnings = std::collections::BTreeMap::from([(2026, amount)]);
-        tax::social_security_benefit(&params, 1964, 67, &earnings)
+        tax::social_security_benefit(&params, 1964, 67 * 12, &earnings)
     };
     // One year of 2026's 184,500 over 420 months: AIME 439, all in the 90%
     // band.
     assert_eq!(one_year(184_500), 395 * 12);
     assert_eq!(one_year(1_000_000), one_year(184_500));
     let empty = std::collections::BTreeMap::new();
-    assert_eq!(tax::social_security_benefit(&params, 1964, 67, &empty), 0);
+    assert_eq!(
+        tax::social_security_benefit(&params, 1964, 67 * 12, &empty),
+        0
+    );
 }
 
 #[test]
@@ -346,8 +349,8 @@ fn earnings_index_to_the_year_the_worker_turns_sixty() {
     // whose age-60 year is the published 2024.
     let params = benefit_params();
     let record = (1999..=2025).map(|year| (year, 50_000)).collect();
-    let born_1977 = tax::social_security_benefit(&params, 1977, 67, &record);
-    let born_1964 = tax::social_security_benefit(&params, 1964, 67, &record);
+    let born_1977 = tax::social_security_benefit(&params, 1977, 67 * 12, &record);
+    let born_1964 = tax::social_security_benefit(&params, 1964, 67 * 12, &record);
     assert!(
         born_1977 > born_1964 * 13 / 10,
         "{born_1977} vs {born_1964}"
@@ -367,8 +370,8 @@ fn earnings_at_wage_index_back_to_the_salary() {
     assert_eq!(record[&2023], 57_230);
     let career = tax::earnings_at_wage(&params, 60_000, 2024, 1990..=2024);
     let flat = (1990..=2024).map(|year| (year, 60_000)).collect();
-    let scaled = tax::social_security_benefit(&params, 1964, 67, &career);
-    let at_face = tax::social_security_benefit(&params, 1964, 67, &flat);
+    let scaled = tax::social_security_benefit(&params, 1964, 67 * 12, &career);
+    let at_face = tax::social_security_benefit(&params, 1964, 67 * 12, &flat);
     assert!(
         scaled < at_face,
         "{scaled} vs {at_face}: 1990's 60,000 indexed"
@@ -379,8 +382,13 @@ fn earnings_at_wage_index_back_to_the_salary() {
 #[test]
 fn claim_year_share_follows_the_ssa_calendar() {
     let born = |month, day| retiretui_engine::plan::PlanDate(jiff::civil::date(1980, month, day));
-    let paid = |birth, age, months: u8| {
-        let share = tax::claim_year_share(birth, age);
+    let paid = |birth, age: u8, months: u8| {
+        let first = if age == 62 {
+            tax::first_claim_month(birth)
+        } else {
+            tax::attained_month(birth, age)
+        };
+        let share = tax::claim_year_share(first, 1980 + i16::from(age));
         assert!(
             (share - f64::from(months) / 12.0).abs() < f64::EPSILON,
             "{share} for {months} months"
@@ -390,10 +398,29 @@ fn claim_year_share_follows_the_ssa_calendar() {
     paid(born(6, 14), 67, 7);
     paid(born(12, 20), 70, 1);
     paid(born(2, 1), 70, 12);
-    // 62 must be attained by the first of the month.
+    // 62 must be held throughout the month.
     paid(born(6, 2), 62, 7);
     paid(born(6, 3), 62, 6);
     paid(born(12, 3), 62, 0);
+}
+
+#[test]
+fn a_claim_at_62_is_early_by_the_months_to_full_retirement_age() {
+    let born = |day| retiretui_engine::plan::PlanDate(jiff::civil::date(1964, 6, day));
+    let early = |day| {
+        let birth = born(day);
+        tax::full_retirement_months(1964) - tax::age_months(birth, tax::first_claim_month(birth))
+    };
+    // Attaining 62 on the 1st of June, June is the first month held
+    // throughout; otherwise it is the month after the one attained in.
+    assert_eq!(early(2), 60);
+    assert_eq!(early(1), 59);
+    assert_eq!(early(15), 59);
+    assert_eq!(
+        tax::age_months(born(15), tax::month_index(2031, 6)),
+        67 * 12
+    );
+    assert_eq!(tax::age_months(born(1), tax::month_index(2031, 5)), 67 * 12);
 }
 
 #[test]

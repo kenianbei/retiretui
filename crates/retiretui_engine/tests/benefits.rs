@@ -262,3 +262,92 @@ start = { age = 67, owner = "me" }
         "{issues:?}"
     );
 }
+
+/// A frozen benefit computed from the salary to 66, started by `start`,
+/// with whatever the person's line needs after it in `extra`.
+fn frozen_claim(start: &str, extra: &str) -> String {
+    head(&format!(
+        r#"
+[[accounts]]
+id = "cash"
+kind = "cash"
+owner = "me"
+balance = 0
+
+[[income]]
+id = "salary"
+kind = "salary"
+owner = "me"
+amount = 100000
+end = {{ age = 66, owner = "me" }}
+
+[[income]]
+id = "ss"
+kind = "social-security"
+owner = "me"
+cola = false
+start = {start}
+{extra}
+"#
+    ))
+}
+
+fn paid_by(text: &str) -> impl Fn(i16) -> f64 + use<> {
+    let projection = run(text);
+    move |year| {
+        projection
+            .row(year)
+            .map_or(0.0, |row| row.income["ss"] as f64)
+    }
+}
+
+fn assert_near(actual: f64, expected: f64) {
+    assert!((actual - expected).abs() < 0.001, "{actual} vs {expected}");
+}
+
+#[test]
+fn a_date_claim_is_priced_and_paid_from_its_month() {
+    // Born 1980-06-15, full retirement age 67 is June 2047, paid seven
+    // months of that year; October is four months past it, paid three and
+    // credited from 2048.
+    let at_67 = paid_by(&frozen_claim(r#"{ age = 67, owner = "me" }"#, ""));
+    let dated = paid_by(&frozen_claim("{ date = 2047-10-01 }", ""));
+    assert_near(dated(2047) * 4.0 / (at_67(2047) * 12.0 / 7.0), 1.0);
+    assert_near(dated(2048) / at_67(2048), 1.0 + 4.0 * 2.0 / 300.0);
+    let chained = paid_by(&frozen_claim(
+        r#"{ event = "retire" }"#,
+        "[[events]]\nid = \"retire\"\ntrigger = { date = 2047-10-01 }\n",
+    ));
+    assert_near(chained(2047), dated(2047));
+    assert_near(chained(2048), dated(2048));
+}
+
+#[test]
+fn delayed_credits_earned_in_the_claim_year_are_paid_from_the_next_january() {
+    // At 68 in June 2048: seven months of credit by January, twelve after.
+    let at_68 = paid_by(&frozen_claim(r#"{ age = 68, owner = "me" }"#, ""));
+    let credited = |months: f64| 1.0 + months * 2.0 / 300.0;
+    assert_near(
+        at_68(2048) * 12.0 / 7.0 / at_68(2049),
+        credited(7.0) / credited(12.0),
+    );
+    // At 70 every credit is paid at once.
+    let at_70 = frozen_claim(r#"{ age = 70, owner = "me" }"#, "");
+    let at_70 = paid_by(&at_70.replace("horizon_age = 70", "horizon_age = 75"));
+    assert_near(at_70(2050) * 12.0 / 7.0 / at_70(2051), 1.0);
+}
+
+#[test]
+fn a_computed_benefit_claimed_before_the_month_62_is_attained_is_refused() {
+    let issues = |start| {
+        let plan = Plan::from_toml_str(&frozen_claim(start, "")).unwrap();
+        validate_plan(&plan, &TaxTables::embedded())
+    };
+    let early = issues("{ date = 2042-03-01 }");
+    assert_eq!(early.len(), 1, "{early:?}");
+    assert!(
+        early[0].message.ends_with("claims at 61 and 9 months"),
+        "{early:?}"
+    );
+    assert!(issues("{ date = 2042-06-01 }").is_empty());
+}

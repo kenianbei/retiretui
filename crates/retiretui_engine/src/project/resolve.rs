@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
 use crate::plan::{Allocation, Node, Plan, Span, Trigger, TriggerForm};
+use crate::tax;
 
 /// Trigger-to-year resolution, memoized over the plan's events and income
 /// starts. Built once per projection; a validated plan always resolves, and
@@ -137,8 +138,44 @@ impl Timeline {
     }
 }
 
+/// How deep a chain of references is followed before it is taken to never
+/// resolve.
+const MAX_DEPTH: u32 = 64;
+
+/// The month a trigger fires in, as [`tax::month_index`] counts it: a
+/// date's, the month an age is attained, January for an income with no
+/// start; a reference is followed to its root and each offset year moves
+/// it twelve months.
+pub(crate) fn trigger_month(plan: &Plan, trigger: &Trigger) -> Option<i32> {
+    root_month(plan, trigger, 0)
+}
+
+fn root_month(plan: &Plan, trigger: &Trigger, depth: u32) -> Option<i32> {
+    if depth > MAX_DEPTH {
+        return None;
+    }
+    let (node, offset) = match trigger.form().ok()? {
+        TriggerForm::Date(date) => return Some(tax::month_index(date.year(), date.0.month())),
+        TriggerForm::Age { owner, years } => {
+            return Some(tax::attained_month(plan.person(owner)?.birth, years));
+        }
+        TriggerForm::Event { id, offset } => (Node::Event(id), offset),
+        TriggerForm::Income { id, offset } => (Node::Income(id), offset),
+    };
+    let root = match node {
+        Node::Event(id) => {
+            let event = plan.events.iter().find(|event| event.id == id)?;
+            root_month(plan, &event.trigger, depth + 1)?
+        }
+        Node::Income(id) => match plan.income_source(id)?.span().first() {
+            Some(trigger) => root_month(plan, trigger, depth + 1)?,
+            None => tax::month_index(plan.plan.start_year, 1),
+        },
+    };
+    Some(root + offset * tax::MONTHS_PER_YEAR)
+}
+
 fn resolve_node(plan: &Plan, node: Node<'_>, depth: u32) -> Option<i16> {
-    const MAX_DEPTH: u32 = 64;
     if depth > MAX_DEPTH {
         return None;
     }
