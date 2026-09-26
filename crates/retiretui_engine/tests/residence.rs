@@ -1,6 +1,6 @@
 //! Where the household lives, year by year, and what its state takes.
 
-use retiretui_engine::params::TaxTables;
+use retiretui_engine::params::{Inflation, TaxTables};
 use retiretui_engine::plan::Plan;
 use retiretui_engine::project::{Projection, project, validate_plan};
 
@@ -97,7 +97,7 @@ fn a_state_with_no_table_is_refused_rather_than_taxed_at_nothing() {
 }
 
 #[test]
-fn a_state_is_refused_from_the_first_year_lived_there_without_a_table() {
+fn an_override_year_without_states_inherits_them_inflated() {
     let text = std::fs::read_to_string("tax/2026.toml").unwrap();
     let (federal, _) = text.split_once("[states.").unwrap();
     let mut tables = TaxTables::embedded();
@@ -107,11 +107,10 @@ fn a_state_is_refused_from_the_first_year_lived_there_without_a_table() {
             "a later year",
         )
         .unwrap();
-    let issues = validate_plan(&plan(OREGON), &tables);
-    assert_eq!(issues.len(), 1, "{issues:?}");
-    assert!(issues[0].message.contains("in 2028"), "{issues:?}");
-
-    let gone_by_then =
-        format!("{OREGON}\n[[residency]]\ncountry = \"pt\"\nfrom = {{ date = 2028-01-01 }}\n");
-    assert!(validate_plan(&plan(&gone_by_then), &tables).is_empty());
+    assert!(validate_plan(&plan(OREGON), &tables).is_empty());
+    let inflation = Inflation::constant(0.025);
+    let carried = TaxTables::embedded().params_for(2030, &inflation);
+    let inherited = tables.params_for(2030, &inflation);
+    assert_eq!(inherited.states["or"], carried.states["or"]);
+    assert!(!inherited.states.contains_key("ca"));
 }

@@ -161,10 +161,15 @@ pub(crate) fn write_atomic(path: &Path, text: &str) -> std::io::Result<()> {
     fs::write(&staged, text).and_then(|()| fs::rename(&staged, path))
 }
 
-/// The plan `text` holds with a statement's earnings recorded on `person`.
-/// A scenario is refused: a resolved plan cannot be written back into an
-/// overlay, so the record belongs in its base plan.
-pub(crate) fn adopt_statement(text: &str, person: &str, xml: &str) -> Result<Plan, String> {
+/// The plan `text` holds with a statement's earnings recorded on `person`,
+/// and the statement's note on any years it spread. A scenario is refused:
+/// a resolved plan cannot be written back into an overlay, so the record
+/// belongs in its base plan.
+pub(crate) fn adopt_statement(
+    text: &str,
+    person: &str,
+    xml: &str,
+) -> Result<(Plan, Option<String>), String> {
     use retiretui_engine::plan::Scenario;
     let is_scenario = Scenario::from_toml_str(text)
         .map_err(|error| error.to_string())?
@@ -176,7 +181,7 @@ pub(crate) fn adopt_statement(text: &str, person: &str, xml: &str) -> Result<Pla
     let statement = retiretui_engine::statement::parse(xml).map_err(|error| error.to_string())?;
     plan.adopt_earnings(person, &statement)
         .map_err(|issue| issue.message)?;
-    Ok(plan)
+    Ok((plan, statement.spread_note()))
 }
 
 /// Writes a plan to `path` as canonical TOML - comments and layout of the

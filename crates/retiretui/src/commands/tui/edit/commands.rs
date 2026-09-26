@@ -5,7 +5,7 @@ use bevy_ecs::system::SystemParam;
 use bevy_input_focus::InputFocus;
 use plurimus::widgets::ActiveDescendant;
 use retiretui_engine::plan::Plan;
-use retiretui_engine::statement;
+use retiretui_engine::statement::{self, Statement};
 use toml::Table;
 
 use super::codec::to_text;
@@ -155,23 +155,28 @@ pub fn record_statement(
         return;
     };
     match adopt(&path, &person, &mut editor.draft.plan) {
-        Ok(years) => {
+        Ok(statement) => {
             editor.commit();
             let name = editor.draft.plan.person_name(&person);
-            journal::say(format!("recorded {years} year(s) of earnings for {name}"));
+            let years = statement.earnings.len();
+            let mut said = format!("recorded {years} year(s) of earnings for {name}");
+            if let Some(note) = statement.spread_note() {
+                said = format!("{said}; {note}");
+            }
+            journal::say(said);
         }
         Err(reason) => journal::warn(format!("not recorded: {reason}")),
     }
 }
 
-/// The years recorded from the statement at `path`.
-fn adopt(path: &Path, person: &str, plan: &mut Plan) -> Result<usize, String> {
+/// The statement at `path`, once its earnings are recorded on `person`.
+fn adopt(path: &Path, person: &str, plan: &mut Plan) -> Result<Statement, String> {
     let xml =
         std::fs::read_to_string(path).map_err(|error| format!("{}: {error}", path.display()))?;
     let statement = statement::parse(&xml).map_err(|error| error.to_string())?;
     plan.adopt_earnings(person, &statement)
         .map_err(|issue| issue.message)?;
-    Ok(statement.earnings.len())
+    Ok(statement)
 }
 
 /// The field the domain knows `item` by, which is what a deletion names

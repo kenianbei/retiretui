@@ -27,7 +27,7 @@ pub fn run(args: &ImportEarningsArgs) -> anyhow::Result<()> {
             .map_err(|error| anyhow::anyhow!("failed to read {}: {error}", path.display()))
     };
     let (text, xml) = (read(&args.plan)?, read(&args.statement)?);
-    let plan = super::adopt_statement(&text, &args.person, &xml)
+    let (plan, note) = super::adopt_statement(&text, &args.person, &xml)
         .map_err(|reason| anyhow::anyhow!("{}: {reason}", args.plan.display()))?;
     let tables = super::load_tables(&args.tax_dir)?;
     let issues = validate_plan(&plan, &tables);
@@ -53,5 +53,8 @@ pub fn run(args: &ImportEarningsArgs) -> anyhow::Result<()> {
         recorded.len(),
         args.person
     );
+    if let Some(note) = note {
+        println!("{note}");
+    }
     Ok(())
 }

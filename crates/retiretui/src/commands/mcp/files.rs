@@ -60,6 +60,10 @@ pub struct WriteReply {
     /// Whether the stored canonical form differs from the submitted text;
     /// false when nothing was written.
     pub canonicalized: bool,
+    /// What an earnings import made of the statement beyond copying it:
+    /// the years a sum stated for several was spread over.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
 }
 
 #[tool_router(vis = "pub(super)")]
@@ -123,10 +127,11 @@ impl PlanServer {
         }): Parameters<ImportEarningsArgs>,
     ) -> Result<Json<WriteReply>, String> {
         let text = self.store.read(&path)?;
-        let plan = crate::commands::adopt_statement(&text, &person, &statement)
+        let (plan, note) = crate::commands::adopt_statement(&text, &person, &statement)
             .map_err(|reason| format!("{path}: {reason}"))?;
         let toml = plan.to_toml_string().map_err(|err| err.to_string())?;
-        self.store_document(&path, &toml).map(Json)
+        let reply = self.store_document(&path, &toml)?;
+        Ok(Json(WriteReply { note, ..reply }))
     }
 }
 
@@ -141,6 +146,7 @@ impl PlanServer {
             return Ok(WriteReply {
                 issues,
                 canonicalized: false,
+                note: None,
             });
         }
         let scenario = Scenario::from_toml_str(toml).map_err(|err| format!("{path}: {err}"))?;
@@ -154,6 +160,7 @@ impl PlanServer {
         Ok(WriteReply {
             issues: Vec::new(),
             canonicalized: canonical != toml,
+            note: None,
         })
     }
 }
