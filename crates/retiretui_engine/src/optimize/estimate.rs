@@ -65,10 +65,7 @@ fn estimate_at(
     };
     income.start = Some(claim.trigger());
     let projection = project(estimating, tables);
-    let row = projection
-        .years
-        .iter()
-        .find(|row| row.year == first_whole_year)?;
+    let row = projection.row(first_whole_year)?;
     let paid = *row.income.get(&claim.income)?;
     Some(deflate(paid, row.deflator * f64::from(MONTHS_PER_YEAR)))
 }

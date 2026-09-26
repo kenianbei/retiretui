@@ -266,9 +266,7 @@ impl Shown<'_> {
 
     /// The Ledger's row for the cursor's year.
     pub fn row(&self) -> Option<&YearRow> {
-        let year = self.year();
-        let years = &self.ledger().projection.years;
-        years.iter().find(|row| row.year == year)
+        self.ledger().projection.row(self.year())
     }
 }
 

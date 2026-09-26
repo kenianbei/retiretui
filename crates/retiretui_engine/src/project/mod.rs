@@ -387,13 +387,17 @@ pub fn deflate(amount: Dollars, deflator: f64) -> Dollars {
 }
 
 impl Projection {
+    /// The row for `year`, if the projection covers it.
+    #[must_use]
+    pub fn row(&self, year: i16) -> Option<&YearRow> {
+        self.years.iter().find(|row| row.year == year)
+    }
+
     /// `amount` deflated by `year`'s deflator; a year outside the
     /// projection returns it unchanged.
     #[must_use]
     pub fn deflate_in(&self, year: i16, amount: Dollars) -> Dollars {
-        self.years
-            .iter()
-            .find(|row| row.year == year)
+        self.row(year)
             .map_or(amount, |row| deflate(amount, row.deflator))
     }
 }

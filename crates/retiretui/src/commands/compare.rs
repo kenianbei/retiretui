@@ -155,14 +155,9 @@ fn metric_table(compared: &[ComparedPlan], metric: Metric, nominal: bool) -> Str
         .map(|year| {
             let mut cells = vec![year.to_string()];
             for plan in compared {
-                let cell = plan
-                    .projection
-                    .years
-                    .iter()
-                    .find(|row| row.year == year)
-                    .map_or_else(String::new, |row| {
-                        display_dollars(metric.value(row), row.deflator, nominal)
-                    });
+                let cell = plan.projection.row(year).map_or_else(String::new, |row| {
+                    display_dollars(metric.value(row), row.deflator, nominal)
+                });
                 cells.push(cell);
             }
             cells

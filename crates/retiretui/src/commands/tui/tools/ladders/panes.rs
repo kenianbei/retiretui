@@ -130,11 +130,7 @@ fn conversion_rows(bracket: &SweptBracket, plan: &Plan, is_nominal: bool) -> Vec
         .steps
         .iter()
         .map(|step| {
-            let row = bracket
-                .optimized
-                .years
-                .iter()
-                .find(|row| row.year == step.year);
+            let row = bracket.optimized.row(step.year);
             let deflator = row.map_or(1.0, |row| row.deflator);
             let taxable = row.map_or(0, |row| row.taxes.ordinary_taxable);
             let shown = |amount| compact_dollars(basis_amount(amount, deflator, is_nominal));

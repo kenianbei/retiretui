@@ -237,7 +237,7 @@ fn ladder_table(steps: &[LadderStep], optimized: &Projection, nominal: bool) -> 
     let rows: Vec<Vec<String>> = steps
         .iter()
         .map(|step| {
-            let row = optimized.years.iter().find(|row| row.year == step.year);
+            let row = optimized.row(step.year);
             let deflator = row.map_or(1.0, |row| row.deflator);
             let taxable = row.map_or(0, |row| row.taxes.ordinary_taxable);
             vec![

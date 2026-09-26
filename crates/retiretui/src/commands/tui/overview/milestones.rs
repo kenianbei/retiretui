@@ -2,7 +2,7 @@
 //! item it comes from.
 
 use retiretui_engine::plan::{Allocation, IncomeKind, Item, Plan, TreatmentClass};
-use retiretui_engine::project::{Timeline, YearRow};
+use retiretui_engine::project::{Projection, Timeline};
 use retiretui_engine::tax::{MEDICARE_AGE, rmd_start_age};
 
 use super::rows::Entry;
@@ -21,7 +21,7 @@ pub(super) fn entries(projected: &Projected, nominal: bool) -> Vec<Entry> {
     let timeline = Timeline::new(plan);
     let mut found: Vec<Entry> = [
         events(plan, &timeline),
-        claims(plan, &timeline, years, nominal),
+        claims(plan, &timeline, &projected.projection, nominal),
         incomes_starting(plan, &timeline),
         medicare(plan),
         rmds(plan),
@@ -54,12 +54,12 @@ fn events(plan: &Plan, timeline: &Timeline) -> Vec<Entry> {
 
 /// Each Social Security claim, with what its first full year pays: the
 /// claim year is paid from the month the age is reached.
-fn claims(plan: &Plan, timeline: &Timeline, years: &[YearRow], nominal: bool) -> Vec<Entry> {
+fn claims(plan: &Plan, timeline: &Timeline, projection: &Projection, nominal: bool) -> Vec<Entry> {
     let each = plan.income.iter().enumerate();
     each.filter(|(_, income)| income.kind == IncomeKind::SocialSecurity)
         .filter_map(|(at, income)| {
             let year = timeline.income.get(&income.id)?.first()?;
-            let full = years.iter().find(|row| row.year == year + 1);
+            let full = projection.row(year + 1);
             let paid = full.and_then(|row| {
                 let amount = *row.income.get(&income.id)?;
                 Some(basis_amount(amount, row.deflator, nominal))

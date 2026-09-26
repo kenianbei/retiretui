@@ -95,10 +95,7 @@ fn refresh_flows(
     let Some(row) = shown.row() else {
         return;
     };
-    let years = &shown.ledger().projection.years;
-    // Years are contiguous from the plan's start, so the offset indexes.
-    let at = usize::try_from(row.year - years[0].year).unwrap_or(0);
-    let previous = at.checked_sub(1).map(|before| &years[before]);
+    let previous = shown.ledger().projection.row(row.year - 1);
     let rows = flow_rows(&shown.ledger().plan, previous, row, shown.basis.nominal);
     let header = HEADER.map(str::to_owned);
     let TableColumns(mut widths) = tabulate::columns((&header, &rows), DETAIL_GAP);
