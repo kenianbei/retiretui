@@ -101,7 +101,21 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The engine is 0.2.0: `tax::social_security_benefit` takes an age in months and
   the COLAs to carry the benefit through, `tax::claim_year_share` takes the
   first paid month, `BenefitParams` gains `cola`, `Statement` gains `grouped`,
-  and `StatementError::Grouped` is gone.
+  and `StatementError::Grouped` is gone. `optimize::optimize_claims` and
+  `optimize::sweep_brackets` take a `Progress` and answer a `RunError`, which
+  now live in a `search` module and are still re-exported from `market`.
+- A conversion sweep searches its brackets side by side on the machine's
+  threads, so `optimize conversions` without `--bracket`, MCP
+  `sweep_conversion_brackets` and the Roth Conversions tool answer in about half
+  the time.
+- A claim or ladder search that a newer one replaces - an edit made while the
+  Overview, SSA Benefits or Roth Conversions page is searching - stops rather
+  than running to its end, and the SSA Benefits page works out each person's
+  estimates off the main thread.
+- Turning back to an editing page whose plan has not changed keeps its table as
+  it was rather than rebuilding it, typing in a picker rewrites its rows rather
+  than making them anew, and `tab` finds the page's panes without visiting every
+  row of its tables.
 
 ### Fixed
 

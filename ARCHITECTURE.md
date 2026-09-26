@@ -103,7 +103,9 @@ never depends on UI.
   file may replace, and runs a plan through many of them at once across threads,
   keeping of each run only what the tools show: success, ending, shortfall and
   net worth by year in that run's own today's dollars, with percentile bands and
-  the runs singled out.
+  the runs singled out. `search` is what every search shares: a way to follow it
+  and to stop it at its next step, and the machine's threads to run its
+  independent steps across - a market's runs, a sweep's brackets.
 - `retiretui` - the single user-facing binary; surfaces are clap subcommands.
   One shared resolver follows scenario base chains - reading files and resolving
   paths is surface policy: relative to the referring file on the CLI, contained
@@ -169,23 +171,23 @@ never depends on UI.
   or as their difference from the baseline, ⏎ on one taking it into the
   document's place with the others kept - and the tools, each panes of its own
   over a line of help and a search on a thread of its own that runs by itself
-  whenever what it would search changes, taking instead what the overview has
-  already found over the same plan, its options ranked best first in one shared
-  table under a row for the plan as it stands - the conversion search's beside
-  what it runs under, read out and edited as a domain's one item is, and over
-  the highlighted ladder year by year, the claim search's beside a table of each
-  person's record, income and estimated benefit, ⏎ on a person offering what can
-  be done for them, and the claims held out of the search among what it watches,
-  and the market tools' runs - the plan through random markets, or from every
-  historical start year worst first - beside what they run under and how the
-  plan fared, over a chart of the runs' spread that `v` turns to other views, a
-  newer search stopping one under way and ⏎ on a run opening it in the ledger,
-  and on the plan's own row the plan's own projection - the searches'
-  highlighted option written as a scenario over the document into the workspace
-  and compared at once, or taken into the draft, after asking, as one applied
-  item - a Roth conversion ladder as conversions of its own, in place of the
-  ladder taken before, a set of Social Security claims as each searched income's
-  start, adding the incomes the search made up. Viewing and editing are
+  whenever what it would search changes, a newer search stopping one under way,
+  taking instead what the overview has already found over the same plan, its
+  options ranked best first in one shared table under a row for the plan as it
+  stands - the conversion search's beside what it runs under, read out and
+  edited as a domain's one item is, and over the highlighted ladder year by
+  year, the claim search's beside a table of each person's record, income and
+  estimated benefit, ⏎ on a person offering what can be done for them, and the
+  claims held out of the search among what it watches, and the market tools'
+  runs - the plan through random markets, or from every historical start year
+  worst first - beside what they run under and how the plan fared, over a chart
+  of the runs' spread that `v` turns to other views, ⏎ on a run opening it in
+  the ledger, and on the plan's own row the plan's own projection - the
+  searches' highlighted option written as a scenario over the document into the
+  workspace and compared at once, or taken into the draft, after asking, as one
+  applied item - a Roth conversion ladder as conversions of its own, in place of
+  the ladder taken before, a set of Social Security claims as each searched
+  income's start, adding the incomes the search made up. Viewing and editing are
   distinct: a domain with many items is a table, shown in the plan's order or
   ordered by a column for the view alone, with the row under the cursor read out
   beside it, every field the item has a use for in the form's words, wherever
