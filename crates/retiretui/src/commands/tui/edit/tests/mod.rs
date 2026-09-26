@@ -14,6 +14,7 @@ mod keyboard;
 mod leaving;
 mod panes;
 mod places;
+mod scroll;
 mod sorting;
 mod structured;
 mod triggers;
@@ -107,6 +108,20 @@ pub(crate) fn open(app: &mut App, page: Page) {
     show(app, page);
     app.update();
     press_key(app, KeyCode::Enter);
+}
+
+/// Stops along a brokerage account's form to the pick that says how it is
+/// invested.
+pub(super) const INVESTED: usize = 6;
+
+/// Where the open item's form stands: its top line, and the column of its
+/// left border in cells.
+pub(super) fn form_box(frame: &str) -> (usize, usize) {
+    let found = frame.lines().enumerate().find_map(|(top, line)| {
+        let (before, _) = line.split_once("╭ Edit")?;
+        Some((top, before.chars().count()))
+    });
+    found.unwrap_or_else(|| panic!("no form: {frame}"))
 }
 
 /// Whether a row labelled exactly `label` is drawn: the label, then its
@@ -433,6 +448,14 @@ fn an_issue_reads_in_the_forms_words_and_an_unknown_path_as_written() {
         (
             "accounts[99].balance",
             "Accounts \u{203a} Balance: is wrong",
+        ),
+        (
+            "accounts[99].allocation",
+            "Accounts \u{203a} Stocks: is wrong",
+        ),
+        (
+            "accounts[99].allocation[1]",
+            "Accounts \u{203a} Mix 2 from: is wrong",
         ),
         (
             "contributions[99].match.up_to",

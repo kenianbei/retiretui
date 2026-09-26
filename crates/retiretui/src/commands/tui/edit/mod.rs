@@ -24,6 +24,7 @@ mod income;
 mod market;
 mod offers;
 mod screen;
+mod scroll;
 mod search;
 mod select;
 mod sort;
@@ -43,11 +44,10 @@ use toml::{Table, Value};
 use super::hints::Hints;
 use super::layout::{self, Body};
 use super::nav::Page;
-use super::overlay;
 
 #[cfg(test)]
 pub use build::EditForm;
-pub use build::{FormButton, help_fits};
+pub use build::{FormButton, SHORTEST_FORM_ROWS, help_fits};
 pub use changes::change_words;
 pub use codec::from_table;
 pub use commands::{Importing, add, delete, import_earnings, record_statement};
@@ -92,7 +92,7 @@ pub enum EditSystems {
 pub fn plugin(app: &mut App) {
     app.init_resource::<Importing>();
     app.configure_sets(Update, (EditSystems::Seed, EditSystems::Place).chain());
-    app.add_plugins((screen::plugin, form::plugin));
+    app.add_plugins((screen::plugin, form::plugin, scroll::plugin));
     app.add_systems(
         Startup,
         (seed_draft, spawn_screens.after(layout::spawn_frame)),
@@ -128,23 +128,6 @@ pub fn lists_items(page: Page) -> bool {
 pub fn item_count(page: Page, plan: &Plan) -> Option<usize> {
     let list = SCREENS.iter().find(|ops| ops.surface == Some(page))?.list?;
     Some((list.count)(plan))
-}
-
-/// The rows the tallest form takes standing over its page, which is what
-/// the body has to be able to hold.
-pub const TALLEST_FORM_ROWS: u16 = tallest_form_rows();
-
-const fn tallest_form_rows() -> u16 {
-    let mut tallest = 0;
-    let mut at = 0;
-    while at < SCREENS.len() {
-        let rows = build::rows_of(SCREENS[at]).saturating_add(overlay::CHROME);
-        if rows > tallest {
-            tallest = rows;
-        }
-        at += 1;
-    }
-    tallest
 }
 
 const _: () = {
@@ -217,7 +200,7 @@ fn locate(path: &str) -> Option<Located> {
     };
     // A root may itself be a key of the item, as `medicare` is.
     let keyed_root = root.rsplit('.').next().map_or(0, str::len);
-    let field = field_at(ops.fields, within.trim_start_matches('.'))
+    let field = field_at(ops.fields, &codec::as_key(within.trim_start_matches('.')))
         .or_else(|| field_at(ops.fields, &path[root.len() - keyed_root..]));
     let place = field.and_then(|spec| codec::list_place(path, spec.key));
     Some(Located {

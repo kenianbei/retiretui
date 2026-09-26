@@ -16,6 +16,7 @@ use bevy_input::keyboard::Key;
 use bevy_input_focus::InputFocus;
 use bevy_ui::{Node, UiRect, Val};
 use plurimus::core::UiWidget;
+use plurimus::core::ratatui_core::style::Style;
 use plurimus::ui::{Checked, KeyBinding};
 use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
 use plurimus::widgets::{
@@ -27,13 +28,14 @@ use toml::Value;
 
 use super::build::FormField;
 use super::cells::{field_text, parse_field};
-use super::codec::get_path;
+use super::codec::{get_path, share_left};
 use super::domain::{FieldKind, FieldSpec};
-use super::editing::Editing;
+use super::editing::{EditSession, Editing};
 use super::group::{nth, nth_back};
 use super::select::{Select, spawn_select};
 use super::trigger::Slot;
 use crate::commands::tui::layout::{placed, sized};
+use crate::commands::tui::present;
 use crate::commands::tui::theme::Theme;
 
 /// A widget activated by space alone, leaving Enter to apply the item.
@@ -51,6 +53,43 @@ const SHARE_STEP: f32 = 0.05;
 const SLIDER_WIDTH: f32 = 20.0;
 /// Cells kept clear between the slider and the text beside it.
 const SLIDER_GAP: f32 = 1.0;
+/// Where a remainder's text starts: level with the shares' text, past
+/// their slider and bracket.
+const REMAINDER_INDENT: f32 = SLIDER_WIDTH + SLIDER_GAP + BRACKETS[0].len() as f32;
+/// What a remainder is drawn with, and the share it last drew.
+#[derive(Component, Default)]
+pub struct Remaining {
+    left: Option<f64>,
+}
+
+/// A remainder shows what the shares beside it leave, marked where that
+/// is less than none or more than the whole.
+pub fn show_remainders(
+    session: Res<EditSession>,
+    theme: Res<Theme>,
+    mut shown: Query<(&mut Remaining, &FormField, &mut UiWidget)>,
+) {
+    if !session.is_changed() && !theme.is_changed() {
+        return;
+    }
+    let Some(editing) = session.0.as_ref() else {
+        return;
+    };
+    for (mut remaining, field, mut widget) in &mut shown {
+        let left = share_left(&editing.snapshot, field.spec.key);
+        if remaining.left == left && !theme.is_changed() {
+            continue;
+        }
+        remaining.left = left;
+        let style = if left.is_some_and(|left| (0.0..=1.0).contains(&left)) {
+            Style::default()
+        } else {
+            theme.exceeded()
+        };
+        let text = left.map(present::rate).unwrap_or_default();
+        *widget = UiWidget::new(Paragraph::new(text).style(style));
+    }
+}
 
 /// Marks a flag's box, which is a component rather than a value.
 fn show_check(entity: Entity, wanted: bool, is_checked: bool, commands: &mut Commands) {
@@ -194,6 +233,19 @@ pub fn spawn_field(commands: &mut Commands, row: Entity, spec: FieldSpec) {
                 .observe(checkbox_self_update);
         }
         FieldKind::Rate | FieldKind::Share => spawn_slider(commands, row, field),
+        FieldKind::Remainder => {
+            commands.spawn((
+                Remaining::default(),
+                field,
+                Node {
+                    margin: UiRect::left(Val::Px(REMAINDER_INDENT)),
+                    ..sharing()
+                },
+                UiWidget::new(Paragraph::new("")),
+                placed(),
+                ChildOf(row),
+            ));
+        }
         FieldKind::Trigger => super::trigger::spawn(commands, row, field),
         kind => {
             let select = Select::new(kind, spec.blank_word()).required(spec.is_required());

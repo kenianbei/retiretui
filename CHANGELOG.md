@@ -6,7 +6,23 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- A form too tall for the terminal scrolls: its fields scroll above a help line
+  and buttons that stay put, the field holding the keyboard is kept in view, the
+  mouse wheel scrolls it, and a scrollbar on its right edge shows where it is.
+- An account's glide path is edited as up to six steps, each step offered once
+  the one before it is filled; a file's steps past the sixth are kept as they
+  are.
+- A mix's cash, and each glide step's, is shown beside its stocks and bonds as
+  what they leave, following them as they are edited and marked when they leave
+  less than none.
+- The Market form edits the stocks-cash and bonds-cash correlations.
+
 ### Changed
+
+- A form stands only as tall as the fields the item has a use for, and the
+  smallest terminal the planner takes no longer grows with its tallest form.
 
 - The minimum versions of the engine's and the binary's dependencies are now the
   versions they are built and checked against.
@@ -34,6 +50,9 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - A trigger's kind menu lists its blank - the plan's start, say - first.
 - The new-plan form refuses to write a plan that does not validate, as every
   save does.
+- An issue against one step of a glide path marks that step's row in the form.
+- A mix whose stocks are written as a whole number, `stocks = 1`, no longer
+  gains a full share of cash when applied.
 
 ## [0.1.0] - 2026-09-25
 

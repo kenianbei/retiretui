@@ -5,7 +5,7 @@
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Component, Entity};
 use bevy_input_focus::tab_navigation::TabGroup;
-use bevy_ui::{FlexDirection, Node, Val};
+use bevy_ui::{FlexDirection, Node, Overflow, PositionType, Val};
 use plurimus::core::UiWidget;
 use plurimus::widgets::button;
 use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
@@ -76,15 +76,45 @@ pub const fn help_fits(ops: Ops) -> bool {
     true
 }
 
-/// The box a form standing alone is centred in.
-pub fn centred(ops: Ops) -> (Node, Centred) {
-    overlay::centred(FORM_COLS, rows_of(ops))
+/// The box a form is centred in, as tall as its foot until its rows on
+/// show are counted.
+pub fn centred() -> (Node, Centred) {
+    overlay::centred(FORM_COLS, BELOW_FIELDS)
 }
 
-/// The rows a form's contents take inside its frame: its fields and its
-/// foot.
-pub(super) const fn rows_of(ops: Ops) -> u16 {
-    (ops.fields.len() as u16).saturating_add(HELP_ROWS + FOOT_ROWS)
+/// Rows a form takes inside its frame below its fields: help and foot.
+pub(super) const BELOW_FIELDS: u16 = HELP_ROWS + FOOT_ROWS;
+
+/// The rows the least form takes standing over its page: one field over
+/// its foot, inside its frame.
+pub const SHORTEST_FORM_ROWS: u16 = BELOW_FIELDS + 1 + overlay::CHROME;
+
+/// The column a form's field rows scroll in, over its foot, and the bar
+/// beside it.
+#[derive(Component)]
+pub struct FormFields {
+    pub bar: Entity,
+}
+
+/// The bar on a form's right edge beside its fields, drawn while they
+/// overflow: what it last drew, as the rows scrolled out of view and how
+/// many of them are above.
+#[derive(Component, Default)]
+pub struct FormBar {
+    pub drawn: Option<(usize, usize)>,
+}
+
+/// Where a form's bar stands: on the frame's right edge, level with the
+/// field column.
+fn bar_node() -> Node {
+    Node {
+        position_type: PositionType::Absolute,
+        top: Val::Px(1.0),
+        bottom: Val::Px(f32::from(BELOW_FIELDS + 1)),
+        right: Val::Px(0.0),
+        width: Val::Px(1.0),
+        ..Node::default()
+    }
 }
 
 /// What is drawn before the label of a field in a table a tick stands
@@ -129,14 +159,34 @@ pub fn spawn_form(commands: &mut Commands, form: Entity, ops: Ops, is_alone: boo
         .entity(form)
         .insert((EditForm { ops }, TabGroup::modal()))
         .observe(handle_form_key);
+    let bar = commands
+        .spawn((
+            FormBar::default(),
+            bar_node(),
+            UiWidget::default(),
+            placed(),
+        ))
+        .id();
+    let column = commands
+        .spawn((
+            FormFields { bar },
+            Node {
+                flex_direction: FlexDirection::Column,
+                flex_shrink: 1.0,
+                overflow: Overflow::scroll_y(),
+                ..growing()
+            },
+            ChildOf(form),
+        ))
+        .id();
+    commands.entity(bar).insert(ChildOf(form));
     for &spec in ops.fields {
         let gutter = gutter_cols(ops.fields, &spec);
-        let row = spawn_row(commands, form, spec, gutter, label_cols - gutter);
+        let row = spawn_row(commands, column, spec, gutter, label_cols - gutter);
         if let Some(dependent) = Dependent::of(ops.fields, &spec) {
             commands.entity(row).insert(dependent);
         }
     }
-    commands.spawn((growing(), ChildOf(form)));
     commands.spawn((rule(), ChildOf(form)));
     commands.spawn((
         HelpFoot,
@@ -153,7 +203,7 @@ pub fn spawn_form(commands: &mut Commands, form: Entity, ops: Ops, is_alone: boo
 /// `gutter` cells, and the widget its kind is entered by.
 fn spawn_row(
     commands: &mut Commands,
-    form: Entity,
+    column: Entity,
     spec: FieldSpec,
     gutter: u16,
     label_cols: u16,
@@ -164,7 +214,7 @@ fn spawn_row(
                 flex_direction: FlexDirection::Row,
                 ..fixed(1.0)
             },
-            ChildOf(form),
+            ChildOf(column),
         ))
         .id();
     if gutter > 0 {

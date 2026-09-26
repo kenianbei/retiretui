@@ -17,7 +17,7 @@ use super::hints::Hints;
 use super::layout::{filling, list_cursor, placed};
 use super::pane::Framed;
 use bevy_ecs::change_detection::{DetectChanges, Ref};
-use bevy_ecs::prelude::{Component, IntoScheduleConfigs, Query, With};
+use bevy_ecs::prelude::{Component, IntoScheduleConfigs, Mut, Query, With};
 use bevy_ui::{FlexDirection, Node, Overflow, PositionType, UiRect, UiSystems, Val};
 use plurimus::bui::ComputedNodeRect;
 
@@ -48,6 +48,14 @@ pub struct Centred {
     rows: u16,
 }
 
+/// Makes a centred box as tall as the `rows` it holds inside its frame.
+pub fn hold(centred: &mut Mut<Centred>, rows: u16) {
+    let rows = rows.saturating_add(CHROME);
+    if centred.rows != rows {
+        centred.rows = rows;
+    }
+}
+
 /// The box a centred overlay is laid out in: `cols` cells across and as
 /// tall as the `rows` it holds inside its frame, clipped where the body
 /// gives it less.
@@ -57,7 +65,6 @@ pub fn centred(cols: u16, rows: u16) -> (Node, Centred) {
     let node = Node {
         position_type: PositionType::Absolute,
         width: Val::Px(f32::from(cols)),
-        height: Val::Px(f32::from(rows)),
         max_height: Val::Percent(100.0),
         padding: UiRect::all(Val::Px(1.0)),
         flex_direction: FlexDirection::Column,
@@ -98,7 +105,8 @@ pub fn bottom_panel(commands: &mut Commands, root: Entity, title: &str, hints: H
         .id()
 }
 
-/// Places each centred box on whole cells. Left to the layout, a box an
+/// Places each centred box on whole cells, as tall as it holds - the one
+/// writer of its height and place. Left to the layout, a box an
 /// odd number of cells narrower than the body starts on half a cell, and
 /// what it holds is then rounded a cell past its border.
 fn centre_boxes(
@@ -110,10 +118,11 @@ fn centre_boxes(
     };
     let room = body.visible;
     for (centred, mut node) in &mut boxes {
-        if !body.is_changed() && !centred.is_added() {
+        if !body.is_changed() && !centred.is_changed() {
             continue;
         }
         let rows = centred.rows.min(room.height);
+        node.height = Val::Px(f32::from(centred.rows));
         node.left = Val::Px(f32::from(room.width.saturating_sub(centred.cols) / 2));
         node.top = Val::Px(f32::from(room.height.saturating_sub(rows).div_ceil(2)));
     }

@@ -1,6 +1,5 @@
 ---
 source: crates/retiretui/src/commands/tui/frames.rs
-assertion_line: 26
 expression: composed_frame(app)
 ---
 ╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                              
@@ -18,8 +17,10 @@ expression: composed_frame(app)
 │  People         2 ││  Inflation spread                                                                                       │
 │  Residency      1 ││    persistence                                                                                          │
 │  Household        ││  Stocks, bonds                                                                                          │
-│  Settings         ││  Stocks, inflation                                                                                      │
-│▏ Market           ││  Bonds, inflation                                                                                       │
+│  Settings         ││  Stocks, cash                                                                                           │
+│▏ Market           ││  Stocks, inflation                                                                                      │
+│                   ││  Bonds, cash                                                                                            │
+│                   ││  Bonds, inflation                                                                                       │
 │                   ││  Cash, inflation                                                                                        │
 │                   ││  Monte Carlo draws  The assumptions                                                                     │
 │                   ││    trials                                                                                               │
@@ -27,8 +28,6 @@ expression: composed_frame(app)
 │                   ││  Historical from                                                                                        │
 │                   ││    to                                                                                                   │
 │                   ││    wrap             ✓                                                                                   │
-│                   ││                                                                                                         │
-│                   ││                                                                                                         │
 │                   ││                                                                                                         │
 │                   ││                                                                                                         │
 │                   ││                                                                                                         │

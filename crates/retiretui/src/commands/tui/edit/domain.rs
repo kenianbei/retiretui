@@ -76,6 +76,9 @@ pub enum FieldKind {
     /// One place, counted from the first, in an order of a vocabulary's
     /// words that several rows hold between them, none of them twice.
     Order(Vocabulary, usize),
+    /// A share no one enters: what the other shares of its table leave of
+    /// the whole, shown as they change.
+    Remainder,
 }
 
 /// What every field that says how an amount grows is described by.
@@ -132,6 +135,10 @@ impl FieldSpec {
 
     pub const fn share(key: &'static str, label: &'static str) -> Self {
         Self::new(key, label, FieldKind::Share)
+    }
+
+    pub const fn remainder(key: &'static str, label: &'static str) -> Self {
+        Self::new(key, label, FieldKind::Remainder)
     }
 
     pub const fn growth(key: &'static str, label: &'static str) -> Self {

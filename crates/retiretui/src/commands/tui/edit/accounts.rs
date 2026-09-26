@@ -7,6 +7,7 @@ use toml::{Table, Value};
 
 use super::applies;
 use super::cells::Column;
+use super::codec::left_of;
 use super::domain::{Domain, FieldSpec};
 use super::offers::{RefSource, Vocabulary};
 use crate::commands::tui::nav::Page;
@@ -20,8 +21,8 @@ pub const MIX: &str = "mix";
 pub const GLIDE: &str = "glide";
 
 const ALLOCATION: &str = "allocation";
-const SHARE_HELP: &str =
-    "Its share of the account, rebalanced every year. Cash is whatever stocks and bonds leave.";
+const SHARE_HELP: &str = "Its share of the account, rebalanced every year.";
+const CASH_HELP: &str = "Whatever stocks and bonds leave, held in cash.";
 const STEP_FROM_HELP: &str =
     "When this mix takes over. The first holds until the second fires; a blank step is dropped.";
 
@@ -48,7 +49,7 @@ fn write_invested(item: &mut Table, form: &Value) {
         }
         (Some(GLIDE), Some(true)) => {
             if let Some(Value::Array(steps)) = item.get_mut(ALLOCATION) {
-                steps.retain(|step| step.as_table().is_some_and(|step| !step.is_empty()));
+                steps.retain(is_filled_step);
                 steps
                     .iter_mut()
                     .filter_map(Value::as_table_mut)
@@ -64,22 +65,21 @@ fn write_invested(item: &mut Table, form: &Value) {
     }
 }
 
-const STOCKS: &str = "stocks";
-const BONDS: &str = "bonds";
 const CASH: &str = "cash";
-
-/// Below this, what stocks and bonds leave is rounding, not cash.
-const NO_CASH: f64 = 1e-9;
 
 /// Holds in cash what a mix's stocks and bonds leave of the whole.
 fn fill_cash(mix: &mut Table) {
-    let share = |key: &str| mix.get(key).and_then(Value::as_float).unwrap_or(0.0);
-    let left = 1.0 - share(STOCKS) - share(BONDS);
-    if left.abs() < NO_CASH {
+    let left = left_of(mix, CASH);
+    if left == 0.0 {
         mix.remove(CASH);
     } else {
         mix.insert(CASH.to_owned(), Value::Float(left));
     }
+}
+
+/// Whether a glide step holds anything; one that does not is dropped.
+fn is_filled_step(step: &Value) -> bool {
+    step.as_table().is_some_and(|step| !step.is_empty())
 }
 
 fn invested(item: &Table) -> &str {
@@ -98,15 +98,34 @@ fn glides(item: &Table) -> bool {
     invested(item) == GLIDE
 }
 
+/// Step `STEP` of a glide path is offered while it or a later step holds
+/// anything, and after the last that does: every filled step, then one
+/// blank one.
+fn step_shown<const STEP: usize>(item: &Table) -> bool {
+    let steps = || {
+        item.get(ALLOCATION)
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+    };
+    glides(item) && (STEP == 0 || steps().skip(STEP - 1).any(is_filled_step))
+}
+
 const fn share(key: &'static str, label: &'static str, shown: fn(&Table) -> bool) -> FieldSpec {
     FieldSpec::share(key, label)
         .shown_when(shown)
         .help(SHARE_HELP)
 }
 
-const fn step_from(key: &'static str, label: &'static str) -> FieldSpec {
+const fn cash(key: &'static str, label: &'static str, shown: fn(&Table) -> bool) -> FieldSpec {
+    FieldSpec::remainder(key, label)
+        .shown_when(shown)
+        .help(CASH_HELP)
+}
+
+const fn step_from(key: &'static str, label: &'static str, shown: fn(&Table) -> bool) -> FieldSpec {
     FieldSpec::trigger(key, label)
-        .shown_when(glides)
+        .shown_when(shown)
         .help(STEP_FROM_HELP)
 }
 
@@ -141,12 +160,31 @@ impl Domain for Accounts {
             .help("Growth per year, the same every year and in every market. Blank earns nothing."),
         share("allocation.stocks", "Stocks", holds_mix),
         share("allocation.bonds", "Bonds", holds_mix),
-        step_from("allocation.0.from", "First mix from"),
-        share("allocation.0.stocks", "  Stocks", glides),
-        share("allocation.0.bonds", "  Bonds", glides),
-        step_from("allocation.1.from", "Then from"),
-        share("allocation.1.stocks", "  Stocks", glides),
-        share("allocation.1.bonds", "  Bonds", glides),
+        cash("allocation.cash", "Cash", holds_mix),
+        step_from("allocation.0.from", "Mix 1 from", step_shown::<0>),
+        share("allocation.0.stocks", "  Stocks", step_shown::<0>),
+        share("allocation.0.bonds", "  Bonds", step_shown::<0>),
+        cash("allocation.0.cash", "  Cash", step_shown::<0>),
+        step_from("allocation.1.from", "Mix 2 from", step_shown::<1>),
+        share("allocation.1.stocks", "  Stocks", step_shown::<1>),
+        share("allocation.1.bonds", "  Bonds", step_shown::<1>),
+        cash("allocation.1.cash", "  Cash", step_shown::<1>),
+        step_from("allocation.2.from", "Mix 3 from", step_shown::<2>),
+        share("allocation.2.stocks", "  Stocks", step_shown::<2>),
+        share("allocation.2.bonds", "  Bonds", step_shown::<2>),
+        cash("allocation.2.cash", "  Cash", step_shown::<2>),
+        step_from("allocation.3.from", "Mix 4 from", step_shown::<3>),
+        share("allocation.3.stocks", "  Stocks", step_shown::<3>),
+        share("allocation.3.bonds", "  Bonds", step_shown::<3>),
+        cash("allocation.3.cash", "  Cash", step_shown::<3>),
+        step_from("allocation.4.from", "Mix 5 from", step_shown::<4>),
+        share("allocation.4.stocks", "  Stocks", step_shown::<4>),
+        share("allocation.4.bonds", "  Bonds", step_shown::<4>),
+        cash("allocation.4.cash", "  Cash", step_shown::<4>),
+        step_from("allocation.5.from", "Mix 6 from", step_shown::<5>),
+        share("allocation.5.stocks", "  Stocks", step_shown::<5>),
+        share("allocation.5.bonds", "  Bonds", step_shown::<5>),
+        cash("allocation.5.cash", "  Cash", step_shown::<5>),
         FieldSpec::trigger("locked_until", "Locked until")
             .blank("Never")
             .help("Until then, nothing can be withdrawn or transferred out."),
@@ -213,20 +251,47 @@ mod tests {
             MIX,
         );
         assert!(get_path(&whole, "allocation.cash").is_none(), "{whole}");
+        let whole_number = written("allocation = { stocks = 1 }", MIX);
+        assert!(
+            get_path(&whole_number, "allocation.cash").is_none(),
+            "{whole_number}"
+        );
     }
 
     #[test]
     fn a_glide_path_drops_its_blank_steps_and_keeps_those_the_form_does_not_show() {
-        let steps = written(
-            "allocation = [{ from = { age = 50 }, stocks = 1.0 }, {}, { from = { age = 60 }, bonds = 1.0 }, { from = { age = 70 }, stocks = 0.5 }]",
-            GLIDE,
-        );
+        let step = |age: u8| format!("{{ from = {{ age = {age} }}, stocks = 0.5 }}");
+        let mut steps: Vec<String> = (50..57).map(step).collect();
+        steps.insert(1, "{}".to_owned());
+        let steps = written(&format!("allocation = [{}]", steps.join(", ")), GLIDE);
         let steps = steps["allocation"].as_array().unwrap();
-        assert_eq!(steps.len(), 3, "{steps:?}");
+        assert_eq!(steps.len(), 7, "{steps:?}");
         assert_eq!(
-            steps[2]["cash"].as_float(),
+            steps[6]["cash"].as_float(),
             Some(0.5),
-            "the third step, filled"
+            "the seventh step, past the form's last, filled"
+        );
+    }
+
+    #[test]
+    fn each_filled_step_is_offered_and_one_blank_one_after_the_last() {
+        let glide = |text: &str| {
+            let mut glide = item(text);
+            glide.insert(INVESTED.to_owned(), Value::String(GLIDE.to_owned()));
+            glide
+        };
+        let empty = glide("");
+        assert!(step_shown::<0>(&empty) && !step_shown::<1>(&empty));
+        let second_blanked =
+            glide("allocation = [{ from = { age = 50 } }, {}, { from = { age = 70 } }]");
+        assert!(
+            step_shown::<1>(&second_blanked),
+            "a later step holds it open"
+        );
+        assert!(step_shown::<3>(&second_blanked) && !step_shown::<4>(&second_blanked));
+        assert!(
+            !step_shown::<0>(&item("")),
+            "not while the pick is a return"
         );
     }
 

@@ -227,7 +227,7 @@ pub fn sync_item_form(
         ITEM_HINTS
     };
     commands.entity(form).insert((
-        build::centred(editing.ops),
+        build::centred(),
         Framed::over(editing.title()),
         ModalOpen,
         hints,

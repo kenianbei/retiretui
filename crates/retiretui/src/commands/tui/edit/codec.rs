@@ -72,8 +72,46 @@ fn get_within<'a>(value: &'a Value, key: &str) -> Option<&'a Value> {
     let Value::Array(items) = value else {
         return get_path(value.as_table()?, key);
     };
-    let (at, inner) = key.split_once(KEY_SEPARATOR)?;
+    let Some((at, inner)) = key.split_once(KEY_SEPARATOR) else {
+        return items.get(key.parse::<usize>().ok()?);
+    };
     get_path(items.get(at.parse::<usize>().ok()?)?.as_table()?, inner)
+}
+
+/// A number the file states, whole or not.
+pub fn as_number(value: &Value) -> Option<f64> {
+    match value {
+        Value::Integer(whole) => Some(*whole as f64),
+        Value::Float(real) => Some(*real),
+        _ => None,
+    }
+}
+
+/// Below this, what shares leave of the whole is rounding, not a share.
+const ROUNDING: f64 = 1e-9;
+
+/// What the shares of `shares` other than `own` leave of the whole.
+pub fn left_of(shares: &Table, own: &str) -> f64 {
+    let taken = shares
+        .iter()
+        .filter(|(held, _)| held.as_str() != own)
+        .filter_map(|(_, share)| as_number(share));
+    let left = 1.0 - taken.sum::<f64>();
+    if left.abs() < ROUNDING { 0.0 } else { left }
+}
+
+/// What the other shares of the table holding `key` leave of the whole,
+/// where the item holds that table.
+pub fn share_left(item: &Table, key: &str) -> Option<f64> {
+    let (outer, own) = key.rsplit_once(KEY_SEPARATOR)?;
+    Some(left_of(get_path(item, outer)?.as_table()?, own))
+}
+
+/// An issue's path as a key: `allocation[2]` reaches what
+/// `allocation.2.from` does.
+pub fn as_key(path: &str) -> String {
+    path.replace(INDEX_OPEN, &KEY_SEPARATOR.to_string())
+        .replace(INDEX_CLOSE, "")
 }
 
 /// Writes the value at `key`, or clears it. A table is made for the first

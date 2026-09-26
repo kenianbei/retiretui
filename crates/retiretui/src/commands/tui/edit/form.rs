@@ -41,7 +41,13 @@ pub fn plugin(app: &mut App) {
     );
     app.add_systems(
         Update,
-        (mark_issues, show_help, field::light_brackets).in_set(Repainted),
+        (
+            mark_issues,
+            show_help,
+            field::light_brackets,
+            field::show_remainders,
+        )
+            .in_set(Repainted),
     );
     app.add_systems(Update, field::place_brackets.after(trigger::place_slots));
     app.add_systems(
