@@ -50,7 +50,9 @@ impl Ring<'_, '_> {
     }
 
     /// The page's own panes in the order they are drawn: every stop under
-    /// the surface's root, depth first in child order.
+    /// the surface's root, depth first in child order. A stop holds no
+    /// other, so the walk does not go down into one - a table's rows are
+    /// never visited.
     fn panes(&self) -> impl Iterator<Item = Entity> {
         let shown = self.shown.surface();
         let root = self
@@ -58,9 +60,25 @@ impl Ring<'_, '_> {
             .iter()
             .find(|(_, root)| root.0 == shown)
             .map(|(entity, _)| entity);
-        root.into_iter()
-            .flat_map(|root| self.children.iter_descendants_depth_first(root))
-            .filter(|&entity| self.stops.contains(entity))
+        let mut unwalked: Vec<Entity> =
+            root.into_iter().flat_map(|root| self.under(root)).collect();
+        std::iter::from_fn(move || {
+            while let Some(entity) = unwalked.pop() {
+                if self.stops.contains(entity) {
+                    return Some(entity);
+                }
+                unwalked.extend(self.under(entity));
+            }
+            None
+        })
+    }
+
+    /// `entity`'s children, last first, so the first is walked first.
+    fn under(&self, entity: Entity) -> impl Iterator<Item = Entity> {
+        let children = self.children.get(entity).ok();
+        children
+            .into_iter()
+            .flat_map(|children| children.iter().rev().copied())
     }
 
     /// The panes the keyboard walks: the sidebar beside a grouped page,
@@ -229,6 +247,28 @@ mod tests {
                     .map_or("", |(_, word)| word)
             })
             .collect()
+    }
+
+    /// What the ring's walk rests on: it does not go down into a stop.
+    #[test]
+    fn no_stop_holds_another() {
+        let mut app = headless_app(SIZE);
+        for page in Page::ALL {
+            show(&mut app, page);
+        }
+        let world = app.world_mut();
+        let stops: Vec<Entity> = world
+            .query_filtered::<Entity, bevy_ecs::prelude::With<FocusStop>>()
+            .iter(world)
+            .collect();
+        let mut children = world.query::<&Children>();
+        let children = children.query(world);
+        for &stop in &stops {
+            let nested = children
+                .iter_descendants(stop)
+                .find(|entity| stops.contains(entity));
+            assert_eq!(nested, None, "a stop under {stop}");
+        }
     }
 
     #[test]
