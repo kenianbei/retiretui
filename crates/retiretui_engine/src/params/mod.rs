@@ -12,8 +12,8 @@ use crate::plan::{Dollars, FilingStatus};
 mod index;
 
 pub use index::Inflation;
-use index::inflate;
 pub(crate) use index::scale;
+use index::{inflate, inflate_state};
 
 /// The tax parameter file schema version this build reads.
 const PARAMS_SCHEMA_VERSION: u32 = 1;
@@ -149,6 +149,11 @@ pub struct BenefitParams {
     pub wage_growth: f64,
     /// The national average wage index by year, as published.
     pub wage_index: BTreeMap<i16, f64>,
+    /// Each published cost-of-living adjustment, as a rate, by the year it
+    /// took effect; a benefit carries those from the year its worker turns
+    /// 62.
+    #[serde(default)]
+    pub cola: BTreeMap<i16, f64>,
 }
 
 /// The 1994 contribution and benefit base; later bases scale it by the
@@ -452,7 +457,9 @@ impl TaxTables {
     /// table at or below it; a year past the last known table is that table
     /// with its indexed dollar values carried to `year` by `inflation`.
     /// Statutory unindexed values (Social Security thresholds, RMD divisors,
-    /// rates) are never scaled.
+    /// rates) are never scaled. A state the answering table omits is taken
+    /// from the latest earlier table holding it, carried from that table's
+    /// year alike, so an override year need not restate every state.
     ///
     /// # Panics
     ///
@@ -466,11 +473,24 @@ impl TaxTables {
             .next_back()
             .or_else(|| self.years.iter().next())
             .expect("at least one tax table is loaded");
-        if year <= base_year {
+        let mut params = if year <= base_year {
             let mut params = base.clone();
             params.year = year;
-            return params;
+            params
+        } else {
+            inflate(base, year, inflation.factor(base_year, year))
+        };
+        for (&earlier_year, earlier) in self.years.range(..base_year).rev() {
+            let factor = inflation.factor(earlier_year, year);
+            for (code, state) in &earlier.states {
+                if params.states.contains_key(code) {
+                    continue;
+                }
+                let mut state = state.clone();
+                inflate_state(&mut state, factor);
+                params.states.insert(code.clone(), state);
+            }
         }
-        inflate(base, year, inflation.factor(base_year, year))
+        params
     }
 }

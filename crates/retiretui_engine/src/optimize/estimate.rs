@@ -9,7 +9,7 @@ use crate::params::TaxTables;
 use crate::plan::{Dollars, IncomeKind, Person, Plan};
 use crate::project::benefit_params;
 use crate::project::{deflate, horizon_year, project};
-use crate::tax::{self, EARLIEST_CLAIM_AGE, FIRST_WORKING_AGE, LATEST_CREDIT_AGE, MONTHS_PER_YEAR};
+use crate::tax::{self, EARLIEST_CLAIM_AGE, LATEST_CREDIT_AGE, MONTHS_PER_YEAR};
 
 /// `person`'s monthly benefit in today's dollars claimed at 62, at the first
 /// whole age at or past full retirement age, and at 70: each read off the
@@ -72,7 +72,7 @@ fn estimate_at(
 
 /// A career for `person` at the salary the plan pays them in its start
 /// year, today's dollars, through [`tax::earnings_at_wage`] from
-/// [`FIRST_WORKING_AGE`] to the year before the plan. `plan` must be valid.
+/// [`tax::FIRST_WORKING_AGE`] to the year before the plan. `plan` must be valid.
 ///
 /// # Errors
 ///
@@ -96,8 +96,7 @@ pub fn career_at_salary(
             "{person} is paid no salary in {start_year} to fill a career from; import a statement"
         ));
     }
-    let from = owner.birth.year() + FIRST_WORKING_AGE;
-    let career = tax::earnings_at_wage(&params, salary, start_year, from..=start_year - 1);
+    let career = tax::career_before(&params, owner.birth.year(), salary, start_year);
     if career.is_empty() {
         return Err(format!("{person} has no working year before {start_year}"));
     }

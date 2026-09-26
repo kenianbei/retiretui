@@ -4,7 +4,7 @@
 mod common;
 
 use retiretui_engine::optimize::{benefit_estimates, career_at_salary};
-use retiretui_engine::params::{Inflation, TaxTables};
+use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::Plan;
 use retiretui_engine::tax::{earnings_at_wage, social_security_benefit};
 
@@ -49,14 +49,12 @@ fn with_income(income: &str) -> Plan {
 fn the_estimates_are_the_formula_monthly_and_rise_with_the_claim() {
     let plan = plan_from(BASE);
     let estimates = benefit_estimates(&plan, &TaxTables::embedded(), "me");
-    let params = TaxTables::embedded()
-        .params_for(2026, &Inflation::constant(0.0))
-        .social_security
-        .benefit
-        .unwrap();
+    let params = common::benefit_params();
     let earnings = &plan.person("me").unwrap().earnings;
-    let expected =
-        [62, 67, 70].map(|age| Some(social_security_benefit(&params, 1964, age, earnings) / 12));
+    // Born on the 15th, 62 is first held throughout the month after the
+    // birthday's: a claim at 62 is a month older than 62.
+    let expected = [62 * 12 + 1, 67 * 12, 70 * 12]
+        .map(|months| Some(social_security_benefit(&params, 1964, months, earnings, &[]) / 12));
     assert_eq!(estimates, expected);
     let [early, full, late] = estimates.map(Option::unwrap);
     assert!(early < full && full < late, "{estimates:?}");
@@ -102,11 +100,7 @@ fn a_career_is_the_wage_indexed_salary_before_the_plan() {
     let salaried = with_income(
         "[[income]]\nid = \"pay\"\nkind = \"salary\"\nowner = \"me\"\namount = 100000\n",
     );
-    let params = TaxTables::embedded()
-        .params_for(2026, &Inflation::constant(0.0))
-        .social_security
-        .benefit
-        .unwrap();
+    let params = common::benefit_params();
     assert_eq!(
         career_at_salary(&salaried, &TaxTables::embedded(), "me").unwrap(),
         earnings_at_wage(&params, 100_000, 2026, 1986..=2025)

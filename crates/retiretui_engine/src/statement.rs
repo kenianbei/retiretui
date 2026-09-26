@@ -22,6 +22,26 @@ pub struct Statement {
     pub birth: PlanDate,
     /// Covered (FICA) earnings by calendar year, nominal.
     pub earnings: BTreeMap<i16, Dollars>,
+    /// The first and last year of each row that stated several years'
+    /// earnings as one sum, which `earnings` holds spread evenly over them.
+    pub grouped: Vec<(i16, i16)>,
+}
+
+impl Statement {
+    /// A sentence naming the rows spread over their years, if any were.
+    #[must_use]
+    pub fn spread_note(&self) -> Option<String> {
+        if self.grouped.is_empty() {
+            return None;
+        }
+        let ranges: Vec<String> = (self.grouped.iter())
+            .map(|(from, to)| format!("{from}-{to}"))
+            .collect();
+        Some(format!(
+            "earnings stated as one sum for {} were spread evenly over those years",
+            ranges.join(", ")
+        ))
+    }
 }
 
 /// Why a statement could not be read.
@@ -43,24 +63,16 @@ pub enum StatementError {
         /// What was expected of it.
         expected: &'static str,
     },
-    /// Several years' earnings stated as one lump, which no record can
-    /// place year by year.
-    #[error("earnings for {from}-{to} are one lump; enter those years by hand")]
-    Grouped {
-        /// The first year of the lump.
-        from: i16,
-        /// The last year of the lump.
-        to: i16,
-    },
 }
 
-/// Reads a statement's XML text.
+/// Reads a statement's XML text. A row stating several years' earnings as
+/// one sum is spread evenly over them, the remainder on the last.
 ///
 /// # Errors
 ///
 /// Returns a [`StatementError`] when the text is not a statement of the
-/// expected schema, lacks its date of birth, holds a value that does not
-/// read, or groups several years' earnings into one figure.
+/// expected schema, lacks its date of birth, or holds a value that does not
+/// read, a year range running backwards among them.
 pub fn parse(xml: &str) -> Result<Statement, StatementError> {
     if !xml.contains(NAMESPACE) {
         return Err(StatementError::NotAStatement);
@@ -71,22 +83,39 @@ pub fn parse(xml: &str) -> Result<Statement, StatementError> {
         .map(PlanDate)
         .map_err(|_| malformed(BIRTH_TAG, birth_text, "date"))?;
     let mut earnings = BTreeMap::new();
+    let mut grouped = Vec::new();
     let open = format!("<osss:{EARNINGS_TAG} ");
     let close = format!("</osss:{EARNINGS_TAG}>");
     for row in xml.split(&open).skip(1) {
         let row = row.split_once(&close).map_or(row, |(row, _)| row);
         let from = attribute(row, START_ATTRIBUTE)?;
         let to = attribute(row, END_ATTRIBUTE)?;
-        if from != to {
-            return Err(StatementError::Grouped { from, to });
-        }
         let amount_text = text_of(row, FICA_TAG).ok_or(StatementError::Missing(FICA_TAG))?;
-        let amount = amount_text
+        let amount: Dollars = amount_text
             .parse()
             .map_err(|_| malformed(FICA_TAG, amount_text, "whole number of dollars"))?;
-        earnings.insert(from, amount);
+        let years = Dollars::from(to - from) + 1;
+        if years < 1 {
+            return Err(malformed(
+                EARNINGS_TAG,
+                &format!("{from}-{to}"),
+                "year range",
+            ));
+        }
+        if years > 1 {
+            grouped.push((from, to));
+        }
+        let share = amount / years;
+        for year in from..to {
+            earnings.insert(year, share);
+        }
+        earnings.insert(to, amount - share * (years - 1));
     }
-    Ok(Statement { birth, earnings })
+    Ok(Statement {
+        birth,
+        earnings,
+        grouped,
+    })
 }
 
 fn text_of<'a>(xml: &'a str, tag: &str) -> Option<&'a str> {

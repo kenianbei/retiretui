@@ -26,6 +26,11 @@ pub const LATEST_CREDIT_AGE: i16 = 70;
 
 /// Months in a year, which the benefit's monthly figures are counted in.
 pub const MONTHS_PER_YEAR: i32 = 12;
+
+/// [`EARLIEST_CLAIM_AGE`] in months.
+pub const EARLIEST_CLAIM_MONTHS: i32 = EARLIEST_CLAIM_AGE as i32 * MONTHS_PER_YEAR;
+/// [`LATEST_CREDIT_AGE`] in months.
+pub const LATEST_CREDIT_MONTHS: i32 = LATEST_CREDIT_AGE as i32 * MONTHS_PER_YEAR;
 /// The highest indexed years averaged into the AIME, and their months.
 const COMPUTATION_YEARS: usize = 35;
 const COMPUTATION_MONTHS: f64 = (COMPUTATION_YEARS as i32 * MONTHS_PER_YEAR) as f64;
@@ -162,24 +167,33 @@ pub fn full_retirement_months(birth_year: i16) -> i32 {
     }
 }
 
-/// The annual retirement benefit for a claim at `claim_age` whole years,
-/// in the dollars of the year the worker turns 62 and before the COLAs
-/// that run from it: each year's covered earnings capped at its own wage
-/// base and indexed to the average wage of the year they turn 60, the
-/// highest 35 years averaged monthly, the PIA through the bend points of
-/// the eligibility year truncated to the dime, then reduced or credited
-/// month by month against full retirement age and truncated to the dollar.
-/// Claims past 70 earn 70's credit.
+/// The annual retirement benefit for a claim at `age_months` of age: each
+/// year's covered earnings capped at its own wage base and indexed to the
+/// average wage of the year the worker turns 60, the highest 35 years
+/// averaged monthly, the PIA through the bend points of the year they turn
+/// 62 truncated to the dime, carried through each of `colas` in turn and
+/// truncated to the dime again after each, then reduced or credited month
+/// by month against full retirement age and truncated to the dollar.
+/// Claims past 70 earn 70's credit. Without `colas` the benefit is in the
+/// dollars of the year the worker turns 62.
 #[must_use]
 pub fn social_security_benefit(
     params: &BenefitParams,
     birth_year: i16,
-    claim_age: i16,
+    age_months: i32,
     earnings: &BTreeMap<i16, Dollars>,
+    colas: &[f64],
 ) -> Dollars {
-    let pia = primary_insurance_amount(params, birth_year, earnings);
-    let monthly = (pia * claim_factor(birth_year, claim_age) * 100.0).round() / 100.0;
+    let pia = (colas.iter()).fold(
+        primary_insurance_amount(params, birth_year, earnings),
+        |pia, cola| to_the_dime(pia * (1.0 + cola)),
+    );
+    let monthly = (pia * claim_factor(birth_year, age_months) * 100.0).round() / 100.0;
     monthly.floor() as Dollars * MONTHS_PER_YEAR as Dollars
+}
+
+fn to_the_dime(amount: f64) -> f64 {
+    ((amount * 100.0).round() / 10.0).floor() / 10.0
 }
 
 /// A career at one real wage, as SSA's Quick Calculator fills a record
@@ -202,20 +216,69 @@ pub fn earnings_at_wage(
         .collect()
 }
 
-/// The share of the year a worker turns `claim_age` that a claim at that
-/// age is paid for: the months from the one the age is attained in, out
-/// of twelve. An age is attained the day before the birthday, except that
-/// 62 must be attained by the month's first day; nothing when that falls
-/// in the next year.
+/// A career before `start_year` at one `salary` in that year's dollars,
+/// through [`earnings_at_wage`] from the year the worker turned
+/// [`FIRST_WORKING_AGE`].
 #[must_use]
-pub fn claim_year_share(birth: PlanDate, claim_age: i16) -> f64 {
-    let first_paid = i16::from(birth.0.month())
-        + match (claim_age == EARLIEST_CLAIM_AGE, birth.0.day()) {
-            (true, day) if day > 2 => 1,
-            (false, 1) => -1,
-            _ => 0,
-        };
-    let months = (MONTHS_PER_YEAR as i16 + 1 - first_paid).clamp(0, MONTHS_PER_YEAR as i16);
+pub fn career_before(
+    params: &BenefitParams,
+    birth_year: i16,
+    salary: Dollars,
+    start_year: i16,
+) -> BTreeMap<i16, Dollars> {
+    let from = birth_year + FIRST_WORKING_AGE;
+    earnings_at_wage(params, salary, start_year, from..=start_year - 1)
+}
+
+/// The age in months a claim at `age_months` is paid at for the rest of
+/// the calendar year it is made in, whose January the worker was
+/// `january_months` old in: credits past full retirement age earned that
+/// year are paid from the next January, except for a claim at 70 or later,
+/// credited at once.
+#[must_use]
+pub fn claim_year_age(birth_year: i16, age_months: i32, january_months: i32) -> i32 {
+    let full = full_retirement_months(birth_year);
+    if age_months > full && age_months < LATEST_CREDIT_MONTHS {
+        january_months.clamp(full, age_months)
+    } else {
+        age_months
+    }
+}
+
+/// A calendar month as one count across years: `year * 12 + month - 1`.
+#[must_use]
+pub fn month_index(year: i16, month: i8) -> i32 {
+    i32::from(year) * MONTHS_PER_YEAR + i32::from(month) - 1
+}
+
+/// The month someone born on `birth` attains `age`: an age is attained the
+/// day before the birthday, so a month early for a birthday on the 1st.
+#[must_use]
+pub fn attained_month(birth: PlanDate, age: u8) -> i32 {
+    month_index(birth.year() + i16::from(age), birth.0.month()) - i32::from(birth.0.day() == 1)
+}
+
+/// Someone born on `birth`'s age in `month`, in whole months.
+#[must_use]
+pub fn age_months(birth: PlanDate, month: i32) -> i32 {
+    month - attained_month(birth, 0)
+}
+
+/// The first month a retirement benefit can be paid for: 62 must be held
+/// throughout it, so the month 62 is attained only when it is attained on
+/// that month's first day.
+#[must_use]
+pub fn first_claim_month(birth: PlanDate) -> i32 {
+    let attained = attained_month(birth, EARLIEST_CLAIM_AGE as u8);
+    attained + i32::from(birth.0.day() != 2)
+}
+
+/// The share of `year` a benefit first paid for `first_paid` is paid for:
+/// the months from it, out of twelve; all of a later year and none of an
+/// earlier one.
+#[must_use]
+pub fn claim_year_share(first_paid: i32, year: i16) -> f64 {
+    let months = (month_index(year + 1, 1) - first_paid).clamp(0, MONTHS_PER_YEAR);
     f64::from(months) / f64::from(MONTHS_PER_YEAR)
 }
 
@@ -246,12 +309,12 @@ fn primary_insurance_amount(
     let pia = PIA_RATES[0] * aime.min(first)
         + PIA_RATES[1] * (aime.min(second) - first).max(0.0)
         + PIA_RATES[2] * (aime - second).max(0.0);
-    ((pia * 100.0).round() / 10.0).floor() / 10.0
+    to_the_dime(pia)
 }
 
-fn claim_factor(birth_year: i16, claim_age: i16) -> f64 {
+fn claim_factor(birth_year: i16, age_months: i32) -> f64 {
     let full = full_retirement_months(birth_year);
-    let claim = i32::from(claim_age.min(LATEST_CREDIT_AGE)) * MONTHS_PER_YEAR;
+    let claim = age_months.min(LATEST_CREDIT_MONTHS);
     if claim >= full {
         return 1.0 + f64::from(claim - full) * DELAYED_RATE;
     }

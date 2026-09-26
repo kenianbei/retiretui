@@ -4,7 +4,7 @@
 
 use crate::plan::Dollars;
 
-use super::{Bracket, ContributionLimits, PerStatus, PhaseOut, TaxParams};
+use super::{Bracket, ContributionLimits, PerStatus, PhaseOut, StateParams, TaxParams};
 
 /// How prices moved: each year's inflation over a span of years, and one
 /// rate for every year before or after it.
@@ -105,14 +105,18 @@ fn scale_brackets(brackets: &mut PerStatus<Vec<Bracket>>, factor: f64) {
     }
 }
 
+pub(super) fn inflate_state(state: &mut StateParams, factor: f64) {
+    state.deduction = scale_status(state.deduction, factor);
+    scale_brackets(&mut state.brackets, factor);
+}
+
 pub(super) fn inflate(base: &TaxParams, year: i16, factor: f64) -> TaxParams {
     let mut params = base.clone();
     params.year = year;
     params.deductions.standard = scale_status(base.deductions.standard, factor);
     scale_brackets(&mut params.brackets, factor);
     for state in params.states.values_mut() {
-        state.deduction = scale_status(state.deduction, factor);
-        scale_brackets(&mut state.brackets, factor);
+        inflate_state(state, factor);
     }
     params.ltcg.zero_until = scale_status(base.ltcg.zero_until, factor);
     params.ltcg.fifteen_until = scale_status(base.ltcg.fifteen_until, factor);

@@ -1,11 +1,20 @@
 //! Helpers the engine's test crates share.
 #![allow(dead_code, reason = "each test crate uses its own share of these")]
 
-use retiretui_engine::params::TaxTables;
+use retiretui_engine::params::{BenefitParams, Inflation, TaxTables};
 use retiretui_engine::plan::{Issue, Plan};
 use retiretui_engine::project::{Projection, project};
 
 pub const FULL: &str = include_str!("../fixtures/full.toml");
+
+/// The embedded benefit formula's parameters as a 2026 plan reads them.
+pub fn benefit_params() -> BenefitParams {
+    TaxTables::embedded()
+        .params_for(2026, &Inflation::constant(0.025))
+        .social_security
+        .benefit
+        .unwrap()
+}
 
 pub fn plan_from(text: &str) -> Plan {
     let plan = Plan::from_toml_str(text).unwrap();

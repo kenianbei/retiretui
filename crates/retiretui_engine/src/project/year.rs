@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use crate::params::TaxTables;
 use crate::plan::{Account, ColaSpec, Dollars, Plan, Span};
 
+use super::benefit::{Derived, first_paid_months};
 use super::collect::{default_cliff_end, seed_magi_lookback};
 use super::invest::Holding;
 use super::resolve::Resolver;
@@ -33,7 +34,10 @@ pub(crate) struct Simulation<'a> {
     /// The computed Social Security benefit per income, in start-year
     /// dollars of the income's own escalation, once its claim year has
     /// been walked.
-    pub(super) benefits: Vec<Option<Dollars>>,
+    pub(super) benefits: Vec<Option<Derived>>,
+    /// The first month each income is paid for, where it is a Social
+    /// Security benefit with a stated start.
+    pub(super) first_paid: Vec<Option<i32>>,
 }
 
 #[derive(Default)]
@@ -104,6 +108,7 @@ impl<'a> Simulation<'a> {
             default_cliff_end: default_cliff_end(plan),
             covered: BTreeMap::new(),
             benefits: vec![None; plan.income.len()],
+            first_paid: first_paid_months(plan),
         }
     }
 

@@ -41,18 +41,46 @@ fn refuses_what_is_not_a_statement() {
 }
 
 #[test]
-fn refuses_a_lump_over_several_years() {
-    let grouped = STATEMENT.replace(
-        "startYear=\"1995\" endYear=\"1995\"",
-        "startYear=\"1991\" endYear=\"1995\"",
-    );
+fn spreads_a_sum_over_several_years_evenly_with_the_remainder_last() {
+    let grouped = STATEMENT
+        .replace(
+            "startYear=\"1995\" endYear=\"1995\"",
+            "startYear=\"1991\" endYear=\"1995\"",
+        )
+        .replace("<osss:FicaEarnings>4200<", "<osss:FicaEarnings>4203<");
+    let statement = parse(&grouped).unwrap();
     assert_eq!(
-        parse(&grouped),
-        Err(StatementError::Grouped {
-            from: 1991,
-            to: 1995
-        })
+        statement.earnings,
+        [
+            (1991, 840),
+            (1992, 840),
+            (1993, 840),
+            (1994, 840),
+            (1995, 843),
+            (1996, 0),
+            (2024, 168_600)
+        ]
+        .into()
     );
+    assert_eq!(statement.grouped, [(1991, 1995)]);
+    let note = statement.spread_note().unwrap();
+    assert!(note.contains("1991-1995"), "{note}");
+    assert_eq!(parse(STATEMENT).unwrap().spread_note(), None);
+}
+
+#[test]
+fn refuses_a_range_that_runs_backwards() {
+    let backwards = STATEMENT.replace(
+        "startYear=\"1995\" endYear=\"1995\"",
+        "startYear=\"1995\" endYear=\"1991\"",
+    );
+    assert!(matches!(
+        parse(&backwards),
+        Err(StatementError::Malformed {
+            tag: "Earnings",
+            ..
+        })
+    ));
 }
 
 #[test]
