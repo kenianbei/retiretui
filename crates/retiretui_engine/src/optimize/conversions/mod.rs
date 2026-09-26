@@ -18,8 +18,9 @@ pub use ladder::{LADDER_ID_PREFIX, apply_ladder, is_ladder, ladder_overlay};
 
 use serde::Serialize;
 
+use super::rank_key;
 use crate::params::TaxTables;
-use crate::plan::{Dollars, Issue, Plan};
+use crate::plan::{Dollars, Issue, Plan, TreatmentClass};
 use crate::project::{Projection, plan_inflation, project};
 
 use check::check_options;
@@ -29,7 +30,8 @@ use fill::search_ladder;
 /// passed beside them, so a sweep reuses one set of constraints.
 #[derive(Debug, Clone)]
 pub struct OptimizeOptions {
-    /// Deferred source account ids, drained in the given order.
+    /// Deferred source account ids, drained in the given order; empty means
+    /// every deferred account of the destination's owner, in plan order.
     pub sources: Vec<String>,
     /// Roth destination account id; every source shares its owner.
     pub destination: String,
@@ -79,7 +81,8 @@ pub struct OptimizedLadder {
 pub struct BracketSweep {
     /// The plan projected as given, any ladder it holds included.
     pub baseline: Projection,
-    /// One entry per fillable bracket, ascending by rate.
+    /// One entry per bracket searched, best first by
+    /// [`rank_key`](super::rank_key); a tie keeps the lower rate first.
     pub brackets: Vec<SweptBracket>,
 }
 
@@ -132,6 +135,7 @@ pub fn optimize_conversions(
     options: &OptimizeOptions,
     bracket_rate: f64,
 ) -> Result<OptimizedLadder, Vec<Issue>> {
+    let options = &with_default_sources(plan, options);
     let issues = check_options(plan, tables, options, Some(bracket_rate));
     if !issues.is_empty() {
         return Err(issues);
@@ -149,9 +153,9 @@ pub fn optimize_conversions(
     })
 }
 
-/// Runs the optimizer once per fillable bracket (every rate but the top,
-/// which has no ceiling), in ascending rate order, against one shared
-/// baseline; each ladder replaces the plan's own, as
+/// Runs the optimizer once per bracket - `rate`'s alone, or every rate
+/// but the top, which has no ceiling - against one shared baseline, and
+/// ranks the ladders best first; each ladder replaces the plan's own, as
 /// [`optimize_conversions`].
 ///
 /// # Errors
@@ -161,24 +165,22 @@ pub fn sweep_brackets(
     plan: &Plan,
     tables: &TaxTables,
     options: &OptimizeOptions,
+    rate: Option<f64>,
 ) -> Result<BracketSweep, Vec<Issue>> {
-    let issues = check_options(plan, tables, options, None);
+    let options = &with_default_sources(plan, options);
+    let issues = check_options(plan, tables, options, rate);
     if !issues.is_empty() {
         return Err(issues);
     }
     let baseline = project(plan, tables);
     let (bare, from) = without_ladder(plan, tables, &baseline);
-    let params = tables.params_for(plan.plan.start_year, &plan_inflation(plan));
-    let rates: Vec<f64> = params
-        .brackets
-        .for_status(plan.household.filing)
-        .iter()
-        .map(|bracket| bracket.rate)
-        .collect();
-    let brackets = rates
-        .iter()
-        .take(rates.len().saturating_sub(1))
-        .map(|&rate| {
+    let rates = match rate {
+        Some(rate) => vec![rate],
+        None => fillable_rates(plan, tables),
+    };
+    let mut brackets: Vec<SweptBracket> = rates
+        .into_iter()
+        .map(|rate| {
             let (steps, optimized) = search_ladder(&bare, tables, options, rate, &from);
             SweptBracket {
                 rate,
@@ -187,7 +189,41 @@ pub fn sweep_brackets(
             }
         })
         .collect();
+    brackets.sort_by_cached_key(|bracket| rank_key(&bracket.optimized));
     Ok(BracketSweep { baseline, brackets })
+}
+
+/// Every bracket rate a ladder can fill: all but the top, ascending.
+fn fillable_rates(plan: &Plan, tables: &TaxTables) -> Vec<f64> {
+    let params = tables.params_for(plan.plan.start_year, &plan_inflation(plan));
+    let mut rates: Vec<f64> = params
+        .brackets
+        .for_status(plan.household.filing)
+        .iter()
+        .map(|bracket| bracket.rate)
+        .collect();
+    rates.pop();
+    rates
+}
+
+/// `options` with no sources stated read as every deferred account of the
+/// destination's owner, in plan order.
+fn with_default_sources(plan: &Plan, options: &OptimizeOptions) -> OptimizeOptions {
+    let mut options = options.clone();
+    if options.sources.is_empty() {
+        let owner = plan
+            .account(&options.destination)
+            .map(|account| &account.owner);
+        options.sources = plan
+            .accounts
+            .iter()
+            .filter(|account| {
+                account.treatment() == TreatmentClass::Deferred && Some(&account.owner) == owner
+            })
+            .map(|account| account.id.clone())
+            .collect();
+    }
+    options
 }
 
 /// `plan` without the conversions a ladder put there, and its projection,

@@ -13,6 +13,7 @@ use crate::commands::tui::support::{
 };
 use crate::commands::tui::tools::hold;
 use crate::commands::tui::tools::write::SAVE_FIRST;
+use retiretui_engine::optimize::optimize_conversions;
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::Scenario;
 
@@ -217,7 +218,7 @@ fn a_search_arrives_ranked_best_first_and_arrows_step_over_the_plan_s_own_row() 
     let expected: Vec<String> = {
         let plan = &app.world().resource::<Draft>().plan;
         let (options, rate) = held(app.world().resource::<Draft>()).unwrap();
-        search(plan, &TaxTables::embedded(), &options, rate)
+        sweep_brackets(plan, &TaxTables::embedded(), &options, rate)
             .unwrap()
             .brackets
             .iter()
@@ -284,7 +285,7 @@ fn an_edit_during_a_search_drops_the_result() {
     app.world_mut()
         .resource_mut::<Ladders>()
         .start(plan, move |plan| {
-            let sweep = sweep_brackets(plan, &TaxTables::embedded(), &options)?;
+            let sweep = sweep_brackets(plan, &TaxTables::embedded(), &options, None)?;
             Ok(Swept { sweep, options })
         });
     commit_edit(&mut app, |plan| plan.plan.name = Some("changed".to_owned()));

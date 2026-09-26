@@ -5,7 +5,7 @@ mod common;
 
 use retiretui_engine::optimize::{
     OptimizeOptions, OptimizedLadder, SweptBracket, apply_ladder, is_ladder, ladder_overlay,
-    optimize_conversions, sweep_brackets,
+    optimize_conversions, rank_key, sweep_brackets,
 };
 use retiretui_engine::params::{Inflation, TaxTables};
 use retiretui_engine::plan::{Plan, Scenario};
@@ -265,8 +265,8 @@ fn a_new_ladder_replaces_the_one_taken() {
         project(&laddered, &TaxTables::embedded()),
         "the plan as given"
     );
-    let swept = sweep_brackets(&laddered, &TaxTables::embedded(), &options()).unwrap();
-    let fresh = sweep_brackets(&plan_from(BASE), &TaxTables::embedded(), &options()).unwrap();
+    let swept = sweep_brackets(&laddered, &TaxTables::embedded(), &options(), None).unwrap();
+    let fresh = sweep_brackets(&plan_from(BASE), &TaxTables::embedded(), &options(), None).unwrap();
     let steps = |sweep: &retiretui_engine::optimize::BracketSweep| {
         sweep
             .brackets
@@ -341,19 +341,20 @@ fn optimizer_is_deterministic() {
 }
 
 #[test]
-fn sweep_covers_every_fillable_bracket() {
-    let sweep = sweep_brackets(&plan_from(BASE), &TaxTables::embedded(), &options()).unwrap();
+fn sweep_covers_every_fillable_bracket_best_first() {
+    let sweep = sweep_brackets(&plan_from(BASE), &TaxTables::embedded(), &options(), None).unwrap();
     let params = TaxTables::embedded().params_for(2026, &Inflation::constant(0.0));
     let brackets = params
         .brackets
         .for_status(retiretui_engine::plan::FilingStatus::Single);
     assert_eq!(sweep.brackets.len(), brackets.len() - 1);
     assert!(
-        sweep
-            .brackets
-            .windows(2)
-            .all(|pair| pair[0].rate < pair[1].rate),
-        "ascending rates"
+        sweep.brackets.windows(2).all(|pair| {
+            let key = |bracket: &SweptBracket| rank_key(&bracket.optimized);
+            key(&pair[0]) < key(&pair[1])
+                || (key(&pair[0]) == key(&pair[1]) && pair[0].rate < pair[1].rate)
+        }),
+        "best first, a tie keeping the lower rate first"
     );
     let twelve = sweep
         .brackets
@@ -404,8 +405,34 @@ fn bad_options_are_refused() {
             .iter()
             .any(|issue| issue.message.contains("unknown account"))
     );
-    let issues = refuse(|bad| bad.sources = Vec::new());
+    let issues = refuse(|bad| {
+        bad.sources = Vec::new();
+        bad.destination = "ghost".to_owned();
+    });
     assert!(issues.iter().any(|issue| issue.path == "options.sources"));
+}
+
+#[test]
+fn blank_sources_are_every_deferred_account_of_the_destination_s_owner() {
+    let plan = plan_from(&BASE.replace(
+        "[[accounts]]\nid = \"r\"",
+        "[[accounts]]\nid = \"k2\"\nkind = \"ira\"\nowner = \"me\"\nbalance = 50000\n\n[[accounts]]\nid = \"r\"",
+    ));
+    let mut blank = options();
+    blank.sources = Vec::new();
+    let mut stated = options();
+    stated.sources = vec!["k".to_owned(), "k2".to_owned()];
+    let tables = TaxTables::embedded();
+    let ladder = |options| optimize_conversions(&plan, &tables, options, 0.12).unwrap();
+    let (from_blank, from_stated) = (ladder(&blank), ladder(&stated));
+    assert!(
+        from_blank
+            .ladder
+            .steps
+            .iter()
+            .any(|step| step.source == "k2")
+    );
+    assert_eq!(from_blank.ladder.steps, from_stated.ladder.steps);
 }
 
 #[test]

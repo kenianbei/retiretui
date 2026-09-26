@@ -20,8 +20,9 @@ use crate::commands::table::{align, display_dollars, summary_table};
 pub struct OptimizeArgs {
     /// Path to the plan or scenario TOML file.
     pub plan: PathBuf,
-    /// Deferred source account id, drained in the given order (repeatable).
-    #[arg(long, required = true)]
+    /// Deferred source account id, drained in the given order (repeatable);
+    /// absent means every deferred account of the destination's owner.
+    #[arg(long)]
     pub from: Vec<String>,
     /// Roth destination account id; every source must share its owner.
     #[arg(long)]
@@ -99,7 +100,8 @@ impl LadderConstraints {
 pub struct SweepReply {
     /// The plan without any ladder.
     pub baseline: Summary,
-    /// One entry per fillable bracket, ascending by rate.
+    /// One entry per fillable bracket, best first: the least left unfunded,
+    /// then the most left at the end.
     pub brackets: Vec<SweepEntry>,
 }
 
@@ -170,6 +172,7 @@ fn run_sweep(plan: &Plan, tables: &TaxTables, args: &OptimizeArgs) -> anyhow::Re
         plan,
         tables,
         &args.constraints.options(&args.from, &args.to),
+        None,
     )
     .map_err(|issues| anyhow::Error::msg(crate::commands::issue_listing(&issues)))?;
     let deflated = !args.nominal;

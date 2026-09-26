@@ -18,7 +18,9 @@ use crate::commands::optimize::{ClaimsReply, LadderConstraints, LadderReply, Swe
 pub struct ConversionToolArgs {
     /// Plan or scenario path, relative to the served directory.
     pub path: String,
-    /// Deferred source account ids, drained in the given order.
+    /// Deferred source account ids, drained in the given order; empty or
+    /// absent means every deferred account of the destination's owner.
+    #[serde(default)]
     pub from: Vec<String>,
     /// Roth destination account id; every source must share its owner.
     pub to: String,
@@ -111,7 +113,7 @@ impl PlanServer {
         Parameters(args): Parameters<ConversionToolArgs>,
     ) -> Result<Json<SweepReply>, String> {
         let plan = self.load_valid_plan(&args.path)?;
-        let sweep = sweep_brackets(&plan, &self.tables, &args.options())
+        let sweep = sweep_brackets(&plan, &self.tables, &args.options(), None)
             .map_err(|issues| crate::commands::issue_listing(&issues))?;
         Ok(Json(SweepReply::new(&sweep, !args.nominal)))
     }

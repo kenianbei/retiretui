@@ -116,13 +116,13 @@ fn best_ladder(app: &App, destination: &str) -> SweptBracket {
     let plan = &projected(app).plan;
     let tables = &app.world().resource::<Session>().tables;
     let (options, rate) = options_of(app, destination);
-    let sweep = ladders::search(plan, tables, &options, rate).unwrap();
+    let sweep = sweep_brackets(plan, tables, &options, rate).unwrap();
     sweep.brackets.into_iter().next().unwrap()
 }
 
 fn options_of(app: &App, destination: &str) -> (OptimizeOptions, Option<f64>) {
     let held = ladders::held_answers(app.world().resource::<Draft>());
-    ladders::options_into(&projected(app).plan, &held, destination).unwrap()
+    ladders::options_into(&held, destination).unwrap()
 }
 
 fn claim_search(app: &App) -> ClaimSearch {
@@ -173,7 +173,7 @@ fn enter_on_a_ladder_opens_its_search_with_the_same_best() {
     let tables = app.world().resource::<Session>().tables.clone();
     let plan = projected(&app).plan.clone();
     let (options, _) = options_of(&app, "roth");
-    let sweep = sweep_brackets(&plan, &tables, &options).unwrap();
+    let sweep = sweep_brackets(&plan, &tables, &options, None).unwrap();
     let best = best_ladder(&app, "roth");
     let lesser = sweep.brackets.iter().rfind(|held| held.steps != best.steps);
     takes(&mut app, &lesser.unwrap().clone(), "roth");
@@ -235,7 +235,7 @@ fn a_held_constraint_is_searched_under_and_kept() {
     let current = rank_key(&projected(&app).projection);
     let (options, _) = options_of(&app, ROTH);
     let tables = &app.world().resource::<Session>().tables;
-    let sweep = ladders::search(&projected(&app).plan, tables, &options, None).unwrap();
+    let sweep = sweep_brackets(&projected(&app).plan, tables, &options, None).unwrap();
     let held = (sweep.brackets[1..].iter())
         .find(|bracket| rank_key(&bracket.optimized) < current)
         .expect("a lesser ladder beats the plan");

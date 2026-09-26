@@ -14,10 +14,10 @@ use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
 use bevy_ecs::prelude::{Commands, In, IntoScheduleConfigs, Local, Res, ResMut, World};
 use retiretui_engine::optimize::{
     BracketSweep, LadderStep, OptimizeOptions, SweptBracket, apply_ladder, is_ladder,
-    ladder_overlay, optimize_conversions, rank_key, sweep_brackets,
+    ladder_overlay, sweep_brackets,
 };
 use retiretui_engine::params::TaxTables;
-use retiretui_engine::plan::{Issue, Plan, TreatmentClass};
+use retiretui_engine::plan::Plan;
 use retiretui_engine::project::Projection;
 use serde::Deserialize;
 
@@ -104,22 +104,9 @@ const NO_BRACKET: &str = "no bracket can be filled";
 
 impl Constraints {
     /// The engine's options, and the one bracket rate or `None` to sweep.
-    /// Blank sources are every deferred account of the destination's
-    /// owner.
-    fn options(self, plan: &Plan) -> Result<(OptimizeOptions, Option<f64>), String> {
+    fn options(self) -> Result<(OptimizeOptions, Option<f64>), String> {
         let destination = self.to.ok_or_else(|| NO_DESTINATION.to_owned())?;
-        let sources = if let Some(source) = self.from {
-            vec![source]
-        } else {
-            let owner = plan.account(&destination).map(|account| &account.owner);
-            plan.accounts
-                .iter()
-                .filter(|account| {
-                    account.treatment() == TreatmentClass::Deferred && Some(&account.owner) == owner
-                })
-                .map(|account| account.id.clone())
-                .collect()
-        };
+        let sources: Vec<String> = self.from.into_iter().collect();
         let options = self.held.options(&sources, &destination);
         let bracket = self.bracket.map(|percent| f64::from(percent) / 100.0);
         Ok((options, bracket))
@@ -139,14 +126,13 @@ pub(crate) fn held_answers(draft: &Draft) -> toml::Table {
 /// The options the page searches under with the `held` answers into
 /// `destination`, and the one bracket rate or `None` to sweep.
 pub(crate) fn options_into(
-    plan: &Plan,
     held: &toml::Table,
     destination: &str,
 ) -> Option<(OptimizeOptions, Option<f64>)> {
     let mut answers = held.clone();
     answers.insert(DESTINATION.to_owned(), destination.into());
     let constraints = edit::from_table::<Constraints>(answers).ok()?;
-    constraints.options(plan).ok()
+    constraints.options().ok()
 }
 
 /// Sets the form to search into `destination`, keeping the rest of what
@@ -160,8 +146,7 @@ pub(crate) fn aim_at(draft: &mut Draft, destination: &str) {
 /// The constraints the draft holds, and what the engine is to be asked
 /// under them.
 fn held(draft: &Draft) -> Result<(OptimizeOptions, Option<f64>), String> {
-    edit::from_table::<Constraints>(draft.answers::<Constraints>())
-        .and_then(|constraints| constraints.options(&draft.plan))
+    edit::from_table::<Constraints>(draft.answers::<Constraints>()).and_then(Constraints::options)
 }
 
 /// What a search found, and what it was searched under.
@@ -186,8 +171,8 @@ pub(crate) fn sweep_into(
     held: &toml::Table,
     destination: &str,
 ) -> Option<Swept> {
-    let (options, rate) = options_into(plan, held, destination)?;
-    let sweep = search(plan, tables, &options, rate).ok()?;
+    let (options, rate) = options_into(held, destination)?;
+    let sweep = sweep_brackets(plan, tables, &options, rate).ok()?;
     Some(Swept { sweep, options })
 }
 
@@ -305,32 +290,8 @@ fn search_by_itself(
     }
     let tables = session.tables.clone();
     ladders.start(draft.plan.clone(), move |plan| {
-        search(plan, &tables, &options, rate).map(|sweep| Swept { sweep, options })
+        sweep_brackets(plan, &tables, &options, rate).map(|sweep| Swept { sweep, options })
     });
-}
-
-/// The `rate` bracket's ladder, or every bracket's with none, best first
-/// as the claim search ranks; the sort is stable, so a tie keeps the
-/// lower rate first.
-pub(crate) fn search(
-    plan: &Plan,
-    tables: &TaxTables,
-    options: &OptimizeOptions,
-    rate: Option<f64>,
-) -> Result<BracketSweep, Vec<Issue>> {
-    let mut sweep = match rate {
-        Some(rate) => {
-            optimize_conversions(plan, tables, options, rate).map(|ladder| BracketSweep {
-                baseline: ladder.baseline,
-                brackets: vec![ladder.ladder],
-            })
-        }
-        None => sweep_brackets(plan, tables, options),
-    }?;
-    sweep
-        .brackets
-        .sort_by_cached_key(|bracket| rank_key(&bracket.optimized));
-    Ok(sweep)
 }
 
 /// The `take-ladder` command: asks before taking the highlighted ladder -
