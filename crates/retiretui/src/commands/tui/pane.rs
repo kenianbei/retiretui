@@ -8,6 +8,7 @@ use bevy_input_focus::InputFocus;
 use bevy_ui::{FlexDirection, Node, Overflow, UiRect, Val};
 use plurimus::core::ratatui_core::buffer::Buffer;
 use plurimus::core::ratatui_core::layout::Rect;
+use plurimus::core::ratatui_core::style::Style;
 use plurimus::core::ratatui_core::text::Line;
 use plurimus::core::ratatui_core::widgets::Widget;
 use plurimus::core::{UiArea, UiOrder, UiWidget};
@@ -38,6 +39,8 @@ pub struct Framed {
     pub title: String,
     /// What follows the title while there is something to say.
     pub note: String,
+    /// What the title is drawn in, where not the accent.
+    pub title_style: Option<Style>,
     is_covering: bool,
 }
 
@@ -48,6 +51,7 @@ impl Framed {
         Self {
             title: title.into(),
             note: String::new(),
+            title_style: None,
             is_covering: false,
         }
     }
@@ -59,6 +63,7 @@ impl Framed {
         Self {
             title: title.into(),
             note: String::new(),
+            title_style: None,
             is_covering: true,
         }
     }
@@ -67,6 +72,14 @@ impl Framed {
     pub fn retitle(framed: &mut Mut<Self>, title: &str) {
         if framed.title != title {
             title.clone_into(&mut framed.title);
+        }
+    }
+
+    /// Sets what the title is drawn in, the accent for `None`, marking the
+    /// frame changed only when it differs.
+    pub fn restyle(framed: &mut Mut<Self>, style: Option<Style>) {
+        if framed.title_style != style {
+            framed.title_style = style;
         }
     }
 
@@ -122,7 +135,7 @@ fn draw_frames(
         } else {
             format!(" {} · {} ", framed.title, framed.note)
         };
-        let title = Line::styled(heading, theme.accented());
+        let title = Line::styled(heading, framed.title_style.unwrap_or(theme.accented()));
         let block = Block::bordered()
             .border_type(BorderType::Rounded)
             .border_style(lined)

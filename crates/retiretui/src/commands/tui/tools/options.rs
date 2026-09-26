@@ -223,7 +223,8 @@ fn fill(commands: &mut Commands, table: Entity, laid: Laid, chosen: usize, theme
 
 /// The option the table's cursor rests on is the one the tool's commands
 /// take; moving it redraws nothing, so the tool is not marked changed. A
-/// cursor that lands on the plan's own row goes on to the best option.
+/// cursor that lands on the plan's own row rests there where the tool
+/// opens it, and goes on to the best option where it does not.
 pub fn follow_cursor<R: Found>(
     mut tables: Query<
         (&mut ActiveDescendant, &Children),
@@ -237,6 +238,9 @@ pub fn follow_cursor<R: Found>(
             continue;
         };
         match rows.get(row) {
+            Ok((true, _)) if R::IS_PLAN_ROW_CHOSEN => {
+                tool.bypass_change_detection().highlighted = 0;
+            }
             Ok((true, _)) => {
                 let best = children
                     .iter()

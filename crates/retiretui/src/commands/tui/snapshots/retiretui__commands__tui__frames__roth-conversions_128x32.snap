@@ -6,32 +6,32 @@ expression: composed_frame(app)
 ╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                              
 │1 Overview││2 Ledger││3 Compare││4 Tools││5 Plan│                                                                  full.toml ● 
 ┴──────────┴┴────────┴┴─────────┴╯       ╰┴──────┴──────────────────────────────────────────────────────────────────────────────
-╭ Tools ────────────╮╭ Constraints ───────────────────────────────────╮╭ Ladder Options ───────────────────────────────────────╮
-│▏ Roth Conversions ││                                                ││Ranked here once Convert to names a Roth account.      │
-│  SSA Benefits     ││▌ Convert from  Every deferred account          ││                                                       │
-│  Monte Carlo      ││  Convert to                                    ││                                                       │
-│  Historical       ││  Fill bracket                                  ││                                                       │
-│                   ││  First year                                    ││                                                       │
-│                   ││  Last year                                     ││                                                       │
-│                   ││  Annual cap                                    ││                                                       │
-│                   ││  Total cap                                     ││                                                       │
+╭ Tools ────────────╮╭ Constraints ───────────────────────────────────╮╭ Ladder Options · 0.0s ────────────────────────────────╮
+│▏ Roth Conversions ││                                                ││  Bracket converted unfunded final net taxes medicare  │
+│  SSA Benefits     ││▌ Convert from  Every deferred account          ││  Current      330k        0     2.09M  697k        0  │
+│  Monte Carlo      ││  Convert to    roth-ira                        ││▏ 22%          987k        0     2.15M  515k        0  │
+│  Historical       ││  Fill bracket                                  ││  24%          961k        0     2.13M  512k        0  │
+│                   ││  First year                                    ││  32%          957k        0     2.09M  521k        0  │
+│                   ││  Last year                                     ││  10%          388k        0     2.06M  709k        0  │
+│                   ││  Annual cap                                    ││  35%          956k        0     2.06M  527k        0  │
+│                   ││  Total cap                                     ││  12%          982k        0     2.04M  581k        0  │
 │                   ││  Headroom                                      │╰───────────────────────────────────────────────────────╯
 │                   ││  IRMAA tier                                    │╭ Conversions ──────────────────────────────────────────╮
-│                   ││  MAGI cap                                      ││The highlighted option's conversions, year by year.    │
-│                   ││                                                ││                                                       │
-│                   ││                                                ││                                                       │
-│                   ││                                                ││                                                       │
-│                   ││                                                ││                                                       │
-│                   ││                                                ││                                                       │
-│                   ││                                                ││                                                       │
-│                   ││                                                ││                                                       │
-│                   ││                                                ││                                                       │
-│                   ││                                                ││                                                       │
-│                   ││                                                ││                                                       │
-│                   ││                                                ││                                                       │
-│                   ││                                                ││                                                       │
-│                   ││                                                ││                                                       │
-│                   ││                                                ││                                                       │
+│                   ││  MAGI cap                                      ││  Year           From  Amount Taxable                  │
+│                   ││                                                ││▏ 2026       fid-401k    125k    211k                  │
+│                   ││                                                ││  2027       fid-401k    125k    211k                  │
+│                   ││                                                ││  2028       fid-401k    125k    211k                  │
+│                   ││                                                ││  2029       fid-401k    125k    211k                  │
+│                   ││                                                ││  2030       fid-401k    125k    211k                  │
+│                   ││                                                ││  2031       fid-401k     46k    131k                  │
+│                   ││                                                ││  2032       fid-401k     33k    118k                  │
+│                   ││                                                ││  2033       fid-401k     33k    118k                  │
+│                   ││                                                ││  2034       fid-401k     33k    118k                  │
+│                   ││                                                ││  2035       fid-401k     33k    118k                  │
+│                   ││                                                ││  2036       fid-401k     33k    118k                  │
+│                   ││                                                ││  2037       fid-401k    3093     73k                  │
+│                   ││                                                ││  2037   rollover-ira     82k     73k                  │
+│                   ││                                                ││  2038       fid-401k    3092     23k                  │
 │                   │╰────────────────────────────────────────────────╯╰───────────────────────────────────────────────────────╯
-╰───────────────────╯Pick the Roth account to convert to under Constraints, and every bracket's ladder is searched.             
- ⏎ edit  ⇥ pane  ctrl-s save  r reload  q quit  ctrl-↓ tab  n dollars                                        : commands  ? help
+╰───────────────────╯⏎ edits a constraint; the ladders are searched again once they are applied. ⇧⇥ back to them.               
+ ⏎ edit  ⇥ pane  w write  t take  ctrl-s save  r reload  q quit  ctrl-↓ tab  n dollars                       : commands  ? help

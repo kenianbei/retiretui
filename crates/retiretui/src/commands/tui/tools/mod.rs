@@ -84,6 +84,9 @@ pub trait Found: Send + Sync + 'static {
     /// Whether the search counts its steps, its answer then speaking for
     /// itself with no time beside it.
     const IS_COUNTED: bool = false;
+    /// Whether the cursor may rest on the plan's own row, as a row of its
+    /// own to open, rather than going on to the best option.
+    const IS_PLAN_ROW_CHOSEN: bool = false;
 
     /// The options pane's rows, over `plan` as it stands.
     fn laid(&self, plan: &Plan, nominal: bool) -> options::Laid;
@@ -392,9 +395,15 @@ pub fn hold<R: Found>(app: &mut bevy_app::App, is_held: bool) {
     app.world_mut().resource_mut::<Tool<R>>().is_held = is_held;
 }
 
+/// Ticks until `R`'s search has answered, then draws the answer as having
+/// taken no time: how long it took is the machine's, not the answer's.
 #[cfg(test)]
 fn settle<R: Found>(app: &mut bevy_app::App) {
     settle_until_idle(app, |app| app.world().resource::<Tool<R>>().is_running());
+    if let Some((_, took)) = &mut app.world_mut().resource_mut::<Tool<R>>().found {
+        *took = Duration::ZERO;
+    }
+    app.update();
 }
 
 /// Ticks until nothing `is_running` and the tick after starts nothing,

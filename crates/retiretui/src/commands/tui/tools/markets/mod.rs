@@ -159,20 +159,25 @@ fn search_by_itself<R: MarketTool>(
     });
 }
 
-/// Keeps the runs table's title saying how the plan fares.
+/// Keeps the runs table's title saying how the plan fares, in the colour
+/// of the zone its share falls in.
 fn title_runs<R: MarketTool>(
-    tool: Res<Tool<R>>,
+    (tool, theme): (Res<Tool<R>>, Res<Theme>),
     mut panes: Query<&mut Framed, bevy_ecs::prelude::With<ResultPane<R>>>,
 ) {
-    if !tool.is_changed() {
+    if !tool.is_changed() && !theme.is_changed() {
         return;
     }
     let title = tool.found().map_or_else(
         || R::RUN_HEADING.to_owned(),
         |found| format!("{} · {} {}", R::RUN_HEADING, R::HEADLINE, found.verdict()),
     );
+    let zone = tool
+        .found()
+        .map(|found| zone_style(found.runs().success_rate(), &theme));
     for mut pane in &mut panes {
         Framed::retitle(&mut pane, &title);
+        Framed::restyle(&mut pane, zone);
     }
 }
 
@@ -260,15 +265,21 @@ fn highlighted<R: MarketTool>(tool: &Tool<R>) -> Option<(String, &Run)> {
 }
 
 /// The `open-*-run` commands: the highlighted run, projected whole, in the
-/// Ledger.
+/// Ledger - or, on the plan's own row, the plan's own projection, which is
+/// the market it states.
 pub(crate) fn open_run<R: MarketTool>(
     (tool, draft, session, history): (Res<Tool<R>>, Res<Draft>, Res<Session>, Res<MarketHistory>),
     mut run: ResMut<crate::commands::tui::session::LedgerRun>,
     mut active: ResMut<ActivePage>,
 ) -> crate::commands::tui::command::Outcome {
     use crate::commands::tui::command::Outcome;
-    let Some((label, chosen)) = highlighted(&*tool) else {
+    if tool.found().is_none() {
         return Outcome::Refused(super::NOTHING_SEARCHED_YET.to_owned());
+    }
+    let Some((label, chosen)) = highlighted(&*tool) else {
+        run.0 = None;
+        active.0 = Page::Ledger;
+        return Outcome::Done;
     };
     let replayed: Option<Projection> =
         retiretui_engine::market::replay(&draft.plan, &session.tables, &history.0, chosen.name);

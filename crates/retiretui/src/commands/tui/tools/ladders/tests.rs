@@ -121,7 +121,7 @@ fn a_scenario_session_takes_constraints_too() {
 }
 
 #[test]
-fn applying_a_destination_searches_by_itself_and_the_help_follows_the_keyboard() {
+fn the_one_roth_account_is_the_destination_and_the_help_follows_the_keyboard() {
     let mut app = headless_app_at(scratch_full_plan(), SIZE);
     show(&mut app, Page::RothConversions);
     let frame = composed_frame(&app);
@@ -129,11 +129,11 @@ fn applying_a_destination_searches_by_itself_and_the_help_follows_the_keyboard()
         frame.contains("Convert to"),
         "the constraints to read: {frame}"
     );
-    assert!(app.world().resource::<Ladders>().running.is_none());
-    press_key(&mut app, KeyCode::Enter);
-    tab_to_field(&mut app, 1);
-    press_key(&mut app, KeyCode::Right);
-    press_key(&mut app, KeyCode::Enter);
+    assert_eq!(
+        tool(&app).get("to").and_then(Value::as_str),
+        Some("roth-ira"),
+        "the plan's one Roth account, named on a first look"
+    );
     settle(&mut app);
     assert!(
         app.world().resource::<Ladders>().found().is_some(),
@@ -352,11 +352,12 @@ fn the_highlighted_option_lists_its_ladder_as_the_engine_searched_it() {
 #[test]
 fn w_and_t_are_hinted_once_there_is_a_ladder_and_refuse_in_words_before() {
     let (_, mut app) = workspace_app(SIZE);
+    hold::<Swept>(&mut app, true);
     show(&mut app, Page::RothConversions);
     let frame = redrawn(&mut app);
     assert!(
         !frame.contains("w write") && !frame.contains("t take"),
-        "{frame}"
+        "nothing found yet: {frame}"
     );
     press_key(&mut app, KeyCode::Char('w'));
     app.update();
@@ -364,7 +365,7 @@ fn w_and_t_are_hinted_once_there_is_a_ladder_and_refuse_in_words_before() {
         said(&app).last().map(String::as_str),
         Some(NOTHING_SEARCHED_YET)
     );
-    constrain(&mut app, "to", Value::String("roth-ira".to_owned()));
+    hold::<Swept>(&mut app, false);
     settle(&mut app);
     let frame = redrawn(&mut app);
     assert!(
@@ -389,6 +390,7 @@ fn highlighted_steps(app: &App) -> usize {
 #[test]
 fn t_and_enter_ask_then_take_the_ladder_in_place_of_the_last_one() {
     let mut app = headless_app_at(scratch_full_plan(), SIZE);
+    hold::<Swept>(&mut app, true);
     show(&mut app, Page::RothConversions);
     assert!(!composed_frame(&app).contains("t take"), "nothing to take");
     press_key(&mut app, KeyCode::Char('t'));
@@ -397,7 +399,7 @@ fn t_and_enter_ask_then_take_the_ladder_in_place_of_the_last_one() {
         said(&app).last().map(String::as_str),
         Some(NOTHING_SEARCHED_YET)
     );
-    constrain(&mut app, "to", Value::String("roth-ira".to_owned()));
+    hold::<Swept>(&mut app, false);
     settle(&mut app);
     let own = conversions(&app);
     let best = highlighted_steps(&app);

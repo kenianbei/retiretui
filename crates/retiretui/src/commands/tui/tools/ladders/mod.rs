@@ -38,7 +38,12 @@ pub type Ladders = Tool<Swept>;
 pub fn plugin(app: &mut App) {
     super::install::<Swept>(app, &PAGE);
     super::options::plugin::<Swept>(app);
-    app.add_systems(Update, search_by_itself.before(super::poll_search::<Swept>));
+    app.add_systems(
+        Update,
+        (aim_at_only_roth, search_by_itself)
+            .chain()
+            .before(super::poll_search::<Swept>),
+    );
     panes::plugin(app);
     guide::plugin(app);
 }
@@ -223,6 +228,28 @@ fn act(which: FormButton, commands: &mut Commands) {
 
 fn mark_applied(mut ladders: ResMut<Ladders>) {
     ladders.set_changed();
+}
+
+/// Names the plan's one Roth account as the destination while the page is
+/// on show and the form names none, so the first look is already ranked.
+fn aim_at_only_roth(active: Res<ActivePage>, mut draft: ResMut<Draft>) {
+    let is_moved = draft.is_changed() || active.is_changed();
+    if !is_moved || active.0 != Page::RothConversions {
+        return;
+    }
+    if draft.answers::<Constraints>().contains_key(DESTINATION) {
+        return;
+    }
+    let mut roths = draft
+        .plan
+        .accounts
+        .iter()
+        .filter(|account| account.treatment() == TreatmentClass::Roth);
+    let (Some(only), None) = (roths.next(), roths.next()) else {
+        return;
+    };
+    let only = only.id.clone();
+    aim_at(&mut draft, &only);
 }
 
 /// Searches again whenever the page is on show over a valid draft whose
