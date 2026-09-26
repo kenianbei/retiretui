@@ -30,6 +30,7 @@ use crate::commands::tui::documents::{Browsing, Pickers};
 use crate::commands::tui::edit::{self, Draft, DraftEditor, FieldSpec, FormButton, Ops, RefSource};
 use crate::commands::tui::journal;
 use crate::commands::tui::nav::{self, Page, ShownSurface};
+use crate::commands::tui::overview::Better;
 use crate::commands::tui::present::compact_dollars;
 use crate::commands::tui::session::Session;
 
@@ -167,9 +168,30 @@ fn held(draft: &Draft) -> Result<(OptimizeOptions, Option<f64>), String> {
 }
 
 /// What a search found, and what it was searched under.
+#[derive(Clone)]
 pub struct Swept {
     sweep: BracketSweep,
     options: OptimizeOptions,
+}
+
+impl Swept {
+    /// The best bracket's ladder, where any bracket was searched.
+    pub(crate) fn best(&self) -> Option<&SweptBracket> {
+        self.sweep.brackets.first()
+    }
+}
+
+/// The ladders into `destination` under the `held` answers, searched as
+/// the page searches them; none where the answers do not make a search.
+pub(crate) fn sweep_into(
+    plan: &Plan,
+    tables: &TaxTables,
+    held: &toml::Table,
+    destination: &str,
+) -> Option<Swept> {
+    let (options, rate) = options_into(plan, held, destination)?;
+    let sweep = search(plan, tables, &options, rate).ok()?;
+    Some(Swept { sweep, options })
 }
 
 impl Found for Swept {
@@ -250,9 +272,10 @@ fn aim_at_only_roth(shown: ShownSurface, mut draft: ResMut<Draft>) {
 
 /// Searches again whenever the page is on show over a valid draft whose
 /// plan or constraints differ from the last it searched, once they name a
-/// destination, so the ranking is never asked for.
+/// destination, so the ranking is never asked for; what the Overview
+/// already found over them is taken instead.
 fn search_by_itself(
-    (draft, session): (Res<Draft>, Res<Session>),
+    (draft, session, better): (Res<Draft>, Res<Session>, Res<Better>),
     shown: ShownSurface,
     mut searched: Local<Option<(Plan, toml::Table)>>,
     mut ladders: ResMut<Ladders>,
@@ -272,6 +295,13 @@ fn search_by_itself(
     let Ok((options, rate)) = held(&draft) else {
         return;
     };
+    let destination = answers.get(DESTINATION).and_then(toml::Value::as_str);
+    let found = destination.and_then(|to| better.ladders(&draft.plan, &held_answers(&draft), to));
+    if let Some(swept) = found {
+        ladders.take(swept.clone());
+        *searched = Some((draft.plan.clone(), answers));
+        return;
+    }
     *searched = Some((draft.plan.clone(), answers));
     let tables = session.tables.clone();
     ladders.start(draft.plan.clone(), move |plan| {

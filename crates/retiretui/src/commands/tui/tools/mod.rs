@@ -143,7 +143,8 @@ struct Running<R> {
 #[derive(Resource)]
 pub struct Tool<R: Found> {
     running: Option<Running<R>>,
-    found: Option<(R, Duration)>,
+    /// What was found, and how long the search took where it ran here.
+    found: Option<(R, Option<Duration>)>,
     /// Why the last search found nothing, which the pane says in its place.
     refused: Option<String>,
     /// Zero is the plan's own row.
@@ -184,6 +185,15 @@ impl<R: Found> Tool<R> {
     ) {
         self.spawn(plan, None, move |plan, _| work(plan));
         self.found = None;
+        self.refused = None;
+        self.highlighted = 0;
+    }
+
+    /// Takes what another search already found over the plan, in place of
+    /// searching it again.
+    fn take(&mut self, found: R) {
+        self.running = None;
+        self.found = Some((found, None));
         self.refused = None;
         self.highlighted = 0;
     }
@@ -235,7 +245,7 @@ impl<R: Found> Tool<R> {
             return;
         }
         match found {
-            Ok(found) => self.found = Some((found, took)),
+            Ok(found) => self.found = Some((found, Some(took))),
             Err(issues) => self.refused = issues.first().map(|issue| issue.message.clone()),
         }
     }
@@ -258,8 +268,8 @@ impl<R: Found> Tool<R> {
                 None => format!("searching… {}s", running.search.elapsed().as_secs()),
             },
             (None, Some(_)) if R::IS_COUNTED => String::new(),
-            (None, Some((_, took))) => format!("{:.1}s", took.as_secs_f32()),
-            (None, None) => String::new(),
+            (None, Some((_, Some(took)))) => format!("{:.1}s", took.as_secs_f32()),
+            (None, _) => String::new(),
         }
     }
 
@@ -271,7 +281,7 @@ impl<R: Found> Tool<R> {
             .unwrap_or_else(|| R::NOTHING_SEARCHED.to_owned())
     }
 
-    fn is_running(&self) -> bool {
+    pub(crate) fn is_running(&self) -> bool {
         self.running.is_some()
     }
 }
@@ -390,7 +400,7 @@ pub fn hold<R: Found>(app: &mut bevy_app::App, is_held: bool) {
 #[cfg(test)]
 fn settle<R: Found>(app: &mut bevy_app::App) {
     settle_until_idle(app, |app| app.world().resource::<Tool<R>>().is_running());
-    if let Some((_, took)) = &mut app.world_mut().resource_mut::<Tool<R>>().found {
+    if let Some((_, Some(took))) = &mut app.world_mut().resource_mut::<Tool<R>>().found {
         *took = Duration::ZERO;
     }
     app.update();

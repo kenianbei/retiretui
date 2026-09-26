@@ -1,12 +1,11 @@
 ---
 source: crates/retiretui/src/commands/tui/frames.rs
-assertion_line: 44
 expression: composed_frame(app)
 ---
 ╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                                                                                                      
 │1 Overview││2 Ledger││3 Compare││4 Tools││5 Plan│                                                                                                                                          full.toml ● 
 ┴──────────┴┴────────┴┴─────────┴╯       ╰┴──────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-╭ Tools ────────────╮╭ Constraints ───────────────────────────────────────────────────────────────────╮╭ Ladder Options · 0.0s ────────────────────────────────────────────────────────────────────────╮
+╭ Tools ────────────╮╭ Constraints ───────────────────────────────────────────────────────────────────╮╭ Ladder Options ───────────────────────────────────────────────────────────────────────────────╮
 │▏ Roth Conversions ││                                                                                ││  Bracket converted unfunded final net taxes medicare                                          │
 │  SSA Benefits     ││▌ Convert from  Every deferred account                                          ││  Current      330k        0     2.09M  697k        0                                          │
 │  Monte Carlo      ││  Convert to    roth-ira                                                        ││▏ 22%          987k        0     2.15M  515k        0                                          │

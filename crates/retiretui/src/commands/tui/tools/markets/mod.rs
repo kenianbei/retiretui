@@ -34,6 +34,7 @@ use super::{Found, HelpLine, ResultPane, Tool, count_text, show_help};
 use crate::commands::tui::edit::Draft;
 use crate::commands::tui::hints::Hints;
 use crate::commands::tui::nav::{self, FocusStop, Page, ShownSurface, Turn};
+use crate::commands::tui::overview::Better;
 use crate::commands::tui::pane::{Framed, Pane};
 use crate::commands::tui::present::{self, compact_dollars};
 use crate::commands::tui::session::Session;
@@ -115,6 +116,15 @@ pub(crate) trait MarketTool: Found + Sized {
     /// What the tool runs under, as rows of the Assumptions pane after
     /// the verdict.
     fn settings(plan: &Plan) -> Vec<assumptions::Assumption>;
+
+    /// What the Overview already found over `plan`, taken in place of a
+    /// search.
+    fn found_by(_better: &Better, _plan: &Plan) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        None
+    }
 }
 
 /// The engine's refusals as the tool says them; a search cancelled for a
@@ -146,7 +156,7 @@ fn install<R: MarketTool>(app: &mut App) {
 /// a search under way.
 fn search_by_itself<R: MarketTool>(
     (draft, session, history): (Res<Draft>, Res<Session>, Res<MarketHistory>),
-    shown: ShownSurface,
+    (shown, better): (ShownSurface, Res<Better>),
     mut searched: Local<Option<Plan>>,
     mut tool: ResMut<Tool<R>>,
 ) {
@@ -155,6 +165,10 @@ fn search_by_itself<R: MarketTool>(
         return;
     }
     *searched = Some(draft.plan.clone());
+    if let Some(found) = R::found_by(&better, &draft.plan) {
+        tool.take(found);
+        return;
+    }
     let tables = session.tables.clone();
     let history = history.0.clone();
     let total = R::total(&draft.plan);

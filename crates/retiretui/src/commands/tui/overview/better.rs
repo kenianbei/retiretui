@@ -10,7 +10,7 @@ use std::collections::BTreeSet;
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::prelude::{Res, ResMut, Resource};
 use retiretui_engine::market::{History, Progress, RunError, Runs, historical};
-use retiretui_engine::optimize::{ClaimSearch, SweptBracket, optimize_claims, rank_key};
+use retiretui_engine::optimize::{ClaimSearch, optimize_claims, rank_key};
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::{Plan, TreatmentClass};
 use retiretui_engine::project::Projection;
@@ -21,7 +21,7 @@ use crate::commands::tui::nav::{Page, ShownSurface};
 use crate::commands::tui::present::signed_money;
 use crate::commands::tui::session::{Projected, Session};
 use crate::commands::tui::tools::claims::HeldClaims;
-use crate::commands::tui::tools::ladders::{self, rate_label};
+use crate::commands::tui::tools::ladders::{self, Swept, rate_label};
 use crate::commands::tui::tools::markets::MarketHistory;
 use crate::commands::tui::tools::{Keyed, Searches};
 
@@ -49,12 +49,12 @@ pub(crate) struct Found {
     ladders: Vec<Ladder>,
 }
 
-/// A Roth owner's best ladder into their Roth account, `None` where the
-/// search is refused under the page's answers.
+/// A Roth owner's ladders into their Roth account, `None` where the search
+/// is refused under the page's answers.
 struct Ladder {
     owner: String,
     destination: String,
-    best: Option<SweptBracket>,
+    swept: Option<Swept>,
 }
 
 impl Better {
@@ -62,6 +62,38 @@ impl Better {
     /// describes the plan shown.
     pub(crate) fn found(&self) -> Option<&Found> {
         self.answered.as_ref().map(|(_, found)| found)
+    }
+
+    /// What was found over `plan`, whatever else it was searched under.
+    fn found_over(&self, plan: &Plan) -> Option<(&Searched, &Found)> {
+        let (searched, found) = self.answered.as_ref()?;
+        (searched.0 == *plan).then_some((searched, found))
+    }
+
+    /// The claim search over `plan` with the `held` claims, where it is
+    /// answered.
+    pub(crate) fn claims(&self, plan: &Plan, held: &BTreeSet<String>) -> Option<&ClaimSearch> {
+        let (searched, found) = self.found_over(plan)?;
+        (searched.1 == *held).then_some(found.claims.as_ref()?)
+    }
+
+    /// The plan from every start year, where it is answered.
+    pub(crate) fn historical(&self, plan: &Plan) -> Option<&Runs> {
+        self.found_over(plan)?.1.historical.as_ref()
+    }
+
+    /// The ladders into `destination` over `plan` under the `held`
+    /// conversion answers, where they are answered.
+    pub(crate) fn ladders(
+        &self,
+        plan: &Plan,
+        held: &toml::Table,
+        destination: &str,
+    ) -> Option<&Swept> {
+        let (searched, found) = self.found_over(plan)?;
+        let ladders = found.ladders.iter();
+        let mut into = ladders.filter(|ladder| ladder.destination == destination);
+        (searched.2 == *held).then_some(into.next()?.swept.as_ref()?)
     }
 
     #[cfg(test)]
@@ -152,13 +184,10 @@ fn best_ladder(
     answers: &toml::Table,
     (owner, destination): (&str, &str),
 ) -> Ladder {
-    let best = ladders::options_into(plan, answers, destination)
-        .and_then(|(options, rate)| ladders::search(plan, tables, &options, rate).ok())
-        .and_then(|sweep| sweep.brackets.into_iter().next());
     Ladder {
         owner: owner.to_owned(),
         destination: destination.to_owned(),
-        best,
+        swept: ladders::sweep_into(plan, tables, answers, destination),
     }
 }
 
@@ -210,9 +239,10 @@ pub(super) fn entries(better: &Better, projected: &Projected, nominal: bool) -> 
         .ladders
         .iter()
         .map(|ladder| {
-            let said = match &ladder.best {
-                None => REFUSED.to_owned(),
-                Some(best) if beats(&best.optimized, current) => {
+            let best = ladder.swept.as_ref().map(Swept::best);
+            let said = match best {
+                None | Some(None) => REFUSED.to_owned(),
+                Some(Some(best)) if beats(&best.optimized, current) => {
                     let rate = rate_label(best.rate);
                     format!(
                         "convert to {rate}, {}",

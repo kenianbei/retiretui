@@ -32,6 +32,7 @@ use crate::commands::tui::documents::{Browsing, Pickers};
 use crate::commands::tui::edit::{Draft, DraftEditor};
 use crate::commands::tui::journal;
 use crate::commands::tui::nav::{self, Page, ShownSurface};
+use crate::commands::tui::overview::Better;
 use crate::commands::tui::session::Session;
 pub(crate) use people::HeldClaims;
 
@@ -125,10 +126,11 @@ impl Tool<ClaimSearch> {
 }
 
 /// Searches again whenever the page is on show over a valid draft whose plan
-/// differs from the last it searched, so the ranking is never asked for.
+/// differs from the last it searched, so the ranking is never asked for;
+/// what the Overview already found over it is taken instead.
 fn search_by_itself(
     (draft, held): (Res<Draft>, Res<HeldClaims>),
-    session: Res<Session>,
+    (session, better): (Res<Session>, Res<Better>),
     shown: ShownSurface,
     mut searched: Local<Option<(Plan, BTreeSet<String>)>>,
     mut claims: ResMut<Claims>,
@@ -141,6 +143,10 @@ fn search_by_itself(
         return;
     }
     *searched = Some((draft.plan.clone(), held.0.clone()));
+    if let Some(found) = better.claims(&draft.plan, &held.0) {
+        claims.take(found.clone());
+        return;
+    }
     let tables = session.tables.clone();
     let held: Vec<String> = held.0.iter().cloned().collect();
     claims.start(draft.plan.clone(), move |plan| {

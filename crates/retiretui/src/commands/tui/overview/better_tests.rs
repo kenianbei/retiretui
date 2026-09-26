@@ -18,9 +18,11 @@ use crate::commands::tui::support::{
     Headless, SETTLING_TICKS, SIZE, TEST_PLAN, active_page, commit_edit, press_key, redrawn,
     scratch_plan, searched_app, show,
 };
+use crate::commands::tui::tools::ladders::Swept;
 use crate::commands::tui::tools::ladders::tests::table_rows;
 use crate::commands::tui::tools::ladders::{self, rate_label};
-use crate::commands::tui::tools::{Claims, settle_all};
+use crate::commands::tui::tools::{self, Claims, Found, Tool, settle_all};
+use retiretui_engine::market::Runs;
 
 /// Two people, each with a 401(k) and a Roth IRA, the second named.
 const ROTH_OWNERS: &str = r#"
@@ -396,4 +398,35 @@ fn the_empty_shell_searches_nothing() {
             .resource::<crate::commands::tui::success::Successes>();
         assert_eq!(successes.of(plan), Success::Waiting);
     }
+}
+
+/// `R`'s page, turned to after the Overview answered, shows that answer
+/// with no search of its own; the tool is held, so one of its own would
+/// never answer.
+fn assert_taken<R: Found>(app: &mut Headless) {
+    for _ in 0..SETTLING_TICKS {
+        app.update();
+    }
+    let tool = app.world().resource::<Tool<R>>();
+    assert!(!tool.is_running(), "no search of its own");
+    assert!(tool.found().is_some(), "the Overview's answer");
+}
+
+#[test]
+fn a_tool_opened_from_the_overview_takes_its_answer() {
+    let mut app = searched_app(scratch_plan(), ROTH_OWNERS, SIZE);
+    tools::hold::<Swept>(&mut app, true);
+    tools::hold::<Runs>(&mut app, true);
+    hold(&mut app, "Could do better");
+    press_key(&mut app, KeyCode::Enter);
+    assert_eq!(active_page(&app), Page::RothConversions);
+    assert_taken::<Swept>(&mut app);
+    show(&mut app, Page::Overview);
+    nav::turn_in(app.world_mut(), Page::Historical);
+    assert_taken::<Runs>(&mut app);
+
+    let mut app = searched_app(scratch_plan(), &claiming(), SIZE);
+    tools::hold::<ClaimSearch>(&mut app, true);
+    nav::turn_in(app.world_mut(), Page::SsaBenefits);
+    assert_taken::<ClaimSearch>(&mut app);
 }
