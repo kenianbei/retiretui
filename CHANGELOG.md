@@ -45,6 +45,9 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Every built-in theme colours the good and caution zones from its own palette,
   and draws a text caret in its accent. The market runs table's title carries
   the zone colour.
+- Roth Conversions, SSA Benefits and Historical, opened on a plan the Overview
+  has already searched, show the Overview's answer at once rather than searching
+  the same plan again.
 
 - The minimum versions of the engine's and the binary's dependencies are now the
   versions they are built and checked against.
@@ -79,6 +82,8 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   in nominal dollars.
 - A click in a table whose pane has grown, after a terminal resize say, lands on
   the row drawn under the pointer.
+- A person's claim held out of the claim search is no longer held for a person
+  of the same id in the next document opened.
 
 ## [0.1.0] - 2026-09-25
 
