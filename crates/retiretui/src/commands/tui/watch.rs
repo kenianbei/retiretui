@@ -47,14 +47,9 @@ impl Watch {
 
     /// Records the files' current mtimes as the known state.
     pub fn restamp(&mut self) {
-        restamp(&mut self.files);
-    }
-}
-
-/// Records `files`' current mtimes as the known state.
-pub fn restamp(files: &mut Stamped) {
-    for (path, recorded) in files {
-        *recorded = mtime(path);
+        for (path, recorded) in &mut self.files {
+            *recorded = mtime(path);
+        }
     }
 }
 
@@ -66,26 +61,30 @@ pub type Stamped = Vec<(PathBuf, Option<SystemTime>)>;
 pub fn load_session(session: &Session, today: Today) -> Result<(Projected, Stamped), String> {
     match &session.plan_path {
         Some(path) => {
-            load_projected(path, &session.tables).map_err(|invalid| invalid.headline().to_owned())
+            let (loaded, files) = load_projected(path, &session.tables);
+            let projected = loaded.map_err(|invalid| invalid.headline().to_owned())?;
+            Ok((projected, files))
         }
         None => Ok((Projected::blank(&session.tables, today), Vec::new())),
     }
 }
 
-/// Loads, validates, and projects the plan at `path`. Also returns the
-/// stamped chain files to watch.
+/// Loads, validates, and projects the plan at `path`, beside the stamped
+/// chain files it read - on a failure, as far as the read got, so a fix
+/// anywhere in the chain as it now stands is picked up.
 ///
-/// # Errors
-///
-/// Why the plan did not pass the gate: a reader says its headline, or its
-/// reason where it names the file itself.
+/// The error is why the plan did not pass the gate: a reader says its
+/// headline, or its reason where it names the file itself.
 pub(crate) fn load_projected(
     path: &Path,
     tables: &TaxTables,
-) -> Result<(Projected, Stamped), Invalid> {
-    let (plan, files) = crate::commands::validated_plan_with_files(path, tables)?;
-    let projection = project(&plan, tables);
-    Ok((Projected { plan, projection }, stamp(files)))
+) -> (Result<Projected, Invalid>, Stamped) {
+    let (plan, files) = crate::commands::validated_plan_with_files(path, tables);
+    let projected = plan.map(|plan| {
+        let projection = project(&plan, tables);
+        Projected { plan, projection }
+    });
+    (projected, stamp(files))
 }
 
 fn stamp(files: Vec<PathBuf>) -> Stamped {
@@ -140,24 +139,17 @@ fn follow_document(watch: &mut Watch, editor: &mut DraftEditor, session: &EditSe
     }
 }
 
-/// A failed reload keeps the last good projection; the recorded mtimes are
-/// refreshed either way so a broken save does not refire every poll.
+/// A failed reload keeps the last good projection; the watch follows the
+/// chain as read either way, so a broken save does not refire every poll.
 pub fn apply_reload(
     session: &Session,
     projected: &mut Projected,
     watch: &mut Watch,
 ) -> Result<(), String> {
-    match load_projected(session.document()?, &session.tables) {
-        Ok((fresh, files)) => {
-            *projected = fresh;
-            watch.files = files;
-            Ok(())
-        }
-        Err(invalid) => {
-            watch.restamp();
-            Err(format!("reload failed: {}", invalid.headline()))
-        }
-    }
+    let (loaded, files) = load_projected(session.document()?, &session.tables);
+    watch.files = files;
+    *projected = loaded.map_err(|invalid| format!("reload failed: {}", invalid.headline()))?;
+    Ok(())
 }
 
 #[cfg(test)]
@@ -185,7 +177,8 @@ mod tests {
         let overlay =
             super::super::support::scenario_over(&base.file_name().unwrap().to_string_lossy());
         let scenario = scratch("chain-overlay", &overlay);
-        let (plan, files) = crate::commands::load_plan_with_files(&scenario).unwrap();
+        let mut files = Vec::new();
+        let plan = crate::commands::load_plan_with_files(&scenario, &mut files).unwrap();
         assert_eq!(plan.plan.name.as_deref(), Some("variant"));
         assert_eq!(files.len(), 2, "{files:?}");
         assert_eq!(files[1], base.canonicalize().unwrap());

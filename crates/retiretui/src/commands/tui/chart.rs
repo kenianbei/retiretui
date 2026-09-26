@@ -260,7 +260,7 @@ impl Widget for &SeriesChart {
     }
 }
 
-fn draw_charts(mut charts: Query<(Ref<SeriesChart>, &mut UiWidget)>) {
+pub(crate) fn draw_charts(mut charts: Query<(Ref<SeriesChart>, &mut UiWidget)>) {
     for (chart, mut widget) in &mut charts {
         if chart.is_changed() {
             *widget = UiWidget::new(SeriesChart::clone(&chart));

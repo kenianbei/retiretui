@@ -63,6 +63,26 @@ jobs:
       - name: Check
         run: cargo check --all-features
 
+  minimal-versions:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+        with:
+          cache-save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Install nightly for the resolver
+        run: rustup toolchain install nightly --profile minimal
+
+      - name: Resolve direct dependencies at their floors
+        run: cargo +nightly update -Z direct-minimal-versions
+
+      - name: Check
+        run: cargo check --all-features --locked
+
   markdown:
     runs-on: ubuntu-latest
 

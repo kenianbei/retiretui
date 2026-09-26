@@ -25,8 +25,8 @@ pub(super) struct ComparedDoc {
 
 impl ComparedDoc {
     pub(super) fn read(path: PathBuf, tables: &TaxTables) -> Result<Self, String> {
-        let (projected, files) = watch::load_projected(&path, tables)
-            .map_err(|invalid| invalid.headline().to_owned())?;
+        let (loaded, files) = watch::load_projected(&path, tables);
+        let projected = loaded.map_err(|invalid| invalid.headline().to_owned())?;
         Ok(Self {
             path,
             projected,
@@ -38,14 +38,14 @@ impl ComparedDoc {
     /// Reads the file again; one that fails keeps its figures, says so,
     /// and marks its row until it reads again.
     fn reread(&mut self, tables: &TaxTables) {
-        match watch::load_projected(&self.path, tables) {
-            Ok((projected, files)) => {
+        let (loaded, files) = watch::load_projected(&self.path, tables);
+        self.files = files;
+        match loaded {
+            Ok(projected) => {
                 self.projected = projected;
-                self.files = files;
                 self.failure = None;
             }
             Err(invalid) => {
-                watch::restamp(&mut self.files);
                 let (name, reason) = (session::file_name(&self.path), invalid.reason());
                 journal::warn(format!("{name} not re-read: {reason}"));
                 self.failure = Some(reason.to_owned());

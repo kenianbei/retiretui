@@ -59,10 +59,19 @@ pub fn ladder_overlay(
 /// optimizer's conversions from its own.
 pub const LADDER_ID_PREFIX: &str = "opt-";
 
-/// Whether `conversion` is one a ladder put in a plan.
+/// Whether `conversion` is one a ladder put in a plan: its id is exactly
+/// `opt-<source>-<year>`, as a ladder names what it puts there.
 #[must_use]
 pub fn is_ladder(conversion: &Conversion) -> bool {
-    conversion.id.starts_with(LADDER_ID_PREFIX)
+    conversion
+        .id
+        .rsplit_once('-')
+        .and_then(|(_, year)| year.parse::<i16>().ok())
+        .is_some_and(|year| ladder_id(&conversion.from, year) == conversion.id)
+}
+
+fn ladder_id(source: &str, year: i16) -> String {
+    format!("{LADDER_ID_PREFIX}{source}-{year}")
 }
 
 /// Takes the ladder `steps` into `plan` as conversions of its own, in
@@ -90,7 +99,7 @@ pub(super) fn ladder_conversion(
     amount: Dollars,
 ) -> Conversion {
     Conversion {
-        id: format!("{LADDER_ID_PREFIX}{source}-{year}"),
+        id: ladder_id(source, year),
         name: None,
         from: source.to_owned(),
         to: destination.to_owned(),

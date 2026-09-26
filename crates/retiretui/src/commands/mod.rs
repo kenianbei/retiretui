@@ -27,8 +27,8 @@ pub fn run_validate(path: &Path) -> anyhow::Result<()> {
 /// Loads a plan or scenario file and refuses an invalid one, printing its
 /// issues to stderr.
 fn load_validated_plan(path: &Path, tables: &TaxTables) -> anyhow::Result<Plan> {
-    let invalid = match validated_plan_with_files(path, tables) {
-        Ok((plan, _)) => return Ok(plan),
+    let invalid = match validated_plan_with_files(path, tables).0 {
+        Ok(plan) => return Ok(plan),
         Err(invalid) => invalid,
     };
     match &invalid {
@@ -68,20 +68,24 @@ impl Invalid {
     }
 }
 
-/// The full load-and-validate gate every surface runs, also returning the
-/// files the resolution read.
+/// The full load-and-validate gate every surface runs, beside the files
+/// the resolution read, whether or not it passed.
 fn validated_plan_with_files(
     path: &Path,
     tables: &TaxTables,
-) -> Result<(Plan, Vec<PathBuf>), Invalid> {
-    let (plan, files) =
-        load_plan_with_files(path).map_err(|error| Invalid::Load(error.to_string()))?;
-    let issues = validate_plan(&plan, tables);
-    if issues.is_empty() {
-        return Ok((plan, files));
-    }
-    let headline = format!("{} issue(s) found in {}:", issues.len(), path.display());
-    Err(Invalid::Issues { headline, issues })
+) -> (Result<Plan, Invalid>, Vec<PathBuf>) {
+    let mut files = Vec::new();
+    let validated = load_plan_with_files(path, &mut files)
+        .map_err(|error| Invalid::Load(error.to_string()))
+        .and_then(|plan| {
+            let issues = validate_plan(&plan, tables);
+            if issues.is_empty() {
+                return Ok(plan);
+            }
+            let headline = format!("{} issue(s) found in {}:", issues.len(), path.display());
+            Err(Invalid::Issues { headline, issues })
+        });
+    (validated, files)
 }
 
 /// One issue per line, in validation order.
@@ -132,11 +136,10 @@ pub(crate) fn overlay_base(out: &Path, plan_path: &Path) -> std::io::Result<Stri
 /// Loads a plan or scenario file, resolving `base` chains relative to each
 /// referring file, and returns every file the resolution read - the document
 /// and its whole base chain - for callers that watch them.
-fn load_plan_with_files(path: &Path) -> anyhow::Result<(Plan, Vec<PathBuf>)> {
+fn load_plan_with_files(path: &Path, files: &mut Vec<PathBuf>) -> anyhow::Result<Plan> {
     let start = path
         .canonicalize()
         .with_context(|| format!("failed to open {}", path.display()))?;
-    let mut files = Vec::new();
     let mut read = |file: &Path| {
         files.push(file.to_owned());
         fs::read_to_string(file)
@@ -149,9 +152,7 @@ fn load_plan_with_files(path: &Path) -> anyhow::Result<(Plan, Vec<PathBuf>)> {
             .map_err(|error| format!("failed to open {}: {error}", joined.display()))
     };
     let text = read(&start).map_err(anyhow::Error::msg)?;
-    let plan =
-        resolve::resolve_plan(start, text, &mut read, &mut locate).map_err(anyhow::Error::msg)?;
-    Ok((plan, files))
+    resolve::resolve_plan(start, text, &mut read, &mut locate).map_err(anyhow::Error::msg)
 }
 
 /// Writes `text` to `path` atomically: staged beside it, then renamed over.

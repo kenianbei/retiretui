@@ -283,8 +283,9 @@ pub fn write_new(In(path): In<PathBuf>, world: &mut World) {
         journal::warn(refusal);
         return;
     }
-    world.resource_mut::<Composed>().written = Some(path.clone());
-    documents::switch(In(path.into()), world);
+    if documents::land(path.clone().into(), world) {
+        world.resource_mut::<Composed>().written = Some(path);
+    }
 }
 
 /// The file the plan was written to is the document: the shell is in the

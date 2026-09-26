@@ -108,12 +108,18 @@ fn save_then_go(In(wanted): In<Opening>, world: &mut World) {
 
 /// A document that fails to load leaves the shell as it was.
 pub fn switch(In(opening): In<Opening>, world: &mut World) {
+    land(opening, world);
+}
+
+/// Makes `opening` the document, saying whether it did.
+pub fn land(opening: Opening, world: &mut World) -> bool {
     let tables = &world.resource::<Session>().tables;
-    let (projected, files) = match watch::load_projected(&opening.path, tables) {
-        Ok(loaded) => loaded,
+    let (loaded, files) = watch::load_projected(&opening.path, tables);
+    let projected = match loaded {
+        Ok(projected) => projected,
         Err(invalid) => {
             journal::warn(format!("not opened: {}", invalid.headline()));
-            return;
+            return false;
         }
     };
     let left = world
@@ -133,6 +139,7 @@ pub fn switch(In(opening): In<Opening>, world: &mut World) {
         "opened {}",
         world.resource::<Session>().file_name()
     ));
+    true
 }
 
 /// Everything a document takes with it when it goes: the draft it is

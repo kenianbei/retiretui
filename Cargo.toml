@@ -15,11 +15,11 @@ rust-version = "1.95"
 
 [workspace.dependencies]
 retiretui_engine = { path = "crates/retiretui_engine", version = "0.1.0" }
-jiff = "0.2"
-schemars = "1"
+jiff = "0.2.37"
+schemars = "1.2.2"
 serde = { version = "1.0.229", features = ["derive"] }
-serde_json = "1.0"
-toml = "1.1"
+serde_json = "1.0.151"
+toml = "1.1.6"
 
 [workspace.lints.rust]
 missing_docs = "warn"
