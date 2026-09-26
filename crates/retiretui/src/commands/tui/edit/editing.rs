@@ -107,9 +107,8 @@ impl Editing {
         }
     }
 
-    /// Where the item is stored: where it now sits, followed by what it was
-    /// when opened, so an item moved underneath is still found; `None` once
-    /// nothing is what was opened.
+    /// Where the item now sits, found by what it was when opened, so one
+    /// moved underneath is followed; `None` once nothing is what was opened.
     fn stored_at(&self, draft: &Draft) -> Option<usize> {
         let held = match self.slot {
             Slot::At(Row(held)) => held,

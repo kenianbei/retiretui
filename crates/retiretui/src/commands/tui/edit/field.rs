@@ -268,7 +268,7 @@ impl Fields<'_, '_> {
     }
 
     /// A field that does not yet make a value keeps its text, since no item
-    /// holds it - read as money where it is.
+    /// holds it - dressed as its kind reads, where it parses.
     fn show_text_at(&mut self, widget: Entity, editing: &Editing, is_focused: bool) {
         let Ok((field, mut text)) = self.texts.get_mut(widget) else {
             return;
