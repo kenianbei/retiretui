@@ -24,8 +24,11 @@ pub fn plugin(app: &mut App) {
     app.add_systems(Update, draw_frames.in_set(Repainted));
 }
 
+/// The cells a pane's border takes across either axis: one on each side.
+pub const BORDERS: u16 = 2;
+
 /// The cell a pane keeps for its border on every side.
-const FRAME_INSET: f32 = 1.0;
+const FRAME_INSET: f32 = (BORDERS / 2) as f32;
 
 /// One below the floor plurimus gives a node it publishes an area for, so
 /// a frame is drawn beneath everything laid out inside it.

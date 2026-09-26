@@ -6,7 +6,7 @@ use retiretui_engine::project::validate_plan;
 use toml::Table;
 
 use super::{CANCEL, CREATE, LifeStage, SetupAnswers, TITLE};
-use crate::commands::tui::edit::{Draft, ToolAnswers};
+use crate::commands::tui::edit::Draft;
 use crate::commands::tui::nav::Page;
 use crate::commands::tui::session::Session;
 use crate::commands::tui::support::{
@@ -14,6 +14,7 @@ use crate::commands::tui::support::{
     headless_app_at, is_asking, lit_tab, press_ctrl, press_key, press_shift, run_command, said,
     scratch_workspace, type_text,
 };
+use crate::commands::tui::tools::ladders::Constraints;
 
 /// The answers a form holding `body` under this filing and stage would
 /// have been applied with.
@@ -31,10 +32,9 @@ pub(super) fn as_table(filing: FilingStatus, stage: LifeStage, body: &str) -> Ta
 /// take it up.
 fn answer(app: &mut App, filing: FilingStatus, body: &str) {
     let table = as_table(filing, LifeStage::Working, body);
-    let mut draft = app.world_mut().resource_mut::<Draft>();
-    draft
-        .tools
-        .insert(SetupAnswers::SLOT.to_owned(), toml::Value::Table(table));
+    app.world_mut()
+        .resource_mut::<Draft>()
+        .set_answers::<SetupAnswers>(table);
     settle(app);
 }
 
@@ -264,21 +264,16 @@ fn esc_with_nothing_to_cancel_says_nothing() {
 fn the_answers_are_kept_apart_from_the_optimizer_s() {
     let mut app = headless_app_at(support::scratch_plan(), SIZE);
     let constraints: Table = "bracket = 22".parse().expect("a table");
-    let slot = "optimizer";
     app.world_mut()
         .resource_mut::<Draft>()
-        .tools
-        .insert(slot.to_owned(), toml::Value::Table(constraints.clone()));
+        .set_answers::<Constraints>(constraints.clone());
     run_command(&mut app, "new");
     answer(&mut app, FilingStatus::Single, SAM);
     press_button(&mut app, CREATE);
     press_key(&mut app, KeyCode::Esc);
     settle(&mut app);
-    let tools = &app.world().resource::<Draft>().tools;
-    assert_eq!(
-        tools.get(slot).and_then(toml::Value::as_table),
-        Some(&constraints)
-    );
+    let draft = app.world().resource::<Draft>();
+    assert_eq!(draft.answers::<Constraints>(), constraints);
 }
 
 #[test]

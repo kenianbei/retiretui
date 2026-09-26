@@ -19,12 +19,14 @@ use super::command::Outcome;
 use super::hints::Hints;
 use super::journal::Journal;
 use super::overlay::{self, Standing};
-use super::picker;
 use super::theme::{Repainted, Theme};
 
 pub fn plugin(app: &mut App) {
     app.init_resource::<Drawer>();
-    app.add_systems(Update, sync_drawer.in_set(Repainted).after(picker::Synced));
+    app.add_systems(
+        Update,
+        sync_drawer.in_set(Repainted).after(overlay::Settles),
+    );
 }
 
 const TITLE: &str = "Messages";

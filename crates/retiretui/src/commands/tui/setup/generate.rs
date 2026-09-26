@@ -15,6 +15,7 @@ use retiretui_engine::plan::{Dollars, FilingStatus, Plan};
 use retiretui_engine::tax::{FIRST_WORKING_AGE, earnings_at_wage};
 
 use super::{Answered, LifeStage, SetupAnswers};
+use crate::commands::tui::session::{CASH_ID, HORIZON_AGE, INFLATION};
 
 /// The id a person whose name writes nothing down gets.
 const FALLBACK_ID: &str = "person";
@@ -23,15 +24,8 @@ const FALLBACK_ID: &str = "person";
 /// people spelt the same are still two people.
 const COLLISION_SUFFIX: char = '2';
 
-/// The account a household starts with, which is also where unspent
-/// income sweeps.
-const CASH_ID: &str = "cash";
-
 /// The one expense every household has, which the spending step edits.
 const LIVING_ID: &str = "living";
-
-const HORIZON_AGE: u8 = 95;
-const INFLATION: f64 = 0.025;
 
 /// What a new workplace account is invested in: a balanced mix, so the
 /// market tools have something to vary from the first run.

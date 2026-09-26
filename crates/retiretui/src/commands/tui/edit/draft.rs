@@ -23,7 +23,7 @@ pub struct Draft {
     pub plan: Plan,
     /// What each tool's form holds beside the plan, under the tool's own
     /// name; dropped with the document and kept across a reload.
-    pub tools: Table,
+    tools: Table,
     /// The plan as of the last commit, undo, redo, or reset: what the next
     /// commit's undo goes back to.
     committed: Plan,
@@ -44,6 +44,11 @@ impl Draft {
     pub fn answers<T: ToolAnswers>(&self) -> Table {
         let held = self.tools.get(T::SLOT).and_then(Value::as_table);
         held.cloned().unwrap_or_default()
+    }
+
+    /// Holds `answers` as tool `T`'s form's.
+    pub fn set_answers<T: ToolAnswers>(&mut self, answers: Table) {
+        self.tools.insert(T::SLOT.to_owned(), Value::Table(answers));
     }
 
     /// A scenario session is read-only: the resolved plan cannot be written

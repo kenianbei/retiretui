@@ -30,7 +30,7 @@ pub use table::COMMANDS;
 use super::documents;
 use super::journal;
 use super::nav::{Page, PageSystems, ShownSurface};
-use super::picker;
+use super::overlay;
 use super::scope::{KeyScope, Scoped};
 use super::session::NO_DOCUMENT;
 
@@ -239,7 +239,9 @@ pub fn plugin(app: &mut App) {
     app.add_systems(Startup, register);
     app.add_systems(
         Update,
-        run_pending.after(picker::Synced).in_set(PageSystems::Turn),
+        run_pending
+            .after(overlay::Settles)
+            .in_set(PageSystems::Turn),
     );
     app.add_systems(PostStartup, watch_keys);
 }

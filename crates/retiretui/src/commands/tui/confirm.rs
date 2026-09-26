@@ -20,18 +20,20 @@ use super::hints::Hints;
 use super::layout::{Emphasis, button_node, fixed, growing, placed, spawn_button_row, wrapped};
 use super::overlay::{self, Standing};
 use super::pane::Framed;
-use super::picker;
 use super::theme::Repainted;
 
 pub fn plugin(app: &mut App) {
     app.init_resource::<Confirm>();
-    app.add_systems(Update, sync_confirm.in_set(Repainted).after(picker::Synced));
+    app.add_systems(
+        Update,
+        sync_confirm.in_set(Repainted).after(overlay::Settles),
+    );
 }
 
 const TITLE: &str = "Confirm";
 const WIDTH: u16 = 48;
 /// What the question has of the width, inside the frame.
-const TEXT_COLS: u16 = WIDTH - 2;
+const TEXT_COLS: u16 = WIDTH - overlay::CHROME;
 /// Past the question's rows: a blank one, and the one the answers sit on.
 const ANSWER_ROWS: u16 = 2;
 #[derive(Component, Default, Debug)]

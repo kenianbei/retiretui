@@ -22,7 +22,7 @@ const FRAME_ORDER: UiOrder = UiOrder(UiOrder::OVERLAY.0 - 1);
 /// How many overlays stand under the one this marks. Widgets are painted
 /// in one flat order, so two overlays sharing a band would draw the lower
 /// one's text through the upper one's frame.
-#[derive(Component, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Component, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct Band(i32);
 
 impl Band {

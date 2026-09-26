@@ -79,7 +79,7 @@ impl Focus {
     /// frame rather than the top one, so an overlay closing beneath one
     /// that stands leaves that one the keyboard, and owed what this one
     /// was. With none above, what this one was owed is answered.
-    pub fn forget<Marker: Component>(&mut self) -> Option<Entity> {
+    fn forget<Marker: Component>(&mut self) -> Option<Entity> {
         let at = self.frame_of::<Marker>()?;
         let closed = self.taken.remove(at);
         match self.taken.get_mut(at) {

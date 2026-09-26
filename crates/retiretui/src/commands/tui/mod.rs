@@ -9,6 +9,7 @@ mod documents;
 mod drawer;
 mod edit;
 mod focus;
+mod guard;
 mod hints;
 mod issues;
 mod journal;
@@ -115,6 +116,7 @@ fn add_tui(app: &mut App) {
     app.add_plugins((WidgetsPlugin, FilePickerPlugin));
     app.add_plugins((
         layout::plugin,
+        guard::plugin,
         theme::plugin,
         pane::plugin,
         nav::plugin,

@@ -20,7 +20,7 @@ use crate::commands::tui::support::{
 };
 use crate::commands::tui::tools::ladders::Swept;
 use crate::commands::tui::tools::ladders::tests::table_rows;
-use crate::commands::tui::tools::ladders::{self, rate_label};
+use crate::commands::tui::tools::ladders::{self, Constraints, rate_label};
 use crate::commands::tui::tools::{self, Claims, Found, Tool, settle_all};
 use retiretui_engine::market::Runs;
 
@@ -193,9 +193,9 @@ fn enter_on_a_ladder_opens_its_search_with_the_same_best() {
     press_key(&mut app, KeyCode::Enter);
     assert_eq!(active_page(&app), Page::RothConversions);
     assert_page_best(&mut app, &best);
-    let answers = &app.world().resource::<Draft>().tools["optimizer"];
+    let answers = app.world().resource::<Draft>().answers::<Constraints>();
     assert_eq!(
-        answers.to_string(),
+        toml::Value::Table(answers).to_string(),
         "{ to = \"roth\" }",
         "only the destination is named"
     );
@@ -244,8 +244,7 @@ fn a_held_constraint_is_searched_under_and_kept() {
     answers.insert("bracket".to_owned(), percent.into());
     app.world_mut()
         .resource_mut::<Draft>()
-        .tools
-        .insert("optimizer".to_owned(), toml::Value::Table(answers));
+        .set_answers::<Constraints>(answers);
     settle_all(&mut app);
     let best = best_ladder(&app, ROTH);
     assert_eq!(rate_label(best.rate), format!("{percent}%"));
@@ -258,7 +257,7 @@ fn a_held_constraint_is_searched_under_and_kept() {
     assert!(frame.contains(&row), "{row}: {frame}");
     press_key(&mut app, KeyCode::Enter);
     assert_page_best(&mut app, &best);
-    let answers = &app.world().resource::<Draft>().tools["optimizer"];
+    let answers = app.world().resource::<Draft>().answers::<Constraints>();
     assert_eq!(answers["bracket"].as_integer(), Some(percent));
     assert_eq!(answers["to"].as_str(), Some(ROTH));
 }
@@ -272,8 +271,7 @@ fn an_owner_refused_under_the_held_answers_keeps_a_row() {
     answers.insert("from".to_owned(), "k".into());
     app.world_mut()
         .resource_mut::<Draft>()
-        .tools
-        .insert("optimizer".to_owned(), toml::Value::Table(answers));
+        .set_answers::<Constraints>(answers);
     settle_all(&mut app);
     hold(&mut app, "Could do better");
     let frame = redrawn(&mut app);
@@ -283,7 +281,7 @@ fn an_owner_refused_under_the_held_answers_keeps_a_row() {
     press_key(&mut app, KeyCode::Down);
     press_key(&mut app, KeyCode::Enter);
     assert_eq!(active_page(&app), Page::RothConversions);
-    let answers = &app.world().resource::<Draft>().tools["optimizer"];
+    let answers = app.world().resource::<Draft>().answers::<Constraints>();
     assert_eq!(answers["to"].as_str(), Some("you-roth"));
 }
 
