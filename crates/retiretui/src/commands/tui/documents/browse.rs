@@ -8,10 +8,11 @@ use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Component, In, IntoScheduleConfigs, On, Res, ResMut, Resource};
 use bevy_ecs::system::{SystemId, SystemParam};
+use plurimus::core::UiWidget;
 use plurimus::core::ratatui_core::text::Line;
 use plurimus::ui::{ModalDismiss, ModalOpen};
 use plurimus::widgets::ValueChange;
-use plurimus_filepicker::{FilePickerLook, FilePickerMatchStyle, file_picker};
+use plurimus_filepicker::{FilePicker, FilePickerLook, FilePickerMatchStyle};
 
 use super::pickers;
 use crate::commands::tui::compare::Compared;
@@ -64,19 +65,29 @@ struct Dressing<'w> {
 
 /// The file picker on show.
 #[derive(Resource, Default, Debug)]
-pub struct Browsing(Option<FilePick>);
+pub struct Browsing {
+    pick: Option<FilePick>,
+    /// The name the path field is opened holding.
+    named: Option<&'static str>,
+}
 
 impl Browsing {
     pub fn open(&mut self, pick: FilePick) {
-        self.0 = Some(pick);
+        self.open_named(pick, None);
+    }
+
+    /// Opens `pick` with `named` already typed, where there is one.
+    pub fn open_named(&mut self, pick: FilePick, named: Option<&'static str>) {
+        self.pick = Some(pick);
+        self.named = named;
     }
 
     pub fn close(&mut self) {
-        self.0 = None;
+        self.pick = None;
     }
 
     pub const fn is_open(&self) -> bool {
-        self.0.is_some()
+        self.pick.is_some()
     }
 }
 
@@ -93,7 +104,7 @@ fn sync_browse(
     if !browsing.is_changed() {
         return;
     }
-    let Some(pick) = browsing.0 else {
+    let Some(pick) = browsing.pick else {
         standing.close(&mut commands);
         return;
     };
@@ -120,8 +131,13 @@ fn sync_browse(
         .with_extensions([pick.extension])
         .with_accepts_new(pick.accepts_new)
         .with_prompt(Line::styled(PROMPT, dim));
+    let mut field = FilePicker::new(session.workspace());
+    if let Some(named) = browsing.named {
+        field.set_path(named);
+    }
     let mut picker = commands.spawn((
-        file_picker(session.workspace()),
+        field,
+        UiWidget::default(),
         look,
         FilePickerMatchStyle(dressing.theme.accented()),
         list_cursor(),
@@ -141,7 +157,7 @@ fn handle_chosen(
     mut browsing: ResMut<Browsing>,
     mut commands: Commands,
 ) {
-    if let Some(pick) = browsing.0.take() {
+    if let Some(pick) = browsing.pick.take() {
         commands.run_system_with(pick.chosen, chosen.value.clone());
     }
 }

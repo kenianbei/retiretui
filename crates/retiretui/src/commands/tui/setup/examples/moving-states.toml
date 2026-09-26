@@ -1,0 +1,147 @@
+# Kenji, 58, and Maria, 56, live in Oregon and move to Washington, which has
+# no income tax, the year Kenji retires. Maria keeps working remotely until 62,
+# and each year is taxed by the state lived in, so her salary's state tax stops
+# at the move.
+#
+# try: retiretui project examples/moving-states.toml
+# try: retiretui actions examples/moving-states.toml --year 2030
+
+schema = 1
+
+[plan]
+name = "Moving states"
+start_year = 2026
+horizon_age = 95
+inflation = 0.025
+
+[household]
+filing = "married-joint"
+
+[[household.people]]
+id = "kenji"
+name = "Kenji"
+birth = 1968-03-03
+
+[[household.people]]
+id = "maria"
+name = "Maria"
+birth = 1969-11-19
+
+[[events]]
+id = "retire"
+name = "Kenji retires and they move"
+trigger = { age = 62, owner = "kenji" }
+
+[[events]]
+id = "retire-maria"
+name = "Maria retires"
+trigger = { age = 62, owner = "maria" }
+
+# Where they live at the start, then from the move on.
+[[residency]]
+country = "us"
+state = "or"
+
+[[residency]]
+country = "us"
+state = "wa"
+from = { event = "retire" }
+
+[[accounts]]
+id = "checking"
+name = "Checking"
+kind = "cash"
+owner = "kenji"
+balance = 30000
+
+[[accounts]]
+id = "brokerage"
+name = "Joint brokerage"
+kind = "brokerage"
+owner = "kenji"
+balance = 300000
+basis = 200000
+expected_return = 0.06
+
+[[accounts]]
+id = "401k-kenji"
+name = "Kenji's 401(k)"
+kind = "401k"
+owner = "kenji"
+balance = 700000
+expected_return = 0.06
+
+[[accounts]]
+id = "401k-maria"
+name = "Maria's 401(k)"
+kind = "401k"
+owner = "maria"
+balance = 400000
+expected_return = 0.06
+
+[[accounts]]
+id = "roth-ira-maria"
+name = "Maria's Roth IRA"
+kind = "ira"
+roth = true
+owner = "maria"
+balance = 50000
+expected_return = 0.06
+
+[[income]]
+id = "salary-kenji"
+name = "Kenji's salary"
+kind = "salary"
+owner = "kenji"
+amount = 140000
+end = { event = "retire", offset = -1 }
+
+[[income]]
+id = "salary-maria"
+name = "Maria's salary"
+kind = "salary"
+owner = "maria"
+amount = 90000
+end = { event = "retire-maria", offset = -1 }
+
+[[income]]
+id = "ss-kenji"
+name = "Kenji's Social Security"
+kind = "social-security"
+owner = "kenji"
+# A figure from the SSA statement: with no earnings record in the plan, a
+# computed benefit would count only the salary paid inside it.
+amount = 42000
+start = { age = 67, owner = "kenji" }
+
+[[income]]
+id = "ss-maria"
+name = "Maria's Social Security"
+kind = "social-security"
+owner = "maria"
+amount = 30000
+start = { age = 67, owner = "maria" }
+
+[[contributions]]
+id = "deferral-kenji"
+name = "Kenji's 401(k) deferral"
+to = "401k-kenji"
+max = true
+end = { event = "retire", offset = -1 }
+
+[[contributions]]
+id = "deferral-maria"
+name = "Maria's 401(k) deferral"
+to = "401k-maria"
+max = true
+end = { event = "retire-maria", offset = -1 }
+
+[[expenses]]
+id = "housing"
+name = "Housing"
+amount = 24000
+
+[[expenses]]
+id = "living"
+name = "Living expenses"
+amount = 80000

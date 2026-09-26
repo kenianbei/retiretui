@@ -1,5 +1,6 @@
 ---
 source: crates/retiretui/src/commands/tui/frames.rs
+assertion_line: 44
 expression: composed_frame(app)
 ---
 ╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                              
@@ -33,4 +34,4 @@ expression: composed_frame(app)
 │                   ││                                ││                                                                       │
 │                   │╰────────────────────────────────╯╰───────────────────────────────────────────────────────────────────────╯
 ╰───────────────────╯Each year of the record as the plan's first, its markets and inflation as they came. Today's dollars.      
- ↑↓ assumption  ⏎ edit  ⇥ pane  v view  ctrl-s save  r reload  q quit  ctrl-↓ tab  n toggle dollars          : commands  ? help
+ ↑↓ assumption  ⏎ edit  ⇥ pane  v view  ctrl-s save  r reload  q quit  ctrl-↓ tab  n dollars                 : commands  ? help

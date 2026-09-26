@@ -13,7 +13,7 @@ use plurimus::widgets::ratatui_widgets::borders::Borders;
 use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
 
 use crate::commands::tui::edit::Draft;
-use crate::commands::tui::layout::{cells_of, clipped, placed, sized};
+use crate::commands::tui::layout::{cells_of, clipped_middle, placed, sized};
 use crate::commands::tui::present;
 use crate::commands::tui::session::Session;
 use crate::commands::tui::theme::{Repainted, Theme};
@@ -94,7 +94,7 @@ fn draw_status(
     let room = size
         .cols
         .saturating_sub(super::TABS_COLS + NAME_GAP + taken + STATUS_MARGIN);
-    let name = clipped(session.file_name().into_owned(), room);
+    let name = clipped_middle(session.file_name().into_owned(), room);
     let mut spans = vec![Span::styled(format!("{name} "), theme.dimmed())];
     spans.extend(marks);
     let line = Line::from(spans);

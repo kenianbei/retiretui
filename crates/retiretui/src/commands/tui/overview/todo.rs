@@ -37,7 +37,7 @@ fn entries(projected: &Projected, tables: &TaxTables, year: i16) -> Vec<Entry> {
     };
     let actions =
         (row.actions.iter()).map(|action| Entry::plain(sentence(&projected.plan, action)));
-    let warnings = collect_warnings(&projected.plan, tables, row)
+    let warnings = collect_warnings(&projected.plan, tables, row, None)
         .into_iter()
         .map(|warning| Entry {
             tone: Tone::Warning,

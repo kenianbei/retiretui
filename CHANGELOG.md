@@ -18,11 +18,33 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   what they leave, following them as they are edited and marked when they leave
   less than none.
 - The Market form edits the stocks-cash and bonds-cash correlations.
+- A new plan can start from one of the ten example plans, picked at the top of
+  the new-plan form and saved under the example's name.
+- The new-plan form asks when each person started working, and takes a retired
+  person's salary as what they last earned, so a retiree's Social Security is
+  computed from their career as a worker's is. A retiree who has not reached
+  their claim age claims at it.
+- On the Monte Carlo and Historical pages the cursor rests on "As planned", and
+  ⏎ there shows the plan's own projection in the Ledger.
 
 ### Changed
 
 - A form stands only as tall as the fields the item has a use for, and the
   smallest terminal the planner takes no longer grows with its tallest form.
+- The Roth Conversions tool converts into the plan's one Roth account without
+  asking, so its ladders are ranked on a first look.
+- The Ledger's detail is as tall as the cursor year needs, up to half the page,
+  and Income & Tax leaves out what the year paid nothing on.
+- The key row's words are shorter, so more of each page's keys fit at 128
+  columns, and a tool's write and take keys are shown only once there is
+  something to write or take.
+- A table too narrow for its columns cuts a long header before any cell, and one
+  with room to spare uses all of it. A tool table's message wraps rather than
+  being cut off.
+- The status bar cuts a long file name in the middle, keeping its end.
+- Every built-in theme colours the good and caution zones from its own palette,
+  and draws a text caret in its accent. The market runs table's title carries
+  the zone colour.
 
 - The minimum versions of the engine's and the binary's dependencies are now the
   versions they are built and checked against.
@@ -53,6 +75,10 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - An issue against one step of a glide path marks that step's row in the form.
 - A mix whose stocks are written as a whole number, `stocks = 1`, no longer
   gains a full share of cash when applied.
+- The Ledger's warnings state their amounts in the dollars on show, not always
+  in nominal dollars.
+- A click in a table whose pane has grown, after a terminal resize say, lands on
+  the row drawn under the pointer.
 
 ## [0.1.0] - 2026-09-25
 

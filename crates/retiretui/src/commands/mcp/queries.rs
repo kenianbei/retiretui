@@ -162,7 +162,7 @@ impl PlanServer {
         let projection = project(&plan, &self.tables);
         let year = args.year.unwrap_or_else(actions::current_year);
         let row = actions::year_row(&projection, year)?;
-        let warnings = actions::collect_warnings(&plan, &self.tables, row);
+        let warnings = actions::collect_warnings(&plan, &self.tables, row, None);
         Ok(Json(ActionsReply::new(row, warnings)))
     }
 

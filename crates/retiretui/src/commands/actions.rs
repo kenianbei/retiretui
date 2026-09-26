@@ -64,7 +64,7 @@ pub fn run(args: &ActionsArgs) -> anyhow::Result<()> {
     let projection = project(&plan, &tables);
     let year = args.year.unwrap_or_else(current_year);
     let row = year_row(&projection, year).map_err(anyhow::Error::msg)?;
-    let warnings = collect_warnings(&plan, &tables, row);
+    let warnings = collect_warnings(&plan, &tables, row, None);
     match args.format {
         OutputFormat::Json => {
             let reply = ActionsReply::new(row, warnings);
@@ -236,29 +236,37 @@ pub(crate) fn held_contributions(row: &YearRow) -> impl Iterator<Item = (&str, H
     })
 }
 
-pub(crate) fn collect_warnings(plan: &Plan, tables: &TaxTables, row: &YearRow) -> Vec<String> {
+/// The year's warnings, each amount in the dollars of the year it is paid
+/// in, or in today's through `deflating`'s deflators where one is given.
+pub(crate) fn collect_warnings(
+    plan: &Plan,
+    tables: &TaxTables,
+    row: &YearRow,
+    deflating: Option<&Projection>,
+) -> Vec<String> {
+    let dollars = |year, amount| deflating.map_or(amount, |years| years.deflate_in(year, amount));
     let mut warnings: Vec<String> = held_contributions(row)
         .map(|(account, held)| format!("{}: {}", account_name(plan, account), held.warning()))
         .collect();
     if row.unfunded > 0 {
         warnings.push(format!(
             "Unfunded: spending exceeds available money by {}",
-            money(row.unfunded)
+            money(dollars(row.year, row.unfunded))
         ));
     }
     if row.medicare > 0 {
         warnings.push(format!(
             "Medicare surcharges and cliff costs paid this year: {}",
-            money(row.medicare)
+            money(dollars(row.year, row.medicare))
         ));
     }
     let purchase = irmaa_purchase(plan, tables, row.year, row.taxes.magi);
     if purchase > 0 {
+        let premium_year = row.year + tax::IRMAA_LOOKBACK_YEARS;
         warnings.push(format!(
-            "This year's MAGI ({}) buys {} in IRMAA surcharges in {}",
-            money(row.taxes.magi),
-            money(purchase),
-            row.year + tax::IRMAA_LOOKBACK_YEARS
+            "This year's MAGI ({}) buys {} in IRMAA surcharges in {premium_year}",
+            money(dollars(row.year, row.taxes.magi)),
+            money(dollars(premium_year, purchase)),
         ));
     }
     warnings

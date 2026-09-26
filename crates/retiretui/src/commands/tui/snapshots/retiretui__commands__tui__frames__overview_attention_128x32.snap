@@ -1,5 +1,6 @@
 ---
 source: crates/retiretui/src/commands/tui/frames.rs
+assertion_line: 44
 expression: composed_frame(app)
 ---
 ╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                              
@@ -33,4 +34,4 @@ expression: composed_frame(app)
 │                                                                                                                              │
 │                                                                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
- ⏎ markets  ←→ year  ⇥ pane  v chart  e edit  ctrl-s save  r reload  q quit  ctrl-↓ tab  n toggle dollars    : commands  ? help
+ ⏎ markets  ←→ year  ⇥ pane  v chart  e edit  ctrl-s save  r reload  q quit  ctrl-↓ tab  n dollars           : commands  ? help

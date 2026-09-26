@@ -1,13 +1,14 @@
 ---
 source: crates/retiretui/src/commands/tui/frames.rs
+assertion_line: 44
 expression: composed_frame(app)
 ---
 ╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                              
 │1 Overview││2 Ledger││3 Compare││4 Tools││5 Plan│                                                                  full.toml ● 
 ┴──────────┴┴────────┴┴─────────┴┴───────┴╯      ╰──────────────────────────────────────────────────────────────────────────────
 ╭ Plan ─────────────╮╭ Conversions ─────────────────────────────────────────────────────────╮ ╭ Conversion ────────────────────╮
-│  Accounts       7 ││  Conversion  Convert from Convert to  Amount From      Until         │ │                                │
-│  Income         4 ││▌ roth-ladder fid-401k     roth-ira   $30,000 at retire age 72 (jord… │ │▏ ID             roth-ladder    │
+│  Accounts       7 ││  Conversion  Convert f… Convert to  Amount From      Until           │ │                                │
+│  Income         4 ││▌ roth-ladder fid-401k   roth-ira   $30,000 at retire age 72 (jordan) │ │▏ ID             roth-ladder    │
 │  Expenses       2 ││                                                                      │ │  Name                          │
 │  Cliffs         0 ││                                                                      │ │  From           fid-401k       │
 │  Transfers      1 ││                                                                      │ │  To             roth-ira       │
@@ -33,4 +34,4 @@ expression: composed_frame(app)
 │                   ││                                                                      │ │                                │
 │                   ││  [ + Add Conversion ]                                                │ │                                │
 ╰───────────────────╯╰──────────────────────────────────────────────────────────────────────╯ ╰────────────────────────────────╯
- ⏎ edit  ← domains  ⇥ pane  a add  d delete  ctrl-s save  r reload  q quit  ctrl-↓ tab  n toggle dollars     : commands  ? help
+ ⏎ edit  ← domains  ⇥ pane  a add  d delete  ctrl-s save  r reload  q quit  ctrl-↓ tab  n dollars            : commands  ? help

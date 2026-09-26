@@ -1,0 +1,126 @@
+# Robin, 60, in New Hampshire, with a Social Security earnings record. The
+# benefit is computed from the record the way SSA does it, so the claim search
+# can try every age from 62 to 70. The earnings figures are invented; import
+# your own statement with `retiretui import-earnings`.
+#
+# try: retiretui project examples/with-earnings.toml
+# try: retiretui optimize claims examples/with-earnings.toml
+
+schema = 1
+
+[plan]
+name = "With earnings"
+start_year = 2026
+horizon_age = 95
+inflation = 0.025
+
+[household]
+filing = "single"
+
+[[household.people]]
+id = "robin"
+name = "Robin"
+birth = 1966-05-05
+
+# Covered wages by year, nominal, as a statement records them.
+[household.people.earnings]
+1988 = 14000
+1989 = 16500
+1990 = 18000
+1991 = 19500
+1992 = 21000
+1993 = 0
+1994 = 12000
+1995 = 24000
+1996 = 26500
+1997 = 28000
+1998 = 30500
+1999 = 33000
+2000 = 35500
+2001 = 37000
+2002 = 38500
+2003 = 40000
+2004 = 42000
+2005 = 44500
+2006 = 46000
+2007 = 48500
+2008 = 50000
+2009 = 50000
+2010 = 52000
+2011 = 54000
+2012 = 56500
+2013 = 58000
+2014 = 60000
+2015 = 62500
+2016 = 64000
+2017 = 66000
+2018 = 68000
+2019 = 70000
+2020 = 71000
+2021 = 72500
+2022 = 74000
+2023 = 75000
+2024 = 75000
+2025 = 75000
+
+[[residency]]
+country = "us"
+state = "nh"
+
+[[accounts]]
+id = "checking"
+name = "Checking"
+kind = "cash"
+owner = "robin"
+balance = 20000
+
+[[accounts]]
+id = "brokerage"
+name = "Brokerage"
+kind = "brokerage"
+owner = "robin"
+balance = 50000
+basis = 40000
+expected_return = 0.05
+
+[[accounts]]
+id = "401k-robin"
+name = "Robin's 401(k)"
+kind = "401k"
+owner = "robin"
+balance = 550000
+expected_return = 0.05
+
+[[accounts]]
+id = "roth-ira-robin"
+name = "Robin's Roth IRA"
+kind = "ira"
+roth = true
+owner = "robin"
+balance = 40000
+expected_return = 0.05
+
+[[income]]
+id = "salary-robin"
+name = "Robin's salary"
+kind = "salary"
+owner = "robin"
+amount = 75000
+end = { age = 64, owner = "robin" }
+
+[[income]]
+id = "ss-robin"
+name = "Robin's Social Security"
+kind = "social-security"
+owner = "robin"
+start = { age = 67, owner = "robin" }
+
+[[expenses]]
+id = "housing"
+name = "Housing"
+amount = 15000
+
+[[expenses]]
+id = "living"
+name = "Living expenses"
+amount = 45000

@@ -129,47 +129,49 @@ never depends on UI.
   typing or completing its path - which takes a name no file has as a new one
   wherever a file is to be written. Without a document there is nothing to view,
   so the four tabs with a page behind them are drawn dead and the form a new
-  plan starts from stands over the empty shell: a household's filing status,
-  where it is in life, and each person's name, birth year, retirement age,
-  salary and Social Security - which a working person may leave for the engine
-  to compute, from a career at that salary. Creating it builds the plan those
-  answers describe, names it through the picker that saves under another name,
-  and opens it, so nothing reaches disk until it is named and everything after
-  the first answers is edited in the plan's own domains. The same form stands
-  over an open document when a new plan is asked for, the document staying open
-  beneath it and taking no key while it does; alone, it lets the shell's own
-  keys through. Each command's scope states whether it runs where no page is
-  shown - what finds a document, ends the session, dresses the shell, or moves
-  the keyboard between panes does, and the rest refuse. A page is a view of the
-  projection (an overview answering what the plan's owner asks of it - whether
-  the money lasts and how surely, when the big things happen, what needs
-  attention, what to do in the year, how the money is split between tax
-  treatments, and what the optimizers find better, searched in the background
-  while it is shown - each answer leading to the page its detail lives on; a
-  year ledger - the plan's own projection, or a market run opened from a market
-  tool until `esc` or an edit returns it - over the cursor year's flows, each
-  account from its open to its close with every flow in and out named by where
-  it came from or went, beside its income and tax - the overview and the ledger
-  sharing one year cursor, today until moved and always within the plan's years,
-  which each follows when the other moves it and the charts also set under a
-  click and read out under the pointer), one of the plan's editing domains, or
-  one of what runs over it: the document compared with other workspace files,
-  which follow the disk as the document does - each plan's figures, its success
-  through random markets, and what it changes of the one chosen as the baseline,
-  beside the plans charted or tabled year by year, whole or as their difference
-  from the baseline, ⏎ on one taking it into the document's place with the
-  others kept - and the tools, each panes of its own over a line of help and a
-  search on a thread of its own that runs by itself whenever what it would
-  search changes, its options ranked best first in one shared table under a row
-  for the plan as it stands - the conversion search's beside what it runs under,
-  read out and edited as a domain's one item is, and over the highlighted ladder
-  year by year, the claim search's beside a table of each person's record,
-  income and estimated benefit, ⏎ on a person offering what can be done for
-  them, and the claims held out of the search among what it watches, and the
-  market tools' runs - the plan through random markets, or from every historical
-  start year worst first - beside what they run under and how the plan fared,
-  over a chart of the runs' spread that `v` turns to other views, a newer search
-  stopping one under way and ⏎ on a run opening it in the ledger - the searches'
+  plan starts from stands over the empty shell: one of the example plans, or a
+  household's filing status, where it is in life, and each person's name, birth
+  year, retirement age, when they started working, salary and Social Security -
+  which anyone may leave for the engine to compute, from a career at that
+  salary, a retiree's the last they earned. Creating it builds the plan the
+  example or the answers describe, names it through the picker that saves under
+  another name, and opens it, so nothing reaches disk until it is named and
+  everything after the first answers is edited in the plan's own domains. The
+  same form stands over an open document when a new plan is asked for, the
+  document staying open beneath it and taking no key while it does; alone, it
+  lets the shell's own keys through. Each command's scope states whether it runs
+  where no page is shown - what finds a document, ends the session, dresses the
+  shell, or moves the keyboard between panes does, and the rest refuse. A page
+  is a view of the projection (an overview answering what the plan's owner asks
+  of it - whether the money lasts and how surely, when the big things happen,
+  what needs attention, what to do in the year, how the money is split between
+  tax treatments, and what the optimizers find better, searched in the
+  background while it is shown - each answer leading to the page its detail
+  lives on; a year ledger - the plan's own projection, or a market run opened
+  from a market tool until `esc` or an edit returns it - over the cursor year's
+  flows, each account from its open to its close with every flow in and out
+  named by where it came from or went, beside its income and tax - the overview
+  and the ledger sharing one year cursor, today until moved and always within
+  the plan's years, which each follows when the other moves it and the charts
+  also set under a click and read out under the pointer), one of the plan's
+  editing domains, or one of what runs over it: the document compared with other
+  workspace files, which follow the disk as the document does - each plan's
+  figures, its success through random markets, and what it changes of the one
+  chosen as the baseline, beside the plans charted or tabled year by year, whole
+  or as their difference from the baseline, ⏎ on one taking it into the
+  document's place with the others kept - and the tools, each panes of its own
+  over a line of help and a search on a thread of its own that runs by itself
+  whenever what it would search changes, its options ranked best first in one
+  shared table under a row for the plan as it stands - the conversion search's
+  beside what it runs under, read out and edited as a domain's one item is, and
+  over the highlighted ladder year by year, the claim search's beside a table of
+  each person's record, income and estimated benefit, ⏎ on a person offering
+  what can be done for them, and the claims held out of the search among what it
+  watches, and the market tools' runs - the plan through random markets, or from
+  every historical start year worst first - beside what they run under and how
+  the plan fared, over a chart of the runs' spread that `v` turns to other
+  views, a newer search stopping one under way and ⏎ on a run opening it in the
+  ledger, and on the plan's own row the plan's own projection - the searches'
   highlighted option written as a scenario over the document into the workspace
   and compared at once, or taken into the draft, after asking, as one applied
   item - a Roth conversion ladder as conversions of its own, in place of the

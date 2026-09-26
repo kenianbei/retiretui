@@ -55,7 +55,7 @@ use domain::FieldKind;
 pub use domain::{FieldSpec, Ops, ToolAnswers};
 pub use draft::{Draft, DraftEditor, redo, save, undo, write_draft};
 pub use editing::{EditSession, Slot, open_item};
-pub use offers::{RefSource, Vocabulary};
+pub use offers::{RefSource, Vocabulary, ref_offers};
 pub use sort::sort;
 #[cfg(test)]
 pub use table::DomainTable;

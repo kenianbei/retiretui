@@ -24,6 +24,7 @@ pub fn plugin(app: &mut App) {
 impl Found for MonteCarlo {
     const NOTHING_SEARCHED: &'static str = super::NOTHING_SEARCHED;
     const IS_COUNTED: bool = true;
+    const IS_PLAN_ROW_CHOSEN: bool = true;
 
     fn laid(&self, plan: &Plan, _: bool) -> Laid {
         super::laid(self, plan)

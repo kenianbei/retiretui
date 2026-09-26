@@ -17,6 +17,7 @@ use super::focus::Ring;
 use super::layout::HintRow;
 use super::scope::{KeyScope, Scoped};
 use super::theme::{Repainted, Theme};
+use super::tools::Idle;
 
 pub fn plugin(app: &mut App) {
     app.add_systems(Update, refresh_hints.in_set(Repainted));
@@ -102,12 +103,12 @@ const WALK: Hint = ("⇥", "pane");
 /// page's panes are counted only as the page changes.
 fn refresh_hints(
     held: Held,
-    shell: (Ring, Res<TerminalSize>, Res<Theme>),
+    shell: (Ring, Idle, Res<TerminalSize>, Res<Theme>),
     mut rows: Query<&mut UiWidget, With<HintRow>>,
     mut drawn: Local<Drawn>,
     mut has_many: Local<bool>,
 ) {
-    let (ring, size, theme) = shell;
+    let (ring, idle, size, theme) = shell;
     if ring.shown.is_changed() {
         *has_many = ring.has_many();
     }
@@ -116,7 +117,9 @@ fn refresh_hints(
         if *has_many {
             leading.push(WALK);
         }
-        leading.extend(command::page_hints(ring.shown.surface()));
+        leading.extend(command::page_hints(ring.shown.surface(), |name| {
+            idle.is_idle(name)
+        }));
     }
     let trailing: &[Hint] = if owns_keys { &[] } else { &FINDERS };
     let cols = usize::from(size.cols);

@@ -1,0 +1,129 @@
+# Ruth and Walter, both 68, retired in Florida. Social Security already paying,
+# required minimum distributions from 73, Medicare surcharges (IRMAA) priced
+# from the income two years before, and spending that slows down with age.
+#
+# try: retiretui project examples/retired-couple.toml
+# try: retiretui actions examples/retired-couple.toml --year 2031
+# try: retiretui compare examples/retired-couple.toml examples/retired-couple-downsize.toml
+
+schema = 1
+
+[plan]
+name = "Retired couple"
+start_year = 2026
+horizon_age = 95
+inflation = 0.025
+surplus_to = "checking"
+
+[household]
+filing = "married-joint"
+
+[[household.people]]
+id = "ruth"
+name = "Ruth"
+birth = 1958-02-14
+
+[[household.people]]
+id = "walter"
+name = "Walter"
+birth = 1958-07-30
+
+[[residency]]
+country = "us"
+state = "fl"
+
+# The two years before the plan, for the IRMAA lookback of 2026 and 2027: a
+# large sale in 2025 lifts 2027's premiums over the first surcharge tier.
+[medicare]
+prior_magi = [120000, 260000]
+
+[[events]]
+id = "slow-down"
+name = "Travel winds down"
+trigger = { age = 78, owner = "ruth" }
+
+[[accounts]]
+id = "checking"
+name = "Checking"
+kind = "cash"
+owner = "ruth"
+balance = 30000
+
+[[accounts]]
+id = "brokerage"
+name = "Joint brokerage"
+kind = "brokerage"
+owner = "ruth"
+balance = 250000
+basis = 180000
+expected_return = 0.05
+
+[[accounts]]
+id = "ira-ruth"
+name = "Ruth's IRA"
+kind = "ira"
+owner = "ruth"
+balance = 600000
+expected_return = 0.05
+
+[[accounts]]
+id = "ira-walter"
+name = "Walter's IRA"
+kind = "ira"
+owner = "walter"
+balance = 450000
+expected_return = 0.05
+
+[[accounts]]
+id = "roth-ira-ruth"
+name = "Ruth's Roth IRA"
+kind = "ira"
+roth = true
+owner = "ruth"
+balance = 100000
+expected_return = 0.05
+
+[[income]]
+id = "ss-ruth"
+name = "Ruth's Social Security"
+kind = "social-security"
+owner = "ruth"
+amount = 30000
+# Already claimed: a date start pays the whole first year.
+start = { date = 2026-01-01 }
+
+[[income]]
+id = "ss-walter"
+name = "Walter's Social Security"
+kind = "social-security"
+owner = "walter"
+amount = 36000
+start = { date = 2026-01-01 }
+
+[[expenses]]
+id = "housing"
+name = "Housing"
+amount = 24000
+
+[[expenses]]
+id = "living"
+name = "Living expenses"
+amount = 55000
+
+# Standard Part B and D premiums; the engine adds only the surcharge above them.
+[[expenses]]
+id = "medicare"
+name = "Medicare premiums"
+amount = 7000
+
+[[expenses]]
+id = "travel"
+name = "Travel"
+amount = 15000
+end = { event = "slow-down", offset = -1 }
+
+[[expenses]]
+id = "care"
+name = "Help at home"
+amount = 20000
+start = { event = "slow-down", offset = 7 }

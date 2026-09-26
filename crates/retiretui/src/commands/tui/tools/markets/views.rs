@@ -150,7 +150,8 @@ pub(super) fn title(view: View, runs: &Runs, label: &str) -> String {
 }
 
 /// Fills the part on show from what the search found, as it is turned to:
-/// a table filled while hidden is measured against no area.
+/// a table given its cursor while hidden scrolls that row into no area and
+/// is shown a row down, its header gone.
 fn refresh_views<R: MarketTool>(
     (tool, theme, view): (Res<Tool<R>>, Res<Theme>, Res<ViewOf<R>>),
     mut parts: Query<(Entity, &ViewPart, Option<&mut ScrollArea>)>,
@@ -207,7 +208,7 @@ fn fill_by_year(commands: &mut Commands, (table, scroll): (Entity, &mut ScrollAr
             cells
         })
         .collect();
-    let columns = tabulate::columns((&header, &rows), GAP);
+    let columns = tabulate::gapped_columns((&header, &rows), GAP);
     commands.entity(table).insert(columns);
     tabulate::refill(commands, (table, scroll), (&header, &rows), &[0]);
 }

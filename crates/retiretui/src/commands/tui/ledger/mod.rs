@@ -4,7 +4,6 @@ use bevy_ecs::prelude::{
     ChildOf, Commands, Component, Entity, IntoScheduleConfigs, Local, Or, Query, Res, ResMut, With,
 };
 use bevy_ecs::system::SystemParam;
-use bevy_ui::{FlexDirection, Node, Val};
 use plurimus::core::TerminalSize;
 use plurimus::core::ratatui_core::layout::{Constraint, Size};
 use plurimus::core::ratatui_core::style::{Modifier, Style};
@@ -28,9 +27,10 @@ use super::theme::Theme;
 
 mod detail;
 mod flows;
+mod split;
 
 pub fn plugin(app: &mut App) {
-    app.add_plugins((detail::plugin, flows::plugin));
+    app.add_plugins((detail::plugin, flows::plugin, split::plugin));
     app.add_systems(Startup, spawn_ledger.after(layout::spawn_frame));
     app.init_resource::<LedgerRun>();
     app.add_systems(
@@ -47,9 +47,6 @@ pub fn plugin(app: &mut App) {
     app.add_observer(table_self_update);
 }
 
-/// The table's share of the page's height, and the detail's beneath it.
-const TABLE_SHARE: f32 = 0.65;
-const DETAIL_SHARE: f32 = 0.35;
 /// The cells between the detail tables' columns, past the one a table
 /// leaves.
 const DETAIL_GAP: u16 = 2;
@@ -103,9 +100,7 @@ fn spawn_ledger(bodies: Query<Entity, With<Body>>, mut commands: Commands) {
         return;
     };
     let view = nav::spawn_surface(&mut commands, body, Some(Page::Ledger));
-    let pane = Pane::new(TITLE)
-        .sharing(TABLE_SHARE)
-        .spawn(&mut commands, view);
+    let pane = Pane::new(TITLE).sharing(1.0).spawn(&mut commands, view);
     commands.entity(pane).insert(LedgerPane);
     commands.spawn((
         table([Constraint::Length(5)]),
@@ -120,14 +115,7 @@ fn spawn_ledger(bodies: Query<Entity, With<Body>>, mut commands: Commands) {
         placed(),
         ChildOf(pane),
     ));
-    let detail = Node {
-        flex_direction: FlexDirection::Row,
-        flex_grow: DETAIL_SHARE,
-        flex_basis: Val::Px(0.0),
-        min_height: Val::Px(0.0),
-        ..Node::default()
-    };
-    let detail = commands.spawn((detail, ChildOf(view))).id();
+    let detail = split::spawn_detail(&mut commands, view);
     flows::spawn_pane(&mut commands, detail);
     detail::spawn_pane(&mut commands, detail);
 }

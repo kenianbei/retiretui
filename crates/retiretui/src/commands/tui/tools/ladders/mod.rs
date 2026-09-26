@@ -38,7 +38,12 @@ pub type Ladders = Tool<Swept>;
 pub fn plugin(app: &mut App) {
     super::install::<Swept>(app, &PAGE);
     super::options::plugin::<Swept>(app);
-    app.add_systems(Update, search_by_itself.before(super::poll_search::<Swept>));
+    app.add_systems(
+        Update,
+        (aim_at_only_roth, search_by_itself)
+            .chain()
+            .before(super::poll_search::<Swept>),
+    );
     panes::plugin(app);
     guide::plugin(app);
 }
@@ -202,7 +207,7 @@ impl Found for Swept {
 impl Tool<Swept> {
     /// The highlighted bracket, or the best while the plan's own row is
     /// highlighted.
-    fn highlighted_bracket(&self) -> Option<&SweptBracket> {
+    pub(super) fn highlighted_bracket(&self) -> Option<&SweptBracket> {
         let brackets = &self.found()?.sweep.brackets;
         let highlighted = self.highlighted().and_then(|at| brackets.get(at));
         highlighted.or_else(|| brackets.first())
@@ -223,6 +228,23 @@ fn act(which: FormButton, commands: &mut Commands) {
 
 fn mark_applied(mut ladders: ResMut<Ladders>) {
     ladders.set_changed();
+}
+
+/// Names the plan's one Roth account as the destination while the page is
+/// on show and the form names none, so the first look is already ranked.
+fn aim_at_only_roth(active: Res<ActivePage>, mut draft: ResMut<Draft>) {
+    let is_moved = draft.is_changed() || active.is_changed();
+    if !is_moved || active.0 != Page::RothConversions {
+        return;
+    }
+    if draft.answers::<Constraints>().contains_key(DESTINATION) {
+        return;
+    }
+    let offered = edit::ref_offers(&draft.plan, RefSource::RothAccount);
+    let [only] = offered.as_slice() else {
+        return;
+    };
+    aim_at(&mut draft, &only.value);
 }
 
 /// Searches again whenever the page is on show over a valid draft whose

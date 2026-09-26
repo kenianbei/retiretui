@@ -1,5 +1,6 @@
 ---
 source: crates/retiretui/src/commands/tui/frames.rs
+assertion_line: 44
 expression: composed_frame(app)
 ---
 ╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                                                                                                      
@@ -56,4 +57,4 @@ expression: composed_frame(app)
 │╰─────────────────────────────────────────────────────────────────────────────────────────────────╯╰─────────────────────────────────────────────────────────────────────────────────────────────────╯│
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 Compare this plan with others in its folder: c adds one.                                                                                                                                                
- ↑↓ plan  ⏎ open  ←→ metric  ⇥ pane  c add plan  x remove  b baseline  d difference  v view  ctrl-s save  r reload  q quit  ctrl-↓ tab  n toggle dollars                             : commands  ? help
+ ↑↓ plan  ⏎ open  ←→ metric  ⇥ pane  c add  x remove  b baseline  d diff  v view  ctrl-s save  r reload  q quit  ctrl-↓ tab  n dollars                                               : commands  ? help

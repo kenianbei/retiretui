@@ -21,6 +21,7 @@ use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{
     Commands, Component, Entity, IntoScheduleConfigs, On, Query, Res, ResMut, Resource, With,
 };
+use bevy_ecs::system::SystemParam;
 use bevy_input::keyboard::{Key, KeyboardInput};
 use bevy_input_focus::FocusedInput;
 use bevy_ui::{FlexDirection, Node};
@@ -46,10 +47,35 @@ use super::theme::{Repainted, Theme};
 
 pub fn plugin(app: &mut App) {
     app.init_resource::<Searches>();
-    app.add_plugins((ladders::plugin, claims::plugin, markets::plugin));
+    app.add_plugins((
+        ladders::plugin,
+        claims::plugin,
+        markets::plugin,
+        options::plugin_said,
+    ));
 }
 
 const NOTHING_SEARCHED_YET: &str = "nothing searched yet";
+
+/// Which tool commands have nothing to act on yet, so the key row leaves
+/// their hints out; the keys still run and say why they refuse.
+#[derive(SystemParam)]
+pub struct Idle<'w> {
+    ladders: Res<'w, Ladders>,
+    claims: Res<'w, Claims>,
+}
+
+impl Idle<'_> {
+    /// Whether the command named `name` would refuse for want of a result.
+    pub fn is_idle(&self, name: &str) -> bool {
+        use super::command::{TAKE_CLAIMS, TAKE_LADDER, WRITE_CLAIMS, WRITE_LADDER};
+        match name {
+            WRITE_LADDER | TAKE_LADDER => self.ladders.highlighted_bracket().is_none(),
+            WRITE_CLAIMS | TAKE_CLAIMS => self.claims.found().is_none(),
+            _ => false,
+        }
+    }
+}
 
 /// What a tool's search found, as its options pane lists it: the plan's
 /// own row, then an option per result, best first.
@@ -59,6 +85,9 @@ pub trait Found: Send + Sync + 'static {
     /// Whether the search counts its steps, its answer then speaking for
     /// itself with no time beside it.
     const IS_COUNTED: bool = false;
+    /// Whether the cursor may rest on the plan's own row, as a row of its
+    /// own to open, rather than going on to the best option.
+    const IS_PLAN_ROW_CHOSEN: bool = false;
 
     /// The options pane's rows, over `plan` as it stands.
     fn laid(&self, plan: &Plan, nominal: bool) -> options::Laid;
@@ -367,9 +396,15 @@ pub fn hold<R: Found>(app: &mut bevy_app::App, is_held: bool) {
     app.world_mut().resource_mut::<Tool<R>>().is_held = is_held;
 }
 
+/// Ticks until `R`'s search has answered, then draws the answer as having
+/// taken no time: how long it took is the machine's, not the answer's.
 #[cfg(test)]
 fn settle<R: Found>(app: &mut bevy_app::App) {
     settle_until_idle(app, |app| app.world().resource::<Tool<R>>().is_running());
+    if let Some((_, took)) = &mut app.world_mut().resource_mut::<Tool<R>>().found {
+        *took = Duration::ZERO;
+    }
+    app.update();
 }
 
 /// Ticks until nothing `is_running` and the tick after starts nothing,

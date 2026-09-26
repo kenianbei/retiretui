@@ -1,15 +1,15 @@
 ---
 source: crates/retiretui/src/commands/tui/frames.rs
-assertion_line: 26
+assertion_line: 44
 expression: composed_frame(app)
 ---
 ╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                                                                                                      
 │1 Overview││2 Ledger││3 Compare││4 Tools││5 Plan│                                                                                                                                          full.toml ● 
 ┴──────────┴┴────────┴┴─────────┴╯       ╰┴──────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭ Tools ────────────╮╭ People ────────────────────────────────────────────────────────────────────────────────╮╭ Claim Options ────────────────────────────────────────────────────────────────────────╮
-│  Roth Conversions ││  Person   Record  Income  62  FRA 70                                                   ││no social-security income computes its benefit, and no one without one has an earnings │
-│▏ SSA Benefits     ││▌ jordan     none   typed   -    -  -                                                   ││                                                                                       │
-│  Monte Carlo      ││  alex       none    none   -    -  -                                                   ││                                                                                       │
+│  Roth Conversions ││  Person   Record  Income  62  FRA  70                                                  ││no social-security income computes its benefit, and no one without one has an earnings │
+│▏ SSA Benefits     ││▌ jordan     none   typed   -    -   -                                                  ││record                                                                                 │
+│  Monte Carlo      ││  alex       none    none   -    -   -                                                  ││                                                                                       │
 │  Historical       ││                                                                                        ││                                                                                       │
 │                   ││                                                                                        ││                                                                                       │
 │                   ││                                                                                        ││                                                                                       │
@@ -57,4 +57,4 @@ expression: composed_frame(app)
 │                   ││                                                                                        ││                                                                                       │
 │                   │╰────────────────────────────────────────────────────────────────────────────────────────╯╰───────────────────────────────────────────────────────────────────────────────────────╯
 ╰───────────────────╯alex has no earnings record: ⏎ on alex to import a statement or estimate one from their salary.                                                                                    
- ↑↓ person  ⏎ actions  ⇥ pane  w write  t take  e statement  c career  k compute  ctrl-s save  r reload  q quit  ctrl-↓ tab  n toggle dollars                                        : commands  ? help
+ ↑↓ person  ⏎ actions  ⇥ pane  e statement  c career  k compute  ctrl-s save  r reload  q quit  ctrl-↓ tab  n dollars                                                                : commands  ? help

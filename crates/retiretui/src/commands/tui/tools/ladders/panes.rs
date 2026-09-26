@@ -3,13 +3,12 @@
 
 use bevy_app::{App, Update};
 use bevy_ecs::change_detection::DetectChanges;
-use bevy_ecs::hierarchy::{ChildOf, Children};
+use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{
     Commands, Component, Entity, IntoScheduleConfigs, Local, Query, Res, With,
 };
 use bevy_ui::{FlexDirection, Node, Val};
 use plurimus::ui::ScrollArea;
-use plurimus::widgets::WidgetSystems;
 use retiretui_engine::optimize::SweptBracket;
 use retiretui_engine::plan::Plan;
 
@@ -24,15 +23,13 @@ use crate::commands::tui::pane::Pane;
 use crate::commands::tui::present::{account_name, compact_dollars};
 use crate::commands::tui::session::Basis;
 use crate::commands::tui::tabulate;
-use crate::commands::tui::theme::{Repainted, Theme};
 
 pub fn plugin(app: &mut App) {
     app.add_systems(
         Update,
         refresh_conversions
-            .after(options::follow_cursor::<Swept>)
-            .before(Repainted)
-            .before(WidgetSystems::Layout),
+            .in_set(options::TablesFilled)
+            .after(options::follow_cursor::<Swept>),
     );
 }
 
@@ -94,14 +91,13 @@ pub fn spawn_panes(commands: &mut Commands, row: Entity) {
 /// it moves or what they were drawn from changes. A search under way
 /// leaves the last in view.
 fn refresh_conversions(
-    state: (Res<Ladders>, Res<Basis>, Res<Theme>, Res<Draft>),
+    state: (Res<Ladders>, Res<Basis>, Res<Draft>),
     mut drawn: Local<Option<usize>>,
     mut tables: Query<(Entity, &mut ScrollArea), With<ConversionsTable>>,
     mut commands: Commands,
 ) {
-    let (ladders, basis, theme, draft) = state;
-    let is_moved =
-        ladders.is_changed() || basis.is_changed() || theme.is_changed() || draft.is_changed();
+    let (ladders, basis, draft) = state;
+    let is_moved = ladders.is_changed() || basis.is_changed() || draft.is_changed();
     if (!is_moved && *drawn == Some(ladders.highlighted))
         || (ladders.found().is_none() && ladders.is_running())
     {
@@ -123,8 +119,7 @@ fn refresh_conversions(
                 continue;
             }
         };
-        commands.entity(table).despawn_related::<Children>();
-        say_instead(&mut commands, (table, &mut scroll), said.to_owned(), &theme);
+        say_instead(&mut commands, table, said.to_owned());
     }
 }
 

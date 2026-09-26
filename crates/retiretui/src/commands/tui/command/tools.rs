@@ -8,6 +8,11 @@ use crate::commands::tui::nav::Page;
 use crate::commands::tui::tools;
 use crate::commands::tui::tools::markets::MarketTool;
 
+pub const WRITE_LADDER: &str = "write-ladder";
+pub const TAKE_LADDER: &str = "take-ladder";
+pub const WRITE_CLAIMS: &str = "write-claims";
+pub const TAKE_CLAIMS: &str = "take-claims";
+
 /// Every row the Tools tab's pages add to the command table.
 pub(super) fn commands() -> Vec<CommandSpec> {
     [
@@ -26,7 +31,7 @@ pub(super) fn commands() -> Vec<CommandSpec> {
 fn ladders() -> Vec<CommandSpec> {
     vec![
         CommandSpec {
-            name: "write-ladder",
+            name: WRITE_LADDER,
             scope: Scope::On(Page::RothConversions),
             doc: "write the highlighted ladder as a scenario over the document",
             keys: vec![character("w")],
@@ -34,7 +39,7 @@ fn ladders() -> Vec<CommandSpec> {
             register: Box::new(|world| world.register_system(tools::ladders::write_picker)),
         },
         CommandSpec {
-            name: "take-ladder",
+            name: TAKE_LADDER,
             scope: Scope::On(Page::RothConversions),
             doc: "take the highlighted ladder into the plan as conversions",
             keys: vec![character("t")],
@@ -48,7 +53,7 @@ fn ladders() -> Vec<CommandSpec> {
 fn claims() -> Vec<CommandSpec> {
     vec![
         CommandSpec {
-            name: "write-claims",
+            name: WRITE_CLAIMS,
             scope: Scope::On(Page::SsaBenefits),
             doc: "write the highlighted claims as a scenario over the document",
             keys: vec![character("w")],
@@ -56,7 +61,7 @@ fn claims() -> Vec<CommandSpec> {
             register: Box::new(|world| world.register_system(tools::claims::write_picker)),
         },
         CommandSpec {
-            name: "take-claims",
+            name: TAKE_CLAIMS,
             scope: Scope::On(Page::SsaBenefits),
             doc: "take the highlighted claims into the plan as each income's start",
             keys: vec![character("t")],

@@ -1,6 +1,6 @@
 ---
 source: crates/retiretui/src/commands/tui/frames.rs
-assertion_line: 26
+assertion_line: 44
 expression: composed_frame(app)
 ---
 ╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                              
@@ -8,19 +8,21 @@ expression: composed_frame(app)
 ┴──────────┴┴────────┴┴─────────┴┴───────┴╯      ╰──────────────────────────────────────────────────────────────────────────────
                                                                                                                                 
                                                                                                                                 
-                                                                                                                                
                               ╭ New plan ───────────────────────────────────────────────────────╮                               
+                              │Start from                  [ My own answers ▾ ]                 │                               
                               │Filing status               [ None ▾ ]                           │                               
                               │Life stage                  [ None ▾ ]                           │                               
                               │Your name                   [                                  ] │                               
                               │Birth year                  [                                  ] │                               
                               │Retirement age              [                                  ] │                               
+                              │Working since               [                                  ] │                               
                               │Salary                      [                                  ] │                               
                               │Social Security             [                                  ] │                               
                               │Claim age                   [                                  ] │                               
                               │Partner's name              [                                  ] │                               
                               │Partner's birth year        [                                  ] │                               
                               │Partner's retirement age    [                                  ] │                               
+                              │Partner's working since     [                                  ] │                               
                               │Partner's salary            [                                  ] │                               
                               │Partner's Social Security   [                                  ] │                               
                               │Partner's claim age         [                                  ] │                               
@@ -31,7 +33,5 @@ expression: composed_frame(app)
                               │─────────────────────────────────────────────────────────────────│                               
                               │                                                       [ Create ]│                               
                               ╰─────────────────────────────────────────────────────────────────╯                               
-                                                                                                                                
-                                                                                                                                
                                                                                                                                 
  ⏎ edit  q quit                                                                                              : commands  ? help

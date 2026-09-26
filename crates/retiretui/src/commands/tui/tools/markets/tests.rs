@@ -4,7 +4,7 @@
 use std::time::Duration;
 
 use bevy_app::App;
-use bevy_ecs::prelude::Entity;
+use bevy_ecs::prelude::{Entity, With};
 use plurimus::term::KeyCode;
 use retiretui_engine::market::{MonteCarlo, Runs};
 use retiretui_engine::plan::Market;
@@ -12,12 +12,14 @@ use retiretui_engine::plan::Market;
 use super::MarketTool;
 use super::views::{View, ViewPart};
 use crate::commands::tui::nav::Page;
+use crate::commands::tui::pane::Framed;
 use crate::commands::tui::session::{LedgerRun, Projected};
 use crate::commands::tui::support::{
     Headless, SIZE, active_page, assert_at_rest, click_year, commit_edit, headless_app,
     ledger_year, press_key, redrawn, show,
 };
-use crate::commands::tui::tools::{Tool, settle_all};
+use crate::commands::tui::theme::Theme;
+use crate::commands::tui::tools::{ResultPane, Tool, settle_all};
 
 /// Hands the keyboard to the runs, from the assumptions the page opens on.
 fn to_runs(app: &mut Headless) {
@@ -118,6 +120,42 @@ fn enter_on_a_run_opens_it_in_the_ledger_until_esc_or_an_edit() {
         None,
         "a changed plan leaves the run behind"
     );
+}
+
+#[test]
+fn the_cursor_rests_on_as_planned_and_enter_opens_the_plan_s_own_ledger() {
+    let mut app = app_on(Page::MonteCarlo);
+    to_runs(&mut app);
+    press_key(&mut app, KeyCode::Enter);
+    assert!(ledger_run(&app).is_some(), "a run to leave behind");
+    show(&mut app, Page::MonteCarlo);
+    to_runs(&mut app);
+    press_key(&mut app, KeyCode::Up);
+    let tool = app.world().resource::<Tool<MonteCarlo>>();
+    assert_eq!(
+        tool.highlighted, 0,
+        "on the plan's own row, not bounced off"
+    );
+    press_key(&mut app, KeyCode::Enter);
+    assert_eq!(active_page(&app), Page::Ledger);
+    assert_eq!(ledger_run(&app), None, "the plan's own projection");
+}
+
+#[test]
+fn the_runs_title_is_drawn_in_the_colour_of_the_plan_s_zone() {
+    let mut app = app_on(Page::MonteCarlo);
+    let share = {
+        let tool = app.world().resource::<Tool<MonteCarlo>>();
+        tool.found().expect("searched").runs.success_rate()
+    };
+    let theme = app.world().resource::<Theme>().clone();
+    let styles: Vec<_> = app
+        .world_mut()
+        .query_filtered::<&Framed, With<ResultPane<MonteCarlo>>>()
+        .iter(app.world())
+        .map(|pane| pane.title_style)
+        .collect();
+    assert_eq!(styles, [Some(super::zone_style(share, &theme))]);
 }
 
 #[test]

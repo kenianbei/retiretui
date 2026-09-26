@@ -6,7 +6,7 @@ use bevy_app::{App, Update};
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Component, Entity, IntoScheduleConfigs, Query, Res, ResMut};
-use plurimus::ui::{ScrollArea, UiStyle};
+use plurimus::ui::ScrollArea;
 use plurimus::widgets::{ActiveDescendant, WidgetSystems};
 use retiretui_engine::plan::{Account, AssetClass, Plan};
 
@@ -19,7 +19,6 @@ use crate::commands::tui::nav::{ActivePage, FocusStop, Page};
 use crate::commands::tui::pane::Pane;
 use crate::commands::tui::present::{money, rate};
 use crate::commands::tui::tabulate;
-use crate::commands::tui::theme::Theme;
 use crate::commands::tui::tools::{EnterRuns, Tool, handle_enter};
 
 const TITLE: &str = "Assumptions";
@@ -116,14 +115,13 @@ fn rows<R: MarketTool>(plan: &Plan, found: Option<&R>) -> Vec<Assumption> {
     rows
 }
 
-/// Rewrites the table whenever the plan or what the search found moves,
-/// its first row coloured by how the plan fared.
+/// Rewrites the table whenever the plan or what the search found moves.
 fn refresh<R: MarketTool>(
-    (tool, draft, theme): (Res<Tool<R>>, Res<Draft>, Res<Theme>),
+    (tool, draft): (Res<Tool<R>>, Res<Draft>),
     mut tables: Query<(Entity, &AssumptionsTable, &mut ScrollArea)>,
     mut commands: Commands,
 ) {
-    if !(tool.is_changed() || draft.is_changed() || theme.is_changed()) {
+    if !(tool.is_changed() || draft.is_changed()) {
         return;
     }
     let assumptions = rows::<R>(&draft.plan, tool.found());
@@ -146,12 +144,6 @@ fn refresh<R: MarketTool>(
         );
         for (&row, (_, _, page)) in spawned.iter().zip(&assumptions) {
             commands.entity(row).insert(EditedOn(*page));
-        }
-        if let (Some(&first), Some(found)) = (spawned.first(), tool.found()) {
-            let share = found.runs().success_rate();
-            commands
-                .entity(first)
-                .insert(UiStyle(super::zone_style(share, &theme)));
         }
     }
 }

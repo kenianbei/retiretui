@@ -10,13 +10,15 @@ use bevy_ecs::prelude::{
 };
 use bevy_ui::{Display, FlexDirection, JustifyContent, Node, UiSystems, Val};
 use plurimus::bui::{BuiPlugin, ComputedNodeRect};
-use plurimus::core::ratatui_core::layout::Rect;
+use plurimus::core::ratatui_core::layout::{Position, Rect};
 use plurimus::core::ratatui_core::style::{Modifier, Style};
 use plurimus::core::{
     DefaultCamera, ResolvedViewport, TerminalCamera, TerminalSize, UiArea, UiHidden, UiWidget,
     local_area,
 };
-use plurimus::ui::UiStyle;
+use plurimus::ui::{
+    ComputedWidgetArea, ScrollArea, ScrollOffset, UiStyle, apply_offset, max_offset,
+};
 use plurimus::widgets::ratatui_widgets::block::Block;
 use plurimus::widgets::ratatui_widgets::borders::Borders;
 use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
@@ -25,7 +27,7 @@ mod clip;
 mod cursor;
 mod list;
 
-pub use clip::{cells_of, clipped, wrapped};
+pub use clip::{cells_of, clipped, clipped_middle, wrapped};
 pub use cursor::{CURSOR_COLS, Rests, list_cursor, table_cursor};
 pub use list::{fill_wrapped, row_width, spawn_scrolled_list};
 
@@ -91,9 +93,31 @@ pub fn plugin(app: &mut App) {
     app.add_systems(Startup, spawn_frame);
     app.add_systems(
         Update,
-        (guard_size, (draw_rules, emphasise).in_set(Repainted)),
+        (
+            guard_size,
+            hold_offsets,
+            (draw_rules, emphasise).in_set(Repainted),
+        ),
     );
     app.add_systems(PostUpdate, sync_areas.after(UiSystems::PostLayout));
+}
+
+/// Holds each scroll area's offset within what it can scroll once its area
+/// moves: plurimus clamps an offset as it scrolls and again as it draws,
+/// but keeps one a grown area has left past the end, which a click then
+/// reads as rows further on than those drawn.
+fn hold_offsets(
+    mut areas: Query<
+        (Entity, &ComputedWidgetArea, &ScrollArea, &mut ScrollOffset),
+        Changed<ComputedWidgetArea>,
+    >,
+    mut commands: Commands,
+) {
+    for (entity, area, scroll, mut offset) in &mut areas {
+        let most = max_offset(scroll.content_size, area.0);
+        let held = Position::new(offset.0.x.min(most.x), offset.0.y.min(most.y));
+        apply_offset(entity, held, &mut offset, &mut commands);
+    }
 }
 
 #[must_use]
@@ -145,13 +169,16 @@ pub fn sized(cols: f32, rows: f32) -> Node {
 pub const NO_STOP: i32 = -1;
 
 /// The `[ ` and ` ]` plurimus paints a button's label between.
-const BUTTON_DECORATION: usize = 4;
+const BUTTON_DECORATION: u16 = 4;
 pub const BUTTON_GAP: f32 = 1.0;
 
 /// The node of a button saying `label`, as wide as it is drawn.
 #[must_use]
 pub fn button_node(label: &str) -> Node {
-    sized((label.chars().count() + BUTTON_DECORATION) as f32, 1.0)
+    sized(
+        f32::from(cells_of(label).saturating_add(BUTTON_DECORATION)),
+        1.0,
+    )
 }
 
 /// A row of buttons under what `parent` already holds, its last the

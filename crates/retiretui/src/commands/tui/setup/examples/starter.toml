@@ -1,0 +1,108 @@
+# Sam, 30, in a first salaried job in Texas: the smallest plan that projects.
+# A 401(k) with an employer match, a Roth IRA filled to the limit each year,
+# and Social Security left for the engine to compute from the salary.
+#
+# try: retiretui project examples/starter.toml
+# try: retiretui actions examples/starter.toml --year 2026
+
+schema = 1
+
+[plan]
+name = "Starter"
+start_year = 2026
+horizon_age = 95
+inflation = 0.025
+
+[household]
+filing = "single"
+
+[[household.people]]
+id = "sam"
+name = "Sam"
+birth = 1996-03-10
+
+[[residency]]
+country = "us"
+state = "tx"
+
+[[events]]
+id = "retire"
+name = "Sam retires"
+trigger = { age = 65, owner = "sam" }
+
+[[accounts]]
+id = "checking"
+name = "Checking"
+kind = "cash"
+owner = "sam"
+balance = 5000
+
+[[accounts]]
+id = "401k-sam"
+name = "Sam's 401(k)"
+kind = "401k"
+owner = "sam"
+balance = 12000
+expected_return = 0.06
+
+[[accounts]]
+id = "roth-ira-sam"
+name = "Sam's Roth IRA"
+kind = "ira"
+roth = true
+owner = "sam"
+balance = 3000
+expected_return = 0.06
+
+[[income]]
+id = "salary-sam"
+name = "Sam's salary"
+kind = "salary"
+owner = "sam"
+amount = 60000
+end = { event = "retire", offset = -1 }
+
+# No amount: the benefit is computed at the claim from the salary above. It
+# counts only salary paid inside the plan, which here is a whole career.
+[[income]]
+id = "ss-sam"
+name = "Sam's Social Security"
+kind = "social-security"
+owner = "sam"
+start = { age = 67, owner = "sam" }
+
+[[contributions]]
+id = "deferral-sam"
+name = "Sam's 401(k) deferral"
+to = "401k-sam"
+rate = 0.06
+of = "salary-sam"
+end = { event = "retire", offset = -1 }
+
+# The employer pays half of what Sam defers, up to 6% of the salary.
+[[contributions]]
+id = "match-sam"
+name = "Sam's employer match"
+to = "401k-sam"
+by = "employer"
+match = { rate = 0.5, up_to = 0.06 }
+of = "salary-sam"
+end = { event = "retire", offset = -1 }
+
+# The year's IRA limit, whatever it is.
+[[contributions]]
+id = "roth-ira-sam"
+name = "Sam's Roth IRA contribution"
+to = "roth-ira-sam"
+max = true
+end = { event = "retire", offset = -1 }
+
+[[expenses]]
+id = "rent"
+name = "Rent"
+amount = 18000
+
+[[expenses]]
+id = "living"
+name = "Living expenses"
+amount = 24000

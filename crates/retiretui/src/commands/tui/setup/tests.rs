@@ -129,6 +129,32 @@ fn creating_names_the_plan_writes_it_and_lands_in_its_accounts() {
 }
 
 #[test]
+fn an_example_hides_the_questions_and_is_named_after_itself() {
+    let (dir, mut app) = empty_shell();
+    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, KeyCode::Right);
+    settle(&mut app);
+    let frame = composed_frame(&app);
+    assert!(frame.contains("Start from"), "{frame}");
+    assert!(!frame.contains("Birth year"), "nothing to answer: {frame}");
+    press_button(&mut app, CREATE);
+    assert!(
+        composed_frame(&app).contains("starter.toml"),
+        "the name offered is the example's: {}",
+        composed_frame(&app)
+    );
+    press_key(&mut app, KeyCode::Enter);
+    settle(&mut app);
+
+    let written = dir.join("starter.toml");
+    assert_eq!(document(&app), Some(written.clone()));
+    let plan = Plan::from_toml_str(&std::fs::read_to_string(written).unwrap()).unwrap();
+    let (_, _, example) = super::examples::named("starter.toml").unwrap();
+    let example = Plan::from_toml_str(example).unwrap();
+    assert_eq!(plan, example, "the example as it stands");
+}
+
+#[test]
 fn a_form_no_one_touched_still_makes_a_plan() {
     let (dir, mut app) = empty_shell();
     create_as(&mut app, "blank");

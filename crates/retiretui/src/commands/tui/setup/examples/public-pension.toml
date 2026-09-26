@@ -1,0 +1,180 @@
+# Dana, 54, a public employee, and Chris, 52. Dana's pension starts at 58,
+# which unlocks the defined-contribution account beside it, rolled over to an
+# IRA the same year; a 457(b) can be drawn without penalty before 59 and a half.
+#
+# try: retiretui project examples/public-pension.toml
+# try: retiretui project examples/public-pension.toml --by-account
+
+schema = 1
+
+[plan]
+name = "Public pension"
+start_year = 2026
+horizon_age = 95
+inflation = 0.025
+
+[household]
+filing = "married-joint"
+
+[[household.people]]
+id = "dana"
+name = "Dana"
+birth = 1972-04-11
+
+[[household.people]]
+id = "chris"
+name = "Chris"
+birth = 1974-08-23
+
+[[residency]]
+country = "us"
+state = "nv"
+
+[[events]]
+id = "retire-dana"
+name = "Dana retires"
+trigger = { age = 58, owner = "dana" }
+
+[[accounts]]
+id = "checking"
+name = "Checking"
+kind = "cash"
+owner = "dana"
+balance = 25000
+
+# Locked until the pension it belongs to starts paying.
+[[accounts]]
+id = "dc-dana"
+name = "Dana's pension DC account"
+kind = "414k"
+owner = "dana"
+balance = 120000
+expected_return = 0.05
+locked_until = { income = "pension-dana" }
+
+[[accounts]]
+id = "457b-dana"
+name = "Dana's 457(b)"
+kind = "457b"
+owner = "dana"
+balance = 150000
+expected_return = 0.06
+
+[[accounts]]
+id = "ira-dana"
+name = "Dana's rollover IRA"
+kind = "ira"
+owner = "dana"
+balance = 0
+expected_return = 0.05
+
+[[accounts]]
+id = "401k-chris"
+name = "Chris's 401(k)"
+kind = "401k"
+owner = "chris"
+balance = 200000
+expected_return = 0.06
+
+[[accounts]]
+id = "roth-ira-chris"
+name = "Chris's Roth IRA"
+kind = "ira"
+roth = true
+owner = "chris"
+balance = 60000
+expected_return = 0.06
+
+[[income]]
+id = "salary-dana"
+name = "Dana's salary"
+kind = "salary"
+owner = "dana"
+amount = 85000
+end = { event = "retire-dana", offset = -1 }
+
+# Grows 2% a year of its own, not with inflation.
+[[income]]
+id = "pension-dana"
+name = "Dana's pension"
+kind = "pension"
+owner = "dana"
+amount = 42000
+cola = 0.02
+start = { event = "retire-dana" }
+
+[[income]]
+id = "salary-chris"
+name = "Chris's salary"
+kind = "salary"
+owner = "chris"
+amount = 70000
+end = { age = 61, owner = "chris" }
+
+[[income]]
+id = "ss-dana"
+name = "Dana's Social Security"
+kind = "social-security"
+owner = "dana"
+amount = 14400
+start = { age = 67, owner = "dana" }
+
+[[income]]
+id = "ss-chris"
+name = "Chris's Social Security"
+kind = "social-security"
+owner = "chris"
+amount = 28000
+start = { age = 67, owner = "chris" }
+
+# The whole DC balance moves to the IRA the year the pension starts; a move
+# between two tax-deferred accounts is not taxed.
+[[transfers]]
+id = "rollover-dc-dana"
+name = "Pension DC rollover"
+from = "dc-dana"
+to = "ira-dana"
+on = { income = "pension-dana" }
+
+[[contributions]]
+id = "dc-dana"
+name = "Dana's pension DC contribution"
+to = "dc-dana"
+rate = 0.06
+of = "salary-dana"
+end = { event = "retire-dana", offset = -1 }
+
+[[contributions]]
+id = "457b-dana"
+name = "Dana's 457(b) deferral"
+to = "457b-dana"
+rate = 0.10
+of = "salary-dana"
+end = { event = "retire-dana", offset = -1 }
+
+[[contributions]]
+id = "deferral-chris"
+name = "Chris's 401(k) deferral"
+to = "401k-chris"
+rate = 0.08
+of = "salary-chris"
+end = { age = 61, owner = "chris" }
+
+[[contributions]]
+id = "match-chris"
+name = "Chris's employer match"
+to = "401k-chris"
+by = "employer"
+match = { rate = 1.0, up_to = 0.04 }
+of = "salary-chris"
+end = { age = 61, owner = "chris" }
+
+[[expenses]]
+id = "housing"
+name = "Housing"
+amount = 20000
+
+[[expenses]]
+id = "living"
+name = "Living expenses"
+amount = 70000

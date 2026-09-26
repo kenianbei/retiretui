@@ -1,5 +1,6 @@
 ---
 source: crates/retiretui/src/commands/tui/frames.rs
+assertion_line: 44
 expression: composed_frame(app)
 ---
 ╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                              
@@ -33,4 +34,4 @@ expression: composed_frame(app)
 │  2026                                                          2050 ╭───────────────────────────────────────────────────────╮│
 ╰─────────────────────────────────────────────────────────────────────│ richer.toml not re-read: must be between -0.1 and 0.5 │╯
 Compare this plan with others in its folder: c adds one.              ╰───────────────────────────────────────────────────────╯ 
- ↑↓ plan  ⏎ open  ←→ metric  ⇥ pane  c add plan  x remove  b baseline  d difference  v view  ctrl-s save     : commands  ? help
+ ↑↓ plan  ⏎ open  ←→ metric  ⇥ pane  c add  x remove  b baseline  d diff  v view  ctrl-s save  r reload      : commands  ? help

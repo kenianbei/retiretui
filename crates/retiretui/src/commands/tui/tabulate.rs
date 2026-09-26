@@ -4,12 +4,20 @@
 //! table says which of its columns are text and sizes them itself.
 
 use bevy_ecs::hierarchy::{ChildOf, Children};
-use bevy_ecs::prelude::{Commands, Entity};
+use bevy_ecs::prelude::{Commands, Component, Entity};
 use plurimus::core::ratatui_core::layout::Constraint;
 use plurimus::core::ratatui_core::style::{Color, Modifier, Style};
 use plurimus::core::ratatui_core::text::{Line, Span};
 use plurimus::ui::{ScrollArea, UiStyle};
 use plurimus::widgets::{ActiveDescendant, TableColumns, table_header, table_row};
+
+/// What a table says in place of rows it has none of, and the width it
+/// was last wrapped to; rows spawned into the table take its place.
+#[derive(Component, Debug)]
+pub(super) struct Said {
+    pub(super) text: String,
+    pub(super) drawn: Option<u16>,
+}
 
 /// Each column as wide as its widest cell, header included, and `gap`
 /// cells more before the next than the one the table itself leaves.
@@ -63,7 +71,7 @@ fn cells(row: &[String], text: &[usize]) -> Vec<Line<'static>> {
 }
 
 /// Spawns `header`, bold, and `rows` into `table`, measured as
-/// [`columns`] measures them, the first column on the left and the rest
+/// [`gapped_columns`] measures them, the first column on the left and the rest
 /// right, answering with each row's entity.
 pub(super) fn fill(
     commands: &mut Commands,
@@ -71,7 +79,7 @@ pub(super) fn fill(
     rows: (&[String], &[Vec<String>]),
     gap: u16,
 ) -> Vec<Entity> {
-    commands.entity(table).insert(columns(rows, gap));
+    commands.entity(table).insert(gapped_columns(rows, gap));
     let (header, body) = rows;
     let body = body.iter().map(|row| cells(row, &[0]));
     spawn_rows(commands, table, cells(header, &[0]), body)
@@ -157,6 +165,7 @@ fn spawn_rows(
     header: Vec<Line<'static>>,
     rows: impl Iterator<Item = Vec<Line<'static>>>,
 ) -> Vec<Entity> {
+    commands.entity(table).remove::<Said>();
     commands.spawn((
         table_header(header),
         UiStyle(Style::new().add_modifier(Modifier::BOLD)),

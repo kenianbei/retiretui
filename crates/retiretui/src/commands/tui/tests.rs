@@ -222,7 +222,11 @@ fn ledger_lists_years_and_detail_follows_the_cursor() {
         "the pane names the cursor year and its dollars: {frame}"
     );
     assert!(frame.contains("salary"), "{frame}");
-    assert!(frame.contains("Unfunded"), "{frame}");
+    assert!(frame.contains("Spending"), "{frame}");
+    assert!(
+        !frame.contains("Unfunded"),
+        "nothing unfunded, so no line for it: {frame}"
+    );
     assert!(frame.contains("+$26,830 surplus"), "{frame}");
     press_key(&mut app, KeyCode::Down);
     app.update();
@@ -432,21 +436,27 @@ fn scenario_sessions_refuse_to_save() {
 }
 
 #[test]
-fn the_ledger_table_takes_about_two_thirds_of_the_page() {
+fn the_detail_is_as_tall_as_its_year_needs_up_to_half_the_page() {
     for size in [SIZE, ROOMY] {
         let mut app = headless_app(size);
         show(&mut app, Page::Ledger);
-        let frame = composed_frame(&app);
-        let lines: Vec<&str> = frame.lines().collect();
-        let starts = |title: &str| lines.iter().position(|line| line.contains(title)).unwrap();
-        let (table_top, detail_top) = (starts("╭ Ledger"), starts("Flows ·"));
-        let key_row = lines.len() - 1;
-        let table = (detail_top - table_top) as f32;
-        let whole = (key_row - table_top) as f32;
-        let share = table / whole;
+        let detail_of = |frame: &str| {
+            let lines: Vec<&str> = frame.lines().collect();
+            let starts = |title: &str| lines.iter().position(|line| line.contains(title)).unwrap();
+            let (table_top, detail_top) = (starts("╭ Ledger"), starts("Flows ·"));
+            let key_row = lines.len() - 1;
+            (key_row - detail_top, key_row - table_top)
+        };
+        let (working, whole) = detail_of(&composed_frame(&app));
         assert!(
-            (share - 0.65).abs() * whole <= 1.0,
-            "{share} of {whole} rows at {size:?}"
+            working * 2 <= whole,
+            "{working} of {whole} rows at {size:?}"
+        );
+        press_key(&mut app, KeyCode::End);
+        let (retired, _) = detail_of(&composed_frame(&app));
+        assert!(
+            retired < working,
+            "a quieter year takes fewer rows: {retired} against {working} at {size:?}"
         );
     }
 }
