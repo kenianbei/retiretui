@@ -18,8 +18,7 @@ use crate::commands::tui::scope::KeyScope;
 /// `Marker` is the component its root is marked with. Taking the keyboard
 /// and giving it back are the two ends of one stack, and an overlay that
 /// reaches them through [`Standing::open`] and [`Standing::close`] has no
-/// path that takes without drawing. Whatever is already spawned when it
-/// opens takes and restores on [`Focus`] directly.
+/// path that takes without drawing.
 #[derive(SystemParam)]
 pub struct Standing<'w, 's, Marker: Component + Default> {
     open: Query<'w, 's, Entity, With<Marker>>,

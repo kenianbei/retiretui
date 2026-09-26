@@ -141,3 +141,28 @@ fn the_motion_command_steps_through_the_three_and_says_which() {
     }
     assert_eq!(said(&app), ["motion full", "motion reduced", "motion off"]);
 }
+
+#[test]
+fn the_backdrop_spares_the_overlay_standing_deepest() {
+    use bevy_ecs::prelude::World;
+    use bevy_ecs::system::RunSystemOnce;
+
+    use crate::commands::tui::overlay::Band;
+
+    let upper = Rect::new(10, 5, 20, 8);
+    let mut world = World::new();
+    world.insert_resource(Theme::terminal());
+    world.init_resource::<Cues>();
+    world.spawn((ModalOpen, ComputedWidgetArea(upper), Band::at(1)));
+    world.spawn((
+        ModalOpen,
+        ComputedWidgetArea(Rect::new(0, 0, 60, 20)),
+        Band::at(0),
+    ));
+    world.run_system_once(dim_backdrop).unwrap();
+    let cued = &world.resource::<Cues>().0;
+    assert!(
+        matches!(cued.as_slice(), [Cue::Play { area, .. }] if *area == upper),
+        "{cued:?}"
+    );
+}

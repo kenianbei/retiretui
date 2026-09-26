@@ -17,7 +17,6 @@ use bevy_ecs::prelude::{
 };
 use bevy_ui::UiSystems;
 use plurimus::bui::ComputedNodeRect;
-use plurimus::core::UiOrder;
 use plurimus::core::ratatui_core::layout::Rect;
 use plurimus::core::ratatui_core::style::Color;
 use plurimus::ui::{ComputedWidgetArea, ModalOpen};
@@ -26,6 +25,7 @@ use serde::Deserialize;
 use super::command::Outcome;
 use super::journal;
 use super::layout::HintRow;
+use super::overlay::Band;
 use super::settings::Settings;
 use super::theme::Theme;
 
@@ -169,7 +169,7 @@ pub fn cycle(mut settings: ResMut<Settings>) -> Outcome {
 /// Dims everything outside the topmost overlay while one stands, sparing
 /// the hint row, which names the overlay's keys.
 fn dim_backdrop(
-    overlays: Query<(&ComputedWidgetArea, Option<&UiOrder>), With<ModalOpen>>,
+    overlays: Query<(&ComputedWidgetArea, Option<&Band>), With<ModalOpen>>,
     hint_rows: Query<&ComputedNodeRect, With<HintRow>>,
     theme: Res<Theme>,
     mut cues: ResMut<Cues>,
@@ -178,7 +178,7 @@ fn dim_backdrop(
     let topmost = overlays
         .iter()
         .filter(|(area, _)| !area.0.is_empty())
-        .max_by_key(|(_, order)| order.map_or(i32::MIN, |order| order.0))
+        .max_by_key(|(_, band)| band.copied())
         .map(|(area, _)| area.0);
     let spared = hint_rows.single().map_or(Rect::ZERO, |row| row.rect);
     let standing = topmost.map(|area| (area, spared));

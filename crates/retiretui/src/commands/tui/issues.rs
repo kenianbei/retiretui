@@ -21,13 +21,15 @@ use super::edit::{self, Draft, Turn};
 use super::hints::Hints;
 use super::journal;
 use super::overlay::{self, Standing};
-use super::picker;
 use super::theme::Theme;
 
 pub fn plugin(app: &mut App) {
     app.init_resource::<Issues>();
-    // Closes before the dialog a jump may open, as a picker does.
-    app.add_systems(Update, (sync_issues, refresh_issues).in_set(picker::Synced));
+    // Closes before the dialog a jump may open.
+    app.add_systems(
+        Update,
+        (sync_issues, refresh_issues).in_set(overlay::Settles),
+    );
 }
 
 const TITLE: &str = "Issues";

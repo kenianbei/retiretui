@@ -11,7 +11,6 @@ use bevy_ecs::prelude::{
     Changed, Commands, Component, Entity, In, IntoScheduleConfigs, IntoSystem, Local, On, Query,
     Res, ResMut, Resource, With, World,
 };
-use bevy_ecs::schedule::SystemSet;
 use bevy_ecs::system::SystemId;
 use bevy_input::keyboard::{Key, KeyboardInput};
 use bevy_input_focus::FocusedInput;
@@ -32,19 +31,17 @@ use super::hints::Hints;
 use super::layout::{fixed, growing, list_cursor, placed};
 use super::overlay::{self, Standing};
 use super::pane::Framed;
-use super::theme::{Repainted, Theme};
+use super::theme::Theme;
 
 pub fn plugin(app: &mut App) {
     app.init_resource::<Picking>();
-    app.configure_sets(Update, Synced.in_set(Repainted));
-    app.add_systems(Update, (sync_picker, relist, try_on).chain().in_set(Synced));
+    app.add_systems(
+        Update,
+        (sync_picker, relist, try_on)
+            .chain()
+            .in_set(overlay::Settles),
+    );
 }
-
-/// The picker opening and closing. An overlay a choice may open is drawn
-/// after it, so that it takes the keyboard from the page rather than from
-/// a list about to be despawned.
-#[derive(SystemSet, Clone, Copy, PartialEq, Eq, Hash, Debug)]
-pub struct Synced;
 
 const WIDTH: u16 = 64;
 const LIST_ROWS: u16 = 10;

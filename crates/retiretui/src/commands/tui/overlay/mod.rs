@@ -5,9 +5,10 @@ mod band;
 mod focus;
 mod standing;
 
-use bevy_app::{App, PostUpdate};
+use bevy_app::{App, PostUpdate, Update};
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Entity};
+use bevy_ecs::schedule::SystemSet;
 use bevy_input::keyboard::Key;
 use plurimus::core::ratatui_core::layout::Size;
 use plurimus::ui::{KeyBinding, ModalOpen, ScrollArea};
@@ -16,17 +17,26 @@ use plurimus::widgets::listbox;
 use super::hints::Hints;
 use super::layout::{filling, list_cursor, placed};
 use super::pane::Framed;
+use super::theme::Repainted;
 use bevy_ecs::change_detection::{DetectChanges, Ref};
 use bevy_ecs::prelude::{Component, IntoScheduleConfigs, Mut, Query, With};
 use bevy_ui::{FlexDirection, Node, Overflow, PositionType, UiRect, UiSystems, Val};
 use plurimus::bui::ComputedNodeRect;
 
+pub use band::Band;
 pub use focus::Focus;
 pub use standing::Standing;
 
 use super::layout::Body;
 
+/// The overlays a choice can close opening and closing. An overlay a
+/// choice may open is drawn after them, so that it takes the keyboard from
+/// the page rather than from a list about to be despawned.
+#[derive(SystemSet, Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub struct Settles;
+
 pub fn plugin(app: &mut App) {
+    app.configure_sets(Update, Settles.in_set(Repainted));
     app.init_resource::<Focus>();
     app.add_plugins(band::plugin);
     app.add_systems(PostUpdate, centre_boxes.before(UiSystems::Layout));

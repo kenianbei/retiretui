@@ -20,7 +20,7 @@ use crate::commands::tui::hints::Hints;
 use crate::commands::tui::layout::{growing, list_cursor, placed};
 use crate::commands::tui::overlay::{self, Standing};
 use crate::commands::tui::pane::Framed;
-use crate::commands::tui::picker::{PROMPT, Synced};
+use crate::commands::tui::picker::PROMPT;
 use crate::commands::tui::session::Session;
 use crate::commands::tui::theme::Theme;
 
@@ -30,7 +30,7 @@ const ROWS: u16 = 11;
 
 pub fn plugin(app: &mut App) {
     app.init_resource::<Browsing>();
-    app.add_systems(Update, sync_browse.in_set(Synced));
+    app.add_systems(Update, sync_browse.in_set(overlay::Settles));
 }
 
 /// One file picker: what it is called, what it lists, and the system told

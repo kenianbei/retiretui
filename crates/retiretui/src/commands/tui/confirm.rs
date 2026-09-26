@@ -20,12 +20,14 @@ use super::hints::Hints;
 use super::layout::{Emphasis, button_node, fixed, growing, placed, spawn_button_row, wrapped};
 use super::overlay::{self, Standing};
 use super::pane::Framed;
-use super::picker;
 use super::theme::Repainted;
 
 pub fn plugin(app: &mut App) {
     app.init_resource::<Confirm>();
-    app.add_systems(Update, sync_confirm.in_set(Repainted).after(picker::Synced));
+    app.add_systems(
+        Update,
+        sync_confirm.in_set(Repainted).after(overlay::Settles),
+    );
 }
 
 const TITLE: &str = "Confirm";
