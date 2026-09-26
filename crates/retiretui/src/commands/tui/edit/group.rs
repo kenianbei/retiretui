@@ -60,7 +60,7 @@ pub fn place_dependents(
     let Some((editing, form)) = session.0.as_ref().and_then(|held| Some((held, held.form?))) else {
         return;
     };
-    for &row in tree.get(form).into_iter().flatten() {
+    for row in tree.iter_descendants(form) {
         let Ok((dependent, mut node)) = rows.get_mut(row) else {
             continue;
         };

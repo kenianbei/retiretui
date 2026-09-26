@@ -6,31 +6,31 @@ expression: composed_frame(app)
 │1 Overview││2 Ledger││3 Compare││4 Tools││5 Plan│                                                                  full.toml ● 
 ┴──────────┴┴────────┴┴─────────┴┴───────┴╯      ╰──────────────────────────────────────────────────────────────────────────────
 ╭ Plan ─────────────╮╭ Accounts ────────────────────────────────────────────────────────────╮ ╭ Account ───────────────────────╮
-│▏ Accounts       7 ││  Accoun╭ Edit cash ──────────────────────────────────────────────────────╮                              │
-│  Income         4 ││▌ cash  │ID                [ cash                                       ] │ID               cash         │
-│  Expenses       2 ││  broker│Name              [                                            ] │Name                          │
-│  Cliffs         0 ││  fid-40│Type              [ Cash ▾ ]                                     │Type             Cash         │
-│  Transfers      1 ││  roth-i│Owner             [ jordan ▾ ]                                   │Owner            jordan       │
-│  Conversions    1 ││  rollov│Balance           [ $40,000                                    ] │Balance          $40,000      │
-│  Contributions  3 ││  hsa   │Invested          [ Fixed return ▾ ]                             │Invested         Fixed return │
-│  Events         1 ││  pensio│Expected return   █─────────────────── [                       ] │Expected return               │
-│  People         2 ││        │Locked until      [ Never ▾ ]                                    │Locked until     Never        │
-│  Residency      1 ││        │Drain priority    [                                            ] │Drain priority                │
-│  Household        ││        │                                                                 │                              │
-│  Settings         ││        │                                                                 │                              │
-│  Market           ││        │                                                                 │                              │
-│                   ││        │                                                                 │                              │
-│                   ││        │                                                                 │                              │
-│                   ││        │                                                                 │                              │
-│                   ││        │                                                                 │                              │
-│                   ││        │                                                                 │                              │
-│                   ││        │                                                                 │                              │
-│                   ││        │                                                                 │                              │
+│▏ Accounts       7 ││  Account              Type              Owner           Balance      │ │                                │
+│  Income         4 ││▌ cash                 Cash              jordan          $40,000      │ │▏ ID               cash         │
+│  Expenses       2 ││  brokerage            Brokerage         jordan         $300,000      │ │  Name                          │
+│  Cliffs         0 ││  fid-401k             401(k)            jordan         $450,000      │ │  Type             Cash         │
+│  Transfers      1 ││  roth-ira             IRA               jordan          $90,000      │ │  Owner            jordan       │
+│  Conversions    1 ││  rollov╭ Edit cash ──────────────────────────────────────────────────────╮Balance          $40,000      │
+│  Contributions  3 ││  hsa   │ID                [ cash                                       ] │Invested         Fixed return │
+│  Events         1 ││  pensio│Name              [                                            ] │Expected return               │
+│  People         2 ││        │Type              [ Cash ▾ ]                                     │Locked until     Never        │
+│  Residency      1 ││        │Owner             [ jordan ▾ ]                                   │Drain priority                │
+│  Household        ││        │Balance           [ $40,000                                    ] │                              │
+│  Settings         ││        │Invested          [ Fixed return ▾ ]                             │                              │
+│  Market           ││        │Expected return   █─────────────────── [                       ] │                              │
+│                   ││        │Locked until      [ Never ▾ ]                                    │                              │
+│                   ││        │Drain priority    [                                            ] │                              │
 │                   ││        │─────────────────────────────────────────────────────────────────│                              │
 │                   ││        │A short unique handle other items refer to this account by.      │                              │
 │                   ││        │                                                                 │                              │
 │                   ││        │                                                                 │                              │
 │                   ││        │─────────────────────────────────────────────────────────────────│                              │
-│                   ││  [ + Ad│                                            [ Discard ] [ Apply ]│                              │
-╰───────────────────╯╰────────╰─────────────────────────────────────────────────────────────────╯──────────────────────────────╯
+│                   ││        │                                            [ Discard ] [ Apply ]│                              │
+│                   ││        ╰─────────────────────────────────────────────────────────────────╯                              │
+│                   ││                                                                      │ │                                │
+│                   ││                                                                      │ │                                │
+│                   ││                                                                      │ │                                │
+│                   ││  [ + Add Account ]                                                   │ │                                │
+╰───────────────────╯╰──────────────────────────────────────────────────────────────────────╯ ╰────────────────────────────────╯
  ⇥ next  ⏎ apply  esc close

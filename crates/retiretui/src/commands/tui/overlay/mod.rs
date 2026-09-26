@@ -17,7 +17,7 @@ use super::hints::Hints;
 use super::layout::{filling, list_cursor, placed};
 use super::pane::Framed;
 use bevy_ecs::change_detection::{DetectChanges, Ref};
-use bevy_ecs::prelude::{Component, IntoScheduleConfigs, Query, With};
+use bevy_ecs::prelude::{Component, IntoScheduleConfigs, Mut, Query, With};
 use bevy_ui::{FlexDirection, Node, Overflow, PositionType, UiRect, UiSystems, Val};
 use plurimus::bui::ComputedNodeRect;
 
@@ -46,6 +46,15 @@ pub const CLOSE_KEYS: &[(KeyBinding, ())] = &[(KeyBinding::new(Key::Escape), ())
 pub struct Centred {
     cols: u16,
     rows: u16,
+}
+
+/// Makes a centred box as tall as the `rows` it holds inside its frame.
+pub fn hold(centred: &mut Mut<Centred>, node: &mut Mut<Node>, rows: u16) {
+    let rows = rows.saturating_add(CHROME);
+    if centred.rows != rows {
+        centred.rows = rows;
+        node.height = Val::Px(f32::from(rows));
+    }
 }
 
 /// The box a centred overlay is laid out in: `cols` cells across and as
@@ -110,7 +119,7 @@ fn centre_boxes(
     };
     let room = body.visible;
     for (centred, mut node) in &mut boxes {
-        if !body.is_changed() && !centred.is_added() {
+        if !body.is_changed() && !centred.is_changed() {
             continue;
         }
         let rows = centred.rows.min(room.height);

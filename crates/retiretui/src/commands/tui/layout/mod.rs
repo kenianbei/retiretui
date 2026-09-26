@@ -37,12 +37,13 @@ use super::{edit, tabbar};
 const FLOOR: TerminalSize = TerminalSize::new(128, 32);
 
 /// The smallest terminal the shell lays itself out in: what the tab row
-/// and the tallest standing form need, or the floor where they need less.
+/// and the least form, one field over its foot, need, or the floor where
+/// they need less; a taller form scrolls.
 /// Derived so that a renamed tab or a domain that gains a field cannot
 /// leave it silently stale.
 pub const MIN_SIZE: TerminalSize = TerminalSize::new(
     raised(FLOOR.cols, tabbar::TABS_COLS + tabbar::status::MIN_COLS),
-    raised(FLOOR.rows, CHROME_ROWS + edit::TALLEST_FORM_ROWS),
+    raised(FLOOR.rows, CHROME_ROWS + edit::SHORTEST_FORM_ROWS),
 );
 
 /// Rows the frame spends on chrome: the tab row and the hint row.

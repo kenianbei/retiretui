@@ -198,9 +198,19 @@ fn a_field_reads_plainly_while_typed_in_and_dressed_once_left() {
     press_key(&mut app, KeyCode::Enter);
     let form_row = |app: &bevy_app::App, label: &str| {
         let frame = composed_frame(app);
-        // The form's own cells: the table beside it shares the line.
-        let row = frame.lines().find_map(|line| line.split_once(label));
-        let (_, held) = row.unwrap_or_else(|| panic!("{label}: {frame}"));
+        // The form's own cells, from its left border: the table and the
+        // read-out beside it share the line, and the read-out names the
+        // same label.
+        let border = |line: &str| {
+            let (before, _) = line.split_once("╭ Edit")?;
+            Some(before.chars().count())
+        };
+        let left = frame.lines().find_map(border).unwrap_or_default();
+        let mut rows = frame
+            .lines()
+            .map(|line| line.chars().skip(left).collect::<String>());
+        let row = rows.find_map(|line| Some(line.strip_prefix(label)?.to_owned()));
+        let held = row.unwrap_or_else(|| panic!("{label}: {frame}"));
         held.split('│').next().unwrap_or_default().to_owned()
     };
     assert!(form_row(&app, "│Balance").contains("$300,000"));

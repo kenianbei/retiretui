@@ -14,6 +14,7 @@ mod keyboard;
 mod leaving;
 mod panes;
 mod places;
+mod scroll;
 mod sorting;
 mod structured;
 mod triggers;
