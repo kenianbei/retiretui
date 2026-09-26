@@ -25,7 +25,7 @@ mod clip;
 mod cursor;
 mod list;
 
-pub use clip::{cells_of, clipped, wrapped};
+pub use clip::{cells_of, clipped, clipped_middle, wrapped};
 pub use cursor::{CURSOR_COLS, Rests, list_cursor, table_cursor};
 pub use list::{fill_wrapped, row_width, spawn_scrolled_list};
 
@@ -145,13 +145,16 @@ pub fn sized(cols: f32, rows: f32) -> Node {
 pub const NO_STOP: i32 = -1;
 
 /// The `[ ` and ` ]` plurimus paints a button's label between.
-const BUTTON_DECORATION: usize = 4;
+const BUTTON_DECORATION: u16 = 4;
 pub const BUTTON_GAP: f32 = 1.0;
 
 /// The node of a button saying `label`, as wide as it is drawn.
 #[must_use]
 pub fn button_node(label: &str) -> Node {
-    sized((label.chars().count() + BUTTON_DECORATION) as f32, 1.0)
+    sized(
+        f32::from(cells_of(label).saturating_add(BUTTON_DECORATION)),
+        1.0,
+    )
 }
 
 /// A row of buttons under what `parent` already holds, its last the

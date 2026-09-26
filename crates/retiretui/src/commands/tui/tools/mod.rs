@@ -46,7 +46,12 @@ use super::theme::{Repainted, Theme};
 
 pub fn plugin(app: &mut App) {
     app.init_resource::<Searches>();
-    app.add_plugins((ladders::plugin, claims::plugin, markets::plugin));
+    app.add_plugins((
+        ladders::plugin,
+        claims::plugin,
+        markets::plugin,
+        options::plugin_said,
+    ));
 }
 
 const NOTHING_SEARCHED_YET: &str = "nothing searched yet";

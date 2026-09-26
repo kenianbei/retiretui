@@ -9,11 +9,12 @@ use bevy_app::{App, Update};
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
 use bevy_ecs::hierarchy::{ChildOf, Children};
 use bevy_ecs::prelude::{
-    Changed, Commands, Component, Entity, Has, IntoScheduleConfigs, Query, Res, ResMut, With,
+    Changed, Commands, Component, Entity, Has, IntoScheduleConfigs, Query, Res, ResMut, SystemSet,
+    With,
 };
 use plurimus::core::ratatui_core::layout::Constraint;
 use plurimus::core::ratatui_core::text::Line;
-use plurimus::ui::{ScrollArea, UiStyle};
+use plurimus::ui::{ComputedWidgetArea, ScrollArea, UiStyle};
 use plurimus::widgets::{ActiveDescendant, TableColumns, WidgetSystems, table_row};
 use retiretui_engine::project::Summary;
 
@@ -32,7 +33,22 @@ pub fn plugin<R: Found>(app: &mut App) {
         Update,
         (refresh_options::<R>, follow_cursor::<R>)
             .chain()
-            .after(super::poll_search::<R>)
+            .in_set(TablesFilled)
+            .after(super::poll_search::<R>),
+    );
+}
+
+/// Where the tools' tables are filled, or told what to say in place of
+/// rows.
+#[derive(SystemSet, Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub struct TablesFilled;
+
+/// Wraps what each table says in place of rows, once filled.
+pub(super) fn plugin_said(app: &mut App) {
+    app.add_systems(
+        Update,
+        wrap_said
+            .after(TablesFilled)
             .before(Repainted)
             .before(WidgetSystems::Layout),
     );
@@ -117,9 +133,10 @@ fn refresh_options<R: Found>(
     for (table, mut scroll) in &mut tables {
         commands.entity(table).despawn_related::<Children>();
         let Some(found) = tool.found() else {
-            say_instead(&mut commands, (table, &mut scroll), tool.said(), &theme);
+            say_instead(&mut commands, table, tool.said());
             continue;
         };
+        commands.entity(table).remove::<Said>();
         let laid = found.laid(&draft.plan, basis.nominal);
         // The widget measures the rows a frame behind a respawn, and keeps
         // that; the header, the plan's own row and the options are told.
@@ -130,25 +147,54 @@ fn refresh_options<R: Found>(
     }
 }
 
-/// A dimmed line in place of `table`'s rows, saying why there are none: a
-/// table whose body has once gone empty draws no rows it is given after.
-pub fn say_instead(
-    commands: &mut Commands,
-    (table, scroll): (Entity, &mut ScrollArea),
-    said: String,
-    theme: &Theme,
-) {
+/// What a table says in place of rows it has none of, and the width it
+/// was last wrapped to.
+#[derive(Component, Debug)]
+pub struct Said {
+    text: String,
+    drawn: Option<u16>,
+}
+
+/// Dimmed lines in place of `table`'s rows, saying why there are none,
+/// wrapped to the table's width: a table whose body has once gone empty
+/// draws no rows it is given after.
+pub fn say_instead(commands: &mut Commands, table: Entity, said: String) {
     commands.entity(table).insert((
         TableColumns(vec![Constraint::Fill(1)]),
         ActiveDescendant(None),
+        Said {
+            text: said,
+            drawn: None,
+        },
     ));
-    commands.spawn((
-        table_row([Line::from(said)]),
-        CurrentRow,
-        UiStyle(theme.dimmed()),
-        ChildOf(table),
-    ));
-    scroll.content_size.height = 1;
+}
+
+/// Rewraps each table's [`Said`] whenever it, the theme or the table's
+/// width moves.
+fn wrap_said(
+    theme: Res<Theme>,
+    mut tables: Query<(Entity, &mut Said, &mut ScrollArea, &ComputedWidgetArea)>,
+    mut commands: Commands,
+) {
+    for (table, mut said, mut scroll, area) in &mut tables {
+        // No row is the cursor's, so the lines start at the table's edge.
+        let width = scroll.content_width(area.0.width);
+        if said.drawn == Some(width) && !said.is_changed() && !theme.is_changed() {
+            continue;
+        }
+        said.bypass_change_detection().drawn = Some(width);
+        commands.entity(table).despawn_related::<Children>();
+        let lines = layout::wrapped(&said.text, width, "");
+        scroll.content_size.height = u16::try_from(lines.len()).unwrap_or(u16::MAX);
+        for line in lines {
+            commands.spawn((
+                table_row([Line::from(line)]),
+                CurrentRow,
+                UiStyle(theme.dimmed()),
+                ChildOf(table),
+            ));
+        }
+    }
 }
 
 /// The table's rows: the column names, the plan's own row, dimmed, and an

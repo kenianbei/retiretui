@@ -1,13 +1,14 @@
 ---
 source: crates/retiretui/src/commands/tui/frames.rs
+assertion_line: 44
 expression: composed_frame(app)
 ---
 ╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                              
 │1 Overview││2 Ledger││3 Compare││4 Tools││5 Plan│                                                                  full.toml ● 
 ┴──────────┴┴────────┴┴─────────┴┴───────┴╯      ╰──────────────────────────────────────────────────────────────────────────────
 ╭ Plan ─────────────╮╭ Transfers ──────────────────────────────────────────────────────────────────────────────────────────────╮
-│  Accounts       7 ││  Transfer           From              To                  When                                 Amount   │
-│  Income         4 ││▌ dc-rollover        pension-dc        rollover-ira        when db-pension starts        Whole balance   │
+│  Accounts       7 ││  Transfer            From               To                  When                                 Amount │
+│  Income         4 ││▌ dc-rollover         pension-dc         rollover-ira        when db-pension starts        Whole balance │
 │  Expenses       2 ││                                                                                                         │
 │  Cliffs         0 ││                                                                                                         │
 │▏ Transfers      1 ││                                                                                                         │

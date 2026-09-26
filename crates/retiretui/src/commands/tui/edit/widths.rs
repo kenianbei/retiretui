@@ -23,6 +23,8 @@ const FLOOR: u16 = 6;
 /// One column: what it asked for, until the share says what it gets.
 struct Dealt {
     width: u16,
+    /// The widest of its cells, the header aside.
+    content: u16,
     header: String,
     /// A number keeps its width whatever the squeeze: a clipped figure
     /// reads as a different figure, which a clipped word does not.
@@ -44,8 +46,10 @@ impl Laid {
             .enumerate()
             .map(|(at, column)| {
                 let header = heading(column.header(fields), table.sort, at);
+                let content = widest(rows, at);
                 Dealt {
-                    width: widest(&header, rows, at),
+                    width: content.max(cells_of(&header)),
+                    content,
                     header,
                     is_numeric: column.is_numeric(fields),
                 }
@@ -98,12 +102,10 @@ fn heading(label: &str, sort: Option<super::sort::Sort>, at: usize) -> String {
     }
 }
 
-/// The widest the column at `at` has to be to show everything in it.
-fn widest(header: &str, rows: &[sort::Item], at: usize) -> u16 {
+/// The widest of the cells in the column at `at`.
+fn widest(rows: &[sort::Item], at: usize) -> u16 {
     let cells = rows.iter().filter_map(|(_, cells)| cells.get(at));
-    cells.fold(cells_of(header), |widest, cell| {
-        widest.max(cells_of(&cell.text))
-    })
+    cells.fold(0, |widest, cell| widest.max(cells_of(&cell.text)))
 }
 
 /// Shares `given` cells out over the columns: what each holds where they
@@ -117,20 +119,58 @@ fn share(columns: &[Dealt], given: u16) -> Vec<u16> {
         .fold(0u16, |total, column| total.saturating_add(column.width));
     match usable.checked_sub(wanted) {
         Some(spare) => widened(columns, spare),
-        None => squeezed(columns, usable),
+        None => headed_off(columns, wanted - usable).unwrap_or_else(|| squeezed(columns, usable)),
     }
 }
 
-/// Every column as wide as it asked, the spare dealt evenly over the
-/// columns of words and capped, so what is left over stays empty.
+/// What a column of words is wider than its cells for its header alone,
+/// down to the floor.
+fn header_excess(column: &Dealt) -> u16 {
+    if column.is_numeric {
+        return 0;
+    }
+    column.width - column.content.max(FLOOR).min(column.width)
+}
+
+/// The columns `short` cells narrower where their headers alone can give
+/// them up, the widest excess first: a clipped header still names its
+/// column, where a clipped cell loses what the row holds.
+fn headed_off(columns: &[Dealt], short: u16) -> Option<Vec<u16>> {
+    let excess: Vec<u16> = columns.iter().map(header_excess).collect();
+    let total = excess
+        .iter()
+        .fold(0u16, |total, cut| total.saturating_add(*cut));
+    let room = total.checked_sub(short)?;
+    let kept = level(excess.clone(), room);
+    let levelled = excess
+        .iter()
+        .fold(0u16, |total, cut| total + (*cut).min(kept));
+    let mut left = room - levelled;
+    let given = columns.iter().zip(excess).map(|(column, cut)| {
+        let extra = u16::from(cut > kept && left > 0);
+        left -= extra;
+        column.width - cut + cut.min(kept) + extra
+    });
+    Some(given.collect())
+}
+
+/// Every column as wide as it asked, the spare dealt over the columns of
+/// words a cell at a time from the left and capped, so only what is past
+/// the cap stays empty.
 fn widened(columns: &[Dealt], spare: u16) -> Vec<u16> {
     let words = columns.iter().filter(|column| !column.is_numeric).count();
-    let each = match u16::try_from(words) {
-        Ok(words) if words > 0 => (spare / words).min(SPARE),
-        _ => 0,
+    let words = u16::try_from(words).unwrap_or(u16::MAX);
+    let dealt = spare.min(words.saturating_mul(SPARE));
+    let mut nth_word = 0;
+    let mut given = |column: &Dealt| {
+        if column.is_numeric {
+            return column.width;
+        }
+        let extra = dealt / words + u16::from(nth_word < dealt % words);
+        nth_word += 1;
+        column.width + extra
     };
-    let given = |column: &Dealt| column.width + u16::from(!column.is_numeric) * each;
-    columns.iter().map(given).collect()
+    columns.iter().map(&mut given).collect()
 }
 
 /// The numbers keep their width and the words give up theirs, down to
@@ -202,6 +242,7 @@ mod tests {
     fn column(wanted: u16, is_numeric: bool) -> Dealt {
         Dealt {
             width: wanted,
+            content: wanted,
             header: String::new(),
             is_numeric,
         }
@@ -232,6 +273,29 @@ mod tests {
             share(&columns, vast),
             [10 + SPARE, 8],
             "and stops at the cap"
+        );
+    }
+
+    #[test]
+    fn the_spare_past_an_even_share_goes_to_the_first_words() {
+        let columns = [word(10), number(8), word(6), word(4)];
+        let spare = 5;
+        let given = 10 + 8 + 6 + 4 + layout::CURSOR_COLS + GAP * 3 + spare;
+        assert_eq!(share(&columns, given), [12, 8, 8, 5]);
+    }
+
+    #[test]
+    fn a_squeeze_clips_long_headers_before_any_cell() {
+        let headed = |content, header| Dealt {
+            content,
+            ..word(header)
+        };
+        let columns = [word(11), headed(8, 12), headed(8, 10), word(15)];
+        let given = 11 + 12 + 10 + 15 + layout::CURSOR_COLS + GAP * 3 - 3;
+        assert_eq!(
+            share(&columns, given),
+            [11, 10, 9, 15],
+            "the widest header gives way first and every cell stays whole"
         );
     }
 

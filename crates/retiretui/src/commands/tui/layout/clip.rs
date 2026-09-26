@@ -28,6 +28,33 @@ pub fn clipped(text: String, width: u16) -> String {
     kept
 }
 
+/// `text` cut to `width` cells in its middle, the one there spent saying
+/// it was cut, so texts told apart only at their ends still read apart.
+pub fn clipped_middle(text: String, width: u16) -> String {
+    if cells_of(&text) <= width {
+        return text;
+    }
+    let room = width.saturating_sub(1);
+    let tail: String = fitting(text.chars().rev(), room / 2).rev().collect();
+    let head: String = fitting(text.chars(), room - cells_of(&tail)).collect();
+    format!("{head}{ELLIPSIS}{tail}")
+}
+
+/// As many of `characters` as fit in `width` cells.
+fn fitting(
+    characters: impl DoubleEndedIterator<Item = char>,
+    width: u16,
+) -> impl DoubleEndedIterator<Item = char> {
+    let mut taken = 0;
+    let kept: Vec<char> = characters
+        .take_while(|character| {
+            taken += cells_of(character.encode_utf8(&mut [0; 4]));
+            taken <= width
+        })
+        .collect();
+    kept.into_iter()
+}
+
 /// `text` broken between words into lines of at most `width` cells, each
 /// after the first led by `indent`; a word wider than a line stands alone
 /// on one.
@@ -62,6 +89,19 @@ mod tests {
             ["Income › salary", "  › Ends: age 60"]
         );
         assert_eq!(wrapped("a unbreakable", 4, "  "), ["a", "  unbreakable"]);
+    }
+
+    #[test]
+    fn a_text_cut_in_its_middle_keeps_both_ends() {
+        let name = "retirement-plan-2031.toml";
+        assert_eq!(clipped_middle(name.to_owned(), 25), name);
+        assert_eq!(clipped_middle(name.to_owned(), 15), "retirem…31.toml");
+        assert_eq!(clipped_middle(name.to_owned(), 16), "retireme…31.toml");
+        assert_eq!(
+            clipped_middle("王小明的帳戶".to_owned(), 7),
+            "王小…戶",
+            "two cells each, the head taking what the tail cannot"
+        );
     }
 
     #[test]

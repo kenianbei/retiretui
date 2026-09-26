@@ -96,9 +96,13 @@ fn the_status_names_the_document_and_cuts_the_name_where_the_tabs_leave_no_room(
     *app.world_mut().resource_mut::<TerminalSize>() = SIZE;
     let narrow = redrawn(&mut app);
     let row = status_row(&narrow);
-    let cut = format!("\u{2026} \u{25cf} {said}");
-    assert!(row.contains(&cut), "the name is cut, not dropped: {narrow}");
-    assert!(row.contains(&*stem), "from its end: {narrow}");
+    let tail = format!(".toml \u{25cf} {said}");
+    assert!(
+        row.contains('\u{2026}'),
+        "the name is cut, not dropped: {narrow}"
+    );
+    assert!(row.contains(&*stem), "keeping its head: {narrow}");
+    assert!(row.contains(&tail), "and its tail: {narrow}");
     assert_eq!(row.chars().count(), usize::from(SIZE.cols), "{narrow}");
 }
 

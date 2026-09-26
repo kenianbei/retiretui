@@ -63,7 +63,7 @@ fn cells(row: &[String], text: &[usize]) -> Vec<Line<'static>> {
 }
 
 /// Spawns `header`, bold, and `rows` into `table`, measured as
-/// [`columns`] measures them, the first column on the left and the rest
+/// [`gapped_columns`] measures them, the first column on the left and the rest
 /// right, answering with each row's entity.
 pub(super) fn fill(
     commands: &mut Commands,
@@ -71,7 +71,7 @@ pub(super) fn fill(
     rows: (&[String], &[Vec<String>]),
     gap: u16,
 ) -> Vec<Entity> {
-    commands.entity(table).insert(columns(rows, gap));
+    commands.entity(table).insert(gapped_columns(rows, gap));
     let (header, body) = rows;
     let body = body.iter().map(|row| cells(row, &[0]));
     spawn_rows(commands, table, cells(header, &[0]), body)
