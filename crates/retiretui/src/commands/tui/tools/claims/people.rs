@@ -86,7 +86,6 @@ struct Estimates {
     running: Option<Keyed<(), Vec<Estimate>>>,
 }
 
-/// Whether the estimates are under way.
 #[cfg(test)]
 pub(crate) fn is_estimating(app: &bevy_app::App) -> bool {
     app.world().resource::<Estimates>().running.is_some()
