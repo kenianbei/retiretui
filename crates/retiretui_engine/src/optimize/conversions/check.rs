@@ -56,7 +56,11 @@ fn check_accounts(plan: &Plan, options: &OptimizeOptions, issues: &mut Vec<Issue
         Some(account) => Some(account.owner.clone()),
     };
     if options.sources.is_empty() {
-        push_issue(issues, "options.sources", "at least one source is required");
+        push_issue(
+            issues,
+            "options.sources",
+            "no deferred account to convert from: name one, or convert into a Roth whose owner holds one",
+        );
     }
     for (i, source) in options.sources.iter().enumerate() {
         let path = format!("options.sources[{i}]");

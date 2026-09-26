@@ -198,11 +198,7 @@ on = { income = "pension" }
     assert!(!first.withdrawals.contains_key("pension-dc"));
     assert_eq!(first.balances["pension-dc"], 100_000);
     // 2030 is the retire/pension year: the DC account rolls over whole.
-    let unlock = projection
-        .years
-        .iter()
-        .find(|row| row.year == 2030)
-        .unwrap();
+    let unlock = projection.row(2030).unwrap();
     assert_eq!(unlock.balances["pension-dc"], 0);
     assert!(unlock.balances["rollover"] >= 100_000);
     assert!(unlock.income.contains_key("pension"));

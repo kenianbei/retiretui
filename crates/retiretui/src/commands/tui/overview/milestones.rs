@@ -256,9 +256,7 @@ amount = 60000
     }
 
     fn first_full_year(projected: &Projected, nominal: bool) -> String {
-        let row = (projected.projection.years.iter())
-            .find(|row| row.year == 2038)
-            .unwrap();
+        let row = projected.projection.row(2038).unwrap();
         let paid = basis_amount(row.income["ss"], row.deflator, nominal);
         format!("2037 Social Security · Sam, {} a year", compact_money(paid))
     }

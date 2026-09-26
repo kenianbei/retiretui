@@ -39,7 +39,7 @@ start = { age = 67, owner = "me" }
     // 45,108 a year in 2042 dollars, 30,386 in 2026's; claimed at 67 it
     // carries six COLAs by 2048 and pays July on in 2047.
     let income = |year| {
-        let row = projection.years.iter().find(|row| row.year == year);
+        let row = projection.row(year);
         row.map_or(0, |row| row.income.get("ss").copied().unwrap_or(0))
     };
     assert_eq!(income(2046), 0);
@@ -74,12 +74,7 @@ start = { age = 67, owner = "me" }
     )
     .replace("inflation = 0.025", "inflation = 0.025\nwage_growth = 0.0");
     let projection = run(&plan);
-    let paid = projection
-        .years
-        .iter()
-        .find(|row| row.year == 2048)
-        .unwrap()
-        .income["ss"];
+    let paid = projection.row(2048).unwrap().income["ss"];
     // A wage frozen at 2024's indexes nothing up: less than the 52,312 the
     // table's 3.6% pays.
     assert!(paid < 52_312 && paid > 0, "{paid}");
@@ -111,14 +106,7 @@ start = { age = 67, owner = "me" }
 "#,
     );
     let projection = run(&plan);
-    let paid = |year| {
-        projection
-            .years
-            .iter()
-            .find(|row| row.year == year)
-            .unwrap()
-            .income["ss"]
-    };
+    let paid = |year| projection.row(year).unwrap().income["ss"];
     // Frozen, the benefit is the eligibility-year amount itself; the
     // escalating income above pays it grown 2.5% for the six years from
     // 2042, not the 22 from the plan's start.
@@ -148,14 +136,7 @@ start = {start}
 "#
         ))
     };
-    let paid = |projection: &Projection, year| {
-        projection
-            .years
-            .iter()
-            .find(|row| row.year == year)
-            .unwrap()
-            .income["ss"]
-    };
+    let paid = |projection: &Projection, year| projection.row(year).unwrap().income["ss"];
     // Born 15 June: 67 is attained on the 14th, and June on is paid.
     let at_age = run(&stated(r#"{ age = 67, owner = "me" }"#));
     assert_eq!(paid(&at_age, 2047), 7_000);
@@ -187,11 +168,7 @@ start = { age = 62, owner = "me" }
         "birth = 1980-06-15\nearnings = { 2000 = 30000, 2001 = 30000 }",
     );
     let projection = run(&plan);
-    let first_full_year = projection
-        .years
-        .iter()
-        .find(|row| row.year == 2043)
-        .unwrap();
+    let first_full_year = projection.row(2043).unwrap();
     let benefit = projection.deflate_in(2043, first_full_year.income["ss"]);
     assert!((benefit - 40_000).abs() <= 1, "{benefit}");
 }

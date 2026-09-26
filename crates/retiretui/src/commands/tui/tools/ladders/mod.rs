@@ -302,7 +302,12 @@ pub(crate) fn search(
     rate: Option<f64>,
 ) -> Result<BracketSweep, Vec<Issue>> {
     match rate {
-        Some(rate) => optimize_conversions(plan, tables, options, rate).map(BracketSweep::from),
+        Some(rate) => {
+            optimize_conversions(plan, tables, options, rate).map(|ladder| BracketSweep {
+                baseline: ladder.baseline,
+                brackets: vec![ladder.ladder],
+            })
+        }
         None => sweep_brackets(plan, tables, options),
     }
 }

@@ -96,13 +96,7 @@ fn twelve_top() -> i64 {
 }
 
 fn taxable_in(projection: &Projection, year: i16) -> i64 {
-    projection
-        .years
-        .iter()
-        .find(|row| row.year == year)
-        .unwrap()
-        .taxes
-        .ordinary_taxable
+    projection.row(year).unwrap().taxes.ordinary_taxable
 }
 
 #[test]
@@ -304,7 +298,7 @@ fn an_overlay_removes_the_ladder_years_it_does_not_restate() {
     let text = ladder_overlay("base.toml", &laddered, &shorter, &ladder.steps).unwrap();
     assert!(text.contains("remove = true"), "{text}");
     let scenario = Scenario::from_toml_str(&text).unwrap().expect("a scenario");
-    let base = toml::Table::try_from(&laddered).unwrap();
+    let base = retiretui_engine::plan::to_table(&laddered).unwrap();
     let merged = Plan::from_toml_table(scenario.apply(base).unwrap()).unwrap();
     assert_eq!(
         merged.conversions.len(),
@@ -449,12 +443,7 @@ fn irmaa_tier_zero_holds_magi_at_the_first_threshold() {
         .irmaa[0]
         .magi_over
         .single;
-    let year_2043 = ladder
-        .optimized
-        .years
-        .iter()
-        .find(|row| row.year == 2043)
-        .unwrap();
+    let year_2043 = ladder.optimized.row(2043).unwrap();
     assert_eq!(
         year_2043.taxes.magi, first_threshold,
         "fills to the tier edge"
@@ -474,13 +463,7 @@ fn max_magi_and_cliffs_cap_the_fill() {
     explicit.max_magi = Some(30_000);
     let ladder =
         optimize_conversions(&plan_from(BASE), &TaxTables::embedded(), &explicit, 0.12).unwrap();
-    let year_2041 = ladder
-        .ladder
-        .optimized
-        .years
-        .iter()
-        .find(|row| row.year == 2041)
-        .unwrap();
+    let year_2041 = ladder.ladder.optimized.row(2041).unwrap();
     assert_eq!(year_2041.taxes.magi, 30_000);
 
     let cliffed = BASE.replace(
@@ -491,17 +474,7 @@ fn max_magi_and_cliffs_cap_the_fill() {
     let mut windowed = options();
     windowed.start_year = Some(2041);
     let ladder = optimize_conversions(&plan, &TaxTables::embedded(), &windowed, 0.12).unwrap();
-    let magi_in = |year: i16| {
-        ladder
-            .ladder
-            .optimized
-            .years
-            .iter()
-            .find(|row| row.year == year)
-            .unwrap()
-            .taxes
-            .magi
-    };
+    let magi_in = |year: i16| ladder.ladder.optimized.row(year).unwrap().taxes.magi;
     // The default cliff window runs through 2044 (age 65 in 2045).
     assert_eq!(magi_in(2041), 30_000, "capped inside the window");
     assert!(magi_in(2046) > 30_000, "released after the window");

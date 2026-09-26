@@ -180,11 +180,7 @@ fn the_cursor_years_column_follows_the_year_and_the_metric() {
     let mut app = comparing_variant(ROOMY);
     let expected = |app: &App, metric: Metric, year: i16| {
         let projected = app.world().resource::<Projected>();
-        let row = projected
-            .projection
-            .years
-            .iter()
-            .find(|row| row.year == year);
+        let row = projected.projection.row(year);
         let row = row.unwrap();
         compact_money(basis_amount(metric.value(row), row.deflator, false))
     };

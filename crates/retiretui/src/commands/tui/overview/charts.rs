@@ -309,7 +309,7 @@ end = { date = 2030-12-31 }
         let alone = test_projected();
         let end = salary_ends(&alone)[0].1;
         let paid = |year: i16| {
-            let row = alone.projection.years.iter().find(|row| row.year == year);
+            let row = alone.projection.row(year);
             row.unwrap().income.contains_key("salary")
         };
         assert!(paid(end - 1) && !paid(end), "{end}");

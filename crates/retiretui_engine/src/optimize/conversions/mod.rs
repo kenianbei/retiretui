@@ -97,16 +97,6 @@ pub struct SweptBracket {
     pub optimized: Projection,
 }
 
-impl From<OptimizedLadder> for BracketSweep {
-    /// The one bracket's ladder, as a sweep of that bracket alone.
-    fn from(ladder: OptimizedLadder) -> Self {
-        Self {
-            baseline: ladder.baseline,
-            brackets: vec![ladder.ladder],
-        }
-    }
-}
-
 impl SweptBracket {
     /// The ladder's total on the chosen basis: the plain step sum when
     /// nominal, each step deflated by its year's deflator otherwise.

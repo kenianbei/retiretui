@@ -120,11 +120,11 @@ impl Simulation<'_> {
             let Some(owner) = self.plan.person(&account.owner) else {
                 continue;
             };
-            let age = owner.age_in_year(year);
-            if age < i16::from(tax::rmd_start_age(owner.birth.year())) {
+            let age = owner.age_in(year);
+            if age < tax::rmd_start_age(owner.birth.year()) {
                 continue;
             }
-            let amount = tax::rmd(params, age as u8, snapshot[i]).min(self.balances[i]);
+            let amount = tax::rmd(params, age, snapshot[i]).min(self.balances[i]);
             if amount <= 0 {
                 continue;
             }
