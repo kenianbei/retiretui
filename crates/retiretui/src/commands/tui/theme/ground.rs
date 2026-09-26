@@ -7,17 +7,20 @@
 //! grounds to the terminal it does nothing.
 
 use bevy_app::App;
-use bevy_ecs::prelude::{Commands, IntoScheduleConfigs, Res, ResMut, Resource};
+use bevy_ecs::change_detection::DetectChangesMut;
+use bevy_ecs::prelude::{IntoScheduleConfigs, Res, ResMut, Resource};
 use bevy_ecs::schedule::SystemSet;
 use plurimus::core::ratatui_core::style::Color;
 use plurimus::core::{
-    CompositeSystems, FrameBuffer, MainWorld, TerminalRenderAppExt, TerminalRenderSystems,
+    CompositeSystems, FrameBuffer, MainWorld, TerminalRenderApp, TerminalRenderAppExt,
+    TerminalRenderSystems,
 };
 
 use super::Theme;
 
 pub fn plugin(app: &mut App) {
     app.add_extract_systems(extract);
+    app.sub_app_mut(TerminalRenderApp).init_resource::<Ground>();
     app.add_terminal_systems(
         TerminalRenderSystems::Composite,
         paint_ground
@@ -32,24 +35,21 @@ pub fn plugin(app: &mut App) {
 pub struct Grounded;
 
 /// What the theme draws an unstyled cell in, as the render world holds it.
-#[derive(Resource, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Resource, Clone, Copy, PartialEq, Eq, Default, Debug)]
 struct Ground {
     fg: Color,
     bg: Option<Color>,
 }
 
-fn extract(main_world: Res<MainWorld>, mut commands: Commands) {
+fn extract(main_world: Res<MainWorld>, mut ground: ResMut<Ground>) {
     let theme = main_world.resource::<Theme>();
-    commands.insert_resource(Ground {
+    ground.set_if_neq(Ground {
         fg: theme.fg,
         bg: theme.bg,
     });
 }
 
-fn paint_ground(ground: Option<Res<Ground>>, mut frame: ResMut<FrameBuffer>) {
-    let Some(ground) = ground else {
-        return;
-    };
+fn paint_ground(ground: Res<Ground>, mut frame: ResMut<FrameBuffer>) {
     let paints_fg = ground.fg != Color::Reset;
     if !paints_fg && ground.bg.is_none() {
         return;

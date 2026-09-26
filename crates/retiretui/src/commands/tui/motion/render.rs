@@ -3,7 +3,7 @@
 use std::collections::BTreeMap;
 
 use bevy_app::App;
-use bevy_ecs::prelude::{Commands, IntoScheduleConfigs, NonSendMut, ResMut, Resource};
+use bevy_ecs::prelude::{IntoScheduleConfigs, NonSendMut, ResMut, Resource};
 use bevy_time::{Real, Time};
 use plurimus::core::ratatui_core::layout::Rect;
 use plurimus::core::{
@@ -52,15 +52,10 @@ pub fn install(app: &mut App) {
     );
 }
 
-fn extract(mut main_world: ResMut<MainWorld>, mut commands: Commands) {
-    let delta = main_world.resource::<Time<Real>>().delta();
-    let motion = main_world.resource::<Settings>().motion;
-    let cues = std::mem::take(&mut main_world.resource_mut::<Cues>().0);
-    commands.insert_resource(Cued {
-        cues,
-        motion,
-        delta,
-    });
+fn extract(mut main_world: ResMut<MainWorld>, mut cued: ResMut<Cued>) {
+    cued.delta = main_world.resource::<Time<Real>>().delta();
+    cued.motion = main_world.resource::<Settings>().motion;
+    cued.cues = std::mem::take(&mut main_world.resource_mut::<Cues>().0);
 }
 
 fn play(

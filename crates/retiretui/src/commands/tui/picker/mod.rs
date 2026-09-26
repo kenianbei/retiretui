@@ -37,7 +37,7 @@ pub fn plugin(app: &mut App) {
     app.init_resource::<Picking>();
     app.add_systems(
         Update,
-        (sync_picker, relist, try_on)
+        (sync_picker, relist.run_if(is_relist_due), try_on)
             .chain()
             .in_set(overlay::Settles),
     );
@@ -253,11 +253,15 @@ fn list_keys() -> ListBoxKeys {
     ])
 }
 
+fn is_relist_due(picking: Res<Picking>) -> bool {
+    picking.is_stale && picking.open.is_some()
+}
+
 /// Asks the picker's list system what the query leaves and redraws the
 /// rows and the query row. Exclusive because the list is a one-shot.
 fn relist(world: &mut World) {
     let picking = world.resource::<Picking>();
-    let (true, Some(picker)) = (picking.is_stale, picking.open) else {
+    let Some(picker) = picking.open else {
         return;
     };
     let query = picking.query.clone();
