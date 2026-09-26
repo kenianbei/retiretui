@@ -3,17 +3,16 @@
 //! each in today's dollars by that run's own inflation.
 
 use std::cmp::Reverse;
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::thread;
 
 use serde::Serialize;
 
 use crate::optimize::rank_key;
 use crate::params::TaxTables;
-use crate::plan::{Dollars, Issue, Plan, push_issue};
+use crate::plan::{Dollars, Plan, push_issue};
 use crate::project::{MarketPath, Projection, deflate, project_on};
 
 use super::{History, draw, start_in};
+use crate::search::{Progress, RunError, run_all};
 
 /// The percentiles the bands are drawn at, lowest first, and a Monte
 /// Carlo search singles a market out at, highest first.
@@ -146,43 +145,6 @@ fn at_percentile<T: Copy>(sorted: &[T], percentile: u8) -> Option<T> {
     Some(sorted[at.min(last)])
 }
 
-/// How far a search has got, and a way to stop it. Shared with the thread
-/// that runs it.
-#[derive(Debug, Default)]
-pub struct Progress {
-    done: AtomicUsize,
-    is_cancelled: AtomicBool,
-}
-
-impl Progress {
-    /// How many runs have finished.
-    #[must_use]
-    pub fn done(&self) -> usize {
-        self.done.load(Ordering::Relaxed)
-    }
-
-    /// Asks the search to stop after the runs under way.
-    pub fn cancel(&self) {
-        self.is_cancelled.store(true, Ordering::Relaxed);
-    }
-
-    /// Whether the search has been asked to stop, which work of its own
-    /// between steps may check.
-    #[must_use]
-    pub fn is_cancelled(&self) -> bool {
-        self.is_cancelled.load(Ordering::Relaxed)
-    }
-}
-
-/// Why a search answered nothing.
-#[derive(Debug, Clone, PartialEq)]
-pub enum RunError {
-    /// It was cancelled.
-    Cancelled,
-    /// The plan's settings cannot be run, and why.
-    Refused(Vec<Issue>),
-}
-
 /// A Monte Carlo search's runs, and the markets it singles out.
 #[derive(Debug, Clone, PartialEq)]
 pub struct MonteCarlo {
@@ -191,54 +153,6 @@ pub struct MonteCarlo {
     /// The run at each of [`BAND_PERCENTILES`], highest first, then the
     /// worst, by index.
     pub singled_out: Vec<usize>,
-}
-
-/// The runs at `range`, stopping early once `progress` is cancelled.
-fn run_range(
-    range: std::ops::Range<usize>,
-    progress: &Progress,
-    one: &(impl Fn(usize) -> Option<Run> + Sync),
-) -> Vec<Option<Run>> {
-    range
-        .take_while(|_| !progress.is_cancelled())
-        .map(|at| {
-            let run = one(at);
-            progress.done.fetch_add(1, Ordering::Relaxed);
-            run
-        })
-        .collect()
-}
-
-/// Runs `count` markets across the machine's threads; each index's run is
-/// its own whatever thread takes it, and one that has no market is left
-/// out.
-fn run_all(
-    count: usize,
-    progress: &Progress,
-    one: impl Fn(usize) -> Option<Run> + Sync,
-) -> Result<Vec<Run>, RunError> {
-    let threads = thread::available_parallelism()
-        .map_or(1, usize::from)
-        .min(count.max(1));
-    let chunk = count.div_ceil(threads).max(1);
-    let one = &one;
-    let finished: Vec<Vec<Option<Run>>> = thread::scope(|scope| {
-        let handles: Vec<_> = (0..count)
-            .step_by(chunk)
-            .map(|first| {
-                let range = first..(first + chunk).min(count);
-                scope.spawn(move || run_range(range, progress, one))
-            })
-            .collect();
-        handles
-            .into_iter()
-            .map(|handle| handle.join().expect("a run does not panic"))
-            .collect()
-    });
-    if progress.is_cancelled() {
-        return Err(RunError::Cancelled);
-    }
-    Ok(finished.into_iter().flatten().flatten().collect())
 }
 
 fn planned(plan: &Plan, tables: &TaxTables) -> Run {

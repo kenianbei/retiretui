@@ -4,12 +4,12 @@
 
 use serde::Serialize;
 
-use crate::market::{Progress, RunError};
 use crate::params::TaxTables;
 use crate::plan::{
     ColaSpec, Income, IncomeKind, Issue, Plan, PlanError, SCHEMA_VERSION, Trigger, push_issue,
 };
 use crate::project::{Projection, horizon_year, project};
+use crate::search::{Progress, RunError};
 use crate::tax::{EARLIEST_CLAIM_AGE, LATEST_CREDIT_AGE};
 
 /// What a made-up income's id starts with, before its owner's.
@@ -121,6 +121,9 @@ pub fn optimize_claims(
         .collect();
     if !issues.is_empty() {
         return Err(RunError::Refused(issues));
+    }
+    if progress.is_cancelled() {
+        return Err(RunError::Cancelled);
     }
     let baseline = project(plan, tables);
     let mut working = extended.clone();

@@ -81,16 +81,15 @@ type Estimate = [Option<Dollars>; 3];
 /// valid draft the page was shown over, and the next on a thread of their
 /// own.
 #[derive(Resource, Default)]
-pub(crate) struct Estimates {
+struct Estimates {
     shown: Vec<Estimate>,
     running: Option<Keyed<(), Vec<Estimate>>>,
 }
 
-impl Estimates {
-    #[cfg(test)]
-    pub(crate) fn is_running(&self) -> bool {
-        self.running.is_some()
-    }
+/// Whether the estimates are under way.
+#[cfg(test)]
+pub(crate) fn is_estimating(app: &bevy_app::App) -> bool {
+    app.world().resource::<Estimates>().running.is_some()
 }
 
 /// The table, which holds the keyboard for the page.
@@ -138,11 +137,11 @@ fn estimate(
     mut last_plan: Local<Option<Arc<Plan>>>,
     mut estimates: ResMut<Estimates>,
 ) {
-    if estimates.running.as_ref().is_some_and(Keyed::is_finished) {
-        let running = estimates.running.take();
-        if let Some(((), Some(found), _)) = running.map(Keyed::join) {
-            estimates.shown = found;
-        }
+    if estimates.running.as_ref().is_some_and(Keyed::is_finished)
+        && let Some(running) = estimates.running.take()
+        && let ((), Some(found), _) = running.join()
+    {
+        estimates.shown = found;
     }
     let is_moved = draft.is_changed() || shown.is_changed();
     if !is_moved || !draft.issues().is_empty() {
@@ -154,10 +153,11 @@ fn estimate(
     let plan = Arc::new(draft.plan.clone());
     *last_plan = Some(Arc::clone(&plan));
     let tables = session.tables.clone();
-    estimates.bypass_change_detection().running = Some(Keyed::spawn((), move |_| {
+    estimates.bypass_change_detection().running = Some(Keyed::spawn((), move |progress| {
         let people = &plan.household.people;
         people
             .iter()
+            .take_while(|_| !progress.is_cancelled())
             .map(|person| benefit_estimates(&plan, &tables, &person.id))
             .collect()
     }));

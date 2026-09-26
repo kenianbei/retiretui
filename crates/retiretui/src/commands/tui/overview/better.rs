@@ -9,7 +9,7 @@ use std::collections::BTreeSet;
 
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::prelude::{Res, ResMut, Resource};
-use retiretui_engine::market::{History, Progress, RunError, Runs, historical};
+use retiretui_engine::market::{History, Progress, Runs, historical};
 use retiretui_engine::optimize::{ClaimSearch, optimize_claims, rank_key};
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::{Plan, TreatmentClass};
@@ -160,18 +160,15 @@ fn search(
     (tables, history): (&TaxTables, &History),
     progress: &Progress,
 ) -> Option<Found> {
-    let historical = match historical(plan, tables, history, progress) {
-        Err(RunError::Cancelled) => return None,
-        ran => ran.ok(),
-    };
+    let historical = historical(plan, tables, history, progress).ok();
     let held: Vec<String> = held.iter().cloned().collect();
-    let claims = match optimize_claims(plan, tables, &[], &held, progress) {
-        Err(RunError::Cancelled) => return None,
-        searched => searched.ok(),
-    };
+    let claims = optimize_claims(plan, tables, &[], &held, progress).ok();
     let mut ladders = Vec::new();
     for owner in roth_owners(plan) {
-        ladders.push(best_ladder((plan, tables), answers, owner, progress));
+        if progress.is_cancelled() {
+            return None;
+        }
+        ladders.push(best_ladder(plan, tables, answers, owner, progress));
     }
     if progress.is_cancelled() {
         return None;
@@ -186,7 +183,8 @@ fn search(
 /// The best ladder into `owner`'s Roth account, searched as the Roth
 /// Conversions page searches under the `answers` it holds.
 fn best_ladder(
-    searched: (&Plan, &TaxTables),
+    plan: &Plan,
+    tables: &TaxTables,
     answers: &toml::Table,
     (owner, destination): (&str, &str),
     progress: &Progress,
@@ -194,7 +192,7 @@ fn best_ladder(
     Ladder {
         owner: owner.to_owned(),
         destination: destination.to_owned(),
-        swept: ladders::sweep_into(searched, answers, destination, progress),
+        swept: ladders::sweep_into(plan, tables, answers, destination, progress),
     }
 }
 

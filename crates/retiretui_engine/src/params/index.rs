@@ -74,6 +74,30 @@ impl Inflation {
     }
 }
 
+impl Inflation {
+    /// What a price in `from` costs in each of the `years` years from
+    /// `from` on, in one pass: each is exactly [`Inflation::factor`]'s, whose
+    /// compounding up to a year is the start of the compounding up to the
+    /// next.
+    pub(crate) fn factors_from(&self, from: i16, years: usize) -> Vec<f64> {
+        let compound = |(factor, rate, years): (f64, f64, i32)| factor * (1.0 + rate).powi(years);
+        let mut run = (1.0, 0.0_f64, 0);
+        let mut factors = Vec::with_capacity(years);
+        for year in (from..).take(years) {
+            if year > from {
+                let rate = self.rate_into(year);
+                run = if rate.to_bits() == run.1.to_bits() {
+                    (run.0, run.1, run.2 + 1)
+                } else {
+                    (compound(run), rate, 1)
+                };
+            }
+            factors.push(compound(run));
+        }
+        factors
+    }
+}
+
 pub(crate) fn scale(amount: Dollars, factor: f64) -> Dollars {
     (amount as f64 * factor).round() as Dollars
 }
@@ -172,6 +196,22 @@ mod tests {
                     "{rate} {from}-{to}"
                 );
             }
+        }
+    }
+
+    #[test]
+    fn the_factors_from_a_year_are_each_its_factor_bit_for_bit() {
+        let rates = vec![0.031, 0.031, 0.02, -0.004, 0.02, 0.087, 0.087, 0.087];
+        for inflation in [
+            Inflation::yearly(2027, rates, 0.025),
+            Inflation::constant(0.025),
+        ] {
+            let factors = inflation.factors_from(2026, 20);
+            let expected: Vec<u64> = (2026..2046)
+                .map(|year| inflation.factor(2026, year).to_bits())
+                .collect();
+            let got: Vec<u64> = factors.iter().map(|factor| factor.to_bits()).collect();
+            assert_eq!(got, expected, "{inflation:?}");
         }
     }
 

@@ -34,9 +34,9 @@ use crate::commands::tui::journal;
 use crate::commands::tui::nav::{self, Page, ShownSurface};
 use crate::commands::tui::overview::Better;
 use crate::commands::tui::session::Session;
-#[cfg(test)]
-pub(crate) use people::Estimates;
 pub(crate) use people::HeldClaims;
+#[cfg(test)]
+pub(crate) use people::is_estimating;
 
 pub type Claims = Tool<ClaimSearch>;
 

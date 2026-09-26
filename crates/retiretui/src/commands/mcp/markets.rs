@@ -5,7 +5,8 @@ use schemars::JsonSchema;
 use serde::Deserialize;
 
 use super::PlanServer;
-use crate::commands::markets::{HistoricalReply, MonteCarloReply, run_refusal};
+use crate::commands::markets::{HistoricalReply, MonteCarloReply};
+use crate::commands::run_refusal;
 
 #[derive(Deserialize, JsonSchema)]
 pub struct MarketToolArgs {

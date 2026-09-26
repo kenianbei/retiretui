@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use crate::commands::markets::run_refusal;
+use crate::commands::run_refusal;
 use clap::Args;
 use retiretui_engine::market::Progress;
 use retiretui_engine::optimize::LadderStep;

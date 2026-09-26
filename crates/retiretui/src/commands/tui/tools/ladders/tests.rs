@@ -206,7 +206,8 @@ fn searched_labels(draft: &Draft) -> Vec<String> {
     search(
         &draft.plan,
         &TaxTables::embedded(),
-        (&options, rate),
+        &options,
+        rate,
         &Progress::default(),
     )
     .unwrap()

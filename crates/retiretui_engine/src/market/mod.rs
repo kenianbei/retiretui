@@ -6,10 +6,10 @@ mod random;
 mod runs;
 mod statistical;
 
+pub use crate::search::{Progress, RunError};
 pub use history::{HistoricalYear, History, HistoryError};
 pub use runs::{
-    BAND_PERCENTILES, Band, MonteCarlo, Progress, Run, RunError, RunName, Runs, historical,
-    monte_carlo, replay,
+    BAND_PERCENTILES, Band, MonteCarlo, Run, RunName, Runs, historical, monte_carlo, replay,
 };
 
 use crate::params::Inflation;

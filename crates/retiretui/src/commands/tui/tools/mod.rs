@@ -399,9 +399,7 @@ pub fn settle_all(app: &mut bevy_app::App) {
 #[cfg(test)]
 pub fn settle_claims(app: &mut bevy_app::App) {
     settle::<retiretui_engine::optimize::ClaimSearch>(app);
-    settle_until_idle(app, |app| {
-        app.world().resource::<claims::Estimates>().is_running()
-    });
+    settle_until_idle(app, claims::is_estimating);
 }
 
 /// Holds a tool's answer back until released, or releases it.

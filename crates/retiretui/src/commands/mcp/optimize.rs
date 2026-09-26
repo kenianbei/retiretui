@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use crate::commands::markets::run_refusal;
+use crate::commands::run_refusal;
 use retiretui_engine::market::Progress;
 use retiretui_engine::optimize::{
     OptimizeOptions, claims_overlay, ladder_overlay, optimize_claims, optimize_conversions,

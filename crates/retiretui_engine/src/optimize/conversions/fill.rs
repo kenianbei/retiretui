@@ -1,7 +1,7 @@
-use crate::market::Progress;
 use crate::params::TaxTables;
 use crate::plan::{Dollars, Plan};
 use crate::project::{Projection, project};
+use crate::search::Progress;
 
 use super::ladder::ladder_conversion;
 use super::targets::{conversion_window, year_targets};

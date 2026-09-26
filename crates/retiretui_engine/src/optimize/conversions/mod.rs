@@ -16,15 +16,13 @@ mod targets;
 
 pub use ladder::{LADDER_ID_PREFIX, apply_ladder, is_ladder, ladder_overlay};
 
-use std::{panic, thread};
-
 use serde::Serialize;
 
 use super::rank_key;
-use crate::market::{Progress, RunError};
 use crate::params::TaxTables;
 use crate::plan::{Dollars, Issue, Plan, TreatmentClass};
 use crate::project::{Projection, plan_inflation, project};
+use crate::search::{Progress, RunError, run_all};
 
 use check::check_options;
 use fill::search_ladder;
@@ -163,7 +161,7 @@ pub fn optimize_conversions(
 }
 
 /// Runs the optimizer once per fillable bracket (every rate but the top,
-/// which has no ceiling), each on a thread of its own, against one shared
+/// which has no ceiling), across the machine's threads, against one shared
 /// baseline, and ranks the ladders best first; each ladder replaces the
 /// plan's own, as [`optimize_conversions`].
 ///
@@ -183,36 +181,21 @@ pub fn sweep_brackets(
     if !issues.is_empty() {
         return Err(RunError::Refused(issues));
     }
-    let baseline = project(plan, tables);
-    let (bare, from) = without_ladder(plan, tables, &baseline);
-    let (bare, from) = (&bare, &from);
-    let mut brackets: Vec<SweptBracket> = thread::scope(|scope| {
-        let searches: Vec<_> = fillable_rates(plan, tables)
-            .into_iter()
-            .map(|rate| {
-                scope.spawn(move || {
-                    let (steps, optimized) =
-                        search_ladder(bare, tables, (options, rate), from, progress);
-                    SweptBracket {
-                        rate,
-                        steps,
-                        optimized,
-                    }
-                })
-            })
-            .collect();
-        searches
-            .into_iter()
-            .map(|search| {
-                search
-                    .join()
-                    .unwrap_or_else(|panic| panic::resume_unwind(panic))
-            })
-            .collect()
-    });
     if progress.is_cancelled() {
         return Err(RunError::Cancelled);
     }
+    let baseline = project(plan, tables);
+    let (bare, from) = without_ladder(plan, tables, &baseline);
+    let rates = fillable_rates(plan, tables);
+    let mut brackets = run_all(rates.len(), progress, |at| {
+        let rate = rates[at];
+        let (steps, optimized) = search_ladder(&bare, tables, (options, rate), &from, progress);
+        Some(SweptBracket {
+            rate,
+            steps,
+            optimized,
+        })
+    })?;
     brackets.sort_by_cached_key(|bracket| rank_key(&bracket.optimized));
     Ok(BracketSweep { baseline, brackets })
 }

@@ -15,7 +15,7 @@ use crate::commands::tui::support::{
     Headless, SIZE, commit_edit, composed_frame, headless_app_at, press_ctrl, press_key, redrawn,
     said, scratch_workspace, show, type_text,
 };
-use crate::commands::tui::tools::hold;
+use crate::commands::tui::tools::{hold, settle_claims};
 
 const PARTNER: &str = r#"
 [[household.people]]
@@ -48,7 +48,7 @@ fn workspace_app(plan: &str) -> (PathBuf, Headless) {
     let dir = scratch_workspace(plan);
     let mut app = headless_app_at(dir.join("plan.toml"), SIZE);
     show(&mut app, Page::SsaBenefits);
-    settle(&mut app);
+    settle_claims(&mut app);
     (dir, app)
 }
 
@@ -70,10 +70,6 @@ fn run_write(app: &mut App) -> Outcome {
 
 fn run_adopt(app: &mut App) -> Outcome {
     app.world_mut().run_system_cached(adopt).unwrap()
-}
-
-fn settle(app: &mut App) {
-    super::super::settle_claims(app);
 }
 
 fn highlighted_ages(app: &App) -> Vec<u8> {
@@ -161,7 +157,7 @@ fn a_search_arrives_ranked_best_first_and_arrows_step_over_the_plan_s_own_row() 
     app.update();
     assert!(composed_frame(&app).contains("Claim Options · searching… "));
     hold::<ClaimSearch>(&mut app, false);
-    settle(&mut app);
+    settle_claims(&mut app);
     let frame = composed_frame(&app);
     assert!(frame.contains("s ─"), "the title says how long: {frame}");
     let expected = {
@@ -259,7 +255,7 @@ fn the_pane_says_why_nothing_could_be_searched_and_an_edit_drops_a_search() {
         plan.plan.name = Some("changed again".to_owned());
     });
     hold::<ClaimSearch>(&mut app, false);
-    settle(&mut app);
+    settle_claims(&mut app);
     assert!(said(&app).is_empty(), "a dropped search says nothing");
     assert!(
         app.world().resource::<Claims>().found().is_some(),
@@ -324,7 +320,7 @@ fn t_and_enter_ask_then_take_the_chosen_claims_as_one_step() {
         "the cursor opens on the best"
     );
     press_ctrl(&mut app, KeyCode::Char('z'));
-    settle(&mut app);
+    settle_claims(&mut app);
     to_strategies(&mut app);
     press_key(&mut app, KeyCode::Down);
     let ages = highlighted_ages(&app);
@@ -356,7 +352,7 @@ fn the_options_come_back_after_nothing_could_be_searched() {
             person.earnings.clear();
         }
     });
-    settle(&mut app);
+    settle_claims(&mut app);
     let frame = composed_frame(&app);
     assert!(
         frame.contains("no social-security income computes"),
@@ -364,7 +360,7 @@ fn the_options_come_back_after_nothing_could_be_searched() {
     );
     assert!(!frame.contains("Current"), "no options: {frame}");
     press_ctrl(&mut app, KeyCode::Char('z'));
-    settle(&mut app);
+    settle_claims(&mut app);
     let frame = composed_frame(&app);
     assert_eq!(
         table_rows(&frame)[0].1[..3],
@@ -385,7 +381,7 @@ fn a_held_claim_stays_out_of_the_search() {
         app.world_mut().run_system_cached(hold_claim).unwrap(),
         Outcome::Done
     );
-    settle(&mut app);
+    settle_claims(&mut app);
     let found = app.world().resource::<Claims>().found().unwrap();
     assert_eq!(found.incomes, ["ss"], "only me is searched");
     assert_eq!(found.candidates.len(), 9);
@@ -398,7 +394,7 @@ fn a_held_claim_stays_out_of_the_search() {
         app.world_mut().run_system_cached(hold_claim).unwrap(),
         Outcome::Done
     );
-    settle(&mut app);
+    settle_claims(&mut app);
     assert_eq!(
         app.world()
             .resource::<Claims>()

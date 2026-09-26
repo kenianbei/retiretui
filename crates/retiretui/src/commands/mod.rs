@@ -13,6 +13,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::Context;
+use retiretui_engine::market::RunError;
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::{Issue, Plan};
 use retiretui_engine::project::validate_plan;
@@ -92,6 +93,14 @@ fn validated_plan_with_files(
 fn issue_listing(issues: &[Issue]) -> String {
     let listing: Vec<String> = issues.iter().map(ToString::to_string).collect();
     listing.join("\n")
+}
+
+/// Why a search answered nothing, as the CLI and MCP say it.
+pub(crate) fn run_refusal(error: RunError) -> String {
+    match error {
+        RunError::Cancelled => "the search was cancelled".to_owned(),
+        RunError::Refused(issues) => issue_listing(&issues),
+    }
 }
 
 /// `target` re-expressed relative to `from_dir`, with `/` separators. Both

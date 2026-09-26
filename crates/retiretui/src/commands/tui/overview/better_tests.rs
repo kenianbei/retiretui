@@ -117,7 +117,7 @@ fn best_ladder(app: &App, destination: &str) -> SweptBracket {
     let plan = &projected(app).plan;
     let tables = &app.world().resource::<Session>().tables;
     let (options, rate) = options_of(app, destination);
-    let sweep = ladders::search(plan, tables, (&options, rate), &Progress::default()).unwrap();
+    let sweep = ladders::search(plan, tables, &options, rate, &Progress::default()).unwrap();
     sweep.brackets.into_iter().next().unwrap()
 }
 

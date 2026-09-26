@@ -167,13 +167,14 @@ impl Swept {
 /// The ladders into `destination` under the `held` answers, searched as
 /// the page searches them; none where the answers do not make a search.
 pub(crate) fn sweep_into(
-    (plan, tables): (&Plan, &TaxTables),
+    plan: &Plan,
+    tables: &TaxTables,
     held: &toml::Table,
     destination: &str,
     progress: &Progress,
 ) -> Option<Swept> {
     let (options, rate) = options_into(held, destination)?;
-    let sweep = search(plan, tables, (&options, rate), progress).ok()?;
+    let sweep = search(plan, tables, &options, rate, progress).ok()?;
     Some(Swept { sweep, options })
 }
 
@@ -291,7 +292,7 @@ fn search_by_itself(
     }
     let tables = session.tables.clone();
     ladders.start(draft.plan.clone(), move |plan, progress| {
-        search(plan, &tables, (&options, rate), progress).map(|sweep| Swept { sweep, options })
+        search(plan, &tables, &options, rate, progress).map(|sweep| Swept { sweep, options })
     });
 }
 
@@ -299,7 +300,8 @@ fn search_by_itself(
 pub(crate) fn search(
     plan: &Plan,
     tables: &TaxTables,
-    (options, rate): (&OptimizeOptions, Option<f64>),
+    options: &OptimizeOptions,
+    rate: Option<f64>,
     progress: &Progress,
 ) -> Result<BracketSweep, RunError> {
     match rate {
