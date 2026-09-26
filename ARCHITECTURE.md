@@ -181,79 +181,81 @@ never depends on UI.
   the columns do not say everything - a person's ending with their earnings
   record - and a domain there is exactly one of is that read-out alone. Nothing
   on a page edits: one item at a time is the editing session, a form standing
-  over the page, opened by ⏎ on a row or on the read-out and left by esc or by
-  applying, the keyboard going back to what opened it; its fields work on a
-  snapshot that reaches the working draft only when the whole item is applied.
-  Edits no one applied are never dropped silently - the form keeps every key
-  while it stands, and a press outside it asks what is to become of them - and
-  never applied to an item the plan has changed underneath; an unsaved draft is
-  asked about the same way before another document takes its place. Every
-  applied item is one step of a whole-plan history the draft walks back and
-  forward through, dropped with the document and kept across a save; a statement
-  picked on the People page or beside the claim search, through the same file
-  picker, lands its earnings on the highlighted person as one such step. Each
-  field is entered by its kind - ticked, or picked from a closed set wherever
-  the schema states one, from a menu or, where the set is too long for one,
-  through the fuzzy picker, read from the engine rather than restated, and of
-  the plan's own ids wherever it names one, so an invalid value or a misspelt
-  reference cannot be expressed, and a pick the schema requires cannot be
-  emptied. A value with parts of its own is rows of the same form rather than
-  text: a trigger is picked apart into its kind and that kind's operands, a
-  table the item holds is fields that reach into it - made with its first value
-  and gone with its last, or, where its being there is itself the setting,
-  ticked, its rows shown only while it is - and a list is rows that hold it
-  between them, an order offering each place only what no other holds. A field
-  is shown only while the item has a use for it, asked of the engine's own
-  rules - a basis on the kinds of account that keep one, a window on what recurs
-  and a single date on what happens once - and what is applied leaves out
-  whatever is not. A value the file states one of several ways is chosen between
-  by a pick no file holds, read from the item on open and written back as the
-  keys the file does hold. What such rows do not yet make a value of refuses the
-  apply and says why. What remains is typed: money, a rate and how an amount
-  grows read back exactly what they show - separators, a percent, a word - and a
-  name, an id or a date is the plan file's own value syntax, parsed through the
-  schema's types, so what a field cannot read the schema refuses in its own
-  words. The file's spelling stays in the file: each field states a label and a
-  description beside its key, the schema's closed sets and the plan's items are
-  offered under words and display names over the values kept, one module turns a
-  value into the phrase shown for it wherever it is shown, and an issue's path
-  is read back into the page, item and field it names - so a form, a table, a
-  menu and an issue say the same thing in the same words. Every action the shell
-  can take is a row in one static command table, which the keys, the tabs' own
-  digits, the key row, and the fuzzy pickers that find a command or a page all
-  read from; a key particular to a page runs only while that page is on show,
-  ahead of any meaning the shell gives the same key, so two pages may bind one
-  key each and a page may take one of the shell's. The keyboard walks a page's
-  panes in the order they are drawn, the sidebar first beside a grouped page,
-  and a page is entered on its first pane. Whatever stands over the page - a
-  menu, a picker, a dialog, an open item - takes the keyboard on a stack and
-  gives it back to what held it, and a command chosen from one runs once it has,
-  since what holds the keyboard is what a command acts on. Whether a key is a
-  command at all is asked of the widget it was typed at and everything that
-  widget sits in: what stands over the page keeps every key, and a form's fields
-  and buttons keep the plain ones. Everything the shell says is a `tracing`
-  event with two readers: a journal the shell toasts from and lists in a drawer,
-  and a log file. Colour is named by role, never by value: a theme is a table of
-  roles, the terminal's own colours by default, and a cell no widget coloured is
-  drawn in the theme's own ground. What the user sets - theme, motion - lives in
-  one user config file the shell reads at launch and writes back a key at a
-  time, leaving the rest of the file as the user wrote it. Each applied item
-  re-validates the draft: a valid draft is re-projected at once so the views
-  follow it, and an invalid one holds the last good view, reports its first
-  issue, counts them beside the file name, and lists every one in a panel whose
-  rows turn to the item. Saving writes the draft as canonical TOML through the
-  same validation gate as every other write; scenario sessions are read-only,
-  since a resolved plan cannot be written back into an overlay, and saving one
-  under a new name writes the resolved plan as a plan of its own. The resolved
-  chain's files are watched so on-disk edits re-project in place, except under
-  an unsaved draft or an item being edited, which is reported rather than
-  overwritten, and so are each compared file's, which have no draft to protect;
-  `mcp` serves the same contract to AI agents over stdio - list, read, validate,
-  write, project, actions, compare, earnings-import, optimizer and market tools
-  over plan files sandboxed to a served directory, plus tax-parameter lookup and
-  an embedded schema reference. Writes are gated on full validation - scenarios
-  validated fully resolved - and stored in canonical TOML; the schema
-  reference's worked example is kept valid by the test suite.
+  over the page as tall as the fields on show and scrolling what the body cannot
+  hold, opened by ⏎ on a row or on the read-out and left by esc or by applying,
+  the keyboard going back to what opened it; its fields work on a snapshot that
+  reaches the working draft only when the whole item is applied. Edits no one
+  applied are never dropped silently - the form keeps every key while it stands,
+  and a press outside it asks what is to become of them - and never applied to
+  an item the plan has changed underneath; an unsaved draft is asked about the
+  same way before another document takes its place. Every applied item is one
+  step of a whole-plan history the draft walks back and forward through, dropped
+  with the document and kept across a save; a statement picked on the People
+  page or beside the claim search, through the same file picker, lands its
+  earnings on the highlighted person as one such step. Each field is entered by
+  its kind - ticked, or picked from a closed set wherever the schema states one,
+  from a menu or, where the set is too long for one, through the fuzzy picker,
+  read from the engine rather than restated, and of the plan's own ids wherever
+  it names one, so an invalid value or a misspelt reference cannot be expressed,
+  and a pick the schema requires cannot be emptied. A value with parts of its
+  own is rows of the same form rather than text: a trigger is picked apart into
+  its kind and that kind's operands, a table the item holds is fields that reach
+  into it - made with its first value and gone with its last, or, where its
+  being there is itself the setting, ticked, its rows shown only while it is -
+  and a list is rows that hold it between them, an order offering each place
+  only what no other holds. A field is shown only while the item has a use for
+  it, asked of the engine's own rules - a basis on the kinds of account that
+  keep one, a window on what recurs and a single date on what happens once - and
+  what is applied leaves out whatever is not. A value the file states one of
+  several ways is chosen between by a pick no file holds, read from the item on
+  open and written back as the keys the file does hold. What such rows do not
+  yet make a value of refuses the apply and says why. A share the others
+  settle - a mix's cash - is not entered but shown as what they leave. What
+  remains is typed: money, a rate and how an amount grows read back exactly what
+  they show - separators, a percent, a word - and a name, an id or a date is the
+  plan file's own value syntax, parsed through the schema's types, so what a
+  field cannot read the schema refuses in its own words. The file's spelling
+  stays in the file: each field states a label and a description beside its key,
+  the schema's closed sets and the plan's items are offered under words and
+  display names over the values kept, one module turns a value into the phrase
+  shown for it wherever it is shown, and an issue's path is read back into the
+  page, item and field it names - so a form, a table, a menu and an issue say
+  the same thing in the same words. Every action the shell can take is a row in
+  one static command table, which the keys, the tabs' own digits, the key row,
+  and the fuzzy pickers that find a command or a page all read from; a key
+  particular to a page runs only while that page is on show, ahead of any
+  meaning the shell gives the same key, so two pages may bind one key each and a
+  page may take one of the shell's. The keyboard walks a page's panes in the
+  order they are drawn, the sidebar first beside a grouped page, and a page is
+  entered on its first pane. Whatever stands over the page - a menu, a picker, a
+  dialog, an open item - takes the keyboard on a stack and gives it back to what
+  held it, and a command chosen from one runs once it has, since what holds the
+  keyboard is what a command acts on. Whether a key is a command at all is asked
+  of the widget it was typed at and everything that widget sits in: what stands
+  over the page keeps every key, and a form's fields and buttons keep the plain
+  ones. Everything the shell says is a `tracing` event with two readers: a
+  journal the shell toasts from and lists in a drawer, and a log file. Colour is
+  named by role, never by value: a theme is a table of roles, the terminal's own
+  colours by default, and a cell no widget coloured is drawn in the theme's own
+  ground. What the user sets - theme, motion - lives in one user config file the
+  shell reads at launch and writes back a key at a time, leaving the rest of the
+  file as the user wrote it. Each applied item re-validates the draft: a valid
+  draft is re-projected at once so the views follow it, and an invalid one holds
+  the last good view, reports its first issue, counts them beside the file name,
+  and lists every one in a panel whose rows turn to the item. Saving writes the
+  draft as canonical TOML through the same validation gate as every other write;
+  scenario sessions are read-only, since a resolved plan cannot be written back
+  into an overlay, and saving one under a new name writes the resolved plan as a
+  plan of its own. The resolved chain's files are watched so on-disk edits
+  re-project in place, except under an unsaved draft or an item being edited,
+  which is reported rather than overwritten, and so are each compared file's,
+  which have no draft to protect; `mcp` serves the same contract to AI agents
+  over stdio - list, read, validate, write, project, actions, compare,
+  earnings-import, optimizer and market tools over plan files sandboxed to a
+  served directory, plus tax-parameter lookup and an embedded schema reference.
+  Writes are gated on full validation - scenarios validated fully resolved - and
+  stored in canonical TOML; the schema reference's worked example is kept valid
+  by the test suite.
 
 Plans express timing through a closed trigger vocabulary - a fixed date, a
 person's age, or a reference to a named event or income source with a whole year
