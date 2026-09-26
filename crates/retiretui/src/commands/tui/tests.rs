@@ -1,6 +1,7 @@
 //! Headless shell behavior tests.
 
 use std::collections::BTreeSet;
+use std::time::Duration;
 
 use bevy_app::App;
 use bevy_ui::{Display, Node};
@@ -19,7 +20,7 @@ use super::picker_tests::is_palette_open;
 use super::session::{NO_DOCUMENT, Session, YearCursor};
 use super::support::{
     self, ROOMY, SIZE, active_page as active, commit_edit, composed_frame, headless_app,
-    headless_app_at, is_browsing, press_ctrl, press_key, said, show,
+    headless_app_at, is_browsing, let_pass, press_ctrl, press_key, said, show,
 };
 
 /// The pages whose root takes room in the body.
@@ -275,6 +276,65 @@ fn r_reloads_edits_and_keeps_the_view_on_failure() {
     let frame = composed_frame(&app);
     assert!(frame.contains("reload failed"), "{frame}");
     assert_eq!(plan_name(&app), "edited-plan", "last good view survives");
+}
+
+/// Writes `text` over `path` a moment after its last write, so its mtime
+/// moves, and lets the watch's beat come round.
+fn change_on_disk(app: &mut App, path: &std::path::Path, text: &str) {
+    std::thread::sleep(Duration::from_millis(50));
+    std::fs::write(path, text).unwrap();
+    let_pass(app, Duration::from_secs_f32(super::watch::POLL_SECONDS));
+}
+
+#[test]
+fn a_disk_change_waits_behind_an_unsaved_draft() {
+    let mut app = headless_app(SIZE);
+    let plan_path = app.world().resource::<Session>().plan_path.clone().unwrap();
+    edit_draft(&mut app, |plan| {
+        plan.plan.name = Some("draft-plan".to_owned());
+    });
+    let renamed = support::TEST_PLAN.replace("name = \"test-plan\"", "name = \"edited-plan\"");
+    change_on_disk(&mut app, &plan_path, &renamed);
+    let_pass(
+        &mut app,
+        Duration::from_secs_f32(super::watch::POLL_SECONDS),
+    );
+    assert_eq!(
+        plan_name(&app),
+        "draft-plan",
+        "the draft is not overwritten"
+    );
+    let warned = said(&app)
+        .iter()
+        .filter(|text| text.contains("plan changed on disk"))
+        .count();
+    assert_eq!(warned, 1, "said once, not every beat");
+}
+
+#[test]
+fn a_disk_change_is_followed_on_the_beat() {
+    let mut app = headless_app(SIZE);
+    let plan_path = app.world().resource::<Session>().plan_path.clone().unwrap();
+    let renamed = support::TEST_PLAN.replace("name = \"test-plan\"", "name = \"edited-plan\"");
+    change_on_disk(&mut app, &plan_path, &renamed);
+    assert_eq!(plan_name(&app), "edited-plan");
+}
+
+#[test]
+fn a_failed_reload_watches_the_chain_as_it_now_reads() {
+    let mut app = headless_app(SIZE);
+    let plan_path = app.world().resource::<Session>().plan_path.clone().unwrap();
+    let base = plan_path.with_file_name("base.toml");
+    let broken = support::TEST_PLAN.replace("inflation = 0.025", "inflation = 9.0");
+    std::fs::write(&base, broken).unwrap();
+    change_on_disk(&mut app, &plan_path, &support::scenario_over("base.toml"));
+    assert!(
+        said(&app).iter().any(|text| text.contains("reload failed")),
+        "{:?}",
+        said(&app)
+    );
+    change_on_disk(&mut app, &base, support::TEST_PLAN);
+    assert_eq!(plan_name(&app), "variant", "fixing the new base reloads");
 }
 
 #[test]

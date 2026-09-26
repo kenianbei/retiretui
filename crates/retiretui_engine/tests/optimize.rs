@@ -4,7 +4,7 @@
 mod common;
 
 use retiretui_engine::optimize::{
-    OptimizeOptions, OptimizedLadder, SweptBracket, apply_ladder, ladder_overlay,
+    OptimizeOptions, OptimizedLadder, SweptBracket, apply_ladder, is_ladder, ladder_overlay,
     optimize_conversions, sweep_brackets,
 };
 use retiretui_engine::params::{Inflation, TaxTables};
@@ -275,6 +275,24 @@ fn a_new_ladder_replaces_the_one_taken() {
             .collect::<Vec<_>>()
     };
     assert_eq!(steps(&swept), steps(&fresh));
+}
+
+#[test]
+fn a_ladder_leaves_the_users_own_opt_conversions() {
+    let own = BASE.replace(
+        "[[expenses]]",
+        "[[conversions]]\nid = \"opt-mine\"\nfrom = \"k\"\nto = \"r\"\namount = 5000\ncola = false\n\n[[expenses]]",
+    );
+    let taken = searched(&plan_from(BASE), &options(), 0.12);
+    let mut plan = plan_from(&own);
+    apply_ladder(&mut plan, &options(), &taken.steps);
+    assert!(
+        plan.conversions
+            .iter()
+            .any(|conversion| conversion.id == "opt-mine")
+    );
+    assert!(!is_ladder(&plan.conversions[0]));
+    assert!(plan.conversions[1..].iter().all(is_ladder));
 }
 
 #[test]

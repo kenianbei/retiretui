@@ -109,8 +109,9 @@ fn save_then_go(In(wanted): In<Opening>, world: &mut World) {
 /// A document that fails to load leaves the shell as it was.
 pub fn switch(In(opening): In<Opening>, world: &mut World) {
     let tables = &world.resource::<Session>().tables;
-    let (projected, files) = match watch::load_projected(&opening.path, tables) {
-        Ok(loaded) => loaded,
+    let (loaded, files) = watch::load_projected(&opening.path, tables);
+    let projected = match loaded {
+        Ok(projected) => projected,
         Err(invalid) => {
             journal::warn(format!("not opened: {}", invalid.headline()));
             return;

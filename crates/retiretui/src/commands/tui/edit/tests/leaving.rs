@@ -13,11 +13,13 @@ use super::{
 use crate::commands::tui::edit::build::FormButton;
 use crate::commands::tui::edit::{Draft, DraftEditor};
 use crate::commands::tui::nav::{ActivePage, Page};
+use crate::commands::tui::session::Session;
 use crate::commands::tui::support::{
-    SIZE, answer_back, cell_of, cell_style, click, composed_frame, headless_app, is_asking,
-    press_ctrl, press_key, press_shift, show, type_text,
+    self, SIZE, answer_back, cell_of, cell_style, click, composed_frame, headless_app, is_asking,
+    let_pass, press_ctrl, press_key, press_shift, said, show, type_text,
 };
 use crate::commands::tui::theme::Theme;
+use crate::commands::tui::watch::POLL_SECONDS;
 
 /// A cell inside the first tab's box, which is how a page is chosen with
 /// the pointer.
@@ -152,6 +154,31 @@ fn applying_an_item_no_one_edited_leaves_the_draft_clean() {
     press_key(&mut app, KeyCode::Enter);
     assert!(!is_editing(&app));
     assert!(!app.world().resource::<Draft>().is_dirty());
+}
+
+#[test]
+fn a_disk_change_waits_behind_an_item_being_edited() {
+    let mut app = headless_app(SIZE);
+    show(&mut app, Page::Settings);
+    press_key(&mut app, KeyCode::Enter);
+    tab_to_field(&mut app, 2);
+    clear_field(&mut app);
+    type_text(&mut app, "80");
+    let plan_path = app.world().resource::<Session>().plan_path.clone().unwrap();
+    std::thread::sleep(std::time::Duration::from_millis(50));
+    std::fs::write(
+        &plan_path,
+        support::TEST_PLAN.replace("horizon_age = 70", "horizon_age = 75"),
+    )
+    .unwrap();
+    let_pass(&mut app, std::time::Duration::from_secs_f32(POLL_SECONDS));
+    assert!(is_editing(&app), "the item stays open");
+    assert!(composed_frame(&app).contains("80"), "with its edit");
+    assert!(
+        said(&app)
+            .iter()
+            .any(|text| text.contains("plan changed on disk"))
+    );
 }
 
 #[test]
