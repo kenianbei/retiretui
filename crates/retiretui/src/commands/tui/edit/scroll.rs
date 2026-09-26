@@ -88,10 +88,9 @@ fn reveal_focused(
     }
 }
 
-/// Each form's bar shows where its fields are scrolled to, drawn as a
-/// table's is, and nothing while they fit. Layout moves a column's
-/// scroll and content without marking it changed, so each is compared
-/// with what its bar last drew. It reads the last layout's.
+/// Each form's bar shows where its fields are scrolled to, as a table's
+/// does. Layout moves a column's scroll unmarked, so the last layout's is
+/// compared with what the bar last drew.
 fn draw_bars(
     columns: Query<(&ComputedNode, &FormFields)>,
     mut bars: Query<(&mut FormBar, &mut UiWidget)>,
