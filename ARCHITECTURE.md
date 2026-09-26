@@ -79,23 +79,24 @@ never depends on UI.
   an explicit cap, active cliffs), and Social Security claim ages, every
   computed benefit - and one made up for anyone with an earnings record and
   none, save the people whose claims are held as the plan states them - tried at
-  each whole age it can still reach, jointly for the household, ranked by what
-  the household ends with; beside the search, a person's benefit is estimated at
-  the ages that frame the choice, by projection; each search emits its answer as
-  a scenario overlay through the schema's own serialization. Each projected row
-  also records the actions the engine executed - transfers, RMDs, contributions,
-  conversion steps, funding withdrawals, the surplus swept - with post-clamp
-  nominal amounts, and what each account grew, so every surface can answer "what
-  do I actually do this year" and where every account's money went without
-  re-deriving execution. `market` makes the markets a plan is walked through -
-  correlated draws from the plan's `[market]` assumptions on a seeded generator
-  of the engine's own, so a saved seed draws the same markets, historical years
-  bootstrapped in blocks, or history replayed from a start year - from an
-  embedded yearly record of U.S. returns and inflation since 1871 that a user
-  file may replace, and runs a plan through many of them at once across threads,
-  keeping of each run only what the tools show: success, ending, shortfall and
-  net worth by year in that run's own today's dollars, with percentile bands and
-  the runs singled out.
+  each whole age it can still reach, jointly for the household - each search
+  ranking what it finds by what the household ends with; beside the claim
+  search, a person's benefit is estimated at the ages that frame the choice, by
+  projection; each search emits its answer as a scenario overlay through the
+  schema's own serialization. Each projected row also records the actions the
+  engine executed - transfers, RMDs, contributions, conversion steps, funding
+  withdrawals, the surplus swept - with post-clamp nominal amounts, and what
+  each account grew, so every surface can answer "what do I actually do this
+  year" and where every account's money went without re-deriving execution.
+  `market` makes the markets a plan is walked through - correlated draws from
+  the plan's `[market]` assumptions on a seeded generator of the engine's own,
+  so a saved seed draws the same markets, historical years bootstrapped in
+  blocks, or history replayed from a start year - from an embedded yearly record
+  of U.S. returns and inflation since 1871 that a user file may replace, and
+  runs a plan through many of them at once across threads, keeping of each run
+  only what the tools show: success, ending, shortfall and net worth by year in
+  that run's own today's dollars, with percentile bands and the runs singled
+  out.
 - `retiretui` - the single user-facing binary; surfaces are clap subcommands.
   One shared resolver follows scenario base chains - reading files and resolving
   paths is surface policy: relative to the referring file on the CLI, contained
