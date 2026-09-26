@@ -53,7 +53,7 @@ pub struct ImportEarningsArgs {
     pub statement: String,
 }
 
-#[derive(Serialize, JsonSchema)]
+#[derive(Default, Serialize, JsonSchema)]
 pub struct WriteReply {
     /// Issues that blocked the write; empty means the plan was written.
     pub issues: Vec<Issue>,
@@ -145,8 +145,7 @@ impl PlanServer {
         if !issues.is_empty() {
             return Ok(WriteReply {
                 issues,
-                canonicalized: false,
-                note: None,
+                ..WriteReply::default()
             });
         }
         let scenario = Scenario::from_toml_str(toml).map_err(|err| format!("{path}: {err}"))?;
@@ -160,7 +159,7 @@ impl PlanServer {
         Ok(WriteReply {
             issues: Vec::new(),
             canonicalized: canonical != toml,
-            note: None,
+            ..WriteReply::default()
         })
     }
 }

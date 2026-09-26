@@ -26,6 +26,11 @@ pub const LATEST_CREDIT_AGE: i16 = 70;
 
 /// Months in a year, which the benefit's monthly figures are counted in.
 pub const MONTHS_PER_YEAR: i32 = 12;
+
+/// [`EARLIEST_CLAIM_AGE`] in months.
+pub const EARLIEST_CLAIM_MONTHS: i32 = EARLIEST_CLAIM_AGE as i32 * MONTHS_PER_YEAR;
+/// [`LATEST_CREDIT_AGE`] in months.
+pub const LATEST_CREDIT_MONTHS: i32 = LATEST_CREDIT_AGE as i32 * MONTHS_PER_YEAR;
 /// The highest indexed years averaged into the AIME, and their months.
 const COMPUTATION_YEARS: usize = 35;
 const COMPUTATION_MONTHS: f64 = (COMPUTATION_YEARS as i32 * MONTHS_PER_YEAR) as f64;
@@ -211,6 +216,35 @@ pub fn earnings_at_wage(
         .collect()
 }
 
+/// A career before `start_year` at one `salary` in that year's dollars,
+/// through [`earnings_at_wage`] from the year the worker turned
+/// [`FIRST_WORKING_AGE`].
+#[must_use]
+pub fn career_before(
+    params: &BenefitParams,
+    birth_year: i16,
+    salary: Dollars,
+    start_year: i16,
+) -> BTreeMap<i16, Dollars> {
+    let from = birth_year + FIRST_WORKING_AGE;
+    earnings_at_wage(params, salary, start_year, from..=start_year - 1)
+}
+
+/// The age in months a claim at `age_months` is paid at for the rest of
+/// the calendar year it is made in, whose January the worker was
+/// `january_months` old in: credits past full retirement age earned that
+/// year are paid from the next January, except for a claim at 70 or later,
+/// credited at once.
+#[must_use]
+pub fn claim_year_age(birth_year: i16, age_months: i32, january_months: i32) -> i32 {
+    let full = full_retirement_months(birth_year);
+    if age_months > full && age_months < LATEST_CREDIT_MONTHS {
+        january_months.clamp(full, age_months)
+    } else {
+        age_months
+    }
+}
+
 /// A calendar month as one count across years: `year * 12 + month - 1`.
 #[must_use]
 pub fn month_index(year: i16, month: i8) -> i32 {
@@ -280,7 +314,7 @@ fn primary_insurance_amount(
 
 fn claim_factor(birth_year: i16, age_months: i32) -> f64 {
     let full = full_retirement_months(birth_year);
-    let claim = age_months.min(i32::from(LATEST_CREDIT_AGE) * MONTHS_PER_YEAR);
+    let claim = age_months.min(LATEST_CREDIT_MONTHS);
     if claim >= full {
         return 1.0 + f64::from(claim - full) * DELAYED_RATE;
     }

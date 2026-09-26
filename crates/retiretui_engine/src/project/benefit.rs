@@ -3,7 +3,9 @@
 //! the benefit formula the first year the income is active.
 
 use crate::params::{BenefitParams, TaxTables};
-use crate::plan::{Dollars, Income, IncomeKind, Issue, Plan, push_issue};
+use std::collections::BTreeMap;
+
+use crate::plan::{ColaSpec, Dollars, Income, IncomeKind, Issue, Person, Plan, push_issue};
 use crate::tax;
 
 use super::resolve::trigger_month;
@@ -52,54 +54,26 @@ impl Simulation<'_> {
         }
     }
 
-    /// The owner's record - where they have none, a career before the plan
-    /// at the salary its first year pays them - each year it lacks before
-    /// the claim filled from the salary paid so far, capped at that year's
-    /// wage base; the benefit in start-year dollars, carried from the
-    /// age-62 year by the COLAs SSA has published and the income's own rate
-    /// for any it has not, so that the income's own escalation reaches the
-    /// claim as the COLAs to come. A claim past full retirement age is paid
-    /// its claim year's credits from the next January, as SSA pays them,
-    /// unless it is made at 70 or later.
+    /// The benefit priced at its claim, in start-year dollars: carried from
+    /// the age-62 year by the COLAs to the start, so that the income's own
+    /// escalation reaches the claim as the COLAs to come. A claim past full
+    /// retirement age is paid its claim year's credits from the next
+    /// January, as SSA pays them, unless it is made at 70 or later.
     fn compute_benefit(&self, index: usize, first_active_year: i16) -> Derived {
         let income = &self.plan.income[index];
         let owner = self.plan.person(&income.owner);
         let (Some(owner), Some(params)) = (owner, benefit_params(self.plan, self.tables)) else {
             return Derived::default();
         };
-        let paid = self.covered.get(owner.id.as_str());
-        let mut earnings = owner.earnings.clone();
-        let first_salary = paid.and_then(|years| years.get(&self.start_year)).copied();
-        if let Some(salary) = first_salary.filter(|_| earnings.is_empty()) {
-            let from = owner.birth.year() + tax::FIRST_WORKING_AGE;
-            earnings =
-                tax::earnings_at_wage(&params, salary, self.start_year, from..=self.start_year - 1);
-        }
-        let covered = paid.into_iter().flatten();
-        for (&year, &amount) in covered.filter(|&(&year, _)| year < first_active_year) {
-            earnings.entry(year).or_insert(amount);
-        }
+        let earnings = self.claim_record(owner, &params, first_active_year);
         let claim = self.first_paid[index]
             .unwrap_or_else(|| tax::attained_month(owner.birth, owner.age_in(first_active_year)));
         let claim_year = year_of(claim);
         let age = tax::age_months(owner.birth, claim);
-        let full = tax::full_retirement_months(owner.birth.year());
-        let credited_at_once = i32::from(tax::LATEST_CREDIT_AGE) * tax::MONTHS_PER_YEAR;
-        let claim_year_age = if age > full && age < credited_at_once {
-            let january = tax::age_months(owner.birth, tax::month_index(claim_year, 1));
-            january.clamp(full, age)
-        } else {
-            age
-        };
+        let january = tax::age_months(owner.birth, tax::month_index(claim_year, 1));
+        let claim_year_age = tax::claim_year_age(owner.birth.year(), age, january);
         let eligibility_year = owner.eligibility_year();
-        let colas: Vec<f64> = (eligibility_year..self.start_year)
-            .map(|year| {
-                params.cola.get(&year).copied().unwrap_or_else(|| {
-                    self.cola_factor(income.cola, year + 1) / self.cola_factor(income.cola, year)
-                        - 1.0
-                })
-            })
-            .collect();
+        let colas = self.colas_to_start(&params, income.cola, eligibility_year);
         let to_start = 1.0 / self.cola_factor(income.cola, eligibility_year.max(self.start_year));
         let in_start_dollars = |age| {
             let benefit =
@@ -111,6 +85,51 @@ impl Simulation<'_> {
             claim_year_amount: in_start_dollars(claim_year_age),
             later_amount: in_start_dollars(age),
         }
+    }
+
+    /// `owner`'s record for a claim first paid in `first_active_year`: their
+    /// own - where they have none, a career before the plan at the salary
+    /// its first year pays them - with each year it lacks before the claim
+    /// filled from the salary paid so far.
+    fn claim_record(
+        &self,
+        owner: &Person,
+        params: &BenefitParams,
+        first_active_year: i16,
+    ) -> BTreeMap<i16, Dollars> {
+        let paid = self.covered.get(owner.id.as_str());
+        let first_salary = paid.and_then(|years| years.get(&self.start_year)).copied();
+        let mut earnings = match first_salary {
+            Some(salary) if owner.earnings.is_empty() => {
+                tax::career_before(params, owner.birth.year(), salary, self.start_year)
+            }
+            _ => owner.earnings.clone(),
+        };
+        let covered = paid.into_iter().flatten();
+        for (&year, &amount) in covered.filter(|&(&year, _)| year < first_active_year) {
+            earnings.entry(year).or_insert(amount);
+        }
+        earnings
+    }
+
+    /// The COLA of each year from `eligibility_year` to the plan's start:
+    /// SSA's where it has published one, the income's own rate where not.
+    fn colas_to_start(
+        &self,
+        params: &BenefitParams,
+        cola: ColaSpec,
+        eligibility_year: i16,
+    ) -> Vec<f64> {
+        let assumed = |year| self.cola_factor(cola, year + 1) / self.cola_factor(cola, year) - 1.0;
+        (eligibility_year..self.start_year)
+            .map(|year| {
+                params
+                    .cola
+                    .get(&year)
+                    .copied()
+                    .unwrap_or_else(|| assumed(year))
+            })
+            .collect()
     }
 }
 
@@ -134,12 +153,13 @@ pub(super) fn first_paid_months(plan: &Plan) -> Vec<Option<i32>> {
         }
         let owner = plan.person(&income.owner)?;
         let fired = trigger_month(plan, income.start.as_ref()?)?;
-        let at_62 = i32::from(tax::EARLIEST_CLAIM_AGE) * tax::MONTHS_PER_YEAR;
-        Some(if tax::age_months(owner.birth, fired) == at_62 {
-            tax::first_claim_month(owner.birth)
-        } else {
-            fired
-        })
+        Some(
+            if tax::age_months(owner.birth, fired) == tax::EARLIEST_CLAIM_MONTHS {
+                tax::first_claim_month(owner.birth)
+            } else {
+                fired
+            },
+        )
     };
     plan.income.iter().map(first_paid).collect()
 }
@@ -185,7 +205,7 @@ pub(super) fn check_derived_claims(plan: &Plan, tables: &TaxTables) -> Vec<Issue
             continue;
         };
         let age = tax::age_months(owner.birth, claim);
-        if age < i32::from(tax::EARLIEST_CLAIM_AGE) * tax::MONTHS_PER_YEAR {
+        if age < tax::EARLIEST_CLAIM_MONTHS {
             push_issue(
                 &mut issues,
                 format!("income[{i}].start"),

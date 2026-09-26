@@ -481,12 +481,14 @@ impl TaxTables {
             inflate(base, year, inflation.factor(base_year, year))
         };
         for (&earlier_year, earlier) in self.years.range(..base_year).rev() {
+            let factor = inflation.factor(earlier_year, year);
             for (code, state) in &earlier.states {
-                params.states.entry(code.clone()).or_insert_with(|| {
-                    let mut state = state.clone();
-                    inflate_state(&mut state, inflation.factor(earlier_year, year));
-                    state
-                });
+                if params.states.contains_key(code) {
+                    continue;
+                }
+                let mut state = state.clone();
+                inflate_state(&mut state, factor);
+                params.states.insert(code.clone(), state);
             }
         }
         params

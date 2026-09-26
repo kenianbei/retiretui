@@ -2,7 +2,7 @@
 
 mod common;
 
-use retiretui_engine::params::{Inflation, TaxTables};
+use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::Plan;
 use retiretui_engine::project::{Projection, validate_plan};
 use retiretui_engine::tax::earnings_at_wage;
@@ -32,6 +32,14 @@ owner = "me"
 start = { age = 67, owner = "me" }
 "#;
 
+/// `record` as the person's `earnings` line.
+fn record_line(record: &std::collections::BTreeMap<i16, i64>) -> String {
+    let years: Vec<String> = (record.iter())
+        .map(|(year, amount)| format!("{year} = {amount}"))
+        .collect();
+    format!("earnings = {{ {} }}", years.join(", "))
+}
+
 /// A record of one year without earnings: stated, so nothing is filled.
 const NOTHING_BEFORE: &str = "earnings = { 2000 = 0 }";
 
@@ -57,16 +65,9 @@ fn social_security_without_an_amount_is_computed_from_earnings() {
 #[test]
 fn an_empty_record_is_filled_with_a_career_at_the_first_years_salary() {
     let filled = run(&head(SALARIED_CLAIM));
-    let params = TaxTables::embedded()
-        .params_for(2026, &Inflation::constant(0.025))
-        .social_security
-        .benefit
-        .unwrap();
+    let params = common::benefit_params();
     let career = earnings_at_wage(&params, 100_000, 2026, 2002..=2025);
-    let years: Vec<String> = (career.iter())
-        .map(|(year, amount)| format!("{year} = {amount}"))
-        .collect();
-    let record = format!("earnings = {{ {} }}", years.join(", "));
+    let record = record_line(&career);
     let stated = run(&head(&format!("{record}\n{SALARIED_CLAIM}")));
     let paid = |projection: &Projection| projection.row(2048).unwrap().income["ss"];
     assert_eq!(paid(&filled), paid(&stated));
@@ -358,10 +359,7 @@ fn a_benefit_eligible_before_the_plan_carries_the_published_colas() {
     // to the plan's 2026 dollars, frozen after.
     let record: std::collections::BTreeMap<i16, i64> =
         (1982..=2021).map(|year| (year, 60_000)).collect();
-    let years: Vec<String> = (record.iter())
-        .map(|(year, amount)| format!("{year} = {amount}"))
-        .collect();
-    let stated = format!("earnings = {{ {} }}", years.join(", "));
+    let stated = record_line(&record);
     let text = frozen_claim(r#"{ age = 67, owner = "me" }"#, "")
         .replace(
             "birth = 1980-06-15",
@@ -369,11 +367,7 @@ fn a_benefit_eligible_before_the_plan_carries_the_published_colas() {
         )
         .replace("amount = 100000", "amount = 0");
     let paid = paid_by(&text);
-    let params = TaxTables::embedded()
-        .params_for(2026, &Inflation::constant(0.025))
-        .social_security
-        .benefit
-        .unwrap();
+    let params = common::benefit_params();
     let published = [0.087, 0.032, 0.025, 0.028];
     let expected =
         retiretui_engine::tax::social_security_benefit(&params, 1960, 67 * 12, &record, &published);
