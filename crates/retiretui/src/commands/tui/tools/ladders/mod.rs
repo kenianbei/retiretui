@@ -53,7 +53,7 @@ pub fn plugin(app: &mut App) {
 /// The constraints as the form holds them: the CLI's flags, blank where
 /// its are optional; `bracket` is a percent, blank sweeping every one.
 #[derive(Deserialize)]
-struct Constraints {
+pub(crate) struct Constraints {
     from: Option<String>,
     to: Option<String>,
     bracket: Option<u8>,
@@ -154,10 +154,7 @@ pub(crate) fn options_into(
 pub(crate) fn aim_at(draft: &mut Draft, destination: &str) {
     let mut answers = draft.answers::<Constraints>();
     answers.insert(DESTINATION.to_owned(), destination.into());
-    draft.tools.insert(
-        <Constraints as edit::ToolAnswers>::SLOT.to_owned(),
-        toml::Value::Table(answers),
-    );
+    draft.set_answers::<Constraints>(answers);
 }
 
 /// The constraints the draft holds, and what the engine is to be asked

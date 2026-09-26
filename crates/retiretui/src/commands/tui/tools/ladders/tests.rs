@@ -5,7 +5,6 @@ use toml::Value;
 use super::*;
 use crate::commands::tui::compare::Compared;
 use crate::commands::tui::confirm::Confirm;
-use crate::commands::tui::edit::ToolAnswers;
 use crate::commands::tui::edit::tests::{open, tab_to_field};
 use crate::commands::tui::support::{
     Headless, ROOMY, SIZE, commit_edit, composed_frame, headless_app, headless_app_at, is_asking,
@@ -24,10 +23,13 @@ fn tool(app: &App) -> toml::Table {
 fn constrain(app: &mut App, key: &str, value: Value) {
     let mut held = tool(app);
     held.insert(key.to_owned(), value);
+    hold_answers(app, held);
+}
+
+fn hold_answers(app: &mut App, answers: toml::Table) {
     app.world_mut()
         .resource_mut::<Draft>()
-        .tools
-        .insert(Constraints::SLOT.to_owned(), Value::Table(held));
+        .set_answers::<Constraints>(answers);
 }
 
 fn settle(app: &mut App) {
@@ -188,10 +190,7 @@ fn constraints_that_hold_nothing_leave_the_last_search_standing() {
     assert!(app.world().resource::<Ladders>().found().is_some());
     let mut held = tool(&app);
     held.remove("to");
-    app.world_mut()
-        .resource_mut::<Draft>()
-        .tools
-        .insert(Constraints::SLOT.to_owned(), Value::Table(held));
+    hold_answers(&mut app, held);
     app.update();
     assert!(!app.world().resource::<Ladders>().is_running());
     constrain(&mut app, "to", Value::String("roth-ira".to_owned()));

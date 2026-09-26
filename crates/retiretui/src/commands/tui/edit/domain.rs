@@ -391,7 +391,7 @@ fn tool_item<T: ToolAnswers>(draft: &Draft, index: usize) -> Option<Table> {
 /// A table its item parses is kept as typed, blank fields and all.
 fn tool_store<T: ToolAnswers>(draft: &mut Draft, _: usize, table: Table) -> Result<(), String> {
     from_table::<T>(table.clone())?;
-    draft.tools.insert(T::SLOT.to_owned(), Value::Table(table));
+    draft.set_answers::<T>(table);
     Ok(())
 }
 
