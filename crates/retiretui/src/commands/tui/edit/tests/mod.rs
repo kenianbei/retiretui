@@ -20,7 +20,7 @@ mod structured;
 mod triggers;
 
 use bevy_app::App;
-use bevy_ecs::prelude::Entity;
+use bevy_ecs::prelude::{Children, Entity};
 use bevy_input_focus::InputFocus;
 use plurimus::term::KeyCode;
 use plurimus::widgets::ActiveDescendant;
@@ -28,12 +28,12 @@ use retiretui_engine::plan::Plan;
 
 use super::build::FormField;
 use super::editing::EditSession;
-use super::table::Row;
+use super::table::{DomainTable, Row};
 use super::{Draft, SCREENS};
 use crate::commands::tui::nav::Page;
 use crate::commands::tui::support::{
-    self, Headless, ROOMY, SIZE, cell_fg, cell_of, composed_frame, headless_app, headless_app_at,
-    press_key, show, type_text,
+    self, Headless, ROOMY, SIZE, cell_fg, cell_of, commit_edit, composed_frame, headless_app,
+    headless_app_at, press_key, show, type_text,
 };
 use crate::commands::tui::theme::Theme;
 
@@ -498,4 +498,44 @@ fn a_statement_picked_on_the_people_page_is_recorded_on_the_highlighted_person()
     press_key(&mut app, KeyCode::Enter);
     app.update();
     assert!(draft_plan(&app).household.people[1].earnings.is_empty());
+}
+
+/// The body rows of the table on `page`, as the entities they are.
+fn body_rows(app: &mut App, page: Page) -> Vec<Entity> {
+    let world = app.world_mut();
+    let table = world
+        .query::<(Entity, &DomainTable)>()
+        .iter(world)
+        .find(|(_, table)| table.ops.surface == Some(page))
+        .map(|(entity, _)| entity)
+        .unwrap();
+    let children = world.get::<Children>(table).unwrap().to_vec();
+    children
+        .into_iter()
+        .filter(|&child| world.get::<Row>(child).is_some())
+        .collect()
+}
+
+#[test]
+fn a_table_turned_back_to_unmoved_keeps_its_rows() {
+    let mut app = fixture_app();
+    show(&mut app, Page::Accounts);
+    let before = body_rows(&mut app, Page::Accounts);
+    assert!(!before.is_empty());
+    show(&mut app, Page::Income);
+    show(&mut app, Page::Accounts);
+    assert_eq!(body_rows(&mut app, Page::Accounts), before);
+}
+
+#[test]
+fn a_table_turned_back_to_shows_what_changed_while_it_was_hidden() {
+    let mut app = fixture_app();
+    show(&mut app, Page::Accounts);
+    show(&mut app, Page::Income);
+    commit_edit(&mut app, |plan| {
+        plan.accounts[0].name = Some("Renamed while hidden".to_owned());
+    });
+    show(&mut app, Page::Accounts);
+    let frame = composed_frame(&app);
+    assert!(frame.contains("Renamed while hidden"), "{frame}");
 }
