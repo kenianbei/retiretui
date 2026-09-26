@@ -65,14 +65,14 @@ pub enum StatementError {
     },
 }
 
-/// Reads a statement's XML text.
+/// Reads a statement's XML text. A row stating several years' earnings as
+/// one sum is spread evenly over them, the remainder on the last.
 ///
 /// # Errors
 ///
 /// Returns a [`StatementError`] when the text is not a statement of the
-/// expected schema, lacks its date of birth, holds a value that does not
-/// read. A row stating several years' earnings as one sum is spread
-/// evenly over them, the remainder on the last.
+/// expected schema, lacks its date of birth, or holds a value that does not
+/// read, a year range running backwards among them.
 pub fn parse(xml: &str) -> Result<Statement, StatementError> {
     if !xml.contains(NAMESPACE) {
         return Err(StatementError::NotAStatement);
