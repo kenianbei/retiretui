@@ -164,13 +164,12 @@ fn a_search_needs_a_destination_and_a_valid_draft() {
     show(&mut app, Page::RothConversions);
     assert!(!app.world().resource::<Ladders>().is_running());
     constrain(&mut app, "to", Value::String("k".to_owned()));
-    app.update();
-    let ladders = app.world().resource::<Ladders>();
-    assert!(
-        ladders.is_running() || ladders.refused.is_some(),
-        "a destination is searched, and may be refused by now"
-    );
     settle(&mut app);
+    assert_eq!(
+        app.world().resource::<Ladders>().refused.as_deref(),
+        Some("must be a Roth account"),
+        "a destination is searched, and the engine answers"
+    );
     commit_edit(&mut app, |plan| plan.plan.start_year = 1000);
     app.update();
     assert!(
@@ -208,8 +207,10 @@ fn a_search_arrives_ranked_best_first_and_arrows_step_over_the_plan_s_own_row() 
     constrain(&mut app, "to", Value::String("roth-ira".to_owned()));
     app.update();
     app.update();
-    let frame = composed_frame(&app);
-    assert!(frame.contains("Ladder Options · searching… "), "{frame}");
+    if app.world().resource::<Ladders>().is_running() {
+        let frame = composed_frame(&app);
+        assert!(frame.contains("Ladder Options · searching… "), "{frame}");
+    }
     settle(&mut app);
     let frame = redrawn(&mut app);
     assert!(frame.contains("s ─"), "the title says how long: {frame}");

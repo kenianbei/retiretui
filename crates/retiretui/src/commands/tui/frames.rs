@@ -59,11 +59,14 @@ fn every_page_draws_its_frame() {
     }
 }
 
-/// The Overview's chart in each view `v` turns to after the balances.
+/// The Overview's chart in each view `v` turns to after the balances,
+/// beside what its searches found.
 #[test]
 fn the_overview_draws_each_chart_view() {
     for size in [SIZE, ROOMY] {
         let mut app = fixture_app(size);
+        app.insert_resource(Searches(true));
+        super::tools::settle_all(&mut app);
         for view in ["net_worth", "income_taxes"] {
             press_key(&mut app, KeyCode::Char('v'));
             app.update();

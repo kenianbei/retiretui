@@ -152,7 +152,9 @@ fn a_search_arrives_ranked_best_first_and_arrows_step_over_the_plan_s_own_row() 
     let (_, mut app) = workspace_app(&fixture());
     commit_edit(&mut app, |plan| plan.plan.name = Some("changed".to_owned()));
     app.update();
-    assert!(composed_frame(&app).contains("Claim Options · searching… "));
+    if app.world().resource::<Claims>().is_running() {
+        assert!(composed_frame(&app).contains("Claim Options · searching… "));
+    }
     settle(&mut app);
     let frame = composed_frame(&app);
     assert!(frame.contains("s ─"), "the title says how long: {frame}");

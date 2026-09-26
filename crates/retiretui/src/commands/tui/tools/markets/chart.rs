@@ -5,12 +5,12 @@
 use bevy_app::{App, Update};
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::ChildOf;
-use bevy_ecs::prelude::{Commands, Entity, Local, Query, Res};
+use bevy_ecs::prelude::{Commands, Entity, IntoScheduleConfigs, Local, Query, Res};
 use retiretui_engine::market::{Run, Runs};
 
 use super::views::{View, ViewOf, ViewPart};
 use super::{MarketTool, highlighted};
-use crate::commands::tui::chart::{Series, SeriesChart, Shade};
+use crate::commands::tui::chart::{Series, SeriesChart, Shade, draw_charts};
 use crate::commands::tui::layout::filling;
 use crate::commands::tui::pane::{Framed, Pane};
 use crate::commands::tui::theme::Theme;
@@ -25,7 +25,12 @@ const RUN_SERIES: usize = 0;
 const PLANNED: &str = "As planned";
 
 pub(super) fn install<R: MarketTool>(app: &mut App) {
-    app.add_systems(Update, redraw::<R>);
+    app.add_systems(
+        Update,
+        redraw::<R>
+            .after(crate::commands::tui::tools::poll_search::<R>)
+            .before(draw_charts),
+    );
 }
 
 pub(super) fn spawn_pane<R: MarketTool>(commands: &mut Commands, column: Entity) {
@@ -70,9 +75,9 @@ fn line(runs: &Runs, label: &str, run: &Run, theme: &Theme) -> Series {
     }
 }
 
-/// Redraws the bands whenever the search answers or the highlight moves,
-/// and names the view on show in the pane's title; the highlight moves
-/// without marking the tool changed.
+/// Redraws the bands whenever the search answers, the highlight moves, or
+/// a chart is spawned after the answer, and names the view on show in the
+/// pane's title; the highlight moves without marking the tool changed.
 fn redraw<R: MarketTool>(
     (tool, theme, view): (Res<Tool<R>>, Res<Theme>, Res<ViewOf<R>>),
     mut drawn: Local<Option<usize>>,
@@ -80,7 +85,13 @@ fn redraw<R: MarketTool>(
     mut panes: Query<&mut Framed>,
 ) {
     let at = tool.highlighted;
-    if !(tool.is_changed() || theme.is_changed() || view.is_changed() || *drawn != Some(at)) {
+    let is_new_chart = charts.iter_mut().any(|(chart, ..)| chart.is_added());
+    if !(tool.is_changed()
+        || theme.is_changed()
+        || view.is_changed()
+        || is_new_chart
+        || *drawn != Some(at))
+    {
         return;
     }
     *drawn = Some(at);
