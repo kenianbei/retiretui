@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use bevy_app::App;
 use plurimus::term::KeyCode;
+use retiretui_engine::market::Progress;
 use retiretui_engine::optimize::optimize_claims;
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::Scenario;
@@ -165,7 +166,7 @@ fn a_search_arrives_ranked_best_first_and_arrows_step_over_the_plan_s_own_row() 
     assert!(frame.contains("s ─"), "the title says how long: {frame}");
     let expected = {
         let plan = &app.world().resource::<Draft>().plan;
-        optimize_claims(plan, &TaxTables::embedded(), &[], &[]).unwrap()
+        optimize_claims(plan, &TaxTables::embedded(), &[], &[], &Progress::default()).unwrap()
     };
     let found = app.world().resource::<Claims>().found().unwrap();
     assert_eq!(found.candidates.len(), 9);

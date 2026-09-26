@@ -4,6 +4,7 @@
 
 use serde::Serialize;
 
+use crate::market::{Progress, RunError};
 use crate::params::TaxTables;
 use crate::plan::{
     ColaSpec, Income, IncomeKind, Issue, Plan, PlanError, SCHEMA_VERSION, Trigger, push_issue,
@@ -92,16 +93,19 @@ impl ClaimSearch {
 ///
 /// # Errors
 ///
-/// Returns validation issues when nothing computes a benefit, a named
-/// income is unknown, not `social-security`, or states its amount, a
-/// searched income has no id to be restated by, the id a made-up income
-/// would take is held, or no claim age is left for an income.
+/// [`RunError::Refused`] with validation issues when nothing computes a
+/// benefit, a named income is unknown, not `social-security`, or states its
+/// amount, a searched income has no id to be restated by, the id a made-up
+/// income would take is held, or no claim age is left for an income;
+/// [`RunError::Cancelled`] when `progress` is cancelled before every cell is
+/// projected.
 pub fn optimize_claims(
     plan: &Plan,
     tables: &TaxTables,
     incomes: &[String],
     held: &[String],
-) -> Result<ClaimSearch, Vec<Issue>> {
+    progress: &Progress,
+) -> Result<ClaimSearch, RunError> {
     let mut issues = Vec::new();
     let added = if incomes.is_empty() {
         added_incomes(plan, held, &mut issues)
@@ -116,14 +120,18 @@ pub fn optimize_claims(
         .filter_map(|&index| grid_of(&extended, index, &mut issues))
         .collect();
     if !issues.is_empty() {
-        return Err(issues);
+        return Err(RunError::Refused(issues));
     }
     let baseline = project(plan, tables);
     let mut working = extended.clone();
     let mut candidates: Vec<ClaimCandidate> = combinations(&grids)
         .iter()
+        .take_while(|_| !progress.is_cancelled())
         .map(|ages| candidate(&mut working, tables, &grids, ages))
         .collect();
+    if progress.is_cancelled() {
+        return Err(RunError::Cancelled);
+    }
     candidates.sort_by_cached_key(|candidate| {
         let ages: Vec<u8> = candidate.claims.iter().map(|claim| claim.age).collect();
         (super::rank_key(&candidate.projection), ages)

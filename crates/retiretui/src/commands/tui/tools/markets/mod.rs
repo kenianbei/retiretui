@@ -23,7 +23,7 @@ use plurimus::core::UiWidget;
 use plurimus::core::ratatui_core::style::Style;
 use retiretui_engine::market::{History, Progress, Run, RunError, Runs};
 use retiretui_engine::params::TaxTables;
-use retiretui_engine::plan::{Issue, Plan};
+use retiretui_engine::plan::Plan;
 use retiretui_engine::project::Projection;
 
 pub(crate) use assumptions::edit_assumption;
@@ -124,15 +124,6 @@ pub(crate) trait MarketTool: Found + Sized {
     }
 }
 
-/// The engine's refusals as the tool says them; a search cancelled for a
-/// newer one says nothing.
-fn issues_of(error: RunError) -> Vec<Issue> {
-    match error {
-        RunError::Refused(issues) => issues,
-        RunError::Cancelled => Vec::new(),
-    }
-}
-
 fn install<R: MarketTool>(app: &mut App) {
     super::install::<R>(app, R::TOOL_PAGE);
     super::options::plugin::<R>(app);
@@ -170,7 +161,7 @@ fn search_by_itself<R: MarketTool>(
     let history = history.0.clone();
     let total = R::total(&draft.plan);
     tool.restart(draft.plan.clone(), total, move |plan, progress| {
-        R::search(plan, &tables, &history, progress).map_err(issues_of)
+        R::search(plan, &tables, &history, progress)
     });
 }
 

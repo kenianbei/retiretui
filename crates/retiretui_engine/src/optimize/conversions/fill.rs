@@ -1,3 +1,4 @@
+use crate::market::Progress;
 use crate::params::TaxTables;
 use crate::plan::{Dollars, Plan};
 use crate::project::{Projection, project};
@@ -7,13 +8,14 @@ use super::targets::{conversion_window, year_targets};
 use super::{LadderStep, OptimizeOptions, UNBOUNDED};
 
 /// Settles the window years front to back against `baseline`, returning the
-/// steps and the final optimized projection.
+/// steps and the final optimized projection; once `progress` is cancelled,
+/// the steps settled so far.
 pub(super) fn search_ladder(
     plan: &Plan,
     tables: &TaxTables,
-    options: &OptimizeOptions,
-    bracket_rate: f64,
+    (options, bracket_rate): (&OptimizeOptions, f64),
     baseline: &Projection,
+    progress: &Progress,
 ) -> (Vec<LadderStep>, Projection) {
     let mut working = plan.clone();
     let mut current = baseline.clone();
@@ -26,6 +28,9 @@ pub(super) fn search_ladder(
         };
         let mut annual_left = options.annual_max.unwrap_or(UNBOUNDED);
         for source in &options.sources {
+            if progress.is_cancelled() {
+                return (steps, current);
+            }
             let total_left = options.total_max.map_or(UNBOUNDED, |max| max - total);
             let cap = annual_left.min(total_left);
             if cap <= 0 {

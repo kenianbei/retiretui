@@ -58,6 +58,9 @@ impl Inflation {
         };
         let compound =
             |factor: f64, rate: f64, years: i32| factor * (1.0 + rate).powi(sign * years);
+        if self.rates.is_empty() {
+            return compound(1.0, self.beyond, i32::from(high - low));
+        }
         let (factor, rate, years) =
             (low + 1..=high).fold((1.0, 0.0_f64, 0), |(factor, run_rate, run_years), year| {
                 let rate = self.rate_into(year);
@@ -155,6 +158,21 @@ mod tests {
         assert_eq!(bits(2026, 2040), 1.025_f64.powi(14).to_bits());
         assert_eq!(bits(2040, 2026), 1.025_f64.powi(-14).to_bits());
         assert_eq!(bits(2030, 2030), 1.0_f64.to_bits());
+    }
+
+    #[test]
+    fn a_constant_rate_matches_the_year_by_year_compounding_bit_for_bit() {
+        for rate in [0.0, -0.0, 0.021, 0.025, 0.03, -0.01, 0.137] {
+            let constant = Inflation::constant(rate);
+            let walked = Inflation::yearly(i16::MAX, vec![0.5], rate);
+            for (from, to) in [(2026, 2026), (2026, 2027), (2026, 2074), (2074, 2026)] {
+                assert_eq!(
+                    constant.factor(from, to).to_bits(),
+                    walked.factor(from, to).to_bits(),
+                    "{rate} {from}-{to}"
+                );
+            }
+        }
     }
 
     #[test]

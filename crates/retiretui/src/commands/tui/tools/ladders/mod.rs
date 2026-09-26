@@ -12,12 +12,13 @@ use std::path::PathBuf;
 use bevy_app::{App, Update};
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
 use bevy_ecs::prelude::{Commands, In, IntoScheduleConfigs, Local, Res, ResMut, World};
+use retiretui_engine::market::{Progress, RunError};
 use retiretui_engine::optimize::{
     BracketSweep, LadderStep, OptimizeOptions, SweptBracket, apply_ladder, is_ladder,
     ladder_overlay, optimize_conversions, sweep_brackets,
 };
 use retiretui_engine::params::TaxTables;
-use retiretui_engine::plan::{Issue, Plan};
+use retiretui_engine::plan::Plan;
 use retiretui_engine::project::Projection;
 use serde::Deserialize;
 
@@ -166,13 +167,13 @@ impl Swept {
 /// The ladders into `destination` under the `held` answers, searched as
 /// the page searches them; none where the answers do not make a search.
 pub(crate) fn sweep_into(
-    plan: &Plan,
-    tables: &TaxTables,
+    (plan, tables): (&Plan, &TaxTables),
     held: &toml::Table,
     destination: &str,
+    progress: &Progress,
 ) -> Option<Swept> {
     let (options, rate) = options_into(held, destination)?;
-    let sweep = search(plan, tables, &options, rate).ok()?;
+    let sweep = search(plan, tables, (&options, rate), progress).ok()?;
     Some(Swept { sweep, options })
 }
 
@@ -289,8 +290,8 @@ fn search_by_itself(
         return;
     }
     let tables = session.tables.clone();
-    ladders.start(draft.plan.clone(), move |plan| {
-        search(plan, &tables, &options, rate).map(|sweep| Swept { sweep, options })
+    ladders.start(draft.plan.clone(), move |plan, progress| {
+        search(plan, &tables, (&options, rate), progress).map(|sweep| Swept { sweep, options })
     });
 }
 
@@ -298,17 +299,17 @@ fn search_by_itself(
 pub(crate) fn search(
     plan: &Plan,
     tables: &TaxTables,
-    options: &OptimizeOptions,
-    rate: Option<f64>,
-) -> Result<BracketSweep, Vec<Issue>> {
+    (options, rate): (&OptimizeOptions, Option<f64>),
+    progress: &Progress,
+) -> Result<BracketSweep, RunError> {
     match rate {
-        Some(rate) => {
-            optimize_conversions(plan, tables, options, rate).map(|ladder| BracketSweep {
+        Some(rate) => optimize_conversions(plan, tables, options, rate)
+            .map(|ladder| BracketSweep {
                 baseline: ladder.baseline,
                 brackets: vec![ladder.ladder],
             })
-        }
-        None => sweep_brackets(plan, tables, options),
+            .map_err(RunError::Refused),
+        None => sweep_brackets(plan, tables, options, progress),
     }
 }
 

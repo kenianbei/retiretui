@@ -1,5 +1,7 @@
 use std::path::Path;
 
+use crate::commands::markets::run_refusal;
+use retiretui_engine::market::Progress;
 use retiretui_engine::optimize::{
     OptimizeOptions, claims_overlay, ladder_overlay, optimize_claims, optimize_conversions,
     sweep_brackets,
@@ -113,8 +115,8 @@ impl PlanServer {
         Parameters(args): Parameters<ConversionToolArgs>,
     ) -> Result<Json<SweepReply>, String> {
         let plan = self.load_valid_plan(&args.path)?;
-        let sweep = sweep_brackets(&plan, &self.tables, &args.options())
-            .map_err(|issues| crate::commands::issue_listing(&issues))?;
+        let sweep = sweep_brackets(&plan, &self.tables, &args.options(), &Progress::default())
+            .map_err(run_refusal)?;
         Ok(Json(SweepReply::new(&sweep, !args.nominal)))
     }
 
@@ -132,8 +134,14 @@ impl PlanServer {
         Parameters(args): Parameters<ClaimToolArgs>,
     ) -> Result<Json<WithOverlay<ClaimsReply>>, String> {
         let plan = self.load_valid_plan(&args.path)?;
-        let search = optimize_claims(&plan, &self.tables, &args.incomes, &[])
-            .map_err(|issues| crate::commands::issue_listing(&issues))?;
+        let search = optimize_claims(
+            &plan,
+            &self.tables,
+            &args.incomes,
+            &[],
+            &Progress::default(),
+        )
+        .map_err(run_refusal)?;
         let (scenario_toml, written) =
             self.emit_overlay(&args.path, args.write_to.as_deref(), |base| {
                 claims_overlay(base, &search.added, &search.best().claims)

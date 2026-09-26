@@ -6,7 +6,7 @@ use std::time::Duration;
 use bevy_app::App;
 use bevy_ecs::prelude::{Entity, With};
 use plurimus::term::KeyCode;
-use retiretui_engine::market::{MonteCarlo, Runs};
+use retiretui_engine::market::{MonteCarlo, RunError, Runs};
 use retiretui_engine::plan::Market;
 
 use super::MarketTool;
@@ -180,7 +180,7 @@ fn a_restart_counts_its_runs_and_keeps_the_last_answer_until_it_lands() {
     .unwrap();
     tool.restart(plan, 5, |_, _| {
         std::thread::sleep(Duration::from_millis(200));
-        Err(Vec::new())
+        Err(RunError::Cancelled)
     });
     assert_eq!(tool.note(), "running 0 of 5");
     assert!(tool.found().is_some(), "the last answer stays on show");

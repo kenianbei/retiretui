@@ -149,8 +149,8 @@ fn search_by_itself(
     }
     let tables = session.tables.clone();
     let held: Vec<String> = held.0.iter().cloned().collect();
-    claims.start(draft.plan.clone(), move |plan| {
-        optimize_claims(plan, &tables, &[], &held)
+    claims.start(draft.plan.clone(), move |plan, progress| {
+        optimize_claims(plan, &tables, &[], &held, progress)
     });
 }
 

@@ -200,6 +200,22 @@ fn constraints_that_hold_nothing_leave_the_last_search_standing() {
     assert!(ladders.found().is_some());
 }
 
+/// Each bracket's label, as a search of the draft ranks them.
+fn searched_labels(draft: &Draft) -> Vec<String> {
+    let (options, rate) = held(draft).unwrap();
+    search(
+        &draft.plan,
+        &TaxTables::embedded(),
+        (&options, rate),
+        &Progress::default(),
+    )
+    .unwrap()
+    .brackets
+    .iter()
+    .map(|bracket| rate_label(bracket.rate))
+    .collect()
+}
+
 #[test]
 fn a_search_arrives_ranked_best_first_and_arrows_step_over_the_plan_s_own_row() {
     let mut app = headless_app_at(scratch_full_plan(), SIZE);
@@ -214,16 +230,7 @@ fn a_search_arrives_ranked_best_first_and_arrows_step_over_the_plan_s_own_row() 
     settle(&mut app);
     let frame = redrawn(&mut app);
     assert!(frame.contains("s ─"), "the title says how long: {frame}");
-    let expected: Vec<String> = {
-        let plan = &app.world().resource::<Draft>().plan;
-        let (options, rate) = held(app.world().resource::<Draft>()).unwrap();
-        search(plan, &TaxTables::embedded(), &options, rate)
-            .unwrap()
-            .brackets
-            .iter()
-            .map(|bracket| rate_label(bracket.rate))
-            .collect()
-    };
+    let expected = searched_labels(app.world().resource::<Draft>());
     assert!(expected.len() > 1, "a sweep");
     let rows = table_rows(&frame);
     let labels: Vec<&str> = rows[1..]
@@ -283,8 +290,8 @@ fn an_edit_during_a_search_drops_the_result() {
     let plan = draft.plan.clone();
     app.world_mut()
         .resource_mut::<Ladders>()
-        .start(plan, move |plan| {
-            let sweep = sweep_brackets(plan, &TaxTables::embedded(), &options)?;
+        .start(plan, move |plan, progress| {
+            let sweep = sweep_brackets(plan, &TaxTables::embedded(), &options, progress)?;
             Ok(Swept { sweep, options })
         });
     commit_edit(&mut app, |plan| plan.plan.name = Some("changed".to_owned()));
