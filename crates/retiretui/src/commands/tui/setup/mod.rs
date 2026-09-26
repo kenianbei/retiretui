@@ -279,7 +279,8 @@ pub fn write_new(In(path): In<PathBuf>, world: &mut World) {
     let Some(plan) = world.resource_mut::<Composed>().plan.take() else {
         return;
     };
-    if let Err(refusal) = edit::write_draft(&Draft::new(plan, false), &path) {
+    let draft = Draft::validated(plan, &world.resource::<Session>().tables);
+    if let Err(refusal) = edit::write_draft(&draft, &path) {
         journal::warn(refusal);
         return;
     }

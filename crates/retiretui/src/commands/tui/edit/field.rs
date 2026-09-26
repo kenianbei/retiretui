@@ -26,7 +26,7 @@ use retiretui_engine::plan::Plan;
 use toml::Value;
 
 use super::build::FormField;
-use super::cells::field_text;
+use super::cells::{field_text, parse_field};
 use super::codec::get_path;
 use super::domain::{FieldKind, FieldSpec};
 use super::editing::Editing;
@@ -229,10 +229,15 @@ fn spawn_slider(commands: &mut Commands, row: Entity, field: FormField) {
 #[derive(SystemParam)]
 pub struct FormTree<'w, 's> {
     children: Query<'w, 's, &'static Children>,
-    editable: Query<'w, 's, (), With<FormField>>,
+    editable: Query<'w, 's, &'static FormField>,
 }
 
 impl FormTree<'_, '_> {
+    /// The key of the field `widget` edits, where it edits one.
+    pub fn key_of(&self, widget: Entity) -> Option<&'static str> {
+        self.editable.get(widget).ok().map(|field| field.spec.key)
+    }
+
     pub fn first(&self, form: Entity) -> Option<Entity> {
         self.children
             .iter_descendants_depth_first(form)
@@ -262,13 +267,20 @@ impl Fields<'_, '_> {
         }
     }
 
-    /// A field that does not yet make a value keeps its text: no item holds
-    /// it.
+    /// A field that does not yet make a value keeps its text, since no item
+    /// holds it - dressed as its kind reads, where it parses.
     fn show_text_at(&mut self, widget: Entity, editing: &Editing, is_focused: bool) {
         let Ok((field, mut text)) = self.texts.get_mut(widget) else {
             return;
         };
         if editing.incomplete.contains_key(field.spec.key) {
+            // A trigger's operand is typed as the file states it.
+            let kind = field.spec.kind;
+            let read = parse_field(kind, text.value()).filter(|_| kind != FieldKind::Trigger);
+            if let Some(read) = read {
+                let own = field_text(kind, Some(&read), is_focused);
+                show_text(&mut text, own);
+            }
             return;
         }
         let value = get_path(&editing.snapshot, field.spec.key);
@@ -284,10 +296,7 @@ impl Fields<'_, '_> {
     pub fn show_rates(&mut self, form: Entity, editing: &Editing, focused: Option<Entity>) {
         let widgets: Vec<Entity> = self.tree.children.iter_descendants(form).collect();
         for widget in widgets {
-            if let Ok((field, mut value)) = self.sliders.get_mut(widget) {
-                let rate = get_path(&editing.snapshot, field.spec.key).and_then(Value::as_float);
-                *value = SliderValue(rate.unwrap_or(0.0) as f32);
-            }
+            self.show_slider_at(widget, editing);
             let is_rate = |(field, _): (&FormField, _)| {
                 matches!(field.spec.kind, FieldKind::Rate | FieldKind::Share)
             };
@@ -297,12 +306,19 @@ impl Fields<'_, '_> {
         }
     }
 
+    fn show_slider_at(&mut self, widget: Entity, editing: &Editing) {
+        if let Ok((field, mut value)) = self.sliders.get_mut(widget) {
+            let rate = get_path(&editing.snapshot, field.spec.key).and_then(Value::as_float);
+            *value = SliderValue(rate.unwrap_or(0.0) as f32);
+        }
+    }
+
     pub fn show(&mut self, form: Entity, editing: &Editing, plan: &Plan, focused: Option<Entity>) {
-        self.show_texts(form, editing, focused);
-        self.show_rates(form, editing, focused);
         let table = &editing.snapshot;
         let widgets: Vec<Entity> = self.tree.children.iter_descendants(form).collect();
         for widget in widgets {
+            self.show_text_at(widget, editing, focused == Some(widget));
+            self.show_slider_at(widget, editing);
             if let Ok((field, mut select)) = self.selects.get_mut(widget) {
                 let value = get_path(table, field.spec.key);
                 // An order's place is offered every word again, since what

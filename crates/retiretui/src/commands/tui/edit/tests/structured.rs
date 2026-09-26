@@ -4,20 +4,12 @@ use bevy_app::App;
 use plurimus::term::KeyCode;
 use retiretui_engine::plan::{Medicare, TreatmentClass};
 
-use super::fields::tab_until;
-use super::{draft_plan, fixture_app, focused, open, shows_row};
-use crate::commands::tui::edit::build::{FormButton, FormField};
+use super::{draft_plan, fixture_app, focused, open, shows_row, tab_to_key};
+use crate::commands::tui::edit::build::FormButton;
 use crate::commands::tui::nav::Page;
 use crate::commands::tui::support::{
     commit_edit, composed_frame, press_key, press_shift, said, type_text,
 };
-
-fn tab_to_key(app: &mut App, key: &str) {
-    tab_until(app, key, |app| {
-        let field = app.world().get::<FormField>(focused(app));
-        field.is_some_and(|field| field.spec.key == key)
-    });
-}
 
 const MEDICARE: &str = "medicare";
 const PART_D: &str = "medicare.part_d";
@@ -72,6 +64,11 @@ fn an_earlier_income_alone_is_refused_and_both_are_written_oldest_first() {
     assert!(heard.contains("Income last year: is blank"), "{heard}");
     assert_eq!(medicare(&app), None, "nothing was applied");
     press_shift(&mut app, KeyCode::Tab);
+    let frame = composed_frame(&app);
+    assert!(
+        frame.contains("$180,000"),
+        "left, it reads as money: {frame}"
+    );
     type_text(&mut app, "185000");
     press_key(&mut app, KeyCode::Enter);
     let held = medicare(&app).map(|held| held.prior_magi);

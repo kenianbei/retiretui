@@ -25,6 +25,7 @@ use plurimus::term::KeyCode;
 use plurimus::widgets::ActiveDescendant;
 use retiretui_engine::plan::Plan;
 
+use super::build::FormField;
 use super::editing::EditSession;
 use super::table::Row;
 use super::{Draft, SCREENS};
@@ -117,6 +118,14 @@ pub(super) fn shows_row(frame: &str, label: &str) -> bool {
         })
     };
     frame.lines().any(|line| line.split('│').any(is_row))
+}
+
+/// Tabs round the open form until the keyboard is in the field `key`.
+pub(super) fn tab_to_key(app: &mut App, key: &str) {
+    fields::tab_until(app, key, |app| {
+        let field = app.world().get::<FormField>(focused(app));
+        field.is_some_and(|field| field.spec.key == key)
+    });
 }
 
 pub(crate) fn tab_to_field(app: &mut App, row: usize) {

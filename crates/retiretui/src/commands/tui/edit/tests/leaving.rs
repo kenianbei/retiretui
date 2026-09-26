@@ -1,7 +1,6 @@
 //! Headless tests for leaving an item whose edits no one applied.
 
 use crate::commands::tui::layout;
-use bevy_ecs::system::RunSystemOnce;
 use plurimus::core::ratatui_core::style::{Modifier, Style};
 use plurimus::term::KeyCode;
 
@@ -10,8 +9,8 @@ use super::{
     clear_field, draft_plan, fixture_app, fixture_app_sized, focused, is_editing, open,
     tab_to_field,
 };
+use crate::commands::tui::edit::Draft;
 use crate::commands::tui::edit::build::FormButton;
-use crate::commands::tui::edit::{Draft, DraftEditor};
 use crate::commands::tui::nav::{ActivePage, Page};
 use crate::commands::tui::session::Session;
 use crate::commands::tui::support::{
@@ -194,25 +193,38 @@ fn reloading_over_an_edit_asks_about_the_edit_first() {
 }
 
 #[test]
-fn an_item_that_moved_under_its_edit_is_not_written_over_another() {
+fn an_item_that_moved_under_its_edit_is_followed_rather_than_written_over_another() {
     let mut app = fixture_app();
     open_and_retype_balance(&mut app);
-    app.world_mut()
-        .run_system_once(|mut editor: DraftEditor| {
-            editor.draft.plan.accounts.remove(0);
-            editor.commit();
-        })
-        .unwrap();
+    support::commit_edit(&mut app, |plan| {
+        plan.accounts.remove(0);
+    });
     app.update();
     press_key(&mut app, KeyCode::Enter);
-    assert!(is_editing(&app), "refused rather than applied");
+    assert!(!is_editing(&app), "applied: {:?}", said(&app));
     let accounts = draft_plan(&app).accounts;
     assert_eq!(accounts[0].id, "brokerage");
+    assert_eq!(accounts[0].balance, 123_456, "the edit followed it");
     assert_eq!(
         accounts[1].balance, 450_000,
         "the item now second is untouched"
     );
-    assert_eq!(accounts[0].balance, 300_000);
+}
+
+#[test]
+fn an_item_renamed_under_its_edit_is_refused() {
+    let mut app = fixture_app();
+    open_and_retype_balance(&mut app);
+    support::commit_edit(&mut app, |plan| plan.accounts[1].id = "renamed".to_owned());
+    app.update();
+    press_key(&mut app, KeyCode::Enter);
+    assert!(is_editing(&app), "refused rather than applied");
+    assert!(
+        said(&app)
+            .iter()
+            .any(|line| line.contains("the plan changed under this edit"))
+    );
+    assert_eq!(draft_plan(&app).accounts[1].balance, 300_000);
 }
 
 #[test]

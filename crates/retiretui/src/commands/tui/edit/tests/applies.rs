@@ -5,6 +5,7 @@ use plurimus::term::KeyCode;
 
 use super::{
     clear_field, draft_plan, fixture_app, is_editing, open, open_travel, shows_row, tab_to_field,
+    tab_to_key,
 };
 use crate::commands::tui::edit::Draft;
 use crate::commands::tui::nav::Page;
@@ -118,6 +119,23 @@ fn a_value_the_file_holds_stays_on_show_where_it_has_no_use() {
     assert!(shows_row(&frame, "Basis"), "to be cleared by hand: {frame}");
     press_key(&mut app, KeyCode::Enter);
     assert_eq!(draft_plan(&app).accounts[0].basis, Some(1_000), "untouched");
+}
+
+#[test]
+fn a_value_with_no_use_cleared_by_hand_leaves_with_the_keyboard() {
+    let mut app = fixture_app();
+    app.world_mut().resource_mut::<Draft>().plan.accounts[0].basis = Some(1_000);
+    open(&mut app, Page::Accounts);
+    tab_to_key(&mut app, "basis");
+    clear_field(&mut app);
+    assert!(
+        shows_row(&composed_frame(&app), "Basis"),
+        "held while typed in"
+    );
+    press_shift(&mut app, KeyCode::Tab);
+    assert!(!shows_row(&composed_frame(&app), "Basis"), "gone once left");
+    press_key(&mut app, KeyCode::Enter);
+    assert_eq!(draft_plan(&app).accounts[0].basis, None);
 }
 
 #[test]

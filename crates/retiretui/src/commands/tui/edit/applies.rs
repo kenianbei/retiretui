@@ -139,6 +139,30 @@ pub fn stale(ops: Ops, pristine: &Table, snapshot: &Table) -> Vec<&'static str> 
 const ONCE_UNDATED: &str = "happens once, but does not say when";
 
 impl Editing {
+    /// Hides the stale fields cleared by hand but `held`, the one the
+    /// keyboard is in, answering whether any went: a row cleared and left
+    /// has nothing left to be seen for.
+    pub(super) fn hide_cleared(&mut self, held: Option<&str>) -> bool {
+        let is_cleared = |key: &&&'static str| {
+            held != Some(**key)
+                && get_path(&self.snapshot, key).is_none()
+                && !self.cleared.contains(key)
+        };
+        let newly: Vec<&'static str> = self.stale.iter().filter(is_cleared).copied().collect();
+        self.cleared.extend(&newly);
+        !newly.is_empty()
+    }
+
+    /// Whether the field `key` is on show: used by its own rule, or stale
+    /// and not yet cleared and left.
+    pub(super) fn is_on_show(&self, key: &str) -> bool {
+        let spec = super::cells::field_of(self.ops.fields, key);
+        spec.is_none_or(|spec| {
+            spec.shown.is_none_or(|shown| shown(&self.snapshot))
+                || (self.stale.contains(&spec.key) && !self.cleared.contains(&spec.key))
+        })
+    }
+
     fn applies(&self, spec: &FieldSpec) -> bool {
         spec.shown.is_none_or(|shown| shown(&self.snapshot)) || self.stale.contains(&spec.key)
     }

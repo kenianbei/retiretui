@@ -5,7 +5,9 @@ use plurimus::term::KeyCode;
 
 use super::{BALANCE_FIELD, fixture_app, open, tab_to_field};
 use crate::commands::tui::nav::Page;
-use crate::commands::tui::support::{commit_edit, composed_frame, press_key};
+use retiretui_engine::plan::Medicare;
+
+use crate::commands::tui::support::{commit_edit, composed_frame, press_key, said};
 
 #[test]
 fn a_form_says_what_the_field_holding_the_keyboard_means() {
@@ -39,4 +41,25 @@ fn a_field_the_draft_holds_an_issue_against_says_so_in_its_form() {
     let frame = composed_frame(&app);
     assert!(frame.contains("must not be negative"), "{frame}");
     assert!(!frame.contains("What it holds at the start"), "{frame}");
+}
+
+#[test]
+fn an_issue_against_one_place_of_a_list_marks_that_row_alone() {
+    let mut app = fixture_app();
+    commit_edit(&mut app, |plan| {
+        plan.medicare = Some(Medicare {
+            prior_magi: vec![-1, 100_000],
+            part_d: true,
+        });
+    });
+    app.update();
+    let warned = said(&app).last().cloned().unwrap_or_default();
+    assert!(
+        warned.contains("Income year before: must not be negative"),
+        "{warned}"
+    );
+    open(&mut app, Page::Household);
+    let frame = composed_frame(&app);
+    assert!(frame.contains("Income year before !"), "{frame}");
+    assert!(!frame.contains("Income last year !"), "{frame}");
 }

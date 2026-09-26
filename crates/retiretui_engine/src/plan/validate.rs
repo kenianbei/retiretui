@@ -114,9 +114,12 @@ impl<'a> Checker<'a> {
             self.push("plan.withdrawal_order", "must list at least one class");
         }
         let mut seen = BTreeSet::new();
-        for class in &settings.withdrawal_order {
+        for (i, class) in settings.withdrawal_order.iter().enumerate() {
             if !seen.insert(class) {
-                self.push("plan.withdrawal_order", "classes must not repeat");
+                self.push(
+                    format!("plan.withdrawal_order[{i}]"),
+                    "classes must not repeat",
+                );
             }
         }
         self.check_surplus_target();
@@ -320,8 +323,10 @@ impl<'a> Checker<'a> {
                 "at most two pre-plan years are looked back to",
             );
         }
-        if medicare.prior_magi.iter().any(|&magi| magi < 0) {
-            self.push("medicare.prior_magi", "must not be negative");
+        for (i, &magi) in medicare.prior_magi.iter().enumerate() {
+            if magi < 0 {
+                self.push(format!("medicare.prior_magi[{i}]"), "must not be negative");
+            }
         }
     }
 

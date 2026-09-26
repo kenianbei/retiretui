@@ -110,8 +110,7 @@ fn label_cols(fields: &[FieldSpec]) -> u16 {
 /// the field.
 #[derive(Component, Clone, Copy)]
 pub struct FieldLabel {
-    pub key: &'static str,
-    pub label: &'static str,
+    pub spec: FieldSpec,
     /// Whether the label is drawn marked, so it is redrawn only when that
     /// moves.
     pub is_marked: bool,
@@ -178,8 +177,7 @@ fn spawn_row(
     }
     commands.spawn((
         FieldLabel {
-            key: spec.key,
-            label: spec.label,
+            spec,
             is_marked: false,
         },
         sized(f32::from(label_cols), 1.0),
