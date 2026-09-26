@@ -41,7 +41,11 @@ fn a_form_stands_as_tall_as_its_rows_on_show() {
     press_key(&mut app, KeyCode::Right);
     app.update();
     let mixed = form_rows(&composed_frame(&app));
-    assert_eq!(mixed, fixed + 1, "a return gives way to stocks and bonds");
+    assert_eq!(
+        mixed,
+        fixed + 2,
+        "a return gives way to stocks, bonds and cash"
+    );
 }
 
 /// What the Market form holds first and last, which the body cannot

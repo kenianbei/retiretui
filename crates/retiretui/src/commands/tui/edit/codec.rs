@@ -72,8 +72,37 @@ fn get_within<'a>(value: &'a Value, key: &str) -> Option<&'a Value> {
     let Value::Array(items) = value else {
         return get_path(value.as_table()?, key);
     };
-    let (at, inner) = key.split_once(KEY_SEPARATOR)?;
-    get_path(items.get(at.parse::<usize>().ok()?)?.as_table()?, inner)
+    let (at, inner) = key
+        .split_once(KEY_SEPARATOR)
+        .map_or((key, None), |(at, inner)| (at, Some(inner)));
+    let item = items.get(at.parse::<usize>().ok()?)?;
+    match inner {
+        None => Some(item),
+        Some(inner) => get_path(item.as_table()?, inner),
+    }
+}
+
+/// What the other shares of the table holding `key` leave of the whole,
+/// where the item holds that table.
+pub fn share_left(item: &Table, key: &str) -> Option<f64> {
+    let (outer, own) = key.rsplit_once(KEY_SEPARATOR)?;
+    let shares = get_path(item, outer)?.as_table()?;
+    let taken = shares
+        .iter()
+        .filter(|(held, _)| held.as_str() != own)
+        .filter_map(|(_, share)| {
+            share
+                .as_float()
+                .or(share.as_integer().map(|whole| whole as f64))
+        });
+    Some(1.0 - taken.sum::<f64>())
+}
+
+/// An issue's path as a key: `allocation[2]` reaches what
+/// `allocation.2.from` does.
+pub fn as_key(path: &str) -> String {
+    path.replace(INDEX_OPEN, &KEY_SEPARATOR.to_string())
+        .replace(INDEX_CLOSE, "")
 }
 
 /// Writes the value at `key`, or clears it. A table is made for the first

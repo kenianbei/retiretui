@@ -436,6 +436,14 @@ fn an_issue_reads_in_the_forms_words_and_an_unknown_path_as_written() {
             "Accounts \u{203a} Balance: is wrong",
         ),
         (
+            "accounts[99].allocation",
+            "Accounts \u{203a} Stocks: is wrong",
+        ),
+        (
+            "accounts[99].allocation[1]",
+            "Accounts \u{203a} Mix 2 from: is wrong",
+        ),
+        (
             "contributions[99].match.up_to",
             "Contributions \u{203a} Matched up to: is wrong",
         ),

@@ -200,7 +200,7 @@ fn locate(path: &str) -> Option<Located> {
     };
     // A root may itself be a key of the item, as `medicare` is.
     let keyed_root = root.rsplit('.').next().map_or(0, str::len);
-    let field = field_at(ops.fields, within.trim_start_matches('.'))
+    let field = field_at(ops.fields, &codec::as_key(within.trim_start_matches('.')))
         .or_else(|| field_at(ops.fields, &path[root.len() - keyed_root..]));
     let place = field.and_then(|spec| codec::list_place(path, spec.key));
     Some(Located {
