@@ -351,3 +351,31 @@ fn a_computed_benefit_claimed_before_the_month_62_is_attained_is_refused() {
     );
     assert!(issues("{ date = 2042-06-01 }").is_empty());
 }
+
+#[test]
+fn a_benefit_eligible_before_the_plan_carries_the_published_colas() {
+    // Born 1960, 62 in 2022: 2022-2025's published COLAs carry the benefit
+    // to the plan's 2026 dollars, frozen after.
+    let record: std::collections::BTreeMap<i16, i64> =
+        (1982..=2021).map(|year| (year, 60_000)).collect();
+    let years: Vec<String> = (record.iter())
+        .map(|(year, amount)| format!("{year} = {amount}"))
+        .collect();
+    let stated = format!("earnings = {{ {} }}", years.join(", "));
+    let text = frozen_claim(r#"{ age = 67, owner = "me" }"#, "")
+        .replace(
+            "birth = 1980-06-15",
+            &format!("birth = 1960-06-15\n{stated}"),
+        )
+        .replace("amount = 100000", "amount = 0");
+    let paid = paid_by(&text);
+    let params = TaxTables::embedded()
+        .params_for(2026, &Inflation::constant(0.025))
+        .social_security
+        .benefit
+        .unwrap();
+    let published = [0.087, 0.032, 0.025, 0.028];
+    let expected =
+        retiretui_engine::tax::social_security_benefit(&params, 1960, 67 * 12, &record, &published);
+    assert_near(paid(2028), expected as f64);
+}

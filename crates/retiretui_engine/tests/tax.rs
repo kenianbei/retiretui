@@ -294,7 +294,7 @@ fn benefit_params() -> retiretui_engine::params::BenefitParams {
 fn social_security_benefit_matches_ssa_case_a() {
     let params = benefit_params();
     let earnings = std::collections::BTreeMap::from(CASE_A_EARNINGS);
-    let at = |age| tax::social_security_benefit(&params, 1964, age * 12, &earnings);
+    let at = |age| tax::social_security_benefit(&params, 1964, age * 12, &earnings, &[]);
     // 60 months early: 20% for the first 36, 10% for the rest of 2,609.80.
     assert_eq!(at(62), 1_826 * 12);
     assert_eq!(at(67), 2_609 * 12);
@@ -304,11 +304,33 @@ fn social_security_benefit_matches_ssa_case_a() {
 }
 
 #[test]
+fn a_pia_is_truncated_to_the_dime_after_each_cola() {
+    let params = benefit_params();
+    let earnings = std::collections::BTreeMap::from(CASE_A_EARNINGS);
+    let colas = [0.087, 0.032, 0.025, 0.028];
+    // 2,609.80 carried a step at a time is 3,084.60, credited 24% at 70;
+    // truncated once at the end it would be 3,084.80 and pay 3,825.
+    let at_70 = tax::social_security_benefit(&params, 1964, 70 * 12, &earnings, &colas);
+    assert_eq!(at_70, 3_824 * 12);
+}
+
+#[test]
+fn the_published_colas_are_embedded_by_the_year_they_took_effect() {
+    let cola = benefit_params().cola;
+    assert_eq!(cola.keys().next(), Some(&1975));
+    assert_eq!(cola.keys().next_back(), Some(&2025));
+    assert_eq!(cola.len(), 51);
+    assert!((cola[&1999] - 0.025).abs() < f64::EPSILON);
+    assert!((cola[&2022] - 0.087).abs() < f64::EPSILON);
+    assert!(cola[&2009].abs() < f64::EPSILON);
+}
+
+#[test]
 fn social_security_benefit_caps_and_pads_the_record() {
     let params = benefit_params();
     let one_year = |amount| {
         let earnings = std::collections::BTreeMap::from([(2026, amount)]);
-        tax::social_security_benefit(&params, 1964, 67 * 12, &earnings)
+        tax::social_security_benefit(&params, 1964, 67 * 12, &earnings, &[])
     };
     // One year of 2026's 184,500 over 420 months: AIME 439, all in the 90%
     // band.
@@ -316,7 +338,7 @@ fn social_security_benefit_caps_and_pads_the_record() {
     assert_eq!(one_year(1_000_000), one_year(184_500));
     let empty = std::collections::BTreeMap::new();
     assert_eq!(
-        tax::social_security_benefit(&params, 1964, 67 * 12, &empty),
+        tax::social_security_benefit(&params, 1964, 67 * 12, &empty, &[]),
         0
     );
 }
@@ -349,8 +371,8 @@ fn earnings_index_to_the_year_the_worker_turns_sixty() {
     // whose age-60 year is the published 2024.
     let params = benefit_params();
     let record = (1999..=2025).map(|year| (year, 50_000)).collect();
-    let born_1977 = tax::social_security_benefit(&params, 1977, 67 * 12, &record);
-    let born_1964 = tax::social_security_benefit(&params, 1964, 67 * 12, &record);
+    let born_1977 = tax::social_security_benefit(&params, 1977, 67 * 12, &record, &[]);
+    let born_1964 = tax::social_security_benefit(&params, 1964, 67 * 12, &record, &[]);
     assert!(
         born_1977 > born_1964 * 13 / 10,
         "{born_1977} vs {born_1964}"
@@ -370,8 +392,8 @@ fn earnings_at_wage_index_back_to_the_salary() {
     assert_eq!(record[&2023], 57_230);
     let career = tax::earnings_at_wage(&params, 60_000, 2024, 1990..=2024);
     let flat = (1990..=2024).map(|year| (year, 60_000)).collect();
-    let scaled = tax::social_security_benefit(&params, 1964, 67 * 12, &career);
-    let at_face = tax::social_security_benefit(&params, 1964, 67 * 12, &flat);
+    let scaled = tax::social_security_benefit(&params, 1964, 67 * 12, &career, &[]);
+    let at_face = tax::social_security_benefit(&params, 1964, 67 * 12, &flat, &[]);
     assert!(
         scaled < at_face,
         "{scaled} vs {at_face}: 1990's 60,000 indexed"

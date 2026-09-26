@@ -55,11 +55,12 @@ impl Simulation<'_> {
     /// The owner's record - where they have none, a career before the plan
     /// at the salary its first year pays them - each year it lacks before
     /// the claim filled from the salary paid so far, capped at that year's
-    /// wage base; the benefit in start-year dollars, so that the income's
-    /// own escalation reaches the claim as the COLAs SSA adds from the
-    /// age-62 year. A claim past full retirement age is paid its claim
-    /// year's credits from the next January, as SSA pays them, unless it is
-    /// made at 70 or later.
+    /// wage base; the benefit in start-year dollars, carried from the
+    /// age-62 year by the COLAs SSA has published and the income's own rate
+    /// for any it has not, so that the income's own escalation reaches the
+    /// claim as the COLAs to come. A claim past full retirement age is paid
+    /// its claim year's credits from the next January, as SSA pays them,
+    /// unless it is made at 70 or later.
     fn compute_benefit(&self, index: usize, first_active_year: i16) -> Derived {
         let income = &self.plan.income[index];
         let owner = self.plan.person(&income.owner);
@@ -90,11 +91,20 @@ impl Simulation<'_> {
         } else {
             age
         };
-        let to_start = 1.0 / self.cola_factor(income.cola, owner.eligibility_year());
+        let eligibility_year = owner.eligibility_year();
+        let colas: Vec<f64> = (eligibility_year..self.start_year)
+            .map(|year| {
+                params.cola.get(&year).copied().unwrap_or_else(|| {
+                    self.cola_factor(income.cola, year + 1) / self.cola_factor(income.cola, year)
+                        - 1.0
+                })
+            })
+            .collect();
+        let to_start = 1.0 / self.cola_factor(income.cola, eligibility_year.max(self.start_year));
         let in_start_dollars = |age| {
-            let at_eligibility =
-                tax::social_security_benefit(&params, owner.birth.year(), age, &earnings);
-            scale(at_eligibility, to_start)
+            let benefit =
+                tax::social_security_benefit(&params, owner.birth.year(), age, &earnings, &colas);
+            scale(benefit, to_start)
         };
         Derived {
             claim_year,

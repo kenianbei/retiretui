@@ -1,9 +1,9 @@
 # RetireTui plan schema (version 1)
 
 A plan is one TOML document. All amounts are annual today's dollars at plan
-start; each item escalates per its `cola`. The engine projects in nominal
-dollars and reports a per-year `deflator` (nominal ÷ deflator = today's
-dollars).
+start - the dollars of `start_year`, whatever year the tax tables were published
+for; each item escalates per its `cola`. The engine projects in nominal dollars
+and reports a per-year `deflator` (nominal ÷ deflator = today's dollars).
 
 ## Document layout
 
@@ -52,8 +52,12 @@ Unknown keys are rejected everywhere.
   only what other items reference - and `earnings` - covered (FICA) wages by
   calendar year, nominal, as the Social Security statement records them, e.g.
   `earnings = { 1995 = 4200, 2024 = 168600 }`. The `import_earnings` tool fills
-  it from the statement's XML; a `social-security` income without an `amount` is
-  computed from it.
+  it from the statement's XML, spreading a row that states several years as one
+  sum evenly over them; a `social-security` income without an `amount` is
+  computed from it. A person with no `earnings` at all is taken to have worked
+  from 22 until the plan at the salary its first year pays them, scaled back by
+  the average wage index; a stated record, even a partial one, is used as it
+  stands.
 
 ## Triggers
 
@@ -124,15 +128,21 @@ else is deferred unless `roth = true`.
   `social-security`, where it is the annual benefit at the claim age and may be
   left out: the benefit is then computed at the claim from the owner's
   `earnings` record, extended with the owner's `salary` incomes through the year
-  before, so the claim must be at 62 or later.
+  before, reduced or credited for each month the claim falls before or after
+  full retirement age, so the claim must be in or after the month 62 is
+  attained. Credits earned in the claim year are paid from the next January,
+  except at 70.
 - `start` / `end` (triggers, optional) - the receiving window; absent means plan
-  start / horizon. A `social-security` income whose `start` is its owner's age
-  is paid, in that year, for the months from the one the age is attained in, as
-  SSA pays it; a `date` start pays the whole year.
+  start / horizon. A `social-security` income with a `start` is paid, in its
+  first year, for the months from the one the start falls in, as SSA pays it: a
+  `date`'s month, the month an age is attained, and for an `event` or `income`
+  reference the month of the date or age it rests on (January where there is
+  none). A claim in the month 62 is attained is paid from the first month 62 is
+  held throughout.
 - `on` (trigger, optional) - one-time receipt; excludes `start`/`end`.
 - `cola` (see escalation). On a computed `social-security` benefit it is also
   the COLA SSA adds each year from the owner's age-62 year, before and after the
-  claim.
+  claim, for every year SSA has not yet published a COLA for.
 
 ## [[expenses]]
 

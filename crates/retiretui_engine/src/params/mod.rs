@@ -149,6 +149,11 @@ pub struct BenefitParams {
     pub wage_growth: f64,
     /// The national average wage index by year, as published.
     pub wage_index: BTreeMap<i16, f64>,
+    /// Each published cost-of-living adjustment, as a rate, by the year it
+    /// took effect; a benefit carries those from the year its worker turns
+    /// 62.
+    #[serde(default)]
+    pub cola: BTreeMap<i16, f64>,
 }
 
 /// The 1994 contribution and benefit base; later bases scale it by the

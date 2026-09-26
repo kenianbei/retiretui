@@ -162,24 +162,33 @@ pub fn full_retirement_months(birth_year: i16) -> i32 {
     }
 }
 
-/// The annual retirement benefit for a claim at `age_months` of age, in
-/// the dollars of the year the worker turns 62 and before the COLAs that
-/// run from it: each year's covered earnings capped at its own wage base
-/// and indexed to the average wage of the year they turn 60, the highest
-/// 35 years averaged monthly, the PIA through the bend points of the
-/// eligibility year truncated to the dime, then reduced or credited month
+/// The annual retirement benefit for a claim at `age_months` of age: each
+/// year's covered earnings capped at its own wage base and indexed to the
+/// average wage of the year the worker turns 60, the highest 35 years
+/// averaged monthly, the PIA through the bend points of the year they turn
+/// 62 truncated to the dime, carried through each of `colas` in turn and
+/// truncated to the dime again after each, then reduced or credited month
 /// by month against full retirement age and truncated to the dollar.
-/// Claims past 70 earn 70's credit.
+/// Claims past 70 earn 70's credit. Without `colas` the benefit is in the
+/// dollars of the year the worker turns 62.
 #[must_use]
 pub fn social_security_benefit(
     params: &BenefitParams,
     birth_year: i16,
     age_months: i32,
     earnings: &BTreeMap<i16, Dollars>,
+    colas: &[f64],
 ) -> Dollars {
-    let pia = primary_insurance_amount(params, birth_year, earnings);
+    let pia = (colas.iter()).fold(
+        primary_insurance_amount(params, birth_year, earnings),
+        |pia, cola| to_the_dime(pia * (1.0 + cola)),
+    );
     let monthly = (pia * claim_factor(birth_year, age_months) * 100.0).round() / 100.0;
     monthly.floor() as Dollars * MONTHS_PER_YEAR as Dollars
+}
+
+fn to_the_dime(amount: f64) -> f64 {
+    ((amount * 100.0).round() / 10.0).floor() / 10.0
 }
 
 /// A career at one real wage, as SSA's Quick Calculator fills a record
@@ -266,7 +275,7 @@ fn primary_insurance_amount(
     let pia = PIA_RATES[0] * aime.min(first)
         + PIA_RATES[1] * (aime.min(second) - first).max(0.0)
         + PIA_RATES[2] * (aime - second).max(0.0);
-    ((pia * 100.0).round() / 10.0).floor() / 10.0
+    to_the_dime(pia)
 }
 
 fn claim_factor(birth_year: i16, age_months: i32) -> f64 {
