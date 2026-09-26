@@ -17,7 +17,7 @@ use retiretui_engine::tax::{FIRST_WORKING_AGE, earnings_at_wage};
 use super::{Answered, LifeStage, SetupAnswers};
 use crate::commands::tui::session::{CASH_ID, HORIZON_AGE, INFLATION};
 
-/// The id a person whose name writes nothing down gets.
+/// What a person whose name writes nothing down has their id numbered from.
 const FALLBACK_ID: &str = "person";
 
 /// The one expense every household has, which the spending step edits.
