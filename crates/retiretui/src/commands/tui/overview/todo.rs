@@ -8,7 +8,7 @@ use plurimus::ui::{ComputedWidgetArea, ScrollArea};
 use retiretui_engine::params::TaxTables;
 
 use super::rows::{self, Entry, Tone};
-use crate::commands::actions::{collect_warnings, sentence};
+use crate::commands::actions::{collect_warnings, nominal, sentence};
 use crate::commands::tui::layout;
 use crate::commands::tui::pane::Framed;
 use crate::commands::tui::session::{Projected, Session, Shown};
@@ -37,7 +37,7 @@ fn entries(projected: &Projected, tables: &TaxTables, year: i16) -> Vec<Entry> {
     };
     let actions =
         (row.actions.iter()).map(|action| Entry::plain(sentence(&projected.plan, action)));
-    let warnings = collect_warnings(&projected.plan, tables, row)
+    let warnings = collect_warnings(&projected.plan, tables, row, nominal)
         .into_iter()
         .map(|warning| Entry {
             tone: Tone::Warning,

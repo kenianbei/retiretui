@@ -22,7 +22,12 @@ use super::super::tabulate;
 use super::DETAIL_GAP;
 
 pub fn plugin(app: &mut App) {
-    app.add_systems(Update, refresh_detail.before(WidgetSystems::Layout));
+    app.add_systems(
+        Update,
+        refresh_detail
+            .in_set(super::split::DetailFilled)
+            .before(WidgetSystems::Layout),
+    );
 }
 
 const TITLE: &str = "Income & Tax";
@@ -69,7 +74,7 @@ fn refresh_detail(
 }
 
 /// Income by source, then a blank line where there was any, then spending
-/// and what the year paid besides.
+/// and what the year paid besides - a line only where the year paid any.
 fn detail_rows(row: &YearRow, plan: &Plan, is_nominal: bool) -> Vec<Vec<String>> {
     let line = |label: &str, amount: Dollars| {
         let amount = basis_amount(amount, row.deflator, is_nominal);
@@ -89,6 +94,8 @@ fn detail_rows(row: &YearRow, plan: &Plan, is_nominal: bool) -> Vec<Vec<String>>
         ("Surplus", row.surplus),
         ("Unfunded", row.unfunded),
     ]
+    .into_iter()
+    .filter(|&(_, amount)| amount != 0)
     .map(|(label, amount)| line(label, amount));
     let mut rows: Vec<Vec<String>> = income.collect();
     if !rows.is_empty() {
@@ -115,7 +122,10 @@ mod tests {
             "{labels:?}"
         );
         assert_eq!(labels[blank + 1], "Spending");
-        assert_eq!(labels.last(), Some(&"Unfunded"));
+        assert!(
+            rows.iter().all(|cells| cells[1] != "$0"),
+            "no line for what the year did not pay: {labels:?}"
+        );
     }
 
     #[test]

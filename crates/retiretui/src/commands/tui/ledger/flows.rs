@@ -35,6 +35,7 @@ pub fn plugin(app: &mut App) {
     app.add_systems(
         Update,
         (refresh_flows, refresh_warnings)
+            .in_set(super::split::DetailFilled)
             .before(Repainted)
             .before(WidgetSystems::Layout),
     );
@@ -131,7 +132,16 @@ fn refresh_warnings(
     let Some(row) = shown.row() else {
         return;
     };
-    let warnings = collect_warnings(&shown.ledger().plan, &session.tables, row);
+    let ledger = shown.ledger();
+    let is_nominal = shown.basis.nominal;
+    let shown_in = |year, amount| {
+        if is_nominal {
+            amount
+        } else {
+            ledger.projection.deflate_in(year, amount)
+        }
+    };
+    let warnings = collect_warnings(&ledger.plan, &session.tables, row, shown_in);
     let lines: Vec<Line<'static>> = warnings
         .into_iter()
         .map(|warning| Line::styled(format!("{WARNING_MARK}{warning}"), theme.exceeded()))
@@ -295,8 +305,12 @@ const fn is_employer_note(note: &ContributionNote) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::super::super::support::{projected_from, test_projected};
+    use retiretui_engine::params::TaxTables;
+    use retiretui_engine::project::deflate;
+
+    use super::super::super::support::{TEST_PLAN, projected_from, test_projected};
     use super::*;
+    use crate::commands::table::money;
 
     fn busy_year(row: &YearRow) -> YearRow {
         let mut row = row.clone();
@@ -333,6 +347,20 @@ mod tests {
             },
         ];
         row
+    }
+
+    #[test]
+    fn a_warning_names_its_amount_in_the_basis_shown() {
+        let short = TEST_PLAN.replace("amount = 60000", "amount = 600000");
+        let projected = projected_from(&short);
+        let row = &projected.projection.years[5];
+        assert!(row.unfunded > 0, "a year that runs short");
+        let tables = TaxTables::embedded();
+        let today = |year, amount| projected.projection.deflate_in(year, amount);
+        let said = collect_warnings(&projected.plan, &tables, row, today).join("\n");
+        let deflated = money(deflate(row.unfunded, row.deflator));
+        assert!(said.contains(&deflated), "{said}");
+        assert!(!said.contains(&money(row.unfunded)), "{said}");
     }
 
     #[test]
