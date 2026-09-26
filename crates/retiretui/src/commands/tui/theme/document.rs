@@ -233,6 +233,11 @@ mod tests {
         for (slug, _) in EMBEDDED {
             let theme = named(slug, Variant::Dark).unwrap_or_else(|error| panic!("{error}"));
             assert!(theme.bg.is_some(), "{slug} names a background");
+            let terminal = Theme::terminal();
+            assert!(
+                theme.good != terminal.good && theme.caution != terminal.caution,
+                "{slug} names its good and caution"
+            );
             assert_ne!(theme.series(0), theme.series(LEAST_SERIES - 1), "{slug}");
         }
     }

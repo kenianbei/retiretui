@@ -8,6 +8,8 @@ accent = "#8839ef"
 selection_bg = "#ccd0da"
 stripe = "#e6e9ef"
 over = "#d20f39"
+good = "#40a02b"
+caution = "#df8e1d"
 
 series = [
   "#1e66f5",

@@ -141,6 +141,17 @@ impl Theme {
             .with_pressed(pressed)
             .with_disabled(normal.fg(self.dim))
             .with_focused(Style::new().fg(self.accent).add_modifier(Modifier::BOLD))
+            .with_caret(self.caret())
+    }
+
+    /// A text caret in the accent over the theme's ground, or the stock
+    /// reversed cell where the ground is the terminal's own and no colour
+    /// is sure to show against it.
+    fn caret(&self) -> Style {
+        self.bg.map_or_else(
+            || Style::new().add_modifier(Modifier::REVERSED),
+            |bg| Style::new().fg(bg).bg(self.accent),
+        )
     }
 }
 
@@ -181,6 +192,18 @@ fn restripe(theme: Res<Theme>, mut stripes: Query<&mut TableStripe>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_theme_with_a_ground_draws_the_caret_in_its_accent() {
+        let themed = Theme {
+            bg: Some(Color::Black),
+            ..Theme::terminal()
+        };
+        let caret = themed.ui_theme().caret;
+        assert_eq!((caret.bg, caret.fg), (Some(themed.accent), themed.bg));
+        let terminal = Theme::terminal().ui_theme().caret;
+        assert!(terminal.add_modifier.contains(Modifier::REVERSED));
+    }
 
     #[test]
     fn the_terminal_theme_leaves_the_grounds_to_the_terminal() {
