@@ -2,8 +2,8 @@
 //! for it, from the schema's closed sets and from the plan's own items.
 
 use retiretui_engine::plan::{
-    Account, AccountKind, COUNTRIES, Draw, FilingStatus, Income, IncomeKind, Payer, Plan,
-    TreatmentClass, TriggerBasis, US_STATES,
+    AccountKind, COUNTRIES, Draw, FilingStatus, IncomeKind, Item, Payer, Plan, TreatmentClass,
+    TriggerBasis, US_STATES,
 };
 use toml::Table;
 
@@ -136,34 +136,28 @@ pub enum RefSource {
 /// What `source` offers, in plan order: each id under the item's display
 /// name, with the id beside it where two names are the same.
 pub fn ref_offers(plan: &Plan, source: RefSource) -> Vec<Offer> {
-    let named = |id: &str, name: Option<&String>| Offer {
-        value: id.to_owned(),
-        label: name.map_or(id, String::as_str).to_owned(),
-    };
-    let account = |account: &Account| named(&account.id, account.name.as_ref());
-    let income = |income: &Income| named(&income.id, income.name.as_ref());
     let accounts_of = |class: TreatmentClass| {
         let held = plan.accounts.iter();
         held.filter(move |account| account.treatment() == class)
-            .map(account)
+            .map(offer)
             .collect()
     };
-    let people = plan.household.people.iter();
     let offers: Vec<Offer> = match source {
-        RefSource::Person => people
-            .map(|person| named(&person.id, person.name.as_ref()))
-            .collect(),
-        RefSource::Account => plan.accounts.iter().map(account).collect(),
+        RefSource::Person => plan.household.people.iter().map(offer).collect(),
+        RefSource::Account => plan.accounts.iter().map(offer).collect(),
         RefSource::DeferredAccount => accounts_of(TreatmentClass::Deferred),
         RefSource::RothAccount => accounts_of(TreatmentClass::Roth),
-        RefSource::Event => plan
-            .events
-            .iter()
-            .map(|event| named(&event.id, event.name.as_ref()))
-            .collect(),
-        RefSource::Income => plan.income.iter().map(income).collect(),
+        RefSource::Event => plan.events.iter().map(offer).collect(),
+        RefSource::Income => plan.income.iter().map(offer).collect(),
     };
     told_apart(offers)
+}
+
+fn offer(item: &impl Item) -> Offer {
+    Offer {
+        value: item.id().to_owned(),
+        label: item.display_name().to_owned(),
+    }
 }
 
 /// Adds the id to every label another offer shares.

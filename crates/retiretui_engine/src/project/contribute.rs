@@ -199,7 +199,7 @@ impl<'a> Simulation<'a> {
         let age = self
             .plan
             .person(&account.owner)
-            .map_or(0, |owner| owner.age_in_year(year).clamp(0, 255) as u8);
+            .map_or(0, |owner| owner.age_in(year));
         tax::employee_limit(params, self.plan.household.filing, account.kind, age)
             .unwrap_or(Dollars::MAX)
     }

@@ -86,7 +86,7 @@ fn a_trigger_stating_a_basis_and_its_operands_classifies() {
             };
             table.insert(operand.key().to_owned(), value);
         }
-        let trigger: Trigger = toml::from_str(&toml::to_string(&table).unwrap()).unwrap();
+        let trigger: Trigger = retiretui_engine::plan::from_table(&table).unwrap();
         assert_eq!(trigger.basis(), Ok(basis));
         assert_eq!(basis.as_str(), basis.operands()[0].key());
         trigger.form().unwrap();

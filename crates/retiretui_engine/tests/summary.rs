@@ -93,3 +93,22 @@ amount = 50000
     assert_eq!(first.net_worth, 0);
     assert_eq!(first.taxes.total, 0);
 }
+
+#[test]
+fn a_row_is_found_by_its_year_and_none_outside_the_projection() {
+    let plan = head(
+        r#"
+[[accounts]]
+id = "cash"
+kind = "cash"
+owner = "me"
+balance = 0
+"#,
+    );
+    let projection = run(&plan);
+    let (first, last) = (&projection.years[0], projection.years.last().unwrap());
+    let second = &projection.years[1];
+    assert_eq!(projection.row(second.year), Some(second));
+    assert_eq!(projection.row(first.year - 1), None);
+    assert_eq!(projection.row(last.year + 1), None);
+}

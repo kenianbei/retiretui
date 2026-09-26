@@ -1,6 +1,8 @@
 use std::collections::BTreeSet;
 use std::fmt;
 
+use serde::Serialize;
+
 use super::escalation::ColaSpec;
 use super::incomes::IncomeKind;
 use super::{AccountKind, TreatmentClass};
@@ -16,7 +18,8 @@ fn is_plausible_rate(rate: f64) -> bool {
 }
 
 /// A semantic problem found in a plan.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct Issue {
     /// TOML-style path of the offending item, e.g. `accounts[2].locked_until`.
     pub path: String,

@@ -20,8 +20,9 @@ use crate::commands::table::{align, display_dollars, summary_table};
 pub struct OptimizeArgs {
     /// Path to the plan or scenario TOML file.
     pub plan: PathBuf,
-    /// Deferred source account id, drained in the given order (repeatable).
-    #[arg(long, required = true)]
+    /// Deferred source account id, drained in the given order (repeatable);
+    /// absent means every deferred account of the destination's owner.
+    #[arg(long)]
     pub from: Vec<String>,
     /// Roth destination account id; every source must share its owner.
     #[arg(long)]
@@ -99,7 +100,8 @@ impl LadderConstraints {
 pub struct SweepReply {
     /// The plan without any ladder.
     pub baseline: Summary,
-    /// One entry per fillable bracket, ascending by rate.
+    /// One entry per fillable bracket, best first: the least left unfunded,
+    /// then the most left at the end.
     pub brackets: Vec<SweepEntry>,
 }
 
@@ -237,7 +239,7 @@ fn ladder_table(steps: &[LadderStep], optimized: &Projection, nominal: bool) -> 
     let rows: Vec<Vec<String>> = steps
         .iter()
         .map(|step| {
-            let row = optimized.years.iter().find(|row| row.year == step.year);
+            let row = optimized.row(step.year);
             let deflator = row.map_or(1.0, |row| row.deflator);
             let taxable = row.map_or(0, |row| row.taxes.ordinary_taxable);
             vec![

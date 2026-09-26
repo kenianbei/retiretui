@@ -3,6 +3,7 @@
 mod accounts;
 mod allocation;
 mod cliffs;
+mod codec;
 mod contributions;
 mod dates;
 mod diff;
@@ -12,6 +13,7 @@ mod expenses;
 mod flows;
 mod households;
 mod incomes;
+mod item;
 mod market;
 
 pub(crate) use market::{INFLATION, VARIABLES, cholesky};
@@ -27,6 +29,7 @@ mod validate;
 pub use accounts::{Account, AccountKind, TreatmentClass};
 pub use allocation::{Allocation, AssetClass, ClassReturns, Mix, MixPhase};
 pub use cliffs::Cliff;
+pub use codec::{from_table, to_table};
 pub use contributions::{Contribution, Match, Payer, Step};
 pub use dates::PlanDate;
 pub use diff::{Change, ChangeKind, diff};
@@ -36,6 +39,7 @@ pub use expenses::Expense;
 pub use flows::{Conversion, Transfer};
 pub use households::{FilingStatus, Household, Person, Residency};
 pub use incomes::{Income, IncomeKind};
+pub use item::{Item, fresh_id};
 pub use market::{
     ClassAssumption, Correlation, Correlations, Draw, HistoricalSettings, InflationAssumption,
     Market, MonteCarloSettings,
@@ -175,9 +179,7 @@ impl Plan {
     /// Returns [`PlanError`] when the table does not match the schema or
     /// cannot be serialized.
     pub fn from_toml_table(table: toml::Table) -> Result<Self, PlanError> {
-        // `toml::Value`'s in-memory Deserializer stringifies datetimes, so a
-        // direct `try_into` loses dates; the text round-trip keeps them.
-        Self::from_toml_str(&toml::to_string(&table)?)
+        from_table(&table)
     }
 
     /// Serializes the plan to canonical TOML. The app owns the format:
@@ -206,7 +208,7 @@ impl Plan {
     /// What the person with `id` is shown as: their name, or `id` itself.
     #[must_use]
     pub fn person_name<'a>(&'a self, id: &'a str) -> &'a str {
-        self.person(id).map_or(id, Person::display_name)
+        self.person(id).map_or(id, Item::display_name)
     }
 
     /// The account with the given id, if any.

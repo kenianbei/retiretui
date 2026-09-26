@@ -57,6 +57,21 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - An item open in a form while the plan changes underneath is followed to
   wherever it now sits: applying no longer refuses because an undo or a reload
   moved it. It is still refused when the item itself was changed or renamed.
+- `optimize conversions` and MCP `sweep_conversion_brackets` list the brackets
+  best first - the least left unfunded, then the most left at the end - as the
+  Roth Conversions tool does, rather than by rate.
+- The conversion source is optional: without `--from` on the CLI, or `from` over
+  MCP, a ladder converts from every deferred account of the destination's owner,
+  as the Roth Conversions tool does when its source is left blank. Where that
+  owner holds none, the search says there is no deferred account to convert
+  from.
+- The new-plan form numbers the ids it makes from a person's name, as new items
+  are numbered: Alice is `alice-1`, a second Alice `alice-2`, and their
+  retirement and workplace account follow as `retire-alice-1` and
+  `alice-1-401k`.
+- MCP `project_plan` and `tax_parameters` describe their replies with full
+  output schemas - summary or full rows, and every tax table - and an issue in
+  any reply is described as the engine's own. Replies are unchanged.
 
 ### Fixed
 

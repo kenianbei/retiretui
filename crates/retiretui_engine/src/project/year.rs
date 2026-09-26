@@ -190,12 +190,7 @@ impl<'a> Simulation<'a> {
             .household
             .people
             .iter()
-            .map(|person| {
-                (
-                    person.id.clone(),
-                    person.age_in_year(year).clamp(0, 255) as u8,
-                )
-            })
+            .map(|person| (person.id.clone(), person.age_in(year)))
             .collect();
         let mut class_totals = ClassTotals::default();
         let mut balances = BTreeMap::new();

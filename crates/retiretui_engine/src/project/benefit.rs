@@ -86,7 +86,7 @@ impl Simulation<'_> {
             owner.age_in_year(claim_year),
             &earnings,
         );
-        let eligibility_year = owner.birth.year() + tax::EARLIEST_CLAIM_AGE;
+        let eligibility_year = owner.eligibility_year();
         scale(
             at_eligibility,
             1.0 / self.cola_factor(income.cola, eligibility_year),

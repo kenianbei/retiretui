@@ -206,13 +206,6 @@ pub struct Account {
 }
 
 impl Account {
-    /// What the account is called where it is shown: its name, or its id
-    /// where it has none.
-    #[must_use]
-    pub fn display_name(&self) -> &str {
-        self.name.as_deref().unwrap_or(&self.id)
-    }
-
     /// The account's tax treatment class.
     #[must_use]
     pub fn treatment(&self) -> TreatmentClass {

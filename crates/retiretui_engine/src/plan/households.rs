@@ -5,6 +5,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 use super::Dollars;
 use super::dates::PlanDate;
 use super::triggers::Trigger;
+use crate::tax;
 
 /// Federal filing status. These two are the supported statuses; they cover a
 /// one- or two-person household and the survivor transition between them.
@@ -50,17 +51,23 @@ pub struct Person {
 }
 
 impl Person {
-    /// What the person is called where they are shown: their name, or
-    /// their id where they have none.
-    #[must_use]
-    pub fn display_name(&self) -> &str {
-        self.name.as_deref().unwrap_or(&self.id)
-    }
-
     /// The age this person reaches during the given calendar year.
     #[must_use]
     pub fn age_in_year(&self, year: i16) -> i16 {
         year - self.birth.year()
+    }
+
+    /// The age this person reaches during `year`, held between 0 and 255.
+    #[must_use]
+    pub fn age_in(&self, year: i16) -> u8 {
+        self.age_in_year(year).clamp(0, 255) as u8
+    }
+
+    /// The year this person turns the earliest claim age, whose wage index
+    /// and bend points their benefit is figured on.
+    #[must_use]
+    pub fn eligibility_year(&self) -> i16 {
+        self.birth.year() + tax::EARLIEST_CLAIM_AGE
     }
 }
 

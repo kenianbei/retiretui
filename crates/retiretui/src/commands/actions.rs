@@ -81,15 +81,11 @@ pub(crate) fn current_year() -> i16 {
 
 /// The `year` row; an out-of-range year errors with the valid range.
 pub(crate) fn year_row(projection: &Projection, year: i16) -> Result<&YearRow, String> {
-    projection
-        .years
-        .iter()
-        .find(|row| row.year == year)
-        .ok_or_else(|| {
-            let first = projection.years.first().map_or(year, |row| row.year);
-            let last = projection.years.last().map_or(year, |row| row.year);
-            format!("{year} is outside the projection; the plan covers {first}-{last}")
-        })
+    projection.row(year).ok_or_else(|| {
+        let first = projection.years.first().map_or(year, |row| row.year);
+        let last = projection.years.last().map_or(year, |row| row.year);
+        format!("{year} is outside the projection; the plan covers {first}-{last}")
+    })
 }
 
 fn render(plan: &Plan, row: &YearRow, warnings: &[String]) -> String {

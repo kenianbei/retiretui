@@ -3,6 +3,7 @@
 
 use bevy_ecs::prelude::{In, Res, ResMut};
 use retiretui_engine::optimize::career_at_salary;
+use retiretui_engine::plan::Item;
 
 use super::people::{HeldClaims, NOBODY, PersonCursor, benefit};
 use crate::commands::tui::command::Outcome;

@@ -8,7 +8,7 @@ use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Component, Entity, IntoScheduleConfigs, Query, Res};
 use plurimus::ui::ScrollArea;
 use plurimus::widgets::{ActiveDescendant, WidgetSystems};
-use retiretui_engine::plan::{Account, AssetClass, Plan};
+use retiretui_engine::plan::{Account, AssetClass, Item, Plan};
 
 use super::MarketTool;
 use crate::commands::tui::command::Outcome;

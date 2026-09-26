@@ -5,7 +5,7 @@ mod common;
 
 use retiretui_engine::optimize::{
     OptimizeOptions, OptimizedLadder, SweptBracket, apply_ladder, is_ladder, ladder_overlay,
-    optimize_conversions, sweep_brackets,
+    optimize_conversions, rank_key, sweep_brackets,
 };
 use retiretui_engine::params::{Inflation, TaxTables};
 use retiretui_engine::plan::{Plan, Scenario};
@@ -96,13 +96,7 @@ fn twelve_top() -> i64 {
 }
 
 fn taxable_in(projection: &Projection, year: i16) -> i64 {
-    projection
-        .years
-        .iter()
-        .find(|row| row.year == year)
-        .unwrap()
-        .taxes
-        .ordinary_taxable
+    projection.row(year).unwrap().taxes.ordinary_taxable
 }
 
 #[test]
@@ -304,7 +298,7 @@ fn an_overlay_removes_the_ladder_years_it_does_not_restate() {
     let text = ladder_overlay("base.toml", &laddered, &shorter, &ladder.steps).unwrap();
     assert!(text.contains("remove = true"), "{text}");
     let scenario = Scenario::from_toml_str(&text).unwrap().expect("a scenario");
-    let base = toml::Table::try_from(&laddered).unwrap();
+    let base = retiretui_engine::plan::to_table(&laddered).unwrap();
     let merged = Plan::from_toml_table(scenario.apply(base).unwrap()).unwrap();
     assert_eq!(
         merged.conversions.len(),
@@ -341,7 +335,7 @@ fn optimizer_is_deterministic() {
 }
 
 #[test]
-fn sweep_covers_every_fillable_bracket() {
+fn sweep_covers_every_fillable_bracket_best_first() {
     let sweep = sweep_brackets(&plan_from(BASE), &TaxTables::embedded(), &options()).unwrap();
     let params = TaxTables::embedded().params_for(2026, &Inflation::constant(0.0));
     let brackets = params
@@ -349,11 +343,12 @@ fn sweep_covers_every_fillable_bracket() {
         .for_status(retiretui_engine::plan::FilingStatus::Single);
     assert_eq!(sweep.brackets.len(), brackets.len() - 1);
     assert!(
-        sweep
-            .brackets
-            .windows(2)
-            .all(|pair| pair[0].rate < pair[1].rate),
-        "ascending rates"
+        sweep.brackets.windows(2).all(|pair| {
+            let key = |bracket: &SweptBracket| rank_key(&bracket.optimized);
+            key(&pair[0]) < key(&pair[1])
+                || (key(&pair[0]) == key(&pair[1]) && pair[0].rate < pair[1].rate)
+        }),
+        "best first, a tie keeping the lower rate first"
     );
     let twelve = sweep
         .brackets
@@ -404,8 +399,34 @@ fn bad_options_are_refused() {
             .iter()
             .any(|issue| issue.message.contains("unknown account"))
     );
-    let issues = refuse(|bad| bad.sources = Vec::new());
+    let issues = refuse(|bad| {
+        bad.sources = Vec::new();
+        bad.destination = "ghost".to_owned();
+    });
     assert!(issues.iter().any(|issue| issue.path == "options.sources"));
+}
+
+#[test]
+fn blank_sources_are_every_deferred_account_of_the_destination_s_owner() {
+    let plan = plan_from(&BASE.replace(
+        "[[accounts]]\nid = \"r\"",
+        "[[accounts]]\nid = \"k2\"\nkind = \"ira\"\nowner = \"me\"\nbalance = 50000\n\n[[accounts]]\nid = \"r\"",
+    ));
+    let mut blank = options();
+    blank.sources = Vec::new();
+    let mut stated = options();
+    stated.sources = vec!["k".to_owned(), "k2".to_owned()];
+    let tables = TaxTables::embedded();
+    let ladder = |options| optimize_conversions(&plan, &tables, options, 0.12).unwrap();
+    let (from_blank, from_stated) = (ladder(&blank), ladder(&stated));
+    assert!(
+        from_blank
+            .ladder
+            .steps
+            .iter()
+            .any(|step| step.source == "k2")
+    );
+    assert_eq!(from_blank.ladder.steps, from_stated.ladder.steps);
 }
 
 #[test]
@@ -422,12 +443,7 @@ fn irmaa_tier_zero_holds_magi_at_the_first_threshold() {
         .irmaa[0]
         .magi_over
         .single;
-    let year_2043 = ladder
-        .optimized
-        .years
-        .iter()
-        .find(|row| row.year == 2043)
-        .unwrap();
+    let year_2043 = ladder.optimized.row(2043).unwrap();
     assert_eq!(
         year_2043.taxes.magi, first_threshold,
         "fills to the tier edge"
@@ -447,13 +463,7 @@ fn max_magi_and_cliffs_cap_the_fill() {
     explicit.max_magi = Some(30_000);
     let ladder =
         optimize_conversions(&plan_from(BASE), &TaxTables::embedded(), &explicit, 0.12).unwrap();
-    let year_2041 = ladder
-        .ladder
-        .optimized
-        .years
-        .iter()
-        .find(|row| row.year == 2041)
-        .unwrap();
+    let year_2041 = ladder.ladder.optimized.row(2041).unwrap();
     assert_eq!(year_2041.taxes.magi, 30_000);
 
     let cliffed = BASE.replace(
@@ -464,17 +474,7 @@ fn max_magi_and_cliffs_cap_the_fill() {
     let mut windowed = options();
     windowed.start_year = Some(2041);
     let ladder = optimize_conversions(&plan, &TaxTables::embedded(), &windowed, 0.12).unwrap();
-    let magi_in = |year: i16| {
-        ladder
-            .ladder
-            .optimized
-            .years
-            .iter()
-            .find(|row| row.year == year)
-            .unwrap()
-            .taxes
-            .magi
-    };
+    let magi_in = |year: i16| ladder.ladder.optimized.row(year).unwrap().taxes.magi;
     // The default cliff window runs through 2044 (age 65 in 2045).
     assert_eq!(magi_in(2041), 30_000, "capped inside the window");
     assert!(magi_in(2046) > 30_000, "released after the window");
@@ -508,4 +508,21 @@ fn ceiling_options_are_validated() {
             .iter()
             .any(|issue| issue.message.contains("tiers exist"))
     );
+}
+
+#[test]
+fn a_sweep_is_ranked_by_what_the_household_ends_with_not_by_rate() {
+    let mut into_roth = options();
+    into_roth.sources = Vec::new();
+    into_roth.destination = "roth-ira".to_owned();
+    let plan = plan_from(common::FULL);
+    let sweep = sweep_brackets(&plan, &TaxTables::embedded(), &into_roth).unwrap();
+    let keys: Vec<_> = sweep
+        .brackets
+        .iter()
+        .map(|bracket| rank_key(&bracket.optimized))
+        .collect();
+    assert!(keys.is_sorted(), "best first");
+    let rates = sweep.brackets.iter().map(|bracket| bracket.rate);
+    assert!(!rates.is_sorted(), "the fixture ranks unlike its rates");
 }

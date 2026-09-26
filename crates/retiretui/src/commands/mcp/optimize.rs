@@ -18,7 +18,9 @@ use crate::commands::optimize::{ClaimsReply, LadderConstraints, LadderReply, Swe
 pub struct ConversionToolArgs {
     /// Plan or scenario path, relative to the served directory.
     pub path: String,
-    /// Deferred source account ids, drained in the given order.
+    /// Deferred source account ids, drained in the given order; empty or
+    /// absent means every deferred account of the destination's owner.
+    #[serde(default)]
     pub from: Vec<String>,
     /// Roth destination account id; every source must share its owner.
     pub to: String,

@@ -139,9 +139,7 @@ struct YearFill {
 
 fn year_metrics(projection: &Projection, year: i16) -> YearFill {
     projection
-        .years
-        .iter()
-        .find(|row| row.year == year)
+        .row(year)
         .map(|row| YearFill {
             taxable: row.taxes.ordinary_taxable,
             magi: row.taxes.magi,

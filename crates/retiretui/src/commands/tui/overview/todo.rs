@@ -31,8 +31,7 @@ pub(super) fn spawn(commands: &mut Commands, band: Entity, share: f32) {
 
 /// The to-dos of `year`, each warning marked and in a warning's tone.
 fn entries(projected: &Projected, tables: &TaxTables, year: i16) -> Vec<Entry> {
-    let years = &projected.projection.years;
-    let Some(row) = years.iter().find(|row| row.year == year) else {
+    let Some(row) = projected.projection.row(year) else {
         return Vec::new();
     };
     let actions =

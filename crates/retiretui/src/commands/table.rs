@@ -1,4 +1,4 @@
-use retiretui_engine::plan::{Dollars, Plan, TreatmentClass};
+use retiretui_engine::plan::{Dollars, Item, Plan, TreatmentClass};
 use retiretui_engine::project::{Summary, YearRow, deflate};
 
 /// Column labels matching [`summary_cells`], shared by every table that
@@ -74,23 +74,18 @@ pub fn grouped(count: u64) -> String {
 
 /// An account by its display name, or by its id where it states none.
 pub fn account_name<'a>(plan: &'a Plan, id: &'a str) -> &'a str {
-    let named = plan.accounts.iter().find(|account| account.id == id);
-    named
-        .and_then(|account| account.name.as_deref())
-        .unwrap_or(id)
+    plan.account(id).map_or(id, Item::display_name)
 }
 
 /// An event by its display name, or by its id where it states none.
 pub fn event_name<'a>(plan: &'a Plan, id: &'a str) -> &'a str {
     let named = plan.events.iter().find(|event| event.id == id);
-    named.and_then(|event| event.name.as_deref()).unwrap_or(id)
+    named.map_or(id, Item::display_name)
 }
 
 /// An income by its display name, or by its id where it states none.
 pub fn income_name<'a>(plan: &'a Plan, id: &'a str) -> &'a str {
-    plan.income_source(id)
-        .and_then(|income| income.name.as_deref())
-        .unwrap_or(id)
+    plan.income_source(id).map_or(id, Item::display_name)
 }
 
 const PERCENT: f64 = 100.0;

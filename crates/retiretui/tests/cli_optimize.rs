@@ -210,3 +210,22 @@ fn optimize_json_replies_name_their_fields() {
     assert_eq!(fields(&candidate["claims"][0]), ["age", "income", "owner"]);
     assert_eq!(fields(&candidate["summary"]), summary);
 }
+
+#[test]
+fn optimize_without_a_source_drains_the_destination_owner_s_deferred_accounts() {
+    let dir = scratch_dir("cli-blank-from", "base.toml", &[("opt.toml", OPT_PLAN)]);
+    let plan = dir.join("opt.toml");
+    let plan = plan.to_str().unwrap();
+    let stated = conversions(plan, &["--format", "json"]);
+    let blank = retiretui(&[
+        "optimize",
+        "conversions",
+        plan,
+        "--to",
+        "r",
+        "--format",
+        "json",
+    ]);
+    assert!(blank.status.success(), "{blank:?}");
+    assert_eq!(blank.stdout, stated.stdout, "`k` is the owner's one");
+}

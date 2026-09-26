@@ -7,7 +7,7 @@
 use std::collections::BTreeSet;
 
 use retiretui_engine::market::{RunName, Runs};
-use retiretui_engine::plan::{Dollars, Plan};
+use retiretui_engine::plan::{Dollars, Item, Plan};
 use retiretui_engine::project::YearRow;
 
 #[cfg(test)]

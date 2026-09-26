@@ -11,18 +11,14 @@ use std::fmt::Write as _;
 use std::ops::RangeInclusive;
 
 use retiretui_engine::params::{BenefitParams, Inflation, TaxTables};
-use retiretui_engine::plan::{Dollars, FilingStatus, Plan};
+use retiretui_engine::plan::{Dollars, FilingStatus, Plan, fresh_id};
 use retiretui_engine::tax::{FIRST_WORKING_AGE, earnings_at_wage};
 
 use super::{Answered, LifeStage, SetupAnswers};
 use crate::commands::tui::session::{CASH_ID, HORIZON_AGE, INFLATION};
 
-/// The id a person whose name writes nothing down gets.
+/// What a person whose name writes nothing down has their id numbered from.
 const FALLBACK_ID: &str = "person";
-
-/// What a second person whose name slugifies to the first's takes, so two
-/// people spelt the same are still two people.
-const COLLISION_SUFFIX: char = '2';
 
 /// The one expense every household has, which the spending step edits.
 const LIVING_ID: &str = "living";
@@ -146,23 +142,16 @@ fn career(household: &Household<'_>, salary: Dollars, worked: RangeInclusive<i16
     ))
 }
 
-/// A typed name as a plan id: its alphanumerics, lowercased.
+/// A typed name as a plan id: its alphanumerics, lowercased, numbered past
+/// the id the person before them took.
 fn id_of(name: &str, taken: Option<&str>) -> String {
     let slug: String = name
         .chars()
         .filter(|letter| letter.is_alphanumeric())
         .flat_map(char::to_lowercase)
         .collect();
-    let id = if slug.is_empty() {
-        FALLBACK_ID.to_owned()
-    } else {
-        slug
-    };
-    if taken == Some(id.as_str()) {
-        format!("{id}{COLLISION_SUFFIX}")
-    } else {
-        id
-    }
+    let prefix = if slug.is_empty() { FALLBACK_ID } else { &slug };
+    fresh_id(prefix, taken)
 }
 
 /// The people the answers describe: one, or two where the household files

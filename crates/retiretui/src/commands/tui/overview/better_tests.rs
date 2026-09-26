@@ -122,7 +122,7 @@ fn best_ladder(app: &App, destination: &str) -> SweptBracket {
 
 fn options_of(app: &App, destination: &str) -> (OptimizeOptions, Option<f64>) {
     let held = ladders::held_answers(app.world().resource::<Draft>());
-    ladders::options_into(&projected(app).plan, &held, destination).unwrap()
+    ladders::options_into(&held, destination).unwrap()
 }
 
 fn claim_search(app: &App) -> ClaimSearch {
@@ -235,7 +235,7 @@ fn a_held_constraint_is_searched_under_and_kept() {
     let current = rank_key(&projected(&app).projection);
     let (options, _) = options_of(&app, ROTH);
     let tables = &app.world().resource::<Session>().tables;
-    let sweep = ladders::search(&projected(&app).plan, tables, &options, None).unwrap();
+    let sweep = sweep_brackets(&projected(&app).plan, tables, &options).unwrap();
     let held = (sweep.brackets[1..].iter())
         .find(|bracket| rank_key(&bracket.optimized) < current)
         .expect("a lesser ladder beats the plan");

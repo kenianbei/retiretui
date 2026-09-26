@@ -27,17 +27,9 @@ pub struct PlanText {
 }
 
 #[derive(Serialize, JsonSchema)]
-pub struct IssueEntry {
-    /// TOML-style path of the offending item.
-    pub path: String,
-    /// What is wrong.
-    pub message: String,
-}
-
-#[derive(Serialize, JsonSchema)]
 pub struct IssueList {
     /// Every problem found; empty means the plan is valid.
-    pub issues: Vec<IssueEntry>,
+    pub issues: Vec<Issue>,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -64,7 +56,7 @@ pub struct ImportEarningsArgs {
 #[derive(Serialize, JsonSchema)]
 pub struct WriteReply {
     /// Issues that blocked the write; empty means the plan was written.
-    pub issues: Vec<IssueEntry>,
+    pub issues: Vec<Issue>,
     /// Whether the stored canonical form differs from the submitted text;
     /// false when nothing was written.
     pub canonicalized: bool,
@@ -100,7 +92,7 @@ impl PlanServer {
     ) -> Result<Json<IssueList>, String> {
         let plan = self.store.load_plan(&path)?;
         Ok(Json(IssueList {
-            issues: issue_entries(validate_plan(&plan, &self.tables)),
+            issues: validate_plan(&plan, &self.tables),
         }))
     }
 
@@ -147,7 +139,7 @@ impl PlanServer {
         let issues = validate_plan(&plan, &self.tables);
         if !issues.is_empty() {
             return Ok(WriteReply {
-                issues: issue_entries(issues),
+                issues,
                 canonicalized: false,
             });
         }
@@ -164,14 +156,4 @@ impl PlanServer {
             canonicalized: canonical != toml,
         })
     }
-}
-
-fn issue_entries(issues: Vec<Issue>) -> Vec<IssueEntry> {
-    issues
-        .into_iter()
-        .map(|issue| IssueEntry {
-            path: issue.path,
-            message: issue.message,
-        })
-        .collect()
 }

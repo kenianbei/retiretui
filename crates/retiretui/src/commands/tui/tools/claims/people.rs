@@ -14,7 +14,7 @@ use bevy_ecs::prelude::{
 };
 use plurimus::widgets::{ActiveDescendant, WidgetSystems};
 use retiretui_engine::optimize::benefit_estimates;
-use retiretui_engine::plan::{Dollars, Income, Person, Plan};
+use retiretui_engine::plan::{Dollars, Income, Item, Person, Plan};
 
 use super::super::{EnterRuns, handle_enter};
 use super::guide;

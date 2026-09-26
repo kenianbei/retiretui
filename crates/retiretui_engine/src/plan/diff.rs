@@ -7,7 +7,7 @@ use std::collections::BTreeSet;
 use toml::{Table, Value};
 
 use super::scenario::{HOUSEHOLD_KEY, ID_KEY, PEOPLE_KEY, PEOPLE_PATH, SCHEMA_KEY, is_keyed};
-use super::{Plan, PlanError};
+use super::{Plan, PlanError, to_table};
 
 /// The top-level sections in the order a plan file writes them.
 const SECTIONS: [&str; 13] = [
@@ -66,7 +66,7 @@ pub enum ChangeKind {
 ///
 /// Returns [`PlanError`] when either plan fails to serialize or read back.
 pub fn diff(base: &Plan, other: &Plan) -> Result<Vec<Change>, PlanError> {
-    let (base, other) = (canonical(base)?, canonical(other)?);
+    let (base, other) = (to_table(base)?, to_table(other)?);
     let mut changes = Vec::new();
     for section in sections(&base, &other) {
         let (from, to) = (base.get(section), other.get(section));
@@ -79,10 +79,6 @@ pub fn diff(base: &Plan, other: &Plan) -> Result<Vec<Change>, PlanError> {
         }
     }
     Ok(changes)
-}
-
-fn canonical(plan: &Plan) -> Result<Table, PlanError> {
-    Ok(plan.to_toml_string()?.parse()?)
 }
 
 /// The tables' sections, those a plan file writes in its order.
