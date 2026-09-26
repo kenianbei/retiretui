@@ -536,3 +536,20 @@ fn ceiling_options_are_validated() {
             .any(|issue| issue.message.contains("tiers exist"))
     );
 }
+
+#[test]
+fn a_sweep_is_ranked_by_what_the_household_ends_with_not_by_rate() {
+    let mut into_roth = options();
+    into_roth.sources = Vec::new();
+    into_roth.destination = "roth-ira".to_owned();
+    let plan = plan_from(common::FULL);
+    let sweep = sweep_brackets(&plan, &TaxTables::embedded(), &into_roth).unwrap();
+    let keys: Vec<_> = sweep
+        .brackets
+        .iter()
+        .map(|bracket| rank_key(&bracket.optimized))
+        .collect();
+    assert!(keys.is_sorted(), "best first");
+    let rates = sweep.brackets.iter().map(|bracket| bracket.rate);
+    assert!(!rates.is_sorted(), "the fixture ranks unlike its rates");
+}
