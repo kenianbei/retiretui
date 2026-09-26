@@ -97,6 +97,16 @@ pub struct SweptBracket {
     pub optimized: Projection,
 }
 
+impl From<OptimizedLadder> for BracketSweep {
+    /// The one bracket's ladder, as a sweep of that bracket alone.
+    fn from(ladder: OptimizedLadder) -> Self {
+        Self {
+            baseline: ladder.baseline,
+            brackets: vec![ladder.ladder],
+        }
+    }
+}
+
 impl SweptBracket {
     /// The ladder's total on the chosen basis: the plain step sum when
     /// nominal, each step deflated by its year's deflator otherwise.
@@ -153,9 +163,9 @@ pub fn optimize_conversions(
     })
 }
 
-/// Runs the optimizer once per bracket - `rate`'s alone, or every rate
-/// but the top, which has no ceiling - against one shared baseline, and
-/// ranks the ladders best first; each ladder replaces the plan's own, as
+/// Runs the optimizer once per fillable bracket (every rate but the top,
+/// which has no ceiling) against one shared baseline, and ranks the
+/// ladders best first; each ladder replaces the plan's own, as
 /// [`optimize_conversions`].
 ///
 /// # Errors
@@ -165,20 +175,15 @@ pub fn sweep_brackets(
     plan: &Plan,
     tables: &TaxTables,
     options: &OptimizeOptions,
-    rate: Option<f64>,
 ) -> Result<BracketSweep, Vec<Issue>> {
     let options = &with_default_sources(plan, options);
-    let issues = check_options(plan, tables, options, rate);
+    let issues = check_options(plan, tables, options, None);
     if !issues.is_empty() {
         return Err(issues);
     }
     let baseline = project(plan, tables);
     let (bare, from) = without_ladder(plan, tables, &baseline);
-    let rates = match rate {
-        Some(rate) => vec![rate],
-        None => fillable_rates(plan, tables),
-    };
-    let mut brackets: Vec<SweptBracket> = rates
+    let mut brackets: Vec<SweptBracket> = fillable_rates(plan, tables)
         .into_iter()
         .map(|rate| {
             let (steps, optimized) = search_ladder(&bare, tables, options, rate, &from);

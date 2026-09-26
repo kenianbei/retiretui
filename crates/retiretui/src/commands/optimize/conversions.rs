@@ -172,7 +172,6 @@ fn run_sweep(plan: &Plan, tables: &TaxTables, args: &OptimizeArgs) -> anyhow::Re
         plan,
         tables,
         &args.constraints.options(&args.from, &args.to),
-        None,
     )
     .map_err(|issues| anyhow::Error::msg(crate::commands::issue_listing(&issues)))?;
     let deflated = !args.nominal;

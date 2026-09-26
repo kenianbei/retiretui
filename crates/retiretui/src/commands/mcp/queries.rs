@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use retiretui_engine::params::Inflation;
+use retiretui_engine::params::{Inflation, TaxParams};
 use retiretui_engine::plan::Dollars;
 use retiretui_engine::project::{ClassTotals, Summary, YearRow, project};
 use rmcp::handler::server::wrapper::{Json, Parameters};
@@ -40,22 +40,63 @@ pub enum Detail {
 pub struct ProjectionReply {
     /// One row per projected year, in nominal dollars; divide by each row's
     /// `deflator` for today's dollars. The shape follows `detail`.
-    pub years: Vec<serde_json::Value>,
+    pub years: Years,
 }
 
-#[derive(Serialize)]
-struct SummaryRow<'a> {
-    year: i16,
-    ages: &'a BTreeMap<String, u8>,
-    total_income: Dollars,
-    expenses: Dollars,
-    taxes: Dollars,
-    withdrawals: Dollars,
-    class_totals: ClassTotals,
-    net_worth: Dollars,
-    surplus: Dollars,
-    unfunded: Dollars,
-    deflator: f64,
+/// The projected rows, in the shape `detail` asks for.
+#[derive(Serialize, JsonSchema)]
+#[serde(untagged)]
+pub enum Years {
+    /// Each year's headline figures.
+    Summary(Vec<SummaryRow>),
+    /// Each year's every figure: flows, balances per account, and actions.
+    Full(Vec<YearRow>),
+}
+
+/// A year's headline figures.
+#[derive(Serialize, JsonSchema)]
+pub struct SummaryRow {
+    /// The calendar year.
+    pub year: i16,
+    /// Age each person reaches during the year, by person id.
+    pub ages: BTreeMap<String, u8>,
+    /// Gross income, Social Security included.
+    pub total_income: Dollars,
+    /// Spending for the year.
+    pub expenses: Dollars,
+    /// Ordinary, gains and state tax plus penalties.
+    pub taxes: Dollars,
+    /// Total withdrawn across all accounts, RMDs included.
+    pub withdrawals: Dollars,
+    /// End-of-year balances by treatment class.
+    pub class_totals: ClassTotals,
+    /// Sum of all end-of-year balances.
+    pub net_worth: Dollars,
+    /// Unspent income swept to the surplus account.
+    pub surplus: Dollars,
+    /// Spending the accounts could not cover.
+    pub unfunded: Dollars,
+    /// Cumulative inflation factor since plan start; nominal ÷ this = today's
+    /// dollars.
+    pub deflator: f64,
+}
+
+impl SummaryRow {
+    fn of(row: YearRow) -> Self {
+        Self {
+            year: row.year,
+            withdrawals: row.total_withdrawals(),
+            ages: row.ages,
+            total_income: row.total_income,
+            expenses: row.expenses,
+            taxes: row.taxes.total,
+            class_totals: row.class_totals,
+            net_worth: row.net_worth,
+            surplus: row.surplus,
+            unfunded: row.unfunded,
+            deflator: row.deflator,
+        }
+    }
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -111,15 +152,14 @@ impl PlanServer {
     ) -> Result<Json<ProjectionReply>, String> {
         let plan = self.load_valid_plan(&args.path)?;
         let projection = project(&plan, &self.tables);
-        let years = projection
-            .years
-            .iter()
-            .filter(|row| {
-                args.from_year.is_none_or(|from| row.year >= from)
-                    && args.to_year.is_none_or(|to| row.year <= to)
-            })
-            .map(|row| row_value(row, args.detail))
-            .collect();
+        let rows = projection.years.into_iter().filter(|row| {
+            args.from_year.is_none_or(|from| row.year >= from)
+                && args.to_year.is_none_or(|to| row.year <= to)
+        });
+        let years = match args.detail {
+            Detail::Summary => Years::Summary(rows.map(SummaryRow::of).collect()),
+            Detail::Full => Years::Full(rows.collect()),
+        };
         Ok(Json(ProjectionReply { years }))
     }
 
@@ -173,7 +213,7 @@ impl PlanServer {
     fn resolve_tax_parameters(
         &self,
         Parameters(TaxParametersArgs { year, inflation }): Parameters<TaxParametersArgs>,
-    ) -> Result<Json<serde_json::Value>, String> {
+    ) -> Result<Json<TaxParams>, String> {
         let latest = self.tables.latest_known_year().unwrap_or(year);
         let inflation = match inflation {
             Some(rate) => rate,
@@ -185,12 +225,10 @@ impl PlanServer {
                 ));
             }
         };
-        serde_json::to_value(
+        Ok(Json(
             self.tables
                 .params_for(year, &Inflation::constant(inflation)),
-        )
-        .map(Json)
-        .map_err(|err| err.to_string())
+        ))
     }
 
     /// The plan and scenario file schema reference: document layout, field
@@ -200,24 +238,4 @@ impl PlanServer {
     fn describe_schema() -> String {
         include_str!("schema.md").to_owned()
     }
-}
-
-fn row_value(row: &YearRow, detail: Detail) -> serde_json::Value {
-    let value = match detail {
-        Detail::Full => serde_json::to_value(row),
-        Detail::Summary => serde_json::to_value(SummaryRow {
-            year: row.year,
-            ages: &row.ages,
-            total_income: row.total_income,
-            expenses: row.expenses,
-            taxes: row.taxes.total,
-            withdrawals: row.total_withdrawals(),
-            class_totals: row.class_totals,
-            net_worth: row.net_worth,
-            surplus: row.surplus,
-            unfunded: row.unfunded,
-            deflator: row.deflator,
-        }),
-    };
-    value.expect("plain data serializes")
 }

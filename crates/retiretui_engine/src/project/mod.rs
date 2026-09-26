@@ -38,6 +38,7 @@ pub struct Projection {
 
 /// Taxes assessed for one year.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Serialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct Taxes {
     /// Tax on ordinary income.
     pub ordinary: Dollars,
@@ -65,6 +66,7 @@ pub struct Taxes {
 
 /// End-of-year balances aggregated by treatment class.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Serialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct ClassTotals {
     /// Taxable: brokerage and cash.
     pub taxable: Dollars,
@@ -204,6 +206,7 @@ pub enum Action {
 
 /// One projected calendar year, in nominal dollars.
 #[derive(Debug, Clone, PartialEq, Serialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct YearRow {
     /// The calendar year.
     pub year: i16,

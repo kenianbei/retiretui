@@ -14,10 +14,10 @@ use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
 use bevy_ecs::prelude::{Commands, In, IntoScheduleConfigs, Local, Res, ResMut, World};
 use retiretui_engine::optimize::{
     BracketSweep, LadderStep, OptimizeOptions, SweptBracket, apply_ladder, is_ladder,
-    ladder_overlay, sweep_brackets,
+    ladder_overlay, optimize_conversions, sweep_brackets,
 };
 use retiretui_engine::params::TaxTables;
-use retiretui_engine::plan::Plan;
+use retiretui_engine::plan::{Issue, Plan};
 use retiretui_engine::project::Projection;
 use serde::Deserialize;
 
@@ -172,7 +172,7 @@ pub(crate) fn sweep_into(
     destination: &str,
 ) -> Option<Swept> {
     let (options, rate) = options_into(held, destination)?;
-    let sweep = sweep_brackets(plan, tables, &options, rate).ok()?;
+    let sweep = search(plan, tables, &options, rate).ok()?;
     Some(Swept { sweep, options })
 }
 
@@ -290,8 +290,21 @@ fn search_by_itself(
     }
     let tables = session.tables.clone();
     ladders.start(draft.plan.clone(), move |plan| {
-        sweep_brackets(plan, &tables, &options, rate).map(|sweep| Swept { sweep, options })
+        search(plan, &tables, &options, rate).map(|sweep| Swept { sweep, options })
     });
+}
+
+/// The `rate` bracket's ladder, or every bracket's best first with none.
+pub(crate) fn search(
+    plan: &Plan,
+    tables: &TaxTables,
+    options: &OptimizeOptions,
+    rate: Option<f64>,
+) -> Result<BracketSweep, Vec<Issue>> {
+    match rate {
+        Some(rate) => optimize_conversions(plan, tables, options, rate).map(BracketSweep::from),
+        None => sweep_brackets(plan, tables, options),
+    }
 }
 
 /// The `take-ladder` command: asks before taking the highlighted ladder -

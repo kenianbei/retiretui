@@ -53,6 +53,7 @@ pub enum ParamsError {
 
 /// A value per filing status.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct PerStatus<T> {
     /// Single filer value.
@@ -82,6 +83,7 @@ impl<T: Copy> PerStatus<T> {
 
 /// One ordinary-income bracket: `rate` applies above `over`.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub struct Bracket {
     /// Taxable income where this rate starts.
@@ -96,6 +98,7 @@ pub struct Bracket {
 
 /// Standard deductions.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub struct Deductions {
     /// Standard deduction per filing status.
@@ -104,6 +107,7 @@ pub struct Deductions {
 
 /// Long-term capital gains thresholds and rates.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct Ltcg {
     /// Rate for gains stacked above the zero band.
@@ -119,6 +123,7 @@ pub struct Ltcg {
 /// Social Security parameters: the statutory, unindexed provisional-income
 /// thresholds, and what the benefit formula reads.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct SocialSecurityThresholds {
     /// Below this, no benefit is taxable.
@@ -136,6 +141,7 @@ pub struct SocialSecurityThresholds {
 /// the growth assumed past it. The wage base and the bend points of any
 /// year derive from the index by statute.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct BenefitParams {
     /// Annual growth of the average wage past the last year the index
@@ -203,6 +209,7 @@ impl BenefitParams {
 
 /// Early-withdrawal parameters.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub struct EarlyWithdrawal {
     /// Penalty rate on early distributions.
@@ -211,6 +218,7 @@ pub struct EarlyWithdrawal {
 
 /// One row of the RMD Uniform Lifetime Table.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub struct RmdDivisor {
     /// Age reached during the distribution year.
@@ -221,6 +229,7 @@ pub struct RmdDivisor {
 
 /// The RMD table.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub struct RmdTable {
     /// Rows in ascending age order.
@@ -230,6 +239,7 @@ pub struct RmdTable {
 /// A MAGI band over which something phases out: whole below `from`, gone
 /// at `to`, linear between.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct PhaseOut {
     /// MAGI at or below which nothing is lost.
@@ -254,6 +264,7 @@ impl PhaseOut {
 
 /// Annual contribution limits.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct ContributionLimits {
     /// Elective deferral for 401(k)/403(b)/457(b).
@@ -292,6 +303,7 @@ pub struct ContributionLimits {
 /// One IRMAA tier: the MAGI threshold it starts above and the annual
 /// surcharges per covered person.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct IrmaaTier {
     /// The tier applies when the lookback MAGI exceeds this.
@@ -304,6 +316,7 @@ pub struct IrmaaTier {
 
 /// Every tax parameter for one year.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct TaxParams {
     /// Parameter file schema version.
@@ -337,6 +350,7 @@ pub struct TaxParams {
 /// One state's income tax. A state with no income tax is an empty table,
 /// which is not the same as a state with none: that one is not modeled.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(default, deny_unknown_fields, rename_all = "kebab-case")]
 pub struct StateParams {
     /// Standard deduction by filing status.

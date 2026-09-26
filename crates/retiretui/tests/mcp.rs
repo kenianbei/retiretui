@@ -3,6 +3,7 @@
 
 mod common;
 
+use retiretui_engine::plan::{AccountKind, Draw, FilingStatus, IncomeKind, Payer, TriggerBasis};
 use serde_json::json;
 
 use common::mcp::McpClient;
@@ -192,44 +193,31 @@ fn describe_schema_example_passes_write_plan() {
     assert_eq!(written["issues"].as_array().unwrap().len(), 0, "{written}");
 }
 
+/// Asserts `text` quotes every word, as the schema reference writes a
+/// closed set's spellings.
+fn assert_quotes_every<'a>(text: &str, set: &str, words: impl IntoIterator<Item = &'a str>) {
+    for word in words {
+        assert!(
+            text.contains(&format!("`\"{word}\"`")),
+            "missing {set} {word}"
+        );
+    }
+}
+
 #[test]
 fn schema_reference_names_the_full_vocabulary() {
     let text = include_str!("../src/commands/mcp/schema.md");
-    let account_kinds = [
-        "401k",
-        "403b",
-        "457b",
-        "414k",
-        "ira",
-        "sep-ira",
-        "simple-ira",
-        "hsa",
-        "brokerage",
-        "cash",
-    ];
-    for kind in account_kinds {
-        assert!(
-            text.contains(&format!("`\"{kind}\"`")),
-            "missing account kind {kind}"
-        );
-    }
-    let income_kinds = [
-        "salary",
-        "pension",
-        "annuity",
-        "rental",
-        "social-security",
-        "windfall",
-        "other",
-    ];
-    for kind in income_kinds {
-        assert!(
-            text.contains(&format!("`\"{kind}\"`")),
-            "missing income kind {kind}"
-        );
-    }
-    for basis in ["date =", "age =", "event =", "income ="] {
-        assert!(text.contains(basis), "missing trigger basis {basis}");
+    let kinds = AccountKind::ALL.iter().map(|kind| kind.as_str());
+    assert_quotes_every(text, "account kind", kinds);
+    let kinds = IncomeKind::ALL.iter().map(|kind| kind.as_str());
+    assert_quotes_every(text, "income kind", kinds);
+    let payers = Payer::ALL.iter().map(|payer| payer.as_str());
+    assert_quotes_every(text, "payer", payers);
+    let statuses = FilingStatus::ALL.iter().map(|status| status.as_str());
+    assert_quotes_every(text, "filing status", statuses);
+    for basis in TriggerBasis::ALL {
+        let key = format!("{} =", basis.as_str());
+        assert!(text.contains(&key), "missing trigger basis {key}");
     }
     for marker in ["base =", "remove = true", "replace = true"] {
         assert!(text.contains(marker), "missing scenario marker {marker}");
@@ -237,12 +225,10 @@ fn schema_reference_names_the_full_vocabulary() {
     for marker in ["[medicare]", "[[cliffs]]", "`magi_over`", "`prior_magi`"] {
         assert!(text.contains(marker), "missing cliff marker {marker}");
     }
-    for marker in ["[[contributions]]", "`\"employer\"`"] {
-        assert!(
-            text.contains(marker),
-            "missing contribution marker {marker}"
-        );
-    }
+    assert!(
+        text.contains("[[contributions]]"),
+        "missing the contributions table"
+    );
 }
 
 const SCENARIO: &str = "schema = 1\nbase = \"plan.toml\"\n\n[plan]\nname = \"retire-early\"\n\n[[expenses]]\nid = \"travel\"\nremove = true\n";
@@ -370,12 +356,29 @@ fn market_tools_run_the_plan_and_stay_inside_the_root() {
 #[test]
 fn schema_reference_documents_the_market() {
     let text = include_str!("../src/commands/mcp/schema.md");
-    for marker in [
-        "[market]",
-        "`allocation`",
-        "`\"assumptions\"`",
-        "`\"history\"`",
-    ] {
+    for marker in ["[market]", "`allocation`"] {
         assert!(text.contains(marker), "missing market marker {marker}");
     }
+    assert_quotes_every(text, "draw", Draw::ALL.iter().map(|draw| draw.as_str()));
+}
+
+#[test]
+fn projection_and_tax_parameters_state_their_output_shapes() {
+    let root = scratch_dir("mcp-output-schemas", "plan.toml", &[]);
+    let mut client = McpClient::spawn(&root);
+    let tools = client.request("tools/list", json!({}));
+    let schema_of = |name: &str| {
+        let tools = tools["tools"].as_array().unwrap();
+        let tool = tools.iter().find(|tool| tool["name"] == name).unwrap();
+        tool["outputSchema"].clone()
+    };
+    let projection = schema_of("project_plan");
+    let years = &projection["$defs"]["Years"];
+    let shapes = years["anyOf"].as_array().expect("summary or full rows");
+    assert_eq!(shapes.len(), 2, "{projection}");
+    let parameters = schema_of("tax_parameters");
+    let fields = parameters["properties"].as_object().expect("typed fields");
+    assert!(fields.contains_key("brackets"), "{parameters}");
+    let issues = &schema_of("validate_plan")["properties"]["issues"];
+    assert!(issues["items"].is_object(), "{issues}");
 }

@@ -265,8 +265,8 @@ fn a_new_ladder_replaces_the_one_taken() {
         project(&laddered, &TaxTables::embedded()),
         "the plan as given"
     );
-    let swept = sweep_brackets(&laddered, &TaxTables::embedded(), &options(), None).unwrap();
-    let fresh = sweep_brackets(&plan_from(BASE), &TaxTables::embedded(), &options(), None).unwrap();
+    let swept = sweep_brackets(&laddered, &TaxTables::embedded(), &options()).unwrap();
+    let fresh = sweep_brackets(&plan_from(BASE), &TaxTables::embedded(), &options()).unwrap();
     let steps = |sweep: &retiretui_engine::optimize::BracketSweep| {
         sweep
             .brackets
@@ -342,7 +342,7 @@ fn optimizer_is_deterministic() {
 
 #[test]
 fn sweep_covers_every_fillable_bracket_best_first() {
-    let sweep = sweep_brackets(&plan_from(BASE), &TaxTables::embedded(), &options(), None).unwrap();
+    let sweep = sweep_brackets(&plan_from(BASE), &TaxTables::embedded(), &options()).unwrap();
     let params = TaxTables::embedded().params_for(2026, &Inflation::constant(0.0));
     let brackets = params
         .brackets

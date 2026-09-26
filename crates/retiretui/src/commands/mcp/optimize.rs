@@ -113,7 +113,7 @@ impl PlanServer {
         Parameters(args): Parameters<ConversionToolArgs>,
     ) -> Result<Json<SweepReply>, String> {
         let plan = self.load_valid_plan(&args.path)?;
-        let sweep = sweep_brackets(&plan, &self.tables, &args.options(), None)
+        let sweep = sweep_brackets(&plan, &self.tables, &args.options())
             .map_err(|issues| crate::commands::issue_listing(&issues))?;
         Ok(Json(SweepReply::new(&sweep, !args.nominal)))
     }
