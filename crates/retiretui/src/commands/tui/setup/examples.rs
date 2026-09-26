@@ -57,12 +57,9 @@ pub const EXAMPLES: &[(&str, &str, &str)] = &[
     ),
 ];
 
-/// The example kept as `file`, and its plan.
-pub fn named(file: &str) -> Option<(&'static str, &'static str)> {
-    EXAMPLES
-        .iter()
-        .find(|(kept, _, _)| *kept == file)
-        .map(|&(kept, _, text)| (kept, text))
+/// The example kept as `file`.
+pub fn named(file: &str) -> Option<&'static (&'static str, &'static str, &'static str)> {
+    EXAMPLES.iter().find(|(kept, _, _)| *kept == file)
 }
 
 #[cfg(test)]

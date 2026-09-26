@@ -240,16 +240,11 @@ fn aim_at_only_roth(active: Res<ActivePage>, mut draft: ResMut<Draft>) {
     if draft.answers::<Constraints>().contains_key(DESTINATION) {
         return;
     }
-    let mut roths = draft
-        .plan
-        .accounts
-        .iter()
-        .filter(|account| account.treatment() == TreatmentClass::Roth);
-    let (Some(only), None) = (roths.next(), roths.next()) else {
+    let offered = edit::ref_offers(&draft.plan, RefSource::RothAccount);
+    let [only] = offered.as_slice() else {
         return;
     };
-    let only = only.id.clone();
-    aim_at(&mut draft, &only);
+    aim_at(&mut draft, &only.value);
 }
 
 /// Searches again whenever the page is on show over a valid draft whose

@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use clap::Args;
 use retiretui_engine::params::TaxTables;
-use retiretui_engine::plan::{Dollars, Plan};
+use retiretui_engine::plan::Plan;
 use retiretui_engine::project::{
     Action, ContributionNote, Projection, YearRow, irmaa_purchase, project,
 };
@@ -64,7 +64,7 @@ pub fn run(args: &ActionsArgs) -> anyhow::Result<()> {
     let projection = project(&plan, &tables);
     let year = args.year.unwrap_or_else(current_year);
     let row = year_row(&projection, year).map_err(anyhow::Error::msg)?;
-    let warnings = collect_warnings(&plan, &tables, row, nominal);
+    let warnings = collect_warnings(&plan, &tables, row, None);
     match args.format {
         OutputFormat::Json => {
             let reply = ActionsReply::new(row, warnings);
@@ -236,19 +236,15 @@ pub(crate) fn held_contributions(row: &YearRow) -> impl Iterator<Item = (&str, H
     })
 }
 
-/// Keeps an amount in the dollars of the year it is paid in.
-pub(crate) fn nominal(_: i16, amount: Dollars) -> Dollars {
-    amount
-}
-
-/// The year's warnings, each amount read through `dollars` from the
-/// dollars of the year it is paid in: `nominal` keeps them so.
+/// The year's warnings, each amount in the dollars of the year it is paid
+/// in, or in today's through `deflating`'s deflators where one is given.
 pub(crate) fn collect_warnings(
     plan: &Plan,
     tables: &TaxTables,
     row: &YearRow,
-    dollars: impl Fn(i16, Dollars) -> Dollars,
+    deflating: Option<&Projection>,
 ) -> Vec<String> {
+    let dollars = |year, amount| deflating.map_or(amount, |years| years.deflate_in(year, amount));
     let mut warnings: Vec<String> = held_contributions(row)
         .map(|(account, held)| format!("{}: {}", account_name(plan, account), held.warning()))
         .collect();

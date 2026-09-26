@@ -4,12 +4,20 @@
 //! table says which of its columns are text and sizes them itself.
 
 use bevy_ecs::hierarchy::{ChildOf, Children};
-use bevy_ecs::prelude::{Commands, Entity};
+use bevy_ecs::prelude::{Commands, Component, Entity};
 use plurimus::core::ratatui_core::layout::Constraint;
 use plurimus::core::ratatui_core::style::{Color, Modifier, Style};
 use plurimus::core::ratatui_core::text::{Line, Span};
 use plurimus::ui::{ScrollArea, UiStyle};
 use plurimus::widgets::{ActiveDescendant, TableColumns, table_header, table_row};
+
+/// What a table says in place of rows it has none of, and the width it
+/// was last wrapped to; rows spawned into the table take its place.
+#[derive(Component, Debug)]
+pub(super) struct Said {
+    pub(super) text: String,
+    pub(super) drawn: Option<u16>,
+}
 
 /// Each column as wide as its widest cell, header included, and `gap`
 /// cells more before the next than the one the table itself leaves.
@@ -157,6 +165,7 @@ fn spawn_rows(
     header: Vec<Line<'static>>,
     rows: impl Iterator<Item = Vec<Line<'static>>>,
 ) -> Vec<Entity> {
+    commands.entity(table).remove::<Said>();
     commands.spawn((
         table_header(header),
         UiStyle(Style::new().add_modifier(Modifier::BOLD)),

@@ -133,15 +133,8 @@ fn refresh_warnings(
         return;
     };
     let ledger = shown.ledger();
-    let is_nominal = shown.basis.nominal;
-    let shown_in = |year, amount| {
-        if is_nominal {
-            amount
-        } else {
-            ledger.projection.deflate_in(year, amount)
-        }
-    };
-    let warnings = collect_warnings(&ledger.plan, &session.tables, row, shown_in);
+    let deflating = (!shown.basis.nominal).then_some(&ledger.projection);
+    let warnings = collect_warnings(&ledger.plan, &session.tables, row, deflating);
     let lines: Vec<Line<'static>> = warnings
         .into_iter()
         .map(|warning| Line::styled(format!("{WARNING_MARK}{warning}"), theme.exceeded()))
@@ -356,8 +349,8 @@ mod tests {
         let row = &projected.projection.years[5];
         assert!(row.unfunded > 0, "a year that runs short");
         let tables = TaxTables::embedded();
-        let today = |year, amount| projected.projection.deflate_in(year, amount);
-        let said = collect_warnings(&projected.plan, &tables, row, today).join("\n");
+        let deflating = Some(&projected.projection);
+        let said = collect_warnings(&projected.plan, &tables, row, deflating).join("\n");
         let deflated = money(deflate(row.unfunded, row.deflator));
         assert!(said.contains(&deflated), "{said}");
         assert!(!said.contains(&money(row.unfunded)), "{said}");

@@ -149,7 +149,7 @@ fn an_example_hides_the_questions_and_is_named_after_itself() {
     let written = dir.join("starter.toml");
     assert_eq!(document(&app), Some(written.clone()));
     let plan = Plan::from_toml_str(&std::fs::read_to_string(written).unwrap()).unwrap();
-    let (_, example) = super::examples::named("starter.toml").unwrap();
+    let (_, _, example) = super::examples::named("starter.toml").unwrap();
     let example = Plan::from_toml_str(example).unwrap();
     assert_eq!(plan, example, "the example as it stands");
 }

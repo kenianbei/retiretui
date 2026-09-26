@@ -68,9 +68,10 @@ pub struct Idle<'w> {
 impl Idle<'_> {
     /// Whether the command named `name` would refuse for want of a result.
     pub fn is_idle(&self, name: &str) -> bool {
+        use super::command::{TAKE_CLAIMS, TAKE_LADDER, WRITE_CLAIMS, WRITE_LADDER};
         match name {
-            "write-ladder" | "take-ladder" => self.ladders.highlighted_bracket().is_none(),
-            "write-claims" | "take-claims" => self.claims.found().is_none(),
+            WRITE_LADDER | TAKE_LADDER => self.ladders.highlighted_bracket().is_none(),
+            WRITE_CLAIMS | TAKE_CLAIMS => self.claims.found().is_none(),
             _ => false,
         }
     }

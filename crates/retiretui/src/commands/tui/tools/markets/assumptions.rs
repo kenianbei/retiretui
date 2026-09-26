@@ -19,7 +19,6 @@ use crate::commands::tui::nav::{ActivePage, FocusStop, Page};
 use crate::commands::tui::pane::Pane;
 use crate::commands::tui::present::{money, rate};
 use crate::commands::tui::tabulate;
-use crate::commands::tui::theme::Theme;
 use crate::commands::tui::tools::{EnterRuns, Tool, handle_enter};
 
 const TITLE: &str = "Assumptions";
@@ -118,11 +117,11 @@ fn rows<R: MarketTool>(plan: &Plan, found: Option<&R>) -> Vec<Assumption> {
 
 /// Rewrites the table whenever the plan or what the search found moves.
 fn refresh<R: MarketTool>(
-    (tool, draft, theme): (Res<Tool<R>>, Res<Draft>, Res<Theme>),
+    (tool, draft): (Res<Tool<R>>, Res<Draft>),
     mut tables: Query<(Entity, &AssumptionsTable, &mut ScrollArea)>,
     mut commands: Commands,
 ) {
-    if !(tool.is_changed() || draft.is_changed() || theme.is_changed()) {
+    if !(tool.is_changed() || draft.is_changed()) {
         return;
     }
     let assumptions = rows::<R>(&draft.plan, tool.found());

@@ -24,7 +24,7 @@ use crate::commands::tui::hints::Hints;
 use crate::commands::tui::layout::{self, filling, placed};
 use crate::commands::tui::present::compact_dollars;
 use crate::commands::tui::session::Basis;
-use crate::commands::tui::tabulate;
+use crate::commands::tui::tabulate::{self, Said};
 use crate::commands::tui::theme::{Repainted, Theme};
 
 /// Keeps `R`'s options pane saying what its search found.
@@ -136,7 +136,6 @@ fn refresh_options<R: Found>(
             say_instead(&mut commands, table, tool.said());
             continue;
         };
-        commands.entity(table).remove::<Said>();
         let laid = found.laid(&draft.plan, basis.nominal);
         // The widget measures the rows a frame behind a respawn, and keeps
         // that; the header, the plan's own row and the options are told.
@@ -145,14 +144,6 @@ fn refresh_options<R: Found>(
         let chosen = tool.highlighted().unwrap_or(0);
         fill(&mut commands, table, laid, chosen, &theme);
     }
-}
-
-/// What a table says in place of rows it has none of, and the width it
-/// was last wrapped to.
-#[derive(Component, Debug)]
-pub struct Said {
-    text: String,
-    drawn: Option<u16>,
 }
 
 /// Dimmed lines in place of `table`'s rows, saying why there are none,

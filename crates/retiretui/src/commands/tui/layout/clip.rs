@@ -15,15 +15,7 @@ pub fn clipped(text: String, width: u16) -> String {
     if cells_of(&text) <= width {
         return text;
     }
-    let mut kept = String::new();
-    let mut taken = 0;
-    for character in text.chars() {
-        taken += cells_of(character.encode_utf8(&mut [0; 4]));
-        if taken >= width {
-            break;
-        }
-        kept.push(character);
-    }
+    let mut kept: String = fitting(text.chars(), width.saturating_sub(1)).collect();
     kept.push(ELLIPSIS);
     kept
 }

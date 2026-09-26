@@ -273,7 +273,7 @@ fn create(world: &mut World) {
     let tables = &world.resource::<Session>().tables;
     let built = edit::from_table::<SetupAnswers>(answers).and_then(|answers| {
         match answers.example.as_deref().and_then(examples::named) {
-            Some((file, text)) => Plan::from_toml_str(text)
+            Some(&(file, _, text)) => Plan::from_toml_str(text)
                 .map(|plan| (plan, Some(file)))
                 .map_err(|error| format!("{file}: {error}")),
             None => generate::plan(&answers, start_year, tables).map(|plan| (plan, None)),
