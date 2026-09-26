@@ -3,18 +3,19 @@
 
 use std::sync::Arc;
 use std::thread::JoinHandle;
+use std::time::{Duration, Instant};
 
 use bevy_ecs::prelude::Resource;
 use retiretui_engine::market::Progress;
 
-pub(crate) struct Worker<T> {
+struct Worker<T> {
     /// Taken once the thread has answered.
     handle: Option<JoinHandle<T>>,
-    pub(crate) progress: Arc<Progress>,
+    progress: Arc<Progress>,
 }
 
 impl<T: Send + 'static> Worker<T> {
-    pub(crate) fn spawn(work: impl FnOnce(&Progress) -> T + Send + 'static) -> Self {
+    fn spawn(work: impl FnOnce(&Progress) -> T + Send + 'static) -> Self {
         let progress = Arc::new(Progress::default());
         let shared = Arc::clone(&progress);
         let handle = std::thread::spawn(move || work(&shared));
@@ -26,13 +27,51 @@ impl<T: Send + 'static> Worker<T> {
 }
 
 impl<T> Worker<T> {
-    pub(crate) fn is_finished(&self) -> bool {
+    fn is_finished(&self) -> bool {
         self.handle.as_ref().is_some_and(JoinHandle::is_finished)
     }
 
     /// What the thread answered; none where it panicked.
-    pub(crate) fn join(mut self) -> Option<T> {
+    fn join(mut self) -> Option<T> {
         self.handle.take()?.join().ok()
+    }
+}
+
+/// Work under way over `key`, which says what it is for, and since when.
+pub(crate) struct Keyed<K, T> {
+    pub(crate) key: K,
+    worker: Worker<T>,
+    since: Instant,
+}
+
+impl<K, T: Send + 'static> Keyed<K, T> {
+    pub(crate) fn spawn(key: K, work: impl FnOnce(&Progress) -> T + Send + 'static) -> Self {
+        Self {
+            key,
+            worker: Worker::spawn(work),
+            since: Instant::now(),
+        }
+    }
+}
+
+impl<K, T> Keyed<K, T> {
+    pub(crate) fn is_finished(&self) -> bool {
+        self.worker.is_finished()
+    }
+
+    pub(crate) fn progress(&self) -> &Progress {
+        &self.worker.progress
+    }
+
+    pub(crate) fn elapsed(&self) -> Duration {
+        self.since.elapsed()
+    }
+
+    /// The key, what the thread answered - none where it panicked - and
+    /// how long it took.
+    pub(crate) fn join(self) -> (K, Option<T>, Duration) {
+        let took = self.since.elapsed();
+        (self.key, self.worker.join(), took)
     }
 }
 

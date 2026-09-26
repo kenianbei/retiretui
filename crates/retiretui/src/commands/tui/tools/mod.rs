@@ -12,7 +12,8 @@ mod worker;
 mod write;
 
 use std::marker::PhantomData;
-use std::time::{Duration, Instant};
+use std::sync::Arc;
+use std::time::Duration;
 
 use bevy_app::{App, Startup, Update};
 use bevy_ecs::change_detection::DetectChanges;
@@ -34,8 +35,8 @@ use retiretui_engine::plan::{Issue, Plan};
 
 pub use claims::Claims;
 pub use ladders::Ladders;
+pub(crate) use worker::Keyed;
 pub use worker::Searches;
-pub(crate) use worker::Worker;
 pub use write::OVERLAY_OVER;
 
 use super::command;
@@ -130,16 +131,9 @@ pub(crate) fn show_help(
 }
 const ENTER_KEYS: &[(KeyBinding, ())] = &[(KeyBinding::new(Key::Enter), ())];
 
-/// What a search's thread sends back: the plan it searched, and what it
-/// found there.
-struct Answer<R> {
-    plan: Plan,
-    found: Result<R, Vec<Issue>>,
-}
-
 struct Running<R> {
-    worker: Worker<Answer<R>>,
-    since: Instant,
+    /// What the search found over the plan it is keyed by.
+    search: Keyed<Arc<Plan>, Result<R, Vec<Issue>>>,
     /// How many steps the search takes, where it counts them.
     total: Option<usize>,
 }
@@ -212,15 +206,10 @@ impl<R: Found> Tool<R> {
         total: Option<usize>,
         work: impl FnOnce(&Plan, &Progress) -> Result<R, Vec<Issue>> + Send + 'static,
     ) {
-        let worker = Worker::spawn(move |progress| {
-            let found = work(&plan, progress);
-            Answer { plan, found }
-        });
-        self.running = Some(Running {
-            worker,
-            since: Instant::now(),
-            total,
-        });
+        let plan = Arc::new(plan);
+        let searched = Arc::clone(&plan);
+        let search = Keyed::spawn(plan, move |progress| work(&searched, progress));
+        self.running = Some(Running { search, total });
     }
 
     fn has_answered(&self) -> bool {
@@ -229,7 +218,7 @@ impl<R: Found> Tool<R> {
             return false;
         }
         let running = self.running.as_ref();
-        running.is_some_and(|running| running.worker.is_finished())
+        running.is_some_and(|running| running.search.is_finished())
     }
 
     /// Takes the answer: one describing a plan the draft has since left
@@ -238,14 +227,14 @@ impl<R: Found> Tool<R> {
         let Some(running) = self.running.take() else {
             return;
         };
-        let took = running.since.elapsed();
-        let Some(answer) = running.worker.join() else {
+        let (plan, found, took) = running.search.join();
+        let Some(found) = found else {
             return;
         };
-        if answer.plan != draft.plan {
+        if *plan != draft.plan {
             return;
         }
-        match answer.found {
+        match found {
             Ok(found) => self.found = Some((found, took)),
             Err(issues) => self.refused = issues.first().map(|issue| issue.message.clone()),
         }
@@ -265,8 +254,8 @@ impl<R: Found> Tool<R> {
     fn note(&self) -> String {
         match (&self.running, &self.found) {
             (Some(running), _) => match running.total {
-                Some(total) => running_text(running.worker.progress.done(), total),
-                None => format!("searching… {}s", running.since.elapsed().as_secs()),
+                Some(total) => running_text(running.search.progress().done(), total),
+                None => format!("searching… {}s", running.search.elapsed().as_secs()),
             },
             (None, Some(_)) if R::IS_COUNTED => String::new(),
             (None, Some((_, took))) => format!("{:.1}s", took.as_secs_f32()),

@@ -23,7 +23,7 @@ use crate::commands::tui::session::{Projected, Session};
 use crate::commands::tui::tools::claims::HeldClaims;
 use crate::commands::tui::tools::ladders::{self, rate_label};
 use crate::commands::tui::tools::markets::MarketHistory;
-use crate::commands::tui::tools::{Searches, Worker};
+use crate::commands::tui::tools::{Keyed, Searches};
 
 const NO_LADDER: &str = "no conversion ladder beats the plan";
 const REFUSED: &str = "not searchable under the Roth Conversions answers";
@@ -38,7 +38,7 @@ type Searched = (Plan, BTreeSet<String>, toml::Table);
 #[derive(Resource, Default)]
 pub struct Better {
     answered: Option<(Searched, Found)>,
-    running: Option<(Searched, Worker<Option<Found>>)>,
+    running: Option<Keyed<Searched, Option<Found>>>,
 }
 
 pub(crate) struct Found {
@@ -70,10 +70,10 @@ impl Better {
     }
 
     fn receive(&mut self) {
-        let Some((searched, worker)) = self.running.take() else {
+        let Some(running) = self.running.take() else {
             return;
         };
-        if let Some(Some(found)) = worker.join() {
+        if let (searched, Some(Some(found)), _) = running.join() {
             self.answered = Some((searched, found));
         }
     }
@@ -100,7 +100,7 @@ impl Better {
         if self
             .running
             .as_ref()
-            .is_some_and(|(searched, _)| is_wanted(searched))
+            .is_some_and(|running| is_wanted(&running.key))
         {
             return;
         }
@@ -108,9 +108,9 @@ impl Better {
         let wanted: Searched = (plan.clone(), held.clone(), answers);
         let (tables, history) = (tables.clone(), history.clone());
         let searched = wanted.clone();
-        let worker =
-            Worker::spawn(move |progress| search(&searched, (&tables, &history), progress));
-        self.running = Some((wanted, worker));
+        self.running = Some(Keyed::spawn(wanted, move |progress| {
+            search(&searched, (&tables, &history), progress)
+        }));
     }
 }
 
@@ -179,11 +179,7 @@ pub(super) fn work(
     (session, history, held): (Res<Session>, Res<MarketHistory>, Res<HeldClaims>),
     (draft, mut better): (Res<Draft>, ResMut<Better>),
 ) {
-    if better
-        .running
-        .as_ref()
-        .is_some_and(|(_, worker)| worker.is_finished())
-    {
+    if better.running.as_ref().is_some_and(Keyed::is_finished) {
         better.receive();
     }
     let is_moved = projected.is_changed()
