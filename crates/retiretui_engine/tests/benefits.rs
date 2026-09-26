@@ -373,3 +373,25 @@ fn a_benefit_eligible_before_the_plan_carries_the_published_colas() {
         retiretui_engine::tax::social_security_benefit(&params, 1960, 67 * 12, &record, &published);
     assert_near(paid(2028), expected as f64);
 }
+
+#[test]
+fn a_benefit_claimed_before_the_plan_is_priced_at_the_age_it_was_claimed() {
+    // Born 1960-06-15 and claimed at 62 in 2022: 59 months early, not the
+    // 66 the owner is in the plan's first year.
+    let record = (1982..=2021).map(|year| (year, 60_000)).collect();
+    let text = frozen_claim(r#"{ age = 62, owner = "me" }"#, "")
+        .replace(
+            "birth = 1980-06-15",
+            &format!("birth = 1960-06-15\n{}", record_line(&record)),
+        )
+        .replace("amount = 100000", "amount = 0");
+    let published = [0.087, 0.032, 0.025, 0.028];
+    let expected = retiretui_engine::tax::social_security_benefit(
+        &common::benefit_params(),
+        1960,
+        62 * 12 + 1,
+        &record,
+        &published,
+    );
+    assert_near(paid_by(&text)(2026), expected as f64);
+}

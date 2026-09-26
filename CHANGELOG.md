@@ -72,9 +72,42 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - MCP `project_plan` and `tax_parameters` describe their replies with full
   output schemas - summary or full rows, and every tax table - and an issue in
   any reply is described as the engine's own. Replies are unchanged.
+- A computed Social Security benefit is priced at the claim's age in months, not
+  whole years: a claim on a date is priced from that date's month, and a claim
+  on an event or another income from the month of the date or age it rests on. A
+  claim at 62 starts in the first month 62 is held throughout, the month after
+  the birthday unless it falls on the 2nd, so most claims at 62 are 59 months
+  early rather than 60. A computed benefit claimed before the month 62 is
+  attained is refused.
+- Every Social Security income's first year, typed or computed, is paid from the
+  month it starts, not only one started on its owner's age.
+- Credits for delaying past full retirement age that are earned in the claim
+  year are paid from the next January, as SSA pays them, except for a claim
+  at 70.
+- A benefit whose owner turned 62 before the plan starts is carried to the
+  plan's first year by the COLAs SSA published, truncated to the dime after
+  each, rather than at the plan's inflation. The tax tables carry every COLA
+  from 1975 to 2025.
+- A person with no earnings record is taken to have worked from 22 until the
+  plan at the salary its first year pays them, so a computed benefit counts the
+  years before the plan; a stated record, even a partial one, is used as it
+  stands. The Overview says the benefit comes from an estimated career.
+- An earnings statement row stating several years as one sum is spread evenly
+  over them rather than refused, and the import says which years it spread; MCP
+  `import_earnings` says so in a new `note`.
+- A tax parameter file for a year that leaves out a state takes that state from
+  the latest earlier year that has it, inflated, so a plan living there is no
+  longer refused.
+- The engine is 0.2.0: `tax::social_security_benefit` takes an age in months and
+  the COLAs to carry the benefit through, `tax::claim_year_share` takes the
+  first paid month, `BenefitParams` gains `cola`, `Statement` gains `grouped`,
+  and `StatementError::Grouped` is gone.
 
 ### Fixed
 
+- A computed Social Security benefit claimed before the plan starts is priced at
+  the age it was claimed at, not at the age its owner has reached in the plan's
+  first year.
 - Taking a searched Roth conversion ladder no longer removes a conversion of
   your own whose id happens to start with `opt-`; only the optimizer's own
   `opt-<account>-<year>` conversions are replaced.
