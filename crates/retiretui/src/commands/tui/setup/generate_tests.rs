@@ -148,9 +148,19 @@ fn a_salary_stops_where_the_person_retires_and_a_retiree_has_none() {
     let benefit = retired.income.first().expect("the benefit");
     let claimed = benefit.start.as_ref().expect("a benefit states its claim");
     assert_eq!(
+        claimed.age,
+        Some(67),
+        "a retiree short of the claim age claims at it"
+    );
+
+    let older = ANSWERED.replace("birth_year = 1975", "birth_year = 1955");
+    let retired = generated(FilingStatus::Single, LifeStage::Retired, &older);
+    let benefit = retired.income.first().expect("the benefit");
+    let claimed = benefit.start.as_ref().expect("a benefit states its claim");
+    assert_eq!(
         claimed.date.map(PlanDate::year),
         Some(START_YEAR),
-        "a retiree claims from the plan's first year"
+        "a retiree past it claims from the plan's first year"
     );
 }
 
@@ -191,11 +201,33 @@ fn a_working_person_with_no_figure_typed_gets_a_benefit_computed_from_a_career()
         "and the claim search takes it"
     );
     assert_eq!(found.candidates.len(), 9);
+}
 
-    let retired = generated(FilingStatus::Single, LifeStage::Retired, &untyped);
+#[test]
+fn a_retiree_s_benefit_is_computed_from_what_they_last_earned() {
+    let tables = TaxTables::embedded();
+    let untyped = ANSWERED.replace("social_security = 40000\n", "");
+    let stopped = untyped.replace(
+        "retirement_age = 62",
+        "retirement_age = 45\nworking_since = 1998",
+    );
+    let retired = generated(FilingStatus::Single, LifeStage::Retired, &stopped);
+    let computed = benefit_of(&retired, "jordanexample");
+    assert_eq!(computed.amount, None, "a retiree's is computed too");
+    let record = &retired.household.people[0].earnings;
+    assert_eq!(record.keys().next(), Some(&1998), "from when they started");
+    assert_eq!(
+        record.keys().next_back(),
+        Some(&(1975 + 45 - 1)),
+        "to the year before they stopped"
+    );
+    assert!(validate_plan(&retired, &tables).is_empty());
+
+    let unpaid = stopped.replace("salary = 150000\n", "");
+    let retired = generated(FilingStatus::Single, LifeStage::Retired, &unpaid);
     assert!(
         retired.income.is_empty(),
-        "a retiree with no figure and no salary has no benefit to compute"
+        "no salary, so nothing to compute a benefit from"
     );
 }
 

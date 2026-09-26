@@ -1,0 +1,118 @@
+# Lee, 58, and Pat, 57, stop working now and buy health insurance on the ACA
+# marketplace until Medicare. Income over the premium-credit cliff costs the
+# credit for that year. The fixed conversion below crosses it once the brokerage
+# runs out and the IRA pays the bills; the optimizer, given the cliff as a MAGI
+# ceiling, searches for a ladder that stays under it.
+#
+# try: retiretui project examples/aca-bridge.toml
+# try: retiretui optimize conversions examples/aca-bridge.toml --from ira-lee --to roth-ira-lee --bracket 12 --max-magi 84000
+
+schema = 1
+
+[plan]
+name = "ACA bridge"
+start_year = 2026
+horizon_age = 95
+inflation = 0.025
+
+[household]
+filing = "married-joint"
+
+[[household.people]]
+id = "lee"
+name = "Lee"
+birth = 1968-06-01
+
+[[household.people]]
+id = "pat"
+name = "Pat"
+birth = 1969-02-10
+
+[[residency]]
+country = "us"
+state = "wy"
+
+# Illustrative figures: over this MAGI the premium credit is lost, which costs
+# the household this much that year. Active until the younger turns 65.
+[[cliffs]]
+id = "aca-cliff"
+name = "ACA premium credit"
+magi_over = 84000
+cost = 18000
+
+[[accounts]]
+id = "checking"
+name = "Checking"
+kind = "cash"
+owner = "lee"
+balance = 60000
+
+[[accounts]]
+id = "brokerage"
+name = "Joint brokerage"
+kind = "brokerage"
+owner = "lee"
+balance = 400000
+basis = 300000
+expected_return = 0.05
+
+[[accounts]]
+id = "ira-lee"
+name = "Lee's IRA"
+kind = "ira"
+owner = "lee"
+balance = 700000
+expected_return = 0.05
+
+[[accounts]]
+id = "roth-ira-lee"
+name = "Lee's Roth IRA"
+kind = "ira"
+roth = true
+owner = "lee"
+balance = 20000
+expected_return = 0.05
+
+[[accounts]]
+id = "ira-pat"
+name = "Pat's IRA"
+kind = "ira"
+owner = "pat"
+balance = 300000
+expected_return = 0.05
+
+[[income]]
+id = "ss-lee"
+name = "Lee's Social Security"
+kind = "social-security"
+owner = "lee"
+amount = 32000
+start = { age = 67, owner = "lee" }
+
+[[income]]
+id = "ss-pat"
+name = "Pat's Social Security"
+kind = "social-security"
+owner = "pat"
+amount = 24000
+start = { age = 67, owner = "pat" }
+
+[[expenses]]
+id = "living"
+name = "Living expenses"
+amount = 70000
+
+[[expenses]]
+id = "health-bridge"
+name = "Marketplace premiums after the credit"
+amount = 9000
+end = { age = 64, owner = "pat" }
+
+[[conversions]]
+id = "roth-ladder"
+name = "Roth conversion ladder"
+from = "ira-lee"
+to = "roth-ira-lee"
+amount = 30000
+start = { date = 2026-01-01 }
+end = { age = 64, owner = "pat" }

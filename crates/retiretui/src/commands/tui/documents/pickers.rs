@@ -169,9 +169,14 @@ pub fn save_as(
     Outcome::Done
 }
 
-/// Names the plan the new plan's form composed.
-pub fn name_new_plan(pickers: Res<Pickers>, mut browsing: ResMut<Browsing>) {
-    browsing.open(pickers.new_plan);
+/// Names the plan the new plan's form composed, offering `named` where
+/// the plan has a name of its own.
+pub fn name_new_plan(
+    In(named): In<Option<&'static str>>,
+    pickers: Res<Pickers>,
+    mut browsing: ResMut<Browsing>,
+) {
+    browsing.open_named(pickers.new_plan, named);
 }
 
 pub fn compare_with(pickers: Res<Pickers>, mut browsing: ResMut<Browsing>) -> Outcome {

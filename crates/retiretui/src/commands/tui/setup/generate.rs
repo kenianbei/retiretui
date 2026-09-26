@@ -8,6 +8,7 @@
 
 use std::collections::BTreeMap;
 use std::fmt::Write as _;
+use std::ops::RangeInclusive;
 
 use retiretui_engine::params::{BenefitParams, Inflation, TaxTables};
 use retiretui_engine::plan::{Dollars, FilingStatus, Plan};
@@ -103,10 +104,19 @@ impl Answered<'_> {
             .unwrap_or(born)
             .clamp(start_year.saturating_sub(OLDEST), start_year - 1);
         let salary = self.salary.unwrap_or_default().max(0);
+        let retirement_age = self.retirement_age.unwrap_or(DEFAULT_RETIREMENT_AGE);
+        let started =
+            (self.working_since).unwrap_or_else(|| birth_year.saturating_add(FIRST_WORKING_AGE));
+        let stopped = match household.stage {
+            LifeStage::Working => household.start_year,
+            LifeStage::Retired => birth_year
+                .saturating_add(i16::from(retirement_age))
+                .min(household.start_year),
+        };
         let benefit = match self.social_security {
             Some(figure) if figure > 0 => Benefit::Stated(figure),
             Some(_) => Benefit::None,
-            None => career(household, salary, birth_year),
+            None => career(household, salary, started..=stopped - 1),
         };
         Member {
             id: id_of(self.name.unwrap_or_default(), taken),
@@ -116,7 +126,7 @@ impl Answered<'_> {
                 .filter(|name| !name.is_empty())
                 .map(str::to_owned),
             birth_year,
-            retirement_age: self.retirement_age.unwrap_or(DEFAULT_RETIREMENT_AGE),
+            retirement_age,
             salary,
             claim_age: self.claim_age.unwrap_or(DEFAULT_CLAIM_AGE),
             benefit,
@@ -125,21 +135,20 @@ impl Answered<'_> {
 }
 
 /// The benefit a person who typed none gets: computed from a career at
-/// the salary, from [`FIRST_WORKING_AGE`] to the year before the plan,
-/// while they are working and earning; nothing otherwise.
-fn career(household: &Household<'_>, salary: Dollars, birth_year: i16) -> Benefit {
+/// the salary - what they earn, or last earned - over the years they
+/// worked; nothing where they name no salary or no year worked.
+fn career(household: &Household<'_>, salary: Dollars, worked: RangeInclusive<i16>) -> Benefit {
     let Some(params) = household.params else {
         return Benefit::None;
     };
-    if household.stage != LifeStage::Working || salary <= 0 {
+    if salary <= 0 || worked.is_empty() {
         return Benefit::None;
     }
-    let from = birth_year.saturating_add(FIRST_WORKING_AGE);
     Benefit::Computed(earnings_at_wage(
         params,
         salary,
         household.start_year,
-        from..=household.start_year - 1,
+        worked,
     ))
 }
 
@@ -271,9 +280,9 @@ fn write_accounts(toml: &mut String, members: &[Member]) {
 
 /// A salary ending the year before the person retires, and the benefit
 /// they claim - the figure typed, or none for the engine to compute from
-/// the career - at the age they gave while they are still earning, and
-/// from the plan's first year once they are not. The schema takes no
-/// benefit without a claim, so a retiree's is dated rather than left out.
+/// the career - at the age they gave, or from the plan's first year for a
+/// retiree already past it. The schema takes no benefit without a claim,
+/// so a retiree's is dated rather than left out.
 fn write_income(toml: &mut String, members: &[Member], stage: LifeStage, start_year: i16) {
     for member in members {
         if stage == LifeStage::Working && member.salary > 0 {
@@ -297,13 +306,15 @@ fn write_income(toml: &mut String, members: &[Member], stage: LifeStage, start_y
         if let Benefit::Stated(figure) = member.benefit {
             let _ = writeln!(toml, "amount = {figure}");
         }
-        let _ = match stage {
-            LifeStage::Working => writeln!(
+        let has_claimed = start_year - member.birth_year >= i16::from(member.claim_age);
+        let _ = if stage == LifeStage::Retired && has_claimed {
+            writeln!(toml, "start = {{ date = {start_year:04}-01-01 }}")
+        } else {
+            writeln!(
                 toml,
                 "start = {{ age = {}, owner = \"{}\" }}",
                 member.claim_age, member.id
-            ),
-            LifeStage::Retired => writeln!(toml, "start = {{ date = {start_year:04}-01-01 }}"),
+            )
         };
     }
 }

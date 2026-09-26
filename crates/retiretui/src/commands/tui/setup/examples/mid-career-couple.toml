@@ -1,0 +1,196 @@
+# Priya, 45, and Marcus, 43: two earners in Oregon with kids at home.
+# Deferral rates that step up each year, an HSA, a brokerage with a cost basis,
+# childcare that ends, college, and a retirement event for each of them.
+#
+# try: retiretui project examples/mid-career-couple.toml
+# try: retiretui compare examples/mid-career-couple.toml examples/mid-career-couple-retire-early.toml
+
+schema = 1
+
+[plan]
+name = "Mid-career couple"
+start_year = 2026
+horizon_age = 95
+inflation = 0.025
+
+[household]
+filing = "married-joint"
+
+[[household.people]]
+id = "priya"
+name = "Priya"
+birth = 1981-05-20
+
+[[household.people]]
+id = "marcus"
+name = "Marcus"
+birth = 1983-09-02
+
+[[residency]]
+country = "us"
+state = "or"
+
+[[events]]
+id = "retire-priya"
+name = "Priya retires"
+trigger = { age = 62, owner = "priya" }
+
+[[events]]
+id = "retire-marcus"
+name = "Marcus retires"
+trigger = { age = 62, owner = "marcus" }
+
+[[accounts]]
+id = "checking"
+name = "Checking"
+kind = "cash"
+owner = "priya"
+balance = 20000
+
+# Basis is what was paid in; only the gain above it is taxed on a sale.
+[[accounts]]
+id = "brokerage"
+name = "Joint brokerage"
+kind = "brokerage"
+owner = "priya"
+balance = 150000
+basis = 110000
+expected_return = 0.06
+
+[[accounts]]
+id = "401k-priya"
+name = "Priya's 401(k)"
+kind = "401k"
+owner = "priya"
+balance = 280000
+expected_return = 0.06
+
+[[accounts]]
+id = "401k-marcus"
+name = "Marcus's 401(k)"
+kind = "401k"
+owner = "marcus"
+balance = 190000
+expected_return = 0.06
+
+[[accounts]]
+id = "roth-ira-priya"
+name = "Priya's Roth IRA"
+kind = "ira"
+roth = true
+owner = "priya"
+balance = 40000
+expected_return = 0.06
+
+[[accounts]]
+id = "hsa-marcus"
+name = "Marcus's HSA"
+kind = "hsa"
+owner = "marcus"
+balance = 15000
+expected_return = 0.05
+
+[[income]]
+id = "salary-priya"
+name = "Priya's salary"
+kind = "salary"
+owner = "priya"
+amount = 120000
+end = { event = "retire-priya", offset = -1 }
+
+[[income]]
+id = "salary-marcus"
+name = "Marcus's salary"
+kind = "salary"
+owner = "marcus"
+amount = 95000
+end = { event = "retire-marcus", offset = -1 }
+
+[[income]]
+id = "ss-priya"
+name = "Priya's Social Security"
+kind = "social-security"
+owner = "priya"
+# A figure from the SSA statement: with no earnings record in the plan, a
+# computed benefit would count only the salary paid inside it.
+amount = 36000
+start = { age = 67, owner = "priya" }
+
+[[income]]
+id = "ss-marcus"
+name = "Marcus's Social Security"
+kind = "social-security"
+owner = "marcus"
+amount = 32000
+start = { age = 67, owner = "marcus" }
+
+# 8% of pay this year, a point more each year until 12%.
+[[contributions]]
+id = "deferral-priya"
+name = "Priya's 401(k) deferral"
+to = "401k-priya"
+rate = 0.08
+of = "salary-priya"
+step = { add = 0.01, up_to = 0.12 }
+end = { event = "retire-priya", offset = -1 }
+
+[[contributions]]
+id = "match-priya"
+name = "Priya's employer match"
+to = "401k-priya"
+by = "employer"
+match = { rate = 0.5, up_to = 0.06 }
+of = "salary-priya"
+end = { event = "retire-priya", offset = -1 }
+
+[[contributions]]
+id = "deferral-marcus"
+name = "Marcus's 401(k) deferral"
+to = "401k-marcus"
+rate = 0.06
+of = "salary-marcus"
+step = { add = 0.01, up_to = 0.10 }
+end = { event = "retire-marcus", offset = -1 }
+
+[[contributions]]
+id = "hsa-marcus"
+name = "Marcus's HSA contribution"
+to = "hsa-marcus"
+amount = 7000
+end = { event = "retire-marcus", offset = -1 }
+
+[[expenses]]
+id = "mortgage"
+name = "Mortgage"
+amount = 30000
+cola = false
+end = { date = 2040-12-31 }
+
+[[expenses]]
+id = "housing"
+name = "Property tax and upkeep"
+amount = 9000
+
+[[expenses]]
+id = "living"
+name = "Living expenses"
+amount = 50000
+
+[[expenses]]
+id = "childcare"
+name = "Childcare"
+amount = 14000
+end = { date = 2030-12-31 }
+
+[[expenses]]
+id = "college"
+name = "College"
+amount = 25000
+start = { date = 2036-09-01 }
+end = { date = 2039-12-31 }
+
+[[expenses]]
+id = "travel"
+name = "Travel in retirement"
+amount = 8000
+start = { event = "retire-priya" }

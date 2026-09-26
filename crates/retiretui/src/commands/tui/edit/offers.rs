@@ -14,7 +14,7 @@ use super::codec::to_text;
 use super::contributions;
 use super::domain::{FieldKind, FieldSpec};
 use crate::commands::tui::present;
-use crate::commands::tui::setup::LifeStage;
+use crate::commands::tui::setup::{EXAMPLES, LifeStage};
 
 /// A closed set the schema states, read from the schema rather than
 /// restated here.
@@ -27,6 +27,8 @@ pub enum Vocabulary {
     TreatmentClass,
     /// The new plan's own: where a household is in life.
     LifeStage,
+    /// The new plan's own: the example plan it starts from.
+    Example,
     Country,
     UsState,
     /// The form's own: whether an item recurs or happens once.
@@ -106,6 +108,7 @@ impl Vocabulary {
                 present::treatment_class,
             ),
             Self::LifeStage => offers(LifeStage::ALL, LifeStage::as_str, LifeStage::label),
+            Self::Example => offers(EXAMPLES, |example| example.0, |example| example.1),
             Self::Country => offers(COUNTRIES, |place| place.0, |place| place.1),
             Self::UsState => offers(US_STATES, |place| place.0, |place| place.1),
             Self::Timing => offers(TIMINGS, |timing| timing.0, |timing| timing.1),
