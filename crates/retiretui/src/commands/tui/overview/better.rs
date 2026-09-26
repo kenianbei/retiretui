@@ -74,7 +74,10 @@ impl Better {
     /// answered.
     pub(crate) fn claims(&self, plan: &Plan, held: &BTreeSet<String>) -> Option<&ClaimSearch> {
         let (searched, found) = self.found_over(plan)?;
-        (searched.1 == *held).then_some(found.claims.as_ref()?)
+        if searched.1 != *held {
+            return None;
+        }
+        found.claims.as_ref()
     }
 
     /// The plan from every start year, where it is answered.
@@ -91,9 +94,14 @@ impl Better {
         destination: &str,
     ) -> Option<&Swept> {
         let (searched, found) = self.found_over(plan)?;
-        let ladders = found.ladders.iter();
-        let mut into = ladders.filter(|ladder| ladder.destination == destination);
-        (searched.2 == *held).then_some(into.next()?.swept.as_ref()?)
+        if searched.2 != *held {
+            return None;
+        }
+        let mut ladders = found.ladders.iter();
+        ladders
+            .find(|ladder| ladder.destination == destination)?
+            .swept
+            .as_ref()
     }
 
     #[cfg(test)]
@@ -239,10 +247,9 @@ pub(super) fn entries(better: &Better, projected: &Projected, nominal: bool) -> 
         .ladders
         .iter()
         .map(|ladder| {
-            let best = ladder.swept.as_ref().map(Swept::best);
-            let said = match best {
-                None | Some(None) => REFUSED.to_owned(),
-                Some(Some(best)) if beats(&best.optimized, current) => {
+            let said = match ladder.swept.as_ref().and_then(Swept::best) {
+                None => REFUSED.to_owned(),
+                Some(best) if beats(&best.optimized, current) => {
                     let rate = rate_label(best.rate);
                     format!(
                         "convert to {rate}, {}",

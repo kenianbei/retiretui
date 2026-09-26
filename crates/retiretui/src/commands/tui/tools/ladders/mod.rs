@@ -295,14 +295,17 @@ fn search_by_itself(
     let Ok((options, rate)) = held(&draft) else {
         return;
     };
-    let destination = answers.get(DESTINATION).and_then(toml::Value::as_str);
-    let found = destination.and_then(|to| better.ladders(&draft.plan, &held_answers(&draft), to));
-    if let Some(swept) = found {
+    let mut rest = answers.clone();
+    let destination = rest.remove(DESTINATION);
+    let taken = destination
+        .as_ref()
+        .and_then(toml::Value::as_str)
+        .and_then(|to| better.ladders(&draft.plan, &rest, to));
+    *searched = Some((draft.plan.clone(), answers));
+    if let Some(swept) = taken {
         ladders.take(swept.clone());
-        *searched = Some((draft.plan.clone(), answers));
         return;
     }
-    *searched = Some((draft.plan.clone(), answers));
     let tables = session.tables.clone();
     ladders.start(draft.plan.clone(), move |plan| {
         search(plan, &tables, &options, rate).map(|sweep| Swept { sweep, options })

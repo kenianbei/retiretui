@@ -119,10 +119,7 @@ pub(crate) trait MarketTool: Found + Sized {
 
     /// What the Overview already found over `plan`, taken in place of a
     /// search.
-    fn found_by(_better: &Better, _plan: &Plan) -> Option<Self>
-    where
-        Self: Sized,
-    {
+    fn found_by(_better: &Better, _plan: &Plan) -> Option<Self> {
         None
     }
 }

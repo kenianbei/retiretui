@@ -39,7 +39,7 @@ pub fn plugin(app: &mut App) {
             leave_run_on_replan,
             title_ledger,
             rebuild_rows,
-            follow_cursor,
+            follow_cursor.run_if(nav::shows(Page::Ledger)),
             track_cursor::<LedgerTable>,
         )
             .chain(),
@@ -209,16 +209,12 @@ fn rebuild_rows(mut inputs: RowInputs, entities: LedgerEntities, mut commands: C
 /// for the Ledger to be shown.
 fn follow_cursor(
     shown: Shown,
-    active: Res<ActivePage>,
-    mut is_stale: Local<bool>,
     mut tables: Query<(Entity, &mut ActiveDescendant), With<LedgerTable>>,
     rows: Query<(Entity, &RowYear, &ChildOf)>,
 ) {
-    *is_stale |= shown.is_changed();
-    if !*is_stale || active.page() != Page::Ledger {
+    if !shown.is_changed() {
         return;
     }
-    *is_stale = false;
     let Ok((table, mut active)) = tables.single_mut() else {
         return;
     };

@@ -184,16 +184,19 @@ impl<R: Found> Tool<R> {
         work: impl FnOnce(&Plan) -> Result<R, Vec<Issue>> + Send + 'static,
     ) {
         self.spawn(plan, None, move |plan, _| work(plan));
-        self.found = None;
-        self.refused = None;
-        self.highlighted = 0;
+        self.show(None);
     }
 
     /// Takes what another search already found over the plan, in place of
     /// searching it again.
     fn take(&mut self, found: R) {
         self.running = None;
-        self.found = Some((found, None));
+        self.show(Some((found, None)));
+    }
+
+    /// Shows `found` from its first row, dropping any refusal.
+    fn show(&mut self, found: Option<(R, Option<Duration>)>) {
+        self.found = found;
         self.refused = None;
         self.highlighted = 0;
     }

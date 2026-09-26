@@ -13,10 +13,10 @@ use crate::commands::tui::edit::Draft;
 use crate::commands::tui::nav::{self, Page};
 use crate::commands::tui::present::{compact_dollars, signed_money};
 use crate::commands::tui::session::{Projected, Session};
-use crate::commands::tui::success::Success;
+use crate::commands::tui::success::{Success, Successes};
 use crate::commands::tui::support::{
-    Headless, SETTLING_TICKS, SIZE, TEST_PLAN, active_page, commit_edit, press_key, redrawn,
-    scratch_plan, searched_app, show,
+    Headless, SETTLING_TICKS, SIZE, TEST_PLAN, active_page, commit_edit, headless_app_at,
+    press_key, redrawn, scratch_dir, scratch_plan, searched_app, show,
 };
 use crate::commands::tui::tools::ladders::Swept;
 use crate::commands::tui::tools::ladders::tests::table_rows;
@@ -383,19 +383,14 @@ fn a_failing_historical_start_leads_to_the_historical_page() {
 
 #[test]
 fn the_empty_shell_searches_nothing() {
-    let mut app = crate::commands::tui::support::headless_app_at(
-        crate::commands::tui::support::scratch_dir(),
-        SIZE,
-    );
-    app.insert_resource(crate::commands::tui::tools::Searches(true));
+    let mut app = headless_app_at(scratch_dir(), SIZE);
+    app.insert_resource(tools::Searches(true));
     for _ in 0..SETTLING_TICKS {
         app.update();
         let better = app.world().resource::<Better>();
         assert!(!better.is_running() && better.found().is_none());
         let plan = &app.world().resource::<Projected>().plan;
-        let successes = app
-            .world()
-            .resource::<crate::commands::tui::success::Successes>();
+        let successes = app.world().resource::<Successes>();
         assert_eq!(successes.of(plan), Success::Waiting);
     }
 }

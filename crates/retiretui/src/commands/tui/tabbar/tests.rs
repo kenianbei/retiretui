@@ -160,7 +160,6 @@ fn status_row(frame: &str) -> &str {
         .expect("the bar's middle row")
 }
 
-/// The tab the bar draws as active, read back off its items.
 /// A column inside the `tab`th box, counted off the labels before it.
 fn tab_column(tab: usize) -> u16 {
     let boxed = |at: usize| tab_title(at).chars().count() as u16 + DIGIT_COLS + TAB_DECORATION;
