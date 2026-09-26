@@ -62,7 +62,9 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Roth Conversions tool does, rather than by rate.
 - The conversion source is optional: without `--from` on the CLI, or `from` over
   MCP, a ladder converts from every deferred account of the destination's owner,
-  as the Roth Conversions tool does when its source is left blank.
+  as the Roth Conversions tool does when its source is left blank. Where that
+  owner holds none, the search says there is no deferred account to convert
+  from.
 - The new-plan form numbers the ids it makes from a person's name, as new items
   are numbered: Alice is `alice-1`, a second Alice `alice-2`, and their
   retirement and workplace account follow as `retire-alice-1` and
