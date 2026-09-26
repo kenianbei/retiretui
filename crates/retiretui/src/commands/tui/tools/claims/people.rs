@@ -4,6 +4,7 @@
 //! cursor is the person the page's commands act on.
 
 use std::collections::BTreeSet;
+use std::sync::Arc;
 
 use bevy_app::{App, Update};
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
@@ -16,7 +17,7 @@ use plurimus::widgets::{ActiveDescendant, WidgetSystems};
 use retiretui_engine::optimize::benefit_estimates;
 use retiretui_engine::plan::{Dollars, Income, Item, Person, Plan};
 
-use super::super::{EnterRuns, handle_enter};
+use super::super::{EnterRuns, Keyed, handle_enter};
 use super::guide;
 use crate::commands::tui::edit::{Draft, table_bundle};
 use crate::commands::tui::hints::Hints;
@@ -36,7 +37,7 @@ pub fn plugin(app: &mut App) {
             Update,
             (
                 estimate.run_if(nav::shows(Page::SsaBenefits)),
-                refresh_people,
+                refresh_people.run_if(nav::shows(Page::SsaBenefits)),
                 follow_cursor,
             )
                 .chain()
@@ -73,10 +74,24 @@ impl PersonCursor {
 #[derive(Resource, Default, Debug)]
 pub struct HeldClaims(pub BTreeSet<String>);
 
+/// A person's estimates at 62, full retirement age and 70.
+type Estimate = [Option<Dollars>; 3];
+
 /// Each person's estimates, by place in the household, from the last
-/// valid draft the page was shown over.
+/// valid draft the page was shown over, and the next on a thread of their
+/// own.
 #[derive(Resource, Default)]
-struct Estimates(Vec<[Option<Dollars>; 3]>);
+pub(crate) struct Estimates {
+    shown: Vec<Estimate>,
+    running: Option<Keyed<(), Vec<Estimate>>>,
+}
+
+impl Estimates {
+    #[cfg(test)]
+    pub(crate) fn is_running(&self) -> bool {
+        self.running.is_some()
+    }
+}
 
 /// The table, which holds the keyboard for the page.
 #[derive(Component)]
@@ -111,32 +126,46 @@ pub fn spawn_pane(commands: &mut Commands, row: Entity) {
         .observe(handle_enter);
 }
 
-/// Re-estimates once the draft has moved to a plan not yet estimated and
-/// the page is on show: three projections a person are too many for every
-/// applied item elsewhere. A draft with issues keeps the last estimates.
+/// Takes the estimates once they have answered, and re-estimates on a
+/// thread of their own once the draft has moved to a plan not yet
+/// estimated and the page is on show: three projections a person are too
+/// many for every applied item elsewhere. A draft with issues keeps the
+/// last estimates.
 fn estimate(
     draft: Res<Draft>,
     session: Res<Session>,
     shown: ShownSurface,
-    mut last_plan: Local<Option<Plan>>,
+    mut last_plan: Local<Option<Arc<Plan>>>,
     mut estimates: ResMut<Estimates>,
 ) {
+    if estimates.running.as_ref().is_some_and(Keyed::is_finished) {
+        let running = estimates.running.take();
+        if let Some(((), Some(found), _)) = running.map(Keyed::join) {
+            estimates.shown = found;
+        }
+    }
     let is_moved = draft.is_changed() || shown.is_changed();
     if !is_moved || !draft.issues().is_empty() {
         return;
     }
-    if last_plan.as_ref() == Some(&draft.plan) {
+    if last_plan.as_deref() == Some(&draft.plan) {
         return;
     }
-    *last_plan = Some(draft.plan.clone());
-    let people = &draft.plan.household.people;
-    estimates.0 = people
-        .iter()
-        .map(|person| benefit_estimates(&draft.plan, &session.tables, &person.id))
-        .collect();
+    let plan = Arc::new(draft.plan.clone());
+    *last_plan = Some(Arc::clone(&plan));
+    let tables = session.tables.clone();
+    estimates.bypass_change_detection().running = Some(Keyed::spawn((), move |_| {
+        let people = &plan.household.people;
+        people
+            .iter()
+            .map(|person| benefit_estimates(&plan, &tables, &person.id))
+            .collect()
+    }));
 }
 
-/// Respawns a row per person, the cursor kept on the person it was on.
+/// Respawns a row per person, the cursor kept on the person it was on,
+/// while the page is on show; turned to, it catches up with what changed
+/// while it was not.
 fn refresh_people(
     state: (Res<Draft>, Res<Estimates>, Res<HeldClaims>),
     cursor: Res<PersonCursor>,
@@ -175,7 +204,7 @@ fn people_rows(plan: &Plan, estimates: &Estimates, held: &HeldClaims) -> Vec<Vec
                 record(person),
                 income.to_owned(),
             ];
-            let figures = estimates.0.get(at).copied().unwrap_or_default();
+            let figures = estimates.shown.get(at).copied().unwrap_or_default();
             row.extend(figures.map(|figure| figure.map_or_else(|| "-".to_owned(), compact_money)));
             row
         })

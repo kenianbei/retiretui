@@ -380,7 +380,7 @@ fn poll_search<R: Found>(
 /// Ticks until every tool's search has answered.
 #[cfg(test)]
 pub fn settle_all(app: &mut bevy_app::App) {
-    settle::<retiretui_engine::optimize::ClaimSearch>(app);
+    settle_claims(app);
     settle::<ladders::Swept>(app);
     settle::<retiretui_engine::market::MonteCarlo>(app);
     settle::<retiretui_engine::market::Runs>(app);
@@ -392,6 +392,15 @@ pub fn settle_all(app: &mut bevy_app::App) {
         app.world()
             .resource::<super::overview::Better>()
             .is_running()
+    });
+}
+
+/// Ticks until the claim search and the People estimates have answered.
+#[cfg(test)]
+pub fn settle_claims(app: &mut bevy_app::App) {
+    settle::<retiretui_engine::optimize::ClaimSearch>(app);
+    settle_until_idle(app, |app| {
+        app.world().resource::<claims::Estimates>().is_running()
     });
 }
 

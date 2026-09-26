@@ -73,7 +73,7 @@ fn run_adopt(app: &mut App) -> Outcome {
 }
 
 fn settle(app: &mut App) {
-    super::super::settle::<ClaimSearch>(app);
+    super::super::settle_claims(app);
 }
 
 fn highlighted_ages(app: &App) -> Vec<u8> {
