@@ -89,14 +89,20 @@ pub(super) const BELOW_FIELDS: u16 = HELP_ROWS + FOOT_ROWS;
 /// its foot, inside its frame.
 pub const SHORTEST_FORM_ROWS: u16 = BELOW_FIELDS + 1 + overlay::CHROME;
 
-/// The column a form's field rows scroll in, over its foot.
+/// The column a form's field rows scroll in, over its foot, and the bar
+/// beside it.
 #[derive(Component)]
-pub struct FormFields;
+pub struct FormFields {
+    pub bar: Entity,
+}
 
 /// The bar on a form's right edge beside its fields, drawn while they
-/// overflow.
-#[derive(Component)]
-pub struct FormBar;
+/// overflow: what it last drew, as the rows scrolled out of view and how
+/// many of them are above.
+#[derive(Component, Default)]
+pub struct FormBar {
+    pub drawn: Option<(usize, usize)>,
+}
 
 /// Where a form's bar stands: on the frame's right edge, level with the
 /// field column.
@@ -153,9 +159,17 @@ pub fn spawn_form(commands: &mut Commands, form: Entity, ops: Ops, is_alone: boo
         .entity(form)
         .insert((EditForm { ops }, TabGroup::modal()))
         .observe(handle_form_key);
+    let bar = commands
+        .spawn((
+            FormBar::default(),
+            bar_node(),
+            UiWidget::default(),
+            placed(),
+        ))
+        .id();
     let column = commands
         .spawn((
-            FormFields,
+            FormFields { bar },
             Node {
                 flex_direction: FlexDirection::Column,
                 flex_shrink: 1.0,
@@ -165,13 +179,7 @@ pub fn spawn_form(commands: &mut Commands, form: Entity, ops: Ops, is_alone: boo
             ChildOf(form),
         ))
         .id();
-    commands.spawn((
-        FormBar,
-        bar_node(),
-        UiWidget::default(),
-        placed(),
-        ChildOf(form),
-    ));
+    commands.entity(bar).insert(ChildOf(form));
     for &spec in ops.fields {
         let gutter = gutter_cols(ops.fields, &spec);
         let row = spawn_row(commands, column, spec, gutter, label_cols - gutter);

@@ -4,15 +4,13 @@
 use plurimus::term::KeyCode;
 use retiretui_engine::plan::Allocation;
 
-use super::{draft_plan, fixture_app, fixture_app_sized, shows_row, tab_to_field, tab_to_key};
+use super::{
+    INVESTED, draft_plan, fixture_app, fixture_app_sized, shows_row, tab_to_field, tab_to_key,
+};
 use crate::commands::tui::nav::Page;
 use crate::commands::tui::support::{
     Headless, ROOMY, commit_edit, composed_frame, press_key, show, type_text,
 };
-
-/// Stops along a brokerage account's form to the pick that says how it is
-/// invested.
-const INVESTED: usize = 6;
 
 #[test]
 fn one_mix_shows_its_shares_in_place_of_a_return_and_applies_as_an_allocation() {

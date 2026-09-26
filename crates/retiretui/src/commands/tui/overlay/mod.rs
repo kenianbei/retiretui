@@ -49,11 +49,10 @@ pub struct Centred {
 }
 
 /// Makes a centred box as tall as the `rows` it holds inside its frame.
-pub fn hold(centred: &mut Mut<Centred>, node: &mut Mut<Node>, rows: u16) {
+pub fn hold(centred: &mut Mut<Centred>, rows: u16) {
     let rows = rows.saturating_add(CHROME);
     if centred.rows != rows {
         centred.rows = rows;
-        node.height = Val::Px(f32::from(rows));
     }
 }
 
@@ -66,7 +65,6 @@ pub fn centred(cols: u16, rows: u16) -> (Node, Centred) {
     let node = Node {
         position_type: PositionType::Absolute,
         width: Val::Px(f32::from(cols)),
-        height: Val::Px(f32::from(rows)),
         max_height: Val::Percent(100.0),
         padding: UiRect::all(Val::Px(1.0)),
         flex_direction: FlexDirection::Column,
@@ -107,7 +105,8 @@ pub fn bottom_panel(commands: &mut Commands, root: Entity, title: &str, hints: H
         .id()
 }
 
-/// Places each centred box on whole cells. Left to the layout, a box an
+/// Places each centred box on whole cells, as tall as it holds - the one
+/// writer of its height and place. Left to the layout, a box an
 /// odd number of cells narrower than the body starts on half a cell, and
 /// what it holds is then rounded a cell past its border.
 fn centre_boxes(
@@ -123,6 +122,7 @@ fn centre_boxes(
             continue;
         }
         let rows = centred.rows.min(room.height);
+        node.height = Val::Px(f32::from(centred.rows));
         node.left = Val::Px(f32::from(room.width.saturating_sub(centred.cols) / 2));
         node.top = Val::Px(f32::from(room.height.saturating_sub(rows).div_ceil(2)));
     }

@@ -3,27 +3,30 @@
 
 use plurimus::term::KeyCode;
 
-use super::{fixture_app, open, shows_row, tab_to_field, tab_to_key};
+use super::{INVESTED, fixture_app, form_box, open, shows_row, tab_to_field, tab_to_key};
 use crate::commands::tui::nav::Page;
 use crate::commands::tui::support::{composed_frame, press_key, show};
 
-/// Stops along a brokerage account's form to the pick that says how it is
-/// invested.
-const INVESTED: usize = 6;
-
 /// The rows the open form's box takes, its frame included.
 fn form_rows(frame: &str) -> usize {
-    let lines: Vec<Vec<char>> = frame.lines().map(|line| line.chars().collect()).collect();
-    let top = lines.iter().position(|line| {
-        let line: String = line.iter().collect();
-        line.contains("╭ Edit")
-    });
-    let top = top.unwrap_or_else(|| panic!("no form: {frame}"));
-    let left = lines[top].iter().position(|&cell| cell == '╭').unwrap();
-    let bottom = lines[top..]
-        .iter()
-        .position(|line| line.get(left) == Some(&'╰'));
+    let (top, left) = form_box(frame);
+    let mut below = frame.lines().skip(top);
+    let bottom = below.position(|line| line.chars().nth(left) == Some('╰'));
     bottom.unwrap_or_else(|| panic!("no foot: {frame}")) + 1
+}
+
+/// The bar along the open form's right edge, from its top arrow down.
+fn bar(frame: &str) -> String {
+    let lines: Vec<&str> = frame.lines().collect();
+    let arrow = lines
+        .iter()
+        .enumerate()
+        .find_map(|(top, line)| Some((top, line.chars().position(|cell| cell == '▲')?)));
+    let (top, column) = arrow.unwrap_or_else(|| panic!("no bar: {frame}"));
+    let cells = lines[top..]
+        .iter()
+        .filter_map(|line| line.chars().nth(column));
+    cells.take_while(|&cell| cell != '▼').collect()
 }
 
 #[test]
@@ -57,11 +60,13 @@ const LAST: &str = "  wrap";
 fn a_form_taller_than_the_body_scrolls_to_the_field_holding_the_keyboard() {
     let mut app = fixture_app();
     open(&mut app, Page::Market);
+    app.update();
     let frame = composed_frame(&app);
     assert!(
         shows_row(&frame, FIRST) && !shows_row(&frame, LAST),
         "{frame}"
     );
+    let at_top = bar(&frame);
     tab_to_key(&mut app, "wraps");
     app.update();
     let frame = composed_frame(&app);
@@ -69,6 +74,7 @@ fn a_form_taller_than_the_body_scrolls_to_the_field_holding_the_keyboard() {
         shows_row(&frame, LAST) && !shows_row(&frame, FIRST),
         "{frame}"
     );
+    assert_ne!(bar(&frame), at_top, "the bar follows: {frame}");
     assert!(frame.contains("[ Apply ]"), "the foot stays: {frame}");
     tab_to_key(&mut app, "leave_at_least");
     app.update();
@@ -84,9 +90,7 @@ fn a_bar_is_drawn_only_while_the_fields_overflow() {
     let frame = composed_frame(&app);
     assert!(frame.contains('▲') && frame.contains('▼'), "{frame}");
     let mut app = fixture_app();
-    show(&mut app, Page::Accounts);
-    app.update();
-    press_key(&mut app, KeyCode::Enter);
+    open(&mut app, Page::Accounts);
     app.update();
     let frame = composed_frame(&app);
     assert!(!frame.contains('▲'), "{frame}");

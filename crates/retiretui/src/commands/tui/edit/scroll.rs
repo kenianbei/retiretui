@@ -5,7 +5,7 @@
 use bevy_app::{App, Update};
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::{ChildOf, Children};
-use bevy_ecs::prelude::{Changed, IntoScheduleConfigs, Query, Ref, Res, With, Without};
+use bevy_ecs::prelude::{Changed, IntoScheduleConfigs, Query, Ref, Res, With};
 use bevy_input_focus::InputFocus;
 use bevy_ui::{ComputedNode, Display, Node, ScrollPosition};
 use plurimus::bui::ComputedNodeRect;
@@ -33,10 +33,10 @@ pub fn plugin(app: &mut App) {
 
 /// Each form stands as tall as its rows on show over its foot.
 fn fit_forms(
-    moved: Query<(), (Changed<Node>, With<Dependent>, Without<Centred>)>,
+    moved: Query<(), (Changed<Node>, With<Dependent>)>,
     columns: Query<(Ref<FormFields>, &ChildOf, &Children)>,
-    rows: Query<&Node, Without<Centred>>,
-    mut boxes: Query<(&mut Centred, &mut Node)>,
+    rows: Query<&Node>,
+    mut boxes: Query<&mut Centred>,
 ) {
     let is_moved = !moved.is_empty();
     for (column, form, held) in &columns {
@@ -48,11 +48,11 @@ fn fit_forms(
                 .is_ok_and(|node| node.display != Display::None)
         };
         let shown = held.iter().filter(|&&row| is_shown(row)).count();
-        let Ok((mut centred, mut node)) = boxes.get_mut(form.parent()) else {
+        let Ok(mut centred) = boxes.get_mut(form.parent()) else {
             continue;
         };
         let shown = u16::try_from(shown).unwrap_or(u16::MAX);
-        overlay::hold(&mut centred, &mut node, shown.saturating_add(BELOW_FIELDS));
+        overlay::hold(&mut centred, shown.saturating_add(BELOW_FIELDS));
     }
 }
 
@@ -89,28 +89,27 @@ fn reveal_focused(
 }
 
 /// Each form's bar shows where its fields are scrolled to, drawn as a
-/// table's is, and nothing while they fit. It reads the last layout's.
+/// table's is, and nothing while they fit. Layout moves a column's
+/// scroll and content without marking it changed, so each is compared
+/// with what its bar last drew. It reads the last layout's.
 fn draw_bars(
-    columns: Query<(Ref<ComputedNode>, &ChildOf), With<FormFields>>,
-    forms: Query<&Children>,
-    mut bars: Query<&mut UiWidget, With<FormBar>>,
+    columns: Query<(&ComputedNode, &FormFields)>,
+    mut bars: Query<(&mut FormBar, &mut UiWidget)>,
 ) {
-    for (column, form) in &columns {
-        if !column.is_changed() {
+    for (column, fields) in &columns {
+        let Ok((mut bar, mut widget)) = bars.get_mut(fields.bar) else {
+            continue;
+        };
+        let hidden = (column.content_size.y - column.size.y).max(0.0) as usize;
+        let drawn = (hidden > 0).then(|| (hidden, column.scroll_position.y.max(0.0) as usize));
+        if bar.drawn == drawn {
             continue;
         }
-        let hidden = (column.content_size.y - column.size.y).max(0.0);
-        let drawn = if hidden < 1.0 {
-            UiWidget::default()
-        } else {
-            let state =
-                ScrollbarState::new(hidden as usize).position(column.scroll_position.y as usize);
+        bar.drawn = drawn;
+        *widget = drawn.map_or_else(UiWidget::default, |(hidden, above)| {
+            // An offset from none to every hidden row is a place.
+            let state = ScrollbarState::new(hidden + 1).position(above);
             UiWidget::stateful(Scrollbar::new(ScrollbarOrientation::VerticalRight), state)
-        };
-        let mut held = forms.get(form.parent()).into_iter().flatten();
-        let bar = held.find(|&&child| bars.contains(child));
-        if let Some(mut bar) = bar.and_then(|&bar| bars.get_mut(bar).ok()) {
-            *bar = drawn;
-        }
+        });
     }
 }

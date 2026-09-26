@@ -56,39 +56,38 @@ const SLIDER_GAP: f32 = 1.0;
 /// Where a remainder's text starts: level with the shares' text, past
 /// their slider and bracket.
 const REMAINDER_INDENT: f32 = SLIDER_WIDTH + SLIDER_GAP + BRACKETS[0].len() as f32;
-/// Below this, what the shares leave is rounding, not a share.
-const ROUNDING: f64 = 1e-9;
-
-/// What a remainder is drawn with.
-#[derive(Component)]
-pub struct Remaining;
+/// What a remainder is drawn with, and the share it last drew.
+#[derive(Component, Default)]
+pub struct Remaining {
+    left: Option<f64>,
+}
 
 /// A remainder shows what the shares beside it leave, marked where that
 /// is less than none or more than the whole.
 pub fn show_remainders(
     session: Res<EditSession>,
     theme: Res<Theme>,
-    mut shown: Query<(Ref<Remaining>, &FormField, &mut UiWidget)>,
+    mut shown: Query<(&mut Remaining, &FormField, &mut UiWidget)>,
 ) {
-    let is_stale = session.is_changed() || theme.is_changed();
+    if !session.is_changed() && !theme.is_changed() {
+        return;
+    }
     let Some(editing) = session.0.as_ref() else {
         return;
     };
-    for (remaining, field, mut widget) in &mut shown {
-        if !is_stale && !remaining.is_added() {
+    for (mut remaining, field, mut widget) in &mut shown {
+        let left = share_left(&editing.snapshot, field.spec.key);
+        if remaining.left == left && !theme.is_changed() {
             continue;
         }
-        let Some(left) = share_left(&editing.snapshot, field.spec.key) else {
-            *widget = UiWidget::new(Paragraph::new(""));
-            continue;
-        };
-        let left = if left.abs() < ROUNDING { 0.0 } else { left };
-        let style = if (0.0..=1.0 + ROUNDING).contains(&left) {
+        remaining.left = left;
+        let style = if left.is_some_and(|left| (0.0..=1.0).contains(&left)) {
             Style::default()
         } else {
             theme.exceeded()
         };
-        *widget = UiWidget::new(Paragraph::new(present::rate(left)).style(style));
+        let text = left.map(present::rate).unwrap_or_default();
+        *widget = UiWidget::new(Paragraph::new(text).style(style));
     }
 }
 
@@ -236,7 +235,7 @@ pub fn spawn_field(commands: &mut Commands, row: Entity, spec: FieldSpec) {
         FieldKind::Rate | FieldKind::Share => spawn_slider(commands, row, field),
         FieldKind::Remainder => {
             commands.spawn((
-                Remaining,
+                Remaining::default(),
                 field,
                 Node {
                     margin: UiRect::left(Val::Px(REMAINDER_INDENT)),

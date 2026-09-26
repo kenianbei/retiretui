@@ -110,6 +110,20 @@ pub(crate) fn open(app: &mut App, page: Page) {
     press_key(app, KeyCode::Enter);
 }
 
+/// Stops along a brokerage account's form to the pick that says how it is
+/// invested.
+pub(super) const INVESTED: usize = 6;
+
+/// Where the open item's form stands: its top line, and the column of its
+/// left border in cells.
+pub(super) fn form_box(frame: &str) -> (usize, usize) {
+    let found = frame.lines().enumerate().find_map(|(top, line)| {
+        let (before, _) = line.split_once("╭ Edit")?;
+        Some((top, before.chars().count()))
+    });
+    found.unwrap_or_else(|| panic!("no form: {frame}"))
+}
+
 /// Whether a row labelled exactly `label` is drawn: the label, then its
 /// widget - a bracket or a slider - and nothing else between.
 pub(super) fn shows_row(frame: &str, label: &str) -> bool {

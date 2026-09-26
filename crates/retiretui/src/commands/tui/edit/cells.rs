@@ -5,7 +5,7 @@
 use retiretui_engine::plan::Plan;
 use toml::{Table, Value};
 
-use super::codec::{get_path, parse_text, share_left, to_text};
+use super::codec::{as_number, get_path, parse_text, to_text};
 use super::domain::{FieldKind, FieldSpec};
 use super::group::{nth, nth_back};
 use super::offers::{Offer, display_name, ref_offers};
@@ -132,21 +132,8 @@ impl<'a> Shown<'a> {
             let text = phrase(item, plan);
             return Cell { text, number: None };
         }
-        let left;
-        let value = if self
-            .spec
-            .is_some_and(|spec| spec.kind == FieldKind::Remainder)
-        {
-            left = share_left(item, self.key).map(Value::Float);
-            left.as_ref()
-        } else {
-            get_path(item, self.key)
-        };
-        let number = value.and_then(|value| match value {
-            Value::Integer(whole) => Some(*whole as f64),
-            Value::Float(real) => Some(*real),
-            _ => None,
-        });
+        let value = get_path(item, self.key);
+        let number = value.and_then(as_number);
         Cell {
             text: self.text(value, plan),
             number,
@@ -206,12 +193,10 @@ pub fn field_text(kind: FieldKind, value: Option<&Value>, is_focused: bool) -> S
         (FieldKind::Money | FieldKind::Listed(_), Value::Integer(amount)) if !is_focused => {
             present::money(*amount)
         }
-        (FieldKind::Rate | FieldKind::Share | FieldKind::Remainder, Value::Float(rate)) => {
-            present::rate(*rate)
-        }
-        (FieldKind::Rate | FieldKind::Share | FieldKind::Remainder, Value::Integer(rate)) => {
-            present::rate(*rate as f64)
-        }
+        (
+            FieldKind::Rate | FieldKind::Share | FieldKind::Remainder,
+            Value::Float(_) | Value::Integer(_),
+        ) => present::rate(as_number(value).unwrap_or_default()),
         (FieldKind::Growth, value) => present::growth(Some(value)),
         _ => to_text(value),
     }

@@ -2,13 +2,13 @@
 //! table they sit in is present, and rows that hold one list between them.
 
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
-use bevy_ecs::hierarchy::{ChildOf, Children};
+use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Changed, Component, Entity, Or, Query, Ref, Res, With, Without};
 use bevy_input_focus::tab_navigation::TabIndex;
 use bevy_ui::{Display, Node};
 use toml::Value;
 
-use super::build::FormField;
+use super::build::{FormField, FormFields};
 use super::codec::{get_path, is_within};
 use super::domain::{FieldKind, FieldSpec};
 use super::editing::{EditSession, Editing};
@@ -51,20 +51,22 @@ impl Dependent {
 /// for it.
 pub fn place_dependents(
     session: Res<EditSession>,
-    tree: Query<&Children>,
-    mut rows: Query<(Ref<Dependent>, &mut Node)>,
+    columns: Query<&ChildOf, With<FormFields>>,
+    mut rows: Query<(Ref<Dependent>, &ChildOf, &mut Node)>,
 ) {
-    if !session.is_changed() && !rows.iter().any(|(row, _)| row.is_added()) {
+    if !session.is_changed() && !rows.iter().any(|(row, ..)| row.is_added()) {
         return;
     }
     let Some((editing, form)) = session.0.as_ref().and_then(|held| Some((held, held.form?))) else {
         return;
     };
-    for row in tree.iter_descendants(form) {
-        let Ok((dependent, mut node)) = rows.get_mut(row) else {
-            continue;
-        };
-        set_display(&mut node, dependent.is_shown(editing));
+    for (dependent, column, mut node) in &mut rows {
+        if columns
+            .get(column.parent())
+            .is_ok_and(|held| held.parent() == form)
+        {
+            set_display(&mut node, dependent.is_shown(editing));
+        }
     }
 }
 

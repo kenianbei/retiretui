@@ -6,7 +6,8 @@ use plurimus::widgets::SliderValue;
 use retiretui_engine::plan::AccountKind;
 
 use super::{
-    BALANCE_FIELD, clear_field, draft_plan, fixture_app, focused, is_editing, open, tab_to_field,
+    BALANCE_FIELD, clear_field, draft_plan, fixture_app, focused, form_box, is_editing, open,
+    tab_to_field,
 };
 use crate::commands::tui::edit::Draft;
 use crate::commands::tui::nav::Page;
@@ -201,11 +202,7 @@ fn a_field_reads_plainly_while_typed_in_and_dressed_once_left() {
         // The form's own cells, from its left border: the table and the
         // read-out beside it share the line, and the read-out names the
         // same label.
-        let border = |line: &str| {
-            let (before, _) = line.split_once("╭ Edit")?;
-            Some(before.chars().count())
-        };
-        let left = frame.lines().find_map(border).unwrap_or_default();
+        let (_, left) = form_box(&frame);
         let mut rows = frame
             .lines()
             .map(|line| line.chars().skip(left).collect::<String>());

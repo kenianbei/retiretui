@@ -7,6 +7,7 @@ use toml::{Table, Value};
 
 use super::applies;
 use super::cells::Column;
+use super::codec::left_of;
 use super::domain::{Domain, FieldSpec};
 use super::offers::{RefSource, Vocabulary};
 use crate::commands::tui::nav::Page;
@@ -48,7 +49,7 @@ fn write_invested(item: &mut Table, form: &Value) {
         }
         (Some(GLIDE), Some(true)) => {
             if let Some(Value::Array(steps)) = item.get_mut(ALLOCATION) {
-                steps.retain(|step| step.as_table().is_some_and(|step| !step.is_empty()));
+                steps.retain(is_filled_step);
                 steps
                     .iter_mut()
                     .filter_map(Value::as_table_mut)
@@ -64,22 +65,21 @@ fn write_invested(item: &mut Table, form: &Value) {
     }
 }
 
-const STOCKS: &str = "stocks";
-const BONDS: &str = "bonds";
 const CASH: &str = "cash";
-
-/// Below this, what stocks and bonds leave is rounding, not cash.
-const NO_CASH: f64 = 1e-9;
 
 /// Holds in cash what a mix's stocks and bonds leave of the whole.
 fn fill_cash(mix: &mut Table) {
-    let share = |key: &str| mix.get(key).and_then(Value::as_float).unwrap_or(0.0);
-    let left = 1.0 - share(STOCKS) - share(BONDS);
-    if left.abs() < NO_CASH {
+    let left = left_of(mix, CASH);
+    if left == 0.0 {
         mix.remove(CASH);
     } else {
         mix.insert(CASH.to_owned(), Value::Float(left));
     }
+}
+
+/// Whether a glide step holds anything; one that does not is dropped.
+fn is_filled_step(step: &Value) -> bool {
+    step.as_table().is_some_and(|step| !step.is_empty())
 }
 
 fn invested(item: &Table) -> &str {
@@ -102,10 +102,13 @@ fn glides(item: &Table) -> bool {
 /// anything, and after the last that does: every filled step, then one
 /// blank one.
 fn step_shown<const STEP: usize>(item: &Table) -> bool {
-    let is_filled = |step: &Value| step.as_table().is_some_and(|step| !step.is_empty());
-    let steps = item.get(ALLOCATION).and_then(Value::as_array);
-    let mut from_before = steps.into_iter().flatten().skip(STEP.saturating_sub(1));
-    glides(item) && (STEP == 0 || from_before.any(is_filled))
+    let steps = || {
+        item.get(ALLOCATION)
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+    };
+    glides(item) && (STEP == 0 || steps().skip(STEP - 1).any(is_filled_step))
 }
 
 const fn share(key: &'static str, label: &'static str, shown: fn(&Table) -> bool) -> FieldSpec {
@@ -248,6 +251,11 @@ mod tests {
             MIX,
         );
         assert!(get_path(&whole, "allocation.cash").is_none(), "{whole}");
+        let whole_number = written("allocation = { stocks = 1 }", MIX);
+        assert!(
+            get_path(&whole_number, "allocation.cash").is_none(),
+            "{whole_number}"
+        );
     }
 
     #[test]
