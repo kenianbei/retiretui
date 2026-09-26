@@ -7,10 +7,14 @@ use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::{ChildOf, Children};
 use bevy_ecs::prelude::{Changed, IntoScheduleConfigs, Query, Ref, Res, With, Without};
 use bevy_input_focus::InputFocus;
-use bevy_ui::{Display, Node, ScrollPosition};
+use bevy_ui::{ComputedNode, Display, Node, ScrollPosition};
 use plurimus::bui::ComputedNodeRect;
+use plurimus::core::UiWidget;
+use plurimus::widgets::ratatui_widgets::scrollbar::{
+    Scrollbar, ScrollbarOrientation, ScrollbarState,
+};
 
-use super::build::{BELOW_FIELDS, FormFields};
+use super::build::{BELOW_FIELDS, FormBar, FormFields};
 use super::group::{self, Dependent};
 use crate::commands::tui::overlay::{self, Centred};
 
@@ -22,6 +26,7 @@ pub fn plugin(app: &mut App) {
                 .after(group::place_dependents)
                 .in_set(super::EditSystems::Place),
             reveal_focused,
+            draw_bars,
         ),
     );
 }
@@ -80,5 +85,32 @@ fn reveal_focused(
         scroll.0.y -= f32::from(view.y - row.y);
     } else if row.bottom() > view.bottom() {
         scroll.0.y += f32::from(row.bottom() - view.bottom());
+    }
+}
+
+/// Each form's bar shows where its fields are scrolled to, drawn as a
+/// table's is, and nothing while they fit. It reads the last layout's.
+fn draw_bars(
+    columns: Query<(Ref<ComputedNode>, &ChildOf), With<FormFields>>,
+    forms: Query<&Children>,
+    mut bars: Query<&mut UiWidget, With<FormBar>>,
+) {
+    for (column, form) in &columns {
+        if !column.is_changed() {
+            continue;
+        }
+        let hidden = (column.content_size.y - column.size.y).max(0.0);
+        let drawn = if hidden < 1.0 {
+            UiWidget::default()
+        } else {
+            let state =
+                ScrollbarState::new(hidden as usize).position(column.scroll_position.y as usize);
+            UiWidget::stateful(Scrollbar::new(ScrollbarOrientation::VerticalRight), state)
+        };
+        let mut held = forms.get(form.parent()).into_iter().flatten();
+        let bar = held.find(|&&child| bars.contains(child));
+        if let Some(mut bar) = bar.and_then(|&bar| bars.get_mut(bar).ok()) {
+            *bar = drawn;
+        }
     }
 }

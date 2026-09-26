@@ -1,8 +1,6 @@
 //! The Market domain: what the market tools assume and how they run, the
 //! plan's `[market]` edited as one form. Every field may be left blank for
-//! the built-in default its blank names. The two cash correlations, zero
-//! by default, are the file's alone: the form is as tall as the shortest
-//! terminal holds.
+//! the built-in default its blank names.
 
 use retiretui_engine::plan::{Draw, Market, Plan};
 use toml::{Table, Value};
@@ -62,7 +60,9 @@ impl Single for MarketSettings {
             "How much of a year's stray carries into the next, so high inflation comes in runs. Blank is 60%.",
         ),
         pair("correlation.stocks_bonds", "Stocks, bonds"),
+        pair("correlation.stocks_cash", "Stocks, cash"),
         pair("correlation.stocks_inflation", "Stocks, inflation"),
+        pair("correlation.bonds_cash", "Bonds, cash"),
         pair("correlation.bonds_inflation", "Bonds, inflation"),
         pair("correlation.cash_inflation", "Cash, inflation"),
         FieldSpec::choice("monte_carlo.draw", "Monte Carlo draws", Vocabulary::Draw)

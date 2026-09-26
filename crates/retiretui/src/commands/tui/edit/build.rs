@@ -5,7 +5,7 @@
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Component, Entity};
 use bevy_input_focus::tab_navigation::TabGroup;
-use bevy_ui::{FlexDirection, Node, Overflow, Val};
+use bevy_ui::{FlexDirection, Node, Overflow, PositionType, Val};
 use plurimus::core::UiWidget;
 use plurimus::widgets::button;
 use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
@@ -93,6 +93,24 @@ pub const SHORTEST_FORM_ROWS: u16 = BELOW_FIELDS + 1 + overlay::CHROME;
 #[derive(Component)]
 pub struct FormFields;
 
+/// The bar on a form's right edge beside its fields, drawn while they
+/// overflow.
+#[derive(Component)]
+pub struct FormBar;
+
+/// Where a form's bar stands: on the frame's right edge, level with the
+/// field column.
+fn bar_node() -> Node {
+    Node {
+        position_type: PositionType::Absolute,
+        top: Val::Px(1.0),
+        bottom: Val::Px(f32::from(BELOW_FIELDS + 1)),
+        right: Val::Px(0.0),
+        width: Val::Px(1.0),
+        ..Node::default()
+    }
+}
+
 /// What is drawn before the label of a field in a table a tick stands
 /// for, ruling the table's rows under the tick; a cell in from the form's
 /// own border, which it would otherwise run into.
@@ -147,6 +165,13 @@ pub fn spawn_form(commands: &mut Commands, form: Entity, ops: Ops, is_alone: boo
             ChildOf(form),
         ))
         .id();
+    commands.spawn((
+        FormBar,
+        bar_node(),
+        UiWidget::default(),
+        placed(),
+        ChildOf(form),
+    ));
     for &spec in ops.fields {
         let gutter = gutter_cols(ops.fields, &spec);
         let row = spawn_row(commands, column, spec, gutter, label_cols - gutter);
