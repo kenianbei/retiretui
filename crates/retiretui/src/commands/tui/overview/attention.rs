@@ -158,8 +158,8 @@ const fn held_words(how: Held) -> &'static str {
     }
 }
 
-/// Each person whose benefit the engine computes with no earnings record
-/// to compute it from.
+/// Each person whose benefit the engine computes with no earnings record,
+/// from the career it estimates at their salary.
 fn unrecorded(plan: &Plan) -> Vec<Entry> {
     let each = plan.household.people.iter().enumerate();
     each.filter(|(_, person)| person.earnings.is_empty())
@@ -170,7 +170,7 @@ fn unrecorded(plan: &Plan) -> Vec<Entry> {
         .map(|(at, person)| Entry {
             opens: Some((Page::People, Some(at))),
             ..Entry::plain(format!(
-                "{}'s Social Security is computed without an earnings record",
+                "{}'s Social Security is computed from an estimated career at their salary",
                 person.display_name()
             ))
         })
@@ -246,7 +246,7 @@ start = {{ age = 67, owner = \"me\" }}
         ];
         let said = said(&projected, &draft);
         let unrecorded = (
-            "me's Social Security is computed without an earnings record".to_owned(),
+            "me's Social Security is computed from an estimated career at their salary".to_owned(),
             Some((Page::People, Some(0))),
         );
         assert_eq!(said[0], unrecorded, "what has no year leads");

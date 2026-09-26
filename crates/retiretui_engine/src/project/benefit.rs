@@ -65,18 +65,27 @@ impl Simulation<'_> {
         benefit
     }
 
-    /// The owner's record, each year it lacks before the claim filled from
-    /// the salary paid so far, capped at that year's wage base; the benefit
-    /// in start-year dollars, so that the income's own escalation reaches
-    /// the claim as the COLAs SSA adds from the age-62 year.
+    /// The owner's record - where they have none, a career before the plan
+    /// at the salary its first year pays them - each year it lacks before
+    /// the claim filled from the salary paid so far, capped at that year's
+    /// wage base; the benefit in start-year dollars, so that the income's
+    /// own escalation reaches the claim as the COLAs SSA adds from the
+    /// age-62 year.
     fn compute_benefit(&self, index: usize, claim_year: i16) -> Dollars {
         let income = &self.plan.income[index];
         let owner = self.plan.person(&income.owner);
         let (Some(owner), Some(params)) = (owner, benefit_params(self.plan, self.tables)) else {
             return 0;
         };
+        let paid = self.covered.get(owner.id.as_str());
         let mut earnings = owner.earnings.clone();
-        let covered = self.covered.get(owner.id.as_str()).into_iter().flatten();
+        let first_salary = paid.and_then(|years| years.get(&self.start_year)).copied();
+        if let Some(salary) = first_salary.filter(|_| earnings.is_empty()) {
+            let from = owner.birth.year() + tax::FIRST_WORKING_AGE;
+            earnings =
+                tax::earnings_at_wage(&params, salary, self.start_year, from..=self.start_year - 1);
+        }
+        let covered = paid.into_iter().flatten();
         for (&year, &amount) in covered.filter(|&(&year, _)| year < claim_year) {
             earnings.entry(year).or_insert(amount);
         }

@@ -2,16 +2,16 @@
 
 mod common;
 
-use retiretui_engine::params::TaxTables;
+use retiretui_engine::params::{Inflation, TaxTables};
 use retiretui_engine::plan::Plan;
 use retiretui_engine::project::{Projection, validate_plan};
+use retiretui_engine::tax::earnings_at_wage;
 
 use common::{head, run};
 
-#[test]
-fn social_security_without_an_amount_is_computed_from_earnings() {
-    let plan = head(
-        r#"
+/// A salary to 66 and a benefit computed at 67, after the person's line:
+/// what a stated record goes before.
+const SALARIED_CLAIM: &str = r#"
 [[accounts]]
 id = "cash"
 kind = "cash"
@@ -30,8 +30,14 @@ id = "ss"
 kind = "social-security"
 owner = "me"
 start = { age = 67, owner = "me" }
-"#,
-    );
+"#;
+
+/// A record of one year without earnings: stated, so nothing is filled.
+const NOTHING_BEFORE: &str = "earnings = { 2000 = 0 }";
+
+#[test]
+fn social_security_without_an_amount_is_computed_from_earnings() {
+    let plan = head(&format!("{NOTHING_BEFORE}\n{SALARIED_CLAIM}"));
     let projection = run(&plan);
     // Born 1980-06-15: 21 nominal salary years 2026-2046 at 2.5%, nothing
     // before, indexed to 2040's wage (2024's grown 3.6% a year) and bent
@@ -49,8 +55,32 @@ start = { age = 67, owner = "me" }
 }
 
 #[test]
+fn an_empty_record_is_filled_with_a_career_at_the_first_years_salary() {
+    let filled = run(&head(SALARIED_CLAIM));
+    let params = TaxTables::embedded()
+        .params_for(2026, &Inflation::constant(0.025))
+        .social_security
+        .benefit
+        .unwrap();
+    let career = earnings_at_wage(&params, 100_000, 2026, 2002..=2025);
+    let years: Vec<String> = (career.iter())
+        .map(|(year, amount)| format!("{year} = {amount}"))
+        .collect();
+    let record = format!("earnings = {{ {} }}", years.join(", "));
+    let stated = run(&head(&format!("{record}\n{SALARIED_CLAIM}")));
+    let paid = |projection: &Projection| projection.row(2048).unwrap().income["ss"];
+    assert_eq!(paid(&filled), paid(&stated));
+    let partial = run(&head(&format!("{NOTHING_BEFORE}\n{SALARIED_CLAIM}")));
+    assert!(
+        paid(&filled) > paid(&partial),
+        "a stated record is not filled"
+    );
+}
+
+#[test]
 fn a_plan_may_state_the_wage_growth_a_benefit_is_indexed_over() {
-    let plan = head(
+    let plan = head(&format!(
+        "{NOTHING_BEFORE}\n{}",
         r#"
 [[accounts]]
 id = "cash"
@@ -70,8 +100,8 @@ id = "ss"
 kind = "social-security"
 owner = "me"
 start = { age = 67, owner = "me" }
-"#,
-    )
+"#
+    ))
     .replace("inflation = 0.025", "inflation = 0.025\nwage_growth = 0.0");
     let projection = run(&plan);
     let paid = projection.row(2048).unwrap().income["ss"];
@@ -82,7 +112,8 @@ start = { age = 67, owner = "me" }
 
 #[test]
 fn a_computed_benefit_carries_colas_from_the_age_62_year() {
-    let plan = head(
+    let plan = head(&format!(
+        "{NOTHING_BEFORE}\n{}",
         r#"
 [[accounts]]
 id = "cash"
@@ -103,8 +134,8 @@ kind = "social-security"
 owner = "me"
 cola = false
 start = { age = 67, owner = "me" }
-"#,
-    );
+"#
+    ));
     let projection = run(&plan);
     let paid = |year| projection.row(year).unwrap().income["ss"];
     // Frozen, the benefit is the eligibility-year amount itself; the
