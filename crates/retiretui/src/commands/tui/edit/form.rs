@@ -20,7 +20,7 @@ use super::LocatedIssue;
 use super::build::{EditForm, FieldLabel, FormButton, FormField, HelpFoot};
 use super::cells::parse_field;
 use super::codec::{is_within, parse_text, set_path};
-use super::domain::FieldKind;
+use super::domain::{FieldKind, FieldSpec};
 use super::draft::{Draft, DraftEditor};
 use super::editing::{self, EditSession, SessionFocus};
 use super::field::{self, Fields, FormTree};
@@ -117,16 +117,22 @@ impl FormIssues<'_, '_> {
         Some((editing.form?, editing.slot.row()))
     }
 
-    /// The issue among `located` against the field `key` of the item
+    /// The issue among `located` against the field `spec` of the item
     /// `form` shows. A table's form showing no item of the plan has none.
-    fn of<'a>(&self, located: &[LocatedIssue<'a>], form: Entity, key: &str) -> Option<&'a str> {
+    fn of<'a>(
+        &self,
+        located: &[LocatedIssue<'a>],
+        form: Entity,
+        spec: &FieldSpec,
+    ) -> Option<&'a str> {
         let ops = self.targets.forms.get(form).ok()?.ops;
         let index = match (ops.list, self.shown()) {
             (None, _) => None,
             (Some(_), Some((shown, Some(Row(index))))) if shown == form => Some(index),
             (Some(_), _) => return None,
         };
-        super::field_issue(located, ops, index, key)
+        let item = (ops.item)(&self.draft, index.unwrap_or(0));
+        super::field_issue(located, (ops, index), spec, item.as_ref())
     }
 }
 
@@ -152,15 +158,15 @@ fn mark_issues(
     let located = super::located_issues(&issues.draft);
     for (entity, mut label, mut widget) in &mut labels {
         let form = issues.targets.owner(entity).map(|(form, _)| form);
-        let is_marked = form.is_some_and(|form| issues.of(&located, form, label.key).is_some());
+        let is_marked = form.is_some_and(|form| issues.of(&located, form, &label.spec).is_some());
         if is_marked == label.is_marked && !theme.is_changed() {
             continue;
         }
         label.is_marked = is_marked;
         *widget = UiWidget::new(if is_marked {
-            Paragraph::new(format!("{}{ISSUE_MARK}", label.label)).style(theme.exceeded())
+            Paragraph::new(format!("{}{ISSUE_MARK}", label.spec.label)).style(theme.exceeded())
         } else {
-            Paragraph::new(label.label)
+            Paragraph::new(label.spec.label)
         });
     }
 }
@@ -185,7 +191,7 @@ fn show_help(
     let located = super::located_issues(&issues.draft);
     for (parent, mut widget) in &mut feet {
         let here = field.filter(|_| form.is_some_and(|(form, _)| form == parent.parent()));
-        let issue = here.and_then(|field| issues.of(&located, parent.parent(), field.spec.key));
+        let issue = here.and_then(|field| issues.of(&located, parent.parent(), &field.spec));
         let (said, style) = match (issue, here) {
             (Some(issue), _) => (issue, theme.exceeded()),
             (None, Some(field)) => (field.spec.help, theme.dimmed()),
@@ -309,9 +315,12 @@ fn seed_fields(
     if editing.is_seeded && is_edited {
         fields.show_rates(form, editing, focus.get());
     }
+    let mut is_hidden = false;
     if editing.is_seeded && focus.is_changed() {
         // What a field reads as depends on whether the keyboard is in it.
         fields.show_texts(form, editing, focus.get());
+        let held = focus.get().and_then(|widget| fields.tree.key_of(widget));
+        is_hidden = editing.hide_cleared(held);
     }
     if !editing.is_seeded {
         editing.is_seeded = true;
@@ -331,6 +340,9 @@ fn seed_fields(
         if let Some(held) = held {
             focus.set(held, FocusCause::Navigated);
         }
+    }
+    if is_hidden {
+        session.set_changed();
     }
 }
 

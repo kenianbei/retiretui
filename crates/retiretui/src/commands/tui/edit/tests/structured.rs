@@ -72,6 +72,11 @@ fn an_earlier_income_alone_is_refused_and_both_are_written_oldest_first() {
     assert!(heard.contains("Income last year: is blank"), "{heard}");
     assert_eq!(medicare(&app), None, "nothing was applied");
     press_shift(&mut app, KeyCode::Tab);
+    let frame = composed_frame(&app);
+    assert!(
+        frame.contains("$180,000"),
+        "left, it reads as money: {frame}"
+    );
     type_text(&mut app, "185000");
     press_key(&mut app, KeyCode::Enter);
     let held = medicare(&app).map(|held| held.prior_magi);

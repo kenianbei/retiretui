@@ -34,6 +34,7 @@ use super::group::{nth, nth_back};
 use super::select::{Select, spawn_select};
 use super::trigger::Slot;
 use crate::commands::tui::layout::{placed, sized};
+use crate::commands::tui::present;
 use crate::commands::tui::theme::Theme;
 
 /// A widget activated by space alone, leaving Enter to apply the item.
@@ -229,10 +230,15 @@ fn spawn_slider(commands: &mut Commands, row: Entity, field: FormField) {
 #[derive(SystemParam)]
 pub struct FormTree<'w, 's> {
     children: Query<'w, 's, &'static Children>,
-    editable: Query<'w, 's, (), With<FormField>>,
+    editable: Query<'w, 's, &'static FormField>,
 }
 
 impl FormTree<'_, '_> {
+    /// The key of the field `widget` edits, where it edits one.
+    pub fn key_of(&self, widget: Entity) -> Option<&'static str> {
+        self.editable.get(widget).ok().map(|field| field.spec.key)
+    }
+
     pub fn first(&self, form: Entity) -> Option<Entity> {
         self.children
             .iter_descendants_depth_first(form)
@@ -262,13 +268,18 @@ impl Fields<'_, '_> {
         }
     }
 
-    /// A field that does not yet make a value keeps its text: no item holds
-    /// it.
+    /// A field that does not yet make a value keeps its text, since no item
+    /// holds it - read as money where it is.
     fn show_text_at(&mut self, widget: Entity, editing: &Editing, is_focused: bool) {
         let Ok((field, mut text)) = self.texts.get_mut(widget) else {
             return;
         };
         if editing.incomplete.contains_key(field.spec.key) {
+            let is_money = matches!(field.spec.kind, FieldKind::Money | FieldKind::Listed(_));
+            if let Some(amount) = present::parse_money(text.value()).filter(|_| is_money) {
+                let own = field_text(field.spec.kind, Some(&Value::Integer(amount)), is_focused);
+                show_text(&mut text, own);
+            }
             return;
         }
         let value = get_path(&editing.snapshot, field.spec.key);

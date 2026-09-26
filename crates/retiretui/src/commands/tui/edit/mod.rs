@@ -38,7 +38,7 @@ use std::cmp::Reverse;
 use bevy_app::{App, Startup, Update};
 use bevy_ecs::prelude::{Commands, Entity, IntoScheduleConfigs, Query, With, World};
 use retiretui_engine::plan::Plan;
-use toml::Table;
+use toml::{Table, Value};
 
 use super::hints::Hints;
 use super::layout::{self, Body};
@@ -51,6 +51,7 @@ pub use build::{FormButton, help_fits};
 pub use changes::change_words;
 pub use codec::from_table;
 pub use commands::{Importing, add, delete, import_earnings, record_statement};
+use domain::FieldKind;
 pub use domain::{FieldSpec, Ops, ToolAnswers};
 pub use draft::{Draft, DraftEditor, redo, save, undo, write_draft};
 pub use editing::{EditSession, Slot, open_item};
@@ -171,6 +172,40 @@ struct Located {
     ops: &'static Ops,
     index: Option<usize>,
     field: Option<&'static FieldSpec>,
+    /// The place the path names in the field's list: `2` of
+    /// `plan.withdrawal_order[2]`.
+    place: Option<usize>,
+}
+
+impl Located {
+    /// Whether the issue is against `spec` of `item`: its field, and where
+    /// the path names a place of a list several rows share, that one row.
+    fn is_against(&self, spec: &FieldSpec, item: Option<&Table>) -> bool {
+        self.field.is_some_and(|field| field.key == spec.key)
+            && self
+                .place
+                .is_none_or(|place| holds_place(spec, place, item))
+    }
+}
+
+/// Whether `spec`, one row of the list at its key, holds `place` of that
+/// list as `item` states it.
+fn holds_place(spec: &FieldSpec, place: usize, item: Option<&Table>) -> bool {
+    match spec.kind {
+        FieldKind::Order(_, at) => at == place,
+        FieldKind::Listed(back) => {
+            let list = item.and_then(|item| codec::get_path(item, spec.key));
+            list.and_then(Value::as_array)
+                .is_some_and(|list| list.len() == place + back + 1)
+        }
+        _ => true,
+    }
+}
+
+/// The place `path` names in the list at `key`, where it ends in one.
+fn list_place(path: &str, key: &str) -> Option<usize> {
+    let (list, digits) = path.strip_suffix(']')?.rsplit_once('[')?;
+    list.ends_with(key).then(|| digits.parse().ok())?
 }
 
 /// The longest root wins, so `household.people` is not the household. A
@@ -190,7 +225,13 @@ fn locate(path: &str) -> Option<Located> {
     let keyed_root = root.rsplit('.').next().map_or(0, str::len);
     let field = field_at(ops.fields, within.trim_start_matches('.'))
         .or_else(|| field_at(ops.fields, &path[root.len() - keyed_root..]));
-    Some(Located { ops, index, field })
+    let place = field.and_then(|spec| list_place(path, spec.key));
+    Some(Located {
+        ops,
+        index,
+        field,
+        place,
+    })
 }
 
 /// The field an issue at `path` within an item is about: the one with the
@@ -222,9 +263,8 @@ pub fn issue_words(issue: &retiretui_engine::plan::Issue, draft: &Draft) -> Stri
     let Some(located) = locate(&issue.path) else {
         return issue.to_string();
     };
-    let item = located
-        .index
-        .and_then(|index| (located.ops.item)(draft, index));
+    let index = located.index.or(located.ops.list.is_none().then_some(0));
+    let item = index.and_then(|index| (located.ops.item)(draft, index));
     let place = place_words(&located, item.as_ref());
     format!("{}: {}", place.join(PLACE_SEPARATOR), issue.message)
 }
@@ -233,12 +273,14 @@ pub fn issue_words(issue: &retiretui_engine::plan::Issue, draft: &Draft) -> Stri
 /// `located` points at.
 fn place_words(located: &Located, item: Option<&Table>) -> Vec<String> {
     let identity = located.ops.list.map(|list| list.identity);
-    let item = item
+    let name = item
         .zip(identity)
         .and_then(|(item, identity)| offers::display_name(item, identity, located.ops.fields));
     let page = Some(located.ops.title.to_owned());
-    let field = located.field.map(|spec| spec.label.to_owned());
-    [page, item, field].into_iter().flatten().collect()
+    let fields = located.ops.fields.iter();
+    let row = fields.clone().find(|spec| located.is_against(spec, item));
+    let field = row.or(located.field).map(|spec| spec.label.to_owned());
+    [page, name, field].into_iter().flatten().collect()
 }
 
 /// An issue beside what its path points at, found once for everything
@@ -252,19 +294,19 @@ fn located_issues(draft: &Draft) -> Vec<LocatedIssue<'_>> {
         .collect()
 }
 
-/// What `located` holds against the field `key` of item `index` of `ops`;
-/// `None` is the one item a domain without a table has.
+/// What `located` holds against the field `spec` of `item`, item `index`
+/// of `ops`; `None` is the one item a domain without a table has.
 fn field_issue<'a>(
     located: &[LocatedIssue<'a>],
-    ops: Ops,
-    index: Option<usize>,
-    key: &str,
+    (ops, index): (Ops, Option<usize>),
+    spec: &FieldSpec,
+    item: Option<&Table>,
 ) -> Option<&'a str> {
     let domain = ops.surface.filter(|page| page.is_domain())?;
     located.iter().find_map(|(located, message)| {
         let is_here = located.ops.surface == Some(domain)
             && located.index == index
-            && located.field.is_some_and(|spec| spec.key == key);
+            && located.is_against(spec, item);
         is_here.then_some(*message)
     })
 }

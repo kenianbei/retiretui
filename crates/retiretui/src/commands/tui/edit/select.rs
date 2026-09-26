@@ -249,7 +249,14 @@ pub fn sync_selects(
         let listed = offers.iter().enumerate();
         let rows = listed.map(|(at, option)| (Choice(Some(at)), option.label.as_str()));
         let emptying = blank.map(|blank| (Choice(None), blank));
-        for (choice, text) in rows.chain(emptying) {
+        // What only the menu empties - a trigger's kind - is empty first,
+        // where what it stands for comes before any when.
+        let (first, last) = if select.skips_blank {
+            (emptying, None)
+        } else {
+            (None, emptying)
+        };
+        for (choice, text) in first.into_iter().chain(rows).chain(last) {
             commands
                 .spawn((menu_item(text.to_owned()), choice, ChildOf(popup)))
                 .observe(handle_choice);
@@ -360,19 +367,35 @@ mod tests {
 
     /// How many rows of a select's menu empty the field.
     fn emptying_rows(is_required: bool) -> usize {
+        let rows = menu_rows(filing().required(is_required));
+        rows.iter().filter(|row| row.is_none()).count()
+    }
+
+    /// The options `select`'s menu lists, in order; `None` empties it.
+    fn menu_rows(select: Select) -> Vec<Option<usize>> {
         use bevy_ecs::prelude::World;
         use bevy_ecs::system::RunSystemOnce;
 
         let mut world = World::new();
-        let select = filing().required(is_required);
         let field = FormField {
             spec: FieldSpec::choice("filing", "", Vocabulary::FilingStatus),
         };
         spawn_select(&mut world.commands(), select, field);
         world.flush();
         world.run_system_once(sync_selects).unwrap();
-        let mut rows = world.query::<&Choice>();
-        rows.iter(&world).filter(|row| row.0.is_none()).count()
+        let mut popups = world.query_filtered::<&Children, With<MenuPopup>>();
+        let rows = popups.single(&world).unwrap();
+        rows.iter()
+            .map(|&row| world.get::<Choice>(row).unwrap().0)
+            .collect()
+    }
+
+    #[test]
+    fn only_a_menu_that_alone_empties_its_field_lists_empty_first() {
+        let rows = menu_rows(filing());
+        assert_eq!(rows.last(), Some(&None), "{rows:?}");
+        let rows = menu_rows(filing().skipping_blank());
+        assert_eq!(rows.first(), Some(&None), "{rows:?}");
     }
 
     #[test]

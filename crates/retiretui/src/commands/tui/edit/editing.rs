@@ -58,6 +58,9 @@ pub(super) struct Editing {
     /// Fields the item had no use for as it was opened, yet held: they stay
     /// on show, to be seen and cleared by hand rather than by the form.
     pub(super) stale: Vec<&'static str>,
+    /// Stale fields cleared by hand and left: hidden, and still written as
+    /// cleared.
+    pub(super) cleared: Vec<&'static str>,
     /// What is wrong with each field whose widgets do not yet make a value,
     /// by its key: what they hold is in no table the snapshot could.
     pub(super) incomplete: BTreeMap<&'static str, &'static str>,
@@ -93,6 +96,7 @@ impl Editing {
             slot,
             form: None,
             stale: applies::stale(ops, &pristine, &snapshot),
+            cleared: Vec::new(),
             pristine,
             snapshot,
             incomplete: BTreeMap::new(),

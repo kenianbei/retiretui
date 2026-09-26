@@ -94,7 +94,7 @@ fn cliff_and_medicare_rules() {
     let text = with("[medicare]\nprior_magi = [1, 2, 3]\n");
     assert_issue(&issues(&text), "medicare.prior_magi", "at most two");
     let text = with("[medicare]\nprior_magi = [-5]\n");
-    assert_issue(&issues(&text), "medicare.prior_magi", "negative");
+    assert_issue(&issues(&text), "medicare.prior_magi[0]", "negative");
 }
 
 #[test]
@@ -360,7 +360,7 @@ fn settings_bounds() {
         "inflation = 0.025",
         "inflation = 0.025\nwithdrawal_order = [\"taxable\", \"taxable\"]",
     );
-    assert_issue(&issues(&text), "plan.withdrawal_order", "repeat");
+    assert_issue(&issues(&text), "plan.withdrawal_order[1]", "repeat");
 }
 
 #[test]
