@@ -28,12 +28,26 @@ jobs:
       - name: Install wasm-pack
         run: cargo install wasm-pack --version 0.13.1 --locked
 
-      - name: Build the page
-        run: crates/retiretui_web/build.sh
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Build the web app
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build the canvas demo beside it, at /ratzilla
+        run: |
+          crates/retiretui_web/build.sh
+          cp -R crates/retiretui_web/dist web/dist/ratzilla
 
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
-          path: crates/retiretui_web/dist
+          path: web/dist
 
   deploy:
     needs: build

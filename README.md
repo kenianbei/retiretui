@@ -54,12 +54,24 @@ a retired couple, to try it on.
 
 ### In a browser
 
-The same planner runs in a browser page at
-<https://kenianbei.github.io/retiretui/>, published with each release. Its plans
-are kept in the browser's own storage and never leave it: `upload` and
-`download`, from the `:` command palette, bring a plan or a Social Security
-statement in and take a plan back out. To build and serve the page yourself,
-with [wasm-pack](https://rustwasm.github.io/wasm-pack/) installed:
+The web app at <https://kenianbei.github.io/retiretui/>, published with each
+release, is the planner for a phone or a desktop browser. It opens a plan and
+shows whether the money lasts, how surely through random markets, and what to do
+this year; its other pages are still to come. Plans are kept in the browser's
+own storage and never leave it unless downloaded. To build and serve it
+yourself, with [wasm-pack](https://rustwasm.github.io/wasm-pack/) and Node 22
+installed:
+
+```sh
+cd web
+npm ci
+npm run dev
+```
+
+The whole terminal planner also runs in a browser canvas, as an experiment, at
+<https://kenianbei.github.io/retiretui/ratzilla/>: `upload` and `download`, from
+the `:` command palette, bring a plan or a Social Security statement in and take
+a plan back out. To build and serve it:
 
 ```sh
 crates/retiretui_web/build.sh
