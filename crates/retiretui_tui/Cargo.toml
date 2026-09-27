@@ -38,6 +38,10 @@ toml.workspace = true
 toml_edit = "0.25.15"
 tracing = { version = "0.1.44", default-features = false, features = ["std"] }
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+web-time = "1.1.0"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+jiff = { workspace = true, features = ["js"] }
 
 [dev-dependencies]
 insta = "1.48.0"
