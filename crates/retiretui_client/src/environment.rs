@@ -13,11 +13,26 @@ use retiretui_engine::params::TaxTables;
 /// Where the historical record is read from in place of the embedded one.
 const HISTORY_FILE: &str = "history.toml";
 
+/// The application's own directory in each of the platform's.
+const APPLICATION: &str = "retiretui";
+
 /// The user's own directory `name` in the application's config directory.
 #[must_use]
 pub fn config_dir(name: &str) -> Option<PathBuf> {
     let strategy = etcetera::choose_base_strategy().ok()?;
-    Some(strategy.config_dir().join("retiretui").join(name))
+    Some(strategy.config_dir().join(APPLICATION).join(name))
+}
+
+/// The application's directory in the platform's state directory, else in
+/// its cache.
+///
+/// # Errors
+///
+/// Where the platform names no home to put either in.
+pub fn state_dir() -> anyhow::Result<PathBuf> {
+    let platform = etcetera::choose_base_strategy().context("finding where state is filed")?;
+    let state = platform.state_dir().unwrap_or_else(|| platform.cache_dir());
+    Ok(state.join(APPLICATION))
 }
 
 /// The embedded tax tables, overridden by the user's `tax` directory and then

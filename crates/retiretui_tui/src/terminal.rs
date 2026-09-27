@@ -5,13 +5,12 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
-use anyhow::{Context as _, bail};
+use anyhow::bail;
 use bevy_app::{App, AppExit, ScheduleRunnerPlugin};
 use clap::Args;
-use etcetera::BaseStrategy as _;
 use plurimus::core::CorePlugin;
 use plurimus::crossterm::CrosstermPlugin;
-use retiretui_client::environment::{config_dir, load_history, load_tables};
+use retiretui_client::environment::{config_dir, load_history, load_tables, state_dir};
 use retiretui_client::store::DiskStore;
 
 use crate::Launch;
@@ -30,7 +29,6 @@ pub struct TuiArgs {
 
 const FRAME_INTERVAL: Duration = Duration::from_millis(16);
 const CONFIG_FILE: &str = "config.toml";
-const LOG_DIRECTORY: &str = "retiretui";
 const LOG_FILE: &str = "tui.log";
 
 /// Runs the planner in the terminal until it is quit.
@@ -58,16 +56,9 @@ pub fn run(args: &TuiArgs) -> anyhow::Result<()> {
         CrosstermPlugin::default(),
     ));
     crate::build(&mut app, launch).map_err(anyhow::Error::msg)?;
-    crate::install_log(&app, log_path())?;
+    crate::install_log(&app, state_dir().map(|dir| dir.join(LOG_FILE)))?;
     match app.run() {
         AppExit::Success => Ok(()),
         AppExit::Error(code) => bail!("tui exited with error code {code}"),
     }
-}
-
-/// Where the log file goes: the platform's state directory, else its cache.
-fn log_path() -> anyhow::Result<PathBuf> {
-    let platform = etcetera::choose_base_strategy().context("finding where state is filed")?;
-    let state = platform.state_dir().unwrap_or_else(|| platform.cache_dir());
-    Ok(state.join(LOG_DIRECTORY).join(LOG_FILE))
 }

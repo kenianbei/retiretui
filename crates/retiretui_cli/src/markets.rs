@@ -76,8 +76,6 @@ pub enum DrawArg {
     History,
 }
 
-/// The historical record: `explicit`, else the user's own under the config
-/// directory, else the embedded one.
 /// The plan's `[market]`, created where it states none, for a flag to set.
 fn market_of(plan: &mut Plan) -> &mut Market {
     plan.market.get_or_insert_with(Market::default)

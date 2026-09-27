@@ -3270,7 +3270,6 @@ dependencies = [
  "bevy_ui",
  "bevy_window",
  "clap",
- "etcetera",
  "insta",
  "jiff",
  "nucleo-matcher",

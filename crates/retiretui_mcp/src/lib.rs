@@ -60,7 +60,7 @@ pub fn run(args: &McpArgs) -> anyhow::Result<()> {
 }
 
 /// The MCP tool surface: a sandboxed plan store and the loaded tax tables.
-pub struct PlanServer {
+struct PlanServer {
     store: store::PlanStore,
     tables: TaxTables,
     history: History,
