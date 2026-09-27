@@ -2,17 +2,17 @@
 //! plan, the files it came from, its issues, and, where it has none, its
 //! projection.
 
-use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use retiretui_client::actions::collect_warnings;
+use retiretui_client::actions::{collect_warnings, sentence};
 use retiretui_client::draft::Draft;
 use retiretui_client::files::resolve_with_files;
-use retiretui_client::issues::{issue_listing, issue_place, issue_words};
+use retiretui_client::issues::{issue_listing, issue_words};
 use retiretui_client::replies::{ActionsReply, year_row};
+use retiretui_client::session::{Today, YearCursor, span};
 use retiretui_client::store::normal;
 use retiretui_engine::plan::Item;
-use retiretui_engine::project::{Projection, Summary, project};
+use retiretui_engine::project::{Projection, Summary, YearRow, project};
 use serde::Serialize;
 
 use crate::tables;
@@ -36,19 +36,21 @@ pub struct PlacedIssue {
     /// The domain, the item by its display name and the field's label,
     /// then the message; the engine's own words where no domain holds it.
     pub words: String,
-    /// The domain it is about, as a heading says it.
-    pub domain: Option<&'static str>,
 }
 
-/// Display names by id, one map per list, since ids are unique only within
-/// their list.
+/// A year as every surface says it: what to do, what to watch, and how old
+/// everyone is.
 #[derive(Serialize, Debug)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
-pub struct Names<'a> {
-    /// The household's people.
-    pub people: BTreeMap<&'a str, &'a str>,
-    /// The accounts.
-    pub accounts: BTreeMap<&'a str, &'a str>,
+pub struct SaidYear {
+    /// The year.
+    pub year: i16,
+    /// Each person, by display name, and the age they reach in it.
+    pub ages: Vec<(String, u8)>,
+    /// Each action as a sentence, its amount nominal.
+    pub actions: Vec<String>,
+    /// What to watch for in the year.
+    pub warnings: Vec<String>,
 }
 
 impl Document {
@@ -96,19 +98,8 @@ impl Document {
                 path: issue.path.clone(),
                 message: issue.message.clone(),
                 words: issue_words(issue, &self.draft),
-                domain: issue_place(&issue.path).map(|(domain, _)| domain.title()),
             })
             .collect()
-    }
-
-    /// The display names of the items a year's actions name.
-    #[must_use]
-    pub fn names(&self) -> Names<'_> {
-        let plan = &self.draft.plan;
-        Names {
-            people: named(&plan.household.people),
-            accounts: named(&plan.accounts),
-        }
     }
 
     /// The projection, where the plan passed the gate.
@@ -123,18 +114,52 @@ impl Document {
         Some(self.projection()?.summary(deflated))
     }
 
+    /// The year every view starts on: `today`, held within the plan's
+    /// years; `None` while the plan has issues.
+    #[must_use]
+    pub fn this_year(&self, today: i16) -> Option<i16> {
+        let years = span(&self.projection()?.years);
+        Some(YearCursor::default().resolve(Today(today), years, years))
+    }
+
     /// `year`'s recorded actions and warnings.
     ///
     /// # Errors
     ///
     /// Where the plan has issues, or `year` is outside its projection.
     pub fn actions(&self, year: i16) -> Result<ActionsReply, String> {
+        let row = self.row(year)?;
+        let warnings = collect_warnings(&self.draft.plan, tables(), row, None);
+        Ok(ActionsReply::new(row, warnings))
+    }
+
+    /// `year` in words.
+    ///
+    /// # Errors
+    ///
+    /// Where the plan has issues, or `year` is outside its projection.
+    pub fn said(&self, year: i16) -> Result<SaidYear, String> {
+        let row = self.row(year)?;
+        let plan = &self.draft.plan;
+        let people = plan.household.people.iter();
+        let ages = people.filter_map(|person| {
+            let age = *row.ages.get(&person.id)?;
+            Some((person.display_name().to_owned(), age))
+        });
+        let actions = row.actions.iter();
+        Ok(SaidYear {
+            year,
+            ages: ages.collect(),
+            actions: actions.map(|action| sentence(plan, action)).collect(),
+            warnings: collect_warnings(plan, tables(), row, None),
+        })
+    }
+
+    fn row(&self, year: i16) -> Result<&YearRow, String> {
         let projection = self
             .projection()
             .ok_or_else(|| issue_listing(self.draft.issues()))?;
-        let row = year_row(projection, year)?;
-        let warnings = collect_warnings(&self.draft.plan, tables(), row, None);
-        Ok(ActionsReply::new(row, warnings))
+        year_row(projection, year)
     }
 
     /// The resolved plan as canonical TOML.
@@ -146,11 +171,6 @@ impl Document {
         let plan = &self.draft.plan;
         plan.to_toml_string().map_err(|error| error.to_string())
     }
-}
-
-fn named<T: Item>(items: &[T]) -> BTreeMap<&str, &str> {
-    let items = items.iter();
-    items.map(|item| (item.id(), item.display_name())).collect()
 }
 
 #[cfg(test)]
@@ -193,9 +213,15 @@ mod tests {
         let first = projection.years[0].year;
         assert!(document.summary(true).is_some());
         assert_eq!(document.actions(first).expect("in range").year, first);
-        let names = document.names();
-        assert_eq!(names.accounts.get("roth-ira-sam"), Some(&"Sam's Roth IRA"));
-        assert!(names.people.len() == 1 || names.people.len() == 2);
+        assert_eq!(document.this_year(first - 5), Some(first));
+        assert_eq!(document.this_year(first + 1), Some(first + 1));
+        let said = document.said(first).expect("in range");
+        assert_eq!(said.ages, [("Sam".to_owned(), 30)]);
+        assert!(
+            said.actions
+                .iter()
+                .any(|action| action.contains("Sam's Roth IRA"))
+        );
         let reopened = Plan::from_toml_str(&document.plan_text().expect("serializes"));
         assert_eq!(reopened.expect("parses"), document.draft.plan);
     }
@@ -228,10 +254,10 @@ mod tests {
             Document::open("/plan.toml", &mut reader(&[("/plan.toml", &text)])).expect("opens");
         let issues = document.issues();
         let issue = issues.first().expect("an issue");
-        assert_eq!(issue.domain, Some("Settings"));
         assert!(issue.words.starts_with("Settings"), "{}", issue.words);
         assert!(issue.words.ends_with(&issue.message));
         assert!(document.projection().is_none());
+        assert_eq!(document.this_year(2030), None);
         assert!(document.summary(false).is_none());
         assert!(document.actions(plan.plan.start_year).is_err());
     }

@@ -57,15 +57,15 @@ const compare = createRoute({
 const tools = createRoute({
   getParentRoute: () => root,
   path: "/tools/$page",
-  beforeLoad: ({ params }) => pageOf(TOOLS, params.page),
-  component: () => <GroupedPage pages={TOOLS} />,
+  beforeLoad: ({ params }) => ({ page: pageOf(TOOLS, params.page) }),
+  component: GroupedPage,
 });
 
 const plan = createRoute({
   getParentRoute: () => root,
   path: "/plan/$page",
-  beforeLoad: ({ params }) => pageOf(DOMAINS, params.page),
-  component: () => <GroupedPage pages={DOMAINS} />,
+  beforeLoad: ({ params }) => ({ page: pageOf(DOMAINS, params.page) }),
+  component: GroupedPage,
 });
 
 export const router = createRouter({

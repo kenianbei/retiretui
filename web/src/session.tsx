@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 
-import { Workspace, isOwnKey, pathOf } from "@/workspace";
+import { Workspace, fileAt, pathOf } from "@/workspace";
 
 /** The document a path names, or why it would not open. */
 interface Opened {
@@ -68,9 +68,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const reload = (event: StorageEvent) => {
-      if (!isOwnKey(event.key)) return;
+      const changed = fileAt(event.key);
+      if (changed === undefined) return;
       setFiles(workspace.list());
-      setOpened((now) => openAt(workspace, now.path));
+      setOpened((now) =>
+        changed !== null && now.document?.files().includes(changed) === false
+          ? now
+          : openAt(workspace, now.path),
+      );
     };
     window.addEventListener("storage", reload);
     return () => {

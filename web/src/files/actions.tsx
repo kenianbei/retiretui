@@ -1,4 +1,14 @@
-import { useRef, useState, type ChangeEvent } from "react";
+import type { Example } from "@wasm/retiretui_wasm.js";
+import { examples } from "@wasm/retiretui_wasm.js";
+import {
+  createContext,
+  use,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type ReactNode,
+} from "react";
 
 import {
   AlertDialog,
@@ -18,8 +28,21 @@ interface Incoming {
   text: string;
 }
 
-/** Adding, uploading and downloading files, asking before one replaces another. */
-export function useFileActions() {
+/** What can be done with files, wherever a page offers it. */
+interface FileActions {
+  examples: Example[];
+  add: (name: string, text: string) => void;
+  upload: () => void;
+  download: () => void;
+}
+
+const FileActionsContext = createContext<FileActions | null>(null);
+
+/**
+ * Adding, uploading and downloading files, asking before one replaces
+ * another; the picker and the question are held once for every page.
+ */
+export function FileActionsProvider({ children }: { children: ReactNode }) {
   const session = useSession();
   const [replacing, setReplacing] = useState<Incoming | null>(null);
   const picker = useRef<HTMLInputElement>(null);
@@ -46,8 +69,17 @@ export function useFileActions() {
     URL.revokeObjectURL(url);
   };
 
-  const elements = (
-    <>
+  const plans = useMemo(() => examples(), []);
+  const actions = {
+    examples: plans,
+    add,
+    upload: () => picker.current?.click(),
+    download,
+  };
+
+  return (
+    <FileActionsContext value={actions}>
+      {children}
       <input
         ref={picker}
         type="file"
@@ -81,13 +113,12 @@ export function useFileActions() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </FileActionsContext>
   );
+}
 
-  return {
-    add,
-    upload: () => picker.current?.click(),
-    download,
-    elements,
-  };
+export function useFileActions(): FileActions {
+  const actions = use(FileActionsContext);
+  if (!actions) throw new Error("useFileActions outside a FileActionsProvider");
+  return actions;
 }

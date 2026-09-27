@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { Workspace, isOwnKey, nameOf, pathOf } from "@/workspace";
+import { Workspace, fileAt, nameOf, pathOf } from "@/workspace";
 
 /** `Storage` over a map, as a browser's `localStorage` behaves. */
 class MemoryStorage implements Storage {
@@ -40,7 +40,6 @@ describe("a workspace", () => {
     workspace.write("/b.toml", "");
     workspace.write("/a.toml", "");
     expect(workspace.list()).toEqual(["/a.toml", "/b.toml"]);
-    expect(isOwnKey("retiretui:file:/workspace/demo.toml")).toBe(false);
   });
 
   it("remembers the document last open only while it is there", () => {
@@ -52,6 +51,13 @@ describe("a workspace", () => {
     storage.removeItem("retiretui-app:file:/plan.toml");
     expect(workspace.lastOpen()).toBeNull();
   });
+});
+
+it("reads a changed key as the file it holds, if any", () => {
+  expect(fileAt("retiretui-app:file:/plan.toml")).toBe("/plan.toml");
+  expect(fileAt("retiretui-app:last")).toBeUndefined();
+  expect(fileAt("retiretui:file:/workspace/demo.toml")).toBeUndefined();
+  expect(fileAt(null)).toBeNull();
 });
 
 it("keeps an uploaded file flat under the root", () => {

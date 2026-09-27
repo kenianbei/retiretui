@@ -1,6 +1,4 @@
-import { examples } from "@wasm/retiretui_wasm.js";
 import { Download, FolderOpen, Menu, Sparkles, Upload } from "lucide-react";
-import { useMemo } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,7 +20,6 @@ import { nameOf } from "@/workspace";
 export function FileMenu() {
   const session = useSession();
   const actions = useFileActions();
-  const plans = useMemo(() => examples(), []);
 
   return (
     <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
@@ -66,7 +63,7 @@ export function FileMenu() {
               Add an example
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent className="max-w-80">
-              {plans.map((example) => (
+              {actions.examples.map((example) => (
                 <DropdownMenuItem
                   key={example.file}
                   onSelect={() => {
@@ -92,7 +89,6 @@ export function FileMenu() {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      {actions.elements}
     </div>
   );
 }

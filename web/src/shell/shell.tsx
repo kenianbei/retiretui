@@ -2,11 +2,19 @@ import { Link, Outlet, useLocation } from "@tanstack/react-router";
 
 import type { ReactNode } from "react";
 
+import { FileActionsProvider } from "@/files/actions";
 import { FileMenu } from "@/files/menu";
 import { Start } from "@/files/start";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/session";
-import { TABS, isWithin, type Page, type Tab } from "@/nav";
+import {
+  TABS,
+  isGroup,
+  isWithin,
+  type GroupTab,
+  type Page,
+  type Tab,
+} from "@/nav";
 
 function useIsActive() {
   const { pathname } = useLocation();
@@ -24,21 +32,13 @@ interface TabLinkProps {
 
 /** A link to a tab's own page, or to one of its group's. */
 function TabLink({ tab, page, className, children, isCurrent }: TabLinkProps) {
-  const current = isCurrent ? "page" : undefined;
-  if (!("pages" in tab)) {
-    return (
-      <Link to={tab.path} className={className} aria-current={current}>
-        {children}
-      </Link>
-    );
-  }
-  const slug = (page ?? tab.pages[0])?.slug ?? "";
+  const slug = isGroup(tab) ? (page ?? tab.pages[0])?.slug : undefined;
   return (
     <Link
       to={tab.path}
-      params={{ page: slug }}
+      params={slug === undefined ? {} : { page: slug }}
       className={className}
-      aria-current={current}
+      aria-current={isCurrent ? "page" : undefined}
     >
       {children}
     </Link>
@@ -58,7 +58,7 @@ function Sidebar() {
           <li key={tab.path}>
             <TabLink
               tab={tab}
-              isCurrent={isActive(tab) && !("pages" in tab)}
+              isCurrent={isActive(tab) && !isGroup(tab)}
               className={cn(
                 "hover:bg-accent flex items-center gap-3 rounded-md px-3 py-2 text-sm",
                 isActive(tab) && "bg-accent font-semibold",
@@ -67,7 +67,7 @@ function Sidebar() {
               <tab.icon aria-hidden className="size-4" />
               {tab.title}
             </TabLink>
-            {"pages" in tab && isActive(tab) && (
+            {isGroup(tab) && isActive(tab) && (
               <PageLinks tab={tab} variant="sidebar" />
             )}
           </li>
@@ -123,7 +123,7 @@ function PageLinks({
   tab,
   variant,
 }: {
-  tab: Tab & { pages: readonly Page[] };
+  tab: GroupTab;
   variant: keyof typeof PAGE_LINK;
 }) {
   const { pathname } = useLocation();
@@ -152,8 +152,8 @@ function PageLinks({
 /** The current group's pages above the page, where there is no sidebar. */
 function GroupPages() {
   const isActive = useIsActive();
-  const tab = TABS.find((each) => "pages" in each && isActive(each));
-  if (!tab || !("pages" in tab)) return null;
+  const tab = TABS.filter(isGroup).find(isActive);
+  if (!tab) return null;
   return (
     <nav
       aria-label={tab.title}
@@ -167,27 +167,29 @@ function GroupPages() {
 export function Shell() {
   const { document } = useSession();
   return (
-    <div className="min-h-dvh md:grid md:grid-cols-[15rem_1fr]">
-      <Sidebar />
-      <div className="flex min-h-dvh min-w-0 flex-col pb-20 md:pb-0">
-        <header className="bg-card flex h-14 items-center gap-3 border-b px-4 md:px-8">
-          <span className="font-semibold tracking-tight md:hidden">
-            RetireTui
-          </span>
-          <FileMenu />
-        </header>
-        <main className="flex-1 px-4 py-6 md:px-8">
-          {document ? (
-            <>
-              <GroupPages />
-              <Outlet />
-            </>
-          ) : (
-            <Start />
-          )}
-        </main>
+    <FileActionsProvider>
+      <div className="min-h-dvh md:grid md:grid-cols-[15rem_1fr]">
+        <Sidebar />
+        <div className="flex min-h-dvh min-w-0 flex-col pb-20 md:pb-0">
+          <header className="bg-card flex h-14 items-center gap-3 border-b px-4 md:px-8">
+            <span className="font-semibold tracking-tight md:hidden">
+              RetireTui
+            </span>
+            <FileMenu />
+          </header>
+          <main className="flex-1 px-4 py-6 md:px-8">
+            {document ? (
+              <>
+                <GroupPages />
+                <Outlet />
+              </>
+            ) : (
+              <Start />
+            )}
+          </main>
+        </div>
+        <BottomBar />
       </div>
-      <BottomBar />
-    </div>
+    </FileActionsProvider>
   );
 }

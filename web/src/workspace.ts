@@ -1,10 +1,15 @@
-/** The keys the app's files are kept under, apart from the canvas demo's. */
-const FILE_KEY = "retiretui-app:file:";
-const LAST_KEY = "retiretui-app:last";
+/** Every key the app keeps, apart from the canvas demo's `retiretui:` keys. */
+const PREFIX = "retiretui-app:";
+const FILE_KEY = `${PREFIX}file:`;
+const LAST_KEY = `${PREFIX}last`;
 
-/** Whether a storage key is one of the app's own. */
-export function isOwnKey(key: string | null): boolean {
-  return key === null || key.startsWith("retiretui-app:");
+/**
+ * The file a changed storage `key` holds: `undefined` for a key that holds
+ * none, and `null` where the storage was cleared whole.
+ */
+export function fileAt(key: string | null): string | null | undefined {
+  if (key === null) return null;
+  return key.startsWith(FILE_KEY) ? key.slice(FILE_KEY.length) : undefined;
 }
 
 /** The workspace's path for a file named `name`: flat under `/`. */
@@ -42,8 +47,8 @@ export class Workspace {
       this.storage.key(at),
     );
     return keys
-      .filter((key) => key?.startsWith(FILE_KEY))
-      .map((key) => (key ?? "").slice(FILE_KEY.length))
+      .map((key) => fileAt(key))
+      .filter((path) => typeof path === "string")
       .sort();
   }
 

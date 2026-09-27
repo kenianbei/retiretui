@@ -1,4 +1,5 @@
 import { notFound } from "@tanstack/react-router";
+import { domains } from "@wasm/retiretui_wasm.js";
 import {
   ChartNoAxesColumn,
   Columns2,
@@ -12,7 +13,7 @@ import {
 export interface Page {
   slug: string;
   title: string;
-  holds: string;
+  holds: string | null;
 }
 
 /** The tools that act on the plan as a whole, in the TUI's order. */
@@ -39,72 +40,25 @@ export const TOOLS: readonly Page[] = [
   },
 ];
 
-/** The plan's editing domains, in the TUI's order. */
-export const DOMAINS: readonly Page[] = [
-  {
-    slug: "accounts",
-    title: "Accounts",
-    holds: "What the household holds, and how each is taxed.",
-  },
-  {
-    slug: "income",
-    title: "Income",
-    holds: "Salaries, pensions, Social Security and other income.",
-  },
-  {
-    slug: "expenses",
-    title: "Expenses",
-    holds: "What the household spends, and when.",
-  },
-  {
-    slug: "cliffs",
-    title: "Cliffs",
-    holds: "Income limits the plan should stay under.",
-  },
-  {
-    slug: "transfers",
-    title: "Transfers",
-    holds: "Scheduled moves between accounts.",
-  },
-  { slug: "conversions", title: "Conversions", holds: "Roth conversions." },
-  {
-    slug: "contributions",
-    title: "Contributions",
-    holds: "What is paid into each account.",
-  },
-  {
-    slug: "events",
-    title: "Events",
-    holds: "Named moments other items start or stop on.",
-  },
-  {
-    slug: "people",
-    title: "People",
-    holds: "The household's people and their earnings records.",
-  },
-  {
-    slug: "residency",
-    title: "Residency",
-    holds: "Where the household lives, and from when.",
-  },
-  {
-    slug: "household",
-    title: "Household",
-    holds: "Filing status and Medicare.",
-  },
-  {
-    slug: "settings",
-    title: "Settings",
-    holds: "The plan's years and inflation.",
-  },
-  { slug: "market", title: "Market", holds: "What the market tools assume." },
-];
+/** The plan's editing domains, as the client names them. */
+export const DOMAINS: readonly Page[] = domains().map((domain) => ({
+  slug: domain.slug,
+  title: domain.title,
+  holds: domain.purpose,
+}));
 
 /** One of the five places to be: a page of its own, or a group of pages. */
 export type Tab = { title: string; icon: LucideIcon } & (
   | { path: "/overview" | "/ledger" | "/compare" }
   | { path: "/tools/$page" | "/plan/$page"; pages: readonly Page[] }
 );
+
+/** A tab holding a group of pages. */
+export type GroupTab = Extract<Tab, { pages: readonly Page[] }>;
+
+export function isGroup(tab: Tab): tab is GroupTab {
+  return "pages" in tab;
+}
 
 export const TABS: readonly Tab[] = [
   { title: "Overview", icon: ChartNoAxesColumn, path: "/overview" },

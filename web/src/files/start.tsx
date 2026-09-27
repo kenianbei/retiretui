@@ -1,6 +1,4 @@
-import { examples } from "@wasm/retiretui_wasm.js";
 import { FileText, Upload } from "lucide-react";
-import { useMemo } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -12,7 +10,6 @@ import { nameOf } from "@/workspace";
 export function Start() {
   const session = useSession();
   const actions = useFileActions();
-  const plans = useMemo(() => examples(), []);
 
   return (
     <section className="max-w-prose space-y-8">
@@ -57,7 +54,7 @@ export function Start() {
       <div className="space-y-3">
         <h2 className="font-semibold">Begin from an example</h2>
         <ul className="space-y-2">
-          {plans.map((example) => (
+          {actions.examples.map((example) => (
             <li key={example.file}>
               <Button
                 variant="outline"
@@ -80,7 +77,6 @@ export function Start() {
           Upload a plan
         </Button>
       </div>
-      {actions.elements}
     </section>
   );
 }

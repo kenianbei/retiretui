@@ -16,8 +16,4 @@ message: string,
  * The domain, the item by its display name and the field's label,
  * then the message; the engine's own words where no domain holds it.
  */
-words: string, 
-/**
- * The domain it is about, as a heading says it.
- */
-domain: string | null, };
+words: string, };
