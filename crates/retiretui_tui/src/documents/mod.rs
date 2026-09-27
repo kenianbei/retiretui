@@ -114,8 +114,9 @@ pub fn switch(In(opening): In<Opening>, world: &mut World) {
 
 /// Makes `opening` the document, saying whether it did.
 pub fn land(opening: Opening, world: &mut World) -> bool {
-    let tables = &world.resource::<Session>().tables;
-    let (loaded, files) = watch::load_projected(&opening.path, tables);
+    let session = world.resource::<Session>();
+    let store = std::sync::Arc::clone(&session.store);
+    let (loaded, files) = watch::load_projected(store.as_ref(), &opening.path, &session.tables);
     let projected = match loaded {
         Ok(projected) => projected,
         Err(invalid) => {
@@ -130,9 +131,9 @@ pub fn land(opening: Opening, world: &mut World) -> bool {
     let held = opening
         .is_swap
         .then(|| world.remove_resource::<Compared>().unwrap_or_default());
-    reset_session(world, projected, Watch::new(files));
+    reset_session(world, projected, Watch::new(store, files));
     if let Some(held) = held {
-        let swapped = held.swapped(&opening.path, left, &world.resource::<Session>().tables);
+        let swapped = held.swapped(&opening.path, left, world.resource::<Session>());
         world.insert_resource(swapped);
         nav::turn_in(world, Page::Compare);
     }

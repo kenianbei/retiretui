@@ -2,6 +2,7 @@
 //! terminal the shell lays out in and at a full-screen one.
 
 use bevy_app::App;
+use bevy_ecs::prelude::Mut;
 use plurimus::core::TerminalSize;
 use plurimus::term::KeyCode;
 
@@ -217,9 +218,11 @@ fn comparing(size: TerminalSize, name: &str, text: &str) -> Headless {
     std::fs::write(dir.join(name), text).unwrap();
     let mut app = headless_app_at(dir.join("plan.toml"), size);
     show(&mut app, Page::Compare);
-    let tables = app.world().resource::<Session>().tables.clone();
-    let mut compared = app.world_mut().resource_mut::<Compared>();
-    compared.take_in(dir.join(name), &tables).unwrap();
+    app.world_mut()
+        .resource_scope(|world, mut compared: Mut<Compared>| {
+            compared.take_in(dir.join(name), world.resource::<Session>())
+        })
+        .unwrap();
     app
 }
 

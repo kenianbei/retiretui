@@ -5,7 +5,6 @@ use std::path::{Path, PathBuf};
 
 use bevy_ecs::change_detection::DetectChangesMut;
 use bevy_ecs::prelude::{Commands, Res, ResMut};
-use retiretui_engine::params::TaxTables;
 
 use super::{Compared, plans};
 use crate::command::Outcome;
@@ -24,8 +23,8 @@ pub(super) struct ComparedDoc {
 }
 
 impl ComparedDoc {
-    pub(super) fn read(path: PathBuf, tables: &TaxTables) -> Result<Self, String> {
-        let (loaded, files) = watch::load_projected(&path, tables);
+    pub(super) fn read(session: &Session, path: PathBuf) -> Result<Self, String> {
+        let (loaded, files) = watch::load_projected(session.store.as_ref(), &path, &session.tables);
         let projected = loaded.map_err(|invalid| invalid.headline().to_owned())?;
         Ok(Self {
             path,
@@ -37,8 +36,9 @@ impl ComparedDoc {
 
     /// Reads the file again; one that fails keeps its figures, says so,
     /// and marks its row until it reads again.
-    fn reread(&mut self, tables: &TaxTables) {
-        let (loaded, files) = watch::load_projected(&self.path, tables);
+    fn reread(&mut self, session: &Session) {
+        let (loaded, files) =
+            watch::load_projected(session.store.as_ref(), &self.path, &session.tables);
         self.files = files;
         match loaded {
             Ok(projected) => {
@@ -56,19 +56,19 @@ impl ComparedDoc {
 
 impl Compared {
     /// Re-reads every compared file.
-    pub fn reload(&mut self, tables: &TaxTables) {
+    pub fn reload(&mut self, session: &Session) {
         for doc in &mut self.docs {
-            doc.reread(tables);
+            doc.reread(session);
         }
     }
 
     /// Re-reads each compared file that changed on disk, answering
     /// whether any had.
-    fn reread_stale(&mut self, tables: &TaxTables) -> bool {
+    fn reread_stale(&mut self, session: &Session) -> bool {
         let mut is_reread = false;
         let stale = self.docs.iter_mut();
-        for doc in stale.filter(|doc| watch::is_stale(&doc.files)) {
-            doc.reread(tables);
+        for doc in stale.filter(|doc| watch::is_stale(session.store.as_ref(), &doc.files)) {
+            doc.reread(session);
             is_reread = true;
         }
         is_reread
@@ -78,7 +78,7 @@ impl Compared {
     /// the document it replaces, takes its place as saved on disk - where
     /// it is saved at all - and the baseline follows its row.
     #[must_use]
-    pub fn swapped(mut self, opened: &Path, left: Option<PathBuf>, tables: &TaxTables) -> Self {
+    pub fn swapped(mut self, opened: &Path, left: Option<PathBuf>, session: &Session) -> Self {
         let Some(at) = self.docs.iter().position(|doc| doc.path == opened) else {
             return self;
         };
@@ -86,7 +86,7 @@ impl Compared {
         let is_opened_baseline = self.baseline.as_deref() == Some(opened);
         let joined = left.and_then(|path| {
             let name = session::file_name(&path).into_owned();
-            ComparedDoc::read(path, tables)
+            ComparedDoc::read(session, path)
                 .inspect_err(|reason| journal::warn(format!("{name} not compared: {reason}")))
                 .ok()
         });
@@ -116,10 +116,7 @@ impl Compared {
 /// Re-reads the compared files that changed on disk, on the watch's beat;
 /// the set changes only where one had.
 pub(super) fn follow_disk(session: Res<Session>, mut compared: ResMut<Compared>) {
-    if compared
-        .bypass_change_detection()
-        .reread_stale(&session.tables)
-    {
+    if compared.bypass_change_detection().reread_stale(&session) {
         compared.set_changed();
     }
 }

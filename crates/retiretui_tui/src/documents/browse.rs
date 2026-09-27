@@ -2,6 +2,7 @@
 //! choice or a dismissal, the path chosen handed to the picker's system.
 
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use bevy_app::{App, Update};
 use bevy_ecs::change_detection::DetectChanges;
@@ -9,10 +10,11 @@ use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Component, In, IntoScheduleConfigs, On, Res, ResMut, Resource};
 use bevy_ecs::system::{SystemId, SystemParam};
 use plurimus::core::UiWidget;
+use plurimus::core::ratatui_core::style::Style;
 use plurimus::core::ratatui_core::text::Line;
 use plurimus::ui::{ModalDismiss, ModalOpen};
 use plurimus::widgets::ValueChange;
-use plurimus_filepicker::{FilePicker, FilePickerLook, FilePickerMatchStyle};
+use plurimus_filepicker::{FilePicker, FilePickerLook, FilePickerMatchStyle, FilePickerSource};
 
 use super::pickers;
 use crate::compare::Compared;
@@ -22,6 +24,7 @@ use crate::overlay::{self, Standing};
 use crate::pane::Framed;
 use crate::picker::PROMPT;
 use crate::session::Session;
+use crate::store::StoreSource;
 use crate::theme::Theme;
 
 const WIDTH: u16 = 64;
@@ -127,10 +130,6 @@ fn sync_browse(
         ))
         .observe(handle_dismiss);
     let dim = dressing.theme.dimmed();
-    let look = FilePickerLook::default()
-        .with_extensions([pick.extension])
-        .with_accepts_new(pick.accepts_new)
-        .with_prompt(Line::styled(PROMPT, dim));
     let mut field = FilePicker::new(session.workspace());
     if let Some(named) = browsing.named {
         field.set_path(named);
@@ -138,18 +137,27 @@ fn sync_browse(
     let mut picker = commands.spawn((
         field,
         UiWidget::default(),
-        look,
+        look(&pick, dim),
         FilePickerMatchStyle(dressing.theme.accented()),
         list_cursor(),
         growing(),
         placed(),
         ChildOf(root),
+        FilePickerSource(Arc::new(StoreSource(Arc::clone(&session.store)))),
     ));
-    if let Some(decorator) = pickers::decorate(pick.badges, dim, &dressing.compared) {
+    let store = Arc::clone(&session.store);
+    if let Some(decorator) = pickers::decorate(pick.badges, dim, &dressing.compared, store) {
         picker.insert(decorator);
     }
     let picker = picker.observe(handle_chosen).observe(handle_dismiss).id();
     standing.focus(picker);
+}
+
+fn look(pick: &FilePick, dim: Style) -> FilePickerLook {
+    FilePickerLook::default()
+        .with_extensions([pick.extension])
+        .with_accepts_new(pick.accepts_new)
+        .with_prompt(Line::styled(PROMPT, dim))
 }
 
 fn handle_chosen(

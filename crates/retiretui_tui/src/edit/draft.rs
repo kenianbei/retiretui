@@ -9,6 +9,8 @@ use retiretui_engine::plan::{Issue, Plan};
 use retiretui_engine::project::{project, validate_plan};
 use toml::{Table, Value};
 
+use crate::store::Store;
+
 use super::domain::ToolAnswers;
 
 use crate::command::Outcome;
@@ -129,11 +131,11 @@ impl Draft {
 ///
 /// The refusal to say: the draft's first issue, or what the write failed
 /// on.
-pub fn write_draft(draft: &Draft, path: &Path) -> Result<(), String> {
+pub fn write_draft(store: &dyn Store, draft: &Draft, path: &Path) -> Result<(), String> {
     if let Some(Outcome::Refused(reason)) = draft.refuse_if_invalid() {
         return Err(reason);
     }
-    crate::files::write_plan(path, &draft.plan)
+    crate::files::write_plan(store, path, &draft.plan)
 }
 
 /// Everything a committed edit touches.
@@ -215,7 +217,7 @@ pub fn save(mut draft: ResMut<Draft>, session: Res<Session>, mut watch: ResMut<W
         Ok(path) => path,
         Err(refusal) => return Outcome::Refused(refusal),
     };
-    if let Err(refusal) = write_draft(&draft, path) {
+    if let Err(refusal) = write_draft(session.store.as_ref(), &draft, path) {
         return Outcome::Refused(refusal);
     }
     watch.restamp();

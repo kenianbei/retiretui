@@ -14,6 +14,7 @@ pub use year::*;
 
 use std::ops::{Deref, DerefMut};
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use bevy_app::App;
 use bevy_ecs::system::RunSystemOnce;
@@ -31,6 +32,7 @@ use crate::journal::{self, Inbox, Journal};
 use crate::nav::{self, ActivePage, Page};
 use crate::session::{Session, Today};
 use crate::settings::Settings;
+use crate::store::{DiskStore, Store};
 use crate::tools::Searches;
 use crate::watch;
 
@@ -131,13 +133,28 @@ pub fn headless_app_in(path: PathBuf, size: TerminalSize, today: Today) -> Headl
     headless_app_on(path, size, Settings::still(), today)
 }
 
+/// The shell at `path` in `store` rather than on the disk.
+pub fn headless_app_over(store: Arc<dyn Store>, path: PathBuf, size: TerminalSize) -> Headless {
+    headless_app_from(store, path, size, Settings::still(), TODAY)
+}
+
 fn headless_app_on(
     path: PathBuf,
     size: TerminalSize,
     settings: Settings,
     today: Today,
 ) -> Headless {
-    let session = Session::at(path, TaxTables::embedded());
+    headless_app_from(Arc::new(DiskStore), path, size, settings, today)
+}
+
+fn headless_app_from(
+    store: Arc<dyn Store>,
+    path: PathBuf,
+    size: TerminalSize,
+    settings: Settings,
+    today: Today,
+) -> Headless {
+    let session = Session::at(Arc::clone(&store), path, TaxTables::embedded());
     let (projected, files) = watch::load_session(&session, today).unwrap();
     let mut app = App::new();
     app.add_plugins(CorePlugin);
@@ -150,7 +167,7 @@ fn headless_app_on(
     app.insert_resource(settings);
     app.insert_resource(today);
     app.insert_resource(projected);
-    app.insert_resource(watch::Watch::new(files));
+    app.insert_resource(watch::Watch::new(store, files));
     crate::add_tui(&mut app);
     app.insert_resource(Searches(false));
     let inbox = app.world().resource::<Inbox>().clone();

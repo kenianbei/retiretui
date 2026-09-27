@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
 use bevy_ecs::prelude::{Changed, ChildOf, Component, Entity, Query, Res, ResMut, Resource, With};
@@ -10,6 +11,7 @@ use retiretui_engine::plan::Plan;
 use retiretui_engine::project::{Projection, YearRow, project};
 
 use crate::files::directory_of;
+use crate::store::Store;
 
 /// Where the shown plan came from and what reloads project against.
 #[derive(Resource)]
@@ -20,6 +22,8 @@ pub struct Session {
     launched: PathBuf,
     /// The tax tables loaded at launch.
     pub tables: TaxTables,
+    /// Where the plan files are kept.
+    pub store: Arc<dyn Store>,
 }
 
 pub const NO_DOCUMENT: &str = "no document is open";
@@ -75,12 +79,13 @@ pub struct Projected {
 impl Session {
     /// A session at `path`: a plan or scenario file, or a directory, which
     /// opens the shell empty.
-    pub fn at(path: PathBuf, tables: TaxTables) -> Self {
-        if path.is_dir() {
+    pub fn at(store: Arc<dyn Store>, path: PathBuf, tables: TaxTables) -> Self {
+        if store.is_dir(&path) {
             return Self {
                 plan_path: None,
                 launched: path,
                 tables,
+                store,
             };
         }
         let launched = directory_of(&path).to_path_buf();
@@ -88,6 +93,7 @@ impl Session {
             plan_path: Some(path),
             launched,
             tables,
+            store,
         }
     }
 

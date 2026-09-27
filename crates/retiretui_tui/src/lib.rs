@@ -7,6 +7,7 @@ pub mod files;
 pub mod ladder;
 pub mod metric;
 pub mod resolve;
+pub mod store;
 pub mod table;
 
 mod chart;
@@ -55,11 +56,14 @@ mod picker_tests;
 #[cfg(test)]
 mod settings_tests;
 #[cfg(test)]
+mod store_tests;
+#[cfg(test)]
 mod support;
 #[cfg(test)]
 mod tests;
 
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use bevy_app::{App, Startup};
 use bevy_ecs::prelude::{Res, Resource};
@@ -78,6 +82,11 @@ pub struct Launch {
     pub tables: TaxTables,
     /// The historical market record the market tools draw from.
     pub history: History,
+    /// Where the plan files are kept.
+    pub store: Arc<dyn store::Store>,
+    /// The settings file in `store`; none for a session that keeps
+    /// nothing.
+    pub settings: Option<PathBuf>,
 }
 
 /// Adds the planner to `app`, above whatever backend draws it: the
@@ -87,15 +96,17 @@ pub struct Launch {
 ///
 /// Where the document cannot be read or resolved.
 pub fn build(app: &mut App, launch: Launch) -> Result<(), String> {
-    let session = session::Session::at(launch.path, launch.tables);
+    let session = session::Session::at(Arc::clone(&launch.store), launch.path, launch.tables);
     let today = session::Today::now();
     let (projected, files) = watch::load_session(&session, today)?;
-    let (settings, complaint) = settings::Settings::load();
+    let (settings, complaint) = launch.settings.map_or_else(Default::default, |path| {
+        settings::Settings::at(Arc::clone(&launch.store), path)
+    });
     app.insert_resource(session);
     app.insert_resource(settings);
     app.insert_resource(today);
     app.insert_resource(projected);
-    app.insert_resource(watch::Watch::new(files));
+    app.insert_resource(watch::Watch::new(launch.store, files));
     app.insert_resource(tools::markets::MarketHistory(launch.history));
     add_tui(app);
     if let Some(complaint) = complaint {
@@ -106,13 +117,13 @@ pub fn build(app: &mut App, launch: Launch) -> Result<(), String> {
 }
 
 /// Installs the process's log: the journal the shell toasts from, and the
-/// log file.
+/// log file at `file`, or the reason there is none, which is said.
 ///
 /// # Errors
 ///
 /// Where a subscriber is already installed.
-pub fn install_log(app: &App) -> anyhow::Result<()> {
-    log::install(app.world().resource::<journal::Inbox>())
+pub fn install_log(app: &App, file: anyhow::Result<PathBuf>) -> anyhow::Result<()> {
+    log::install(app.world().resource::<journal::Inbox>(), file)
 }
 
 /// Why the settings file was not read, said once the journal listens.

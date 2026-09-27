@@ -2,17 +2,15 @@
 //! platform files state.
 
 use std::fs::File;
+use std::path::{Path, PathBuf};
 
 use anyhow::Context as _;
-use etcetera::BaseStrategy as _;
 use tracing_subscriber::layer::SubscriberExt as _;
 use tracing_subscriber::util::SubscriberInitExt as _;
 use tracing_subscriber::{EnvFilter, Layer as _, fmt, registry};
 
 use super::journal::{self, Inbox};
 
-const LOG_DIRECTORY: &str = "retiretui";
-const LOG_FILE: &str = "tui.log";
 const LEVEL_VARIABLE: &str = "RETIRETUI_LOG";
 const DEFAULT_LEVEL: &str = "warn";
 const USER_LEVEL: &str = "trace";
@@ -25,8 +23,8 @@ const USER_LEVEL: &str = "trace";
 /// # Errors
 ///
 /// Where a subscriber is already installed.
-pub fn install(inbox: &Inbox) -> anyhow::Result<()> {
-    let (file, failure) = match open_log() {
+pub fn install(inbox: &Inbox, path: anyhow::Result<PathBuf>) -> anyhow::Result<()> {
+    let (file, failure) = match path.and_then(|path| open_log(&path)) {
         Ok(file) => (Some(file), None),
         Err(failure) => (None, Some(failure)),
     };
@@ -47,15 +45,12 @@ pub fn install(inbox: &Inbox) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn open_log() -> anyhow::Result<File> {
-    let platform = etcetera::choose_base_strategy().context("finding where state is filed")?;
-    let state = platform.state_dir().unwrap_or_else(|| platform.cache_dir());
-    let path = state.join(LOG_DIRECTORY).join(LOG_FILE);
+fn open_log(path: &Path) -> anyhow::Result<File> {
     if let Some(directory) = path.parent() {
         std::fs::create_dir_all(directory)
             .with_context(|| format!("creating {}", directory.display()))?;
     }
-    File::create(&path).with_context(|| format!("opening {}", path.display()))
+    File::create(path).with_context(|| format!("opening {}", path.display()))
 }
 
 /// What reaches the file: warnings and worse, or what `RETIRETUI_LOG`

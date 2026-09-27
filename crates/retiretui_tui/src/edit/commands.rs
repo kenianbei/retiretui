@@ -19,6 +19,7 @@ use crate::command::Outcome;
 use crate::confirm::Confirm;
 use crate::documents::{Browsing, Pickers};
 use crate::journal;
+use crate::store::Store;
 
 const NO_TABLE: &str = "nothing to add or delete here";
 const NOT_A_PERSON: &str = "earnings are imported from the People page";
@@ -154,7 +155,8 @@ pub fn record_statement(
     let Some(person) = importing.0.take() else {
         return;
     };
-    match adopt(&path, &person, &mut editor.draft.plan) {
+    let store = editor.session.store.as_ref();
+    match adopt(store, &path, &person, &mut editor.draft.plan) {
         Ok(statement) => {
             editor.commit();
             let name = editor.draft.plan.person_name(&person);
@@ -170,9 +172,15 @@ pub fn record_statement(
 }
 
 /// The statement at `path`, once its earnings are recorded on `person`.
-fn adopt(path: &Path, person: &str, plan: &mut Plan) -> Result<Statement, String> {
-    let xml =
-        std::fs::read_to_string(path).map_err(|error| format!("{}: {error}", path.display()))?;
+fn adopt(
+    store: &dyn Store,
+    path: &Path,
+    person: &str,
+    plan: &mut Plan,
+) -> Result<Statement, String> {
+    let xml = store
+        .read(path)
+        .map_err(|error| format!("{}: {error}", path.display()))?;
     let statement = statement::parse(&xml).map_err(|error| error.to_string())?;
     plan.adopt_earnings(person, &statement)
         .map_err(|issue| issue.message)?;

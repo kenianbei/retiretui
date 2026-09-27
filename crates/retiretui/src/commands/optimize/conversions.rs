@@ -12,6 +12,7 @@ use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::{Dollars, Plan};
 use retiretui_engine::project::{Projection, Summary};
 use retiretui_tui::ladder::LadderConstraints;
+use retiretui_tui::store::DiskStore;
 use schemars::JsonSchema;
 use serde::Serialize;
 
@@ -232,7 +233,7 @@ fn write_overlay(
     options: &OptimizeOptions,
     ladder: &OptimizedLadder,
 ) -> anyhow::Result<()> {
-    let base = retiretui_tui::files::overlay_base(out, plan_path)?;
+    let base = retiretui_tui::files::overlay_base(&DiskStore, out, plan_path)?;
     let overlay = ladder_overlay(&base, plan, options, &ladder.ladder.steps)?;
     retiretui_tui::files::write_atomic(out, &overlay)?;
     Ok(())

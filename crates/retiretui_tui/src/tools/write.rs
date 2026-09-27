@@ -30,7 +30,9 @@ pub(super) fn open_picker(pick: FilePick, draft: &Draft, browsing: &mut Browsing
 /// The document relative to the directory the overlay is written into.
 pub(super) fn base_of(world: &World, overlay: &Path) -> Result<String, String> {
     let document = world.resource::<Session>().document()?;
-    crate::files::overlay_base(overlay, document).map_err(|error| format!("not written: {error}"))
+    let store = world.resource::<Session>().store.as_ref();
+    crate::files::overlay_base(store, overlay, document)
+        .map_err(|error| format!("not written: {error}"))
 }
 
 /// Writes `text` at `path` and compares the file written; a reason it
@@ -43,13 +45,13 @@ pub(super) fn write(world: &mut World, path: PathBuf, text: Result<String, Strin
             return;
         }
     };
-    if let Err(error) = crate::files::write_atomic(&path, &text) {
+    if let Err(error) = world.resource::<Session>().store.write(&path, &text) {
         journal::warn(format!("not written: {}: {error}", path.display()));
         return;
     }
     let name = session::file_name(&path).into_owned();
     let taken = world.resource_scope(|world, mut compared: Mut<Compared>| {
-        compared.take_in(path, &world.resource::<Session>().tables)
+        compared.take_in(path, world.resource::<Session>())
     });
     match taken {
         Ok(()) => journal::say(format!("wrote {name}, compared")),

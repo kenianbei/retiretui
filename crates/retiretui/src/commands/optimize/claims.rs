@@ -5,6 +5,7 @@ use clap::Args;
 use retiretui_engine::market::Progress;
 use retiretui_engine::optimize::{Claim, ClaimSearch, claims_overlay, optimize_claims};
 use retiretui_engine::project::Summary;
+use retiretui_tui::store::DiskStore;
 use schemars::JsonSchema;
 use serde::Serialize;
 
@@ -118,7 +119,7 @@ fn claims_table(search: &ClaimSearch, deflated: bool) -> String {
 }
 
 fn write_best(out: &Path, plan_path: &Path, search: &ClaimSearch) -> anyhow::Result<()> {
-    let base = retiretui_tui::files::overlay_base(out, plan_path)?;
+    let base = retiretui_tui::files::overlay_base(&DiskStore, out, plan_path)?;
     let overlay = claims_overlay(&base, &search.added, &search.best().claims)?;
     retiretui_tui::files::write_atomic(out, &overlay)?;
     Ok(())

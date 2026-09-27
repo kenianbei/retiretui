@@ -4,6 +4,7 @@
 
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use bevy_ecs::prelude::{Commands, In, Res, ResMut, Resource, World};
 use bevy_ecs::system::{IntoSystem, SystemParam};
@@ -20,6 +21,7 @@ use crate::edit::{self, Draft};
 use crate::journal;
 use crate::session::{self, Session};
 use crate::setup;
+use crate::store::Store;
 use crate::tools;
 use crate::watch::Watch;
 
@@ -36,8 +38,8 @@ enum Kind {
 }
 
 impl Kind {
-    fn of(path: &Path) -> Self {
-        let Ok(text) = std::fs::read_to_string(path) else {
+    fn of(store: &dyn Store, path: &Path) -> Self {
+        let Ok(text) = store.read(path) else {
             return Self::Invalid;
         };
         match Scenario::from_toml_str(&text) {
@@ -65,6 +67,7 @@ pub(super) fn decorate(
     badges: Badges,
     dim: Style,
     compared: &Compared,
+    store: Arc<dyn Store>,
 ) -> Option<FilePickerDecorator> {
     let compared: Vec<PathBuf> = match badges {
         Badges::None => return None,
@@ -75,7 +78,7 @@ pub(super) fn decorate(
         if compared.iter().any(|held| held == path) {
             return RowDecoration::default().with_trailing(Line::styled(COMPARED, dim));
         }
-        let kind = Kind::of(path);
+        let kind = Kind::of(store.as_ref(), path);
         let row = RowDecoration::default().with_trailing(Line::styled(kind.badge(), dim));
         if kind == Kind::Invalid {
             row.with_style(dim)
@@ -143,13 +146,16 @@ pub fn register(world: &mut World) {
 /// first launch in a directory with no plans is not shown a list of files
 /// the user does not have.
 pub fn workspace_holds_a_plan(session: &Session) -> bool {
-    std::fs::read_dir(session.workspace())
+    let workspace = session.workspace();
+    session
+        .store
+        .list(workspace)
         .into_iter()
         .flatten()
-        .flatten()
-        .map(|entry| entry.path())
+        .filter(|entry| !entry.is_dir)
+        .map(|entry| workspace.join(entry.name))
         .filter(|path| path.extension() == Some(OsStr::new(EXTENSION)))
-        .any(|path| Kind::of(&path) != Kind::Invalid)
+        .any(|path| Kind::of(session.store.as_ref(), &path) != Kind::Invalid)
 }
 
 pub fn open(pickers: Res<Pickers>, mut browsing: ResMut<Browsing>) -> Outcome {
@@ -194,15 +200,16 @@ fn compare_chosen(In(path): In<PathBuf>, session: Res<Session>, mut compared: Re
         journal::warn(format!("{} is the document", session.file_name()));
         return;
     }
-    compared.toggle(path, &session.tables);
+    compared.toggle(path, &session);
 }
 
 fn is_the_document(session: &Session, path: &Path) -> bool {
+    let store = session.store.as_ref();
     let document = session
         .plan_path
         .as_deref()
-        .and_then(|document| document.canonicalize().ok());
-    document.is_some_and(|document| path.canonicalize().is_ok_and(|path| path == document))
+        .and_then(|document| store.canonical(document).ok());
+    document.is_some_and(|document| store.canonical(path).is_ok_and(|path| path == document))
 }
 
 /// A picker over the documents whose chosen name `write` is run with, after
@@ -229,6 +236,7 @@ fn writing<M: 'static>(
 /// question naming the one it would replace.
 #[derive(SystemParam)]
 struct Asking<'w, 's> {
+    session: Res<'w, Session>,
     confirm: ResMut<'w, Confirm>,
     commands: Commands<'w, 's>,
 }
@@ -240,7 +248,7 @@ impl Asking<'_, '_> {
         write: impl IntoSystem<In<PathBuf>, (), Marker> + Send + Sync + 'static,
         question: &str,
     ) {
-        if !path.exists() {
+        if !self.session.store.exists(&path) {
             self.commands.run_system_cached_with(write, path);
             return;
         }
@@ -254,12 +262,14 @@ impl Asking<'_, '_> {
 /// Writes the draft under `path` and makes that the document, editable
 /// whatever it was: a scenario saved as is a plan.
 fn write_as(In(path): In<PathBuf>, world: &mut World) {
-    if let Err(refusal) = edit::write_draft(world.resource::<Draft>(), &path) {
+    let store = world.resource::<Session>().store.as_ref();
+    if let Err(refusal) = edit::write_draft(store, world.resource::<Draft>(), &path) {
         journal::warn(refusal);
         return;
     }
     world.resource_mut::<Draft>().saved_as();
-    world.insert_resource(Watch::at(path.clone()));
+    let store = std::sync::Arc::clone(&world.resource::<Session>().store);
+    world.insert_resource(Watch::at(store, path.clone()));
     let mut session = world.resource_mut::<Session>();
     session.plan_path = Some(path);
     journal::say(format!("saved {}", session.file_name()));

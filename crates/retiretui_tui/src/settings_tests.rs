@@ -1,6 +1,7 @@
 //! Settings in the running shell: worn at startup, tried on, kept.
 
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use plurimus::core::TerminalSize;
@@ -9,6 +10,7 @@ use plurimus::term::KeyCode;
 
 use super::motion::Motion;
 use super::settings::Settings;
+use super::store::DiskStore;
 use super::support::{
     Headless, ROOMY, SIZE, composed_buffer, composed_frame, headless_app_set, press_key, said,
     scratch_plan, type_text,
@@ -31,7 +33,7 @@ fn config(text: &str) -> PathBuf {
 }
 
 fn app_under(path: PathBuf, size: TerminalSize) -> Headless {
-    let (mut settings, complaint) = Settings::at(path);
+    let (mut settings, complaint) = Settings::at(Arc::new(DiskStore), path);
     assert!(complaint.is_none(), "{complaint:?}");
     // A frame is compared still: an arriving overlay's cells are not all
     // there yet.

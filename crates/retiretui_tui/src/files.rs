@@ -10,6 +10,7 @@ use retiretui_engine::plan::{Issue, Plan};
 use retiretui_engine::project::validate_plan;
 
 use crate::resolve;
+use crate::store::Store;
 
 /// Why a plan file did not pass the load-and-validate gate.
 pub enum Invalid {
@@ -48,11 +49,12 @@ impl Invalid {
 /// The full load-and-validate gate every surface runs, beside the files
 /// the resolution read, whether or not it passed.
 pub fn validated_plan_with_files(
+    store: &dyn Store,
     path: &Path,
     tables: &TaxTables,
 ) -> (Result<Plan, Invalid>, Vec<PathBuf>) {
     let mut files = Vec::new();
-    let validated = load_plan_with_files(path, &mut files)
+    let validated = load_plan_with_files(store, path, &mut files)
         .map_err(|error| Invalid::Load(error.to_string()))
         .and_then(|plan| {
             let issues = validate_plan(&plan, tables);
@@ -100,9 +102,9 @@ pub fn directory_of(path: &Path) -> &Path {
 /// # Errors
 ///
 /// When either path cannot be canonicalized.
-pub fn overlay_base(out: &Path, plan_path: &Path) -> std::io::Result<String> {
-    let out_dir = directory_of(out).canonicalize()?;
-    let plan = plan_path.canonicalize()?;
+pub fn overlay_base(store: &dyn Store, out: &Path, plan_path: &Path) -> std::io::Result<String> {
+    let out_dir = store.canonical(directory_of(out))?;
+    let plan = store.canonical(plan_path)?;
     Ok(relative_path(&out_dir, &plan))
 }
 
@@ -113,19 +115,24 @@ pub fn overlay_base(out: &Path, plan_path: &Path) -> std::io::Result<String> {
 /// # Errors
 ///
 /// When a file cannot be opened or read, or the chain does not resolve.
-pub fn load_plan_with_files(path: &Path, files: &mut Vec<PathBuf>) -> anyhow::Result<Plan> {
-    let start = path
-        .canonicalize()
+pub fn load_plan_with_files(
+    store: &dyn Store,
+    path: &Path,
+    files: &mut Vec<PathBuf>,
+) -> anyhow::Result<Plan> {
+    let start = store
+        .canonical(path)
         .with_context(|| format!("failed to open {}", path.display()))?;
     let mut read = |file: &Path| {
         files.push(file.to_owned());
-        fs::read_to_string(file)
+        store
+            .read(file)
             .map_err(|error| format!("failed to read {}: {error}", file.display()))
     };
     let mut locate = |referrer: &Path, base: &str| {
         let joined = referrer.parent().unwrap_or(Path::new(".")).join(base);
-        joined
-            .canonicalize()
+        store
+            .canonical(&joined)
             .map_err(|error| format!("failed to open {}: {error}", joined.display()))
     };
     let text = read(&start).map_err(anyhow::Error::msg)?;
@@ -148,10 +155,11 @@ pub fn write_atomic(path: &Path, text: &str) -> std::io::Result<()> {
 /// # Errors
 ///
 /// When the plan does not serialize or the file cannot be written.
-pub fn write_plan(path: &Path, plan: &Plan) -> Result<(), String> {
+pub fn write_plan(store: &dyn Store, path: &Path, plan: &Plan) -> Result<(), String> {
     let canonical = plan
         .to_toml_string()
         .map_err(|error| format!("not saved: {error}"))?;
-    write_atomic(path, &canonical)
+    store
+        .write(path, &canonical)
         .map_err(|error| format!("not saved: {}: {error}", path.display()))
 }

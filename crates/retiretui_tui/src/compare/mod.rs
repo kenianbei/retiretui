@@ -21,7 +21,6 @@ use bevy_ecs::prelude::{
 use bevy_ecs::system::SystemParam;
 use plurimus::core::UiWidget;
 use plurimus::widgets::WidgetSystems;
-use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::{Dollars, Plan};
 use retiretui_engine::project::Projection;
 
@@ -106,13 +105,13 @@ impl Compared {
     }
 
     /// Adds `path`, or takes it out where it is compared already.
-    pub fn toggle(&mut self, path: PathBuf, tables: &TaxTables) {
+    pub fn toggle(&mut self, path: PathBuf, session: &Session) {
         if let Some(at) = self.docs.iter().position(|doc| doc.path == path) {
             self.remove(at);
             return;
         }
         let name = session::file_name(&path).into_owned();
-        match self.take_in(path, tables) {
+        match self.take_in(path, session) {
             Ok(()) => journal::say(format!("compared {name}")),
             Err(reason) => journal::warn(format!("{name} not compared: {reason}")),
         }
@@ -137,8 +136,8 @@ impl Compared {
     /// # Errors
     ///
     /// The first line of what the load failed on.
-    pub fn take_in(&mut self, path: PathBuf, tables: &TaxTables) -> Result<(), String> {
-        let doc = ComparedDoc::read(path, tables)?;
+    pub fn take_in(&mut self, path: PathBuf, session: &Session) -> Result<(), String> {
+        let doc = ComparedDoc::read(session, path)?;
         match self.docs.iter().position(|held| held.path == doc.path) {
             Some(at) => self.docs[at] = doc,
             None => self.docs.push(doc),

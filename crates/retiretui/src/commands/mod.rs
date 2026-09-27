@@ -7,6 +7,7 @@ pub mod optimize;
 pub mod project;
 pub mod tui;
 
+use retiretui_tui::store::DiskStore;
 use std::path::{Path, PathBuf};
 
 use retiretui_engine::market::RunError;
@@ -24,7 +25,7 @@ pub fn run_validate(path: &Path) -> anyhow::Result<()> {
 /// Loads a plan or scenario file and refuses an invalid one, printing its
 /// issues to stderr.
 fn load_validated_plan(path: &Path, tables: &TaxTables) -> anyhow::Result<Plan> {
-    let invalid = match validated_plan_with_files(path, tables).0 {
+    let invalid = match validated_plan_with_files(&DiskStore, path, tables).0 {
         Ok(plan) => return Ok(plan),
         Err(invalid) => invalid,
     };

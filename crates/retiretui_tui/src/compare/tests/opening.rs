@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use bevy_ecs::prelude::Mut;
 use retiretui_engine::plan::Dollars;
 
 use super::*;
@@ -117,12 +118,14 @@ fn the_documents_baseline_stays_with_its_row() {
 fn a_document_without_a_file_drops_out() {
     let dir = scratch_workspace(&test_plan_briefly_run());
     let mut app = headless_app_set(dir.clone(), SIZE, Settings::still());
-    let tables = app.world().resource::<Session>().tables.clone();
     std::fs::write(dir.join("other.toml"), test_plan_briefly_run()).unwrap();
     let variant: PathBuf = dir.join("variant.toml");
-    let mut held = app.world_mut().resource_mut::<Compared>();
-    held.take_in(variant.clone(), &tables).unwrap();
-    held.take_in(dir.join("other.toml"), &tables).unwrap();
+    app.world_mut()
+        .resource_scope(|world, mut held: Mut<Compared>| {
+            let session = world.resource::<Session>();
+            held.take_in(variant.clone(), session).unwrap();
+            held.take_in(dir.join("other.toml"), session).unwrap();
+        });
     app.world_mut()
         .run_system_cached_with(documents::open, Opening::swapping(variant))
         .unwrap();

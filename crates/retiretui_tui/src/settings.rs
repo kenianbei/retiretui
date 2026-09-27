@@ -1,19 +1,25 @@
 //! What the user has set: read from the `[tui]` table of `config.toml`,
 //! and written back a key at a time so the file stays the user's own.
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
+use std::sync::Arc;
 
 use bevy_ecs::prelude::Resource;
-use etcetera::BaseStrategy as _;
 use serde::Deserialize;
 use toml_edit::{DocumentMut, Item, Table, Value};
 
 use super::motion::Motion;
 use super::theme::document::Choice;
+use crate::store::Store;
 
-const CONFIG_DIRECTORY: &str = "retiretui";
-const CONFIG_FILE: &str = "config.toml";
 const TUI_TABLE: &str = "tui";
+
+/// The file settings are read from and written back to.
+#[derive(Debug)]
+struct Kept {
+    store: Arc<dyn Store>,
+    path: PathBuf,
+}
 
 #[derive(Deserialize, Default)]
 struct ConfigFile {
@@ -28,27 +34,12 @@ pub struct Settings {
     /// Where a changed key is written; nowhere for a session that keeps
     /// nothing.
     #[serde(skip)]
-    path: Option<PathBuf>,
+    kept: Option<Kept>,
     pub theme: Choice,
     pub motion: Motion,
 }
 
 impl Settings {
-    /// The user's settings from their config directory. A file that is
-    /// absent is the defaults; one that does not read is the defaults and a
-    /// complaint, and is left as it is.
-    pub fn load() -> (Self, Option<String>) {
-        let Ok(platform) = etcetera::choose_base_strategy() else {
-            return (Self::default(), None);
-        };
-        Self::at(
-            platform
-                .config_dir()
-                .join(CONFIG_DIRECTORY)
-                .join(CONFIG_FILE),
-        )
-    }
-
     /// Settings that keep nothing and move nothing, which is what a frame
     /// is compared under.
     #[cfg(test)]
@@ -59,9 +50,11 @@ impl Settings {
         }
     }
 
-    /// The settings the file at `path` holds.
-    pub fn at(path: PathBuf) -> (Self, Option<String>) {
-        let (mut settings, complaint) = match std::fs::read_to_string(&path) {
+    /// The settings the file at `path` in `store` holds. A file that is
+    /// absent is the defaults; one that does not read is the defaults and a
+    /// complaint, and is left as it is.
+    pub fn at(store: Arc<dyn Store>, path: PathBuf) -> (Self, Option<String>) {
+        let (mut settings, complaint) = match store.read(&path) {
             Err(_) => (Self::default(), None),
             Ok(text) => match toml::from_str::<ConfigFile>(&text) {
                 Ok(config) => (config.tui, None),
@@ -71,7 +64,7 @@ impl Settings {
                 ),
             },
         };
-        settings.path = Some(path);
+        settings.kept = Some(Kept { store, path });
         (settings, complaint)
     }
 
@@ -84,13 +77,13 @@ impl Settings {
     /// Where the file holds something that does not read as TOML - it is
     /// not overwritten - or cannot be written.
     pub fn keep(&self, key: &[&str], value: impl Into<Value>) -> Result<(), String> {
-        let Some(path) = &self.path else {
+        let Some(Kept { store, path }) = &self.kept else {
             return Ok(());
         };
-        let text = std::fs::read_to_string(path).unwrap_or_default();
+        let text = store.read(path).unwrap_or_default();
         let kept = with_key(&text, key, value.into())
             .map_err(|error| format!("{}: {error}", path.display()))?;
-        write(path, &kept).map_err(|error| format!("{}: {error}", path.display()))
+        write(store.as_ref(), path, &kept).map_err(|error| format!("{}: {error}", path.display()))
     }
 }
 
@@ -118,16 +111,17 @@ fn with_key(text: &str, key: &[&str], value: Value) -> Result<String, String> {
     Ok(document.to_string())
 }
 
-fn write(path: &Path, text: &str) -> std::io::Result<()> {
+fn write(store: &dyn Store, path: &std::path::Path, text: &str) -> std::io::Result<()> {
     if let Some(directory) = path.parent() {
-        std::fs::create_dir_all(directory)?;
+        store.create_dir_all(directory)?;
     }
-    crate::files::write_atomic(path, text)
+    store.write(path, text)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::store::DiskStore;
 
     const HAND_WRITTEN: &str = "\
 # my settings
@@ -170,17 +164,17 @@ kept = true
             "retiretui-settings-{}/config.toml",
             std::process::id()
         ));
-        let (absent, complaint) = Settings::at(path.clone());
+        let (absent, complaint) = Settings::at(Arc::new(DiskStore), path.clone());
         assert!(complaint.is_none() && absent.theme == Choice::default());
         absent.keep(&["theme", "name"], "nord").unwrap();
         absent.keep(&["motion"], "off").unwrap();
-        let (read, complaint) = Settings::at(path.clone());
+        let (read, complaint) = Settings::at(Arc::new(DiskStore), path.clone());
         assert!(complaint.is_none());
         assert_eq!(read.theme.name.as_deref(), Some("nord"));
         assert_eq!(read.motion, Motion::Off);
 
         std::fs::write(&path, "[tui\n").unwrap();
-        let (broken, complaint) = Settings::at(path.clone());
+        let (broken, complaint) = Settings::at(Arc::new(DiskStore), path.clone());
         assert!(complaint.is_some_and(|said| said.contains("config.toml")));
         assert!(broken.keep(&["motion"], "full").is_err());
         assert_eq!(std::fs::read_to_string(&path).unwrap(), "[tui\n");

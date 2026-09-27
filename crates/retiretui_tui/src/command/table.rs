@@ -419,7 +419,7 @@ fn reload(
 ) -> Outcome {
     match editor.reload(&mut watch) {
         Ok(()) => {
-            compared.reload(&editor.session.tables);
+            compared.reload(&editor.session);
             Outcome::Done
         }
         Err(message) => Outcome::Refused(message),
