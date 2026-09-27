@@ -138,7 +138,7 @@ pub fn opened(ops: &Form, pristine: &Table) -> Table {
 pub fn stale(ops: &Form, pristine: &Table, snapshot: &Table) -> Vec<&'static str> {
     let stated = (ops.typed)(pristine.clone());
     let is_stale = |spec: &&FieldSpec| {
-        let is_unused = spec.shown.is_some_and(|shown| !shown(snapshot));
+        let is_unused = !spec.is_shown_for(snapshot);
         if !is_unused || get_path(pristine, spec.key).is_none() {
             return false;
         }

@@ -250,7 +250,7 @@ impl SessionFocus<'_, '_> {
             return false;
         };
         let draft = editor.draft.bypass_change_detection();
-        let index = match editing.edit.apply(draft, label) {
+        let index = match editing.apply(draft, label) {
             Ok(Some(index)) => index,
             Ok(None) => {
                 self.close();
@@ -285,7 +285,7 @@ impl SessionFocus<'_, '_> {
 
     pub(super) fn discard(&mut self) {
         if let Some(editing) = self.session.0.as_mut() {
-            editing.edit.discard();
+            editing.discard();
             editing.is_seeded = false;
         }
         self.close();

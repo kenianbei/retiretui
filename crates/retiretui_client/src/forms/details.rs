@@ -5,10 +5,9 @@ use retiretui_engine::plan::Plan;
 use toml::Table;
 
 use super::cells::Shown;
-use super::lists::gate_of;
+use super::lists::is_gate_open;
 use super::offers::NAME_KEY;
 use super::{FieldSpec, Form, ListOps, applies};
-use crate::codec::get_path;
 
 /// Whether the domain's items say more than its columns show: a field no
 /// column shows, or a record. The identity is known to the table whether
@@ -33,9 +32,7 @@ pub fn has_details(form: &Form, list: ListOps) -> bool {
 pub fn rows(form: &Form, item: &Table, plan: &Plan) -> Vec<[String; 2]> {
     let opened = applies::opened(form, item);
     let is_used = |spec: &&FieldSpec| {
-        let is_held = |gate| get_path(&opened, gate).is_some();
-        spec.shown.is_none_or(|shown| shown(&opened))
-            && gate_of(form.fields, spec.key).is_none_or(is_held)
+        spec.is_shown_for(&opened) && is_gate_open(form.fields, spec.key, &opened)
     };
     let mut rows: Vec<[String; 2]> = form
         .fields

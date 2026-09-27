@@ -7,9 +7,9 @@ use plurimus::core::ratatui_core::text::Line;
 use plurimus::widgets::{TableColumns, TableLayout};
 
 use super::cells::Cell;
-use super::sort;
 use super::table::DomainTable;
 use crate::layout::{self, cells_of, clipped};
+use retiretui_client::forms::sort::{self, Sort};
 
 /// The most a column is widened past what it holds. A wide terminal
 /// keeps a row's values within a glance of each other rather than
@@ -95,7 +95,7 @@ impl Laid {
 
 /// The column name, with the glyph saying which way the table is ordered
 /// by it.
-fn heading(label: &str, sort: Option<super::sort::Sort>, at: usize) -> String {
+fn heading(label: &str, sort: Option<Sort>, at: usize) -> String {
     match sort.and_then(|sort| sort.marks(at)) {
         Some(glyph) => format!("{label} {glyph}"),
         None => label.to_owned(),

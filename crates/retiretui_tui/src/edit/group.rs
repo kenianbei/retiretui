@@ -9,9 +9,8 @@ use bevy_ui::{Display, Node};
 use toml::Value;
 
 use super::build::{FormField, FormFields};
-use super::codec::get_path;
 use super::domain::{FieldKind, FieldSpec};
-use super::editing::{EditSession, Editing};
+use super::editing::EditSession;
 use super::form::FormTargets;
 use super::select::Select;
 use crate::layout::{NO_STOP, set_display};
@@ -21,22 +20,14 @@ use retiretui_client::forms::lists::{gate_of, unused};
 #[derive(Component, Debug)]
 pub struct Dependent {
     key: &'static str,
-    /// The key of the table a tick stands for, which the field is in.
-    gate: Option<&'static str>,
 }
 
 impl Dependent {
     /// What the row of `spec` depends on, where it does: the tick whose
-    /// table its key reaches into, and what the field is itself shown by.
+    /// table its key reaches into, or what the field is itself shown by.
     pub fn of(fields: &[FieldSpec], spec: &FieldSpec) -> Option<Self> {
-        let gate = gate_of(fields, spec.key);
-        let key = spec.key;
-        (gate.is_some() || spec.shown.is_some()).then_some(Self { key, gate })
-    }
-
-    fn is_shown(&self, editing: &Editing) -> bool {
-        let is_held = |gate| get_path(editing.snapshot(), gate).is_some();
-        self.gate.is_none_or(is_held) && editing.is_on_show(self.key)
+        let is_gated = gate_of(fields, spec.key).is_some();
+        (is_gated || spec.shown.is_some()).then_some(Self { key: spec.key })
     }
 }
 
@@ -58,7 +49,7 @@ pub fn place_dependents(
             .get(column.parent())
             .is_ok_and(|held| held.parent() == form)
         {
-            set_display(&mut node, dependent.is_shown(editing));
+            set_display(&mut node, editing.is_on_show(dependent.key));
         }
     }
 }
@@ -108,15 +99,16 @@ pub fn offer_unused(mut selects: Query<(Entity, &FormField, &mut Select)>, targe
             continue;
         };
         let form = targets.form_of(entity);
-        let others: Vec<Option<Value>> = held
-            .iter()
-            .filter(|(other, in_form, key, _)| {
-                *other != entity && *in_form == form && *key == field.spec.key
-            })
-            .map(|(.., value)| value.clone())
-            .collect();
         let own = select.value();
-        let offers = unused(vocabulary, own.as_ref(), &others);
+        let is_held = |word: &Value| {
+            held.iter().any(|(other, in_form, key, value)| {
+                *other != entity
+                    && *in_form == form
+                    && *key == field.spec.key
+                    && value.as_ref() == Some(word)
+            })
+        };
+        let offers = unused(vocabulary, own.as_ref(), is_held);
         Select::fill(&mut select, Some(offers), own.as_ref());
     }
 }

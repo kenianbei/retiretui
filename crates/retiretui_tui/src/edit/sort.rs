@@ -3,7 +3,7 @@
 
 use bevy_ecs::prelude::{On, Query};
 use plurimus::widgets::TableHeaderClick;
-pub use retiretui_client::forms::sort::{Item, Sort};
+use retiretui_client::forms::sort::Sort;
 
 use super::commands::FocusedTable;
 use super::table::DomainTable;

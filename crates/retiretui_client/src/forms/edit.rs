@@ -9,31 +9,23 @@ use toml::{Table, Value};
 
 use super::applies::{self, HAPPENS, ON_KEY, ONCE_UNDATED, happens_once};
 use super::cells::field_of;
+use super::lists::is_gate_open;
 use super::offers::display_name;
 use super::{FieldKind, FieldSpec, Form, Target};
 use crate::codec::{get_path, is_within, set_path};
 use crate::draft::Draft;
 
-/// Where an item is stored: where it sat in the plan when opened - the
-/// first place it is looked for - or, while a new one is composed, at the
-/// end of its list.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum Slot {
-    /// The item at this index, as it was opened.
-    At(usize),
-    /// A new item, not yet in the plan.
-    New,
-}
-
 /// An item is followed by what it was when opened, so one changed or
 /// renamed underneath may be another item altogether.
-pub const CHANGED_UNDERNEATH: &str =
+const CHANGED_UNDERNEATH: &str =
     "the plan changed under this edit; discard it and open the item again";
 
 /// One item open in its form.
 pub struct ItemEdit {
     form: Form,
-    slot: Slot,
+    /// Where the item sat in the plan when opened or last applied - the
+    /// first place it is looked for - and `None` while it is new.
+    index: Option<usize>,
     /// What the form's fields write; applying copies it into the draft.
     snapshot: Table,
     pristine: Table,
@@ -53,22 +45,22 @@ impl ItemEdit {
     #[must_use]
     pub fn open(form: Form, draft: &Draft, index: usize) -> Self {
         let pristine = (form.item)(draft, index).unwrap_or_default();
-        Self::of(form, Slot::At(index), pristine)
+        Self::of(form, Some(index), pristine)
     }
 
     /// A new item of `form`'s list, the owner already filled in.
     #[must_use]
     pub fn create(form: Form, draft: &Draft) -> Self {
         let blank = form.list.map(|list| (list.blank)(&draft.plan));
-        Self::of(form, Slot::New, blank.unwrap_or_default())
+        Self::of(form, None, blank.unwrap_or_default())
     }
 
-    fn of(form: Form, slot: Slot, pristine: Table) -> Self {
+    fn of(form: Form, index: Option<usize>, pristine: Table) -> Self {
         let snapshot = applies::opened(&form, &pristine);
         Self {
             stale: applies::stale(&form, &pristine, &snapshot),
             form,
-            slot,
+            index,
             snapshot,
             pristine,
             cleared: Vec::new(),
@@ -85,10 +77,7 @@ impl ItemEdit {
     /// Where the item sat when opened, or last applied; `None` while new.
     #[must_use]
     pub const fn index(&self) -> Option<usize> {
-        match self.slot {
-            Slot::At(index) => Some(index),
-            Slot::New => None,
-        }
+        self.index
     }
 
     /// Whether the field `key`'s parts do not yet make a value.
@@ -133,10 +122,10 @@ impl ItemEdit {
             return self.form.title.to_owned();
         };
         let name = display_name(&self.snapshot, list.identity, self.form.fields);
-        match (self.slot, name) {
-            (Slot::New, _) => format!("New {}", list.singular),
-            (Slot::At(_), Some(name)) => format!("Edit {name}"),
-            (Slot::At(_), None) => format!("Edit {}", list.singular),
+        match (self.index, name) {
+            (None, _) => format!("New {}", list.singular),
+            (Some(_), Some(name)) => format!("Edit {name}"),
+            (Some(_), None) => format!("Edit {}", list.singular),
         }
     }
 
@@ -158,8 +147,7 @@ impl ItemEdit {
     /// The first field on show that does not yet make a value, and what is
     /// wrong with it. Once is only a pick until it has a date, which no
     /// file could state, so it is held back as a half-made trigger is.
-    #[must_use]
-    pub fn held_back(&self) -> Option<(&'static str, &'static str)> {
+    fn held_back(&self) -> Option<(&'static str, &'static str)> {
         let mut unmade = self.incomplete.iter().filter(|(key, _)| self.uses(key));
         if let Some((key, complaint)) = unmade.next() {
             return Some((key, complaint));
@@ -183,24 +171,25 @@ impl ItemEdit {
         !newly.is_empty()
     }
 
-    /// Whether the field `key` is on show: used by its own rule, or stale
-    /// and not yet cleared and left.
+    /// Whether the field `key` is on show: under a tick holding its table,
+    /// where it sits under one, and used by its own rule, or stale and not
+    /// yet cleared and left.
     #[must_use]
     pub fn is_on_show(&self, key: &str) -> bool {
         let spec = field_of(self.form.fields, key);
-        spec.is_none_or(|spec| {
-            spec.shown.is_none_or(|shown| shown(&self.snapshot))
-                || (self.stale.contains(&spec.key) && !self.cleared.contains(&spec.key))
-        })
+        is_gate_open(self.form.fields, key, &self.snapshot)
+            && spec.is_none_or(|spec| {
+                spec.is_shown_for(&self.snapshot)
+                    || (self.stale.contains(&spec.key) && !self.cleared.contains(&spec.key))
+            })
     }
 
     fn applies(&self, spec: &FieldSpec) -> bool {
-        spec.shown.is_none_or(|shown| shown(&self.snapshot)) || self.stale.contains(&spec.key)
+        spec.is_shown_for(&self.snapshot) || self.stale.contains(&spec.key)
     }
 
     /// Whether the item has a use for the field `key`.
-    #[must_use]
-    pub fn uses(&self, key: &str) -> bool {
+    fn uses(&self, key: &str) -> bool {
         let spec = field_of(self.form.fields, key);
         spec.is_none_or(|spec| self.applies(spec))
     }
@@ -221,17 +210,15 @@ impl ItemEdit {
     }
 
     /// What applying stores.
-    #[must_use]
-    pub fn written(&self) -> Table {
+    fn written(&self) -> Table {
         self.stripped(self.snapshot.clone())
     }
 
     /// Where the item now sits, found by what it was when opened, so one
     /// moved underneath is followed; `None` once nothing is what was opened.
     fn stored_at(&self, draft: &Draft) -> Option<usize> {
-        let held = match self.slot {
-            Slot::At(held) => held,
-            Slot::New => return Some(self.form.list.map_or(0, |list| (list.count)(&draft.plan))),
+        let Some(held) = self.index else {
+            return Some(self.form.list.map_or(0, |list| (list.count)(&draft.plan)));
         };
         let count = self.form.list.map_or(1, |list| (list.count)(&draft.plan));
         let is_opened =
@@ -281,7 +268,7 @@ impl ItemEdit {
             return Err(format!("{named}: {message}"));
         }
         self.pristine = written;
-        self.slot = Slot::At(index);
+        self.index = Some(index);
         Ok(Some(index))
     }
 }

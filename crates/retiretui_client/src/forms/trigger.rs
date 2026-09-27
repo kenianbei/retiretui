@@ -78,6 +78,12 @@ pub fn kind_of(value: Option<&Value>) -> Option<TriggerBasis> {
         .find(|basis| table.contains_key(basis.as_str()))
 }
 
+/// What the trigger `value` states for `operand`.
+#[must_use]
+pub fn operand_of(value: Option<&Value>, operand: Operand) -> Option<&Value> {
+    value?.as_table()?.get(operand.key())
+}
+
 /// The trigger `parts` compose, or `None` when no kind is chosen or its
 /// own operand is still empty. What another kind's operands hold is left
 /// out of it.
@@ -100,7 +106,7 @@ fn compose(kind: Option<TriggerBasis>, parts: &[(Operand, Option<Value>)]) -> Op
 }
 
 /// Why a trigger whose kind is chosen cannot be applied yet.
-pub const INCOMPLETE: &str = "the trigger names what it is measured from, but not the value";
+const INCOMPLETE: &str = "the trigger names what it is measured from, but not the value";
 
 /// The trigger a `kind` and its `parts` make between them, since its parts
 /// only mean something together, or the complaint where a kind is chosen

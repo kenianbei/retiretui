@@ -17,7 +17,7 @@ use super::offers::Vocabulary;
 use super::select::{Select, spawn_select};
 use crate::layout::{set_display, sized};
 use retiretui_client::forms::trigger::{
-    self, Piece, SENTENCE, basis_named, help_of, kind_of, shows,
+    self, Piece, SENTENCE, basis_named, help_of, kind_of, operand_of, shows,
 };
 
 /// Which part of a trigger a widget edits.
@@ -173,12 +173,11 @@ pub fn held(group: &[Entity], slots: &Slots) -> (Option<Value>, Option<&'static 
 /// Fills a trigger's widgets from `value`: its kind, and every operand
 /// the value states.
 pub fn show_trigger(value: Option<&Value>, plan: &Plan, group: &[Entity], slots: &mut SlotsMut) {
-    let stated = value.and_then(Value::as_table);
     let mut widgets = slots.iter_many_mut(group);
     while let Some((slot, text, select)) = widgets.fetch_next() {
         let part = match *slot {
             Slot::Kind => kind_of(value).map(|kind| Value::String(kind.as_str().to_owned())),
-            Slot::Part(operand) => stated.and_then(|table| table.get(operand.key()).cloned()),
+            Slot::Part(operand) => operand_of(value, operand).cloned(),
         };
         if let Some(mut text) = text {
             show_text(&mut text, part.as_ref().map(to_text).unwrap_or_default());

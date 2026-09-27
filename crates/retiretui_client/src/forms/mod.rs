@@ -319,6 +319,12 @@ impl FieldSpec {
         }
     }
 
+    /// Whether the item `table` has a use for the field by its own rule.
+    #[must_use]
+    pub fn is_shown_for(&self, table: &Table) -> bool {
+        self.shown.is_none_or(|shown| shown(table))
+    }
+
     /// Whether a pick may not be emptied, so its menu offers no way to:
     /// one with no word for what empty means.
     #[must_use]
