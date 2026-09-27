@@ -9,8 +9,8 @@ use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::{Issue, Plan};
 use retiretui_engine::project::validate_plan;
 
-use crate::resolve;
 use crate::store::Store;
+use retiretui_engine::plan::resolve;
 
 /// Why a plan file did not pass the load-and-validate gate.
 pub enum Invalid {

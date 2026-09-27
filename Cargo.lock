@@ -3199,6 +3199,7 @@ dependencies = [
  "insta",
  "jiff",
  "plurimus",
+ "retiretui_client",
  "retiretui_engine",
  "retiretui_tui",
  "rmcp",
@@ -3206,6 +3207,18 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
+ "toml",
+]
+
+[[package]]
+name = "retiretui_client"
+version = "0.2.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "retiretui_engine",
+ "schemars",
+ "serde",
  "toml",
 ]
 
@@ -3234,12 +3247,12 @@ dependencies = [
  "bevy_time",
  "bevy_ui",
  "bevy_window",
- "clap",
  "insta",
  "jiff",
  "nucleo-matcher",
  "plurimus",
  "plurimus_filepicker",
+ "retiretui_client",
  "retiretui_engine",
  "schemars",
  "serde",
@@ -3258,6 +3271,7 @@ dependencies = [
  "bevy_app",
  "js-sys",
  "plurimus",
+ "retiretui_client",
  "retiretui_engine",
  "retiretui_tui",
  "wasm-bindgen",

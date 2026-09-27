@@ -4,7 +4,7 @@ use clap::{Args, ValueEnum};
 use retiretui_engine::plan::Plan;
 use retiretui_engine::project::{Projection, YearRow, project};
 
-use retiretui_tui::table::{Column, align, display_dollars, year_figures};
+use retiretui_client::table::{Column, align, display_dollars, year_figures};
 
 /// Arguments of the `project` subcommand.
 #[derive(Args)]
@@ -77,7 +77,7 @@ fn balance_columns(plan: &Plan, by_account: bool) -> Vec<Column> {
             .map(|account| Column::Account(account.id.clone()))
             .collect();
     }
-    retiretui_tui::table::present_classes(plan)
+    retiretui_client::table::present_classes(plan)
         .into_iter()
         .map(Column::Class)
         .collect()
@@ -86,7 +86,7 @@ fn balance_columns(plan: &Plan, by_account: bool) -> Vec<Column> {
 fn format_row(plan: &Plan, row: &YearRow, columns: &[Column], nominal: bool) -> Vec<String> {
     let mut cells = vec![
         row.year.to_string(),
-        retiretui_tui::table::ages_text(plan, row),
+        retiretui_client::table::ages_text(plan, row),
     ];
     cells.extend(
         year_figures(row, columns)

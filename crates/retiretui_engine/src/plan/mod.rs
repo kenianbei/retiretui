@@ -21,6 +21,7 @@ mod medicare;
 mod places;
 mod references;
 mod residency;
+pub mod resolve;
 mod scenario;
 mod span;
 mod triggers;

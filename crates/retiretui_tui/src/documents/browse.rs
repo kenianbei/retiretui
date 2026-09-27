@@ -1,7 +1,8 @@
 //! The modal a file picker stands in: opened on the workspace, closed by a
 //! choice or a dismissal, the path chosen handed to the picker's system.
 
-use std::path::PathBuf;
+use std::io;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use bevy_app::{App, Update};
@@ -15,8 +16,10 @@ use plurimus::core::ratatui_core::text::Line;
 use plurimus::ui::{ModalDismiss, ModalOpen};
 use plurimus::widgets::ValueChange;
 use plurimus_filepicker::{
-    FilePicker, FilePickerFloor, FilePickerLook, FilePickerMatchStyle, FilePickerSource,
+    DirectorySource, FilePicker, FilePickerFloor, FilePickerLook, FilePickerMatchStyle,
+    FilePickerSource, SourceEntry,
 };
+use retiretui_client::store::Store;
 
 use super::pickers;
 use crate::compare::Compared;
@@ -26,7 +29,6 @@ use crate::overlay::{self, Standing};
 use crate::pane::Framed;
 use crate::picker::PROMPT;
 use crate::session::Session;
-use crate::store::StoreSource;
 use crate::theme::Theme;
 
 const WIDTH: u16 = 64;
@@ -178,4 +180,21 @@ fn handle_chosen(
 /// Esc on the picker and a click outside the frame both land here.
 fn handle_dismiss(_dismissed: On<ModalDismiss>, mut browsing: ResMut<Browsing>) {
     browsing.close();
+}
+
+/// The session's store as the file picker lists it.
+#[derive(Debug)]
+struct StoreSource(Arc<dyn Store>);
+
+impl DirectorySource for StoreSource {
+    fn list(&self, directory: &Path) -> io::Result<Vec<SourceEntry>> {
+        let entries = self.0.list(directory)?.into_iter().map(|entry| {
+            if entry.is_dir {
+                SourceEntry::directory(entry.name)
+            } else {
+                SourceEntry::file(entry.name)
+            }
+        });
+        Ok(entries.collect())
+    }
 }

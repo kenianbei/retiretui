@@ -9,10 +9,11 @@ use retiretui_engine::plan::{
 use retiretui_engine::project::Summary;
 use toml::Value;
 
-use super::edit::from_table;
+use crate::codec::from_table;
 pub use crate::table::{account_name, event_name, income_name, money, rate};
 
 /// The dollars figures are shown in.
+#[must_use]
 pub const fn basis_name(is_nominal: bool) -> &'static str {
     if is_nominal {
         "future dollars"
@@ -21,6 +22,8 @@ pub const fn basis_name(is_nominal: bool) -> &'static str {
     }
 }
 
+/// An account kind as a person says it.
+#[must_use]
 pub const fn account_kind(kind: AccountKind) -> &'static str {
     match kind {
         AccountKind::K401k => "401(k)",
@@ -36,6 +39,8 @@ pub const fn account_kind(kind: AccountKind) -> &'static str {
     }
 }
 
+/// How a market is drawn, as a person says it.
+#[must_use]
 pub const fn draw(draw: Draw) -> &'static str {
     match draw {
         Draw::Assumptions => "The assumptions",
@@ -43,6 +48,8 @@ pub const fn draw(draw: Draw) -> &'static str {
     }
 }
 
+/// Who pays a contribution, as a person says it.
+#[must_use]
 pub const fn payer(payer: Payer) -> &'static str {
     match payer {
         Payer::Employee => "Employee",
@@ -51,6 +58,8 @@ pub const fn payer(payer: Payer) -> &'static str {
     }
 }
 
+/// An income kind as a person says it.
+#[must_use]
 pub const fn income_kind(kind: IncomeKind) -> &'static str {
     match kind {
         IncomeKind::Salary => "Salary",
@@ -63,6 +72,8 @@ pub const fn income_kind(kind: IncomeKind) -> &'static str {
     }
 }
 
+/// A filing status as a person says it.
+#[must_use]
 pub const fn filing_status(status: FilingStatus) -> &'static str {
     match status {
         FilingStatus::Single => "Single",
@@ -70,6 +81,8 @@ pub const fn filing_status(status: FilingStatus) -> &'static str {
     }
 }
 
+/// A tax treatment class as a person says it.
+#[must_use]
 pub const fn treatment_class(class: TreatmentClass) -> &'static str {
     match class {
         TreatmentClass::Taxable => "Taxable",
@@ -80,6 +93,7 @@ pub const fn treatment_class(class: TreatmentClass) -> &'static str {
 }
 
 /// Short enough for the select a trigger's kind is picked in.
+#[must_use]
 pub const fn trigger_basis(basis: TriggerBasis) -> &'static str {
     match basis {
         TriggerBasis::Date => "Date",
@@ -90,6 +104,7 @@ pub const fn trigger_basis(basis: TriggerBasis) -> &'static str {
 }
 
 /// Dollars as [`money`] writes them or as plain digits.
+#[must_use]
 pub fn parse_money(text: &str) -> Option<Dollars> {
     let digits: String = text
         .chars()
@@ -99,6 +114,7 @@ pub fn parse_money(text: &str) -> Option<Dollars> {
 }
 
 /// Dollars in as few cells as say how much: `450k`, `2.58M`.
+#[must_use]
 pub fn compact_dollars(amount: Dollars) -> String {
     let magnitude = amount.abs();
     if magnitude >= 1_000_000 {
@@ -111,18 +127,21 @@ pub fn compact_dollars(amount: Dollars) -> String {
 }
 
 /// [`compact_dollars`] as a sum of money: `$2.58M`, `-$42k`.
+#[must_use]
 pub fn compact_money(amount: Dollars) -> String {
     let sign = if amount < 0 { "-" } else { "" };
     format!("{sign}${}", compact_dollars(amount.abs()))
 }
 
 /// How many issues there are: `1 issue`, `3 issues`.
+#[must_use]
 pub fn issue_count(count: usize) -> String {
     let plural = if count == 1 { "" } else { "s" };
     format!("{count} issue{plural}")
 }
 
 /// A difference in money, signed either way: `+$220k`, `-$12k`, `$0`.
+#[must_use]
 pub fn signed_money(amount: Dollars) -> String {
     let sign = if amount > 0 { "+" } else { "" };
     format!("{sign}{}", compact_money(amount))
@@ -133,16 +152,19 @@ const PERCENT: f64 = 100.0;
 const RATE_GRAIN: f64 = 1e6;
 
 /// A percent, with or without its sign, as the rate the file keeps.
+#[must_use]
 pub fn parse_rate(text: &str) -> Option<f64> {
     let percent: f64 = text.trim().trim_end_matches('%').trim().parse().ok()?;
     Some((percent / PERCENT * RATE_GRAIN).round() / RATE_GRAIN)
 }
 
+/// What an amount growing with inflation is called.
 pub const FOLLOWS_INFLATION: &str = "Inflation";
 const HELD_FIXED: &str = "Fixed";
 
 /// How an amount grows. Unstated is the schema's default, which follows
 /// inflation.
+#[must_use]
 pub fn growth(value: Option<&Value>) -> String {
     match value {
         None | Some(Value::Boolean(true)) => FOLLOWS_INFLATION.to_owned(),
@@ -184,9 +206,13 @@ fn shifted(offset: i32, from: &str, unshifted: String) -> String {
     format!("{} {side} {from}", years(offset.unsigned_abs()))
 }
 
+/// The summary's headings, as every surface names them.
 pub const ENDS_WITH: &str = "Ends with";
+/// See [`ENDS_WITH`].
 pub const MONEY_LASTS: &str = "Money lasts";
+/// See [`ENDS_WITH`].
 pub const PEAKS_AT: &str = "Peaks at";
+/// See [`ENDS_WITH`].
 pub const LIFETIME_TAXES: &str = "Lifetime taxes";
 
 /// What reads as no difference from the baseline.
@@ -204,6 +230,7 @@ fn shift(offset: i16) -> String {
 }
 
 /// How long the money lasts: never short, or by how much from when.
+#[must_use]
 pub fn money_lasts(summary: &Summary) -> String {
     summary.first_unfunded_year.map_or_else(
         || "Never short".to_owned(),
@@ -217,6 +244,7 @@ pub fn money_lasts(summary: &Summary) -> String {
 }
 
 /// How long the money lasts, against how long the baseline's does.
+#[must_use]
 pub fn money_lasts_against(own: &Summary, base: &Summary) -> String {
     match (base.first_unfunded_year, own.first_unfunded_year) {
         (None, None) => SAME.to_owned(),
@@ -227,6 +255,7 @@ pub fn money_lasts_against(own: &Summary, base: &Summary) -> String {
 }
 
 /// The highest net worth reached, and when.
+#[must_use]
 pub fn peaks_at(summary: &Summary) -> String {
     format!(
         "{} in {}",
@@ -237,6 +266,7 @@ pub fn peaks_at(summary: &Summary) -> String {
 
 /// The peak's difference from the baseline's in amount, and in when it
 /// comes.
+#[must_use]
 pub fn peaks_at_against(own: &Summary, base: &Summary) -> String {
     let amount = signed_money(own.peak_net_worth - base.peak_net_worth);
     let when = match own.peak_year - base.peak_year {
@@ -247,6 +277,7 @@ pub fn peaks_at_against(own: &Summary, base: &Summary) -> String {
 }
 
 /// Where a residency is: its state by name, else its country.
+#[must_use]
 pub fn residence(residency: &Residency) -> &str {
     let named = match &residency.state {
         Some(state) => place_name(US_STATES, state),
@@ -257,6 +288,7 @@ pub fn residence(residency: &Residency) -> &str {
 
 /// A mix as whole percents, stocks then bonds, then cash where it holds
 /// any: `60/40`, `40/50/10`.
+#[must_use]
 pub fn mix(stocks: f64, bonds: f64, cash: f64) -> String {
     let percent = |share: f64| format!("{:.0}", share * PERCENT);
     let mut parts = vec![percent(stocks), percent(bonds)];

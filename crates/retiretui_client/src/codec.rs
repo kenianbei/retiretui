@@ -10,6 +10,7 @@ use toml::{Table, Value};
 const PROBE_KEY: &str = "v";
 
 /// The text a field shows for `value`.
+#[must_use]
 pub fn to_text(value: &Value) -> String {
     match value {
         Value::String(text) if is_bare_string(text) => text.clone(),
@@ -24,6 +25,7 @@ fn is_bare_string(text: &str) -> bool {
 }
 
 /// The value `text` stands for; `None` clears the field.
+#[must_use]
 pub fn parse_text(text: &str) -> Option<Value> {
     let text = text.trim();
     if text.is_empty() {
@@ -48,6 +50,7 @@ const INDEX_CLOSE: char = ']';
 
 /// The place `path` names in the list at `key`, where it ends in one:
 /// `2` of `plan.withdrawal_order[2]`.
+#[must_use]
 pub fn list_place(path: &str, key: &str) -> Option<usize> {
     let (list, digits) = path.strip_suffix(INDEX_CLOSE)?.rsplit_once(INDEX_OPEN)?;
     list.ends_with(key).then(|| digits.parse().ok())?
@@ -55,6 +58,7 @@ pub fn list_place(path: &str, key: &str) -> Option<usize> {
 
 /// Whether `key` reaches into the table - or, in an issue's path, the
 /// list - at `outer`.
+#[must_use]
 pub fn is_within(key: &str, outer: &str) -> bool {
     let deeper = key.strip_prefix(outer);
     deeper.is_some_and(|rest| rest.starts_with([KEY_SEPARATOR, INDEX_OPEN]))
@@ -62,6 +66,7 @@ pub fn is_within(key: &str, outer: &str) -> bool {
 
 /// The value at `key`, which may reach into a table - `contributions.start`
 /// - or, by a number, into a list of them: `allocation.0.from`.
+#[must_use]
 pub fn get_path<'a>(table: &'a Table, key: &str) -> Option<&'a Value> {
     match key.split_once(KEY_SEPARATOR) {
         None => table.get(key),
@@ -80,6 +85,7 @@ fn get_within<'a>(value: &'a Value, key: &str) -> Option<&'a Value> {
 }
 
 /// A number the file states, whole or not.
+#[must_use]
 pub fn as_number(value: &Value) -> Option<f64> {
     match value {
         Value::Integer(whole) => Some(*whole as f64),
@@ -92,6 +98,7 @@ pub fn as_number(value: &Value) -> Option<f64> {
 const ROUNDING: f64 = 1e-9;
 
 /// What the shares of `shares` other than `own` leave of the whole.
+#[must_use]
 pub fn left_of(shares: &Table, own: &str) -> f64 {
     let taken = shares
         .iter()
@@ -103,6 +110,7 @@ pub fn left_of(shares: &Table, own: &str) -> f64 {
 
 /// What the other shares of the table holding `key` leave of the whole,
 /// where the item holds that table.
+#[must_use]
 pub fn share_left(item: &Table, key: &str) -> Option<f64> {
     let (outer, own) = key.rsplit_once(KEY_SEPARATOR)?;
     Some(left_of(get_path(item, outer)?.as_table()?, own))
@@ -110,6 +118,7 @@ pub fn share_left(item: &Table, key: &str) -> Option<f64> {
 
 /// An issue's path as a key: `allocation[2]` reaches what
 /// `allocation.2.from` does.
+#[must_use]
 pub fn as_key(path: &str) -> String {
     path.replace(INDEX_OPEN, &KEY_SEPARATOR.to_string())
         .replace(INDEX_CLOSE, "")

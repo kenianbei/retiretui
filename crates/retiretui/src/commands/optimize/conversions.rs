@@ -2,6 +2,8 @@ use std::path::{Path, PathBuf};
 
 use crate::commands::run_refusal;
 use clap::Args;
+use retiretui_client::ladder::LadderConstraints;
+use retiretui_client::store::DiskStore;
 use retiretui_engine::market::Progress;
 use retiretui_engine::optimize::LadderStep;
 use retiretui_engine::optimize::{
@@ -11,13 +13,11 @@ use retiretui_engine::optimize::{
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::{Dollars, Plan};
 use retiretui_engine::project::{Projection, Summary};
-use retiretui_tui::ladder::LadderConstraints;
-use retiretui_tui::store::DiskStore;
 use schemars::JsonSchema;
 use serde::Serialize;
 
 use crate::commands::project::OutputFormat;
-use retiretui_tui::table::{align, display_dollars, summary_table};
+use retiretui_client::table::{align, display_dollars, summary_table};
 
 /// Arguments of the `optimize` subcommand.
 #[derive(Args)]
@@ -233,8 +233,8 @@ fn write_overlay(
     options: &OptimizeOptions,
     ladder: &OptimizedLadder,
 ) -> anyhow::Result<()> {
-    let base = retiretui_tui::files::overlay_base(&DiskStore, out, plan_path)?;
+    let base = retiretui_client::files::overlay_base(&DiskStore, out, plan_path)?;
     let overlay = ladder_overlay(&base, plan, options, &ladder.ladder.steps)?;
-    retiretui_tui::files::write_atomic(out, &overlay)?;
+    retiretui_client::files::write_atomic(out, &overlay)?;
     Ok(())
 }

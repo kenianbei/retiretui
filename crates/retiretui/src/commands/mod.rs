@@ -7,13 +7,13 @@ pub mod optimize;
 pub mod project;
 pub mod tui;
 
-use retiretui_tui::store::DiskStore;
+use retiretui_client::store::DiskStore;
 use std::path::{Path, PathBuf};
 
+use retiretui_client::files::{Invalid, validated_plan_with_files};
 use retiretui_engine::market::RunError;
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::{Issue, Plan};
-use retiretui_tui::files::{Invalid, validated_plan_with_files};
 
 pub fn run_validate(path: &Path) -> anyhow::Result<()> {
     let tables = load_tables(&[])?;

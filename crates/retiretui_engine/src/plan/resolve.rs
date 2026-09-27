@@ -2,7 +2,7 @@
 
 use std::path::{Path, PathBuf};
 
-use retiretui_engine::plan::{Plan, Scenario};
+use super::{Plan, Scenario};
 
 /// Resolves a plan or scenario document into a plan, following `base`
 /// references and applying overlays bottom-up. `text` is the start

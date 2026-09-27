@@ -7,10 +7,10 @@ use std::sync::Arc;
 use bevy_app::App;
 use plurimus::core::CorePlugin;
 use plurimus::web::{GridFit, WebPlugin};
+use retiretui_client::store::{KeyStore, Store};
 use retiretui_engine::market::History;
 use retiretui_engine::params::TaxTables;
 use retiretui_tui::Launch;
-use retiretui_tui::store::{KeyStore, Store};
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::edge::PageEdge;

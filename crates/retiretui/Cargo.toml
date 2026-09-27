@@ -20,7 +20,8 @@ etcetera = "0.11.0"
 jiff.workspace = true
 plurimus = { version = "0.7.2", default-features = false, features = ["crossterm"] }
 retiretui_engine = { workspace = true, features = ["schemars"] }
-retiretui_tui = { workspace = true, features = ["clap"] }
+retiretui_client = { workspace = true, features = ["clap"] }
+retiretui_tui.workspace = true
 rmcp = { version = "3.4.1", features = ["server", "macros", "transport-io", "schemars"] }
 schemars.workspace = true
 serde.workspace = true

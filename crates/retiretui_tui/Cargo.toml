@@ -12,9 +12,6 @@ keywords.workspace = true
 categories.workspace = true
 exclude = ["**/snapshots"]
 
-[features]
-clap = ["dep:clap"]
-
 [dependencies]
 anyhow = "1.0.104"
 bevy_app = "0.19.1"
@@ -25,11 +22,11 @@ bevy_math = { version = "0.19.1", default-features = false }
 bevy_input_focus = { version = "0.19.1", default-features = false, features = ["std", "keyboard"] }
 bevy_time = "0.19.1"
 bevy_ui = { version = "0.19.1", default-features = false }
-clap = { version = "4.6.7", features = ["derive"], optional = true }
 jiff.workspace = true
 nucleo-matcher = "0.3.1"
 plurimus = { version = "0.7.2", default-features = false, features = ["ui", "widgets", "bevy-ui"] }
 plurimus_filepicker = "0.1.1"
+retiretui_client.workspace = true
 retiretui_engine = { workspace = true, features = ["schemars"] }
 schemars.workspace = true
 serde.workspace = true
@@ -48,6 +45,7 @@ tachyonfx = { version = "0.25.2", default-features = false, features = ["std", "
 
 [dev-dependencies]
 insta = "1.48.0"
+retiretui_client = { workspace = true, features = ["testing"] }
 
 [lints]
 workspace = true

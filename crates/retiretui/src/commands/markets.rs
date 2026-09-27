@@ -18,8 +18,8 @@ use serde::Serialize;
 
 use crate::commands::project::OutputFormat;
 use crate::commands::{run_refusal, user_config_dir};
+use retiretui_client::table::{align, percentile_label, plain_dollars, rate};
 use retiretui_engine::project::validate_plan;
-use retiretui_tui::table::{align, percentile_label, plain_dollars, rate};
 
 /// Where the historical record is read from in place of the embedded one.
 const HISTORY_FILE: &str = "history.toml";

@@ -2,6 +2,7 @@
 resolver = "3"
 members = [
     "crates/retiretui_engine",
+    "crates/retiretui_client",
     "crates/retiretui_tui",
     "crates/retiretui",
     "crates/retiretui_web",
@@ -9,6 +10,7 @@ members = [
 # The browser page builds for wasm32 alone, by its own script and job.
 default-members = [
     "crates/retiretui_engine",
+    "crates/retiretui_client",
     "crates/retiretui_tui",
     "crates/retiretui",
 ]
@@ -26,6 +28,7 @@ rust-version = "1.95"
 
 [workspace.dependencies]
 retiretui_engine = { path = "crates/retiretui_engine", version = "0.2.0" }
+retiretui_client = { path = "crates/retiretui_client", version = "0.2.0" }
 retiretui_tui = { path = "crates/retiretui_tui", version = "0.2.0" }
 jiff = "0.2.37"
 schemars = "1.2.2"

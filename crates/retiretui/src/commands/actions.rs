@@ -8,7 +8,7 @@ use schemars::JsonSchema;
 use serde::Serialize;
 
 use super::project::OutputFormat;
-use retiretui_tui::actions::{collect_warnings, sentence};
+use retiretui_client::actions::{collect_warnings, sentence};
 
 /// Arguments of the `actions` subcommand.
 #[derive(Args)]
@@ -89,7 +89,7 @@ fn render(plan: &Plan, row: &YearRow, warnings: &[String]) -> String {
     let mut out = format!(
         "Actions for {} (ages {})\n\n",
         row.year,
-        retiretui_tui::table::ages_text(plan, row)
+        retiretui_client::table::ages_text(plan, row)
     );
     if row.actions.is_empty() {
         out.push_str("Nothing scheduled.\n");
