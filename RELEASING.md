@@ -1,7 +1,8 @@
 # Releasing
 
-A release publishes both crates to crates.io and attaches Linux binaries to a
-GitHub Release. While the version is below 1.0, a breaking change to the
+A release publishes the engine, the planner's library and the binary to
+crates.io, attaches Linux binaries to a GitHub Release, and deploys the browser
+page to GitHub Pages. While the version is below 1.0, a breaking change to the
 engine's API bumps the minor version.
 
 1. **Release branch.** On `chore/release-x.y.z`, rename `## [Unreleased]` in
@@ -24,4 +25,7 @@ engine's API bumps the minor version.
    ```
 
    The tag runs `.github/workflows/release.yml`, which builds the binaries and
-   creates the GitHub Release.
+   creates the GitHub Release, and `.github/workflows/pages.yml`, which builds
+   the browser page and deploys it. The page deploys only once the repository's
+   Pages source is "GitHub Actions" and its `github-pages` environment allows
+   `v*` tags; `pages.yml` can also be run by hand from `main`.
