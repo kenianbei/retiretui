@@ -75,6 +75,9 @@ pub(super) fn decorate(
         Badges::Compared => compared.paths().map(Path::to_path_buf).collect(),
     };
     Some(FilePickerDecorator(Box::new(move |path| {
+        if path.extension() != Some(OsStr::new(EXTENSION)) {
+            return RowDecoration::default();
+        }
         if compared.iter().any(|held| held == path) {
             return RowDecoration::default().with_trailing(Line::styled(COMPARED, dim));
         }

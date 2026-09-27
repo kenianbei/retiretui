@@ -5,11 +5,8 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use bevy_app::App;
-use bevy_ecs::prelude::With;
 use plurimus::core::CorePlugin;
 use plurimus::term::{InputCapabilities, KeyCode};
-use plurimus::ui::UiLabel;
-use plurimus::widgets::{ListItem, ListItemTrailing};
 use retiretui_engine::market::History;
 use retiretui_engine::params::TaxTables;
 
@@ -19,8 +16,8 @@ use crate::session::{Projected, Session};
 use crate::store::memory::Memory;
 use crate::store::{KeyStore, Store};
 use crate::support::{
-    Headless, SIZE, TEST_PLAN, commit_edit, headless_app_over, is_browsing, let_pass, press_ctrl,
-    press_key, scenario_over, type_text,
+    Headless, SIZE, TEST_PLAN, commit_edit, headless_app_over, is_browsing, let_pass, picker_rows,
+    press_ctrl, press_key, scenario_over, type_text,
 };
 use crate::watch::POLL_SECONDS;
 
@@ -43,18 +40,6 @@ fn file(name: &str) -> PathBuf {
     Path::new(WORKSPACE).join(name)
 }
 
-fn listed(app: &mut App) -> Vec<(String, String)> {
-    let mut rows = app
-        .world_mut()
-        .query_filtered::<(&UiLabel, Option<&ListItemTrailing>), With<ListItem>>();
-    rows.iter(app.world())
-        .map(|(label, trailing)| {
-            let badge = trailing.map(|trailing| trailing.0.to_string());
-            (label.0.to_string(), badge.unwrap_or_default())
-        })
-        .collect()
-}
-
 fn plan_name(app: &Headless) -> Option<String> {
     app.world().resource::<Projected>().plan.plan.name.clone()
 }
@@ -65,7 +50,7 @@ fn the_workspace_lists_with_its_badges_and_a_scenario_opens_through_it() {
     let mut app = headless_app_over(workspace(&backend), PathBuf::from(WORKSPACE), SIZE);
     assert!(is_browsing(&app));
     app.update();
-    let rows = listed(&mut app);
+    let rows = picker_rows(&mut app);
     for row in [("plan.toml", "plan"), ("variant.toml", "scenario")] {
         let row = (row.0.to_owned(), row.1.to_owned());
         assert!(rows.contains(&row), "{rows:?}");
@@ -165,7 +150,7 @@ fn the_page_reopens_the_document_last_open_and_remembers_the_next() {
 #[test]
 fn no_picker_climbs_above_the_floor() {
     let mut app = launched(workspace(&Memory::default()));
-    let rows = listed(&mut app);
+    let rows = picker_rows(&mut app);
     assert!(rows.iter().any(|(name, _)| name == "plan.toml"), "{rows:?}");
     assert!(
         !rows.iter().any(|(name, _)| name.starts_with("..")),

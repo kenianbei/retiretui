@@ -81,6 +81,10 @@ pub static COMMANDS: LazyLock<Vec<CommandSpec>> = LazyLock::new(|| {
             hint: None,
             register: Box::new(|world| world.register_system(documents::save_as)),
         },
+    ];
+    #[cfg(target_arch = "wasm32")]
+    commands.extend(exchange_commands());
+    commands.extend([
         CommandSpec {
             name: "reload",
             scope: Scope::Anywhere,
@@ -225,15 +229,7 @@ pub static COMMANDS: LazyLock<Vec<CommandSpec>> = LazyLock::new(|| {
             hint: None,
             register: Box::new(|world| world.register_system(pickers::open_pages)),
         },
-    ];
-    #[cfg(target_arch = "wasm32")]
-    {
-        let beside = commands
-            .iter()
-            .position(|command| command.name == "save-as")
-            .map_or(commands.len(), |at| at + 1);
-        commands.splice(beside..beside, exchange_commands());
-    }
+    ]);
     commands.extend(Page::ALL.into_iter().map(|page| CommandSpec {
         name: page.label(),
         scope: Scope::Anywhere,

@@ -60,6 +60,20 @@ pub fn is_asking(app: &App) -> bool {
     app.world().resource::<Confirm>().is_open()
 }
 
+/// Each row the picker lists, beside what it says at its right.
+pub fn picker_rows(app: &mut App) -> Vec<(String, String)> {
+    let mut rows = app.world_mut().query_filtered::<(
+        &plurimus::ui::UiLabel,
+        Option<&plurimus::widgets::ListItemTrailing>,
+    ), bevy_ecs::prelude::With<plurimus::widgets::ListItem>>();
+    rows.iter(app.world())
+        .map(|(label, trailing)| {
+            let badge = trailing.map(|trailing| trailing.0.to_string());
+            (label.0.to_string(), badge.unwrap_or_default())
+        })
+        .collect()
+}
+
 pub fn is_browsing(app: &App) -> bool {
     app.world().resource::<Browsing>().is_open()
 }

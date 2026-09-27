@@ -6,14 +6,18 @@ use std::fmt;
 use std::io;
 use std::path::{Component, Path, PathBuf};
 use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::SystemTime;
 
 use plurimus_filepicker::{DirectorySource, SourceEntry};
 
-/// What changes whenever a file does: its modification time on disk, or
-/// how many times it was written under a key.
+/// What changes whenever a file does.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub struct Stamp(i128);
+pub enum Stamp {
+    /// Its modification time on disk.
+    Modified(SystemTime),
+    /// How many times it was written under its key.
+    Writes(u64),
+}
 
 /// Files by path, as the planner reads and writes them.
 pub trait Store: fmt::Debug + Send + Sync + 'static {
@@ -112,19 +116,11 @@ impl Store for DiskStore {
         let modified = std::fs::metadata(path)
             .and_then(|meta| meta.modified())
             .ok()?;
-        Some(Stamp(since_epoch(modified)))
+        Some(Stamp::Modified(modified))
     }
 
     fn canonical(&self, path: &Path) -> io::Result<PathBuf> {
         path.canonicalize()
-    }
-}
-
-/// Nanoseconds from the epoch, negative before it.
-fn since_epoch(time: SystemTime) -> i128 {
-    match time.duration_since(UNIX_EPOCH) {
-        Ok(after) => after.as_nanos() as i128,
-        Err(before) => -(before.duration().as_nanos() as i128),
     }
 }
 
@@ -166,14 +162,20 @@ impl<B: Backend> KeyStore<B> {
         self.backend.get(&key(FILE_KEY, path))
     }
 
-    /// Every path held, files and made directories alike.
-    fn paths(&self) -> impl Iterator<Item = PathBuf> {
+    /// Every path held, files and made directories alike, each beside
+    /// whether it is a file.
+    fn paths(&self) -> impl Iterator<Item = (PathBuf, bool)> {
         self.backend.keys().into_iter().filter_map(|key| {
-            let path = key
-                .strip_prefix(FILE_KEY)
-                .or_else(|| key.strip_prefix(DIRECTORY_KEY))?;
-            Some(PathBuf::from(path))
+            let (path, is_file) = match key.strip_prefix(FILE_KEY) {
+                Some(file) => (file, true),
+                None => (key.strip_prefix(DIRECTORY_KEY)?, false),
+            };
+            Some((PathBuf::from(path), is_file))
         })
+    }
+
+    fn writes(&self, path: &Path) -> Option<u64> {
+        self.backend.get(&key(STAMP_KEY, path))?.parse().ok()
     }
 }
 
@@ -187,11 +189,7 @@ impl<B: Backend> Store for KeyStore<B> {
         if !directory.is_some_and(|directory| self.is_dir(&directory)) {
             return Err(not_found(path));
         }
-        let writes = self
-            .backend
-            .get(&key(STAMP_KEY, path))
-            .and_then(|count| count.parse::<i128>().ok())
-            .unwrap_or_default();
+        let writes = self.writes(path).unwrap_or_default();
         self.backend.set(&key(FILE_KEY, path), text)?;
         self.backend
             .set(&key(STAMP_KEY, path), &(writes + 1).to_string())
@@ -212,21 +210,20 @@ impl<B: Backend> Store for KeyStore<B> {
     }
 
     fn list(&self, directory: &Path) -> io::Result<Vec<SourceEntry>> {
-        if !self.is_dir(directory) {
-            return Err(not_found(directory));
-        }
         let directory = normal(directory);
+        let mut is_held = directory == Path::new("/");
         let mut entries: Vec<SourceEntry> = Vec::new();
-        for path in self.paths() {
+        for (path, is_file) in self.paths() {
             let Ok(below) = path.strip_prefix(&directory) else {
                 continue;
             };
+            is_held = true;
             let mut parts = below.components();
             let Some(Component::Normal(name)) = parts.next() else {
                 continue;
             };
             let name = name.to_string_lossy().into_owned();
-            let is_dir = parts.next().is_some() || self.file(&path).is_none();
+            let is_dir = parts.next().is_some() || !is_file;
             if entries.iter().any(|entry| entry.name == name) {
                 continue;
             }
@@ -236,7 +233,11 @@ impl<B: Backend> Store for KeyStore<B> {
                 SourceEntry::file(name)
             });
         }
-        Ok(entries)
+        if is_held {
+            Ok(entries)
+        } else {
+            Err(not_found(&directory))
+        }
     }
 
     fn is_dir(&self, path: &Path) -> bool {
@@ -244,18 +245,18 @@ impl<B: Backend> Store for KeyStore<B> {
         path == Path::new("/")
             || self
                 .paths()
-                .any(|held| held != path && held.starts_with(&path))
+                .any(|(held, _)| held != path && held.starts_with(&path))
             || self.backend.get(&key(DIRECTORY_KEY, &path)).is_some()
     }
 
     fn exists(&self, path: &Path) -> bool {
-        self.file(path).is_some() || self.is_dir(path)
+        self.writes(path).is_some() || self.is_dir(path)
     }
 
+    // A file's count is set beside every write of it and nothing is ever
+    // deleted, so the count is there exactly when the file is.
     fn stamp(&self, path: &Path) -> Option<Stamp> {
-        self.file(path)?;
-        let writes = self.backend.get(&key(STAMP_KEY, path))?;
-        writes.parse().ok().map(Stamp)
+        self.writes(path).map(Stamp::Writes)
     }
 
     fn canonical(&self, path: &Path) -> io::Result<PathBuf> {

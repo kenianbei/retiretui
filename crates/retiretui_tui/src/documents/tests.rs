@@ -4,10 +4,7 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use bevy_app::App;
-use bevy_ecs::prelude::With;
 use plurimus::term::KeyCode;
-use plurimus::ui::UiLabel;
-use plurimus::widgets::{ListItem, ListItemTrailing};
 
 use crate::documents;
 use crate::edit::Draft;
@@ -15,8 +12,8 @@ use crate::nav::{ActivePage, Page};
 use crate::session::{Projected, Session, YearCursor};
 use crate::support::{
     SIZE, TEST_PLAN, answer_back, commit_edit as commit, composed_frame, headless_app,
-    headless_app_at, is_asking, is_browsing, let_pass, press_ctrl, press_key, said, scenario_over,
-    scratch_full_plan, scratch_workspace, show, type_text,
+    headless_app_at, is_asking, is_browsing, let_pass, picker_rows, press_ctrl, press_key, said,
+    scenario_over, scratch_full_plan, scratch_workspace, show, type_text,
 };
 use crate::tools::claims::HeldClaims;
 
@@ -259,12 +256,10 @@ fn compare_with_refuses_the_document_and_takes_another() {
 
 /// What the picker's row naming `file` says at its right.
 fn badge_of(app: &mut App, file: &str) -> String {
-    let mut rows = app
-        .world_mut()
-        .query_filtered::<(&UiLabel, &ListItemTrailing), With<ListItem>>();
-    rows.iter(app.world())
-        .find(|(label, _)| label.0.to_string() == file)
-        .map(|(_, trailing)| trailing.0.to_string())
+    picker_rows(app)
+        .into_iter()
+        .find(|(name, _)| name == file)
+        .map(|(_, badge)| badge)
         .unwrap_or_default()
 }
 
