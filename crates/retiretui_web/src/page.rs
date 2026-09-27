@@ -13,6 +13,7 @@ use retiretui_tui::Launch;
 use retiretui_tui::store::{KeyStore, Store};
 use wasm_bindgen::prelude::wasm_bindgen;
 
+use crate::edge::PageEdge;
 use crate::storage::LocalStorage;
 
 /// Where the visitor's plans are kept, and no picker climbs above.
@@ -48,6 +49,7 @@ fn run() -> Result<(), String> {
         is_light: prefers_light(),
         reopens: true,
         floor: Some(PathBuf::from(WORKSPACE)),
+        exchange: Some(Arc::new(PageEdge::default())),
     };
     let mut app = App::new();
     app.add_plugins((

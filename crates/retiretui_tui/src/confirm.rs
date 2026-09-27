@@ -125,7 +125,6 @@ impl Confirm {
         });
     }
 
-    #[cfg(test)]
     pub const fn is_open(&self) -> bool {
         self.0.is_some()
     }

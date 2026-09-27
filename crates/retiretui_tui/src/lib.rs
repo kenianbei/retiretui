@@ -3,6 +3,7 @@
 //! words every surface says a projection in.
 
 pub mod actions;
+pub mod exchange;
 pub mod files;
 pub mod ladder;
 pub mod metric;
@@ -96,6 +97,9 @@ pub struct Launch {
     /// The directory no picker climbs above; none where any may be
     /// reached.
     pub floor: Option<PathBuf>,
+    /// What hands files across the page's edge; none where there is no
+    /// page.
+    pub exchange: Option<Arc<dyn exchange::Exchange>>,
 }
 
 /// Adds the planner to `app`, above whatever backend draws it: the
@@ -122,6 +126,9 @@ pub fn build(app: &mut App, launch: Launch) -> Result<(), String> {
     app.insert_resource(projected);
     app.insert_resource(watch::Watch::new(launch.store, files));
     app.insert_resource(tools::markets::MarketHistory(launch.history));
+    if let Some(exchange) = launch.exchange {
+        app.insert_resource(exchange::Edge(exchange));
+    }
     add_tui(app);
     let variant = if launch.is_light {
         theme::document::Variant::Light
@@ -213,5 +220,6 @@ fn add_tui(app: &mut App) {
         compare::plugin,
         success::plugin,
         tools::plugin,
+        exchange::plugin,
     ));
 }

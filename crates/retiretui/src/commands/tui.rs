@@ -40,6 +40,7 @@ pub fn run(args: &TuiArgs) -> anyhow::Result<()> {
         is_light: retiretui_tui::terminal_is_light(),
         reopens: false,
         floor: None,
+        exchange: None,
     };
     let mut app = App::new();
     app.add_plugins((

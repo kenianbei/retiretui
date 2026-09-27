@@ -118,6 +118,7 @@ fn launched(store: Arc<dyn Store>) -> App {
         is_light: false,
         reopens: true,
         floor: Some(PathBuf::from(WORKSPACE)),
+        exchange: None,
     };
     crate::build(&mut app, launch).unwrap();
     app.update();

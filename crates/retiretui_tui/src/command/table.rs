@@ -14,6 +14,8 @@ use crate::confirm::Confirm;
 use crate::documents;
 use crate::drawer;
 use crate::edit::{self, Draft, DraftEditor};
+#[cfg(target_arch = "wasm32")]
+use crate::exchange;
 use crate::focus;
 use crate::issues;
 use crate::ledger;
@@ -224,6 +226,14 @@ pub static COMMANDS: LazyLock<Vec<CommandSpec>> = LazyLock::new(|| {
             register: Box::new(|world| world.register_system(pickers::open_pages)),
         },
     ];
+    #[cfg(target_arch = "wasm32")]
+    {
+        let beside = commands
+            .iter()
+            .position(|command| command.name == "save-as")
+            .map_or(commands.len(), |at| at + 1);
+        commands.splice(beside..beside, exchange_commands());
+    }
     commands.extend(Page::ALL.into_iter().map(|page| CommandSpec {
         name: page.label(),
         scope: Scope::Anywhere,
@@ -456,4 +466,27 @@ pub fn register_show(world: &mut World, page: Page) -> SystemId<(), Outcome> {
         turn.to(page);
         Outcome::Done
     })
+}
+
+/// Upload and download, which only a browser page has an edge for.
+#[cfg(target_arch = "wasm32")]
+fn exchange_commands() -> [CommandSpec; 2] {
+    [
+        CommandSpec {
+            name: "upload",
+            scope: Scope::Shell,
+            doc: "take plans or statements from this machine into the workspace",
+            keys: Vec::new(),
+            hint: None,
+            register: Box::new(|world| world.register_system(exchange::commands::upload)),
+        },
+        CommandSpec {
+            name: "download",
+            scope: Scope::Anywhere,
+            doc: "save the document's file to this machine",
+            keys: Vec::new(),
+            hint: None,
+            register: Box::new(|world| world.register_system(exchange::commands::download)),
+        },
+    ]
 }

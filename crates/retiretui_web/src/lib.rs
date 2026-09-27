@@ -3,6 +3,8 @@
 //! `wasm32-unknown-unknown` alone; elsewhere it is empty.
 
 #[cfg(target_arch = "wasm32")]
+mod edge;
+#[cfg(target_arch = "wasm32")]
 mod page;
 #[cfg(target_arch = "wasm32")]
 mod storage;

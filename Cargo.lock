@@ -3269,10 +3269,12 @@ name = "retiretui_web"
 version = "0.2.0"
 dependencies = [
  "bevy_app",
+ "js-sys",
  "plurimus",
  "retiretui_engine",
  "retiretui_tui",
  "wasm-bindgen",
+ "wasm-bindgen-futures",
  "web-sys",
 ]
 
