@@ -10,7 +10,7 @@ rust-version.workspace = true
 readme.workspace = true
 keywords.workspace = true
 categories.workspace = true
-exclude = ["tests", "**/snapshots"]
+exclude = ["tests"]
 
 [dependencies]
 anyhow = "1.0.104"
@@ -26,9 +26,10 @@ clap = { version = "4.6.7", features = ["derive"] }
 etcetera = "0.11.0"
 jiff.workspace = true
 nucleo-matcher = "0.3.1"
-plurimus = { version = "0.7.2", features = ["ui", "widgets", "bevy-ui"] }
+plurimus = { version = "0.7.2", default-features = false, features = ["crossterm"] }
 plurimus_filepicker = "0.1.1"
 retiretui_engine = { workspace = true, features = ["schemars"] }
+retiretui_tui = { workspace = true, features = ["clap"] }
 rmcp = { version = "3.4.1", features = ["server", "macros", "transport-io", "schemars"] }
 schemars.workspace = true
 tachyonfx = { version = "0.25.2", default-features = false, features = ["std", "std-duration", "sendable"] }

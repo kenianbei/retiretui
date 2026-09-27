@@ -17,9 +17,9 @@ use schemars::JsonSchema;
 use serde::Serialize;
 
 use crate::commands::project::OutputFormat;
-use crate::commands::table::{align, plain_dollars, rate};
 use crate::commands::{run_refusal, user_config_dir};
 use retiretui_engine::project::validate_plan;
+use retiretui_tui::table::{align, percentile_label, plain_dollars, rate};
 
 /// Where the historical record is read from in place of the embedded one.
 const HISTORY_FILE: &str = "history.toml";
@@ -208,11 +208,6 @@ impl HistoricalReply {
             start_years,
         }
     }
-}
-
-/// How a market singled out at `percentile` is named.
-pub(crate) fn percentile_label(percentile: u8) -> String {
-    format!("{percentile}th percentile")
 }
 
 /// The historical record: `explicit`, else the user's own under the config

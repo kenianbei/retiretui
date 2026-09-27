@@ -61,7 +61,7 @@ impl PlanStore {
             std::fs::read_to_string(file).map_err(|err| format!("{}: {err}", file.display()))
         };
         let mut locate = |referrer: &Path, base: &str| self.resolve_base(referrer, base);
-        crate::commands::resolve::resolve_plan(start, text, &mut read, &mut locate)
+        retiretui_tui::resolve::resolve_plan(start, text, &mut read, &mut locate)
     }
 
     /// Resolves a scenario's `base` reference relative to the referring
@@ -82,7 +82,7 @@ impl PlanStore {
     /// Writes atomically: staged in the same directory, then renamed over.
     pub fn write(&self, path: &str, text: &str) -> Result<(), String> {
         let resolved = self.resolve_write(path)?;
-        crate::commands::write_atomic(&resolved, text).map_err(|err| format!("{path}: {err}"))
+        retiretui_tui::files::write_atomic(&resolved, text).map_err(|err| format!("{path}: {err}"))
     }
 
     /// Every `*.toml` file under the root, in path order.

@@ -3043,6 +3043,7 @@ dependencies = [
  "plurimus",
  "plurimus_filepicker",
  "retiretui_engine",
+ "retiretui_tui",
  "rmcp",
  "schemars",
  "serde",
@@ -3065,6 +3066,36 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.21",
  "toml",
+]
+
+[[package]]
+name = "retiretui_tui"
+version = "0.2.0"
+dependencies = [
+ "anyhow",
+ "bevy_app",
+ "bevy_ecs",
+ "bevy_input",
+ "bevy_input_focus",
+ "bevy_math",
+ "bevy_time",
+ "bevy_ui",
+ "bevy_window",
+ "clap",
+ "etcetera",
+ "insta",
+ "jiff",
+ "nucleo-matcher",
+ "plurimus",
+ "plurimus_filepicker",
+ "retiretui_engine",
+ "schemars",
+ "serde",
+ "tachyonfx",
+ "toml",
+ "toml_edit",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

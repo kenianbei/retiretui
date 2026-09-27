@@ -190,5 +190,5 @@ fn relative_ref(write_to: &str, plan_path: &str) -> String {
     let out_dir = Path::new(write_to)
         .parent()
         .unwrap_or_else(|| Path::new(""));
-    crate::commands::relative_path(out_dir, Path::new(plan_path))
+    retiretui_tui::files::relative_path(out_dir, Path::new(plan_path))
 }
