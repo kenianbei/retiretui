@@ -1,5 +1,5 @@
 //! The Tools tab's tools: each panes of its own over a line of help, a
-//! search on a thread of its own, and the highlighted option written as a
+//! search beside the frames, and the highlighted option written as a
 //! scenario over the document or taken into the draft. What a tool
 //! searches and how it lays out its options are its own; the search's
 //! life, the options table and the highlight are shared.
@@ -176,7 +176,7 @@ fn is_due<K>(draft: &Draft, searched: Option<&K>, is_same: impl FnOnce(&K) -> bo
 }
 
 impl<R: Found> Tool<R> {
-    /// Runs `work` over `plan` on a thread of its own, dropping what the
+    /// Runs `work` over `plan` beside the frames, dropping what the
     /// last search found.
     fn start(
         &mut self,

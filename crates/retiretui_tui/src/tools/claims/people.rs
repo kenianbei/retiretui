@@ -78,8 +78,7 @@ pub struct HeldClaims(pub BTreeSet<String>);
 type Estimate = [Option<Dollars>; 3];
 
 /// Each person's estimates, by place in the household, from the last
-/// valid draft the page was shown over, and the next on a thread of their
-/// own.
+/// valid draft the page was shown over, and the next beside the frames.
 #[derive(Resource, Default)]
 struct Estimates {
     shown: Vec<Estimate>,
@@ -124,8 +123,8 @@ pub fn spawn_pane(commands: &mut Commands, row: Entity) {
         .observe(handle_enter);
 }
 
-/// Takes the estimates once they have answered, and re-estimates on a
-/// thread of their own once the draft has moved to a plan not yet
+/// Takes the estimates once they have answered, and re-estimates beside
+/// the frames once the draft has moved to a plan not yet
 /// estimated and the page is on show: three projections a person are too
 /// many for every applied item elsewhere. A draft with issues keeps the
 /// last estimates.

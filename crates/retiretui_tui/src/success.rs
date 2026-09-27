@@ -1,5 +1,5 @@
 //! Each plan's Monte Carlo success, under its own `[market]` settings: one
-//! run at a time, the document first, on a thread of its own while a page
+//! run at a time, the document first, beside the frames while a page
 //! that shows it is - a run already spreads across every core, so running
 //! the plans side by side would only crowd them - each answer kept for as
 //! long as its plan is the document or compared with it.

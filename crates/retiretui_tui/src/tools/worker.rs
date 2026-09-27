@@ -180,7 +180,7 @@ impl<K, T> Keyed<K, T> {
     }
 }
 
-/// Whether the Overview runs its searches on threads of their own while
+/// Whether the Overview runs its searches beside the frames while
 /// it is shown. The shell always does; a headless test, most of which
 /// open on the Overview, turns it on only where it looks at what they
 /// find.

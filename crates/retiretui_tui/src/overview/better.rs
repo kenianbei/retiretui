@@ -1,6 +1,6 @@
 //! Could do better: each Roth owner's conversion sweep, the household's
-//! claim search and the plan from every historical start, searched on a
-//! thread of the Overview's own while it is shown - as the Roth
+//! claim search and the plan from every historical start, searched beside
+//! the frames while the Overview is shown - as the Roth
 //! Conversions, SSA Benefits and Historical pages search them, under the
 //! conversion answers and the claims those pages hold - and the answer
 //! kept for what it describes.
