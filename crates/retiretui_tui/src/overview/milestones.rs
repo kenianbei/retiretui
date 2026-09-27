@@ -131,7 +131,7 @@ fn contributions_ending(plan: &Plan, timeline: &Timeline) -> Vec<Entry> {
 fn moves(plan: &Plan, timeline: &Timeline) -> Vec<Entry> {
     let each = plan.residency.iter().zip(&timeline.residency).enumerate();
     each.filter_map(|(at, (residency, year))| {
-        let text = format!("moves to {}", residence(residency));
+        let text = format!("Moves to {}", residence(residency));
         Some(Entry::dated((*year)?, text, (Page::Residency, Some(at))))
     })
     .collect()
@@ -268,7 +268,7 @@ amount = 60000
             "2032 Sam retires".to_owned(),
             "2032 Pension starts".to_owned(),
             "2032 Deferral ends".to_owned(),
-            "2032 moves to Washington".to_owned(),
+            "2032 Moves to Washington".to_owned(),
             "2035 Medicare · Sam".to_owned(),
             first_full_year(&projected, false),
             "2045 RMDs start · Sam".to_owned(),

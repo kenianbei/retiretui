@@ -1,4 +1,5 @@
-//! The `tui` subcommand: the planner in the terminal.
+//! The planner in a terminal: the `tui` command's arguments and the
+//! launch it makes of them.
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -10,11 +11,13 @@ use clap::Args;
 use etcetera::BaseStrategy as _;
 use plurimus::core::CorePlugin;
 use plurimus::crossterm::CrosstermPlugin;
+use retiretui_client::environment::{config_dir, load_history, load_tables};
 use retiretui_client::store::DiskStore;
-use retiretui_tui::Launch;
+
+use crate::Launch;
 
 /// Arguments of the `tui` subcommand.
-#[derive(Args)]
+#[derive(Args, Debug)]
 pub struct TuiArgs {
     /// Path to a plan or scenario TOML file, or to a directory to open
     /// one from; the working directory by default.
@@ -30,14 +33,20 @@ const CONFIG_FILE: &str = "config.toml";
 const LOG_DIRECTORY: &str = "retiretui";
 const LOG_FILE: &str = "tui.log";
 
+/// Runs the planner in the terminal until it is quit.
+///
+/// # Errors
+///
+/// Where the tables, the history or the log cannot be set up, the session
+/// cannot open, or the app exits with an error.
 pub fn run(args: &TuiArgs) -> anyhow::Result<()> {
     let launch = Launch {
         path: args.path.clone(),
-        tables: retiretui_client::environment::load_tables(&args.tax_dir)?,
-        history: retiretui_client::environment::load_history(None)?,
+        tables: load_tables(&args.tax_dir)?,
+        history: load_history(None)?,
         store: Arc::new(DiskStore),
-        settings: retiretui_client::environment::config_dir(CONFIG_FILE),
-        is_light: retiretui_tui::terminal_is_light(),
+        settings: config_dir(CONFIG_FILE),
+        is_light: crate::terminal_is_light(),
         reopens: false,
         floor: None,
         exchange: None,
@@ -48,8 +57,8 @@ pub fn run(args: &TuiArgs) -> anyhow::Result<()> {
         CorePlugin,
         CrosstermPlugin::default(),
     ));
-    retiretui_tui::build(&mut app, launch).map_err(anyhow::Error::msg)?;
-    retiretui_tui::install_log(&app, log_path())?;
+    crate::build(&mut app, launch).map_err(anyhow::Error::msg)?;
+    crate::install_log(&app, log_path())?;
     match app.run() {
         AppExit::Success => Ok(()),
         AppExit::Error(code) => bail!("tui exited with error code {code}"),

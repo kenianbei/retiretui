@@ -35,6 +35,8 @@ mod sidebar;
 mod success;
 mod tabbar;
 mod tabulate;
+#[cfg(feature = "terminal")]
+pub mod terminal;
 mod theme;
 mod toast;
 mod tools;

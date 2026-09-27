@@ -14,14 +14,11 @@ exclude = ["tests"]
 
 [dependencies]
 anyhow = "1.0.104"
-bevy_app = "0.19.1"
 clap = { version = "4.6.7", features = ["derive"] }
-etcetera = "0.11.0"
 jiff.workspace = true
-plurimus = { version = "0.7.2", default-features = false, features = ["crossterm"] }
 retiretui_engine = { workspace = true, features = ["schemars"] }
 retiretui_client = { workspace = true, features = ["clap", "native"] }
-retiretui_tui.workspace = true
+retiretui_tui = { workspace = true, features = ["terminal"] }
 rmcp = { version = "3.4.1", features = ["server", "macros", "transport-io", "schemars"] }
 schemars.workspace = true
 serde.workspace = true

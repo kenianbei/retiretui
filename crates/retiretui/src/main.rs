@@ -13,7 +13,7 @@ use commands::markets::{HistoricalArgs, MonteCarloArgs};
 use commands::mcp::McpArgs;
 use commands::optimize::OptimizeCommand;
 use commands::project::ProjectArgs;
-use commands::tui::TuiArgs;
+use retiretui_tui::terminal::TuiArgs;
 
 #[derive(Parser)]
 #[command(version, about, arg_required_else_help = true)]
@@ -61,7 +61,7 @@ fn main() -> anyhow::Result<()> {
         Command::Project(args) => commands::project::run(&args),
         Command::Actions(args) => commands::actions::run(&args),
         Command::Compare(args) => commands::compare::run(&args),
-        Command::Tui(args) => commands::tui::run(&args),
+        Command::Tui(args) => retiretui_tui::terminal::run(&args),
         Command::Optimize(command) => commands::optimize::run(&command),
         Command::MonteCarlo(args) => commands::markets::run_monte_carlo(&args),
         Command::Historical(args) => commands::markets::run_historical(&args),

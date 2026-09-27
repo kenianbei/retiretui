@@ -5,7 +5,6 @@ pub mod markets;
 pub mod mcp;
 pub mod optimize;
 pub mod project;
-pub mod tui;
 
 use retiretui_client::environment::load_tables;
 use retiretui_client::store::DiskStore;
