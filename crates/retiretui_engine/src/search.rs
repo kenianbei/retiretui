@@ -3,6 +3,7 @@
 //! steps on.
 
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+#[cfg(not(target_arch = "wasm32"))]
 use std::thread;
 
 use crate::plan::Issue;
@@ -68,12 +69,24 @@ pub(crate) fn run_all<T: Send>(
     progress: &Progress,
     one: impl Fn(usize) -> Option<T> + Sync,
 ) -> Result<Vec<T>, RunError> {
+    let finished = run_chunks(count, progress, &one);
+    if progress.is_cancelled() {
+        return Err(RunError::Cancelled);
+    }
+    Ok(finished.into_iter().flatten().flatten().collect())
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn run_chunks<T: Send>(
+    count: usize,
+    progress: &Progress,
+    one: &(impl Fn(usize) -> Option<T> + Sync),
+) -> Vec<Vec<Option<T>>> {
     let threads = thread::available_parallelism()
         .map_or(1, usize::from)
         .min(count.max(1));
     let chunk = count.div_ceil(threads).max(1);
-    let one = &one;
-    let finished: Vec<Vec<Option<T>>> = thread::scope(|scope| {
+    thread::scope(|scope| {
         let handles: Vec<_> = (0..count)
             .step_by(chunk)
             .map(|first| {
@@ -85,9 +98,33 @@ pub(crate) fn run_all<T: Send>(
             .into_iter()
             .map(|handle| handle.join().expect("a search step does not panic"))
             .collect()
-    });
-    if progress.is_cancelled() {
-        return Err(RunError::Cancelled);
+    })
+}
+
+/// A browser page has one thread, and spawning another panics.
+#[cfg(target_arch = "wasm32")]
+fn run_chunks<T: Send>(
+    count: usize,
+    progress: &Progress,
+    one: &(impl Fn(usize) -> Option<T> + Sync),
+) -> Vec<Vec<Option<T>>> {
+    vec![run_range(0..count, progress, one)]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn one_thread_answers_what_many_do() {
+        let square = |at: usize| (!at.is_multiple_of(3)).then_some(at * at);
+        let progress = Progress::default();
+        let serial: Vec<usize> = run_range(0..40, &progress, &square)
+            .into_iter()
+            .flatten()
+            .collect();
+        let threaded = run_all(40, &Progress::default(), square).unwrap();
+        assert_eq!(serial, threaded);
+        assert_eq!(progress.done(), 40);
     }
-    Ok(finished.into_iter().flatten().flatten().collect())
 }
