@@ -13,10 +13,11 @@ use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
 use super::domain::{FieldSpec, Ops};
 use super::field;
 use super::form::{handle_button, handle_form_key};
-use super::group::{Dependent, gate_of};
+use super::group::Dependent;
 use crate::layout::{Emphasis, button_node, fixed, growing, placed, rule, sized, spawn_button_row};
 use crate::overlay::{self, Centred};
 use crate::scope::KeyScope;
+use retiretui_client::forms::lists::gate_of;
 
 /// The form over one item of a domain.
 #[derive(Component)]

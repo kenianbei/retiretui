@@ -89,7 +89,7 @@ fn spawn_table(commands: &mut Commands, root: Entity, ops: Ops, list: ListOps) {
         .observe(handle_table_key)
         .id();
     spawn_add_button(commands, pane, table, list);
-    if details::has_details(ops, list) {
+    if retiretui_client::forms::details::has_details(&ops, list) {
         details::spawn_pane(commands, beside, table, ops);
     }
 }

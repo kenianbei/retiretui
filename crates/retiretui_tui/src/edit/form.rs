@@ -29,6 +29,7 @@ use super::table::Row;
 use super::trigger;
 use crate::pane::Framed;
 use crate::theme::{Repainted, Theme};
+use retiretui_client::forms::lists;
 use retiretui_client::issues::{LocatedIssue, field_issue, located_issues};
 
 pub fn plugin(app: &mut App) {
@@ -251,8 +252,8 @@ impl Items<'_, '_> {
                     .map_or(&[][..], |group| &group[..]);
                 trigger::held(group, &self.slots)
             }
-            FieldKind::Listed(_) => group::listed(self.parts(widget, key)),
-            FieldKind::Order(..) => group::ordered(self.parts(widget, key)),
+            FieldKind::Listed(_) => lists::listed(self.parts(widget, key)),
+            FieldKind::Order(..) => lists::ordered(self.parts(widget, key)),
             FieldKind::Presence(ticked) => {
                 // What the table's own rows show is what it held before.
                 editing.is_seeded = false;
