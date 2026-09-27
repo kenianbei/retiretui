@@ -7,8 +7,9 @@ pub mod optimize;
 pub mod project;
 pub mod tui;
 
+use retiretui_client::environment::load_tables;
 use retiretui_client::store::DiskStore;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use retiretui_client::files::{Invalid, validated_plan_with_files};
 use retiretui_engine::params::TaxTables;
@@ -33,22 +34,4 @@ fn load_validated_plan(path: &Path, tables: &TaxTables) -> anyhow::Result<Plan> 
         Invalid::Issues { issues, .. } => issues.iter().for_each(|issue| eprintln!("{issue}")),
     }
     Err(anyhow::Error::msg(invalid.headline().to_owned()))
-}
-
-/// The user's own directory `name` in the application's config directory.
-pub(crate) fn user_config_dir(name: &str) -> Option<PathBuf> {
-    use etcetera::BaseStrategy;
-    let strategy = etcetera::choose_base_strategy().ok()?;
-    Some(strategy.config_dir().join("retiretui").join(name))
-}
-
-fn load_tables(extra_dirs: &[PathBuf]) -> anyhow::Result<TaxTables> {
-    let mut tables = TaxTables::embedded();
-    if let Some(dir) = user_config_dir("tax") {
-        tables.add_dir(&dir)?;
-    }
-    for dir in extra_dirs {
-        tables.add_dir(dir)?;
-    }
-    Ok(tables)
 }

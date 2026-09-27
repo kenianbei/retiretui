@@ -36,7 +36,7 @@ pub enum OutputFormat {
 }
 
 pub fn run(args: &ProjectArgs) -> anyhow::Result<()> {
-    let tables = super::load_tables(&args.tax_dir)?;
+    let tables = retiretui_client::environment::load_tables(&args.tax_dir)?;
     let plan = super::load_validated_plan(&args.plan, &tables)?;
     let projection = project(&plan, &tables);
     match args.format {

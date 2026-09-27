@@ -35,7 +35,7 @@ pub struct ClaimArgs {
 }
 
 pub fn run(args: &ClaimArgs) -> anyhow::Result<()> {
-    let tables = crate::commands::load_tables(&args.tax_dir)?;
+    let tables = retiretui_client::environment::load_tables(&args.tax_dir)?;
     let plan = crate::commands::load_validated_plan(&args.plan, &tables)?;
     let search = optimize_claims(&plan, &tables, &args.income, &[], &Progress::default())
         .map_err(|error| anyhow::Error::msg(run_refusal(error)))?;

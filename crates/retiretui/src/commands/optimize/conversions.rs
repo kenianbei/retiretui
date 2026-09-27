@@ -51,7 +51,7 @@ pub struct OptimizeArgs {
 }
 
 pub fn run(args: &OptimizeArgs) -> anyhow::Result<()> {
-    let tables = crate::commands::load_tables(&args.tax_dir)?;
+    let tables = retiretui_client::environment::load_tables(&args.tax_dir)?;
     let plan = crate::commands::load_validated_plan(&args.plan, &tables)?;
     match args.bracket {
         Some(percent) => run_single(&plan, &tables, percent / 100.0, args),

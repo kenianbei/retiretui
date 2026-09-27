@@ -34,8 +34,8 @@ pub fn run(args: &McpArgs) -> anyhow::Result<()> {
         .dir
         .canonicalize()
         .with_context(|| format!("failed to open {}", args.dir.display()))?;
-    let tables = super::load_tables(&args.tax_dir)?;
-    let history = super::markets::load_history(None)?;
+    let tables = retiretui_client::environment::load_tables(&args.tax_dir)?;
+    let history = retiretui_client::environment::load_history(None)?;
     let server = PlanServer::new(store::PlanStore::new(root), tables, history);
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()

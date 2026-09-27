@@ -33,10 +33,10 @@ const LOG_FILE: &str = "tui.log";
 pub fn run(args: &TuiArgs) -> anyhow::Result<()> {
     let launch = Launch {
         path: args.path.clone(),
-        tables: super::load_tables(&args.tax_dir)?,
-        history: super::markets::load_history(None)?,
+        tables: retiretui_client::environment::load_tables(&args.tax_dir)?,
+        history: retiretui_client::environment::load_history(None)?,
         store: Arc::new(DiskStore),
-        settings: super::user_config_dir(CONFIG_FILE),
+        settings: retiretui_client::environment::config_dir(CONFIG_FILE),
         is_light: retiretui_tui::terminal_is_light(),
         reopens: false,
         floor: None,

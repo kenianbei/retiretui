@@ -3217,6 +3217,7 @@ dependencies = [
  "anyhow",
  "bevy_ecs",
  "clap",
+ "etcetera",
  "jiff",
  "retiretui_engine",
  "schemars",

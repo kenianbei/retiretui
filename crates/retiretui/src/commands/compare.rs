@@ -49,7 +49,7 @@ impl ComparedPlan {
 }
 
 pub fn run(args: &CompareArgs) -> anyhow::Result<()> {
-    let tables = super::load_tables(&args.tax_dir)?;
+    let tables = retiretui_client::environment::load_tables(&args.tax_dir)?;
     let mut compared = Vec::with_capacity(args.plans.len());
     for path in &args.plans {
         let plan = super::load_validated_plan(path, &tables)?;

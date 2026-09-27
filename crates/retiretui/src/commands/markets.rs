@@ -4,23 +4,18 @@
 //! figure in today's dollars by each run's own inflation.
 
 use retiretui_client::replies::{HistoricalReply, MonteCarloReply, RunEntry};
-use std::fs;
 use std::path::{Path, PathBuf};
 
-use anyhow::Context;
 use clap::{Args, ValueEnum};
 use retiretui_engine::market::{self, BAND_PERCENTILES, History, Progress};
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::{Draw, Market, Plan};
 
 use crate::commands::project::OutputFormat;
-use crate::commands::user_config_dir;
+use retiretui_client::environment::{load_history, load_tables};
 use retiretui_client::searches::run_refusal;
 use retiretui_client::table::{align, plain_dollars, rate};
 use retiretui_engine::project::validate_plan;
-
-/// Where the historical record is read from in place of the embedded one.
-const HISTORY_FILE: &str = "history.toml";
 
 /// Arguments of `monte-carlo`.
 #[derive(Args)]
@@ -83,19 +78,6 @@ pub enum DrawArg {
 
 /// The historical record: `explicit`, else the user's own under the config
 /// directory, else the embedded one.
-pub(crate) fn load_history(explicit: Option<&Path>) -> anyhow::Result<History> {
-    let user = user_config_dir("market").map(|dir| dir.join(HISTORY_FILE));
-    let Some(path) = explicit
-        .map(Path::to_path_buf)
-        .or_else(|| user.filter(|path| path.is_file()))
-    else {
-        return Ok(History::embedded().clone());
-    };
-    let text =
-        fs::read_to_string(&path).with_context(|| format!("failed to read {}", path.display()))?;
-    History::from_toml_str(&text).with_context(|| format!("in {}", path.display()))
-}
-
 /// The plan's `[market]`, created where it states none, for a flag to set.
 fn market_of(plan: &mut Plan) -> &mut Market {
     plan.market.get_or_insert_with(Market::default)
@@ -108,7 +90,7 @@ fn prepare(
     common: &MarketArgs,
     settle: impl FnOnce(&mut Plan),
 ) -> anyhow::Result<(Plan, TaxTables, History)> {
-    let tables = crate::commands::load_tables(&common.tax_dir)?;
+    let tables = load_tables(&common.tax_dir)?;
     let mut plan = crate::commands::load_validated_plan(path, &tables)?;
     settle(&mut plan);
     let issues = validate_plan(&plan, &tables);
