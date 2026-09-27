@@ -72,6 +72,7 @@ impl Run {
 /// One projected year across every run.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct Band {
     /// The calendar year.
     pub year: i16,

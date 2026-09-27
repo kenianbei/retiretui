@@ -15,6 +15,7 @@ use crate::table::percentile_label;
 
 /// One year's to-dos, as `actions` and `plan_actions` reply.
 #[derive(Serialize, JsonSchema)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct ActionsReply {
     /// The reported year.
     pub year: i16,
@@ -45,6 +46,7 @@ impl ActionsReply {
 
 /// A claim search, as `optimize claims` and `optimize_claims` reply.
 #[derive(Serialize, JsonSchema)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct ClaimsReply {
     /// Headline figures with the plan's own claims.
     pub baseline: Summary,
@@ -58,6 +60,7 @@ pub struct ClaimsReply {
 
 /// One set of claims the search tried.
 #[derive(Serialize, JsonSchema)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct ClaimEntry {
     /// One claim per searched income.
     pub claims: Vec<Claim>,
@@ -87,6 +90,7 @@ impl ClaimsReply {
 /// A bracket sweep, as `optimize conversions` and
 /// `sweep_conversion_brackets` reply.
 #[derive(Serialize, JsonSchema)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct SweepReply {
     /// The plan without any ladder.
     pub baseline: Summary,
@@ -97,6 +101,7 @@ pub struct SweepReply {
 
 /// One bracket of a sweep.
 #[derive(Serialize, JsonSchema)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct SweepEntry {
     /// The bracket's rate (e.g. 0.22).
     pub bracket_rate: f64,
@@ -154,6 +159,7 @@ impl LadderReply {
 
 /// One run as the replies show it.
 #[derive(Serialize, JsonSchema)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct RunEntry {
     /// What the run is: "as planned", a percentile, "worst", or a start
     /// year.
@@ -174,6 +180,7 @@ pub struct RunEntry {
 
 /// A Monte Carlo search, as `monte-carlo` and `plan_monte_carlo` reply.
 #[derive(Serialize, JsonSchema)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct MonteCarloReply {
     /// "assumptions" or "history".
     pub draw: String,
@@ -193,6 +200,7 @@ pub struct MonteCarloReply {
 
 /// A Historical search, as `historical` and `plan_historical` reply.
 #[derive(Serialize, JsonSchema)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct HistoricalReply {
     /// The first start year tried.
     pub from: i16,

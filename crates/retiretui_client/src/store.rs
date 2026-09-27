@@ -300,7 +300,8 @@ fn not_found(path: &Path) -> io::Error {
 
 /// `path` from the root with `.` dropped and `..` folded, a `..` at the
 /// root staying there.
-fn normal(path: &Path) -> PathBuf {
+#[must_use]
+pub fn normal(path: &Path) -> PathBuf {
     let mut normal = PathBuf::from("/");
     for component in path.components() {
         match component {

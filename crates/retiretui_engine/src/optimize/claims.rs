@@ -18,6 +18,7 @@ const ADDED_ID_PREFIX: &str = "ss-";
 /// One income claimed at one age.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct Claim {
     /// The income's id.
     pub income: String,
