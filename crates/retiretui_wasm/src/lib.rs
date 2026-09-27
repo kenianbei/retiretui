@@ -42,7 +42,7 @@ fn reply<T: Serialize>(answer: Result<T, String>) -> Result<JsValue, JsError> {
 #[wasm_bindgen(typescript_custom_section)]
 const TYPES: &str = r#"import type {
   ActionsReply, ClaimsReply, Example, HistoricalReply, Issue, MonteCarloReply,
-  Projection, Summary, SweepReply,
+  Names, PlacedIssue, Projection, Summary, SweepReply,
 } from "../bindings/index";"#;
 
 /// A plan file opened through the page's reads.
@@ -81,14 +81,24 @@ impl JsDocument {
             .collect()
     }
 
-    /// What the full gate found wrong.
+    /// What the full gate found wrong, each where it is.
     ///
     /// # Errors
     ///
     /// Where the issues do not convert.
-    #[wasm_bindgen(unchecked_return_type = "Issue[]")]
+    #[wasm_bindgen(unchecked_return_type = "PlacedIssue[]")]
     pub fn issues(&self) -> Result<JsValue, JsError> {
         to_js(&self.0.issues())
+    }
+
+    /// The display names of the items a year's actions name.
+    ///
+    /// # Errors
+    ///
+    /// Where the names do not convert.
+    #[wasm_bindgen(unchecked_return_type = "Names")]
+    pub fn names(&self) -> Result<JsValue, JsError> {
+        to_js(&self.0.names())
     }
 
     /// The projection, `null` while the plan has issues. Each call converts
@@ -220,6 +230,7 @@ mod bindings {
     use retiretui_engine::project::{Projection, Summary};
     use ts_rs::{Config, TS};
 
+    use crate::document::{Names, PlacedIssue};
     use crate::searches::Example;
 
     const BINDINGS: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/bindings");
@@ -232,6 +243,8 @@ mod bindings {
             .with_out_dir(BINDINGS);
         let exports = [
             Issue::export_all,
+            PlacedIssue::export_all,
+            Names::export_all,
             Projection::export_all,
             Summary::export_all,
             ActionsReply::export_all,

@@ -10,6 +10,8 @@ export type { Example } from "./Example";
 export type { HistoricalReply } from "./HistoricalReply";
 export type { Issue } from "./Issue";
 export type { MonteCarloReply } from "./MonteCarloReply";
+export type { Names } from "./Names";
+export type { PlacedIssue } from "./PlacedIssue";
 export type { Projection } from "./Projection";
 export type { RunEntry } from "./RunEntry";
 export type { Summary } from "./Summary";

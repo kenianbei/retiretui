@@ -2,25 +2,53 @@
 //! plan, the files it came from, its issues, and, where it has none, its
 //! projection.
 
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use retiretui_client::actions::collect_warnings;
+use retiretui_client::draft::Draft;
 use retiretui_client::files::resolve_with_files;
-use retiretui_client::issues::issue_listing;
+use retiretui_client::issues::{issue_listing, issue_place, issue_words};
 use retiretui_client::replies::{ActionsReply, year_row};
 use retiretui_client::store::normal;
-use retiretui_engine::plan::{Issue, Plan};
-use retiretui_engine::project::{Projection, Summary, project, validate_plan};
+use retiretui_engine::plan::Item;
+use retiretui_engine::project::{Projection, Summary, project};
+use serde::Serialize;
 
 use crate::tables;
 
 /// A resolved plan and what the gate made of it.
 #[derive(Debug)]
 pub(crate) struct Document {
-    plan: Plan,
+    draft: Draft,
     files: Vec<PathBuf>,
-    issues: Vec<Issue>,
     projection: Option<Projection>,
+}
+
+/// An issue beside where it is in the plan, in the forms' words.
+#[derive(Serialize, PartialEq, Debug)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+pub struct PlacedIssue {
+    /// The plan path it is about, such as `accounts[2].locked_until`.
+    pub path: String,
+    /// What is wrong, as the engine says it.
+    pub message: String,
+    /// The domain, the item by its display name and the field's label,
+    /// then the message; the engine's own words where no domain holds it.
+    pub words: String,
+    /// The domain it is about, as a heading says it.
+    pub domain: Option<&'static str>,
+}
+
+/// Display names by id, one map per list, since ids are unique only within
+/// their list.
+#[derive(Serialize, Debug)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+pub struct Names<'a> {
+    /// The household's people.
+    pub people: BTreeMap<&'a str, &'a str>,
+    /// The accounts.
+    pub accounts: BTreeMap<&'a str, &'a str>,
 }
 
 impl Document {
@@ -37,12 +65,12 @@ impl Document {
         let mut files = Vec::new();
         let canonical = |path: &Path| Ok(normal(path));
         let plan = resolve_with_files(normal(Path::new(path)), read, &canonical, &mut files)?;
-        let issues = validate_plan(&plan, tables());
-        let projection = issues.is_empty().then(|| project(&plan, tables()));
+        let draft = Draft::validated(plan, tables());
+        let is_valid = draft.issues().is_empty();
+        let projection = is_valid.then(|| project(&draft.plan, tables()));
         Ok(Self {
-            plan,
+            draft,
             files,
-            issues,
             projection,
         })
     }
@@ -59,10 +87,28 @@ impl Document {
         &self.files
     }
 
-    /// What the full gate found wrong.
+    /// What the full gate found wrong, each where it is.
     #[must_use]
-    pub fn issues(&self) -> &[Issue] {
-        &self.issues
+    pub fn issues(&self) -> Vec<PlacedIssue> {
+        let issues = self.draft.issues().iter();
+        issues
+            .map(|issue| PlacedIssue {
+                path: issue.path.clone(),
+                message: issue.message.clone(),
+                words: issue_words(issue, &self.draft),
+                domain: issue_place(&issue.path).map(|(domain, _)| domain.title()),
+            })
+            .collect()
+    }
+
+    /// The display names of the items a year's actions name.
+    #[must_use]
+    pub fn names(&self) -> Names<'_> {
+        let plan = &self.draft.plan;
+        Names {
+            people: named(&plan.household.people),
+            accounts: named(&plan.accounts),
+        }
     }
 
     /// The projection, where the plan passed the gate.
@@ -85,9 +131,9 @@ impl Document {
     pub fn actions(&self, year: i16) -> Result<ActionsReply, String> {
         let projection = self
             .projection()
-            .ok_or_else(|| issue_listing(&self.issues))?;
+            .ok_or_else(|| issue_listing(self.draft.issues()))?;
         let row = year_row(projection, year)?;
-        let warnings = collect_warnings(&self.plan, tables(), row, None);
+        let warnings = collect_warnings(&self.draft.plan, tables(), row, None);
         Ok(ActionsReply::new(row, warnings))
     }
 
@@ -97,10 +143,14 @@ impl Document {
     ///
     /// Where the plan does not serialize.
     pub fn plan_text(&self) -> Result<String, String> {
-        self.plan
-            .to_toml_string()
-            .map_err(|error| error.to_string())
+        let plan = &self.draft.plan;
+        plan.to_toml_string().map_err(|error| error.to_string())
     }
+}
+
+fn named<T: Item>(items: &[T]) -> BTreeMap<&str, &str> {
+    let items = items.iter();
+    items.map(|item| (item.id(), item.display_name())).collect()
 }
 
 #[cfg(test)]
@@ -108,6 +158,7 @@ mod tests {
     use std::collections::BTreeMap;
 
     use retiretui_client::setup::EXAMPLES;
+    use retiretui_engine::plan::Plan;
 
     use super::*;
 
@@ -142,8 +193,11 @@ mod tests {
         let first = projection.years[0].year;
         assert!(document.summary(true).is_some());
         assert_eq!(document.actions(first).expect("in range").year, first);
+        let names = document.names();
+        assert_eq!(names.accounts.get("roth-ira-sam"), Some(&"Sam's Roth IRA"));
+        assert!(names.people.len() == 1 || names.people.len() == 2);
         let reopened = Plan::from_toml_str(&document.plan_text().expect("serializes"));
-        assert_eq!(reopened.expect("parses"), document.plan);
+        assert_eq!(reopened.expect("parses"), document.draft.plan);
     }
 
     #[test]
@@ -172,7 +226,11 @@ mod tests {
         let text = plan.to_toml_string().expect("serializes");
         let document =
             Document::open("/plan.toml", &mut reader(&[("/plan.toml", &text)])).expect("opens");
-        assert!(!document.issues().is_empty());
+        let issues = document.issues();
+        let issue = issues.first().expect("an issue");
+        assert_eq!(issue.domain, Some("Settings"));
+        assert!(issue.words.starts_with("Settings"), "{}", issue.words);
+        assert!(issue.words.ends_with(&issue.message));
         assert!(document.projection().is_none());
         assert!(document.summary(false).is_none());
         assert!(document.actions(plan.plan.start_year).is_err());
