@@ -8,6 +8,7 @@ members = [
     "crates/retiretui_mcp",
     "crates/retiretui",
     "crates/retiretui_web",
+    "crates/retiretui_wasm",
 ]
 # The browser page builds for wasm32 alone, by its own script and job.
 default-members = [
@@ -17,6 +18,7 @@ default-members = [
     "crates/retiretui_cli",
     "crates/retiretui_mcp",
     "crates/retiretui",
+    "crates/retiretui_wasm",
 ]
 
 [workspace.package]

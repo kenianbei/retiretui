@@ -20,6 +20,7 @@ fn is_plausible_rate(rate: f64) -> bool {
 /// A semantic problem found in a plan.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct Issue {
     /// TOML-style path of the offending item, e.g. `accounts[2].locked_until`.
     pub path: String,

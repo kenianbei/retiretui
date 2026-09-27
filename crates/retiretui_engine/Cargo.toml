@@ -12,11 +12,15 @@ keywords.workspace = true
 categories.workspace = true
 exclude = ["tests"]
 
+[features]
+ts = ["dep:ts-rs"]
+
 [dependencies]
 jiff.workspace = true
 schemars = { workspace = true, optional = true }
 serde.workspace = true
 thiserror = "2.0.21"
+ts-rs = { version = "12.0.1", optional = true }
 toml.workspace = true
 
 [dev-dependencies]

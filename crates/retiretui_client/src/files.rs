@@ -2,6 +2,7 @@
 //! back whole.
 
 use std::fs;
+use std::io;
 use std::path::{Path, PathBuf};
 
 use anyhow::Context;
@@ -123,20 +124,35 @@ pub fn load_plan_with_files(
     let start = store
         .canonical(path)
         .with_context(|| format!("failed to open {}", path.display()))?;
-    let mut read = |file: &Path| {
+    let mut read = |file: &Path| store.read(file).map_err(|error| error.to_string());
+    let canonical = |path: &Path| store.canonical(path);
+    resolve_with_files(start, &mut read, &canonical, files).map_err(anyhow::Error::msg)
+}
+
+/// Resolves the document at `start`, reading each file through `read` and
+/// finding each base beside the file that names it through `canonical`, and
+/// records every file read in `files`.
+///
+/// # Errors
+///
+/// When a file cannot be read or a base found, or the chain does not
+/// resolve.
+pub fn resolve_with_files(
+    start: PathBuf,
+    read: &mut dyn FnMut(&Path) -> Result<String, String>,
+    canonical: &dyn Fn(&Path) -> io::Result<PathBuf>,
+    files: &mut Vec<PathBuf>,
+) -> Result<Plan, String> {
+    let mut reading = |file: &Path| {
         files.push(file.to_owned());
-        store
-            .read(file)
-            .map_err(|error| format!("failed to read {}: {error}", file.display()))
+        read(file).map_err(|error| format!("failed to read {}: {error}", file.display()))
     };
     let mut locate = |referrer: &Path, base: &str| {
         let joined = referrer.parent().unwrap_or(Path::new(".")).join(base);
-        store
-            .canonical(&joined)
-            .map_err(|error| format!("failed to open {}: {error}", joined.display()))
+        canonical(&joined).map_err(|error| format!("failed to open {}: {error}", joined.display()))
     };
-    let text = read(&start).map_err(anyhow::Error::msg)?;
-    resolve::resolve_plan(start, text, &mut read, &mut locate).map_err(anyhow::Error::msg)
+    let text = reading(&start)?;
+    resolve::resolve_plan(start, text, &mut reading, &mut locate)
 }
 
 /// Writes `text` to `path` atomically: staged beside it, then renamed over.

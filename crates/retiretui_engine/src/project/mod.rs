@@ -31,6 +31,7 @@ use crate::plan::{Dollars, Issue, Plan, TreatmentClass};
 
 /// One projected plan: a row per calendar year.
 #[derive(Debug, Clone, PartialEq, Serialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct Projection {
     /// Rows from the plan's start year through the horizon.
     pub years: Vec<YearRow>,
@@ -39,6 +40,7 @@ pub struct Projection {
 /// Taxes assessed for one year.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Serialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct Taxes {
     /// Tax on ordinary income.
     pub ordinary: Dollars,
@@ -67,6 +69,7 @@ pub struct Taxes {
 /// End-of-year balances aggregated by treatment class.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Serialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct ClassTotals {
     /// Taxable: brokerage and cash.
     pub taxable: Dollars,
@@ -103,6 +106,7 @@ impl ClassTotals {
 /// How a year's contribution into an account came to be what it is.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum ContributionNote {
     /// An item paid a share of an income's gross, at this year's rate.
@@ -149,6 +153,7 @@ pub enum ContributionNote {
 /// amounts; what a user following the plan would actually do.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Action {
     /// A scheduled transfer that fired (lock-deferred ones in their
@@ -207,6 +212,7 @@ pub enum Action {
 /// One projected calendar year, in nominal dollars.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct YearRow {
     /// The calendar year.
     pub year: i16,
@@ -264,6 +270,7 @@ impl YearRow {
 /// Headline figures aggregated over a whole projection.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct Summary {
     /// Net worth at the horizon.
     pub final_net_worth: Dollars,

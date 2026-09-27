@@ -33,6 +33,9 @@ jobs:
       - name: Tests
         run: cargo test --all-features --locked
 
+      - name: The TypeScript bindings match the Rust types
+        run: git diff --exit-code crates/retiretui_wasm/bindings
+
       - name: Docs
         run: cargo doc --all-features --no-deps
         env:
@@ -56,7 +59,7 @@ jobs:
       - name: Clippy for the browser page
         run: >
           cargo clippy -p retiretui_client -p retiretui_tui -p retiretui_web
-          --target wasm32-unknown-unknown -- -D warnings
+          -p retiretui_wasm --target wasm32-unknown-unknown -- -D warnings
 
       - name: The client stays free of every interface's own dependencies
         run: |
@@ -73,6 +76,18 @@ jobs:
           refuses retiretui_cli 'bevy|plurimus|rmcp|tokio'
           refuses retiretui_mcp 'bevy|plurimus'
           refuses retiretui_tui 'crossterm|rmcp|etcetera'
+          refuses retiretui_wasm 'bevy|plurimus|clap|rmcp|tokio|etcetera'
+
+      - name: Install wasm-pack
+        run: cargo install wasm-pack --version 0.13.1 --locked
+
+      - name: The bindings answer from JavaScript
+        run: |
+          wasm-pack build --target nodejs --dev --out-dir pkg crates/retiretui_wasm
+          node crates/retiretui_wasm/smoke.mjs
+
+      - name: The bindings type-check
+        run: npx -y -p typescript@5.9.3 tsc -p crates/retiretui_wasm
 
   msrv:
     runs-on: ubuntu-latest

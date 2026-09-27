@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "noEmit": true,
+    "strict": true,
+    "target": "es2022",
+    "lib": ["esnext", "dom"],
+    "module": "esnext",
+    "moduleResolution": "bundler"
+  },
+  "files": ["pkg/retiretui_wasm.d.ts", "bindings/index.ts"]
+}

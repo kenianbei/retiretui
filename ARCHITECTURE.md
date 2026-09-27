@@ -114,15 +114,16 @@ depends on UI.
   and field it is about. The form model - each editing domain by an id of its
   own, its fields in a form's words, what edits each and when the item has a use
   for it, the choices a closed set or the plan's own ids offer. The
-  load-and-validate gate, and every plan file read, written, listed and stamped
-  through one store - the disk, or files kept as keys of a browser's storage,
-  each file's count of writes its stamp. The document a shell holds open, its
-  projection, and the draft every edit lands in with its whole-plan history. A
-  first plan from the new-plan answers or an example; a statement's earnings
-  recorded on a person; the searches the tools and the overview share; and the
-  shapes a search or a year's actions are replied in as data. Where there is a
-  machine beneath it, what that machine supplies: the user's own tax tables,
-  market history and directories.
+  load-and-validate gate, a scenario's base chain followed over whatever reads
+  its files, and every plan file read, written, listed and stamped through one
+  store - the disk, or files kept as keys of a browser's storage, each file's
+  count of writes its stamp. The document a shell holds open, its projection,
+  and the draft every edit lands in with its whole-plan history. A first plan
+  from the new-plan answers or an example; a statement's earnings recorded on a
+  person; the searches the tools and the overview share; and the shapes a search
+  or a year's actions are replied in as data. Where there is a machine beneath
+  it, what that machine supplies: the user's own tax tables, market history and
+  directories.
 - `retiretui_tui` - the interactive planner described under `tui` below, as a
   library over the client and above whatever backend draws it, mapping each
   editing domain to its page. It runs each search beside the frames: on a thread
@@ -306,6 +307,15 @@ depends on UI.
   page's table holds - through the browser's file dialog and a download link, an
   upload asking before it replaces a file of the same name. Quit starts the page
   over, on the document last open.
+- `retiretui_wasm` - the engine and client for a JavaScript page, unpublished: a
+  document opened through whatever reads the page's files - its base chain
+  resolved as every surface resolves it, its issues, and, where it has none, its
+  projection, summary, a year's actions and its canonical text - and, over a
+  plan's text alone so that a worker can run them, the gate, the conversion and
+  claim searches, the market runs and the example plans, each answered in the
+  shapes the command line's JSON and the MCP server reply in. Values cross as
+  plain objects, typed by TypeScript generated from the Rust types; the build
+  fails where the two have drifted.
 
 Plans express timing through a closed trigger vocabulary - a fixed date, a
 person's age, or a reference to a named event or income source with a whole year

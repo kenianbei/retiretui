@@ -16,6 +16,7 @@ bevy = ["dep:bevy_ecs"]
 clap = ["dep:clap"]
 native = ["dep:etcetera"]
 testing = []
+ts = ["dep:ts-rs", "retiretui_engine/ts"]
 
 [dependencies]
 anyhow = "1.0.104"
@@ -27,6 +28,7 @@ retiretui_engine = { workspace = true, features = ["schemars"] }
 schemars.workspace = true
 serde.workspace = true
 toml.workspace = true
+ts-rs = { version = "12.0.1", optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 jiff = { workspace = true, features = ["js"] }
