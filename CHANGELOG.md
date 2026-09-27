@@ -6,7 +6,24 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- A web app for phones and desktop browsers, published to GitHub Pages at the
+  site's root with each release. It keeps its plans in the browser's own
+  storage, apart from the canvas page's, and never sends them anywhere. It
+  offers the example plans or an upload to start from, reopens the plan last
+  open, and downloads the open plan. Its Overview shows whether the money
+  lasts - its headline figures in today's or nominal dollars, and the share of a
+  thousand random markets it survives, run off the page's thread - and what to
+  do this year, said as the terminal says it. A plan with issues lists each by
+  the page, item and field it is about. The other pages are named but not yet
+  built. Light or dark follows the system, and navigation is a bottom bar on a
+  phone and a sidebar on a wider screen.
+
 ### Changed
+
+- The canvas page, the terminal planner drawn in a browser, moves from the Pages
+  site's root to `/ratzilla/`.
 
 - What every interface shares over the engine is a crate of its own,
   `retiretui_client`: the words a plan is said in, the form model with its
