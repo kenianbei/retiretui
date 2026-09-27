@@ -55,8 +55,17 @@ jobs:
 
       - name: Clippy for the browser page
         run: >
-          cargo clippy -p retiretui_tui -p retiretui_web
+          cargo clippy -p retiretui_client -p retiretui_tui -p retiretui_web
           --target wasm32-unknown-unknown -- -D warnings
+
+      - name: The client stays free of every interface's own dependencies
+        run: |
+          for target in x86_64-unknown-linux-gnu wasm32-unknown-unknown; do
+            if cargo tree -p retiretui_client -e normal --target "$target" \
+              | grep -E 'bevy|plurimus|clap|rmcp|tokio|etcetera'; then
+              exit 1
+            fi
+          done
 
   msrv:
     runs-on: ubuntu-latest
