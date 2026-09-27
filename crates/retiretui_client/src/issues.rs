@@ -3,6 +3,7 @@
 
 use std::cmp::Reverse;
 
+use retiretui_engine::plan::Issue;
 use toml::{Table, Value};
 
 use crate::codec;
@@ -155,4 +156,32 @@ pub fn field_issue<'a>(
             && located.is_against(spec, item);
         is_here.then_some(*message)
     })
+}
+
+/// One issue per line, in validation order.
+#[must_use]
+pub fn issue_listing(issues: &[Issue]) -> String {
+    let listing: Vec<String> = issues.iter().map(ToString::to_string).collect();
+    listing.join("\n")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn an_issue_path_reads_back_as_its_domain_and_item() {
+        let place = |path| issue_place(path);
+        assert_eq!(
+            place("accounts[1].balance"),
+            Some((DomainId::Accounts, Some(1)))
+        );
+        assert_eq!(
+            place("household.people[0].birth"),
+            Some((DomainId::People, Some(0))),
+            "the longest root wins"
+        );
+        assert_eq!(place("plan.inflation"), Some((DomainId::Settings, None)));
+        assert_eq!(place("nowhere.at_all"), None);
+    }
 }

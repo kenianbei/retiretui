@@ -265,3 +265,16 @@ pub fn is_stale(store: &dyn Store, files: &[(PathBuf, Option<Stamp>)]) -> bool {
         .iter()
         .any(|(path, recorded)| store.stamp(path) != *recorded)
 }
+
+/// The `year` row; an out-of-range year errors with the valid range.
+///
+/// # Errors
+///
+/// Where the plan does not reach `year`.
+pub fn year_row(projection: &Projection, year: i16) -> Result<&YearRow, String> {
+    projection.row(year).ok_or_else(|| {
+        let first = projection.years.first().map_or(year, |row| row.year);
+        let last = projection.years.last().map_or(year, |row| row.year);
+        format!("{year} is outside the projection; the plan covers {first}-{last}")
+    })
+}

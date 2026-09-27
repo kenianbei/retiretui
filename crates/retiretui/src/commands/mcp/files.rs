@@ -127,7 +127,7 @@ impl PlanServer {
         }): Parameters<ImportEarningsArgs>,
     ) -> Result<Json<WriteReply>, String> {
         let text = self.store.read(&path)?;
-        let (plan, note) = crate::commands::adopt_statement(&text, &person, &statement)
+        let (plan, note) = retiretui_client::statement::adopt_statement(&text, &person, &statement)
             .map_err(|reason| format!("{path}: {reason}"))?;
         let toml = plan.to_toml_string().map_err(|err| err.to_string())?;
         let reply = self.store_document(&path, &toml)?;

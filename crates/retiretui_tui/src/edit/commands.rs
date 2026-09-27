@@ -5,7 +5,7 @@ use bevy_ecs::system::SystemParam;
 use bevy_input_focus::InputFocus;
 use plurimus::widgets::ActiveDescendant;
 use retiretui_engine::plan::Plan;
-use retiretui_engine::statement::{self, Statement};
+use retiretui_engine::statement::Statement;
 use toml::Table;
 
 use super::codec::to_text;
@@ -181,10 +181,7 @@ fn adopt(
     let xml = store
         .read(path)
         .map_err(|error| format!("{}: {error}", path.display()))?;
-    let statement = statement::parse(&xml).map_err(|error| error.to_string())?;
-    plan.adopt_earnings(person, &statement)
-        .map_err(|issue| issue.message)?;
-    Ok(statement)
+    retiretui_client::statement::record(plan, person, &xml)
 }
 
 /// The field the domain knows `item` by, which is what a deletion names

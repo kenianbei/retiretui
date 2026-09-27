@@ -77,7 +77,7 @@ impl PlanServer {
         }
         Err(format!(
             "{path} is invalid:\n{}",
-            super::issue_listing(&issues)
+            retiretui_client::issues::issue_listing(&issues)
         ))
     }
 }

@@ -5,8 +5,8 @@ use schemars::JsonSchema;
 use serde::Deserialize;
 
 use super::PlanServer;
-use crate::commands::markets::{HistoricalReply, MonteCarloReply};
-use crate::commands::run_refusal;
+use retiretui_client::replies::{HistoricalReply, MonteCarloReply};
+use retiretui_client::searches::run_refusal;
 
 #[derive(Deserialize, JsonSchema)]
 pub struct MarketToolArgs {
