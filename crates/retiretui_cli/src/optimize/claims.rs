@@ -7,11 +7,11 @@ use retiretui_client::store::DiskStore;
 use retiretui_engine::market::Progress;
 use retiretui_engine::optimize::{ClaimSearch, claims_overlay, optimize_claims};
 
-use crate::commands::project::OutputFormat;
+use crate::project::OutputFormat;
 use retiretui_client::table::summary_table;
 
 /// Arguments of `optimize claims`.
-#[derive(Args)]
+#[derive(Args, Debug)]
 pub struct ClaimArgs {
     /// Path to the plan or scenario TOML file.
     pub plan: PathBuf,
@@ -35,8 +35,8 @@ pub struct ClaimArgs {
 }
 
 pub fn run(args: &ClaimArgs) -> anyhow::Result<()> {
-    let tables = crate::commands::load_tables(&args.tax_dir)?;
-    let plan = crate::commands::load_validated_plan(&args.plan, &tables)?;
+    let tables = retiretui_client::environment::load_tables(&args.tax_dir)?;
+    let plan = crate::load_validated_plan(&args.plan, &tables)?;
     let search = optimize_claims(&plan, &tables, &args.income, &[], &Progress::default())
         .map_err(|error| anyhow::Error::msg(run_refusal(error)))?;
     let deflated = !args.nominal;

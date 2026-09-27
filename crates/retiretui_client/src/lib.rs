@@ -6,6 +6,8 @@
 pub mod actions;
 pub mod codec;
 pub mod draft;
+#[cfg(feature = "native")]
+pub mod environment;
 pub mod files;
 pub mod forms;
 pub mod issues;

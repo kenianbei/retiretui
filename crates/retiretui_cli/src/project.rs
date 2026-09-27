@@ -7,7 +7,7 @@ use retiretui_engine::project::{Projection, YearRow, project};
 use retiretui_client::table::{Column, align, display_dollars, year_figures};
 
 /// Arguments of the `project` subcommand.
-#[derive(Args)]
+#[derive(Args, Debug)]
 pub struct ProjectArgs {
     /// Path to the plan TOML file.
     pub plan: PathBuf,
@@ -27,7 +27,7 @@ pub struct ProjectArgs {
 }
 
 /// How `project` prints the ledger.
-#[derive(Clone, Copy, PartialEq, Eq, ValueEnum)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
 pub enum OutputFormat {
     /// A year-by-year text table.
     Table,
@@ -36,7 +36,7 @@ pub enum OutputFormat {
 }
 
 pub fn run(args: &ProjectArgs) -> anyhow::Result<()> {
-    let tables = super::load_tables(&args.tax_dir)?;
+    let tables = retiretui_client::environment::load_tables(&args.tax_dir)?;
     let plan = super::load_validated_plan(&args.plan, &tables)?;
     let projection = project(&plan, &tables);
     match args.format {

@@ -11,7 +11,7 @@ use super::project::OutputFormat;
 use retiretui_client::actions::{collect_warnings, sentence};
 
 /// Arguments of the `actions` subcommand.
-#[derive(Args)]
+#[derive(Args, Debug)]
 pub struct ActionsArgs {
     /// Path to the plan TOML file.
     pub plan: PathBuf,
@@ -27,7 +27,7 @@ pub struct ActionsArgs {
 }
 
 pub fn run(args: &ActionsArgs) -> anyhow::Result<()> {
-    let tables = super::load_tables(&args.tax_dir)?;
+    let tables = retiretui_client::environment::load_tables(&args.tax_dir)?;
     let plan = super::load_validated_plan(&args.plan, &tables)?;
     let projection = project(&plan, &tables);
     let year = args.year.unwrap_or_else(|| Today::now().0);

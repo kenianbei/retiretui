@@ -9,7 +9,7 @@ use retiretui_client::metric::Metric;
 use retiretui_client::table::{align, display_dollars, summary_table};
 
 /// Arguments of the `compare` subcommand.
-#[derive(Args)]
+#[derive(Args, Debug)]
 pub struct CompareArgs {
     /// Paths to two or more plan or scenario TOML files.
     #[arg(num_args = 2..)]
@@ -49,7 +49,7 @@ impl ComparedPlan {
 }
 
 pub fn run(args: &CompareArgs) -> anyhow::Result<()> {
-    let tables = super::load_tables(&args.tax_dir)?;
+    let tables = retiretui_client::environment::load_tables(&args.tax_dir)?;
     let mut compared = Vec::with_capacity(args.plans.len());
     for path in &args.plans {
         let plan = super::load_validated_plan(path, &tables)?;

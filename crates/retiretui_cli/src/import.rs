@@ -6,7 +6,7 @@ use clap::Args;
 use retiretui_engine::project::validate_plan;
 
 /// Arguments of the `import-earnings` subcommand.
-#[derive(Args)]
+#[derive(Args, Debug)]
 pub struct ImportEarningsArgs {
     /// Path to the plan TOML file; rewritten in canonical form.
     pub plan: PathBuf,
@@ -30,7 +30,7 @@ pub fn run(args: &ImportEarningsArgs) -> anyhow::Result<()> {
     let (text, xml) = (read(&args.plan)?, read(&args.statement)?);
     let (plan, note) = retiretui_client::statement::adopt_statement(&text, &args.person, &xml)
         .map_err(|reason| anyhow::anyhow!("{}: {reason}", args.plan.display()))?;
-    let tables = super::load_tables(&args.tax_dir)?;
+    let tables = retiretui_client::environment::load_tables(&args.tax_dir)?;
     let issues = validate_plan(&plan, &tables);
     if !issues.is_empty() {
         anyhow::bail!(

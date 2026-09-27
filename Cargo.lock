@@ -3193,21 +3193,24 @@ name = "retiretui"
 version = "0.2.0"
 dependencies = [
  "anyhow",
- "bevy_app",
  "clap",
- "etcetera",
- "insta",
- "jiff",
- "plurimus",
+ "retiretui_cli",
+ "retiretui_engine",
+ "retiretui_mcp",
+ "retiretui_tui",
+ "serde_json",
+]
+
+[[package]]
+name = "retiretui_cli"
+version = "0.2.0"
+dependencies = [
+ "anyhow",
+ "clap",
  "retiretui_client",
  "retiretui_engine",
- "retiretui_tui",
- "rmcp",
- "schemars",
  "serde",
  "serde_json",
- "tokio",
- "toml",
 ]
 
 [[package]]
@@ -3217,6 +3220,7 @@ dependencies = [
  "anyhow",
  "bevy_ecs",
  "clap",
+ "etcetera",
  "jiff",
  "retiretui_engine",
  "schemars",
@@ -3237,6 +3241,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "retiretui_mcp"
+version = "0.2.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "retiretui_client",
+ "retiretui_engine",
+ "rmcp",
+ "schemars",
+ "serde",
+ "tokio",
+ "toml",
+]
+
+[[package]]
 name = "retiretui_tui"
 version = "0.2.0"
 dependencies = [
@@ -3249,6 +3268,7 @@ dependencies = [
  "bevy_time",
  "bevy_ui",
  "bevy_window",
+ "clap",
  "insta",
  "jiff",
  "nucleo-matcher",

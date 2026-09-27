@@ -1,0 +1,26 @@
+[package]
+name = "retiretui_mcp"
+description = "RetireTui's Model Context Protocol server: plan files served to AI agents over stdio. Internal; no stable API."
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+readme = "README.md"
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+anyhow = "1.0.104"
+clap = { version = "4.6.7", features = ["derive"] }
+retiretui_client = { workspace = true, features = ["native"] }
+retiretui_engine = { workspace = true, features = ["schemars"] }
+rmcp = { version = "3.4.1", features = ["server", "macros", "transport-io", "schemars"] }
+schemars.workspace = true
+serde.workspace = true
+tokio = { version = "1.53.1", features = ["rt"] }
+toml.workspace = true
+
+[lints]
+workspace = true

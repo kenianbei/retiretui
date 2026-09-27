@@ -1,26 +1,22 @@
 [package]
-name = "retiretui"
-description = "Retirement planning application for the terminal."
+name = "retiretui_cli"
+description = "RetireTui's command line: plans validated, projected, compared, searched and run through markets. Internal; no stable API."
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
-readme.workspace = true
+readme = "README.md"
 keywords.workspace = true
 categories.workspace = true
-exclude = ["tests"]
 
 [dependencies]
 anyhow = "1.0.104"
 clap = { version = "4.6.7", features = ["derive"] }
-retiretui_cli.workspace = true
-retiretui_mcp.workspace = true
-retiretui_tui = { workspace = true, features = ["terminal"] }
-
-[dev-dependencies]
+retiretui_client = { workspace = true, features = ["clap", "native"] }
 retiretui_engine.workspace = true
+serde.workspace = true
 serde_json.workspace = true
 
 [lints]

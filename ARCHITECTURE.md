@@ -120,7 +120,9 @@ depends on UI.
   projection, and the draft every edit lands in with its whole-plan history. A
   first plan from the new-plan answers or an example; a statement's earnings
   recorded on a person; the searches the tools and the overview share; and the
-  shapes a search or a year's actions are replied in as data.
+  shapes a search or a year's actions are replied in as data. Where there is a
+  machine beneath it, what that machine supplies: the user's own tax tables,
+  market history and directories.
 - `retiretui_tui` - the interactive planner described under `tui` below, as a
   library over the client and above whatever backend draws it, mapping each
   editing domain to its page. It runs each search beside the frames: on a thread
@@ -128,78 +130,82 @@ depends on UI.
   that shows it under way. A launch names what the session opens, its store and
   settings file, whether the screen it is drawn on is light, and, for a page,
   that the document last open is reopened, the directory no picker climbs above,
-  and what hands files across the page's edge.
-- `retiretui` - the single user-facing binary; surfaces are clap subcommands.
-  The engine's resolver follows scenario base chains - reading files and
-  resolving paths is surface policy: relative to the referring file on the CLI,
-  contained in the served directory under MCP. `validate` runs the engine's
-  validation contract; `project` renders the ledger as a text table or as JSON;
-  `actions` prints one year's recorded to-dos with warnings, defaulting to the
-  current calendar year; `compare` projects two or more plans side by side - a
-  summary row per plan, one metric year by year, or JSON; `optimize` sweeps or
-  targets a tax bracket and writes the searched conversion ladder as a scenario
-  overlay, or ranks every claim age for the household's computed Social Security
-  benefits and writes the best; `monte-carlo` and `historical` run the plan
-  through random markets or every historical start year and report the share it
-  survives, their settings the plan's and overridable by flag; `import-earnings`
-  records a statement's earnings on a person and writes the plan back
-  canonically, the one CLI command that rewrites a plan file; `tui` opens the
-  interactive planner in the terminal - a plurimus (Bevy-in-the-terminal) app
-  shaped like a desktop one, driven by keyboard or pointer: a row of bordered
-  tabs naming the five places to be, the page one of them shows, and a row
-  naming the keys in reach. A tab is selected by its own digit, by the pointer,
-  or by stepping the row; three open a page of their own and the last two each
-  hold a group of pages - the tools that act on the plan as a whole, and the
-  plan's editing domains - a sidebar naming the group's pages beside whichever
-  is on show: the sidebar's cursor and the page are one fact, whichever of them
-  moves, and a grouped tab comes back to the page last shown through it. It
-  opens on a plan, a scenario, or a directory - the working directory by
-  default - and holds one document at a time: a command opens another or saves
-  the draft under another name, each through one file picker - a path field over
-  the directory it names, opened on the workspace, the directory beside the
-  document or the one launched on while there is none, and listing that
-  directory's files of the kind wanted and every directory beneath or above it,
-  so a plan anywhere is reached by typing or completing its path - which takes a
-  name no file has as a new one wherever a file is to be written. Without a
-  document there is nothing to view, so the four tabs with a page behind them
-  are drawn dead and the form a new plan starts from stands over the empty
-  shell: one of the example plans, or a household's filing status, where it is
-  in life, and each person's name, birth year, retirement age, when they started
-  working, salary and Social Security - which anyone may leave for the engine to
-  compute, from a career at that salary, a retiree's the last they earned.
-  Creating it builds the plan the example or the answers describe, names it
-  through the picker that saves under another name, and opens it, so nothing
-  reaches disk until it is named and everything after the first answers is
-  edited in the plan's own domains. The same form stands over an open document
-  when a new plan is asked for, the document staying open beneath it and taking
-  no key while it does; alone, it lets the shell's own keys through. Each
-  command's scope states whether it runs where no page is shown - what finds a
-  document, ends the session, dresses the shell, or moves the keyboard between
-  panes does, and the rest refuse. A page is a view of the projection (an
-  overview answering what the plan's owner asks of it - whether the money lasts
-  and how surely, when the big things happen, what needs attention, what to do
-  in the year, how the money is split between tax treatments, and what the
-  optimizers find better, searched in the background while it is shown - each
-  answer leading to the page its detail lives on; a year ledger - the plan's own
-  projection, or a market run opened from a market tool until `esc` or an edit
-  returns it - over the cursor year's flows, each account from its open to its
-  close with every flow in and out named by where it came from or went, beside
-  its income and tax - the overview and the ledger sharing one year cursor,
-  today until moved and always within the plan's years, which each follows when
-  the other moves it and the charts also set under a click and read out under
-  the pointer), one of the plan's editing domains, or one of what runs over it:
-  the document compared with other workspace files, which follow the disk as the
-  document does - each plan's figures, its success through random markets, and
-  what it changes of the one chosen as the baseline, beside the plans charted or
-  tabled year by year, whole or as their difference from the baseline, ⏎ on one
-  taking it into the document's place with the others kept - and the tools, each
-  panes of its own over a line of help and a search beside the frames that runs
-  by itself whenever what it would search changes, a newer search stopping one
-  under way, taking instead what the overview has already found over the same
-  plan, its options ranked best first in one shared table under a row for the
-  plan as it stands - the conversion search's beside what it runs under, read
-  out and edited as a domain's one item is, and over the highlighted ladder year
-  by year, the claim search's beside a table of each person's record, income and
+  and what hands files across the page's edge. Behind a feature, it holds the
+  launcher that runs it in a terminal.
+- `retiretui` - the single user-facing binary, composing each interface's clap
+  subcommands into one command: the command line's from `retiretui_cli`, `tui`
+  from `retiretui_tui`'s terminal launcher, and `mcp` from `retiretui_mcp`; each
+  is a library of its own over the client. The engine's resolver follows
+  scenario base chains - reading files and resolving paths is surface policy:
+  relative to the referring file on the CLI, contained in the served directory
+  under MCP. `validate` runs the engine's validation contract; `project` renders
+  the ledger as a text table or as JSON; `actions` prints one year's recorded
+  to-dos with warnings, defaulting to the current calendar year; `compare`
+  projects two or more plans side by side - a summary row per plan, one metric
+  year by year, or JSON; `optimize` sweeps or targets a tax bracket and writes
+  the searched conversion ladder as a scenario overlay, or ranks every claim age
+  for the household's computed Social Security benefits and writes the best;
+  `monte-carlo` and `historical` run the plan through random markets or every
+  historical start year and report the share it survives, their settings the
+  plan's and overridable by flag; `import-earnings` records a statement's
+  earnings on a person and writes the plan back canonically, the one CLI command
+  that rewrites a plan file; `tui` opens the interactive planner in the
+  terminal - a plurimus (Bevy-in-the-terminal) app shaped like a desktop one,
+  driven by keyboard or pointer: a row of bordered tabs naming the five places
+  to be, the page one of them shows, and a row naming the keys in reach. A tab
+  is selected by its own digit, by the pointer, or by stepping the row; three
+  open a page of their own and the last two each hold a group of pages - the
+  tools that act on the plan as a whole, and the plan's editing domains - a
+  sidebar naming the group's pages beside whichever is on show: the sidebar's
+  cursor and the page are one fact, whichever of them moves, and a grouped tab
+  comes back to the page last shown through it. It opens on a plan, a scenario,
+  or a directory - the working directory by default - and holds one document at
+  a time: a command opens another or saves the draft under another name, each
+  through one file picker - a path field over the directory it names, opened on
+  the workspace, the directory beside the document or the one launched on while
+  there is none, and listing that directory's files of the kind wanted and every
+  directory beneath or above it, so a plan anywhere is reached by typing or
+  completing its path - which takes a name no file has as a new one wherever a
+  file is to be written. Without a document there is nothing to view, so the
+  four tabs with a page behind them are drawn dead and the form a new plan
+  starts from stands over the empty shell: one of the example plans, or a
+  household's filing status, where it is in life, and each person's name, birth
+  year, retirement age, when they started working, salary and Social Security -
+  which anyone may leave for the engine to compute, from a career at that
+  salary, a retiree's the last they earned. Creating it builds the plan the
+  example or the answers describe, names it through the picker that saves under
+  another name, and opens it, so nothing reaches disk until it is named and
+  everything after the first answers is edited in the plan's own domains. The
+  same form stands over an open document when a new plan is asked for, the
+  document staying open beneath it and taking no key while it does; alone, it
+  lets the shell's own keys through. Each command's scope states whether it runs
+  where no page is shown - what finds a document, ends the session, dresses the
+  shell, or moves the keyboard between panes does, and the rest refuse. A page
+  is a view of the projection (an overview answering what the plan's owner asks
+  of it - whether the money lasts and how surely, when the big things happen,
+  what needs attention, what to do in the year, how the money is split between
+  tax treatments, and what the optimizers find better, searched in the
+  background while it is shown - each answer leading to the page its detail
+  lives on; a year ledger - the plan's own projection, or a market run opened
+  from a market tool until `esc` or an edit returns it - over the cursor year's
+  flows, each account from its open to its close with every flow in and out
+  named by where it came from or went, beside its income and tax - the overview
+  and the ledger sharing one year cursor, today until moved and always within
+  the plan's years, which each follows when the other moves it and the charts
+  also set under a click and read out under the pointer), one of the plan's
+  editing domains, or one of what runs over it: the document compared with other
+  workspace files, which follow the disk as the document does - each plan's
+  figures, its success through random markets, and what it changes of the one
+  chosen as the baseline, beside the plans charted or tabled year by year, whole
+  or as their difference from the baseline, ⏎ on one taking it into the
+  document's place with the others kept - and the tools, each panes of its own
+  over a line of help and a search beside the frames that runs by itself
+  whenever what it would search changes, a newer search stopping one under way,
+  taking instead what the overview has already found over the same plan, its
+  options ranked best first in one shared table under a row for the plan as it
+  stands - the conversion search's beside what it runs under, read out and
+  edited as a domain's one item is, and over the highlighted ladder year by
+  year, the claim search's beside a table of each person's record, income and
   estimated benefit, ⏎ on a person offering what can be done for them, and the
   claims held out of the search among what it watches, and the market tools'
   runs - the plan through random markets, or from every historical start year

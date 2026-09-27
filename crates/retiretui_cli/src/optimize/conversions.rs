@@ -15,11 +15,11 @@ use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::Plan;
 use retiretui_engine::project::Projection;
 
-use crate::commands::project::OutputFormat;
+use crate::project::OutputFormat;
 use retiretui_client::table::{align, display_dollars, summary_table};
 
 /// Arguments of the `optimize` subcommand.
-#[derive(Args)]
+#[derive(Args, Debug)]
 pub struct OptimizeArgs {
     /// Path to the plan or scenario TOML file.
     pub plan: PathBuf,
@@ -51,8 +51,8 @@ pub struct OptimizeArgs {
 }
 
 pub fn run(args: &OptimizeArgs) -> anyhow::Result<()> {
-    let tables = crate::commands::load_tables(&args.tax_dir)?;
-    let plan = crate::commands::load_validated_plan(&args.plan, &tables)?;
+    let tables = retiretui_client::environment::load_tables(&args.tax_dir)?;
+    let plan = crate::load_validated_plan(&args.plan, &tables)?;
     match args.bracket {
         Some(percent) => run_single(&plan, &tables, percent / 100.0, args),
         None => run_sweep(&plan, &tables, args),
