@@ -16,9 +16,9 @@ use crate::codec::left_of;
 /// shape, whichever rows it leaves on show holding the rest.
 const INVESTED: &str = "invested";
 /// The investing choice that earns one fixed return.
-pub const FIXED: &str = "fixed";
+pub(crate) const FIXED: &str = "fixed";
 /// The investing choice that holds one mix of classes.
-pub const MIX: &str = "mix";
+pub(crate) const MIX: &str = "mix";
 /// The investing choice that steps between mixes as triggers fire.
 pub const GLIDE: &str = "glide";
 

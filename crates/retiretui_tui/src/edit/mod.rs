@@ -2,8 +2,6 @@
 //! it.
 
 mod build;
-use retiretui_client::codec;
-use retiretui_client::forms::{applies, cells, offers};
 mod commands;
 mod details;
 mod domain;
@@ -22,6 +20,9 @@ mod table;
 pub(crate) mod tests;
 mod trigger;
 mod widths;
+
+use retiretui_client::codec;
+use retiretui_client::forms::{applies, cells, offers};
 
 use bevy_app::{App, Startup, Update};
 use bevy_ecs::prelude::{Commands, Entity, IntoScheduleConfigs, Query, With, World};
@@ -50,15 +51,10 @@ pub use table::{Row, Turn, table_bundle};
 use super::session::Projected;
 use super::watch::Watch;
 
-const SCREENS: [Ops; DOMAINS.len()] = {
-    let mut screens = [Ops::domain(DOMAINS[0]); DOMAINS.len()];
-    let mut at = 1;
-    while at < DOMAINS.len() {
-        screens[at] = Ops::domain(DOMAINS[at]);
-        at += 1;
-    }
-    screens
-};
+/// Every domain's form, on the page that shows it.
+fn screens() -> impl Iterator<Item = Ops> {
+    DOMAINS.iter().map(|form| Ops::domain(*form))
+}
 
 /// The session settles on its item and fills the form before anything
 /// reads what that wrote: a trigger's slots follow the kind filled in, and
@@ -90,7 +86,7 @@ fn spawn_screens(bodies: Query<Entity, With<Body>>, mut commands: Commands) {
     let Ok(body) = bodies.single() else {
         return;
     };
-    for &ops in &SCREENS {
+    for ops in screens() {
         screen::spawn_screen(&mut commands, body, ops);
     }
 }
@@ -98,23 +94,21 @@ fn spawn_screens(bodies: Query<Entity, With<Body>>, mut commands: Commands) {
 /// Whether `page` is a table of items, which is what add and delete act
 /// on.
 pub fn lists_items(page: Page) -> bool {
-    SCREENS
-        .iter()
-        .any(|ops| ops.surface == Some(page) && ops.list.is_some())
+    screens().any(|ops| ops.surface == Some(page) && ops.list.is_some())
 }
 
 /// How many items `page`'s domain holds; `None` for a page that lists
 /// none.
 pub fn item_count(page: Page, plan: &Plan) -> Option<usize> {
-    let list = SCREENS.iter().find(|ops| ops.surface == Some(page))?.list?;
+    let list = screens().find(|ops| ops.surface == Some(page))?.list?;
     Some((list.count)(plan))
 }
 
 const _: () = {
     let mut at = 0;
-    while at < SCREENS.len() {
+    while at < DOMAINS.len() {
         assert!(
-            build::help_fits(SCREENS[at]),
+            build::help_fits(DOMAINS[at].fields),
             "a field's help is missing or too long"
         );
         at += 1;

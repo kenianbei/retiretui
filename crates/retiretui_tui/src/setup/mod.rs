@@ -34,7 +34,7 @@ const CREATE: &str = "Create";
 /// The form stands over whatever the shell shows, so it is of no page.
 const OPS: Ops = Ops::tool::<SetupAnswers>(None, TITLE, FIELDS).acting([CANCEL, CREATE], act);
 const _: () = assert!(
-    edit::help_fits(OPS),
+    edit::help_fits(OPS.form.fields),
     "a field's help is missing or too long"
 );
 

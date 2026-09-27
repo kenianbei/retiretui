@@ -50,7 +50,7 @@ pub const fn draw(draw: Draw) -> &'static str {
 
 /// Who pays a contribution, as a person says it.
 #[must_use]
-pub const fn payer(payer: Payer) -> &'static str {
+pub(crate) const fn payer(payer: Payer) -> &'static str {
     match payer {
         Payer::Employee => "Employee",
         Payer::Employer => "Employer",
@@ -60,7 +60,7 @@ pub const fn payer(payer: Payer) -> &'static str {
 
 /// An income kind as a person says it.
 #[must_use]
-pub const fn income_kind(kind: IncomeKind) -> &'static str {
+pub(crate) const fn income_kind(kind: IncomeKind) -> &'static str {
     match kind {
         IncomeKind::Salary => "Salary",
         IncomeKind::Pension => "Pension",
@@ -74,7 +74,7 @@ pub const fn income_kind(kind: IncomeKind) -> &'static str {
 
 /// A filing status as a person says it.
 #[must_use]
-pub const fn filing_status(status: FilingStatus) -> &'static str {
+pub(crate) const fn filing_status(status: FilingStatus) -> &'static str {
     match status {
         FilingStatus::Single => "Single",
         FilingStatus::MarriedJoint => "Married filing jointly",
@@ -153,13 +153,13 @@ const RATE_GRAIN: f64 = 1e6;
 
 /// A percent, with or without its sign, as the rate the file keeps.
 #[must_use]
-pub fn parse_rate(text: &str) -> Option<f64> {
+pub(crate) fn parse_rate(text: &str) -> Option<f64> {
     let percent: f64 = text.trim().trim_end_matches('%').trim().parse().ok()?;
     Some((percent / PERCENT * RATE_GRAIN).round() / RATE_GRAIN)
 }
 
 /// What an amount growing with inflation is called.
-pub const FOLLOWS_INFLATION: &str = "Inflation";
+pub(crate) const FOLLOWS_INFLATION: &str = "Inflation";
 const HELD_FIXED: &str = "Fixed";
 
 /// How an amount grows. Unstated is the schema's default, which follows
@@ -176,7 +176,7 @@ pub fn growth(value: Option<&Value>) -> String {
 }
 
 /// What [`growth`] writes, or the file's own `true` and `false`.
-pub fn parse_growth(text: &str) -> Option<Value> {
+pub(crate) fn parse_growth(text: &str) -> Option<Value> {
     let word = text.trim().to_ascii_lowercase();
     match word.as_str() {
         "" => None,

@@ -5,7 +5,8 @@ use bevy_app::{App, Update};
 use bevy_ecs::prelude::{Res, ResMut, Resource};
 use bevy_time::{Real, Time, Timer, TimerMode};
 
-pub use retiretui_client::session::{Stamped, is_stale, load_projected, load_session, stamp};
+pub use retiretui_client::session::load_session;
+use retiretui_client::session::{Stamped, is_stale, load_projected, stamp};
 use retiretui_client::store::Store;
 
 use super::edit::{DraftEditor, EditSession};
@@ -110,18 +111,6 @@ mod tests {
         let path = std::env::temp_dir().join(format!("retiretui-watch-{name}.toml"));
         std::fs::write(&path, text).unwrap();
         path
-    }
-
-    #[test]
-    fn staleness_follows_stamps() {
-        let path = scratch("stale", "schema = 1\n");
-        let files = stamp(&DiskStore, vec![path.clone()]);
-        assert!(!is_stale(&DiskStore, &files));
-        let missing = vec![(PathBuf::from("no-such-file.toml"), DiskStore.stamp(&path))];
-        assert!(
-            is_stale(&DiskStore, &missing),
-            "a vanished file counts as stale"
-        );
     }
 
     #[test]

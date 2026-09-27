@@ -40,12 +40,12 @@ impl DraftEditor<'_> {
 
     fn revalidate(&mut self) {
         let tables = &self.session.tables;
-        let Some(issue) = self.draft.revalidate(tables).cloned() else {
+        if self.draft.revalidate(tables) {
             self.projected.projection = project(&self.draft.plan, tables);
             self.projected.plan = self.draft.plan.clone();
-            return;
-        };
-        journal::warn(issue_words(&issue, &self.draft));
+        } else if let Some(issue) = self.draft.issues().first() {
+            journal::warn(issue_words(issue, &self.draft));
+        }
     }
 }
 

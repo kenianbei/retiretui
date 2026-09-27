@@ -207,3 +207,41 @@ pub fn compose(
         None => generate::plan(&answers, start_year, tables).map(|plan| (plan, None)),
     }
 }
+
+/// The account a household starts with, which is also where unspent
+/// income sweeps.
+pub(crate) const CASH_ID: &str = "cash";
+
+/// The age every starting plan runs to.
+pub(crate) const HORIZON_AGE: u8 = 95;
+
+/// The inflation every starting plan assumes.
+pub(crate) const INFLATION: f64 = 0.025;
+
+/// The smallest plan that validates: one person and the cash account
+/// surplus lands in, starting `start_year`.
+#[must_use]
+pub(crate) fn blank_plan(start_year: i16) -> String {
+    format!(
+        r#"schema = 1
+
+[plan]
+start_year = {start_year}
+horizon_age = {HORIZON_AGE}
+inflation = {INFLATION}
+
+[household]
+filing = "single"
+
+[[household.people]]
+id = "me"
+birth = 1970-01-01
+
+[[accounts]]
+id = "{CASH_ID}"
+kind = "cash"
+owner = "me"
+balance = 0
+"#
+    )
+}

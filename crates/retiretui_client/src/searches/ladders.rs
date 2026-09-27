@@ -130,7 +130,7 @@ impl Swept {
 
 /// The ladders into `destination` under the `held` answers, searched as
 /// the page searches them; none where the answers do not make a search.
-pub fn sweep_into(
+pub(crate) fn sweep_into(
     plan: &Plan,
     tables: &TaxTables,
     held: &toml::Table,

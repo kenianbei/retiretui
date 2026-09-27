@@ -1,6 +1,6 @@
-//! What is open: the document, where it came from, the tables and store it
-//! is read through, its projection, the year the session runs in, and the
-//! year every view is on.
+//! What a shell holds open: the document, where it came from, the tables
+//! and store it is read through, its projection, the year the session runs
+//! in, and the year every view is on.
 
 use std::borrow::Cow;
 use std::path::{Path, PathBuf};
@@ -11,6 +11,7 @@ use retiretui_engine::plan::Plan;
 use retiretui_engine::project::{Projection, YearRow, project};
 
 use crate::files::{Invalid, directory_of};
+use crate::setup::blank_plan;
 use crate::store::{Stamp, Store};
 
 /// Where the shown plan came from and what reloads project against.
@@ -32,44 +33,6 @@ pub struct Session {
 pub const NO_DOCUMENT: &str = "no document is open";
 
 const NO_DOCUMENT_NAME: &str = "no document";
-
-/// The account a household starts with, which is also where unspent
-/// income sweeps.
-pub const CASH_ID: &str = "cash";
-
-/// The age every starting plan runs to.
-pub const HORIZON_AGE: u8 = 95;
-
-/// The inflation every starting plan assumes.
-pub const INFLATION: f64 = 0.025;
-
-/// The smallest plan that validates: one person and the cash account
-/// surplus lands in, starting `start_year`.
-#[must_use]
-pub fn blank_plan(start_year: i16) -> String {
-    format!(
-        r#"schema = 1
-
-[plan]
-start_year = {start_year}
-horizon_age = {HORIZON_AGE}
-inflation = {INFLATION}
-
-[household]
-filing = "single"
-
-[[household.people]]
-id = "me"
-birth = 1970-01-01
-
-[[accounts]]
-id = "{CASH_ID}"
-kind = "cash"
-owner = "me"
-balance = 0
-"#
-    )
-}
 
 /// The projected plan every view derives from; replaced wholesale on reload.
 #[cfg_attr(feature = "bevy", derive(bevy_ecs::prelude::Resource))]
@@ -266,15 +229,26 @@ pub fn is_stale(store: &dyn Store, files: &[(PathBuf, Option<Stamp>)]) -> bool {
         .any(|(path, recorded)| store.stamp(path) != *recorded)
 }
 
-/// The `year` row; an out-of-range year errors with the valid range.
-///
-/// # Errors
-///
-/// Where the plan does not reach `year`.
-pub fn year_row(projection: &Projection, year: i16) -> Result<&YearRow, String> {
-    projection.row(year).ok_or_else(|| {
-        let first = projection.years.first().map_or(year, |row| row.year);
-        let last = projection.years.last().map_or(year, |row| row.year);
-        format!("{year} is outside the projection; the plan covers {first}-{last}")
-    })
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::store::KeyStore;
+    use crate::store::memory::Memory;
+
+    #[test]
+    fn staleness_follows_stamps() {
+        let store = KeyStore::new(Memory::default());
+        store.create_dir_all(Path::new("/w")).unwrap();
+        let path = PathBuf::from("/w/plan.toml");
+        store.write(&path, "one").unwrap();
+        let files = stamp(&store, vec![path.clone()]);
+        assert!(!is_stale(&store, &files));
+        store.write(&path, "two").unwrap();
+        assert!(is_stale(&store, &files), "a write moves the stamp");
+        let missing = vec![(PathBuf::from("/w/gone.toml"), store.stamp(&path))];
+        assert!(
+            is_stale(&store, &missing),
+            "a vanished file counts as stale"
+        );
+    }
 }

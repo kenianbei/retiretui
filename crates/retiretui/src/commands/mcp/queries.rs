@@ -203,7 +203,7 @@ impl PlanServer {
         let year = args
             .year
             .unwrap_or_else(|| retiretui_client::session::Today::now().0);
-        let row = retiretui_client::session::year_row(&projection, year)?;
+        let row = retiretui_client::replies::year_row(&projection, year)?;
         let warnings = retiretui_client::actions::collect_warnings(&plan, &self.tables, row, None);
         Ok(Json(ActionsReply::new(row, warnings)))
     }

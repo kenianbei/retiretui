@@ -34,7 +34,7 @@ pub struct Draft {
 }
 
 /// Why a scenario session refuses a write.
-pub const READ_ONLY_REASON: &str = "scenario sessions are read-only";
+pub(crate) const READ_ONLY_REASON: &str = "scenario sessions are read-only";
 
 /// How many applied items undo reaches back over.
 const HISTORY_DEPTH: usize = 100;
@@ -172,12 +172,12 @@ impl Draft {
         mem::replace(&mut self.plan, plan)
     }
 
-    /// Validates the draft after a change against `tables`, answering its
-    /// first issue; none means it is ready to project.
-    pub fn revalidate(&mut self, tables: &TaxTables) -> Option<&Issue> {
+    /// Validates the draft after a change against `tables`, answering
+    /// whether it is valid, and so ready to project.
+    pub fn revalidate(&mut self, tables: &TaxTables) -> bool {
         self.is_dirty = true;
         self.issues = validate_plan(&self.plan, tables);
-        self.issues.first()
+        self.issues.is_empty()
     }
 }
 

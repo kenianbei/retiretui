@@ -281,7 +281,7 @@ pub fn handle_row_select(
 mod tests {
     #[test]
     fn an_empty_domain_says_what_it_is_for_instead_of_heading_no_rows() {
-        let lists = super::super::SCREENS.iter().filter_map(|ops| ops.list);
+        let lists = super::super::screens().filter_map(|ops| ops.list);
         for list in lists {
             assert!(!list.purpose.is_empty(), "{} says nothing", list.singular);
         }

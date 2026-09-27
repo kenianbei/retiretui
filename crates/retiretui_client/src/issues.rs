@@ -26,7 +26,7 @@ impl Located {
     /// Whether the issue is against `spec` of `item`: its field, and where
     /// the path names a place of a list several rows share, that one row.
     #[must_use]
-    pub fn is_against(&self, spec: &FieldSpec, item: Option<&Table>) -> bool {
+    pub(crate) fn is_against(&self, spec: &FieldSpec, item: Option<&Table>) -> bool {
         self.field.is_some_and(|field| field.key == spec.key)
             && self
                 .place
@@ -50,7 +50,7 @@ fn holds_place(spec: &FieldSpec, place: usize, item: Option<&Table>) -> bool {
 
 /// The longest root wins, so `household.people` is not the household. A
 /// root that is itself a field - `medicare` - is that field.
-pub fn locate(path: &str) -> Option<Located> {
+pub(crate) fn locate(path: &str) -> Option<Located> {
     let (form, root) = DOMAINS
         .iter()
         .flat_map(|form| form.paths.iter().map(move |root| (form, *root)))
@@ -96,7 +96,7 @@ pub fn issue_place(path: &str) -> Option<(DomainId, Option<usize>)> {
 }
 
 /// What separates an issue's place words: page, item, field.
-pub const PLACE_SEPARATOR: &str = " \u{203a} ";
+pub(crate) const PLACE_SEPARATOR: &str = " \u{203a} ";
 
 /// An issue in the words the forms use: the page, the item by its display
 /// name, and the field's label, ahead of the engine's own message. A path
@@ -115,7 +115,7 @@ pub fn issue_words(issue: &retiretui_engine::plan::Issue, draft: &Draft) -> Stri
 /// The page, `item` by its display name, and the field's label, of what
 /// `located` points at.
 #[must_use]
-pub fn place_words(located: &Located, item: Option<&Table>) -> Vec<String> {
+pub(crate) fn place_words(located: &Located, item: Option<&Table>) -> Vec<String> {
     let identity = located.form.list.map(|list| list.identity);
     let name = item
         .zip(identity)

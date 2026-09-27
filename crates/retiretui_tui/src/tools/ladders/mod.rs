@@ -52,7 +52,7 @@ pub fn plugin(app: &mut App) {
 const OPS: Ops = Ops::tool::<Constraints>(Some(Page::RothConversions), "Constraints", FIELDS)
     .acting(["Discard", "Apply"], act);
 const _: () = assert!(
-    edit::help_fits(OPS),
+    edit::help_fits(OPS.form.fields),
     "a field's help is missing or too long"
 );
 const NO_BRACKET: &str = "no bracket can be filled";

@@ -16,9 +16,9 @@ use crate::codec::{get_path, set_path};
 /// never written.
 pub const HAPPENS: &str = "happens";
 /// The timing that recurs every year.
-pub const EVERY_YEAR: &str = "every-year";
+pub(crate) const EVERY_YEAR: &str = "every-year";
 /// The timing that happens once.
-pub const ONCE: &str = "once";
+pub(crate) const ONCE: &str = "once";
 
 /// The key a one-off item's date is under.
 pub const ON_KEY: &str = "on";
@@ -28,7 +28,7 @@ const ROTH_KEY: &str = "roth";
 
 /// An item's timing, read from whether it states when it happens once.
 #[must_use]
-pub fn seed_timing(item: &Table) -> Value {
+pub(crate) fn seed_timing(item: &Table) -> Value {
     let timing = if item.contains_key(ON_KEY) {
         ONCE
     } else {
@@ -38,7 +38,7 @@ pub fn seed_timing(item: &Table) -> Value {
 }
 
 /// A derived field whose value the file's own keys already say.
-pub fn write_nothing(_: &mut Table, _: &Value) {}
+pub(crate) fn write_nothing(_: &mut Table, _: &Value) {}
 
 fn word<'a>(item: &'a Table, key: &str) -> Option<&'a str> {
     item.get(key).and_then(Value::as_str)
@@ -46,7 +46,7 @@ fn word<'a>(item: &'a Table, key: &str) -> Option<&'a str> {
 
 /// A windfall happens once whatever is picked, so it is not asked.
 #[must_use]
-pub fn chooses_timing(item: &Table) -> bool {
+pub(crate) fn chooses_timing(item: &Table) -> bool {
     word(item, KIND_KEY) != Some(IncomeKind::Windfall.as_str())
 }
 
@@ -64,7 +64,7 @@ pub fn recurs(item: &Table) -> bool {
 
 impl FieldSpec {
     /// Whether an item recurs or happens once, which no file states.
-    pub const fn timing() -> Self {
+    pub(crate) const fn timing() -> Self {
         Self::choice(HAPPENS, "Happens", Vocabulary::Timing)
             .shown_when(chooses_timing)
             .derived(seed_timing, write_nothing)
@@ -102,19 +102,19 @@ fn account_is(item: &Table, asked: impl Fn(AccountKind) -> bool) -> bool {
 }
 
 /// Whether the account keeps a cost basis.
-pub fn keeps_basis(item: &Table) -> bool {
+pub(crate) fn keeps_basis(item: &Table) -> bool {
     let is_roth = item.get(ROTH_KEY).and_then(Value::as_bool) == Some(true);
     account_is(item, |kind| kind.keeps_basis(is_roth))
 }
 
 /// Whether the account's kind has a Roth side.
-pub fn supports_roth(item: &Table) -> bool {
+pub(crate) fn supports_roth(item: &Table) -> bool {
     account_is(item, AccountKind::supports_roth)
 }
 
 /// Whether the residency is in the United States.
 #[must_use]
-pub fn is_in_the_us(item: &Table) -> bool {
+pub(crate) fn is_in_the_us(item: &Table) -> bool {
     word(item, COUNTRY_KEY) == Some(US)
 }
 

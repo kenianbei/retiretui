@@ -6,6 +6,7 @@ mod pickers;
 #[cfg(test)]
 mod tests;
 
+use retiretui_client::session::load_projected;
 use std::path::PathBuf;
 
 use bevy_app::{App, PostStartup, Startup};
@@ -20,7 +21,7 @@ use super::nav::{self, ActivePage, Page};
 use super::session::{Projected, Session, YearCursor};
 use super::tools::claims::HeldClaims;
 use super::tools::{Claims, Ladders};
-use super::watch::{self, Watch};
+use super::watch::Watch;
 
 pub use browse::{Browsing, FilePick};
 pub use pickers::{Pickers, compare_with, name_new_plan, open as open_picker, save_as};
@@ -116,7 +117,7 @@ pub fn switch(In(opening): In<Opening>, world: &mut World) {
 pub fn land(opening: Opening, world: &mut World) -> bool {
     let session = world.resource::<Session>();
     let store = std::sync::Arc::clone(&session.store);
-    let (loaded, files) = watch::load_projected(store.as_ref(), &opening.path, &session.tables);
+    let (loaded, files) = load_projected(store.as_ref(), &opening.path, &session.tables);
     let projected = match loaded {
         Ok(projected) => projected,
         Err(invalid) => {

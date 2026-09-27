@@ -16,13 +16,13 @@ use crate::present;
 /// written back as `max` alone, the other three being rows of their own.
 pub const AMOUNT_AS: &str = "amount_as";
 /// The contribution states an amount of dollars.
-pub const DOLLARS: &str = "dollars";
+pub(crate) const DOLLARS: &str = "dollars";
 /// The contribution states a share of an income.
-pub const SHARE: &str = "share";
+pub(crate) const SHARE: &str = "share";
 /// The word and the key are one: the pick's value is what is written.
-pub const MAXIMUM: &str = "max";
+pub(crate) const MAXIMUM: &str = "max";
 /// The contribution states an employer's match.
-pub const MATCH: &str = "match";
+pub(crate) const MATCH: &str = "match";
 
 const AMOUNT_KEY: &str = "amount";
 const RATE_KEY: &str = "rate";
@@ -61,25 +61,25 @@ fn amount_form(item: &Table) -> &str {
 
 /// Whether the contribution states dollars.
 #[must_use]
-pub fn pays_dollars(item: &Table) -> bool {
+pub(crate) fn pays_dollars(item: &Table) -> bool {
     amount_form(item) == DOLLARS
 }
 
 /// Whether the contribution states a share of an income.
 #[must_use]
-pub fn pays_share(item: &Table) -> bool {
+pub(crate) fn pays_share(item: &Table) -> bool {
     amount_form(item) == SHARE
 }
 
 /// Whether the contribution states an employer's match.
 #[must_use]
-pub fn pays_match(item: &Table) -> bool {
+pub(crate) fn pays_match(item: &Table) -> bool {
     amount_form(item) == MATCH
 }
 
 /// Whether the contribution names an income it is paid from.
 #[must_use]
-pub fn names_income(item: &Table) -> bool {
+pub(crate) fn names_income(item: &Table) -> bool {
     pays_share(item) || pays_match(item)
 }
 

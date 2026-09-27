@@ -7,17 +7,6 @@ use toml::Table;
 
 use super::{LifeStage, SetupAnswers, generate};
 
-/// The answers a form holding `body` under this filing and stage would
-/// have been applied with.
-fn as_table(filing: FilingStatus, stage: LifeStage, body: &str) -> Table {
-    format!(
-        "filing = \"{}\"\nstage = \"{}\"\n{body}",
-        filing.as_str(),
-        stage.as_str()
-    )
-    .parse()
-    .expect("the answers are a table")
-}
 use crate::codec::from_table;
 
 const START_YEAR: i16 = 2026;
@@ -63,6 +52,18 @@ fn every_household() -> impl Iterator<Item = (FilingStatus, LifeStage)> {
             .copied()
             .map(move |stage| (filing, stage))
     })
+}
+
+/// The answers a form holding `body` under this filing and stage would
+/// have been applied with.
+fn as_table(filing: FilingStatus, stage: LifeStage, body: &str) -> Table {
+    format!(
+        "filing = \"{}\"\nstage = \"{}\"\n{body}",
+        filing.as_str(),
+        stage.as_str()
+    )
+    .parse()
+    .expect("the answers are a table")
 }
 
 #[test]

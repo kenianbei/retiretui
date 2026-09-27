@@ -101,15 +101,6 @@ pub const DOMAINS: &[Form] = &[
     Form::single::<market::MarketSettings>(),
 ];
 
-/// Domain `id`'s form.
-#[must_use]
-pub fn domain(id: DomainId) -> &'static Form {
-    DOMAINS
-        .iter()
-        .find(|form| form.domain == Some(id))
-        .unwrap_or(&DOMAINS[0])
-}
-
 /// One field of an item: the key the file knows it by, the words the
 /// form shows for it, and what edits it.
 #[derive(Clone, Copy)]
@@ -182,7 +173,7 @@ pub enum FieldKind {
 }
 
 /// What every field that says how an amount grows is described by.
-pub const GROWTH_HELP: &str =
+pub(crate) const GROWTH_HELP: &str =
     "Inflation follows the plan's rate, Fixed never grows, or a rate of its own such as 3%.";
 
 /// What an empty pick reads as where its field says nothing else.

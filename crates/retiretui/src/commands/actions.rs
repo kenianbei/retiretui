@@ -1,5 +1,6 @@
 use retiretui_client::replies::ActionsReply;
-use retiretui_client::session::{Today, year_row};
+use retiretui_client::replies::year_row;
+use retiretui_client::session::Today;
 use std::path::PathBuf;
 
 use clap::Args;

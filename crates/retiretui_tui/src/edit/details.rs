@@ -191,7 +191,7 @@ fn shown_row(cursor: Option<&ActiveDescendant>, rows: &Query<&Row>) -> Option<Ro
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::edit::SCREENS;
+    use crate::edit::screens;
     use crate::nav::Page;
 
     #[test]
@@ -204,13 +204,13 @@ mod tests {
             Page::Contributions,
             Page::People,
         ];
-        for ops in &SCREENS {
+        for ops in screens() {
             let Some(list) = ops.list else {
                 continue;
             };
             let page = ops.surface.unwrap();
             assert_eq!(
-                has_details(*ops, list),
+                has_details(ops, list),
                 with_pane.contains(&page),
                 "{page:?}"
             );

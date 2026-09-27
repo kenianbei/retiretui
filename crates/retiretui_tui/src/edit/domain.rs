@@ -96,3 +96,18 @@ pub const fn page_of(id: DomainId) -> Page {
         DomainId::Market => Page::Market,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use retiretui_client::forms::DOMAINS;
+
+    use super::page_of;
+
+    #[test]
+    fn a_domain_s_page_is_titled_as_the_domain_is() {
+        for form in DOMAINS {
+            let domain = form.domain.expect("every listed form is a domain's");
+            assert_eq!(page_of(domain).title(), domain.title());
+        }
+    }
+}

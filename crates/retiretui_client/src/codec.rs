@@ -51,7 +51,7 @@ const INDEX_CLOSE: char = ']';
 /// The place `path` names in the list at `key`, where it ends in one:
 /// `2` of `plan.withdrawal_order[2]`.
 #[must_use]
-pub fn list_place(path: &str, key: &str) -> Option<usize> {
+pub(crate) fn list_place(path: &str, key: &str) -> Option<usize> {
     let (list, digits) = path.strip_suffix(INDEX_CLOSE)?.rsplit_once(INDEX_OPEN)?;
     list.ends_with(key).then(|| digits.parse().ok())?
 }
@@ -86,7 +86,7 @@ fn get_within<'a>(value: &'a Value, key: &str) -> Option<&'a Value> {
 
 /// A number the file states, whole or not.
 #[must_use]
-pub fn as_number(value: &Value) -> Option<f64> {
+pub(crate) fn as_number(value: &Value) -> Option<f64> {
     match value {
         Value::Integer(whole) => Some(*whole as f64),
         Value::Float(real) => Some(*real),
@@ -99,7 +99,7 @@ const ROUNDING: f64 = 1e-9;
 
 /// What the shares of `shares` other than `own` leave of the whole.
 #[must_use]
-pub fn left_of(shares: &Table, own: &str) -> f64 {
+pub(crate) fn left_of(shares: &Table, own: &str) -> f64 {
     let taken = shares
         .iter()
         .filter(|(held, _)| held.as_str() != own)
@@ -119,7 +119,7 @@ pub fn share_left(item: &Table, key: &str) -> Option<f64> {
 /// An issue's path as a key: `allocation[2]` reaches what
 /// `allocation.2.from` does.
 #[must_use]
-pub fn as_key(path: &str) -> String {
+pub(crate) fn as_key(path: &str) -> String {
     path.replace(INDEX_OPEN, &KEY_SEPARATOR.to_string())
         .replace(INDEX_CLOSE, "")
 }
@@ -194,7 +194,7 @@ fn set_in_list(items: &mut Vec<Value>, key: &str, value: Option<Value>) -> bool 
 }
 
 /// An item as the table its fields edit.
-pub fn to_table<T: Serialize>(item: &T) -> Table {
+pub(crate) fn to_table<T: Serialize>(item: &T) -> Table {
     plan::to_table(item).unwrap_or_default()
 }
 
@@ -203,7 +203,7 @@ pub fn to_table<T: Serialize>(item: &T) -> Table {
 /// # Errors
 ///
 /// The deserialization message, trimmed of its TOML position prefix.
-pub fn from_table<T: DeserializeOwned>(table: Table) -> Result<T, String> {
+pub(crate) fn from_table<T: DeserializeOwned>(table: Table) -> Result<T, String> {
     plan::from_table(&table).map_err(|error| match error {
         PlanError::Parse(error) => error
             .message()
