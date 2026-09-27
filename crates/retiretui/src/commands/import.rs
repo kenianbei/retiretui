@@ -1,3 +1,4 @@
+use retiretui_tui::store::DiskStore;
 use std::fs;
 use std::path::PathBuf;
 
@@ -38,7 +39,7 @@ pub fn run(args: &ImportEarningsArgs) -> anyhow::Result<()> {
             super::issue_listing(&issues)
         );
     }
-    super::write_plan(&args.plan, &plan).map_err(anyhow::Error::msg)?;
+    retiretui_tui::files::write_plan(&DiskStore, &args.plan, &plan).map_err(anyhow::Error::msg)?;
     let recorded = &plan
         .person(&args.person)
         .map(|person| &person.earnings)

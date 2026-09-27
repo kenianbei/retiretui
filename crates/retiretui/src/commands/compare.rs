@@ -1,12 +1,12 @@
 use std::path::PathBuf;
 
-use clap::{Args, ValueEnum};
-use retiretui_engine::plan::Dollars;
+use clap::Args;
 use retiretui_engine::project::{Projection, Summary, YearRow, project};
 use serde::Serialize;
 
 use super::project::OutputFormat;
-use super::table::{align, display_dollars, summary_table};
+use retiretui_tui::metric::Metric;
+use retiretui_tui::table::{align, display_dollars, summary_table};
 
 /// Arguments of the `compare` subcommand.
 #[derive(Args)]
@@ -28,64 +28,6 @@ pub struct CompareArgs {
     /// Extra directory of tax parameter TOML files (repeatable).
     #[arg(long)]
     pub tax_dir: Vec<PathBuf>,
-}
-
-/// A projected quantity comparable year by year.
-#[derive(Clone, Copy, PartialEq, Eq, Default, ValueEnum)]
-pub enum Metric {
-    /// Sum of all end-of-year balances.
-    #[default]
-    NetWorth,
-    /// Gross income, Social Security included.
-    Income,
-    /// Spending for the year.
-    Expenses,
-    /// Total taxes assessed.
-    Taxes,
-    /// Money withdrawn, RMDs included.
-    Withdrawals,
-    /// Roth conversions executed.
-    Conversions,
-    /// Modified adjusted gross income.
-    Magi,
-    /// Spending the accounts could not cover.
-    Unfunded,
-}
-
-impl Metric {
-    pub(crate) const fn title(self) -> &'static str {
-        match self {
-            Self::NetWorth => "Net worth",
-            Self::Income => "Income",
-            Self::Expenses => "Expenses",
-            Self::Taxes => "Taxes",
-            Self::Withdrawals => "Withdrawals",
-            Self::Conversions => "Conversions",
-            Self::Magi => "MAGI",
-            Self::Unfunded => "Unfunded",
-        }
-    }
-
-    /// The metric `step` places along, wrapping at either end.
-    pub(crate) fn neighbor(self, step: isize) -> Self {
-        let all = Self::value_variants();
-        let at = all.iter().position(|metric| *metric == self).unwrap_or(0);
-        let count = all.len() as isize;
-        all[(at as isize + step).rem_euclid(count) as usize]
-    }
-
-    pub(crate) fn value(self, row: &YearRow) -> Dollars {
-        match self {
-            Self::NetWorth => row.net_worth,
-            Self::Income => row.total_income,
-            Self::Expenses => row.expenses,
-            Self::Taxes => row.taxes.total,
-            Self::Withdrawals => row.total_withdrawals(),
-            Self::Conversions => row.conversions,
-            Self::Magi => row.taxes.magi,
-            Self::Unfunded => row.unfunded,
-        }
-    }
 }
 
 struct ComparedPlan {

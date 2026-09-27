@@ -5,11 +5,12 @@ use clap::Args;
 use retiretui_engine::market::Progress;
 use retiretui_engine::optimize::{Claim, ClaimSearch, claims_overlay, optimize_claims};
 use retiretui_engine::project::Summary;
+use retiretui_tui::store::DiskStore;
 use schemars::JsonSchema;
 use serde::Serialize;
 
 use crate::commands::project::OutputFormat;
-use crate::commands::table::summary_table;
+use retiretui_tui::table::summary_table;
 
 /// Arguments of `optimize claims`.
 #[derive(Args)]
@@ -118,8 +119,8 @@ fn claims_table(search: &ClaimSearch, deflated: bool) -> String {
 }
 
 fn write_best(out: &Path, plan_path: &Path, search: &ClaimSearch) -> anyhow::Result<()> {
-    let base = crate::commands::overlay_base(out, plan_path)?;
+    let base = retiretui_tui::files::overlay_base(&DiskStore, out, plan_path)?;
     let overlay = claims_overlay(&base, &search.added, &search.best().claims)?;
-    crate::commands::write_atomic(out, &overlay)?;
+    retiretui_tui::files::write_atomic(out, &overlay)?;
     Ok(())
 }

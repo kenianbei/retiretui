@@ -52,6 +52,20 @@ form builds a first one from the household's basics. The
 [example plans](examples/README.md) are invented households, from a first job to
 a retired couple, to try it on.
 
+### In a browser
+
+The same planner runs in a browser page at
+<https://kenianbei.github.io/retiretui/>, published with each release. Its plans
+are kept in the browser's own storage and never leave it: `upload` and
+`download`, from the `:` command palette, bring a plan or a Social Security
+statement in and take a plan back out. To build and serve the page yourself,
+with [wasm-pack](https://rustwasm.github.io/wasm-pack/) installed:
+
+```sh
+crates/retiretui_web/build.sh
+python3 -m http.server -d crates/retiretui_web/dist
+```
+
 ### Command line
 
 | command           | what it does                                        |

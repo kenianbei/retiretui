@@ -46,12 +46,9 @@ impl AssetClass {
 /// A year's return on each asset class, indexed by [`AssetClass::index`].
 pub type ClassReturns = [f64; 3];
 
-#[expect(
-    clippy::trivially_copy_pass_by_ref,
-    reason = "serde's skip_serializing_if passes a reference"
-)]
-fn is_zero(share: &f64) -> bool {
-    *share == 0.0
+/// Generic because serde's `skip_serializing_if` passes a reference.
+fn is_zero<T: Default + PartialEq>(share: &T) -> bool {
+    *share == T::default()
 }
 
 /// An account's share of each class, rebalanced every year; an unstated

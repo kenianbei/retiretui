@@ -11,11 +11,13 @@ use retiretui_engine::optimize::{
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::{Dollars, Plan};
 use retiretui_engine::project::{Projection, Summary};
+use retiretui_tui::ladder::LadderConstraints;
+use retiretui_tui::store::DiskStore;
 use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::commands::project::OutputFormat;
-use crate::commands::table::{align, display_dollars, summary_table};
+use retiretui_tui::table::{align, display_dollars, summary_table};
 
 /// Arguments of the `optimize` subcommand.
 #[derive(Args)]
@@ -47,53 +49,6 @@ pub struct OptimizeArgs {
     /// Extra directory of tax parameter TOML files (repeatable).
     #[arg(long)]
     pub tax_dir: Vec<PathBuf>,
-}
-
-/// What a ladder is held to, as `optimize conversions` and the MCP
-/// optimizer tools take it.
-#[derive(Args, Deserialize, JsonSchema)]
-pub struct LadderConstraints {
-    /// First conversion year; defaults to plan start.
-    #[arg(long)]
-    pub start_year: Option<i16>,
-    /// Last conversion year; defaults to the year before the owner's RMDs.
-    #[arg(long)]
-    pub end_year: Option<i16>,
-    /// Cap on any single year's conversion.
-    #[arg(long)]
-    pub annual_max: Option<Dollars>,
-    /// Cap on total conversions across the ladder.
-    #[arg(long)]
-    pub total_max: Option<Dollars>,
-    /// Dollars left unfilled below the bracket top.
-    #[arg(long, default_value_t = 0)]
-    #[serde(default)]
-    pub headroom: Dollars,
-    /// Highest IRMAA tier the ladder may buy (0 = under every surcharge);
-    /// requires a `[medicare]` section in the plan.
-    #[arg(long)]
-    pub irmaa_tier: Option<u8>,
-    /// Explicit MAGI ceiling in today's dollars.
-    #[arg(long)]
-    pub max_magi: Option<Dollars>,
-}
-
-impl LadderConstraints {
-    /// The options a ladder from `sources` into `destination` is searched
-    /// under.
-    pub fn options(&self, sources: &[String], destination: &str) -> OptimizeOptions {
-        OptimizeOptions {
-            sources: sources.to_vec(),
-            destination: destination.to_owned(),
-            start_year: self.start_year,
-            end_year: self.end_year,
-            annual_max: self.annual_max,
-            total_max: self.total_max,
-            headroom: self.headroom,
-            irmaa_tier: self.irmaa_tier,
-            max_magi: self.max_magi,
-        }
-    }
 }
 
 /// A bracket sweep, as `optimize conversions` and
@@ -278,8 +233,8 @@ fn write_overlay(
     options: &OptimizeOptions,
     ladder: &OptimizedLadder,
 ) -> anyhow::Result<()> {
-    let base = crate::commands::overlay_base(out, plan_path)?;
+    let base = retiretui_tui::files::overlay_base(&DiskStore, out, plan_path)?;
     let overlay = ladder_overlay(&base, plan, options, &ladder.ladder.steps)?;
-    crate::commands::write_atomic(out, &overlay)?;
+    retiretui_tui::files::write_atomic(out, &overlay)?;
     Ok(())
 }

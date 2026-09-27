@@ -26,6 +26,14 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   their claim age claims at it.
 - On the Monte Carlo and Historical pages the cursor rests on "As planned", and
   ⏎ there shows the plan's own projection in the Ledger.
+- The planner runs in a browser page, published to GitHub Pages with each
+  release. Its workspace is kept in the browser's own storage and never leaves
+  it; the page reopens the plan last open, follows the browser's light or dark
+  preference, and Quit starts it over. `upload` and `download`, in the page's
+  command palette, bring plans, scenarios and Social Security statements in -
+  asking before one replaces a file of the same name - and take the open
+  document's file back out as saved. Searches run on the page between frames, so
+  a large Monte Carlo run holds the page until it answers.
 
 ### Changed
 
@@ -116,6 +124,12 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   it was rather than rebuilding it, typing in a picker rewrites its rows rather
   than making them anew, and `tab` finds the page's panes without visiting every
   row of its tables.
+- The interactive planner is its own library crate, `retiretui_tui`, which the
+  `tui` subcommand and the browser page both run; the CLI and MCP take their
+  plan-file reading and the words their tables and actions are said in from it.
+  It reads and writes every plan file through a `Store` - the disk, or keys in a
+  browser's storage - and is built on plurimus 0.7.2 and plurimus_filepicker
+  0.1.1.
 
 ### Fixed
 

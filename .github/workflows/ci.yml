@@ -41,6 +41,23 @@ jobs:
       - name: Engine without features
         run: cargo check -p retiretui_engine
 
+  wasm:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+        with:
+          target: wasm32-unknown-unknown
+          cache-save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Clippy for the browser page
+        run: >
+          cargo clippy -p retiretui_tui -p retiretui_web
+          --target wasm32-unknown-unknown -- -D warnings
+
   msrv:
     runs-on: ubuntu-latest
 

@@ -7,7 +7,8 @@ mod conversions;
 use clap::Subcommand;
 
 pub use claims::{ClaimArgs, ClaimsReply};
-pub use conversions::{LadderConstraints, LadderReply, OptimizeArgs, SweepReply};
+pub use conversions::{LadderReply, OptimizeArgs, SweepReply};
+pub use retiretui_tui::ladder::LadderConstraints;
 
 /// What `optimize` searches.
 #[derive(Subcommand)]
