@@ -113,7 +113,6 @@ mod tests {
         EXAMPLES[0].2
     }
 
-    /// The starter's Roth IRA.
     const ROTH: &str = "roth-ira-sam";
 
     #[test]
