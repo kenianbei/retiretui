@@ -21,12 +21,12 @@ use plurimus::widgets::{
 use super::domain::{ListOps, Ops};
 use super::draft::Draft;
 use super::editing::{self, Slot};
-use super::sort::{self, Sort};
 use super::widths::Laid;
 use crate::layout;
 use crate::motion::{Cues, Play};
 use crate::nav::{self, Page, ShownSurface};
 use crate::theme::Theme;
+use retiretui_client::forms::sort::{self, Sort};
 
 #[derive(Component)]
 pub struct DomainTable {

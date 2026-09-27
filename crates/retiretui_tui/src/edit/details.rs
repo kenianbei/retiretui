@@ -11,23 +11,17 @@ use bevy_input_focus::FocusedInput;
 use plurimus::term::bevy_compat::HeldModifiers;
 use plurimus::ui::{ScrollArea, first_bound};
 use plurimus::widgets::ActiveDescendant;
-use retiretui_engine::plan::Plan;
-use toml::Table;
 
-use super::applies;
-use super::cells::Shown;
-use super::codec::get_path;
-use super::domain::{FieldSpec, ListOps, Ops};
+use super::domain::Ops;
 use super::draft::Draft;
 use super::editing::{self, Slot};
-use super::group::gate_of;
-use super::offers::NAME_KEY;
 use super::table::{DomainTable, OPEN_KEYS, Row, cursor_row, table_bundle};
 use crate::hints::Hints;
 use crate::layout::{self, filling, placed};
 use crate::nav::{FocusStop, ShownSurface};
 use crate::pane::Pane;
 use crate::tabulate;
+use retiretui_client::forms::details;
 
 /// The width of the pane beside a table, borders included: the longest
 /// label, a gap, and a value's worth of cells; beside the sidebar and a
@@ -44,21 +38,6 @@ const BESIDE_HINTS: Hints = Hints(&[("↑↓", "scroll"), ("⏎", "edit")]);
 pub struct DetailsTable {
     ops: Ops,
     table: Option<Entity>,
-}
-
-/// Whether the domain's items say more than its columns show: a field no
-/// column shows, or a record. The identity is known to the table whether
-/// or not a column shows it, and a column showing the identity shows the
-/// name in its place.
-pub fn has_details(ops: Ops, list: ListOps) -> bool {
-    let is_column = |key: &str| list.columns.iter().any(|column| column.key == key);
-    let shows_name = is_column(list.identity);
-    let is_known = |key: &str| key == list.identity || (shows_name && key == NAME_KEY);
-    list.record.is_some()
-        || ops
-            .fields
-            .iter()
-            .any(|spec| !is_known(spec.key) && !is_column(spec.key))
 }
 
 /// The pane beside `table` in `beside`, following its cursor.
@@ -93,31 +72,6 @@ pub fn spawn_into(
         .observe(handle_enter);
 }
 
-/// The item's rows: each field it has a use for - shown by its own rule,
-/// and by the tick whose table it is in - labelled and phrased as the
-/// form phrases it, then the record where the domain keeps one.
-fn rows(ops: Ops, item: &Table, plan: &Plan) -> Vec<Vec<String>> {
-    let opened = applies::opened(&ops, item);
-    let is_used = |spec: &&FieldSpec| {
-        let is_held = |gate| get_path(&opened, gate).is_some();
-        spec.shown.is_none_or(|shown| shown(&opened))
-            && gate_of(ops.fields, spec.key).is_none_or(is_held)
-    };
-    let mut rows: Vec<Vec<String>> = ops
-        .fields
-        .iter()
-        .filter(is_used)
-        .map(|spec| {
-            let shown = Shown::of_field(spec, ops.fields, plan);
-            vec![spec.label.to_owned(), shown.cell(&opened, plan).text]
-        })
-        .collect();
-    if let Some(record) = ops.list.and_then(|list| list.record) {
-        rows.extend(record(item).into_iter().map(Vec::from));
-    }
-    rows
-}
-
 /// Rewrites each shown details table from its item: one following a
 /// table, whenever its cursor moves, which a rebuilt table's does; the
 /// only item's, whenever the draft or the page moves.
@@ -140,7 +94,10 @@ pub fn refresh(
         }
         let item = shown_row(cursor.as_deref(), &cursors)
             .and_then(|Row(index)| (shown_of.ops.item)(&draft, index));
-        let rows = item.map_or_else(Vec::new, |item| rows(shown_of.ops, &item, &draft.plan));
+        let rows: Vec<Vec<String>> = item.map_or_else(Vec::new, |item| {
+            let rows = details::rows(&shown_of.ops, &item, &draft.plan);
+            rows.into_iter().map(Vec::from).collect()
+        });
         commands
             .entity(table)
             .insert(tabulate::labelled(&rows, GAP));
@@ -210,7 +167,7 @@ mod tests {
             };
             let page = ops.surface.unwrap();
             assert_eq!(
-                has_details(ops, list),
+                details::has_details(&ops, list),
                 with_pane.contains(&page),
                 "{page:?}"
             );

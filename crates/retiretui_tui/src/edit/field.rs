@@ -76,7 +76,7 @@ pub fn show_remainders(
         return;
     };
     for (mut remaining, field, mut widget) in &mut shown {
-        let left = share_left(&editing.snapshot, field.spec.key);
+        let left = share_left(editing.snapshot(), field.spec.key);
         if remaining.left == left && !theme.is_changed() {
             continue;
         }
@@ -325,7 +325,7 @@ impl Fields<'_, '_> {
         let Ok((field, mut text)) = self.texts.get_mut(widget) else {
             return;
         };
-        if editing.incomplete.contains_key(field.spec.key) {
+        if editing.is_incomplete(field.spec.key) {
             // A trigger's operand is typed as the file states it.
             let kind = field.spec.kind;
             let read = parse_field(kind, text.value()).filter(|_| kind != FieldKind::Trigger);
@@ -335,7 +335,7 @@ impl Fields<'_, '_> {
             }
             return;
         }
-        let value = get_path(&editing.snapshot, field.spec.key);
+        let value = get_path(editing.snapshot(), field.spec.key);
         let value = match field.spec.kind {
             FieldKind::Listed(back) => nth_back(value, back),
             _ => value,
@@ -360,13 +360,13 @@ impl Fields<'_, '_> {
 
     fn show_slider_at(&mut self, widget: Entity, editing: &Editing) {
         if let Ok((field, mut value)) = self.sliders.get_mut(widget) {
-            let rate = get_path(&editing.snapshot, field.spec.key).and_then(Value::as_float);
+            let rate = get_path(editing.snapshot(), field.spec.key).and_then(Value::as_float);
             *value = SliderValue(rate.unwrap_or(0.0) as f32);
         }
     }
 
     pub fn show(&mut self, form: Entity, editing: &Editing, plan: &Plan, focused: Option<Entity>) {
-        let table = &editing.snapshot;
+        let table = editing.snapshot();
         let widgets: Vec<Entity> = self.tree.children.iter_descendants(form).collect();
         for widget in widgets {
             self.show_text_at(widget, editing, focused == Some(widget));

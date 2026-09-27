@@ -22,7 +22,7 @@ mod trigger;
 mod widths;
 
 use retiretui_client::codec;
-use retiretui_client::forms::{applies, cells, offers};
+use retiretui_client::forms::{cells, offers};
 
 use bevy_app::{App, Startup, Update};
 use bevy_ecs::prelude::{Commands, Entity, IntoScheduleConfigs, Query, With, World};

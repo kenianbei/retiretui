@@ -89,7 +89,7 @@ fn spawn_table(commands: &mut Commands, root: Entity, ops: Ops, list: ListOps) {
         .observe(handle_table_key)
         .id();
     spawn_add_button(commands, pane, table, list);
-    if details::has_details(ops, list) {
+    if retiretui_client::forms::details::has_details(&ops, list) {
         details::spawn_pane(commands, beside, table, ops);
     }
 }
@@ -133,7 +133,7 @@ fn handle_add_press(
     let Ok(domain) = state.tables.get(button.0) else {
         return;
     };
-    let opened = (domain.ops, Some(button.0), Slot::New(domain.list));
+    let opened = (domain.ops, Some(button.0), Slot::New);
     // The table takes the keyboard first: the button is no tab stop, and
     // what a form opens over is what it hands the keyboard back to.
     state.focus(button.0);

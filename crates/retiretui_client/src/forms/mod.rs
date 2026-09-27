@@ -9,6 +9,8 @@ pub mod changes;
 /// The settings domain.
 pub mod config;
 pub mod contributions;
+pub mod details;
+pub mod edit;
 /// The expense and cliff domains.
 pub mod expenses;
 /// The transfer, conversion and event domains.
@@ -17,8 +19,11 @@ pub mod flows;
 pub mod household;
 /// The income domain.
 pub mod income;
+pub mod lists;
 pub mod market;
 pub mod offers;
+pub mod sort;
+pub mod trigger;
 
 use retiretui_engine::plan::{ID_KEY, Plan, fresh_id};
 use serde::Serialize;
@@ -312,6 +317,12 @@ impl FieldSpec {
             derived: Some(Derived { seed, write }),
             ..self
         }
+    }
+
+    /// Whether the item `table` has a use for the field by its own rule.
+    #[must_use]
+    pub fn is_shown_for(&self, table: &Table) -> bool {
+        self.shown.is_none_or(|shown| shown(table))
     }
 
     /// Whether a pick may not be emptied, so its menu offers no way to:
