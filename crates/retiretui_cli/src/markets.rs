@@ -11,14 +11,14 @@ use retiretui_engine::market::{self, BAND_PERCENTILES, History, Progress};
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::{Draw, Market, Plan};
 
-use crate::commands::project::OutputFormat;
+use crate::project::OutputFormat;
 use retiretui_client::environment::{load_history, load_tables};
 use retiretui_client::searches::run_refusal;
 use retiretui_client::table::{align, plain_dollars, rate};
 use retiretui_engine::project::validate_plan;
 
 /// Arguments of `monte-carlo`.
-#[derive(Args)]
+#[derive(Args, Debug)]
 pub struct MonteCarloArgs {
     /// Path to the plan or scenario TOML file.
     pub plan: PathBuf,
@@ -36,7 +36,7 @@ pub struct MonteCarloArgs {
 }
 
 /// Arguments of `historical`.
-#[derive(Args)]
+#[derive(Args, Debug)]
 pub struct HistoricalArgs {
     /// Path to the plan or scenario TOML file.
     pub plan: PathBuf,
@@ -54,7 +54,7 @@ pub struct HistoricalArgs {
 }
 
 /// What both commands take besides their settings.
-#[derive(Args)]
+#[derive(Args, Debug)]
 pub struct MarketArgs {
     /// Output format.
     #[arg(long, value_enum, default_value_t = OutputFormat::Table)]
@@ -68,7 +68,7 @@ pub struct MarketArgs {
 }
 
 /// Where a Monte Carlo search draws from.
-#[derive(Clone, Copy, ValueEnum)]
+#[derive(Clone, Copy, Debug, ValueEnum)]
 pub enum DrawArg {
     /// Random years from the plan's assumptions.
     Assumptions,
@@ -91,7 +91,7 @@ fn prepare(
     settle: impl FnOnce(&mut Plan),
 ) -> anyhow::Result<(Plan, TaxTables, History)> {
     let tables = load_tables(&common.tax_dir)?;
-    let mut plan = crate::commands::load_validated_plan(path, &tables)?;
+    let mut plan = crate::load_validated_plan(path, &tables)?;
     settle(&mut plan);
     let issues = validate_plan(&plan, &tables);
     if !issues.is_empty() {

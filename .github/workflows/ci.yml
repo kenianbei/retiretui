@@ -67,6 +67,13 @@ jobs:
             fi
           done
 
+      - name: Each interface stays free of the others' dependencies
+        run: |
+          refuses() { ! cargo tree -p "$1" -e normal | grep -E "$2"; }
+          refuses retiretui_cli 'bevy|plurimus|rmcp|tokio'
+          refuses retiretui_mcp 'bevy|plurimus'
+          refuses retiretui_tui 'crossterm|rmcp|etcetera'
+
   msrv:
     runs-on: ubuntu-latest
 

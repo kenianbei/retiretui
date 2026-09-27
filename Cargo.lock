@@ -3194,18 +3194,23 @@ version = "0.2.0"
 dependencies = [
  "anyhow",
  "clap",
- "insta",
- "jiff",
- "retiretui_client",
+ "retiretui_cli",
  "retiretui_engine",
  "retiretui_mcp",
  "retiretui_tui",
- "rmcp",
- "schemars",
+ "serde_json",
+]
+
+[[package]]
+name = "retiretui_cli"
+version = "0.2.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "retiretui_client",
+ "retiretui_engine",
  "serde",
  "serde_json",
- "tokio",
- "toml",
 ]
 
 [[package]]

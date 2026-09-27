@@ -10,7 +10,7 @@ pub use claims::ClaimArgs;
 pub use conversions::OptimizeArgs;
 
 /// What `optimize` searches.
-#[derive(Subcommand)]
+#[derive(Subcommand, Debug)]
 pub enum OptimizeCommand {
     /// Search a fill-bracket Roth conversion ladder and compare it to the
     /// baseline.

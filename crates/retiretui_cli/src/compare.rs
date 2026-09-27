@@ -9,7 +9,7 @@ use retiretui_client::metric::Metric;
 use retiretui_client::table::{align, display_dollars, summary_table};
 
 /// Arguments of the `compare` subcommand.
-#[derive(Args)]
+#[derive(Args, Debug)]
 pub struct CompareArgs {
     /// Paths to two or more plan or scenario TOML files.
     #[arg(num_args = 2..)]

@@ -6,7 +6,7 @@ use clap::Args;
 use retiretui_engine::project::validate_plan;
 
 /// Arguments of the `import-earnings` subcommand.
-#[derive(Args)]
+#[derive(Args, Debug)]
 pub struct ImportEarningsArgs {
     /// Path to the plan TOML file; rewritten in canonical form.
     pub plan: PathBuf,

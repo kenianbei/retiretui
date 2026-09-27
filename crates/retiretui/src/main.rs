@@ -1,17 +1,6 @@
 //! Retirement planning application for the terminal.
 
-mod commands;
-
-use std::path::PathBuf;
-
-use clap::{Parser, Subcommand};
-
-use commands::actions::ActionsArgs;
-use commands::compare::CompareArgs;
-use commands::import::ImportEarningsArgs;
-use commands::markets::{HistoricalArgs, MonteCarloArgs};
-use commands::optimize::OptimizeCommand;
-use commands::project::ProjectArgs;
+use clap::{CommandFactory as _, FromArgMatches as _, Parser, Subcommand};
 use retiretui_mcp::McpArgs;
 use retiretui_tui::terminal::TuiArgs;
 
@@ -24,48 +13,44 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Command {
-    /// Check a plan file for schema and consistency errors.
-    Validate {
-        /// Path to the plan TOML file.
-        plan: PathBuf,
-    },
-    /// Project a plan year by year and print the ledger.
-    Project(ProjectArgs),
-    /// Print one year's concrete to-dos: conversions, RMDs, transfers,
-    /// contributions, and funding withdrawals, with warnings.
-    Actions(ActionsArgs),
-    /// Compare two or more plans or scenarios side by side.
-    Compare(CompareArgs),
+    #[command(flatten)]
+    Cli(retiretui_cli::Command),
     /// Open the interactive dashboard for a plan or scenario.
     Tui(TuiArgs),
-    /// Search a plan: a Roth conversion ladder, or Social Security claim
-    /// ages.
-    #[command(subcommand)]
-    Optimize(OptimizeCommand),
-    /// Run a plan through many random markets, drawn from its assumptions
-    /// or from history, and report how often the money lasts.
-    MonteCarlo(MonteCarloArgs),
-    /// Run a plan through history from every start year and report which
-    /// the money would have lasted through.
-    Historical(HistoricalArgs),
-    /// Pull the earnings record out of a Social Security statement (the
-    /// XML from ssa.gov) onto a person, rewriting the plan file.
-    ImportEarnings(ImportEarningsArgs),
     /// Serve plans to AI agents over the Model Context Protocol on stdio.
     Mcp(McpArgs),
 }
 
+/// The order `--help` lists the commands in, which the crates they come from
+/// do not decide.
+const HELP_ORDER: [&str; 10] = [
+    "validate",
+    "project",
+    "actions",
+    "compare",
+    "tui",
+    "optimize",
+    "monte-carlo",
+    "historical",
+    "import-earnings",
+    "mcp",
+];
+
+fn command_line() -> clap::Command {
+    HELP_ORDER
+        .iter()
+        .enumerate()
+        .fold(Cli::command(), |command, (place, name)| {
+            command.mut_subcommand(name, |sub| sub.display_order(place))
+        })
+}
+
 fn main() -> anyhow::Result<()> {
-    match Cli::parse().command {
-        Command::Validate { plan } => commands::run_validate(&plan),
-        Command::Project(args) => commands::project::run(&args),
-        Command::Actions(args) => commands::actions::run(&args),
-        Command::Compare(args) => commands::compare::run(&args),
+    let cli =
+        Cli::from_arg_matches(&command_line().get_matches()).unwrap_or_else(|error| error.exit());
+    match cli.command {
+        Command::Cli(command) => retiretui_cli::run(&command),
         Command::Tui(args) => retiretui_tui::terminal::run(&args),
-        Command::Optimize(command) => commands::optimize::run(&command),
-        Command::MonteCarlo(args) => commands::markets::run_monte_carlo(&args),
-        Command::Historical(args) => commands::markets::run_historical(&args),
-        Command::ImportEarnings(args) => commands::import::run(&args),
         Command::Mcp(args) => retiretui_mcp::run(&args),
     }
 }

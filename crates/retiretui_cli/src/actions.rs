@@ -11,7 +11,7 @@ use super::project::OutputFormat;
 use retiretui_client::actions::{collect_warnings, sentence};
 
 /// Arguments of the `actions` subcommand.
-#[derive(Args)]
+#[derive(Args, Debug)]
 pub struct ActionsArgs {
     /// Path to the plan TOML file.
     pub plan: PathBuf,
