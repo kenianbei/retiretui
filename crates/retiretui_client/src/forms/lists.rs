@@ -40,7 +40,6 @@ pub fn unused(
     offers.filter(|offer| !is_taken(offer)).collect()
 }
 
-/// Why an order with every place blank cannot be applied.
 const EMPTY_ORDER: &str = "needs at least one of its rows picked";
 
 /// The order `parts` make by their places, blanks closed up, or the complaint
@@ -60,7 +59,6 @@ pub fn ordered(
     (Some(Value::Array(order)), None)
 }
 
-/// Why a list with a blank row before a filled one cannot be applied.
 const GAPPED_LIST: &str = "is blank, but the row after it is not";
 
 /// The list `parts` make, each placed by how far from its end it sits, or the

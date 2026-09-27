@@ -23,8 +23,6 @@ const CHANGED_UNDERNEATH: &str =
 /// One item open in its form.
 pub struct ItemEdit {
     form: Form,
-    /// Where the item sat in the plan when opened or last applied - the
-    /// first place it is looked for - and `None` while it is new.
     index: Option<usize>,
     /// What the form's fields write; applying copies it into the draft.
     snapshot: Table,

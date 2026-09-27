@@ -105,7 +105,6 @@ fn compose(kind: Option<TriggerBasis>, parts: &[(Operand, Option<Value>)]) -> Op
     Some(Value::Table(table))
 }
 
-/// Why a trigger whose kind is chosen cannot be applied yet.
 const INCOMPLETE: &str = "the trigger names what it is measured from, but not the value";
 
 /// The trigger a `kind` and its `parts` make between them, since its parts
