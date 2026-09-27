@@ -43,7 +43,13 @@
     if (!document.createElement("canvas").getContext("webgl2")) {
       say("RetireTui draws with WebGL2, which this browser does not offer.");
     } else {
-      import("./pkg/retiretui.js")
+      // Every glyph is drawn once into a cache in the face loaded when it is
+      // first shown, so both weights must be in before the first frame.
+      Promise.all([
+        document.fonts.load("16px Inconsolata"),
+        document.fonts.load("bold 16px Inconsolata"),
+      ])
+        .then(() => import("./pkg/retiretui.js"))
         .then((module) => module.default())
         .catch((error) => say(`RetireTui did not load: ${error}`));
     }
