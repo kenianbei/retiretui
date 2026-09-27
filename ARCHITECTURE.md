@@ -113,7 +113,10 @@ depends on UI.
   in - a value, a table, an action, and an issue read back as the domain, item
   and field it is about. The form model - each editing domain by an id of its
   own, its fields in a form's words, what edits each and when the item has a use
-  for it, the choices a closed set or the plan's own ids offer. The
+  for it, the choices a closed set or the plan's own ids offer - and the item
+  open in a form: what its fields hold, applied whole into the draft or refused
+  with why, a trigger or a list made from the parts it is entered in, a table's
+  items ordered by a column, and an item read out in the form's words. The
   load-and-validate gate, a scenario's base chain followed over whatever reads
   its files, and every plan file read, written, listed and stamped through one
   store - the disk, or files kept as keys of a browser's storage, each file's
