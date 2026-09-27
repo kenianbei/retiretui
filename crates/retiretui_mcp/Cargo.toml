@@ -19,7 +19,6 @@ retiretui_engine = { workspace = true, features = ["schemars"] }
 rmcp = { version = "3.4.1", features = ["server", "macros", "transport-io", "schemars"] }
 schemars.workspace = true
 serde.workspace = true
-serde_json.workspace = true
 tokio = { version = "1.53.1", features = ["rt"] }
 toml.workspace = true
 
