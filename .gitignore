@@ -4,3 +4,6 @@ debug
 .claude
 /crates/retiretui_web/dist
 /crates/retiretui_wasm/pkg
+/web/node_modules
+/web/dist
+/web/*.tsbuildinfo

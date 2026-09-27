@@ -17,6 +17,8 @@ assert.equal(document.isReadOnly, false);
 const [first] = document.projection().years;
 assert.equal(typeof first.year, "number");
 assert.equal(document.actions(first.year).year, first.year);
+assert.equal(document.thisYear(first.year - 1), first.year);
+assert.deepEqual(document.said(first.year).ages, [["Sam", 30]]);
 
 const plan = document.planText();
 assert.deepEqual(validate(plan), []);

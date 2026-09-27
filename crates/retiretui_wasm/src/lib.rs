@@ -4,6 +4,7 @@
 
 mod document;
 mod searches;
+mod vocabulary;
 
 use std::path::Path;
 use std::sync::OnceLock;
@@ -41,9 +42,10 @@ fn reply<T: Serialize>(answer: Result<T, String>) -> Result<JsValue, JsError> {
 
 #[wasm_bindgen(typescript_custom_section)]
 const TYPES: &str = r#"import type {
-  ActionsReply, ClaimsReply, Example, HistoricalReply, Issue, MonteCarloReply,
-  Projection, Summary, SweepReply,
-} from "../bindings/index";"#;
+  ActionsReply, ClaimsReply, Domain, Example, HistoricalReply, Issue,
+  MonteCarloReply, PlacedIssue, Projection, SaidYear, Summary, SweepReply,
+} from "../bindings/index";
+export type * from "../bindings/index";"#;
 
 /// A plan file opened through the page's reads.
 #[wasm_bindgen(js_name = Document)]
@@ -81,12 +83,12 @@ impl JsDocument {
             .collect()
     }
 
-    /// What the full gate found wrong.
+    /// What the full gate found wrong, each where it is.
     ///
     /// # Errors
     ///
     /// Where the issues do not convert.
-    #[wasm_bindgen(unchecked_return_type = "Issue[]")]
+    #[wasm_bindgen(unchecked_return_type = "PlacedIssue[]")]
     pub fn issues(&self) -> Result<JsValue, JsError> {
         to_js(&self.0.issues())
     }
@@ -113,6 +115,14 @@ impl JsDocument {
         to_js(&self.0.summary(deflated))
     }
 
+    /// The year every view starts on: `today`, held within the plan's
+    /// years; `undefined` while the plan has issues.
+    #[wasm_bindgen(js_name = thisYear)]
+    #[must_use]
+    pub fn this_year(&self, today: i16) -> Option<i16> {
+        self.0.this_year(today)
+    }
+
     /// `year`'s recorded actions and warnings.
     ///
     /// # Errors
@@ -121,6 +131,16 @@ impl JsDocument {
     #[wasm_bindgen(unchecked_return_type = "ActionsReply")]
     pub fn actions(&self, year: i16) -> Result<JsValue, JsError> {
         reply(self.0.actions(year))
+    }
+
+    /// `year` in words: its actions, its warnings, and everyone's age.
+    ///
+    /// # Errors
+    ///
+    /// Where the plan has issues, or `year` is outside its projection.
+    #[wasm_bindgen(unchecked_return_type = "SaidYear")]
+    pub fn said(&self, year: i16) -> Result<JsValue, JsError> {
+        reply(self.0.said(year))
     }
 
     /// The resolved plan as canonical TOML: what a worker is handed, and
@@ -155,6 +175,23 @@ fn read_through(read: &Function, file: &Path) -> Result<String, String> {
 #[wasm_bindgen(unchecked_return_type = "Example[]")]
 pub fn examples() -> Result<JsValue, JsError> {
     to_js(&searches::examples())
+}
+
+/// Every editing domain, in the order the plan lists them.
+///
+/// # Errors
+///
+/// Where the domains do not convert.
+#[wasm_bindgen(unchecked_return_type = "Domain[]")]
+pub fn domains() -> Result<JsValue, JsError> {
+    to_js(&vocabulary::domains())
+}
+
+/// How many issues there are, in words: `1 issue`, `3 issues`.
+#[wasm_bindgen(js_name = issueCount)]
+#[must_use]
+pub fn issue_count(count: usize) -> String {
+    retiretui_client::present::issue_count(count)
 }
 
 /// What the full gate finds wrong with `plan`, a plan's TOML.
@@ -220,7 +257,9 @@ mod bindings {
     use retiretui_engine::project::{Projection, Summary};
     use ts_rs::{Config, TS};
 
+    use crate::document::{PlacedIssue, SaidYear};
     use crate::searches::Example;
+    use crate::vocabulary::Domain;
 
     const BINDINGS: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/bindings");
 
@@ -232,6 +271,8 @@ mod bindings {
             .with_out_dir(BINDINGS);
         let exports = [
             Issue::export_all,
+            PlacedIssue::export_all,
+            SaidYear::export_all,
             Projection::export_all,
             Summary::export_all,
             ActionsReply::export_all,
@@ -240,6 +281,7 @@ mod bindings {
             MonteCarloReply::export_all,
             HistoricalReply::export_all,
             Example::export_all,
+            Domain::export_all,
         ];
         for export in exports {
             export(&config).expect("exports");

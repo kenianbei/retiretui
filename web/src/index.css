@@ -1,0 +1,107 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* Each role is the TUI theme's of the same job; contrast.test.ts holds every
+   text role at 4.5:1 on its ground and every mark at 3:1. */
+:root {
+  --background: #fbfbfa;
+  --foreground: #1b1f23;
+  --card: #ffffff;
+  --card-foreground: #1b1f23;
+  --popover: #ffffff;
+  --popover-foreground: #1b1f23;
+  --primary: #1f5f7a;
+  --primary-foreground: #ffffff;
+  --secondary: #eef1f3;
+  --secondary-foreground: #1b1f23;
+  --muted: #f1f3f4;
+  --muted-foreground: #58636d;
+  --accent: #e3edf1;
+  --accent-foreground: #1b1f23;
+  --destructive: #b3261e;
+  --success: #2e7048;
+  --warning: #85560a;
+  --border: #dcdfe3;
+  --input: #858e96;
+  --ring: #1f5f7a;
+  --chart-1: #1f5f7a;
+  --chart-2: #5f8233;
+  --chart-3: #8e5ba8;
+  --chart-4: #b06e14;
+  --chart-5: #4a72b8;
+  --radius: 0.5rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #111417;
+    --foreground: #e6e8ea;
+    --card: #171b1f;
+    --card-foreground: #e6e8ea;
+    --popover: #171b1f;
+    --popover-foreground: #e6e8ea;
+    --primary: #7cc0d8;
+    --primary-foreground: #0b1a20;
+    --secondary: #1e2327;
+    --secondary-foreground: #e6e8ea;
+    --muted: #1e2327;
+    --muted-foreground: #9aa4ad;
+    --accent: #1d2c33;
+    --accent-foreground: #e6e8ea;
+    --destructive: #f08a80;
+    --success: #6fcf97;
+    --warning: #e3b35a;
+    --border: #2c3338;
+    --input: #6b747b;
+    --ring: #7cc0d8;
+    --chart-1: #7cc0d8;
+    --chart-2: #a6c96a;
+    --chart-3: #c49be0;
+    --chart-4: #e3b35a;
+    --chart-5: #8fb0ee;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    color-scheme: light dark;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}

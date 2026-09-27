@@ -7,4 +7,5 @@ export CARGO_PROFILE_RELEASE_OPT_LEVEL=z
 export CARGO_PROFILE_RELEASE_LTO=true
 export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1
 export CARGO_PROFILE_RELEASE_STRIP=true
-wasm-pack build --target web --release --no-pack --out-dir pkg
+# Weak references free what the page drops, as a garbage-collected value is.
+wasm-pack build --target web --release --weak-refs --no-pack --out-dir pkg
