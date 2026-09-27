@@ -30,8 +30,8 @@ use plurimus::core::UiWidget;
 use plurimus::term::bevy_compat::HeldModifiers;
 use plurimus::ui::{KeyBinding, first_bound};
 use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
-use retiretui_engine::market::Progress;
-use retiretui_engine::plan::{Issue, Plan};
+use retiretui_engine::market::{Progress, RunError};
+use retiretui_engine::plan::Plan;
 
 pub use claims::Claims;
 pub use ladders::Ladders;
@@ -133,7 +133,7 @@ const ENTER_KEYS: &[(KeyBinding, ())] = &[(KeyBinding::new(Key::Enter), ())];
 
 struct Running<R> {
     /// What the search found over the plan it is keyed by.
-    search: Keyed<Arc<Plan>, Result<R, Vec<Issue>>>,
+    search: Keyed<Arc<Plan>, Result<R, RunError>>,
     /// How many steps the search takes, where it counts them.
     total: Option<usize>,
 }
@@ -181,9 +181,9 @@ impl<R: Found> Tool<R> {
     fn start(
         &mut self,
         plan: Plan,
-        work: impl FnOnce(&Plan) -> Result<R, Vec<Issue>> + Send + 'static,
+        work: impl FnOnce(&Plan, &Progress) -> Result<R, RunError> + Send + 'static,
     ) {
-        self.spawn(plan, None, move |plan, _| work(plan));
+        self.spawn(plan, None, work);
         self.show(None);
     }
 
@@ -208,7 +208,7 @@ impl<R: Found> Tool<R> {
         &mut self,
         plan: Plan,
         total: usize,
-        work: impl FnOnce(&Plan, &Progress) -> Result<R, Vec<Issue>> + Send + 'static,
+        work: impl FnOnce(&Plan, &Progress) -> Result<R, RunError> + Send + 'static,
     ) {
         self.spawn(plan, Some(total), work);
     }
@@ -217,7 +217,7 @@ impl<R: Found> Tool<R> {
         &mut self,
         plan: Plan,
         total: Option<usize>,
-        work: impl FnOnce(&Plan, &Progress) -> Result<R, Vec<Issue>> + Send + 'static,
+        work: impl FnOnce(&Plan, &Progress) -> Result<R, RunError> + Send + 'static,
     ) {
         let plan = Arc::new(plan);
         let searched = Arc::clone(&plan);
@@ -249,7 +249,10 @@ impl<R: Found> Tool<R> {
         }
         match found {
             Ok(found) => self.found = Some((found, Some(took))),
-            Err(issues) => self.refused = issues.first().map(|issue| issue.message.clone()),
+            Err(RunError::Refused(issues)) => {
+                self.refused = issues.first().map(|issue| issue.message.clone());
+            }
+            Err(RunError::Cancelled) => self.refused = None,
         }
     }
 
@@ -377,7 +380,7 @@ fn poll_search<R: Found>(
 /// Ticks until every tool's search has answered.
 #[cfg(test)]
 pub fn settle_all(app: &mut bevy_app::App) {
-    settle::<retiretui_engine::optimize::ClaimSearch>(app);
+    settle_claims(app);
     settle::<ladders::Swept>(app);
     settle::<retiretui_engine::market::MonteCarlo>(app);
     settle::<retiretui_engine::market::Runs>(app);
@@ -390,6 +393,13 @@ pub fn settle_all(app: &mut bevy_app::App) {
             .resource::<super::overview::Better>()
             .is_running()
     });
+}
+
+/// Ticks until the claim search and the People estimates have answered.
+#[cfg(test)]
+pub fn settle_claims(app: &mut bevy_app::App) {
+    settle::<retiretui_engine::optimize::ClaimSearch>(app);
+    settle_until_idle(app, claims::is_estimating);
 }
 
 /// Holds a tool's answer back until released, or releases it.

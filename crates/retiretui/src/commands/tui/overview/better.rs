@@ -9,7 +9,7 @@ use std::collections::BTreeSet;
 
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::prelude::{Res, ResMut, Resource};
-use retiretui_engine::market::{History, Progress, RunError, Runs, historical};
+use retiretui_engine::market::{History, Progress, Runs, historical};
 use retiretui_engine::optimize::{ClaimSearch, optimize_claims, rank_key};
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::{Plan, TreatmentClass};
@@ -154,34 +154,30 @@ impl Better {
     }
 }
 
-/// Every search, the cheapest first; none once cancelled, which is
-/// checked between them.
+/// Every search, the cheapest first; none once cancelled.
 fn search(
     (plan, held, answers): &Searched,
     (tables, history): (&TaxTables, &History),
     progress: &Progress,
 ) -> Option<Found> {
-    let historical = match historical(plan, tables, history, progress) {
-        Err(RunError::Cancelled) => return None,
-        ran => ran.ok(),
-    };
+    let historical = historical(plan, tables, history, progress).ok();
     let held: Vec<String> = held.iter().cloned().collect();
-    let claims = unless_cancelled(progress, || optimize_claims(plan, tables, &[], &held).ok())?;
+    let claims = optimize_claims(plan, tables, &[], &held, progress).ok();
     let mut ladders = Vec::new();
     for owner in roth_owners(plan) {
-        let best = unless_cancelled(progress, || best_ladder(plan, tables, answers, owner))?;
-        ladders.push(best);
+        if progress.is_cancelled() {
+            return None;
+        }
+        ladders.push(best_ladder(plan, tables, answers, owner, progress));
+    }
+    if progress.is_cancelled() {
+        return None;
     }
     Some(Found {
         historical,
         claims,
         ladders,
     })
-}
-
-/// `work`, unless the search is cancelled before it starts.
-fn unless_cancelled<T>(progress: &Progress, work: impl FnOnce() -> T) -> Option<T> {
-    (!progress.is_cancelled()).then(work)
 }
 
 /// The best ladder into `owner`'s Roth account, searched as the Roth
@@ -191,11 +187,12 @@ fn best_ladder(
     tables: &TaxTables,
     answers: &toml::Table,
     (owner, destination): (&str, &str),
+    progress: &Progress,
 ) -> Ladder {
     Ladder {
         owner: owner.to_owned(),
         destination: destination.to_owned(),
-        swept: ladders::sweep_into(plan, tables, answers, destination),
+        swept: ladders::sweep_into(plan, tables, answers, destination, progress),
     }
 }
 

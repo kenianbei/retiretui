@@ -3,6 +3,7 @@
 
 mod common;
 
+use retiretui_engine::market::{Progress, RunError};
 use retiretui_engine::optimize::{ClaimSearch, apply_claims, claims_overlay, optimize_claims};
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::{Plan, Scenario};
@@ -67,8 +68,17 @@ fn couple() -> String {
 
 fn search(plan: &Plan, incomes: &[&str]) -> Result<ClaimSearch, Vec<String>> {
     let incomes: Vec<String> = incomes.iter().map(|&id| id.to_owned()).collect();
-    optimize_claims(plan, &TaxTables::embedded(), &incomes, &[])
-        .map_err(|issues| issues.iter().map(ToString::to_string).collect())
+    optimize_claims(
+        plan,
+        &TaxTables::embedded(),
+        &incomes,
+        &[],
+        &Progress::default(),
+    )
+    .map_err(|error| match error {
+        RunError::Refused(issues) => issues.iter().map(ToString::to_string).collect(),
+        RunError::Cancelled => panic!("nothing cancels it"),
+    })
 }
 
 fn ages(search: &ClaimSearch) -> Vec<Vec<u8>> {
@@ -300,11 +310,42 @@ fn a_held_person_keeps_their_claim_and_the_plan_s_own_ages_are_reported() {
     let plan = plan_from(&couple());
     let all = search(&plan, &[]).unwrap();
     assert_eq!(all.current, [Some(67), Some(70)]);
-    let held = optimize_claims(&plan, &TaxTables::embedded(), &[], &["you".to_owned()]).unwrap();
+    let held = optimize_claims(
+        &plan,
+        &TaxTables::embedded(),
+        &[],
+        &["you".to_owned()],
+        &Progress::default(),
+    )
+    .unwrap();
     assert_eq!(held.incomes, ["ss"]);
     assert_eq!(held.candidates.len(), 9);
     let made_up = plan_from(&without_benefit());
-    let refused =
-        optimize_claims(&made_up, &TaxTables::embedded(), &[], &["me".to_owned()]).unwrap_err();
+    let Err(RunError::Refused(refused)) = optimize_claims(
+        &made_up,
+        &TaxTables::embedded(),
+        &[],
+        &["me".to_owned()],
+        &Progress::default(),
+    ) else {
+        panic!("a held person's plan is refused");
+    };
     assert_eq!(refused.len(), 1, "a held person gets no made-up income");
+}
+
+#[test]
+fn a_cancelled_search_answers_cancelled() {
+    let progress = Progress::default();
+    progress.cancel();
+    assert_eq!(
+        optimize_claims(
+            &plan_from(&couple()),
+            &TaxTables::embedded(),
+            &[],
+            &[],
+            &progress
+        )
+        .unwrap_err(),
+        RunError::Cancelled
+    );
 }

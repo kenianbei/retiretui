@@ -6,5 +6,6 @@ pub mod optimize;
 pub mod params;
 pub mod plan;
 pub mod project;
+pub mod search;
 pub mod statement;
 pub mod tax;

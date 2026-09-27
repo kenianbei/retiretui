@@ -13,8 +13,8 @@ use super::*;
 use crate::commands::tui::edit::Importing;
 use crate::commands::tui::pane::Framed;
 use crate::commands::tui::support::{
-    Headless, SIZE, composed_frame, headless_app_at, press_ctrl, press_key, press_shift, redrawn,
-    said, scratch_workspace, show,
+    Headless, SIZE, commit_edit, composed_frame, headless_app_at, press_ctrl, press_key,
+    press_shift, redrawn, said, scratch_workspace, show,
 };
 
 pub(super) const BENEFIT: &str = "[[income]]\nid = \"ss\"\nkind = \"social-security\"\nowner = \"me\"\nstart = { age = 67, owner = \"me\" }\n";
@@ -46,7 +46,7 @@ pub(super) fn app_on(plan: &str) -> Headless {
     let dir = scratch_workspace(plan);
     let mut app = headless_app_at(dir.join("plan.toml"), SIZE);
     show(&mut app, Page::SsaBenefits);
-    super::super::settle::<ClaimSearch>(&mut app);
+    super::super::settle_claims(&mut app);
     app
 }
 
@@ -57,7 +57,7 @@ pub(super) fn plan(app: &App) -> &Plan {
 /// Runs `command` and waits out the search the change starts.
 pub(super) fn run<M>(app: &mut App, command: impl IntoSystem<(), Outcome, M> + 'static) -> Outcome {
     let outcome = app.world_mut().run_system_cached(command).unwrap();
-    super::super::settle::<ClaimSearch>(app);
+    super::super::settle_claims(app);
     outcome
 }
 
@@ -103,6 +103,26 @@ fn the_pane_lists_each_person_s_record_income_and_estimates() {
     let cells = person_cells(row);
     assert_eq!(cells[..4], ["▌", "me", "6y", "computed"], "{row}");
     assert_eq!(cells[4..7], estimates, "{row}");
+}
+
+#[test]
+fn a_record_cleared_on_another_page_shows_when_the_page_is_turned_back_to() {
+    let mut app = app_on(&fixture());
+    show(&mut app, Page::Overview);
+    commit_edit(&mut app, |plan| plan.household.people[0].earnings.clear());
+    app.update();
+    show(&mut app, Page::SsaBenefits);
+    super::super::settle_claims(&mut app);
+    let frame = composed_frame(&app);
+    let row = frame
+        .lines()
+        .find(|line| line.contains(" none "))
+        .unwrap_or_else(|| panic!("the row still shows the record: {frame}"));
+    assert_eq!(
+        person_cells(row)[..4],
+        ["▌", "me", "none", "computed"],
+        "{row}"
+    );
 }
 
 #[test]

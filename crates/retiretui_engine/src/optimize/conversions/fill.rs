@@ -1,19 +1,21 @@
 use crate::params::TaxTables;
 use crate::plan::{Dollars, Plan};
 use crate::project::{Projection, project};
+use crate::search::Progress;
 
 use super::ladder::ladder_conversion;
 use super::targets::{conversion_window, year_targets};
 use super::{LadderStep, OptimizeOptions, UNBOUNDED};
 
 /// Settles the window years front to back against `baseline`, returning the
-/// steps and the final optimized projection.
+/// steps and the final optimized projection; once `progress` is cancelled,
+/// the steps settled so far.
 pub(super) fn search_ladder(
     plan: &Plan,
     tables: &TaxTables,
-    options: &OptimizeOptions,
-    bracket_rate: f64,
+    (options, bracket_rate): (&OptimizeOptions, f64),
     baseline: &Projection,
+    progress: &Progress,
 ) -> (Vec<LadderStep>, Projection) {
     let mut working = plan.clone();
     let mut current = baseline.clone();
@@ -26,6 +28,9 @@ pub(super) fn search_ladder(
         };
         let mut annual_left = options.annual_max.unwrap_or(UNBOUNDED);
         for source in &options.sources {
+            if progress.is_cancelled() {
+                return (steps, current);
+            }
             let total_left = options.total_max.map_or(UNBOUNDED, |max| max - total);
             let cap = annual_left.min(total_left);
             if cap <= 0 {
@@ -146,4 +151,39 @@ fn year_metrics(projection: &Projection, year: i16) -> YearFill {
             converted: row.conversions,
         })
         .unwrap_or_default()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::optimize::conversions::with_default_sources;
+
+    fn settled(progress: &Progress) -> Vec<LadderStep> {
+        let plan = Plan::from_toml_str(include_str!("../../../tests/fixtures/full.toml")).unwrap();
+        let tables = TaxTables::embedded();
+        let options = with_default_sources(
+            &plan,
+            &OptimizeOptions {
+                sources: Vec::new(),
+                destination: "roth-ira".to_owned(),
+                start_year: None,
+                end_year: None,
+                annual_max: None,
+                total_max: None,
+                headroom: 0,
+                irmaa_tier: None,
+                max_magi: None,
+            },
+        );
+        let baseline = project(&plan, &tables);
+        search_ladder(&plan, &tables, (&options, 0.22), &baseline, progress).0
+    }
+
+    #[test]
+    fn a_cancelled_search_settles_no_step() {
+        assert!(!settled(&Progress::default()).is_empty());
+        let cancelled = Progress::default();
+        cancelled.cancel();
+        assert_eq!(settled(&cancelled), []);
+    }
 }

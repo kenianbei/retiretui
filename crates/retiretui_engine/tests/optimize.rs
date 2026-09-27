@@ -3,9 +3,10 @@
 
 mod common;
 
+use retiretui_engine::market::{Progress, RunError};
 use retiretui_engine::optimize::{
-    OptimizeOptions, OptimizedLadder, SweptBracket, apply_ladder, is_ladder, ladder_overlay,
-    optimize_conversions, rank_key, sweep_brackets,
+    BracketSweep, OptimizeOptions, OptimizedLadder, SweptBracket, apply_ladder, is_ladder,
+    ladder_overlay, optimize_conversions, rank_key, sweep_brackets,
 };
 use retiretui_engine::params::{Inflation, TaxTables};
 use retiretui_engine::plan::{Plan, Scenario};
@@ -61,6 +62,23 @@ id = "living"
 amount = 40000
 cola = false
 "#;
+
+fn sweep(plan: &Plan, options: &OptimizeOptions) -> BracketSweep {
+    sweep_brackets(plan, &TaxTables::embedded(), options, &Progress::default()).unwrap()
+}
+
+#[test]
+fn a_cancelled_sweep_answers_cancelled() {
+    let progress = Progress::default();
+    progress.cancel();
+    let answer = sweep_brackets(
+        &plan_from(BASE),
+        &TaxTables::embedded(),
+        &options(),
+        &progress,
+    );
+    assert_eq!(answer.unwrap_err(), RunError::Cancelled);
+}
 
 fn options() -> OptimizeOptions {
     OptimizeOptions {
@@ -259,9 +277,9 @@ fn a_new_ladder_replaces_the_one_taken() {
         project(&laddered, &TaxTables::embedded()),
         "the plan as given"
     );
-    let swept = sweep_brackets(&laddered, &TaxTables::embedded(), &options()).unwrap();
-    let fresh = sweep_brackets(&plan_from(BASE), &TaxTables::embedded(), &options()).unwrap();
-    let steps = |sweep: &retiretui_engine::optimize::BracketSweep| {
+    let swept = sweep(&laddered, &options());
+    let fresh = sweep(&plan_from(BASE), &options());
+    let steps = |sweep: &BracketSweep| {
         sweep
             .brackets
             .iter()
@@ -336,7 +354,7 @@ fn optimizer_is_deterministic() {
 
 #[test]
 fn sweep_covers_every_fillable_bracket_best_first() {
-    let sweep = sweep_brackets(&plan_from(BASE), &TaxTables::embedded(), &options()).unwrap();
+    let sweep = sweep(&plan_from(BASE), &options());
     let params = TaxTables::embedded().params_for(2026, &Inflation::constant(0.0));
     let brackets = params
         .brackets
@@ -516,7 +534,7 @@ fn a_sweep_is_ranked_by_what_the_household_ends_with_not_by_rate() {
     into_roth.sources = Vec::new();
     into_roth.destination = "roth-ira".to_owned();
     let plan = plan_from(common::FULL);
-    let sweep = sweep_brackets(&plan, &TaxTables::embedded(), &into_roth).unwrap();
+    let sweep = sweep(&plan, &into_roth);
     let keys: Vec<_> = sweep
         .brackets
         .iter()

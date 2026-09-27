@@ -3,7 +3,7 @@
 
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
 use bevy_ecs::prelude::{
-    ChildOf, Children, Commands, Component, Entity, Mut, On, Query, Ref, Res, ResMut,
+    ChildOf, Children, Commands, Component, Entity, Mut, On, Query, Res, ResMut,
 };
 use bevy_ecs::system::SystemParam;
 use bevy_input::keyboard::{Key, KeyboardInput};
@@ -39,6 +39,9 @@ pub struct DomainTable {
     pub wanted: Option<Row>,
     /// Whether an item was just applied and its row is still to be flashed.
     pub is_applied: bool,
+    /// The width the rows were last laid out over; none while they are
+    /// behind what they are drawn from.
+    pub built_for: Option<u16>,
 }
 
 /// The item a body row stands for, by where it sits in the plan.
@@ -105,34 +108,40 @@ pub struct TableView<'w> {
 }
 
 /// Respawns a shown table's rows from the draft, keeping the cursor on the
-/// same item unless the table asked for another.
+/// same item unless the table asked for another. A table hidden or not yet
+/// laid out when what it draws moves is marked behind, and rebuilt once it
+/// is shown with room; one turned back to unmoved keeps its rows.
 pub fn rebuild_rows(
     view: TableView,
     mut tables: Query<(
         Entity,
         &mut DomainTable,
         &ActiveDescendant,
-        Ref<ComputedWidgetArea>,
+        &ComputedWidgetArea,
         &ScrollArea,
     )>,
     rows: Query<&Row>,
     mut commands: Commands,
 ) {
     let (draft, theme) = (&view.draft, &view.theme);
-    let is_turned = view.shown.is_changed();
     let surface = view.shown.surface();
     for (table, mut domain_table, cursor, area, scroll) in &mut tables {
+        let is_moved = draft.is_changed() || theme.is_changed() || domain_table.is_changed();
+        if domain_table.ops.surface != surface || area.0.width == 0 {
+            if is_moved {
+                domain_table.bypass_change_detection().built_for = None;
+            }
+            continue;
+        }
         // What the rows are drawn in, which is the area less the column
         // a scrolled table keeps for its bar.
         let given = scroll.content_width(area.0.width);
-        // A resize changes the area the columns are shared over.
-        let is_stale =
-            draft.is_changed() || is_turned || domain_table.is_changed() || area.is_changed();
-        if domain_table.ops.surface != surface || !is_stale {
+        if !is_moved && domain_table.built_for == Some(given) {
             continue;
         }
         let kept = cursor_row(*cursor, &rows);
         let table_ref = domain_table.bypass_change_detection();
+        table_ref.built_for = Some(given);
         let wanted = table_ref.wanted.take().or(kept);
         commands.entity(table).despawn_related::<Children>();
         let list = table_ref.list;

@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use anyhow::Context;
 use clap::{Args, ValueEnum};
 use retiretui_engine::market::{
-    self, BAND_PERCENTILES, Band, History, MonteCarlo, Progress, Run, RunError, RunName, Runs,
+    self, BAND_PERCENTILES, Band, History, MonteCarlo, Progress, Run, RunName, Runs,
 };
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::{Dollars, Draw, Market, Plan};
@@ -18,7 +18,7 @@ use serde::Serialize;
 
 use crate::commands::project::OutputFormat;
 use crate::commands::table::{align, plain_dollars, rate};
-use crate::commands::user_config_dir;
+use crate::commands::{run_refusal, user_config_dir};
 use retiretui_engine::project::validate_plan;
 
 /// Where the historical record is read from in place of the embedded one.
@@ -233,14 +233,6 @@ pub(crate) fn load_history(explicit: Option<&Path>) -> anyhow::Result<History> {
 /// The plan's `[market]`, created where it states none, for a flag to set.
 fn market_of(plan: &mut Plan) -> &mut Market {
     plan.market.get_or_insert_with(Market::default)
-}
-
-/// Why a search answered nothing, as the CLI and MCP say it.
-pub(crate) fn run_refusal(error: RunError) -> String {
-    match error {
-        RunError::Cancelled => "the search was cancelled".to_owned(),
-        RunError::Refused(issues) => crate::commands::issue_listing(&issues),
-    }
 }
 
 /// Loads the plan and its surroundings, lets `settle` apply the flags, and

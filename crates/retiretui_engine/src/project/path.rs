@@ -35,10 +35,7 @@ impl MarketPath {
     /// `inflation`.
     pub(crate) fn new(plan: &Plan, returns: Vec<ClassReturns>, inflation: Inflation) -> Self {
         let start_year = plan.plan.start_year;
-        let deflators = (start_year..)
-            .take(horizon_len(plan))
-            .map(|year| inflation.factor(start_year, year))
-            .collect();
+        let deflators = inflation.factors_from(start_year, horizon_len(plan));
         Self {
             start_year,
             returns,

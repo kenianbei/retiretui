@@ -22,6 +22,7 @@ use super::rank_key;
 use crate::params::TaxTables;
 use crate::plan::{Dollars, Issue, Plan, TreatmentClass};
 use crate::project::{Projection, plan_inflation, project};
+use crate::search::{Progress, RunError, run_all};
 
 use check::check_options;
 use fill::search_ladder;
@@ -142,7 +143,13 @@ pub fn optimize_conversions(
     }
     let baseline = project(plan, tables);
     let (bare, from) = without_ladder(plan, tables, &baseline);
-    let (steps, optimized) = search_ladder(&bare, tables, options, bracket_rate, &from);
+    let (steps, optimized) = search_ladder(
+        &bare,
+        tables,
+        (options, bracket_rate),
+        &from,
+        &Progress::default(),
+    );
     Ok(OptimizedLadder {
         baseline,
         ladder: SweptBracket {
@@ -154,36 +161,41 @@ pub fn optimize_conversions(
 }
 
 /// Runs the optimizer once per fillable bracket (every rate but the top,
-/// which has no ceiling) against one shared baseline, and ranks the
-/// ladders best first; each ladder replaces the plan's own, as
-/// [`optimize_conversions`].
+/// which has no ceiling), across the machine's threads, against one shared
+/// baseline, and ranks the ladders best first; each ladder replaces the
+/// plan's own, as [`optimize_conversions`].
 ///
 /// # Errors
 ///
-/// As [`optimize_conversions`], for the shared constraint checks.
+/// [`RunError::Refused`] as [`optimize_conversions`], for the shared
+/// constraint checks; [`RunError::Cancelled`] when `progress` is cancelled
+/// before every ladder is settled.
 pub fn sweep_brackets(
     plan: &Plan,
     tables: &TaxTables,
     options: &OptimizeOptions,
-) -> Result<BracketSweep, Vec<Issue>> {
+    progress: &Progress,
+) -> Result<BracketSweep, RunError> {
     let options = &with_default_sources(plan, options);
     let issues = check_options(plan, tables, options, None);
     if !issues.is_empty() {
-        return Err(issues);
+        return Err(RunError::Refused(issues));
+    }
+    if progress.is_cancelled() {
+        return Err(RunError::Cancelled);
     }
     let baseline = project(plan, tables);
     let (bare, from) = without_ladder(plan, tables, &baseline);
-    let mut brackets: Vec<SweptBracket> = fillable_rates(plan, tables)
-        .into_iter()
-        .map(|rate| {
-            let (steps, optimized) = search_ladder(&bare, tables, options, rate, &from);
-            SweptBracket {
-                rate,
-                steps,
-                optimized,
-            }
+    let rates = fillable_rates(plan, tables);
+    let mut brackets = run_all(rates.len(), progress, |at| {
+        let rate = rates[at];
+        let (steps, optimized) = search_ladder(&bare, tables, (options, rate), &from, progress);
+        Some(SweptBracket {
+            rate,
+            steps,
+            optimized,
         })
-        .collect();
+    })?;
     brackets.sort_by_cached_key(|bracket| rank_key(&bracket.optimized));
     Ok(BracketSweep { baseline, brackets })
 }

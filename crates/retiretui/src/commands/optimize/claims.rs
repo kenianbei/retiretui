@@ -1,6 +1,8 @@
 use std::path::{Path, PathBuf};
 
+use crate::commands::run_refusal;
 use clap::Args;
+use retiretui_engine::market::Progress;
 use retiretui_engine::optimize::{Claim, ClaimSearch, claims_overlay, optimize_claims};
 use retiretui_engine::project::Summary;
 use schemars::JsonSchema;
@@ -36,8 +38,8 @@ pub struct ClaimArgs {
 pub fn run(args: &ClaimArgs) -> anyhow::Result<()> {
     let tables = crate::commands::load_tables(&args.tax_dir)?;
     let plan = crate::commands::load_validated_plan(&args.plan, &tables)?;
-    let search = optimize_claims(&plan, &tables, &args.income, &[])
-        .map_err(|issues| anyhow::Error::msg(crate::commands::issue_listing(&issues)))?;
+    let search = optimize_claims(&plan, &tables, &args.income, &[], &Progress::default())
+        .map_err(|error| anyhow::Error::msg(run_refusal(error)))?;
     let deflated = !args.nominal;
     match args.format {
         OutputFormat::Json => println!(

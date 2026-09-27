@@ -1,3 +1,4 @@
+use retiretui_engine::market::Progress;
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::{FilingStatus, Item, Plan, PlanDate, Trigger};
 use retiretui_engine::project::{project, validate_plan};
@@ -194,7 +195,9 @@ fn a_working_person_with_no_figure_typed_gets_a_benefit_computed_from_a_career()
     assert!(plan.household.people[1].earnings.is_empty());
 
     assert!(validate_plan(&plan, &tables).is_empty());
-    let found = retiretui_engine::optimize::optimize_claims(&plan, &tables, &[], &[]).unwrap();
+    let found =
+        retiretui_engine::optimize::optimize_claims(&plan, &tables, &[], &[], &Progress::default())
+            .unwrap();
     assert_eq!(
         found.incomes,
         ["ss-jordanexample-1"],

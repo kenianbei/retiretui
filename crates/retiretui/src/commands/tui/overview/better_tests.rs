@@ -1,5 +1,6 @@
 use bevy_app::App;
 use plurimus::term::KeyCode;
+use retiretui_engine::market::Progress;
 use retiretui_engine::optimize::{
     ClaimSearch, OptimizeOptions, SweptBracket, apply_claims, apply_ladder, optimize_claims,
     rank_key, sweep_brackets,
@@ -116,7 +117,7 @@ fn best_ladder(app: &App, destination: &str) -> SweptBracket {
     let plan = &projected(app).plan;
     let tables = &app.world().resource::<Session>().tables;
     let (options, rate) = options_of(app, destination);
-    let sweep = ladders::search(plan, tables, &options, rate).unwrap();
+    let sweep = ladders::search(plan, tables, &options, rate, &Progress::default()).unwrap();
     sweep.brackets.into_iter().next().unwrap()
 }
 
@@ -128,7 +129,7 @@ fn options_of(app: &App, destination: &str) -> (OptimizeOptions, Option<f64>) {
 fn claim_search(app: &App) -> ClaimSearch {
     let plan = &projected(app).plan;
     let tables = &app.world().resource::<Session>().tables;
-    optimize_claims(plan, tables, &[], &[]).unwrap()
+    optimize_claims(plan, tables, &[], &[], &Progress::default()).unwrap()
 }
 
 /// What `option` ends with against the plan as it stands, in the basis
@@ -173,7 +174,7 @@ fn enter_on_a_ladder_opens_its_search_with_the_same_best() {
     let tables = app.world().resource::<Session>().tables.clone();
     let plan = projected(&app).plan.clone();
     let (options, _) = options_of(&app, "roth");
-    let sweep = sweep_brackets(&plan, &tables, &options).unwrap();
+    let sweep = sweep_brackets(&plan, &tables, &options, &Progress::default()).unwrap();
     let best = best_ladder(&app, "roth");
     let lesser = sweep.brackets.iter().rfind(|held| held.steps != best.steps);
     takes(&mut app, &lesser.unwrap().clone(), "roth");
@@ -235,7 +236,13 @@ fn a_held_constraint_is_searched_under_and_kept() {
     let current = rank_key(&projected(&app).projection);
     let (options, _) = options_of(&app, ROTH);
     let tables = &app.world().resource::<Session>().tables;
-    let sweep = sweep_brackets(&projected(&app).plan, tables, &options).unwrap();
+    let sweep = sweep_brackets(
+        &projected(&app).plan,
+        tables,
+        &options,
+        &Progress::default(),
+    )
+    .unwrap();
     let held = (sweep.brackets[1..].iter())
         .find(|bracket| rank_key(&bracket.optimized) < current)
         .expect("a lesser ladder beats the plan");

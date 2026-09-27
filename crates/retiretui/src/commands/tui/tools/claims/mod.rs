@@ -35,6 +35,8 @@ use crate::commands::tui::nav::{self, Page, ShownSurface};
 use crate::commands::tui::overview::Better;
 use crate::commands::tui::session::Session;
 pub(crate) use people::HeldClaims;
+#[cfg(test)]
+pub(crate) use people::is_estimating;
 
 pub type Claims = Tool<ClaimSearch>;
 
@@ -149,8 +151,8 @@ fn search_by_itself(
     }
     let tables = session.tables.clone();
     let held: Vec<String> = held.0.iter().cloned().collect();
-    claims.start(draft.plan.clone(), move |plan| {
-        optimize_claims(plan, &tables, &[], &held)
+    claims.start(draft.plan.clone(), move |plan, progress| {
+        optimize_claims(plan, &tables, &[], &held, progress)
     });
 }
 

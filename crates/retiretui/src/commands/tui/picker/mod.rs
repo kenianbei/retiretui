@@ -3,6 +3,8 @@
 //! system that is told which was chosen.
 
 mod matching;
+#[cfg(test)]
+mod tests;
 
 use bevy_app::{App, Update};
 use bevy_ecs::change_detection::DetectChanges;
@@ -276,8 +278,7 @@ fn relist(world: &mut World) {
         .run_system_with(picker.list, query.clone())
         .unwrap_or_default();
     let theme = world.resource::<Theme>().clone();
-    world.entity_mut(results).despawn_related::<Children>();
-    let first = spawn_rows(world, results, &rows, &theme);
+    let first = place_rows(world, results, &rows, &theme);
     if rows.is_empty() {
         say_no_match(world, results, picker, &query, &theme);
     }
@@ -299,28 +300,41 @@ fn draw_query(world: &mut World, query: String, theme: &Theme) {
     }
 }
 
-/// The rows under `results`, and the first, which the cursor opens on.
-fn spawn_rows(
+/// Writes `rows` over the rows under `results`, keeping the entities
+/// already there and spawning or despawning only the difference; answers
+/// with the first, which the cursor opens on.
+fn place_rows(
     world: &mut World,
     results: Entity,
     rows: &[Offered],
     theme: &Theme,
 ) -> Option<Entity> {
+    let mut kept = world
+        .get::<Children>(results)
+        .map(|children| children.to_vec())
+        .unwrap_or_default();
+    for extra in kept.split_off(rows.len().min(kept.len())) {
+        world.entity_mut(extra).despawn();
+    }
     let mut first = None;
-    for row in rows {
+    for (at, row) in rows.iter().enumerate() {
         let label = matching::lit_line(&row.text, &row.indices, theme.accented());
         let trailing = Line::styled(row.badge.clone(), theme.dimmed());
-        let mut item = world.spawn((
-            list_item(label),
-            ListItemTrailing(trailing),
-            Row(row.id),
-            ChildOf(results),
-        ));
+        let written = (list_item(label), ListItemTrailing(trailing), Row(row.id));
+        let mut item = match kept.get(at) {
+            Some(&entity) => {
+                let mut item = world.entity_mut(entity);
+                item.insert(written);
+                item
+            }
+            None => world.spawn((written, ChildOf(results))),
+        };
         if row.is_dim {
             item.insert(UiStyle(theme.dimmed()));
+        } else {
+            item.remove::<UiStyle>();
         }
-        let item = item.id();
-        first.get_or_insert(item);
+        first.get_or_insert(item.id());
     }
     first
 }

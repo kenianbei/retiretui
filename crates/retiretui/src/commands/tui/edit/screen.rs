@@ -77,6 +77,7 @@ fn spawn_table(commands: &mut Commands, root: Entity, ops: Ops, list: ListOps) {
                 sort: None,
                 wanted: None,
                 is_applied: false,
+                built_for: None,
             },
             FocusStop,
             layout::Rests,

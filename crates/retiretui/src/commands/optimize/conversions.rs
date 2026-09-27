@@ -1,6 +1,8 @@
 use std::path::{Path, PathBuf};
 
+use crate::commands::run_refusal;
 use clap::Args;
+use retiretui_engine::market::Progress;
 use retiretui_engine::optimize::LadderStep;
 use retiretui_engine::optimize::{
     BracketSweep, OptimizeOptions, OptimizedLadder, ladder_overlay, optimize_conversions,
@@ -172,8 +174,9 @@ fn run_sweep(plan: &Plan, tables: &TaxTables, args: &OptimizeArgs) -> anyhow::Re
         plan,
         tables,
         &args.constraints.options(&args.from, &args.to),
+        &Progress::default(),
     )
-    .map_err(|issues| anyhow::Error::msg(crate::commands::issue_listing(&issues)))?;
+    .map_err(|error| anyhow::Error::msg(run_refusal(error)))?;
     let deflated = !args.nominal;
     match args.format {
         OutputFormat::Json => {
