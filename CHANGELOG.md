@@ -18,6 +18,13 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   it, and its `actions`, `files`, `ladder`, `metric`, `resolve`, `store` and
   `table` modules are gone from its API. The engine resolves scenario base
   chains itself, as `plan::resolve`.
+- The command line and the MCP server are library crates of their own,
+  `retiretui_cli` and `retiretui_mcp`, and the terminal launcher is
+  `retiretui_tui`'s `terminal` feature, off by default; `retiretui` composes the
+  three into the one command it always was, with the same commands, output and
+  help. The client loads the tax tables, the market history and the user's
+  directories behind a `native` feature, and the MCP server reaches its
+  sandboxed plan files through the client's store.
 
 ## [0.2.0] - 2026-09-27
 
