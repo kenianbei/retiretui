@@ -1,9 +1,9 @@
 # Releasing
 
-A release publishes the engine, the planner's library and the binary to
-crates.io, attaches Linux binaries to a GitHub Release, and deploys the browser
-page to GitHub Pages. While the version is below 1.0, a breaking change to the
-engine's API bumps the minor version.
+A release publishes the engine, the client every interface shares, the planner's
+library and the binary to crates.io, attaches Linux binaries to a GitHub
+Release, and deploys the browser page to GitHub Pages. While the version is
+below 1.0, a breaking change to the engine's API bumps the minor version.
 
 1. **Release branch.** On `chore/release-x.y.z`, rename `## [Unreleased]` in
    `CHANGELOG.md` to `## [x.y.z] - YYYY-MM-DD`, open a new empty

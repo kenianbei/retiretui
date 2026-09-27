@@ -29,15 +29,16 @@ A cargo workspace splits the system into crates with a one-way rule: logic never
 depends on UI.
 
 - `retiretui_engine` - everything that computes. `plan` is the schema, its
-  semantic validation, the scenario overlay merge, and how one plan differs from
-  another - items matched by id as the merge matches them - both working on
-  parsed TOML tables so the engine stays IO-free; it also states its closed
-  vocabularies - the kinds, statuses, trigger bases, and places a plan may
-  name - so that no surface restates them. `params` holds per-year tax
-  parameters: values are data, embedded as TOML tables for known years,
-  overridable from user directories - a year's table leaving out a state takes
-  it from the latest earlier table that has it - and extended past the last
-  known year by inflating indexed values by the inflation of the market
+  semantic validation, the scenario overlay merge and the resolution that
+  follows a scenario's base chain through whatever reads the files it names, and
+  how one plan differs from another - items matched by id as the merge matches
+  them - both working on parsed TOML tables so the engine stays IO-free; it also
+  states its closed vocabularies - the kinds, statuses, trigger bases, and
+  places a plan may name - so that no surface restates them. `params` holds
+  per-year tax parameters: values are data, embedded as TOML tables for known
+  years, overridable from user directories - a year's table leaving out a state
+  takes it from the latest earlier table that has it - and extended past the
+  last known year by inflating indexed values by the inflation of the market
   projected through - and the national average wage index, grown past its last
   published year at an assumed rate a plan may override, from which the benefit
   formula's wage bases and bend points derive by statute for any year, beside
@@ -107,30 +108,39 @@ depends on UI.
   is what every search shares: a way to follow it and to stop it at its next
   step, and the machine's threads, where there are any, to run its independent
   steps across - a market's runs, a sweep's brackets.
+- `retiretui_client` - what every interface shares over the engine, and draws in
+  its own way; it depends on none of their own crates. The words a plan is said
+  in - a value, a table, an action, and an issue read back as the domain, item
+  and field it is about. The form model - each editing domain by an id of its
+  own, its fields in a form's words, what edits each and when the item has a use
+  for it, the choices a closed set or the plan's own ids offer. The
+  load-and-validate gate, and every plan file read, written, listed and stamped
+  through one store - the disk, or files kept as keys of a browser's storage,
+  each file's count of writes its stamp. The document a shell holds open, its
+  projection, and the draft every edit lands in with its whole-plan history. A
+  first plan from the new-plan answers or an example; a statement's earnings
+  recorded on a person; the searches the tools and the overview share; and the
+  shapes a search or a year's actions are replied in as data.
 - `retiretui_tui` - the interactive planner described under `tui` below, as a
-  library above whatever backend draws it, beside what every surface shares of
-  it: the resolver that follows scenario base chains, the load-and-validate
-  gate, and the words tables and actions are said in. It reads, writes, lists
-  and stamps every plan file through one store - the disk, or files kept as keys
-  of a browser's storage, each file's count of writes its stamp - and runs each
-  search beside the frames: on a thread of its own, or, where there are no
-  threads, whole on the frame after the one that shows it under way. A launch
-  names what the session opens, its store and settings file, whether the screen
-  it is drawn on is light, and, for a page, that the document last open is
-  reopened, the directory no picker climbs above, and what hands files across
-  the page's edge.
+  library over the client and above whatever backend draws it, mapping each
+  editing domain to its page. It runs each search beside the frames: on a thread
+  of its own, or, where there are no threads, whole on the frame after the one
+  that shows it under way. A launch names what the session opens, its store and
+  settings file, whether the screen it is drawn on is light, and, for a page,
+  that the document last open is reopened, the directory no picker climbs above,
+  and what hands files across the page's edge.
 - `retiretui` - the single user-facing binary; surfaces are clap subcommands.
-  One shared resolver follows scenario base chains - reading files and resolving
-  paths is surface policy: relative to the referring file on the CLI, contained
-  in the served directory under MCP. `validate` runs the engine's validation
-  contract; `project` renders the ledger as a text table or as JSON; `actions`
-  prints one year's recorded to-dos with warnings, defaulting to the current
-  calendar year; `compare` projects two or more plans side by side - a summary
-  row per plan, one metric year by year, or JSON; `optimize` sweeps or targets a
-  tax bracket and writes the searched conversion ladder as a scenario overlay,
-  or ranks every claim age for the household's computed Social Security benefits
-  and writes the best; `monte-carlo` and `historical` run the plan through
-  random markets or every historical start year and report the share it
+  The engine's resolver follows scenario base chains - reading files and
+  resolving paths is surface policy: relative to the referring file on the CLI,
+  contained in the served directory under MCP. `validate` runs the engine's
+  validation contract; `project` renders the ledger as a text table or as JSON;
+  `actions` prints one year's recorded to-dos with warnings, defaulting to the
+  current calendar year; `compare` projects two or more plans side by side - a
+  summary row per plan, one metric year by year, or JSON; `optimize` sweeps or
+  targets a tax bracket and writes the searched conversion ladder as a scenario
+  overlay, or ranks every claim age for the household's computed Social Security
+  benefits and writes the best; `monte-carlo` and `historical` run the plan
+  through random markets or every historical start year and report the share it
   survives, their settings the plan's and overridable by flag; `import-earnings`
   records a statement's earnings on a person and writes the plan back
   canonically, the one CLI command that rewrites a plan file; `tui` opens the
