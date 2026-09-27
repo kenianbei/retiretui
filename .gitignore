@@ -3,3 +3,4 @@ debug
 .agents
 .claude
 /crates/retiretui_web/dist
+/crates/retiretui_wasm/pkg
