@@ -2,11 +2,12 @@
 //! it: the gate, the searches, the markets, and the example plans.
 
 use retiretui_client::issues::issue_listing;
+use retiretui_client::ladder::LadderConstraints;
 use retiretui_client::replies::{ClaimsReply, HistoricalReply, MonteCarloReply, SweepReply};
 use retiretui_client::searches::run_refusal;
 use retiretui_client::setup::EXAMPLES;
 use retiretui_engine::market::{self, History, Progress};
-use retiretui_engine::optimize::{OptimizeOptions, optimize_claims, sweep_brackets};
+use retiretui_engine::optimize::{optimize_claims, sweep_brackets};
 use retiretui_engine::plan::{Issue, Plan};
 use retiretui_engine::project::validate_plan;
 use serde::Serialize;
@@ -49,17 +50,7 @@ pub fn validate(text: &str) -> Result<Vec<Issue>, String> {
 ///
 /// Where the plan does not pass the gate, or the search refuses it.
 pub fn sweep(text: &str, destination: &str, deflated: bool) -> Result<SweepReply, String> {
-    let options = OptimizeOptions {
-        sources: Vec::new(),
-        destination: destination.to_owned(),
-        start_year: None,
-        end_year: None,
-        annual_max: None,
-        total_max: None,
-        headroom: 0,
-        irmaa_tier: None,
-        max_magi: None,
-    };
+    let options = LadderConstraints::default().options(&[], destination);
     let sweep = sweep_brackets(&gated(text)?, tables(), &options, &Progress::default())
         .map_err(run_refusal)?;
     Ok(SweepReply::new(&sweep, deflated))
@@ -122,14 +113,8 @@ mod tests {
         EXAMPLES[0].2
     }
 
-    fn roth_of(text: &str) -> String {
-        let plan = parse(text).expect("parses");
-        let roth = plan
-            .accounts
-            .iter()
-            .find(|account| account.treatment() == retiretui_engine::plan::TreatmentClass::Roth);
-        roth.expect("a Roth account").id.clone()
-    }
+    /// The starter's Roth IRA.
+    const ROTH: &str = "roth-ira-sam";
 
     #[test]
     fn every_example_passes_the_gate() {
@@ -142,7 +127,7 @@ mod tests {
     #[test]
     fn the_searches_answer_over_an_example() {
         let text = starter();
-        let swept = sweep(text, &roth_of(text), true).expect("sweeps");
+        let swept = sweep(text, ROTH, true).expect("sweeps");
         assert!(!swept.brackets.is_empty());
         assert!(!claims(text, true).expect("searches").candidates.is_empty());
         let historical = historical(text).expect("runs");

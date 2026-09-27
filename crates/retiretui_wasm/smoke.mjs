@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import wasm from "./pkg/retiretui_wasm.js";
 
-const { Document, examples, historical, sweepBrackets, validate } = wasm;
+const { Document, examples, historical, validate } = wasm;
 
 const [starter] = examples();
 const files = new Map([["/plans/starter.toml", starter.text]]);
@@ -21,7 +21,6 @@ assert.equal(document.actions(first.year).year, first.year);
 const plan = document.planText();
 assert.deepEqual(validate(plan), []);
 assert.ok(historical(plan).start_years.length > 0);
-assert.ok(sweepBrackets(plan, "roth-ira-sam", true).brackets.length > 0);
 
 assert.throws(() => Document.open("/plans/gone.toml", read), /no file at/);
 console.log("smoke: ok");

@@ -7,7 +7,7 @@ use serde::Deserialize;
 
 /// What a ladder is held to, as `optimize conversions` and the MCP
 /// optimizer tools take it.
-#[derive(Deserialize, JsonSchema, Debug)]
+#[derive(Deserialize, JsonSchema, Debug, Default)]
 #[cfg_attr(feature = "clap", derive(clap::Args))]
 pub struct LadderConstraints {
     /// First conversion year; defaults to plan start.

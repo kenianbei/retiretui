@@ -15,8 +15,7 @@ use serde_wasm_bindgen::Serializer;
 use wasm_bindgen::JsCast;
 use wasm_bindgen::prelude::{JsError, JsValue, wasm_bindgen};
 
-pub use document::Document;
-pub use searches::Example;
+use document::Document;
 
 /// The embedded tax tables; the page has no directories of its own.
 fn tables() -> &'static TaxTables {
@@ -34,6 +33,10 @@ fn to_js<T: Serialize>(value: &T) -> Result<JsValue, JsError> {
 
 fn refused(message: String) -> JsError {
     JsError::new(&message)
+}
+
+fn reply<T: Serialize>(answer: Result<T, String>) -> Result<JsValue, JsError> {
+    to_js(&answer.map_err(refused)?)
 }
 
 #[wasm_bindgen(typescript_custom_section)]
@@ -88,7 +91,8 @@ impl JsDocument {
         to_js(&self.0.issues())
     }
 
-    /// The projection, `null` while the plan has issues.
+    /// The projection, `null` while the plan has issues. Each call converts
+    /// it anew, so a caller keeps what it is given.
     ///
     /// # Errors
     ///
@@ -116,7 +120,7 @@ impl JsDocument {
     /// Where the plan has issues, or `year` is outside its projection.
     #[wasm_bindgen(unchecked_return_type = "ActionsReply")]
     pub fn actions(&self, year: i16) -> Result<JsValue, JsError> {
-        to_js(&self.0.actions(year).map_err(refused)?)
+        reply(self.0.actions(year))
     }
 
     /// The resolved plan as canonical TOML: what a worker is handed, and
@@ -160,7 +164,7 @@ pub fn examples() -> Result<JsValue, JsError> {
 /// Where `plan` is not a plan.
 #[wasm_bindgen(unchecked_return_type = "Issue[]")]
 pub fn validate(plan: &str) -> Result<JsValue, JsError> {
-    to_js(&searches::validate(plan).map_err(refused)?)
+    reply(searches::validate(plan))
 }
 
 /// Every bracket's conversion ladder into the `destination` account, best
@@ -171,7 +175,7 @@ pub fn validate(plan: &str) -> Result<JsValue, JsError> {
 /// Where the plan does not pass the gate, or the search refuses it.
 #[wasm_bindgen(js_name = sweepBrackets, unchecked_return_type = "SweepReply")]
 pub fn sweep_brackets(plan: &str, destination: &str, deflated: bool) -> Result<JsValue, JsError> {
-    to_js(&searches::sweep(plan, destination, deflated).map_err(refused)?)
+    reply(searches::sweep(plan, destination, deflated))
 }
 
 /// Every claim age for the household's computed benefits, best first.
@@ -181,7 +185,7 @@ pub fn sweep_brackets(plan: &str, destination: &str, deflated: bool) -> Result<J
 /// Where the plan does not pass the gate, or the search refuses it.
 #[wasm_bindgen(js_name = optimizeClaims, unchecked_return_type = "ClaimsReply")]
 pub fn optimize_claims(plan: &str, deflated: bool) -> Result<JsValue, JsError> {
-    to_js(&searches::claims(plan, deflated).map_err(refused)?)
+    reply(searches::claims(plan, deflated))
 }
 
 /// The plan through the random markets its settings draw.
@@ -191,7 +195,7 @@ pub fn optimize_claims(plan: &str, deflated: bool) -> Result<JsValue, JsError> {
 /// Where the plan does not pass the gate, or cannot be run.
 #[wasm_bindgen(js_name = monteCarlo, unchecked_return_type = "MonteCarloReply")]
 pub fn monte_carlo(plan: &str) -> Result<JsValue, JsError> {
-    to_js(&searches::monte_carlo(plan).map_err(refused)?)
+    reply(searches::monte_carlo(plan))
 }
 
 /// The plan from every historical start year.
@@ -201,7 +205,7 @@ pub fn monte_carlo(plan: &str) -> Result<JsValue, JsError> {
 /// Where the plan does not pass the gate, or cannot be run.
 #[wasm_bindgen(unchecked_return_type = "HistoricalReply")]
 pub fn historical(plan: &str) -> Result<JsValue, JsError> {
-    to_js(&searches::historical(plan).map_err(refused)?)
+    reply(searches::historical(plan))
 }
 
 #[cfg(all(test, feature = "ts"))]
@@ -216,12 +220,12 @@ mod bindings {
     use retiretui_engine::project::{Projection, Summary};
     use ts_rs::{Config, TS};
 
-    use super::Example;
+    use crate::searches::Example;
 
     const BINDINGS: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/bindings");
 
     #[test]
-    fn bindings_are_current() {
+    fn export_bindings() {
         let _ = fs::remove_dir_all(BINDINGS);
         let config = Config::new()
             .with_large_int("number")

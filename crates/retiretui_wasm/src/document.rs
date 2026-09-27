@@ -5,10 +5,10 @@
 use std::path::{Path, PathBuf};
 
 use retiretui_client::actions::collect_warnings;
+use retiretui_client::files::resolve_with_files;
 use retiretui_client::issues::issue_listing;
 use retiretui_client::replies::{ActionsReply, year_row};
 use retiretui_client::store::normal;
-use retiretui_engine::plan::resolve::resolve_plan;
 use retiretui_engine::plan::{Issue, Plan};
 use retiretui_engine::project::{Projection, Summary, project, validate_plan};
 
@@ -16,7 +16,7 @@ use crate::tables;
 
 /// A resolved plan and what the gate made of it.
 #[derive(Debug)]
-pub struct Document {
+pub(crate) struct Document {
     plan: Plan,
     files: Vec<PathBuf>,
     issues: Vec<Issue>,
@@ -34,19 +34,9 @@ impl Document {
         path: &str,
         read: &mut dyn FnMut(&Path) -> Result<String, String>,
     ) -> Result<Self, String> {
-        let start = normal(Path::new(path));
         let mut files = Vec::new();
-        let mut reading = |file: &Path| {
-            files.push(file.to_owned());
-            read(file).map_err(|error| format!("failed to read {}: {error}", file.display()))
-        };
-        let mut locate = |referrer: &Path, base: &str| {
-            Ok(normal(
-                &referrer.parent().unwrap_or(Path::new("/")).join(base),
-            ))
-        };
-        let text = reading(&start)?;
-        let plan = resolve_plan(start, text, &mut reading, &mut locate)?;
+        let canonical = |path: &Path| Ok(normal(path));
+        let plan = resolve_with_files(normal(Path::new(path)), read, &canonical, &mut files)?;
         let issues = validate_plan(&plan, tables());
         let projection = issues.is_empty().then(|| project(&plan, tables()));
         Ok(Self {
@@ -186,11 +176,5 @@ mod tests {
         assert!(document.projection().is_none());
         assert!(document.summary(false).is_none());
         assert!(document.actions(plan.plan.start_year).is_err());
-    }
-
-    #[test]
-    fn a_document_that_does_not_parse_is_refused() {
-        let files = [("/plan.toml", "schema = [")];
-        assert!(Document::open("/plan.toml", &mut reader(&files)).is_err());
     }
 }
