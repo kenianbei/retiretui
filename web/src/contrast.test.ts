@@ -21,6 +21,8 @@ const TEXT_PAIRS = [
   ["destructive", "card"],
   ["success", "card"],
   ["warning", "card"],
+  ["success", "background"],
+  ["warning", "background"],
 ] as const;
 
 const MARK_PAIRS: readonly (readonly [string, string])[] = [

@@ -18,7 +18,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "@wasm/*": ["../crates/retiretui_wasm/pkg/*"]
+      "@wasm/*": ["../crates/retiretui_wasm/pkg/*"],
+      "@bindings": ["../crates/retiretui_wasm/bindings/index.ts"]
     }
   },
   "include": ["src", "vite.config.ts"]

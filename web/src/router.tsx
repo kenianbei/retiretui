@@ -7,6 +7,8 @@ import {
 } from "@tanstack/react-router";
 
 import { DOMAINS, TOOLS, pageOf } from "@/nav";
+import { Overview } from "@/overview/overview";
+import type { Basis } from "@/overview/words";
 import { GroupedPage, NotFound, Placeholder } from "@/pages/placeholder";
 import { Shell } from "@/shell/shell";
 
@@ -17,19 +19,17 @@ const index = createRoute({
   path: "/",
   beforeLoad: () => {
     // eslint-disable-next-line @typescript-eslint/only-throw-error -- the router's own redirect
-    throw redirect({ to: "/overview" });
+    throw redirect({ to: "/overview", search: { basis: "today" } });
   },
 });
 
 const overview = createRoute({
   getParentRoute: () => root,
   path: "/overview",
-  component: () => (
-    <Placeholder
-      title="Overview"
-      holds="Whether the money lasts, what needs attention, and what to do this year."
-    />
-  ),
+  validateSearch: (search: Record<string, unknown>): { basis: Basis } => ({
+    basis: search.basis === "nominal" ? "nominal" : "today",
+  }),
+  component: Overview,
 });
 
 const ledger = createRoute({

@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import init from "@wasm/retiretui_wasm.js";
 import { StrictMode } from "react";
@@ -15,8 +16,10 @@ await init();
 
 createRoot(container).render(
   <StrictMode>
-    <SessionProvider>
-      <RouterProvider router={router} />
-    </SessionProvider>
+    <QueryClientProvider client={new QueryClient()}>
+      <SessionProvider>
+        <RouterProvider router={router} />
+      </SessionProvider>
+    </QueryClientProvider>
   </StrictMode>,
 );
