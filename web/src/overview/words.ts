@@ -1,4 +1,4 @@
-/** The dollars figures are shown in: today's, or those of their own year. */
+/** The dollars a figure is shown in: today's, or those of its own year. */
 export type Basis = "today" | "nominal";
 
 export const BASIS_LABEL: Record<Basis, string> = {
