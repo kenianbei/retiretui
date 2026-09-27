@@ -46,9 +46,10 @@ const EMBEDDED: &[(&str, &str)] = &[
     ("tokyo-night", include_str!("themes/tokyo-night.toml")),
 ];
 
-#[derive(Deserialize, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Deserialize, Clone, Copy, PartialEq, Eq, Default, Debug)]
 #[serde(rename_all = "lowercase")]
 pub enum Variant {
+    #[default]
     Dark,
     Light,
 }
@@ -110,7 +111,7 @@ pub fn listed() -> impl Iterator<Item = (&'static str, Option<Variant>)> {
 
 /// The variant `COLORFGBG` says the terminal wants, and dark where it says
 /// nothing.
-pub fn wanted_variant() -> Variant {
+pub fn terminal_variant() -> Variant {
     let ground = std::env::var(GROUND_VARIABLE).ok();
     variant_of(ground.as_deref())
 }

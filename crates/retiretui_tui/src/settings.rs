@@ -4,15 +4,19 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use bevy_ecs::prelude::Resource;
+use bevy_ecs::change_detection::DetectChanges;
+use bevy_ecs::prelude::{Res, ResMut, Resource};
 use serde::Deserialize;
 use toml_edit::{DocumentMut, Item, Table, Value};
 
 use super::motion::Motion;
 use super::theme::document::Choice;
+use crate::journal;
+use crate::session::Session;
 use crate::store::Store;
 
 const TUI_TABLE: &str = "tui";
+const DOCUMENT_KEY: &str = "document";
 
 /// The file settings are read from and written back to.
 #[derive(Debug)]
@@ -37,6 +41,8 @@ pub struct Settings {
     kept: Option<Kept>,
     pub theme: Choice,
     pub motion: Motion,
+    /// The document last open, where a session reopens it.
+    pub document: Option<PathBuf>,
 }
 
 impl Settings {
@@ -84,6 +90,20 @@ impl Settings {
         let kept = with_key(&text, key, value.into())
             .map_err(|error| format!("{}: {error}", path.display()))?;
         write(store.as_ref(), path, &kept).map_err(|error| format!("{}: {error}", path.display()))
+    }
+}
+
+/// Keeps the open document as the one to reopen, whenever another is.
+pub fn remember_document(session: Res<Session>, mut settings: ResMut<Settings>) {
+    if !session.is_changed() || session.plan_path == settings.document {
+        return;
+    }
+    settings.document.clone_from(&session.plan_path);
+    let Some(path) = session.plan_path.as_deref() else {
+        return;
+    };
+    if let Err(error) = settings.keep(&[DOCUMENT_KEY], path.display().to_string()) {
+        journal::warn(format!("not remembered: {error}"));
     }
 }
 

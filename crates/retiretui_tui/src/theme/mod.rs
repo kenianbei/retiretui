@@ -20,10 +20,16 @@ use super::settings::Settings;
 pub fn plugin(app: &mut App) {
     app.add_plugins((picker::plugin, ground::plugin));
     app.insert_resource(Theme::terminal());
+    app.init_resource::<WantedVariant>();
     app.add_systems(Startup, wear_the_theme_set);
     app.configure_sets(Update, Repainted.before(WidgetSystems::Style));
     app.add_systems(Update, (sync_look, restripe).in_set(Repainted));
 }
+
+/// The variant a theme family is worn in: what the screen it is drawn on
+/// is, light or dark.
+#[derive(Resource, Clone, Copy, Default, Debug)]
+pub struct WantedVariant(pub document::Variant);
 
 /// What draws from the theme, run before the stock widgets restyle
 /// themselves so a theme change reaches the frame it is made on.
@@ -157,8 +163,12 @@ impl Theme {
 
 /// Puts on the theme the settings name. One that does not resolve is said
 /// so, and the terminal's own worn instead.
-fn wear_the_theme_set(settings: Res<Settings>, mut theme: ResMut<Theme>) {
-    match document::resolve(&settings.theme, document::wanted_variant()) {
+fn wear_the_theme_set(
+    settings: Res<Settings>,
+    wanted: Res<WantedVariant>,
+    mut theme: ResMut<Theme>,
+) {
+    match document::resolve(&settings.theme, wanted.0) {
         Ok(set) => *theme = set,
         Err(error) => journal::warn(format!("config.toml: {error}")),
     }

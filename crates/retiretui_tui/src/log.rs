@@ -53,6 +53,19 @@ fn open_log(path: &Path) -> anyhow::Result<File> {
     File::create(path).with_context(|| format!("opening {}", path.display()))
 }
 
+/// Installs the process's subscriber with the journal layer alone, for a
+/// session that keeps no log file.
+///
+/// # Errors
+///
+/// Where a subscriber is already installed.
+pub fn install_journal(inbox: &Inbox) -> anyhow::Result<()> {
+    registry()
+        .with(journal::layer(inbox.clone()))
+        .try_init()
+        .map_err(|failure| anyhow::anyhow!("installing the log: {failure}"))
+}
+
 /// What reaches the file: warnings and worse, or what `RETIRETUI_LOG`
 /// asks for, and always everything said to the user.
 fn level_filter() -> EnvFilter {

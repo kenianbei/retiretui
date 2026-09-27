@@ -4,11 +4,17 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+use bevy_app::App;
 use bevy_ecs::prelude::With;
-use plurimus::term::KeyCode;
+use plurimus::core::CorePlugin;
+use plurimus::term::{InputCapabilities, KeyCode};
 use plurimus::ui::UiLabel;
 use plurimus::widgets::{ListItem, ListItemTrailing};
+use retiretui_engine::market::History;
+use retiretui_engine::params::TaxTables;
 
+use crate::Launch;
+use crate::documents;
 use crate::session::{Projected, Session};
 use crate::store::memory::Memory;
 use crate::store::{KeyStore, Store};
@@ -19,6 +25,7 @@ use crate::support::{
 use crate::watch::POLL_SECONDS;
 
 const WORKSPACE: &str = "/workspace";
+const CONFIG: &str = "/config/config.toml";
 
 /// A workspace holding a plan and a scenario over it, in a backend another
 /// tab could share.
@@ -36,7 +43,7 @@ fn file(name: &str) -> PathBuf {
     Path::new(WORKSPACE).join(name)
 }
 
-fn listed(app: &mut Headless) -> Vec<(String, String)> {
+fn listed(app: &mut App) -> Vec<(String, String)> {
     let mut rows = app
         .world_mut()
         .query_filtered::<(&UiLabel, Option<&ListItemTrailing>), With<ListItem>>();
@@ -94,4 +101,73 @@ fn a_write_from_another_tab_is_followed() {
     other_tab.write(&file("plan.toml"), &renamed).unwrap();
     let_pass(&mut app, std::time::Duration::from_secs_f32(POLL_SECONDS));
     assert_eq!(plan_name(&app).as_deref(), Some("elsewhere"));
+}
+
+/// The page as the browser build launches it, over `store`.
+fn launched(store: Arc<dyn Store>) -> App {
+    let mut app = App::new();
+    app.add_plugins(CorePlugin);
+    app.insert_resource(InputCapabilities::none());
+    app.insert_resource(SIZE);
+    let launch = Launch {
+        path: PathBuf::from(WORKSPACE),
+        tables: TaxTables::embedded(),
+        history: History::embedded().clone(),
+        store,
+        settings: Some(PathBuf::from(CONFIG)),
+        is_light: false,
+        reopens: true,
+        floor: Some(PathBuf::from(WORKSPACE)),
+    };
+    crate::build(&mut app, launch).unwrap();
+    app.update();
+    app.update();
+    app
+}
+
+fn document(app: &App) -> Option<PathBuf> {
+    app.world().resource::<Session>().plan_path.clone()
+}
+
+#[test]
+fn the_page_reopens_the_document_last_open_and_remembers_the_next() {
+    let backend = Memory::default();
+    let store = workspace(&backend);
+    let mut app = launched(Arc::clone(&store));
+    assert_eq!(document(&app), None, "nothing to reopen yet");
+    app.world_mut()
+        .run_system_cached_with(documents::open, file("plan.toml").into())
+        .unwrap();
+    app.update();
+    let kept = store.read(Path::new(CONFIG)).unwrap();
+    assert!(
+        kept.contains("document = \"/workspace/plan.toml\""),
+        "{kept}"
+    );
+    assert_eq!(
+        document(&launched(Arc::clone(&store))),
+        Some(file("plan.toml"))
+    );
+    store
+        .write(
+            Path::new(CONFIG),
+            "[tui]\ndocument = \"/workspace/gone.toml\"\n",
+        )
+        .unwrap();
+    assert_eq!(
+        document(&launched(store)),
+        None,
+        "a vanished document is not"
+    );
+}
+
+#[test]
+fn no_picker_climbs_above_the_floor() {
+    let mut app = launched(workspace(&Memory::default()));
+    let rows = listed(&mut app);
+    assert!(rows.iter().any(|(name, _)| name == "plan.toml"), "{rows:?}");
+    assert!(
+        !rows.iter().any(|(name, _)| name.starts_with("..")),
+        "{rows:?}"
+    );
 }

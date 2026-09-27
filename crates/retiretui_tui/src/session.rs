@@ -24,6 +24,8 @@ pub struct Session {
     pub tables: TaxTables,
     /// Where the plan files are kept.
     pub store: Arc<dyn Store>,
+    /// The directory no picker climbs above; none where any may be reached.
+    pub floor: Option<PathBuf>,
 }
 
 pub const NO_DOCUMENT: &str = "no document is open";
@@ -86,6 +88,7 @@ impl Session {
                 launched: path,
                 tables,
                 store,
+                floor: None,
             };
         }
         let launched = directory_of(&path).to_path_buf();
@@ -94,6 +97,7 @@ impl Session {
             launched,
             tables,
             store,
+            floor: None,
         }
     }
 

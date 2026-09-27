@@ -65,7 +65,7 @@ mod tests;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use bevy_app::{App, Startup};
+use bevy_app::{App, Startup, Update};
 use bevy_ecs::prelude::{Res, Resource};
 use plurimus::widgets::WidgetsPlugin;
 use plurimus_filepicker::FilePickerPlugin;
@@ -87,6 +87,15 @@ pub struct Launch {
     /// The settings file in `store`; none for a session that keeps
     /// nothing.
     pub settings: Option<PathBuf>,
+    /// Whether the screen it is drawn on is light, which the variant of a
+    /// theme family follows.
+    pub is_light: bool,
+    /// Whether the document last open is opened again in place of `path`
+    /// where it is still there, each document opened being remembered.
+    pub reopens: bool,
+    /// The directory no picker climbs above; none where any may be
+    /// reached.
+    pub floor: Option<PathBuf>,
 }
 
 /// Adds the planner to `app`, above whatever backend draws it: the
@@ -96,12 +105,17 @@ pub struct Launch {
 ///
 /// Where the document cannot be read or resolved.
 pub fn build(app: &mut App, launch: Launch) -> Result<(), String> {
-    let session = session::Session::at(Arc::clone(&launch.store), launch.path, launch.tables);
-    let today = session::Today::now();
-    let (projected, files) = watch::load_session(&session, today)?;
     let (settings, complaint) = launch.settings.map_or_else(Default::default, |path| {
         settings::Settings::at(Arc::clone(&launch.store), path)
     });
+    let path = match &settings.document {
+        Some(document) if launch.reopens && launch.store.exists(document) => document.clone(),
+        _ => launch.path,
+    };
+    let mut session = session::Session::at(Arc::clone(&launch.store), path, launch.tables);
+    session.floor = launch.floor;
+    let today = session::Today::now();
+    let (projected, files) = watch::load_session(&session, today)?;
     app.insert_resource(session);
     app.insert_resource(settings);
     app.insert_resource(today);
@@ -109,11 +123,37 @@ pub fn build(app: &mut App, launch: Launch) -> Result<(), String> {
     app.insert_resource(watch::Watch::new(launch.store, files));
     app.insert_resource(tools::markets::MarketHistory(launch.history));
     add_tui(app);
+    let variant = if launch.is_light {
+        theme::document::Variant::Light
+    } else {
+        theme::document::Variant::Dark
+    };
+    app.insert_resource(theme::WantedVariant(variant));
+    if launch.reopens {
+        app.add_systems(Update, settings::remember_document);
+    }
     if let Some(complaint) = complaint {
         app.insert_resource(SettingsComplaint(complaint));
         app.add_systems(Startup, say_settings_complaint);
     }
     Ok(())
+}
+
+/// Whether the terminal says, through `COLORFGBG`, that its ground is
+/// light.
+#[must_use]
+pub fn terminal_is_light() -> bool {
+    theme::document::terminal_variant() == theme::document::Variant::Light
+}
+
+/// Installs the process's journal, which the shell toasts from, and no log
+/// file.
+///
+/// # Errors
+///
+/// Where a subscriber is already installed.
+pub fn install_journal(app: &App) -> anyhow::Result<()> {
+    log::install_journal(app.world().resource::<journal::Inbox>())
 }
 
 /// Installs the process's log: the journal the shell toasts from, and the

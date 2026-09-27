@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RetireTui</title>
+  <style>
+    @font-face {
+      font-family: "Inconsolata";
+      src: url("fonts/Inconsolata-Regular.woff2") format("woff2");
+      font-weight: 400;
+    }
+    @font-face {
+      font-family: "Inconsolata";
+      src: url("fonts/Inconsolata-Bold.woff2") format("woff2");
+      font-weight: 700;
+    }
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #000; color: #bbb; }
+    body { display: flex; flex-direction: column; font: 14px/1.4 "Inconsolata", monospace; }
+    #planner { flex: 1; min-height: 0; }
+    #planner canvas { display: block; outline: none; }
+    #note { padding: 2px 8px; color: #888; }
+    #failure { display: none; padding: 2em; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <div id="planner"></div>
+  <div id="failure"></div>
+  <div id="note">
+    Your plans stay in this browser: nothing is sent anywhere. Download a plan
+    (<kbd>:</kbd> then <kbd>download</kbd>) to keep a copy, since clearing this
+    site's data clears them.
+  </div>
+  <script type="module">
+    const say = (text) => {
+      document.getElementById("planner").style.display = "none";
+      const failure = document.getElementById("failure");
+      failure.style.display = "block";
+      failure.textContent = text;
+    };
+    // Quit, after its question about an unsaved draft, starts the page over.
+    document.addEventListener("plurimus-exit", () => location.reload());
+    if (!document.createElement("canvas").getContext("webgl2")) {
+      say("RetireTui draws with WebGL2, which this browser does not offer.");
+    } else {
+      import("./pkg/retiretui.js")
+        .then((module) => module.default())
+        .catch((error) => say(`RetireTui did not load: ${error}`));
+    }
+  </script>
+</body>
+</html>

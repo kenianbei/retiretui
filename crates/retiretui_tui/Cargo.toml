@@ -33,7 +33,6 @@ plurimus_filepicker = "0.1.1"
 retiretui_engine = { workspace = true, features = ["schemars"] }
 schemars.workspace = true
 serde.workspace = true
-tachyonfx = { version = "0.25.2", default-features = false, features = ["std", "std-duration", "sendable"] }
 toml.workspace = true
 toml_edit = "0.25.15"
 tracing = { version = "0.1.44", default-features = false, features = ["std"] }
@@ -42,6 +41,10 @@ web-time = "1.1.0"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 jiff = { workspace = true, features = ["js"] }
+tachyonfx = { version = "0.25.2", default-features = false, features = ["std", "wasm", "sendable"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tachyonfx = { version = "0.25.2", default-features = false, features = ["std", "std-duration", "sendable"] }
 
 [dev-dependencies]
 insta = "1.48.0"

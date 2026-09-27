@@ -37,6 +37,9 @@ pub fn run(args: &TuiArgs) -> anyhow::Result<()> {
         history: super::markets::load_history(None)?,
         store: Arc::new(DiskStore),
         settings: super::user_config_dir(CONFIG_FILE),
+        is_light: retiretui_tui::terminal_is_light(),
+        reopens: false,
+        floor: None,
     };
     let mut app = App::new();
     app.add_plugins((

@@ -14,7 +14,9 @@ use plurimus::core::ratatui_core::style::Style;
 use plurimus::core::ratatui_core::text::Line;
 use plurimus::ui::{ModalDismiss, ModalOpen};
 use plurimus::widgets::ValueChange;
-use plurimus_filepicker::{FilePicker, FilePickerLook, FilePickerMatchStyle, FilePickerSource};
+use plurimus_filepicker::{
+    FilePicker, FilePickerFloor, FilePickerLook, FilePickerMatchStyle, FilePickerSource,
+};
 
 use super::pickers;
 use crate::compare::Compared;
@@ -145,6 +147,9 @@ fn sync_browse(
         ChildOf(root),
         FilePickerSource(Arc::new(StoreSource(Arc::clone(&session.store)))),
     ));
+    if let Some(floor) = &session.floor {
+        picker.insert(FilePickerFloor(Some(floor.clone())));
+    }
     let store = Arc::clone(&session.store);
     if let Some(decorator) = pickers::decorate(pick.badges, dim, &dressing.compared, store) {
         picker.insert(decorator);

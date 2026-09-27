@@ -2,3 +2,4 @@ target
 debug
 .agents
 .claude
+/crates/retiretui_web/dist

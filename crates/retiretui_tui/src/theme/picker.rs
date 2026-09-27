@@ -4,8 +4,8 @@
 use bevy_app::{App, Startup};
 use bevy_ecs::prelude::{In, Res, ResMut, Resource, World};
 
-use super::Theme;
 use super::document::{self, Choice};
+use super::{Theme, WantedVariant};
 use crate::command::Outcome;
 use crate::journal;
 use crate::picker::{Offered, Picker, Picking, ranked};
@@ -60,9 +60,14 @@ fn choice_of(id: usize, settings: &Settings) -> Option<Choice> {
     })
 }
 
-fn try_on(In(id): In<usize>, settings: Res<Settings>, mut theme: ResMut<Theme>) {
-    let tried = choice_of(id, &settings)
-        .and_then(|choice| document::resolve(&choice, document::wanted_variant()).ok());
+fn try_on(
+    In(id): In<usize>,
+    settings: Res<Settings>,
+    wanted: Res<WantedVariant>,
+    mut theme: ResMut<Theme>,
+) {
+    let tried =
+        choice_of(id, &settings).and_then(|choice| document::resolve(&choice, wanted.0).ok());
     if let Some(tried) = tried
         && *theme != tried
     {
@@ -76,11 +81,16 @@ fn restore(mut worn: ResMut<Worn>, mut theme: ResMut<Theme>) {
     }
 }
 
-fn keep(In(id): In<usize>, mut settings: ResMut<Settings>, mut theme: ResMut<Theme>) {
+fn keep(
+    In(id): In<usize>,
+    mut settings: ResMut<Settings>,
+    wanted: Res<WantedVariant>,
+    mut theme: ResMut<Theme>,
+) {
     let Some(choice) = choice_of(id, &settings) else {
         return;
     };
-    match document::resolve(&choice, document::wanted_variant()) {
+    match document::resolve(&choice, wanted.0) {
         Ok(kept) => *theme = kept,
         Err(error) => return journal::warn(error),
     }

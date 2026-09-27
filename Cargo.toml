@@ -1,6 +1,17 @@
 [workspace]
 resolver = "3"
-members = ["crates/retiretui_engine", "crates/retiretui_tui", "crates/retiretui"]
+members = [
+    "crates/retiretui_engine",
+    "crates/retiretui_tui",
+    "crates/retiretui",
+    "crates/retiretui_web",
+]
+# The browser page builds for wasm32 alone, by its own script and job.
+default-members = [
+    "crates/retiretui_engine",
+    "crates/retiretui_tui",
+    "crates/retiretui",
+]
 
 [workspace.package]
 version = "0.2.0"
