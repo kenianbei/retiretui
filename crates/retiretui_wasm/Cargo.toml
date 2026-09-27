@@ -1,0 +1,40 @@
+[package]
+name = "retiretui_wasm"
+description = "RetireTui's engine and client for JavaScript, with TypeScript types."
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+ts = ["dep:ts-rs", "retiretui_engine/ts", "retiretui_client/ts"]
+
+[dependencies]
+js-sys = "0.3.106"
+retiretui_client.workspace = true
+retiretui_engine.workspace = true
+serde.workspace = true
+serde-wasm-bindgen = "0.6.5"
+ts-rs = { version = "12.0.1", optional = true }
+wasm-bindgen = "0.2.129"
+
+# rustc's default wasm32 features, which wasm-opt must be told it may keep.
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = [
+    "-Oz",
+    "--enable-bulk-memory",
+    "--enable-multivalue",
+    "--enable-mutable-globals",
+    "--enable-nontrapping-float-to-int",
+    "--enable-reference-types",
+    "--enable-sign-ext",
+]
+
+[lints]
+workspace = true
