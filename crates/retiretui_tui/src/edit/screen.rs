@@ -133,7 +133,7 @@ fn handle_add_press(
     let Ok(domain) = state.tables.get(button.0) else {
         return;
     };
-    let opened = (domain.ops, Some(button.0), Slot::New(domain.list));
+    let opened = (domain.ops, Some(button.0), Slot::New);
     // The table takes the keyboard first: the button is no tab stop, and
     // what a form opens over is what it hands the keyboard back to.
     state.focus(button.0);

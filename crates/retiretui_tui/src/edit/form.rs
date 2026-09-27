@@ -18,7 +18,7 @@ use toml::Value;
 
 use super::build::{EditForm, FieldLabel, FormButton, FormField, HelpFoot};
 use super::cells::parse_field;
-use super::codec::{is_within, parse_text, set_path};
+use super::codec::parse_text;
 use super::domain::{FieldKind, FieldSpec};
 use super::draft::{Draft, DraftEditor};
 use super::editing::{self, EditSession, SessionFocus};
@@ -121,7 +121,7 @@ impl FormIssues<'_, '_> {
     /// than the session, which every keystroke in a field marks changed.
     fn shown(&self) -> Option<(Entity, Option<Row>)> {
         let editing = self.session.0.as_ref()?;
-        Some((editing.form?, editing.slot.row()))
+        Some((editing.form?, editing.index().map(Row)))
     }
 
     /// The issue among `located` against the field `spec` of the item
@@ -254,21 +254,16 @@ impl Items<'_, '_> {
             }
             FieldKind::Listed(_) => lists::listed(self.parts(widget, key)),
             FieldKind::Order(..) => lists::ordered(self.parts(widget, key)),
-            FieldKind::Presence(ticked) => {
+            FieldKind::Presence(_) => {
                 // What the table's own rows show is what it held before.
                 editing.is_seeded = false;
-                editing.incomplete.retain(|held, _| !is_within(held, key));
                 let is_ticked = value.as_ref().and_then(Value::as_bool) == Some(true);
-                let table = is_ticked.then(|| Value::Table(ticked.parse().unwrap_or_default()));
-                (table, None)
+                editing.tick(key, is_ticked);
+                return;
             }
             _ => (value, None),
         };
-        match complaint {
-            Some(complaint) => editing.incomplete.insert(key, complaint),
-            None => editing.incomplete.remove(key),
-        };
-        set_path(&mut editing.snapshot, key, value);
+        editing.set(key, value, complaint);
     }
 
     /// What each row holding a part of the list `key` holds, in the form

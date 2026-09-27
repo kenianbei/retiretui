@@ -35,7 +35,7 @@ impl Dependent {
     }
 
     fn is_shown(&self, editing: &Editing) -> bool {
-        let is_held = |gate| get_path(&editing.snapshot, gate).is_some();
+        let is_held = |gate| get_path(editing.snapshot(), gate).is_some();
         self.gate.is_none_or(is_held) && editing.is_on_show(self.key)
     }
 }

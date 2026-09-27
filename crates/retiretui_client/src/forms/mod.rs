@@ -10,6 +10,7 @@ pub mod changes;
 pub mod config;
 pub mod contributions;
 pub mod details;
+pub mod edit;
 /// The expense and cliff domains.
 pub mod expenses;
 /// The transfer, conversion and event domains.

@@ -74,10 +74,7 @@ pub fn add(focused: FocusedTable, mut commands: Commands) -> Outcome {
     let Some((entity, table, _)) = focused.acting() else {
         return Outcome::Refused(NO_TABLE.to_owned());
     };
-    commands.run_system_cached_with(
-        editing::open_item,
-        (table.ops, Some(entity), Slot::New(table.list)),
-    );
+    commands.run_system_cached_with(editing::open_item, (table.ops, Some(entity), Slot::New));
     Outcome::Done
 }
 
