@@ -1,14 +1,14 @@
 use retiretui_engine::plan::{Cliff, Expense, Plan};
 
 use super::cells::Column;
-use super::domain::{Domain, FieldSpec, GROWTH_HELP};
-use crate::nav::Page;
+use super::{Domain, DomainId, FieldSpec, GROWTH_HELP};
 
+/// The plan's expenses, edited as a table.
 pub struct Expenses;
 
 impl Domain for Expenses {
     type Item = Expense;
-    const PAGE: Page = Page::Expenses;
+    const ID: DomainId = DomainId::Expenses;
     const PURPOSE: &'static str = "What you spend each year, and when";
     const PATH: &'static str = "expenses";
     const SINGULAR: &'static str = "Expense";
@@ -43,11 +43,12 @@ amount = 0
     }
 }
 
+/// The MAGI cliffs the plan declares, edited as a table.
 pub struct Cliffs;
 
 impl Domain for Cliffs {
     type Item = Cliff;
-    const PAGE: Page = Page::Cliffs;
+    const ID: DomainId = DomainId::Cliffs;
     const PURPOSE: &'static str = "Costs that start once your income passes a threshold";
     const PATH: &'static str = "cliffs";
     const SINGULAR: &'static str = "Cliff";

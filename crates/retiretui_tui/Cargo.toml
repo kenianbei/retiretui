@@ -26,7 +26,7 @@ jiff.workspace = true
 nucleo-matcher = "0.3.1"
 plurimus = { version = "0.7.2", default-features = false, features = ["ui", "widgets", "bevy-ui"] }
 plurimus_filepicker = "0.1.1"
-retiretui_client.workspace = true
+retiretui_client = { workspace = true, features = ["bevy"] }
 retiretui_engine = { workspace = true, features = ["schemars"] }
 schemars.workspace = true
 serde.workspace = true
@@ -45,7 +45,7 @@ tachyonfx = { version = "0.25.2", default-features = false, features = ["std", "
 
 [dev-dependencies]
 insta = "1.48.0"
-retiretui_client = { workspace = true, features = ["testing"] }
+retiretui_client = { workspace = true, features = ["bevy", "testing"] }
 
 [lints]
 workspace = true

@@ -1,18 +1,16 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use bevy_app::{App, Update};
 use bevy_ecs::prelude::{Res, ResMut, Resource};
 use bevy_time::{Real, Time, Timer, TimerMode};
-use retiretui_engine::params::TaxTables;
-use retiretui_engine::project::project;
 
-use crate::files::Invalid;
-use crate::store::{Stamp, Store};
+pub use retiretui_client::session::{Stamped, is_stale, load_projected, load_session, stamp};
+use retiretui_client::store::Store;
 
 use super::edit::{DraftEditor, EditSession};
 use super::journal;
-use super::session::{Projected, Session, Today};
+use super::session::{Projected, Session};
 
 pub fn plugin(app: &mut App) {
     app.add_systems(Update, poll_watch);
@@ -55,57 +53,6 @@ impl Watch {
             *recorded = self.store.stamp(path);
         }
     }
-}
-
-/// The resolved chain's files, each with its stamp as last seen.
-pub type Stamped = Vec<(PathBuf, Option<Stamp>)>;
-
-/// What the session shows at launch: its document projected, or the blank
-/// plan behind an empty shell that watches nothing.
-pub fn load_session(session: &Session, today: Today) -> Result<(Projected, Stamped), String> {
-    match &session.plan_path {
-        Some(path) => {
-            let (loaded, files) = load_projected(session.store.as_ref(), path, &session.tables);
-            let projected = loaded.map_err(|invalid| invalid.headline().to_owned())?;
-            Ok((projected, files))
-        }
-        None => Ok((Projected::blank(&session.tables, today), Vec::new())),
-    }
-}
-
-/// Loads, validates, and projects the plan at `path`, beside the stamped
-/// chain files it read - on a failure, as far as the read got, so a fix
-/// anywhere in the chain as it now stands is picked up.
-///
-/// The error is why the plan did not pass the gate: a reader says its
-/// headline, or its reason where it names the file itself.
-pub(crate) fn load_projected(
-    store: &dyn Store,
-    path: &Path,
-    tables: &TaxTables,
-) -> (Result<Projected, Invalid>, Stamped) {
-    let (plan, files) = crate::files::validated_plan_with_files(store, path, tables);
-    let projected = plan.map(|plan| {
-        let projection = project(&plan, tables);
-        Projected { plan, projection }
-    });
-    (projected, stamp(store, files))
-}
-
-fn stamp(store: &dyn Store, files: Vec<PathBuf>) -> Stamped {
-    files
-        .into_iter()
-        .map(|path| {
-            let stamped = store.stamp(&path);
-            (path, stamped)
-        })
-        .collect()
-}
-
-pub fn is_stale(store: &dyn Store, files: &[(PathBuf, Option<Stamp>)]) -> bool {
-    files
-        .iter()
-        .any(|(path, recorded)| store.stamp(path) != *recorded)
 }
 
 /// Follows the document's chain on the watch's beat.

@@ -5,23 +5,26 @@
 use retiretui_engine::plan::Plan;
 use toml::{Table, Value};
 
-use super::codec::{as_number, get_path, parse_text, to_text};
-use super::domain::{FieldKind, FieldSpec};
-use super::group::{nth, nth_back};
 use super::offers::{Offer, display_name, ref_offers};
+use super::{FieldKind, FieldSpec};
+use crate::codec::{as_number, get_path, parse_text, to_text};
 use crate::present;
 
+/// One column of a domain's table.
 #[derive(Clone, Copy)]
 pub struct Column {
+    /// The field key the column shows, or the name its phrase goes by.
     pub key: &'static str,
     /// What heads the column where the field's label is too long for it.
-    header: Option<&'static str>,
+    pub header: Option<&'static str>,
     /// A phrase over the whole item, where one key does not say it - so
     /// its key need not name a field.
-    pub(super) phrase: Option<fn(&Table, &Plan) -> String>,
+    pub phrase: Option<fn(&Table, &Plan) -> String>,
 }
 
 impl Column {
+    /// A column showing the field `key`.
+    #[must_use]
     pub const fn new(key: &'static str) -> Self {
         Self {
             key,
@@ -30,6 +33,8 @@ impl Column {
         }
     }
 
+    /// The column headed `header` rather than its field's label.
+    #[must_use]
     pub const fn headed(self, header: &'static str) -> Self {
         Self {
             header: Some(header),
@@ -37,6 +42,8 @@ impl Column {
         }
     }
 
+    /// The column phrasing the whole item through `phrase`.
+    #[must_use]
     pub const fn phrased(self, phrase: fn(&Table, &Plan) -> String) -> Self {
         Self {
             phrase: Some(phrase),
@@ -44,6 +51,8 @@ impl Column {
         }
     }
 
+    /// What heads the column: its own header, else its field's label.
+    #[must_use]
     pub fn header(&self, fields: &[FieldSpec]) -> &'static str {
         let label = || field_of(fields, self.key).map_or(self.key, |spec| spec.label);
         self.header.unwrap_or_else(label)
@@ -51,6 +60,7 @@ impl Column {
 
     /// Whether the column holds numbers, which line up on the right; a
     /// phrase is words whatever its key holds.
+    #[must_use]
     pub fn is_numeric(&self, fields: &[FieldSpec]) -> bool {
         self.phrase.is_none()
             && field_of(fields, self.key).is_some_and(|spec| {
@@ -62,7 +72,9 @@ impl Column {
     }
 }
 
-pub(super) fn field_of<'a>(fields: &'a [FieldSpec], key: &str) -> Option<&'a FieldSpec> {
+/// The field of `fields` under `key`.
+#[must_use]
+pub fn field_of<'a>(fields: &'a [FieldSpec], key: &str) -> Option<&'a FieldSpec> {
     fields.iter().find(|spec| spec.key == key)
 }
 
@@ -70,7 +82,9 @@ pub(super) fn field_of<'a>(fields: &'a [FieldSpec], key: &str) -> Option<&'a Fie
 /// which is what its column is ordered by.
 #[derive(Clone, PartialEq, Debug, Default)]
 pub struct Cell {
+    /// What the cell says.
     pub text: String,
+    /// The number it says, where it is one.
     pub number: Option<f64>,
 }
 
@@ -87,13 +101,16 @@ pub struct Shown<'a> {
 }
 
 impl<'a> Shown<'a> {
+    /// What `column` is read against, among the domain's `fields`.
+    #[must_use]
     pub fn of(column: &Column, fields: &'a [FieldSpec], identity: &'a str, plan: &Plan) -> Self {
         Self::at(column, field_of(fields, column.key), fields, identity, plan)
     }
 
     /// Read against one field of the item: `spec` itself, which a key
     /// several fields share - a list's places - does not say which.
-    pub(super) fn of_field(spec: &'a FieldSpec, fields: &'a [FieldSpec], plan: &Plan) -> Self {
+    #[must_use]
+    pub fn of_field(spec: &'a FieldSpec, fields: &'a [FieldSpec], plan: &Plan) -> Self {
         Self::at(&Column::new(spec.key), Some(spec), fields, "", plan)
     }
 
@@ -142,7 +159,7 @@ impl<'a> Shown<'a> {
 
     /// What `value` reads as in the column: a list's place and an order's
     /// are read out of the whole the item holds.
-    pub(super) fn text(&self, value: Option<&Value>, plan: &Plan) -> String {
+    pub fn text(&self, value: Option<&Value>, plan: &Plan) -> String {
         let Some(spec) = self.spec else {
             return value.map(to_text).unwrap_or_default();
         };
@@ -185,6 +202,7 @@ fn ticked(is_ticked: bool) -> String {
 
 /// The text a field of `kind` shows for `value`. Money is plain digits
 /// while typed in, since a separator is one more thing to get wrong.
+#[must_use]
 pub fn field_text(kind: FieldKind, value: Option<&Value>, is_focused: bool) -> String {
     let Some(value) = value else {
         return String::new();
@@ -213,6 +231,19 @@ pub fn parse_field(kind: FieldKind, text: &str) -> Option<Value> {
         _ => None,
     };
     read.or_else(|| parse_text(text))
+}
+
+/// The entry of the list `value` at `place`, counted from its start.
+#[must_use]
+pub fn nth(value: Option<&Value>, place: usize) -> Option<&Value> {
+    value?.as_array()?.get(place)
+}
+
+/// The entry of the list `value` that sits `back` places from its end.
+#[must_use]
+pub fn nth_back(value: Option<&Value>, back: usize) -> Option<&Value> {
+    let list = value?.as_array()?;
+    list.get(list.len().checked_sub(back + 1)?)
 }
 
 #[cfg(test)]

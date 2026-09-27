@@ -5,9 +5,14 @@
 
 pub mod actions;
 pub mod codec;
+pub mod draft;
 pub mod files;
+pub mod forms;
+pub mod issues;
 pub mod ladder;
 pub mod metric;
 pub mod present;
+pub mod session;
+pub mod setup;
 pub mod store;
 pub mod table;

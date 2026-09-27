@@ -3215,7 +3215,9 @@ name = "retiretui_client"
 version = "0.2.0"
 dependencies = [
  "anyhow",
+ "bevy_ecs",
  "clap",
+ "jiff",
  "retiretui_engine",
  "schemars",
  "serde",

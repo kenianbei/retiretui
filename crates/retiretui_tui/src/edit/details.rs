@@ -97,7 +97,7 @@ pub fn spawn_into(
 /// and by the tick whose table it is in - labelled and phrased as the
 /// form phrases it, then the record where the domain keeps one.
 fn rows(ops: Ops, item: &Table, plan: &Plan) -> Vec<Vec<String>> {
-    let opened = applies::opened(ops, item);
+    let opened = applies::opened(&ops, item);
     let is_used = |spec: &&FieldSpec| {
         let is_held = |gate| get_path(&opened, gate).is_some();
         spec.shown.is_none_or(|shown| shown(&opened))
@@ -204,7 +204,7 @@ mod tests {
             Page::Contributions,
             Page::People,
         ];
-        for ops in SCREENS {
+        for ops in &SCREENS {
             let Some(list) = ops.list else {
                 continue;
             };

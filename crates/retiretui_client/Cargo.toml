@@ -12,16 +12,22 @@ keywords.workspace = true
 categories.workspace = true
 
 [features]
+bevy = ["dep:bevy_ecs"]
 clap = ["dep:clap"]
 testing = []
 
 [dependencies]
 anyhow = "1.0.104"
+bevy_ecs = { version = "0.19.1", optional = true }
 clap = { version = "4.6.7", features = ["derive"], optional = true }
+jiff.workspace = true
 retiretui_engine = { workspace = true, features = ["schemars"] }
 schemars.workspace = true
 serde.workspace = true
 toml.workspace = true
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+jiff = { workspace = true, features = ["js"] }
 
 [lints]
 workspace = true

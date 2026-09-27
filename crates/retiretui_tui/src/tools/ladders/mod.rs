@@ -322,7 +322,7 @@ pub(crate) fn search(
 /// nothing.
 pub fn adopt(ladders: Res<Ladders>, draft: Res<Draft>, mut confirm: ResMut<Confirm>) -> Outcome {
     if let Some(refusal) = draft.refuse_if_read_only() {
-        return refusal;
+        return Outcome::Refused(refusal);
     }
     let Some(swept) = ladders.found() else {
         return Outcome::Refused(NOTHING_SEARCHED_YET.to_owned());

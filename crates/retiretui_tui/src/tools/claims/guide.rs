@@ -141,7 +141,7 @@ pub fn offer_actions(
     mut picking: ResMut<Picking>,
 ) -> Outcome {
     if let Some(refusal) = draft.refuse_if_read_only() {
-        return refusal;
+        return Outcome::Refused(refusal);
     }
     if cursor.person(&draft.plan).is_none() {
         return Outcome::Refused(NOBODY.to_owned());

@@ -10,9 +10,9 @@ use toml::Table;
 use super::accounts;
 use super::applies;
 use super::cells::field_of;
-use super::codec::to_text;
 use super::contributions;
-use super::domain::{FieldKind, FieldSpec};
+use super::{FieldKind, FieldSpec};
+use crate::codec::to_text;
 use crate::present;
 use crate::setup::{EXAMPLES, LifeStage};
 
@@ -20,24 +20,33 @@ use crate::setup::{EXAMPLES, LifeStage};
 /// restated here.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Vocabulary {
+    /// An account's kind.
     AccountKind,
+    /// An income's kind.
     IncomeKind,
+    /// A filing status.
     FilingStatus,
+    /// What a trigger rests on.
     TriggerBasis,
+    /// A tax treatment class.
     TreatmentClass,
     /// The new plan's own: where a household is in life.
     LifeStage,
     /// The new plan's own: the example plan it starts from.
     Example,
+    /// A country.
     Country,
+    /// A U.S. state.
     UsState,
     /// The form's own: whether an item recurs or happens once.
     Timing,
+    /// Who pays a contribution.
     Payer,
     /// The form's own: which way a contribution states its amount.
     AmountForm,
     /// The form's own: how an account says what it earns.
     Holding,
+    /// How a market is drawn.
     Draw,
 }
 
@@ -60,12 +69,15 @@ const AMOUNT_FORMS: &[(&str, &str)] = &[
 /// shown for it.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Offer {
+    /// What the file keeps.
     pub value: String,
+    /// The words shown for it.
     pub label: String,
 }
 
 impl Offer {
     /// An offer with no words of its own, shown as the file spells it.
+    #[must_use]
     pub fn spelt(value: String) -> Self {
         Self {
             label: value.clone(),
@@ -75,6 +87,7 @@ impl Offer {
 }
 
 impl Vocabulary {
+    /// Every word of the vocabulary, as a pick offers it.
     pub fn offers(self) -> Vec<Offer> {
         fn offers<T: Copy>(
             all: &[T],
@@ -123,13 +136,17 @@ impl Vocabulary {
 /// Where a reference field's candidates come from.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum RefSource {
+    /// A person of the household.
     Person,
+    /// Any account.
     Account,
     /// A tax-deferred account, which a conversion drains.
     DeferredAccount,
     /// A Roth account, which a conversion fills.
     RothAccount,
+    /// A named event.
     Event,
+    /// An income.
     Income,
 }
 
@@ -187,11 +204,12 @@ fn told_apart(offers: Vec<Offer>) -> Vec<Offer> {
 }
 
 /// The key every item's display name is stated under.
-pub(super) const NAME_KEY: &str = "name";
+pub const NAME_KEY: &str = "name";
 
 /// What an item is called: its display name where it states one, else
 /// what it is known by - under the words for it, where `fields` has that
 /// picked from a closed set.
+#[must_use]
 pub fn display_name(item: &Table, identity: &str, fields: &[FieldSpec]) -> Option<String> {
     let stated = |key: &str| item.get(key).map(to_text).filter(|text| !text.is_empty());
     let known = || {

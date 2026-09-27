@@ -11,12 +11,10 @@ use bevy_input_focus::{FocusCause, InputFocus};
 use plurimus::ui::ModalOpen;
 use toml::Table;
 
-use super::applies;
 use super::build;
 use super::domain::{ListOps, Ops, Target};
 use super::draft::{Draft, DraftEditor};
 use super::table::{DomainTable, Row};
-use crate::command::Outcome;
 use crate::confirm::{Answer, Confirm};
 use crate::hints::Hints;
 use crate::journal;
@@ -25,6 +23,10 @@ use crate::overlay::{self, Standing};
 use crate::pane::Framed;
 use crate::scope::KeyScope;
 use crate::session::Session;
+use retiretui_client::codec::{get_path, set_path};
+use retiretui_client::forms::FieldSpec;
+use retiretui_client::forms::applies::{self, HAPPENS, ON_KEY, ONCE_UNDATED, happens_once};
+use retiretui_client::forms::cells::field_of;
 
 /// Where an item is stored: where it sat in the plan when opened - the
 /// first place it is looked for - or, while a new one is composed, the
@@ -90,13 +92,13 @@ impl Editing {
             Slot::At(Row(index)) => (ops.item)(draft, index).unwrap_or_default(),
             Slot::New(list) => (list.blank)(&draft.plan),
         };
-        let snapshot = applies::opened(ops, &pristine);
+        let snapshot = applies::opened(&ops, &pristine);
         Self {
             ops,
             table,
             slot,
             form: None,
-            stale: applies::stale(ops, &pristine, &snapshot),
+            stale: applies::stale(&ops, &pristine, &snapshot),
             cleared: Vec::new(),
             pristine,
             snapshot,
@@ -187,7 +189,7 @@ pub fn open_item(
     mut state: SessionFocus,
 ) {
     if ops.target == Target::Draft
-        && let Some(Outcome::Refused(reason)) = draft.refuse_if_read_only()
+        && let Some(reason) = draft.refuse_if_read_only()
     {
         journal::warn(reason);
         return;
@@ -313,7 +315,7 @@ impl SessionFocus<'_, '_> {
         };
         let target = editing.ops.target;
         if target == Target::Draft
-            && let Some(Outcome::Refused(reason)) = editor.draft.refuse_if_read_only()
+            && let Some(reason) = editor.draft.refuse_if_read_only()
         {
             journal::warn(reason);
             return false;
@@ -364,7 +366,7 @@ impl SessionFocus<'_, '_> {
 
     pub(super) fn discard(&mut self) {
         if let Some(editing) = self.session.0.as_mut() {
-            editing.snapshot = applies::opened(editing.ops, &editing.pristine);
+            editing.snapshot = applies::opened(&editing.ops, &editing.pristine);
             editing.incomplete.clear();
             editing.is_seeded = false;
         }
@@ -375,5 +377,74 @@ impl SessionFocus<'_, '_> {
     /// to what opened it.
     fn close(&mut self) {
         self.session.0 = None;
+    }
+}
+
+impl Editing {
+    /// Hides the stale fields cleared by hand but `held`, the one the
+    /// keyboard is in, answering whether any went: a row cleared and left
+    /// has nothing left to be seen for.
+    pub(super) fn hide_cleared(&mut self, held: Option<&str>) -> bool {
+        let is_cleared = |key: &&&'static str| {
+            held != Some(**key)
+                && get_path(&self.snapshot, key).is_none()
+                && !self.cleared.contains(key)
+        };
+        let newly: Vec<&'static str> = self.stale.iter().filter(is_cleared).copied().collect();
+        self.cleared.extend(&newly);
+        !newly.is_empty()
+    }
+
+    /// Whether the field `key` is on show: used by its own rule, or stale
+    /// and not yet cleared and left.
+    pub(super) fn is_on_show(&self, key: &str) -> bool {
+        let spec = field_of(self.ops.fields, key);
+        spec.is_none_or(|spec| {
+            spec.shown.is_none_or(|shown| shown(&self.snapshot))
+                || (self.stale.contains(&spec.key) && !self.cleared.contains(&spec.key))
+        })
+    }
+
+    fn applies(&self, spec: &FieldSpec) -> bool {
+        spec.shown.is_none_or(|shown| shown(&self.snapshot)) || self.stale.contains(&spec.key)
+    }
+
+    /// Whether the item has a use for the field `key`.
+    pub(super) fn uses(&self, key: &str) -> bool {
+        let spec = field_of(self.ops.fields, key);
+        spec.is_none_or(|spec| self.applies(spec))
+    }
+
+    /// The first field on show that does not yet make a value, and what is
+    /// wrong with it. Once is only a pick until it has a date, which no
+    /// file could state, so it is held back as a half-made trigger is.
+    pub(super) fn held_back(&self) -> Option<(&'static str, &'static str)> {
+        let mut unmade = self.incomplete.iter().filter(|(key, _)| self.uses(key));
+        if let Some((key, complaint)) = unmade.next() {
+            return Some((key, complaint));
+        }
+        let asks_timing = self.snapshot.contains_key(HAPPENS);
+        let is_undated = happens_once(&self.snapshot) && !self.snapshot.contains_key(ON_KEY);
+        (asks_timing && is_undated).then_some((ON_KEY, ONCE_UNDATED))
+    }
+
+    /// `item` less what the item being edited has no use for, and with
+    /// each field no file holds turned back into what one does.
+    pub(super) fn stripped(&self, mut item: Table) -> Table {
+        for spec in self.ops.fields {
+            if let Some(derived) = spec.derived {
+                if let Some(value) = item.remove(spec.key) {
+                    (derived.write)(&mut item, &value);
+                }
+            } else if !self.applies(spec) {
+                set_path(&mut item, spec.key, None);
+            }
+        }
+        item
+    }
+
+    /// What applying stores.
+    pub(super) fn written(&self) -> Table {
+        self.stripped(self.snapshot.clone())
     }
 }

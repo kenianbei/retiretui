@@ -151,17 +151,6 @@ pub fn ordered(
 
 const GAPPED_LIST: &str = "is blank, but the row after it is not";
 
-/// The entry of the list `value` at `place`, counted from its start.
-pub fn nth(value: Option<&Value>, place: usize) -> Option<&Value> {
-    value?.as_array()?.get(place)
-}
-
-/// The entry of the list `value` that sits `back` places from its end.
-pub fn nth_back(value: Option<&Value>, back: usize) -> Option<&Value> {
-    let list = value?.as_array()?;
-    list.get(list.len().checked_sub(back + 1)?)
-}
-
 /// The list `parts` make, each placed by how far from its end it sits, or the
 /// complaint where a place nearer the end than a filled one is blank.
 pub fn listed(
@@ -181,6 +170,8 @@ pub fn listed(
 
 #[cfg(test)]
 mod tests {
+    use retiretui_client::forms::cells::nth_back;
+
     use super::*;
 
     fn amounts(list: &[i64]) -> Value {

@@ -3,9 +3,22 @@ use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::{FilingStatus, Item, Plan, PlanDate, Trigger};
 use retiretui_engine::project::{project, validate_plan};
 
-use super::tests::as_table;
+use toml::Table;
+
 use super::{LifeStage, SetupAnswers, generate};
-use crate::edit::from_table;
+
+/// The answers a form holding `body` under this filing and stage would
+/// have been applied with.
+fn as_table(filing: FilingStatus, stage: LifeStage, body: &str) -> Table {
+    format!(
+        "filing = \"{}\"\nstage = \"{}\"\n{body}",
+        filing.as_str(),
+        stage.as_str()
+    )
+    .parse()
+    .expect("the answers are a table")
+}
+use crate::codec::from_table;
 
 const START_YEAR: i16 = 2026;
 

@@ -64,8 +64,8 @@ const WRAP_SLACK: usize = 10;
 pub const fn help_fits(ops: Ops) -> bool {
     let room = (FORM_COLS as usize - FRAME_COLS - WRAP_SLACK) * HELP_ROWS as usize;
     let mut at = 0;
-    while at < ops.fields.len() {
-        let spec = ops.fields[at];
+    while at < ops.form.fields.len() {
+        let spec = ops.form.fields[at];
         if spec.help.is_empty() || spec.help.len() > room {
             return false;
         }

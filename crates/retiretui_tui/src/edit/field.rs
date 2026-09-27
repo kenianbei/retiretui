@@ -31,12 +31,12 @@ use super::cells::{field_text, parse_field};
 use super::codec::{get_path, share_left};
 use super::domain::{FieldKind, FieldSpec};
 use super::editing::{EditSession, Editing};
-use super::group::{nth, nth_back};
 use super::select::{Select, spawn_select};
 use super::trigger::Slot;
 use crate::layout::{placed, sized};
 use crate::present;
 use crate::theme::Theme;
+use retiretui_client::forms::cells::{nth, nth_back};
 
 /// A widget activated by space alone, leaving Enter to apply the item.
 pub fn space() -> ActivateKeys {

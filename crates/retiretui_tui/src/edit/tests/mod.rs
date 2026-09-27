@@ -318,7 +318,7 @@ fn a_domain_emptied_of_items_says_what_it_is_for() {
     assert!(draft_plan(&app).accounts.is_empty());
     let frame = composed_frame(&app);
     assert!(
-        frame.contains(<super::accounts::Accounts as super::domain::Domain>::PURPOSE),
+        frame.contains(<retiretui_client::forms::accounts::Accounts as retiretui_client::forms::Domain>::PURPOSE),
         "an empty domain says what it is for: {frame}"
     );
     press_key(&mut app, KeyCode::Char('d'));

@@ -22,7 +22,7 @@ pub fn import_statement(
     mut importing: ResMut<Importing>,
 ) -> Outcome {
     if let Some(refusal) = draft.refuse_if_read_only() {
-        return refusal;
+        return Outcome::Refused(refusal);
     }
     let Some(person) = cursor.person(&draft.plan) else {
         return Outcome::Refused(NOBODY.to_owned());
@@ -36,7 +36,7 @@ pub fn import_statement(
 /// history.
 pub fn fill_career(cursor: Res<PersonCursor>, mut editor: DraftEditor) -> Outcome {
     if let Some(refusal) = editor.draft.refuse_if_read_only() {
-        return refusal;
+        return Outcome::Refused(refusal);
     }
     if let Some(issue) = editor.draft.issues().first() {
         return Outcome::Refused(format!("not filled: {issue}"));
@@ -70,7 +70,7 @@ pub fn fill_career(cursor: Res<PersonCursor>, mut editor: DraftEditor) -> Outcom
 /// as one step of history.
 pub fn compute_benefit(cursor: Res<PersonCursor>, mut editor: DraftEditor) -> Outcome {
     if let Some(refusal) = editor.draft.refuse_if_read_only() {
-        return refusal;
+        return Outcome::Refused(refusal);
     }
     let Some((id, name)) = cursor
         .person(&editor.draft.plan)
@@ -97,7 +97,7 @@ pub fn clear_record(
     mut confirm: ResMut<Confirm>,
 ) -> Outcome {
     if let Some(refusal) = draft.refuse_if_read_only() {
-        return refusal;
+        return Outcome::Refused(refusal);
     }
     let Some(person) = cursor.person(&draft.plan) else {
         return Outcome::Refused(NOBODY.to_owned());
@@ -134,7 +134,7 @@ pub fn remove_benefit(
     mut confirm: ResMut<Confirm>,
 ) -> Outcome {
     if let Some(refusal) = draft.refuse_if_read_only() {
-        return refusal;
+        return Outcome::Refused(refusal);
     }
     let Some(person) = cursor.person(&draft.plan) else {
         return Outcome::Refused(NOBODY.to_owned());
