@@ -2,7 +2,10 @@ import { Link, Outlet, useLocation } from "@tanstack/react-router";
 
 import type { ReactNode } from "react";
 
+import { FileMenu } from "@/files/menu";
+import { Start } from "@/files/start";
 import { cn } from "@/lib/utils";
+import { useSession } from "@/session";
 import { TABS, isWithin, type Page, type Tab } from "@/nav";
 
 function useIsActive() {
@@ -162,6 +165,7 @@ function GroupPages() {
 }
 
 export function Shell() {
+  const { document } = useSession();
   return (
     <div className="min-h-dvh md:grid md:grid-cols-[15rem_1fr]">
       <Sidebar />
@@ -170,10 +174,17 @@ export function Shell() {
           <span className="font-semibold tracking-tight md:hidden">
             RetireTui
           </span>
+          <FileMenu />
         </header>
         <main className="flex-1 px-4 py-6 md:px-8">
-          <GroupPages />
-          <Outlet />
+          {document ? (
+            <>
+              <GroupPages />
+              <Outlet />
+            </>
+          ) : (
+            <Start />
+          )}
         </main>
       </div>
       <BottomBar />

@@ -18,6 +18,7 @@ export default defineConfig({
     },
   },
   server: { fs: { allow: [".", wasm, "../crates/retiretui_wasm/bindings"] } },
+  build: { target: "es2022" },
   worker: { format: "es" },
   test: { include: ["src/**/*.test.ts"] },
 });

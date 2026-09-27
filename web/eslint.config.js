@@ -13,6 +13,12 @@ export default tseslint.config(
       reactHooks.configs.flat.recommended,
       reactRefresh.configs.vite,
     ],
+    rules: {
+      "react-refresh/only-export-components": [
+        "error",
+        { allowExportNames: ["useSession", "useFileActions"] },
+      ],
+    },
     files: ["**/*.{ts,tsx}"],
     languageOptions: {
       globals: globals.browser,
