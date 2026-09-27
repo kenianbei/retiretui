@@ -1,21 +1,21 @@
 # RetireTui Architecture
 
-RetireTui is a local-first retirement planner for the terminal. The user owns a
-plain TOML plan file describing a household - people and filing status, each
-person's covered earnings where a Social Security statement has been imported,
-accounts with tax treatments and what each is invested in, contributions into
-them, income sources, expenses, named milestones, opt-in Medicare surcharge
-modeling and MAGI-cliff declarations, and what it assumes of the market - and
-the program answers with a deterministic year-by-year projection of that
-household's finances under U.S. federal tax law and the income tax of the state
-it lives in, year by year, and with how that projection fares across many
-markets. All amounts are entered as annual today's dollars and escalate per
-item - at plan inflation by default, frozen nominal, or at a fixed rate of their
-own; the engine computes in nominal dollars and carries a per-year deflator so
-results read in either basis. A projection walks through a market - each year's
-return on each asset class and that year's inflation - and the ledger is the one
-market the plan states: each class's mean return and the plan's inflation, every
-year.
+RetireTui is a local-first retirement planner for the terminal and the browser.
+The user owns a plain TOML plan file describing a household - people and filing
+status, each person's covered earnings where a Social Security statement has
+been imported, accounts with tax treatments and what each is invested in,
+contributions into them, income sources, expenses, named milestones, opt-in
+Medicare surcharge modeling and MAGI-cliff declarations, and what it assumes of
+the market - and the program answers with a deterministic year-by-year
+projection of that household's finances under U.S. federal tax law and the
+income tax of the state it lives in, year by year, and with how that projection
+fares across many markets. All amounts are entered as annual today's dollars and
+escalate per item - at plan inflation by default, frozen nominal, or at a fixed
+rate of their own; the engine computes in nominal dollars and carries a per-year
+deflator so results read in either basis. A projection walks through a market -
+each year's return on each asset class and that year's inflation - and the
+ledger is the one market the plan states: each class's mean return and the
+plan's inflation, every year.
 
 A plan variant is a scenario: a TOML file naming a `base` document and stating
 only deltas. Items are addressed by identity - the `id` every listed item
@@ -25,8 +25,8 @@ its own, so a typo'd id cannot apply silently. A base may itself be a scenario;
 chains resolve bottom-up with cycle detection. Every surface accepts a scenario
 wherever it accepts a plan.
 
-A cargo workspace splits the system into two crates with a one-way rule: logic
-never depends on UI.
+A cargo workspace splits the system into crates with a one-way rule: logic never
+depends on UI.
 
 - `retiretui_engine` - everything that computes. `plan` is the schema, its
   semantic validation, the scenario overlay merge, and how one plan differs from
@@ -100,12 +100,25 @@ never depends on UI.
   of the engine's own, so a saved seed draws the same markets, historical years
   bootstrapped in blocks, or history replayed from a start year - from an
   embedded yearly record of U.S. returns and inflation since 1871 that a user
-  file may replace, and runs a plan through many of them at once across threads,
-  keeping of each run only what the tools show: success, ending, shortfall and
-  net worth by year in that run's own today's dollars, with percentile bands and
-  the runs singled out. `search` is what every search shares: a way to follow it
-  and to stop it at its next step, and the machine's threads to run its
-  independent steps across - a market's runs, a sweep's brackets.
+  file may replace, and runs a plan through many of them at once across the
+  machine's threads where it has more than one, keeping of each run only what
+  the tools show: success, ending, shortfall and net worth by year in that run's
+  own today's dollars, with percentile bands and the runs singled out. `search`
+  is what every search shares: a way to follow it and to stop it at its next
+  step, and the machine's threads, where there are any, to run its independent
+  steps across - a market's runs, a sweep's brackets.
+- `retiretui_tui` - the interactive planner described under `tui` below, as a
+  library above whatever backend draws it, beside what every surface shares of
+  it: the resolver that follows scenario base chains, the load-and-validate
+  gate, and the words tables and actions are said in. It reads, writes, lists
+  and stamps every plan file through one store - the disk, or files kept as keys
+  of a browser's storage, each file's count of writes its stamp - and runs each
+  search beside the frames: on a thread of its own, or, where there are no
+  threads, whole on the frame after the one that shows it under way. A launch
+  names what the session opens, its store and settings file, whether the screen
+  it is drawn on is light, and, for a page, that the document last open is
+  reopened, the directory no picker climbs above, and what hands files across
+  the page's edge.
 - `retiretui` - the single user-facing binary; surfaces are clap subcommands.
   One shared resolver follows scenario base chains - reading files and resolving
   paths is surface policy: relative to the referring file on the CLI, contained
@@ -120,63 +133,63 @@ never depends on UI.
   random markets or every historical start year and report the share it
   survives, their settings the plan's and overridable by flag; `import-earnings`
   records a statement's earnings on a person and writes the plan back
-  canonically, the one CLI command that rewrites a plan file; `tui` opens an
-  interactive planner - a plurimus (Bevy-in-the-terminal) app shaped like a
-  desktop one, driven by keyboard or pointer: a row of bordered tabs naming the
-  five places to be, the page one of them shows, and a row naming the keys in
-  reach. A tab is selected by its own digit, by the pointer, or by stepping the
-  row; three open a page of their own and the last two each hold a group of
-  pages - the tools that act on the plan as a whole, and the plan's editing
-  domains - a sidebar naming the group's pages beside whichever is on show: the
-  sidebar's cursor and the page are one fact, whichever of them moves, and a
-  grouped tab comes back to the page last shown through it. It opens on a plan,
-  a scenario, or a directory - the working directory by default - and holds one
-  document at a time: a command opens another or saves the draft under another
-  name, each through one file picker - a path field over the directory it names,
-  opened on the workspace, the directory beside the document or the one launched
-  on while there is none, and listing that directory's files of the kind wanted
-  and every directory beneath or above it, so a plan anywhere is reached by
-  typing or completing its path - which takes a name no file has as a new one
-  wherever a file is to be written. Without a document there is nothing to view,
-  so the four tabs with a page behind them are drawn dead and the form a new
-  plan starts from stands over the empty shell: one of the example plans, or a
-  household's filing status, where it is in life, and each person's name, birth
-  year, retirement age, when they started working, salary and Social Security -
-  which anyone may leave for the engine to compute, from a career at that
-  salary, a retiree's the last they earned. Creating it builds the plan the
-  example or the answers describe, names it through the picker that saves under
-  another name, and opens it, so nothing reaches disk until it is named and
-  everything after the first answers is edited in the plan's own domains. The
-  same form stands over an open document when a new plan is asked for, the
-  document staying open beneath it and taking no key while it does; alone, it
-  lets the shell's own keys through. Each command's scope states whether it runs
-  where no page is shown - what finds a document, ends the session, dresses the
-  shell, or moves the keyboard between panes does, and the rest refuse. A page
-  is a view of the projection (an overview answering what the plan's owner asks
-  of it - whether the money lasts and how surely, when the big things happen,
-  what needs attention, what to do in the year, how the money is split between
-  tax treatments, and what the optimizers find better, searched in the
-  background while it is shown - each answer leading to the page its detail
-  lives on; a year ledger - the plan's own projection, or a market run opened
-  from a market tool until `esc` or an edit returns it - over the cursor year's
-  flows, each account from its open to its close with every flow in and out
-  named by where it came from or went, beside its income and tax - the overview
-  and the ledger sharing one year cursor, today until moved and always within
-  the plan's years, which each follows when the other moves it and the charts
-  also set under a click and read out under the pointer), one of the plan's
-  editing domains, or one of what runs over it: the document compared with other
-  workspace files, which follow the disk as the document does - each plan's
-  figures, its success through random markets, and what it changes of the one
-  chosen as the baseline, beside the plans charted or tabled year by year, whole
-  or as their difference from the baseline, ⏎ on one taking it into the
-  document's place with the others kept - and the tools, each panes of its own
-  over a line of help and a search on a thread of its own that runs by itself
-  whenever what it would search changes, a newer search stopping one under way,
-  taking instead what the overview has already found over the same plan, its
-  options ranked best first in one shared table under a row for the plan as it
-  stands - the conversion search's beside what it runs under, read out and
-  edited as a domain's one item is, and over the highlighted ladder year by
-  year, the claim search's beside a table of each person's record, income and
+  canonically, the one CLI command that rewrites a plan file; `tui` opens the
+  interactive planner in the terminal - a plurimus (Bevy-in-the-terminal) app
+  shaped like a desktop one, driven by keyboard or pointer: a row of bordered
+  tabs naming the five places to be, the page one of them shows, and a row
+  naming the keys in reach. A tab is selected by its own digit, by the pointer,
+  or by stepping the row; three open a page of their own and the last two each
+  hold a group of pages - the tools that act on the plan as a whole, and the
+  plan's editing domains - a sidebar naming the group's pages beside whichever
+  is on show: the sidebar's cursor and the page are one fact, whichever of them
+  moves, and a grouped tab comes back to the page last shown through it. It
+  opens on a plan, a scenario, or a directory - the working directory by
+  default - and holds one document at a time: a command opens another or saves
+  the draft under another name, each through one file picker - a path field over
+  the directory it names, opened on the workspace, the directory beside the
+  document or the one launched on while there is none, and listing that
+  directory's files of the kind wanted and every directory beneath or above it,
+  so a plan anywhere is reached by typing or completing its path - which takes a
+  name no file has as a new one wherever a file is to be written. Without a
+  document there is nothing to view, so the four tabs with a page behind them
+  are drawn dead and the form a new plan starts from stands over the empty
+  shell: one of the example plans, or a household's filing status, where it is
+  in life, and each person's name, birth year, retirement age, when they started
+  working, salary and Social Security - which anyone may leave for the engine to
+  compute, from a career at that salary, a retiree's the last they earned.
+  Creating it builds the plan the example or the answers describe, names it
+  through the picker that saves under another name, and opens it, so nothing
+  reaches disk until it is named and everything after the first answers is
+  edited in the plan's own domains. The same form stands over an open document
+  when a new plan is asked for, the document staying open beneath it and taking
+  no key while it does; alone, it lets the shell's own keys through. Each
+  command's scope states whether it runs where no page is shown - what finds a
+  document, ends the session, dresses the shell, or moves the keyboard between
+  panes does, and the rest refuse. A page is a view of the projection (an
+  overview answering what the plan's owner asks of it - whether the money lasts
+  and how surely, when the big things happen, what needs attention, what to do
+  in the year, how the money is split between tax treatments, and what the
+  optimizers find better, searched in the background while it is shown - each
+  answer leading to the page its detail lives on; a year ledger - the plan's own
+  projection, or a market run opened from a market tool until `esc` or an edit
+  returns it - over the cursor year's flows, each account from its open to its
+  close with every flow in and out named by where it came from or went, beside
+  its income and tax - the overview and the ledger sharing one year cursor,
+  today until moved and always within the plan's years, which each follows when
+  the other moves it and the charts also set under a click and read out under
+  the pointer), one of the plan's editing domains, or one of what runs over it:
+  the document compared with other workspace files, which follow the disk as the
+  document does - each plan's figures, its success through random markets, and
+  what it changes of the one chosen as the baseline, beside the plans charted or
+  tabled year by year, whole or as their difference from the baseline, ⏎ on one
+  taking it into the document's place with the others kept - and the tools, each
+  panes of its own over a line of help and a search beside the frames that runs
+  by itself whenever what it would search changes, a newer search stopping one
+  under way, taking instead what the overview has already found over the same
+  plan, its options ranked best first in one shared table under a row for the
+  plan as it stands - the conversion search's beside what it runs under, read
+  out and edited as a domain's one item is, and over the highlighted ladder year
+  by year, the claim search's beside a table of each person's record, income and
   estimated benefit, ⏎ on a person offering what can be done for them, and the
   claims held out of the search among what it watches, and the market tools'
   runs - the plan through random markets, or from every historical start year
@@ -247,28 +260,36 @@ never depends on UI.
   of the widget it was typed at and everything that widget sits in: what stands
   over the page keeps every key, and a form's fields and buttons keep the plain
   ones. Everything the shell says is a `tracing` event with two readers: a
-  journal the shell toasts from and lists in a drawer, and a log file. Colour is
-  named by role, never by value: a theme is a table of roles, the terminal's own
-  colours by default, and a cell no widget coloured is drawn in the theme's own
-  ground. What the user sets - theme, motion - lives in one user config file the
-  shell reads at launch and writes back a key at a time, leaving the rest of the
-  file as the user wrote it. Each applied item re-validates the draft: a valid
-  draft is re-projected at once so the views follow it, and an invalid one holds
-  the last good view, reports its first issue, counts them beside the file name,
-  and lists every one in a panel whose rows turn to the item. Saving writes the
-  draft as canonical TOML through the same validation gate as every other write;
-  scenario sessions are read-only, since a resolved plan cannot be written back
-  into an overlay, and saving one under a new name writes the resolved plan as a
-  plan of its own. The resolved chain's files are watched so on-disk edits
-  re-project in place, except under an unsaved draft or an item being edited,
-  which is reported rather than overwritten, and so are each compared file's,
-  which have no draft to protect; `mcp` serves the same contract to AI agents
-  over stdio - list, read, validate, write, project, actions, compare,
-  earnings-import, optimizer and market tools over plan files sandboxed to a
-  served directory, plus tax-parameter lookup and an embedded schema reference.
-  Writes are gated on full validation - scenarios validated fully resolved - and
-  stored in canonical TOML; the schema reference's worked example is kept valid
-  by the test suite.
+  journal the shell toasts from and lists in a drawer, and, in a terminal, a log
+  file. Colour is named by role, never by value: a theme is a table of roles,
+  the terminal's own colours by default, and a cell no widget coloured is drawn
+  in the theme's own ground. What the user sets - theme, motion - lives in one
+  user config file the shell reads at launch and writes back a key at a time,
+  leaving the rest of the file as the user wrote it. Each applied item
+  re-validates the draft: a valid draft is re-projected at once so the views
+  follow it, and an invalid one holds the last good view, reports its first
+  issue, counts them beside the file name, and lists every one in a panel whose
+  rows turn to the item. Saving writes the draft as canonical TOML through the
+  same validation gate as every other write; scenario sessions are read-only,
+  since a resolved plan cannot be written back into an overlay, and saving one
+  under a new name writes the resolved plan as a plan of its own. The resolved
+  chain's files are watched so edits made outside the session - on disk, or from
+  another tab of the page - re-project in place, except under an unsaved draft
+  or an item being edited, which is reported rather than overwritten, and so are
+  each compared file's, which have no draft to protect; `mcp` serves the same
+  contract to AI agents over stdio - list, read, validate, write, project,
+  actions, compare, earnings-import, optimizer and market tools over plan files
+  sandboxed to a served directory, plus tax-parameter lookup and an embedded
+  schema reference. Writes are gated on full validation - scenarios validated
+  fully resolved - and stored in canonical TOML; the schema reference's worked
+  example is kept valid by the test suite.
+- `retiretui_web` - the planner in a browser page, built for wasm alone and
+  published to GitHub Pages with each release: plurimus's WebGL canvas, the
+  workspace kept in the page's own storage under `/workspace`, the browser's
+  light or dark preference, and `upload` and `download` - commands only the
+  page's table holds - through the browser's file dialog and a download link, an
+  upload asking before it replaces a file of the same name. Quit starts the page
+  over, on the document last open.
 
 Plans express timing through a closed trigger vocabulary - a fixed date, a
 person's age, or a reference to a named event or income source with a whole year
