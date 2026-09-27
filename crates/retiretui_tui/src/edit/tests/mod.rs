@@ -29,7 +29,7 @@ use retiretui_engine::plan::Plan;
 use super::build::FormField;
 use super::editing::EditSession;
 use super::table::{DomainTable, Row};
-use super::{Draft, SCREENS};
+use super::{Draft, screens};
 use crate::nav::Page;
 use crate::support::{
     self, Headless, ROOMY, SIZE, cell_fg, cell_of, commit_edit, composed_frame, headless_app,
@@ -318,7 +318,7 @@ fn a_domain_emptied_of_items_says_what_it_is_for() {
     assert!(draft_plan(&app).accounts.is_empty());
     let frame = composed_frame(&app);
     assert!(
-        frame.contains(<super::accounts::Accounts as super::domain::Domain>::PURPOSE),
+        frame.contains(<retiretui_client::forms::accounts::Accounts as retiretui_client::forms::Domain>::PURPOSE),
         "an empty domain says what it is for: {frame}"
     );
     press_key(&mut app, KeyCode::Char('d'));
@@ -346,7 +346,7 @@ fn scenario_sessions_refuse_to_edit() {
 #[test]
 fn every_domain_declares_columns_that_are_fields_and_a_usable_blank() {
     let mut draft = Draft::new(support::test_projected().plan, false);
-    for ops in SCREENS {
+    for ops in screens() {
         let Some(list) = ops.list else { continue };
         for column in list.columns {
             assert!(
@@ -380,7 +380,7 @@ fn every_text_field_reads_back_the_value_it_shows() {
     .unwrap();
     let draft = Draft::new(plan, false);
     let mut checked = 0;
-    for ops in SCREENS {
+    for ops in screens() {
         let count = ops.list.map_or(1, |list| (list.count)(&draft.plan));
         for index in 0..count {
             let item = (ops.item)(&draft, index).expect("an item the domain counted");

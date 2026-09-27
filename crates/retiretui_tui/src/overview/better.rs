@@ -9,52 +9,31 @@ use std::collections::BTreeSet;
 
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::prelude::{Res, ResMut, Resource};
-use retiretui_engine::market::{History, Progress, Runs, historical};
-use retiretui_engine::optimize::{ClaimSearch, optimize_claims, rank_key};
+use retiretui_engine::market::{History, Runs};
+use retiretui_engine::optimize::ClaimSearch;
 use retiretui_engine::params::TaxTables;
-use retiretui_engine::plan::{Plan, TreatmentClass};
-use retiretui_engine::project::Projection;
+use retiretui_engine::plan::Plan;
 
 use super::rows::{Entry, Tone};
 use crate::edit::Draft;
 use crate::nav::{Page, ShownSurface};
-use crate::present::signed_money;
 use crate::session::{Projected, Session};
 use crate::tools::claims::HeldClaims;
 use crate::tools::ladders::{self, Swept, rate_label};
 use crate::tools::markets::MarketHistory;
 use crate::tools::{Keyed, Searches};
+use retiretui_client::searches::overview::{Found, Searched, beats, gain, search};
 
 const NO_LADDER: &str = "no conversion ladder beats the plan";
 const REFUSED: &str = "not searchable under the Roth Conversions answers";
 const CLAIMS_AS_PLANNED: &str = "Claims as planned are best";
 const NOTHING_TO_SEARCH: &str = "No conversion or claim to search";
 
-/// A plan, the people whose claims are held as it states them, and the
-/// conversion answers held but the destination.
-type Searched = (Plan, BTreeSet<String>, toml::Table);
-
 /// What the searches found, and what they were made over.
 #[derive(Resource, Default)]
 pub struct Better {
     answered: Option<(Searched, Found)>,
     running: Option<Keyed<Searched, Option<Found>>>,
-}
-
-pub(crate) struct Found {
-    /// The plan from every start year, where it could be run.
-    pub(super) historical: Option<Runs>,
-    /// The claim search, where anything computes a benefit.
-    claims: Option<ClaimSearch>,
-    ladders: Vec<Ladder>,
-}
-
-/// A Roth owner's ladders into their Roth account, `None` where the search
-/// is refused under the page's answers.
-struct Ladder {
-    owner: String,
-    destination: String,
-    swept: Option<Swept>,
 }
 
 impl Better {
@@ -154,58 +133,6 @@ impl Better {
     }
 }
 
-/// Every search, the cheapest first; none once cancelled.
-fn search(
-    (plan, held, answers): &Searched,
-    (tables, history): (&TaxTables, &History),
-    progress: &Progress,
-) -> Option<Found> {
-    let historical = historical(plan, tables, history, progress).ok();
-    let held: Vec<String> = held.iter().cloned().collect();
-    let claims = optimize_claims(plan, tables, &[], &held, progress).ok();
-    let mut ladders = Vec::new();
-    for owner in roth_owners(plan) {
-        if progress.is_cancelled() {
-            return None;
-        }
-        ladders.push(best_ladder(plan, tables, answers, owner, progress));
-    }
-    if progress.is_cancelled() {
-        return None;
-    }
-    Some(Found {
-        historical,
-        claims,
-        ladders,
-    })
-}
-
-/// The best ladder into `owner`'s Roth account, searched as the Roth
-/// Conversions page searches under the `answers` it holds.
-fn best_ladder(
-    plan: &Plan,
-    tables: &TaxTables,
-    answers: &toml::Table,
-    (owner, destination): (&str, &str),
-    progress: &Progress,
-) -> Ladder {
-    Ladder {
-        owner: owner.to_owned(),
-        destination: destination.to_owned(),
-        swept: ladders::sweep_into(plan, tables, answers, destination, progress),
-    }
-}
-
-/// Each person with a Roth account, and the first they own.
-fn roth_owners(plan: &Plan) -> impl Iterator<Item = (&str, &str)> {
-    plan.household.people.iter().filter_map(|person| {
-        let roth = plan.accounts.iter().find(|account| {
-            account.owner == person.id && account.treatment() == TreatmentClass::Roth
-        })?;
-        Some((person.id.as_str(), roth.id.as_str()))
-    })
-}
-
 /// Takes the answer as it lands, and searches the plan shown while the
 /// Overview is, dropping an answer that describes another.
 pub(super) fn work(
@@ -283,47 +210,5 @@ fn quiet(text: &str) -> Entry {
     Entry {
         tone: Tone::Quiet,
         ..Entry::plain(text.to_owned())
-    }
-}
-
-/// Whether `option` ranks ahead of `current`, as the tools rank options.
-fn beats(option: &Projection, current: &Projection) -> bool {
-    rank_key(option) < rank_key(current)
-}
-
-/// What `option` ends with against `current`, and leaves unfunded where
-/// that differs.
-fn gain(option: &Projection, current: &Projection, nominal: bool) -> String {
-    let (own, base) = (option.summary(!nominal), current.summary(!nominal));
-    let ends = signed_money(own.final_net_worth - base.final_net_worth);
-    let unfunded = own.lifetime_unfunded - base.lifetime_unfunded;
-    if unfunded == 0 {
-        format!("ends {ends}")
-    } else {
-        format!("ends {ends}, unfunded {}", signed_money(unfunded))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::support::{TEST_PLAN, projected_from};
-
-    /// A plan whose historical runs are refused without a look at the
-    /// progress, so only the checks between the steps can stop it.
-    #[test]
-    fn a_cancelled_search_stops_before_the_next_step() {
-        let refused = format!("{TEST_PLAN}\n[market.historical]\nfrom = 1800\n");
-        let searched = (
-            projected_from(&refused).plan,
-            BTreeSet::new(),
-            toml::Table::new(),
-        );
-        let tables = (&TaxTables::embedded(), History::embedded());
-        let progress = Progress::default();
-        let found = search(&searched, tables, &progress).expect("searched");
-        assert!(found.historical.is_none(), "the runs were refused");
-        progress.cancel();
-        assert!(search(&searched, tables, &progress).is_none());
     }
 }

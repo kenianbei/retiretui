@@ -5,10 +5,29 @@
 use std::fmt;
 use std::io;
 use std::path::{Component, Path, PathBuf};
-use std::sync::Arc;
 use std::time::SystemTime;
 
-use plurimus_filepicker::{DirectorySource, SourceEntry};
+/// One entry of a directory: a file or a directory beneath it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Entry {
+    /// Its name within the directory.
+    pub name: String,
+    /// Whether it is a directory.
+    pub is_dir: bool,
+}
+
+impl Entry {
+    fn file(name: String) -> Self {
+        Self {
+            name,
+            is_dir: false,
+        }
+    }
+
+    fn directory(name: String) -> Self {
+        Self { name, is_dir: true }
+    }
+}
 
 /// What changes whenever a file does.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -47,7 +66,7 @@ pub trait Store: fmt::Debug + Send + Sync + 'static {
     /// # Errors
     ///
     /// Where there is no such directory, or it cannot be read.
-    fn list(&self, directory: &Path) -> io::Result<Vec<SourceEntry>>;
+    fn list(&self, directory: &Path) -> io::Result<Vec<Entry>>;
 
     /// Whether `path` is a directory.
     fn is_dir(&self, path: &Path) -> bool;
@@ -86,7 +105,7 @@ impl Store for DiskStore {
 
     // `file_type` is free on most filesystems; only a symlink costs a stat,
     // so a linked directory can be entered.
-    fn list(&self, directory: &Path) -> io::Result<Vec<SourceEntry>> {
+    fn list(&self, directory: &Path) -> io::Result<Vec<Entry>> {
         let entries = std::fs::read_dir(directory)?
             .filter_map(Result::ok)
             .map(|entry| {
@@ -95,9 +114,9 @@ impl Store for DiskStore {
                     kind.is_dir() || (kind.is_symlink() && entry.path().is_dir())
                 });
                 if is_dir {
-                    SourceEntry::directory(name)
+                    Entry::directory(name)
                 } else {
-                    SourceEntry::file(name)
+                    Entry::file(name)
                 }
             })
             .collect();
@@ -209,10 +228,10 @@ impl<B: Backend> Store for KeyStore<B> {
         Ok(())
     }
 
-    fn list(&self, directory: &Path) -> io::Result<Vec<SourceEntry>> {
+    fn list(&self, directory: &Path) -> io::Result<Vec<Entry>> {
         let directory = normal(directory);
         let mut is_held = directory == Path::new("/");
-        let mut entries: Vec<SourceEntry> = Vec::new();
+        let mut entries: Vec<Entry> = Vec::new();
         for (path, is_file) in self.paths() {
             let Ok(below) = path.strip_prefix(&directory) else {
                 continue;
@@ -228,9 +247,9 @@ impl<B: Backend> Store for KeyStore<B> {
                 continue;
             }
             entries.push(if is_dir {
-                SourceEntry::directory(name)
+                Entry::directory(name)
             } else {
-                SourceEntry::file(name)
+                Entry::file(name)
             });
         }
         if is_held {
@@ -295,18 +314,9 @@ fn normal(path: &Path) -> PathBuf {
     normal
 }
 
-/// A [`Store`] as the file picker lists it.
-#[derive(Debug)]
-pub struct StoreSource(pub Arc<dyn Store>);
-
-impl DirectorySource for StoreSource {
-    fn list(&self, directory: &Path) -> io::Result<Vec<SourceEntry>> {
-        self.0.list(directory)
-    }
-}
-
-#[cfg(test)]
-pub(crate) mod memory {
+/// A [`Backend`] in memory, for tests of what runs over a [`KeyStore`].
+#[cfg(any(test, feature = "testing"))]
+pub mod memory {
     use std::collections::BTreeMap;
     use std::io;
     use std::sync::{Arc, Mutex};

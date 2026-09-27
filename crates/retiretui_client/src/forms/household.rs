@@ -4,15 +4,15 @@ use toml::{Table, Value};
 
 use super::applies;
 use super::cells::{Column, field_text};
-use super::domain::{Domain, FieldKind, FieldSpec, Single};
 use super::offers::Vocabulary;
-use crate::nav::Page;
+use super::{Domain, DomainId, FieldKind, FieldSpec, Single};
 
+/// The household's people, edited as a table.
 pub struct People;
 
 impl Domain for People {
     type Item = Person;
-    const PAGE: Page = Page::People;
+    const ID: DomainId = DomainId::People;
     const PURPOSE: &'static str = "Who the plan is for, and when they were born";
     const PATH: &'static str = "household.people";
     const SINGULAR: &'static str = "Person";
@@ -71,11 +71,12 @@ fn earnings_span(item: &Table, _: &Plan) -> String {
     }
 }
 
+/// Where the household lives, edited as a table.
 pub struct Residencies;
 
 impl Domain for Residencies {
     type Item = Residency;
-    const PAGE: Page = Page::Residency;
+    const ID: DomainId = DomainId::Residency;
     const PURPOSE: &'static str = "Where you live, and when that changes";
     const PATH: &'static str = "residency";
     const SINGULAR: &'static str = "Residency";
@@ -117,11 +118,12 @@ pub struct HouseholdSettings {
     medicare: Option<Medicare>,
 }
 
+/// Filing status and Medicare, edited as one form.
 pub struct Household;
 
 impl Single for Household {
     type Item = HouseholdSettings;
-    const PAGE: Page = Page::Household;
+    const ID: DomainId = DomainId::Household;
     const PATHS: &'static [&'static str] = &["household", "medicare"];
     const FIELDS: &'static [FieldSpec] = &[
         FieldSpec::choice("filing", "Filing status", Vocabulary::FilingStatus).help(

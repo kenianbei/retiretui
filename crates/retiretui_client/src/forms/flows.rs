@@ -1,15 +1,15 @@
 use retiretui_engine::plan::{Conversion, Event, Plan, Transfer};
 
 use super::cells::Column;
-use super::domain::{Domain, FieldSpec, GROWTH_HELP};
 use super::offers::RefSource;
-use crate::nav::Page;
+use super::{Domain, DomainId, FieldSpec, GROWTH_HELP};
 
+/// The plan's transfers, edited as a table.
 pub struct Transfers;
 
 impl Domain for Transfers {
     type Item = Transfer;
-    const PAGE: Page = Page::Transfers;
+    const ID: DomainId = DomainId::Transfers;
     const PURPOSE: &'static str = "One-time moves from one account to another";
     const PATH: &'static str = "transfers";
     const SINGULAR: &'static str = "Transfer";
@@ -46,11 +46,12 @@ on = {}
     }
 }
 
+/// The plan's Roth conversions, edited as a table.
 pub struct Conversions;
 
 impl Domain for Conversions {
     type Item = Conversion;
-    const PAGE: Page = Page::Conversions;
+    const ID: DomainId = DomainId::Conversions;
     const PURPOSE: &'static str = "Roth conversions, by year";
     const PATH: &'static str = "conversions";
     const SINGULAR: &'static str = "Conversion";
@@ -93,11 +94,12 @@ amount = 0
     }
 }
 
+/// The plan's named events, edited as a table.
 pub struct Events;
 
 impl Domain for Events {
     type Item = Event;
-    const PAGE: Page = Page::Events;
+    const ID: DomainId = DomainId::Events;
     const PURPOSE: &'static str = "Named moments other items are timed by, such as retiring";
     const PATH: &'static str = "events";
     const SINGULAR: &'static str = "Event";

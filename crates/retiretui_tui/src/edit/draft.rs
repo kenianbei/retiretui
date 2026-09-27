@@ -1,142 +1,16 @@
-use std::collections::VecDeque;
-use std::mem;
-use std::path::Path;
+//! The commands and systems over the draft: committing an edit, undo, redo
+//! and save.
 
-use bevy_ecs::prelude::{Res, ResMut, Resource};
+use bevy_ecs::prelude::{Res, ResMut};
 use bevy_ecs::system::SystemParam;
-use retiretui_engine::params::TaxTables;
-use retiretui_engine::plan::{Issue, Plan};
-use retiretui_engine::project::{project, validate_plan};
-use toml::{Table, Value};
-
-use crate::store::Store;
-
-use super::domain::ToolAnswers;
+pub use retiretui_client::draft::{Draft, write_draft};
+use retiretui_client::issues::issue_words;
+use retiretui_engine::project::project;
 
 use crate::command::Outcome;
 use crate::journal;
 use crate::session::{Projected, Session};
 use crate::watch::{self, Watch};
-
-/// The working copy every edit lands in. A valid draft is what the views
-/// project; an invalid one keeps the last good projection and its issues.
-#[derive(Resource)]
-pub struct Draft {
-    pub plan: Plan,
-    /// What each tool's form holds beside the plan, under the tool's own
-    /// name; dropped with the document and kept across a reload.
-    tools: Table,
-    /// The plan as of the last commit, undo, redo, or reset: what the next
-    /// commit's undo goes back to.
-    committed: Plan,
-    undone: VecDeque<Plan>,
-    redone: Vec<Plan>,
-    is_dirty: bool,
-    is_read_only: bool,
-    issues: Vec<Issue>,
-}
-
-pub const READ_ONLY_REASON: &str = "scenario sessions are read-only";
-
-/// How many applied items undo reaches back over.
-const HISTORY_DEPTH: usize = 100;
-
-impl Draft {
-    /// The answers tool `T`'s form holds, blank until it has been applied.
-    pub fn answers<T: ToolAnswers>(&self) -> Table {
-        let held = self.tools.get(T::SLOT).and_then(Value::as_table);
-        held.cloned().unwrap_or_default()
-    }
-
-    /// Holds `answers` as tool `T`'s form's.
-    pub fn set_answers<T: ToolAnswers>(&mut self, answers: Table) {
-        self.tools.insert(T::SLOT.to_owned(), Value::Table(answers));
-    }
-
-    /// A scenario session is read-only: the resolved plan cannot be written
-    /// back into an overlay.
-    pub fn new(plan: Plan, is_read_only: bool) -> Self {
-        Self {
-            committed: plan.clone(),
-            plan,
-            tools: Table::new(),
-            undone: VecDeque::new(),
-            redone: Vec::new(),
-            is_dirty: false,
-            is_read_only,
-            issues: Vec::new(),
-        }
-    }
-
-    /// `plan` as a draft of its own, its issues found against `tables`, for
-    /// a write with no session behind it.
-    pub fn validated(plan: Plan, tables: &TaxTables) -> Self {
-        let issues = validate_plan(&plan, tables);
-        Self {
-            issues,
-            ..Self::new(plan, false)
-        }
-    }
-
-    /// Starts over from `plan`, as after a reload.
-    pub fn reset(&mut self, plan: Plan) {
-        self.committed = plan.clone();
-        self.plan = plan;
-        self.undone.clear();
-        self.redone.clear();
-        self.issues.clear();
-        self.is_dirty = false;
-    }
-
-    pub const fn is_dirty(&self) -> bool {
-        self.is_dirty
-    }
-
-    pub fn issues(&self) -> &[Issue] {
-        &self.issues
-    }
-
-    /// Whether the session can be written to at all.
-    pub const fn is_read_only(&self) -> bool {
-        self.is_read_only
-    }
-
-    /// The refusal a mutating command gives in a read-only session.
-    pub fn refuse_if_read_only(&self) -> Option<Outcome> {
-        self.is_read_only
-            .then(|| Outcome::Refused(READ_ONLY_REASON.to_owned()))
-    }
-
-    /// The refusal a write gives while the draft has issues.
-    pub fn refuse_if_invalid(&self) -> Option<Outcome> {
-        let issue = super::issue_words(self.issues.first()?, self);
-        Some(Outcome::Refused(format!(
-            "not saved, {} issue(s): {issue}",
-            self.issues.len()
-        )))
-    }
-
-    /// Written under a name of its own, the draft is a plan whatever it
-    /// was resolved from.
-    pub fn saved_as(&mut self) {
-        self.is_read_only = false;
-        self.is_dirty = false;
-    }
-}
-
-/// Writes the draft to `path` as canonical TOML, through the same
-/// validation gate as every other write.
-///
-/// # Errors
-///
-/// The refusal to say: the draft's first issue, or what the write failed
-/// on.
-pub fn write_draft(store: &dyn Store, draft: &Draft, path: &Path) -> Result<(), String> {
-    if let Some(Outcome::Refused(reason)) = draft.refuse_if_invalid() {
-        return Err(reason);
-    }
-    crate::files::write_plan(store, path, &draft.plan)
-}
 
 /// Everything a committed edit touches.
 #[derive(SystemParam)]
@@ -160,58 +34,40 @@ impl DraftEditor<'_> {
     /// valid draft re-projects at once, an invalid one holds the last good
     /// view and reports its first issue.
     pub fn commit(&mut self) {
-        let draft = &mut *self.draft;
-        let before = mem::replace(&mut draft.committed, draft.plan.clone());
-        draft.undone.push_back(before);
-        if draft.undone.len() > HISTORY_DEPTH {
-            draft.undone.pop_front();
-        }
-        draft.redone.clear();
+        self.draft.record();
         self.revalidate();
-    }
-
-    /// Makes `plan` the draft, giving back the one it replaces.
-    fn swap_in(&mut self, plan: Plan) -> Plan {
-        self.draft.committed = plan.clone();
-        let replaced = mem::replace(&mut self.draft.plan, plan);
-        self.revalidate();
-        replaced
     }
 
     fn revalidate(&mut self) {
-        self.draft.is_dirty = true;
-        self.draft.issues = validate_plan(&self.draft.plan, &self.session.tables);
-        match self.draft.issues.first() {
-            None => {
-                self.projected.projection = project(&self.draft.plan, &self.session.tables);
-                self.projected.plan = self.draft.plan.clone();
-            }
-            Some(issue) => journal::warn(super::issue_words(issue, &self.draft)),
+        let tables = &self.session.tables;
+        if self.draft.revalidate(tables) {
+            self.projected.projection = project(&self.draft.plan, tables);
+            self.projected.plan = self.draft.plan.clone();
+        } else if let Some(issue) = self.draft.issues().first() {
+            journal::warn(issue_words(issue, &self.draft));
         }
     }
 }
 
 pub fn undo(mut editor: DraftEditor) -> Outcome {
-    let Some(plan) = editor.draft.undone.pop_back() else {
+    if !editor.draft.undo() {
         return Outcome::Refused("nothing to undo".to_owned());
-    };
-    let replaced = editor.swap_in(plan);
-    editor.draft.redone.push(replaced);
+    }
+    editor.revalidate();
     Outcome::Done
 }
 
 pub fn redo(mut editor: DraftEditor) -> Outcome {
-    let Some(plan) = editor.draft.redone.pop() else {
+    if !editor.draft.redo() {
         return Outcome::Refused("nothing to redo".to_owned());
-    };
-    let replaced = editor.swap_in(plan);
-    editor.draft.undone.push_back(replaced);
+    }
+    editor.revalidate();
     Outcome::Done
 }
 
 pub fn save(mut draft: ResMut<Draft>, session: Res<Session>, mut watch: ResMut<Watch>) -> Outcome {
     if let Some(refusal) = draft.refuse_if_read_only() {
-        return refusal;
+        return Outcome::Refused(refusal);
     }
     let path = match session.document() {
         Ok(path) => path,
@@ -221,7 +77,7 @@ pub fn save(mut draft: ResMut<Draft>, session: Res<Session>, mut watch: ResMut<W
         return Outcome::Refused(refusal);
     }
     watch.restamp();
-    draft.is_dirty = false;
+    draft.saved();
     journal::say(format!("saved {}", path.display()));
     Outcome::Done
 }

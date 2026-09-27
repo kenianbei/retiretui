@@ -10,8 +10,8 @@ use clap::Args;
 use etcetera::BaseStrategy as _;
 use plurimus::core::CorePlugin;
 use plurimus::crossterm::CrosstermPlugin;
+use retiretui_client::store::DiskStore;
 use retiretui_tui::Launch;
-use retiretui_tui::store::DiskStore;
 
 /// Arguments of the `tui` subcommand.
 #[derive(Args)]

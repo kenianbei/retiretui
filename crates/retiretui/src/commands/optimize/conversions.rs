@@ -1,7 +1,10 @@
 use std::path::{Path, PathBuf};
 
-use crate::commands::run_refusal;
 use clap::Args;
+use retiretui_client::ladder::LadderConstraints;
+use retiretui_client::replies::{LadderReply, SweepReply};
+use retiretui_client::searches::run_refusal;
+use retiretui_client::store::DiskStore;
 use retiretui_engine::market::Progress;
 use retiretui_engine::optimize::LadderStep;
 use retiretui_engine::optimize::{
@@ -9,15 +12,11 @@ use retiretui_engine::optimize::{
     sweep_brackets,
 };
 use retiretui_engine::params::TaxTables;
-use retiretui_engine::plan::{Dollars, Plan};
-use retiretui_engine::project::{Projection, Summary};
-use retiretui_tui::ladder::LadderConstraints;
-use retiretui_tui::store::DiskStore;
-use schemars::JsonSchema;
-use serde::Serialize;
+use retiretui_engine::plan::Plan;
+use retiretui_engine::project::Projection;
 
 use crate::commands::project::OutputFormat;
-use retiretui_tui::table::{align, display_dollars, summary_table};
+use retiretui_client::table::{align, display_dollars, summary_table};
 
 /// Arguments of the `optimize` subcommand.
 #[derive(Args)]
@@ -49,70 +48,6 @@ pub struct OptimizeArgs {
     /// Extra directory of tax parameter TOML files (repeatable).
     #[arg(long)]
     pub tax_dir: Vec<PathBuf>,
-}
-
-/// A bracket sweep, as `optimize conversions` and
-/// `sweep_conversion_brackets` reply.
-#[derive(Serialize, JsonSchema)]
-pub struct SweepReply {
-    /// The plan without any ladder.
-    pub baseline: Summary,
-    /// One entry per fillable bracket, best first: the least left unfunded,
-    /// then the most left at the end.
-    pub brackets: Vec<SweepEntry>,
-}
-
-/// One bracket of a sweep.
-#[derive(Serialize, JsonSchema)]
-pub struct SweepEntry {
-    /// The bracket's rate (e.g. 0.22).
-    pub bracket_rate: f64,
-    /// The ladder's total, on the reply's dollar basis.
-    pub total_converted: Dollars,
-    /// Headline figures with the ladder applied.
-    pub optimized: Summary,
-}
-
-impl SweepReply {
-    pub fn new(sweep: &BracketSweep, deflated: bool) -> Self {
-        Self {
-            baseline: sweep.baseline.summary(deflated),
-            brackets: sweep
-                .brackets
-                .iter()
-                .map(|bracket| SweepEntry {
-                    bracket_rate: bracket.rate,
-                    total_converted: bracket.converted(deflated),
-                    optimized: bracket.optimized.summary(deflated),
-                })
-                .collect(),
-        }
-    }
-}
-
-/// A searched ladder, as `optimize conversions --bracket` and
-/// `optimize_conversions` reply.
-#[derive(Serialize, JsonSchema)]
-pub struct LadderReply {
-    /// The per-year conversions, in year order.
-    pub steps: Vec<LadderStep>,
-    /// The ladder's total, on the reply's dollar basis.
-    pub total_converted: Dollars,
-    /// Headline figures without the ladder.
-    pub baseline: Summary,
-    /// Headline figures with the ladder applied.
-    pub optimized: Summary,
-}
-
-impl LadderReply {
-    pub fn new(ladder: &OptimizedLadder, deflated: bool) -> Self {
-        Self {
-            steps: ladder.ladder.steps.clone(),
-            total_converted: ladder.ladder.converted(deflated),
-            baseline: ladder.baseline.summary(deflated),
-            optimized: ladder.ladder.optimized.summary(deflated),
-        }
-    }
 }
 
 pub fn run(args: &OptimizeArgs) -> anyhow::Result<()> {
@@ -166,7 +101,7 @@ fn run_single(
 ) -> anyhow::Result<()> {
     let options = args.constraints.options(&args.from, &args.to);
     let ladder = optimize_conversions(plan, tables, &options, rate)
-        .map_err(|issues| anyhow::Error::msg(crate::commands::issue_listing(&issues)))?;
+        .map_err(|issues| anyhow::Error::msg(retiretui_client::issues::issue_listing(&issues)))?;
     let deflated = !args.nominal;
     match args.format {
         OutputFormat::Json => {
@@ -233,8 +168,8 @@ fn write_overlay(
     options: &OptimizeOptions,
     ladder: &OptimizedLadder,
 ) -> anyhow::Result<()> {
-    let base = retiretui_tui::files::overlay_base(&DiskStore, out, plan_path)?;
+    let base = retiretui_client::files::overlay_base(&DiskStore, out, plan_path)?;
     let overlay = ladder_overlay(&base, plan, options, &ladder.ladder.steps)?;
-    retiretui_tui::files::write_atomic(out, &overlay)?;
+    retiretui_client::files::write_atomic(out, &overlay)?;
     Ok(())
 }

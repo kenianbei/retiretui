@@ -6,6 +6,19 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- What every interface shares over the engine is a crate of its own,
+  `retiretui_client`: the words a plan is said in, the form model with its
+  editing domains named by ids of their own, issues read back as the domain,
+  item and field they are about, the load-and-validate gate and the store every
+  plan file goes through, the open document and the draft with its history, the
+  new-plan answers, the statement import, the searches the tools share, and the
+  shapes the CLI's JSON and the MCP tools reply in. `retiretui_tui` builds on
+  it, and its `actions`, `files`, `ladder`, `metric`, `resolve`, `store` and
+  `table` modules are gone from its API. The engine resolves scenario base
+  chains itself, as `plan::resolve`.
+
 ## [0.2.0] - 2026-09-27
 
 ### Added

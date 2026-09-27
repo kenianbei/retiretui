@@ -7,17 +7,19 @@ use toml::{Table, Value};
 
 use super::applies;
 use super::cells::Column;
-use super::codec::left_of;
-use super::domain::{Domain, FieldSpec};
 use super::offers::{RefSource, Vocabulary};
-use crate::nav::Page;
+use super::{Domain, DomainId, FieldSpec};
+use crate::codec::left_of;
 
 /// The key of the pick that says how the account earns. No file holds
 /// it: it is read from the shape of `allocation`, and written back as that
 /// shape, whichever rows it leaves on show holding the rest.
 const INVESTED: &str = "invested";
-pub const FIXED: &str = "fixed";
-pub const MIX: &str = "mix";
+/// The investing choice that earns one fixed return.
+pub(crate) const FIXED: &str = "fixed";
+/// The investing choice that holds one mix of classes.
+pub(crate) const MIX: &str = "mix";
+/// The investing choice that steps between mixes as triggers fire.
 pub const GLIDE: &str = "glide";
 
 const ALLOCATION: &str = "allocation";
@@ -129,11 +131,12 @@ const fn step_from(key: &'static str, label: &'static str, shown: fn(&Table) -> 
         .help(STEP_FROM_HELP)
 }
 
+/// The plan's accounts, edited as a table.
 pub struct Accounts;
 
 impl Domain for Accounts {
     type Item = Account;
-    const PAGE: Page = Page::Accounts;
+    const ID: DomainId = DomainId::Accounts;
     const PURPOSE: &'static str = "Savings, retirement accounts and investments";
     const PATH: &'static str = "accounts";
     const SINGULAR: &'static str = "Account";
@@ -215,8 +218,8 @@ balance = 0
 
 #[cfg(test)]
 mod tests {
-    use super::super::codec::get_path;
     use super::*;
+    use crate::codec::get_path;
 
     fn item(text: &str) -> Table {
         text.parse().unwrap()

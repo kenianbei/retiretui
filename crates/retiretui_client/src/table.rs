@@ -5,7 +5,7 @@ use retiretui_engine::project::{Summary, YearRow, deflate};
 
 /// Column labels matching [`summary_cells`], shared by every table that
 /// renders a [`Summary`] row.
-pub const SUMMARY_LABELS: [&str; 9] = [
+pub(crate) const SUMMARY_LABELS: [&str; 9] = [
     "final net",
     "peak",
     "peak yr",
@@ -18,7 +18,7 @@ pub const SUMMARY_LABELS: [&str; 9] = [
 ];
 
 /// A table with one summary per row: `leading` labels head the cells each
-/// row brings of its own, [`SUMMARY_LABELS`] the figures after them.
+/// row brings of its own, the summary figures after them.
 #[must_use]
 pub fn summary_table(leading: &[&str], rows: Vec<(Vec<String>, Summary)>) -> String {
     let header: Vec<String> = leading
@@ -38,7 +38,7 @@ pub fn summary_table(leading: &[&str], rows: Vec<(Vec<String>, Summary)>) -> Str
 
 /// One table row of a summary's figures, in [`SUMMARY_LABELS`] order.
 #[must_use]
-pub fn summary_cells(summary: &Summary) -> Vec<String> {
+pub(crate) fn summary_cells(summary: &Summary) -> Vec<String> {
     vec![
         plain_dollars(summary.final_net_worth),
         plain_dollars(summary.peak_net_worth),

@@ -172,7 +172,7 @@ pub fn save_as(
     mut browsing: ResMut<Browsing>,
 ) -> Outcome {
     if let Some(refusal) = draft.refuse_if_invalid() {
-        return refusal;
+        return Outcome::Refused(refusal);
     }
     browsing.open(pickers.save_as);
     Outcome::Done

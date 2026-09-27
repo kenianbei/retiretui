@@ -11,7 +11,7 @@ use crate::command::Outcome;
 use crate::documents::{self, Opening};
 use crate::journal;
 use crate::session::{self, Projected, Session};
-use crate::watch::{self, Stamped};
+use retiretui_client::session::{Stamped, is_stale, load_projected};
 
 pub(super) struct ComparedDoc {
     pub(super) path: PathBuf,
@@ -24,7 +24,7 @@ pub(super) struct ComparedDoc {
 
 impl ComparedDoc {
     pub(super) fn read(session: &Session, path: PathBuf) -> Result<Self, String> {
-        let (loaded, files) = watch::load_projected(session.store.as_ref(), &path, &session.tables);
+        let (loaded, files) = load_projected(session.store.as_ref(), &path, &session.tables);
         let projected = loaded.map_err(|invalid| invalid.headline().to_owned())?;
         Ok(Self {
             path,
@@ -37,8 +37,7 @@ impl ComparedDoc {
     /// Reads the file again; one that fails keeps its figures, says so,
     /// and marks its row until it reads again.
     fn reread(&mut self, session: &Session) {
-        let (loaded, files) =
-            watch::load_projected(session.store.as_ref(), &self.path, &session.tables);
+        let (loaded, files) = load_projected(session.store.as_ref(), &self.path, &session.tables);
         self.files = files;
         match loaded {
             Ok(projected) => {
@@ -67,7 +66,7 @@ impl Compared {
     fn reread_stale(&mut self, session: &Session) -> bool {
         let mut is_reread = false;
         let stale = self.docs.iter_mut();
-        for doc in stale.filter(|doc| watch::is_stale(session.store.as_ref(), &doc.files)) {
+        for doc in stale.filter(|doc| is_stale(session.store.as_ref(), &doc.files)) {
             doc.reread(session);
             is_reread = true;
         }

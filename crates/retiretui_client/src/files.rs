@@ -9,8 +9,8 @@ use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::{Issue, Plan};
 use retiretui_engine::project::validate_plan;
 
-use crate::resolve;
 use crate::store::Store;
+use retiretui_engine::plan::resolve;
 
 /// Why a plan file did not pass the load-and-validate gate.
 pub enum Invalid {
@@ -90,7 +90,7 @@ pub fn relative_path(from_dir: &Path, target: &Path) -> String {
 /// The directory `path` is in: its parent, or the working directory for a
 /// bare name.
 #[must_use]
-pub fn directory_of(path: &Path) -> &Path {
+pub(crate) fn directory_of(path: &Path) -> &Path {
     path.parent()
         .filter(|parent| !parent.as_os_str().is_empty())
         .unwrap_or(Path::new("."))

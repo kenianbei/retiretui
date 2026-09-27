@@ -5,8 +5,8 @@ use retiretui_engine::project::{Projection, Summary, YearRow, project};
 use serde::Serialize;
 
 use super::project::OutputFormat;
-use retiretui_tui::metric::Metric;
-use retiretui_tui::table::{align, display_dollars, summary_table};
+use retiretui_client::metric::Metric;
+use retiretui_client::table::{align, display_dollars, summary_table};
 
 /// Arguments of the `compare` subcommand.
 #[derive(Args)]

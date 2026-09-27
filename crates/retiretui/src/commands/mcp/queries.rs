@@ -9,7 +9,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use super::PlanServer;
-use crate::commands::actions::{self, ActionsReply};
+use retiretui_client::replies::ActionsReply;
 
 #[derive(Deserialize, JsonSchema)]
 pub struct ProjectPlanArgs {
@@ -200,9 +200,11 @@ impl PlanServer {
     ) -> Result<Json<ActionsReply>, String> {
         let plan = self.load_valid_plan(&args.path)?;
         let projection = project(&plan, &self.tables);
-        let year = args.year.unwrap_or_else(actions::current_year);
-        let row = actions::year_row(&projection, year)?;
-        let warnings = retiretui_tui::actions::collect_warnings(&plan, &self.tables, row, None);
+        let year = args
+            .year
+            .unwrap_or_else(|| retiretui_client::session::Today::now().0);
+        let row = retiretui_client::replies::year_row(&projection, year)?;
+        let warnings = retiretui_client::actions::collect_warnings(&plan, &self.tables, row, None);
         Ok(Json(ActionsReply::new(row, warnings)))
     }
 

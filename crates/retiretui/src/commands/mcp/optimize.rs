@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use crate::commands::run_refusal;
+use retiretui_client::searches::run_refusal;
 use retiretui_engine::market::Progress;
 use retiretui_engine::optimize::{
     OptimizeOptions, claims_overlay, ladder_overlay, optimize_claims, optimize_conversions,
@@ -13,7 +13,8 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use super::PlanServer;
-use crate::commands::optimize::{ClaimsReply, LadderConstraints, LadderReply, SweepReply};
+use crate::commands::optimize::LadderConstraints;
+use retiretui_client::replies::{ClaimsReply, LadderReply, SweepReply};
 
 /// What the conversion tools take besides the ladder's constraints.
 #[derive(Deserialize, JsonSchema)]
@@ -94,7 +95,7 @@ impl PlanServer {
         let plan = self.load_valid_plan(&conversion.path)?;
         let options = conversion.options();
         let ladder = optimize_conversions(&plan, &self.tables, &options, args.bracket / 100.0)
-            .map_err(|issues| crate::commands::issue_listing(&issues))?;
+            .map_err(|issues| retiretui_client::issues::issue_listing(&issues))?;
         let (scenario_toml, written) =
             self.emit_overlay(&conversion.path, args.write_to.as_deref(), |base| {
                 ladder_overlay(base, &plan, &options, &ladder.ladder.steps)
@@ -190,5 +191,5 @@ fn relative_ref(write_to: &str, plan_path: &str) -> String {
     let out_dir = Path::new(write_to)
         .parent()
         .unwrap_or_else(|| Path::new(""));
-    retiretui_tui::files::relative_path(out_dir, Path::new(plan_path))
+    retiretui_client::files::relative_path(out_dir, Path::new(plan_path))
 }

@@ -61,11 +61,11 @@ const WRAP_SLACK: usize = 10;
 
 /// Whether every field of `ops` says what it means in the rows a form
 /// keeps for that; help is ASCII, so bytes are cells.
-pub const fn help_fits(ops: Ops) -> bool {
+pub const fn help_fits(fields: &[FieldSpec]) -> bool {
     let room = (FORM_COLS as usize - FRAME_COLS - WRAP_SLACK) * HELP_ROWS as usize;
     let mut at = 0;
-    while at < ops.fields.len() {
-        let spec = ops.fields[at];
+    while at < fields.len() {
+        let spec = fields[at];
         if spec.help.is_empty() || spec.help.len() > room {
             return false;
         }

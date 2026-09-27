@@ -12,28 +12,26 @@ use std::path::PathBuf;
 use bevy_app::{App, Update};
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
 use bevy_ecs::prelude::{Commands, In, IntoScheduleConfigs, Local, Res, ResMut, World};
-use retiretui_engine::market::{Progress, RunError};
 use retiretui_engine::optimize::{
-    BracketSweep, LadderStep, OptimizeOptions, SweptBracket, apply_ladder, is_ladder,
-    ladder_overlay, optimize_conversions, sweep_brackets,
+    LadderStep, OptimizeOptions, SweptBracket, apply_ladder, is_ladder, ladder_overlay,
 };
-use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::Plan;
 use retiretui_engine::project::Projection;
-use serde::Deserialize;
 
 use super::options::{CURRENT_PLAN, FIGURES, Laid, figures};
 use super::{Found, NOTHING_SEARCHED_YET, Tool, ToolPage, write};
 use crate::command::Outcome;
 use crate::confirm::{Answer, Confirm};
 use crate::documents::{Browsing, Pickers};
-use crate::edit::{self, Draft, DraftEditor, FieldSpec, FormButton, Ops, RefSource};
+use crate::edit::{self, Draft, DraftEditor, FormButton, Ops, RefSource};
 use crate::journal;
-use crate::ladder::LadderConstraints;
 use crate::nav::{self, Page, ShownSurface};
 use crate::overview::Better;
 use crate::present::compact_dollars;
 use crate::session::Session;
+pub use retiretui_client::searches::ladders::{
+    Constraints, DESTINATION, FIELDS, Swept, aim_at, held, held_answers, rate_label, search,
+};
 
 pub type Ladders = Tool<Swept>;
 
@@ -51,133 +49,17 @@ pub fn plugin(app: &mut App) {
     guide::plugin(app);
 }
 
-/// The constraints as the form holds them: the CLI's flags, blank where
-/// its are optional; `bracket` is a percent, blank sweeping every one.
-#[derive(Deserialize)]
-pub(crate) struct Constraints {
-    from: Option<String>,
-    to: Option<String>,
-    bracket: Option<u8>,
-    #[serde(flatten)]
-    held: LadderConstraints,
-}
-
-const FIELDS: &[FieldSpec] = &[
-    FieldSpec::refers("from", "Convert from", RefSource::DeferredAccount)
-        .blank("Every deferred account")
-        .help("The tax-deferred account to convert out of."),
-    FieldSpec::refers("to", "Convert to", RefSource::RothAccount)
-        .help("The Roth account the conversions land in."),
-    FieldSpec::whole("bracket", "Fill bracket")
-        .help("Fill this tax bracket, as a percent such as 22. Blank tries every bracket."),
-    FieldSpec::whole("start_year", "First year")
-        .help("The first year to convert in. Blank means the start of the plan."),
-    FieldSpec::whole("end_year", "Last year")
-        .help("The last year to convert in. Blank means the end of the plan."),
-    FieldSpec::money("annual_max", "Annual cap")
-        .help("The most to convert in any one year. Blank sets no cap."),
-    FieldSpec::money("total_max", "Total cap")
-        .help("The most to convert over the whole ladder. Blank sets no cap."),
-    FieldSpec::money("headroom", "Headroom")
-        .help("Dollars to stay below the top of the bracket, as a margin for error."),
-    FieldSpec::whole("irmaa_tier", "IRMAA tier")
-        .help("Stay under this Medicare surcharge tier; 0 avoids them all. Blank ignores it."),
-    FieldSpec::money("max_magi", "MAGI cap")
-        .help("Keep every year's MAGI (modified adjusted gross income) under this."),
-];
-
-impl edit::ToolAnswers for Constraints {
-    const SLOT: &'static str = "optimizer";
-}
-
 const OPS: Ops = Ops::tool::<Constraints>(Some(Page::RothConversions), "Constraints", FIELDS)
     .acting(["Discard", "Apply"], act);
 const _: () = assert!(
-    edit::help_fits(OPS),
+    edit::help_fits(OPS.form.fields),
     "a field's help is missing or too long"
 );
+const NO_BRACKET: &str = "no bracket can be filled";
 const PAGE: ToolPage = ToolPage {
     surface: Page::RothConversions,
     panes: panes::spawn_panes,
 };
-const NO_DESTINATION: &str = "no destination account";
-const NO_BRACKET: &str = "no bracket can be filled";
-
-impl Constraints {
-    /// The engine's options, and the one bracket rate or `None` to sweep.
-    fn options(self) -> Result<(OptimizeOptions, Option<f64>), String> {
-        let destination = self.to.ok_or_else(|| NO_DESTINATION.to_owned())?;
-        let sources: Vec<String> = self.from.into_iter().collect();
-        let options = self.held.options(&sources, &destination);
-        let bracket = self.bracket.map(|percent| f64::from(percent) / 100.0);
-        Ok((options, bracket))
-    }
-}
-
-const DESTINATION: &str = "to";
-
-/// The answers the draft holds but the destination, which each Roth
-/// owner's search names for itself.
-pub(crate) fn held_answers(draft: &Draft) -> toml::Table {
-    let mut answers = draft.answers::<Constraints>();
-    answers.remove(DESTINATION);
-    answers
-}
-
-/// The options the page searches under with the `held` answers into
-/// `destination`, and the one bracket rate or `None` to sweep.
-pub(crate) fn options_into(
-    held: &toml::Table,
-    destination: &str,
-) -> Option<(OptimizeOptions, Option<f64>)> {
-    let mut answers = held.clone();
-    answers.insert(DESTINATION.to_owned(), destination.into());
-    let constraints = edit::from_table::<Constraints>(answers).ok()?;
-    constraints.options().ok()
-}
-
-/// Sets the form to search into `destination`, keeping the rest of what
-/// it holds.
-pub(crate) fn aim_at(draft: &mut Draft, destination: &str) {
-    let mut answers = draft.answers::<Constraints>();
-    answers.insert(DESTINATION.to_owned(), destination.into());
-    draft.set_answers::<Constraints>(answers);
-}
-
-/// The constraints the draft holds, and what the engine is to be asked
-/// under them.
-fn held(draft: &Draft) -> Result<(OptimizeOptions, Option<f64>), String> {
-    edit::from_table::<Constraints>(draft.answers::<Constraints>()).and_then(Constraints::options)
-}
-
-/// What a search found, and what it was searched under.
-#[derive(Clone)]
-pub struct Swept {
-    sweep: BracketSweep,
-    options: OptimizeOptions,
-}
-
-impl Swept {
-    /// The best bracket's ladder, where any bracket was searched.
-    pub(crate) fn best(&self) -> Option<&SweptBracket> {
-        self.sweep.brackets.first()
-    }
-}
-
-/// The ladders into `destination` under the `held` answers, searched as
-/// the page searches them; none where the answers do not make a search.
-pub(crate) fn sweep_into(
-    plan: &Plan,
-    tables: &TaxTables,
-    held: &toml::Table,
-    destination: &str,
-    progress: &Progress,
-) -> Option<Swept> {
-    let (options, rate) = options_into(held, destination)?;
-    let sweep = search(plan, tables, &options, rate, progress).ok()?;
-    Some(Swept { sweep, options })
-}
-
 impl Found for Swept {
     const NOTHING_SEARCHED: &'static str = "Ranked here once Convert to names a Roth account.";
 
@@ -219,10 +101,6 @@ impl Tool<Swept> {
         let highlighted = self.highlighted().and_then(|at| brackets.get(at));
         highlighted.or_else(|| brackets.first())
     }
-}
-
-pub(crate) fn rate_label(rate: f64) -> String {
-    format!("{:.0}%", rate * 100.0)
 }
 
 /// Applying holds the answers beside the draft without marking it
@@ -296,25 +174,6 @@ fn search_by_itself(
     });
 }
 
-/// The `rate` bracket's ladder, or every bracket's best first with none.
-pub(crate) fn search(
-    plan: &Plan,
-    tables: &TaxTables,
-    options: &OptimizeOptions,
-    rate: Option<f64>,
-    progress: &Progress,
-) -> Result<BracketSweep, RunError> {
-    match rate {
-        Some(rate) => optimize_conversions(plan, tables, options, rate)
-            .map(|ladder| BracketSweep {
-                baseline: ladder.baseline,
-                brackets: vec![ladder.ladder],
-            })
-            .map_err(RunError::Refused),
-        None => sweep_brackets(plan, tables, options, progress),
-    }
-}
-
 /// The `take-ladder` command: asks before taking the highlighted ladder -
 /// or the best while the plan's own row is highlighted - into the draft,
 /// in place of any ladder taken before. The answer carries the ladder
@@ -322,7 +181,7 @@ pub(crate) fn search(
 /// nothing.
 pub fn adopt(ladders: Res<Ladders>, draft: Res<Draft>, mut confirm: ResMut<Confirm>) -> Outcome {
     if let Some(refusal) = draft.refuse_if_read_only() {
-        return refusal;
+        return Outcome::Refused(refusal);
     }
     let Some(swept) = ladders.found() else {
         return Outcome::Refused(NOTHING_SEARCHED_YET.to_owned());

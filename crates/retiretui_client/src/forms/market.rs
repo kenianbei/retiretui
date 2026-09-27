@@ -5,11 +5,11 @@
 use retiretui_engine::plan::{Draw, Market, Plan};
 use toml::{Table, Value};
 
-use super::codec::{get_path, set_path};
-use super::domain::{FieldSpec, Single};
 use super::offers::Vocabulary;
-use crate::nav::Page;
+use super::{DomainId, FieldSpec, Single};
+use crate::codec::{get_path, set_path};
 
+/// What the market tools assume, edited as one form.
 pub struct MarketSettings;
 
 const PAIR_HELP: &str = "How the two move together, from -1 to 1. Blank takes the default.";
@@ -41,7 +41,7 @@ const fn pair(key: &'static str, label: &'static str) -> FieldSpec {
 
 impl Single for MarketSettings {
     type Item = Market;
-    const PAGE: Page = Page::Market;
+    const ID: DomainId = DomainId::Market;
     const PATHS: &'static [&'static str] = &["market"];
     const FIELDS: &'static [FieldSpec] = &[
         FieldSpec::money("leave_at_least", "Leave at least").help(

@@ -15,7 +15,7 @@ use retiretui_engine::plan::{Dollars, FilingStatus, Plan, fresh_id};
 use retiretui_engine::tax::{FIRST_WORKING_AGE, earnings_at_wage};
 
 use super::{Answered, LifeStage, SetupAnswers};
-use crate::session::{CASH_ID, HORIZON_AGE, INFLATION};
+use super::{CASH_ID, HORIZON_AGE, INFLATION};
 
 /// What a person whose name writes nothing down has their id numbered from.
 const FALLBACK_ID: &str = "person";

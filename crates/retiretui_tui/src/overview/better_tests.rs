@@ -121,7 +121,7 @@ fn best_ladder(app: &App, destination: &str) -> SweptBracket {
 
 fn options_of(app: &App, destination: &str) -> (OptimizeOptions, Option<f64>) {
     let held = ladders::held_answers(app.world().resource::<Draft>());
-    ladders::options_into(&held, destination).unwrap()
+    retiretui_client::searches::ladders::options_into(&held, destination).unwrap()
 }
 
 fn claim_search(app: &App) -> ClaimSearch {

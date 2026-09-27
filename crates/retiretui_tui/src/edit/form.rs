@@ -16,7 +16,6 @@ use plurimus::widgets::ratatui_widgets::paragraph::{Paragraph, Wrap};
 use plurimus::widgets::{Activate, Submit, TextInput, ValueChange};
 use toml::Value;
 
-use super::LocatedIssue;
 use super::build::{EditForm, FieldLabel, FormButton, FormField, HelpFoot};
 use super::cells::parse_field;
 use super::codec::{is_within, parse_text, set_path};
@@ -30,6 +29,7 @@ use super::table::Row;
 use super::trigger;
 use crate::pane::Framed;
 use crate::theme::{Repainted, Theme};
+use retiretui_client::issues::{LocatedIssue, field_issue, located_issues};
 
 pub fn plugin(app: &mut App) {
     app.init_resource::<EditSession>();
@@ -141,7 +141,7 @@ impl FormIssues<'_, '_> {
             (Some(_), _) => return None,
         };
         let item = (ops.item)(&self.draft, index.unwrap_or(0));
-        super::field_issue(located, (ops, index), spec, item.as_ref())
+        field_issue(located, (&ops.form, index), spec, item.as_ref())
     }
 }
 
@@ -164,7 +164,7 @@ fn mark_issues(
         return;
     }
     *last_shown = shown;
-    let located = super::located_issues(&issues.draft);
+    let located = located_issues(&issues.draft);
     for (entity, mut label, mut widget) in &mut labels {
         let form = issues.targets.owner(entity).map(|(form, _)| form);
         let is_marked = form.is_some_and(|form| issues.of(&located, form, &label.spec).is_some());
@@ -197,7 +197,7 @@ fn show_help(
     let focused = focus.get();
     let form = focused.and_then(|widget| targets.owner(widget));
     let field = focused.and_then(|widget| targets.field(widget, &fields));
-    let located = super::located_issues(&issues.draft);
+    let located = located_issues(&issues.draft);
     for (parent, mut widget) in &mut feet {
         let here = field.filter(|_| form.is_some_and(|(form, _)| form == parent.parent()));
         let issue = here.and_then(|field| issues.of(&located, parent.parent(), &field.spec));

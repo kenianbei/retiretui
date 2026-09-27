@@ -5,14 +5,12 @@ use bevy_ecs::system::SystemParam;
 use bevy_input_focus::InputFocus;
 use plurimus::widgets::ActiveDescendant;
 use retiretui_engine::plan::Plan;
-use retiretui_engine::statement::{self, Statement};
+use retiretui_engine::statement::Statement;
 use toml::Table;
 
 use super::codec::to_text;
-use super::domain::Domain;
 use super::draft::{Draft, DraftEditor};
 use super::editing::{self, EditSession, Slot};
-use super::household::People;
 use super::offers::display_name;
 use super::table::{DomainTable, Row, cursor_row};
 use crate::command::Outcome;
@@ -20,6 +18,8 @@ use crate::confirm::Confirm;
 use crate::documents::{Browsing, Pickers};
 use crate::journal;
 use crate::store::Store;
+use retiretui_client::forms::Domain;
+use retiretui_client::forms::household::People;
 
 const NO_TABLE: &str = "nothing to add or delete here";
 const NOT_A_PERSON: &str = "earnings are imported from the People page";
@@ -86,7 +86,7 @@ pub fn add(focused: FocusedTable, mut commands: Commands) -> Outcome {
 /// not deleted from.
 pub fn delete(focused: FocusedTable, draft: Res<Draft>, mut confirm: ResMut<Confirm>) -> Outcome {
     if let Some(refusal) = draft.refuse_if_read_only() {
-        return refusal;
+        return Outcome::Refused(refusal);
     }
     if focused.acting().is_none() {
         return Outcome::Refused(NO_TABLE.to_owned());
@@ -132,7 +132,7 @@ pub fn import_earnings(
     mut importing: ResMut<Importing>,
 ) -> Outcome {
     if let Some(refusal) = draft.refuse_if_read_only() {
-        return refusal;
+        return Outcome::Refused(refusal);
     }
     let Some((_, table, index)) = focused.cursor() else {
         return Outcome::Refused(NOBODY_HIGHLIGHTED.to_owned());
@@ -181,10 +181,7 @@ fn adopt(
     let xml = store
         .read(path)
         .map_err(|error| format!("{}: {error}", path.display()))?;
-    let statement = statement::parse(&xml).map_err(|error| error.to_string())?;
-    plan.adopt_earnings(person, &statement)
-        .map_err(|issue| issue.message)?;
-    Ok(statement)
+    retiretui_client::statement::record(plan, person, &xml)
 }
 
 /// The field the domain knows `item` by, which is what a deletion names

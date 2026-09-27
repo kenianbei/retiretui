@@ -2,7 +2,7 @@
 
 use std::io;
 
-use retiretui_tui::store::Backend;
+use retiretui_client::store::Backend;
 use web_sys::Storage;
 
 /// The origin's `localStorage`, looked up on each call: a handle to it

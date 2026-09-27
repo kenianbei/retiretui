@@ -120,7 +120,8 @@ fn an_arrow_on_an_empty_domain_moves_no_cursor_onto_its_line() {
     let mut app = fixture_app();
     show(&mut app, Page::Cliffs);
     app.update();
-    let said = <super::super::expenses::Cliffs as super::super::domain::Domain>::PURPOSE;
+    let said =
+        <retiretui_client::forms::expenses::Cliffs as retiretui_client::forms::Domain>::PURPOSE;
     let before = composed_frame(&app);
     assert!(before.contains(said), "{before}");
     press_key(&mut app, KeyCode::Down);

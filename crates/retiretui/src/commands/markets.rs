@@ -3,23 +3,21 @@
 //! out, and for Monte Carlo the spread of net worth year by year - every
 //! figure in today's dollars by each run's own inflation.
 
+use retiretui_client::replies::{HistoricalReply, MonteCarloReply, RunEntry};
 use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::Context;
 use clap::{Args, ValueEnum};
-use retiretui_engine::market::{
-    self, BAND_PERCENTILES, Band, History, MonteCarlo, Progress, Run, RunName, Runs,
-};
+use retiretui_engine::market::{self, BAND_PERCENTILES, History, Progress};
 use retiretui_engine::params::TaxTables;
-use retiretui_engine::plan::{Dollars, Draw, Market, Plan};
-use schemars::JsonSchema;
-use serde::Serialize;
+use retiretui_engine::plan::{Draw, Market, Plan};
 
 use crate::commands::project::OutputFormat;
-use crate::commands::{run_refusal, user_config_dir};
+use crate::commands::user_config_dir;
+use retiretui_client::searches::run_refusal;
+use retiretui_client::table::{align, plain_dollars, rate};
 use retiretui_engine::project::validate_plan;
-use retiretui_tui::table::{align, percentile_label, plain_dollars, rate};
 
 /// Where the historical record is read from in place of the embedded one.
 const HISTORY_FILE: &str = "history.toml";
@@ -83,133 +81,6 @@ pub enum DrawArg {
     History,
 }
 
-/// One run as the replies show it.
-#[derive(Serialize, JsonSchema)]
-pub struct RunEntry {
-    /// What the run is: "as planned", a percentile, "worst", or a start
-    /// year.
-    pub market: String,
-    /// The Monte Carlo trial it was.
-    pub trial: Option<u32>,
-    /// The historical year it started in.
-    pub start: Option<i16>,
-    /// Net worth at the horizon, today's dollars.
-    pub ending: Dollars,
-    /// Spending left uncovered over the run, today's dollars.
-    pub unfunded: Dollars,
-    /// The first year spending went uncovered.
-    pub first_short: Option<i16>,
-    /// Never short, and leaving at least what the plan asks.
-    pub success: bool,
-}
-
-/// A Monte Carlo search, as `monte-carlo` and `plan_monte_carlo` reply.
-#[derive(Serialize, JsonSchema)]
-pub struct MonteCarloReply {
-    /// "assumptions" or "history".
-    pub draw: String,
-    /// The seed the markets were drawn from.
-    pub seed: u32,
-    /// How many markets ran.
-    pub runs: usize,
-    /// How many succeeded.
-    pub successes: usize,
-    /// The share that succeeded.
-    pub success_rate: f64,
-    /// The plan as planned, then the markets singled out, best first.
-    pub markets: Vec<RunEntry>,
-    /// Net worth year by year across the markets.
-    pub bands: Vec<Band>,
-}
-
-/// A Historical search, as `historical` and `plan_historical` reply.
-#[derive(Serialize, JsonSchema)]
-pub struct HistoricalReply {
-    /// The first start year tried.
-    pub from: i16,
-    /// The last start year tried.
-    pub to: i16,
-    /// Whether histories went on from the record's start past its end.
-    pub wrap: bool,
-    /// How many start years ran.
-    pub runs: usize,
-    /// How many succeeded.
-    pub successes: usize,
-    /// The share that succeeded.
-    pub success_rate: f64,
-    /// The plan as planned, then every start year, worst first.
-    pub start_years: Vec<RunEntry>,
-}
-
-fn entry(market: String, run: &Run) -> RunEntry {
-    let (trial, start) = match run.name {
-        RunName::Planned => (None, None),
-        RunName::Trial(trial) => (Some(trial), None),
-        RunName::Start(start) => (None, Some(start)),
-    };
-    RunEntry {
-        market,
-        trial,
-        start,
-        ending: run.ending,
-        unfunded: run.unfunded,
-        first_short: run.first_short,
-        success: run.is_success,
-    }
-}
-
-/// What the plan's own market is called among the runs.
-const PLANNED: &str = "as planned";
-
-impl MonteCarloReply {
-    pub fn new(plan: &Plan, found: &MonteCarlo) -> Self {
-        let runs = &found.runs;
-        let labels = BAND_PERCENTILES
-            .iter()
-            .rev()
-            .map(|&percentile| percentile_label(percentile))
-            .chain(std::iter::once("worst".to_owned()));
-        let mut markets = vec![entry(PLANNED.to_owned(), &runs.planned)];
-        markets.extend(
-            labels
-                .zip(&found.singled_out)
-                .map(|(label, &at)| entry(label, &runs.runs[at])),
-        );
-        Self {
-            draw: plan.market().draw().as_str().to_owned(),
-            seed: plan.market().seed(),
-            runs: runs.runs.len(),
-            successes: runs.successes,
-            success_rate: runs.success_rate(),
-            markets,
-            bands: runs.bands.clone(),
-        }
-    }
-}
-
-impl HistoricalReply {
-    pub fn new(plan: &Plan, runs: &Runs) -> Self {
-        let mut start_years = vec![entry(PLANNED.to_owned(), &runs.planned)];
-        start_years.extend(runs.worst_first().into_iter().map(|at| {
-            let run = &runs.runs[at];
-            let label = match run.name {
-                RunName::Start(start) => start.to_string(),
-                RunName::Planned | RunName::Trial(_) => String::new(),
-            };
-            entry(label, run)
-        }));
-        Self {
-            from: plan.market().from(),
-            to: plan.market().to(),
-            wrap: plan.market().wrap(),
-            runs: runs.runs.len(),
-            successes: runs.successes,
-            success_rate: runs.success_rate(),
-            start_years,
-        }
-    }
-}
-
 /// The historical record: `explicit`, else the user's own under the config
 /// directory, else the embedded one.
 pub(crate) fn load_history(explicit: Option<&Path>) -> anyhow::Result<History> {
@@ -242,7 +113,7 @@ fn prepare(
     settle(&mut plan);
     let issues = validate_plan(&plan, &tables);
     if !issues.is_empty() {
-        anyhow::bail!(crate::commands::issue_listing(&issues));
+        anyhow::bail!(retiretui_client::issues::issue_listing(&issues));
     }
     Ok((plan, tables, load_history(common.history.as_deref())?))
 }

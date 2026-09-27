@@ -1,16 +1,14 @@
 use std::path::{Path, PathBuf};
 
-use crate::commands::run_refusal;
 use clap::Args;
+use retiretui_client::replies::ClaimsReply;
+use retiretui_client::searches::run_refusal;
+use retiretui_client::store::DiskStore;
 use retiretui_engine::market::Progress;
-use retiretui_engine::optimize::{Claim, ClaimSearch, claims_overlay, optimize_claims};
-use retiretui_engine::project::Summary;
-use retiretui_tui::store::DiskStore;
-use schemars::JsonSchema;
-use serde::Serialize;
+use retiretui_engine::optimize::{ClaimSearch, claims_overlay, optimize_claims};
 
 use crate::commands::project::OutputFormat;
-use retiretui_tui::table::summary_table;
+use retiretui_client::table::summary_table;
 
 /// Arguments of `optimize claims`.
 #[derive(Args)]
@@ -56,45 +54,6 @@ pub fn run(args: &ClaimArgs) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// A claim search, as `optimize claims` and `optimize_claims` reply.
-#[derive(Serialize, JsonSchema)]
-pub struct ClaimsReply {
-    /// Headline figures with the plan's own claims.
-    pub baseline: Summary,
-    /// The income ids searched, in the order each candidate's claims hold
-    /// them.
-    pub incomes: Vec<String>,
-    /// Every candidate, best first: least unfunded spending, then the
-    /// highest final net worth in today's dollars, then earlier claims.
-    pub candidates: Vec<ClaimEntry>,
-}
-
-/// One set of claims the search tried.
-#[derive(Serialize, JsonSchema)]
-pub struct ClaimEntry {
-    /// One claim per searched income.
-    pub claims: Vec<Claim>,
-    /// Headline figures under those claims.
-    pub summary: Summary,
-}
-
-impl ClaimsReply {
-    pub fn new(search: &ClaimSearch, deflated: bool) -> Self {
-        Self {
-            baseline: search.baseline.summary(deflated),
-            incomes: search.incomes.clone(),
-            candidates: search
-                .candidates
-                .iter()
-                .map(|candidate| ClaimEntry {
-                    claims: candidate.claims.clone(),
-                    summary: candidate.projection.summary(deflated),
-                })
-                .collect(),
-        }
-    }
-}
-
 /// The headings `rank` and each searched income, then the baseline with
 /// `-` for each and a row per candidate with its rank and claim ages,
 /// ahead of the summary figures.
@@ -119,8 +78,8 @@ fn claims_table(search: &ClaimSearch, deflated: bool) -> String {
 }
 
 fn write_best(out: &Path, plan_path: &Path, search: &ClaimSearch) -> anyhow::Result<()> {
-    let base = retiretui_tui::files::overlay_base(&DiskStore, out, plan_path)?;
+    let base = retiretui_client::files::overlay_base(&DiskStore, out, plan_path)?;
     let overlay = claims_overlay(&base, &search.added, &search.best().claims)?;
-    retiretui_tui::files::write_atomic(out, &overlay)?;
+    retiretui_client::files::write_atomic(out, &overlay)?;
     Ok(())
 }

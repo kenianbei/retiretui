@@ -1,15 +1,15 @@
 use retiretui_engine::plan::{Income, Plan};
 
 use super::cells::Column;
-use super::domain::{Domain, FieldSpec, GROWTH_HELP};
 use super::offers::{RefSource, Vocabulary};
-use crate::nav::Page;
+use super::{Domain, DomainId, FieldSpec, GROWTH_HELP};
 
+/// The plan's incomes, edited as a table.
 pub struct Incomes;
 
 impl Domain for Incomes {
     type Item = Income;
-    const PAGE: Page = Page::Income;
+    const ID: DomainId = DomainId::Income;
     const PURPOSE: &'static str = "Money coming in: salary, pensions, Social Security";
     const PATH: &'static str = "income";
     const SINGULAR: &'static str = "Income Source";

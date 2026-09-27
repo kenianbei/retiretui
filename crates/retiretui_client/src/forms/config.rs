@@ -1,9 +1,9 @@
 use retiretui_engine::plan::{Plan, Settings};
 
-use super::domain::{FieldSpec, Single};
 use super::offers::{RefSource, Vocabulary};
-use crate::nav::Page;
+use super::{DomainId, FieldSpec, Single};
 
+/// The plan's settings, edited as one form.
 pub struct Config;
 
 const SKIPPED: &str = "Skip";
@@ -17,7 +17,7 @@ const fn drawn_from(label: &'static str, place: usize) -> FieldSpec {
 
 impl Single for Config {
     type Item = Settings;
-    const PAGE: Page = Page::Settings;
+    const ID: DomainId = DomainId::Settings;
     const PATHS: &'static [&'static str] = &["plan"];
     const FIELDS: &'static [FieldSpec] = &[
         FieldSpec::text("name", "Plan name").help("What the plan is called wherever it is shown."),

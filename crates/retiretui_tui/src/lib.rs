@@ -2,14 +2,9 @@
 //! whatever backend draws it - a terminal, or a browser page - and the
 //! words every surface says a projection in.
 
-pub mod actions;
 pub mod exchange;
-pub mod files;
-pub mod ladder;
-pub mod metric;
-pub mod resolve;
-pub mod store;
-pub mod table;
+
+use retiretui_client::{actions, files, metric, present, store, table};
 
 mod chart;
 mod command;
@@ -32,7 +27,6 @@ mod overlay;
 mod overview;
 mod pane;
 mod picker;
-mod present;
 mod scope;
 mod session;
 mod settings;
@@ -84,7 +78,7 @@ pub struct Launch {
     /// The historical market record the market tools draw from.
     pub history: History,
     /// Where the plan files are kept.
-    pub store: Arc<dyn store::Store>,
+    pub store: Arc<dyn retiretui_client::store::Store>,
     /// The settings file in `store`; none for a session that keeps
     /// nothing.
     pub settings: Option<PathBuf>,

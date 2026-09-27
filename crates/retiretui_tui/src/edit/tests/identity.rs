@@ -3,14 +3,12 @@
 use retiretui_engine::plan::ID_KEY;
 use toml::Value;
 
-use super::SCREENS;
+use super::screens;
 use crate::support;
 
 #[test]
 fn every_item_known_by_an_id_states_it_first_and_its_name_second() {
-    let keyed = SCREENS
-        .iter()
-        .filter(|ops| ops.list.is_some_and(|list| list.identity == ID_KEY));
+    let keyed = screens().filter(|ops| ops.list.is_some_and(|list| list.identity == ID_KEY));
     for ops in keyed {
         let first: Vec<&str> = ops.fields.iter().take(2).map(|spec| spec.key).collect();
         assert_eq!(first, [ID_KEY, "name"], "{}", ops.title);
@@ -21,8 +19,7 @@ fn every_item_known_by_an_id_states_it_first_and_its_name_second() {
 fn a_new_item_is_given_the_lowest_id_its_kind_leaves_free() {
     let mut plan = support::test_projected().plan;
     let blank_of = |singular: &str, plan: &_| {
-        let list = SCREENS
-            .iter()
+        let list = screens()
             .find_map(|ops| ops.list.filter(|list| list.singular == singular))
             .expect("the domain");
         (list.blank)(plan).get(ID_KEY).cloned()

@@ -6,9 +6,9 @@ use retiretui_engine::plan::{Change, ChangeKind, Plan};
 use toml::Value;
 
 use super::cells::Shown;
-use super::codec::to_text;
-use super::domain::{BLANK, FieldSpec};
-use super::{Located, PLACE_SEPARATOR, locate, place_words};
+use super::{BLANK, FieldSpec};
+use crate::codec::to_text;
+use crate::issues::{Located, PLACE_SEPARATOR, locate, place_words};
 
 const ADDED: &str = "added";
 const REMOVED: &str = "removed";
@@ -17,6 +17,7 @@ const ARROW: &str = " → ";
 
 /// `change`, its old value read against `base` and its new against
 /// `other`, where it names an account or a person.
+#[must_use]
 pub fn change_words(change: &Change, (base, other): (&Plan, &Plan)) -> String {
     let path = match &change.field {
         Some(field) => format!("{}.{field}", change.section),
@@ -61,7 +62,7 @@ fn value_words(
     let (Some(located), Some(spec)) = (located, spec) else {
         return value.map_or_else(|| BLANK.to_owned(), to_text);
     };
-    let fields = located.ops.fields;
+    let fields = located.form.fields;
     let sharing = fields.iter().filter(|field| field.key == spec.key);
     let shown: Vec<String> = sharing
         .map(|field| Shown::of_field(field, fields, plan).text(value, plan))
