@@ -95,12 +95,12 @@ pub fn issue_place(path: &str) -> Option<(DomainId, Option<usize>)> {
     Some((located.form.domain?, located.index))
 }
 
-/// What separates an issue's place words: page, item, field.
+/// What separates an issue's place words: domain, item, field.
 pub(crate) const PLACE_SEPARATOR: &str = " \u{203a} ";
 
-/// An issue in the words the forms use: the page, the item by its display
+/// An issue in the words the forms use: the domain, the item by its display
 /// name, and the field's label, ahead of the engine's own message. A path
-/// no page shows reads as the engine wrote it.
+/// no domain holds reads as the engine wrote it.
 #[must_use]
 pub fn issue_words(issue: &retiretui_engine::plan::Issue, draft: &Draft) -> String {
     let Some(located) = locate(&issue.path) else {
@@ -112,7 +112,7 @@ pub fn issue_words(issue: &retiretui_engine::plan::Issue, draft: &Draft) -> Stri
     format!("{}: {}", place.join(PLACE_SEPARATOR), issue.message)
 }
 
-/// The page, `item` by its display name, and the field's label, of what
+/// The domain, `item` by its display name, and the field's label, of what
 /// `located` points at.
 #[must_use]
 pub(crate) fn place_words(located: &Located, item: Option<&Table>) -> Vec<String> {

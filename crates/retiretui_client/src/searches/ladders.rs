@@ -80,8 +80,8 @@ pub fn held_answers(draft: &Draft) -> toml::Table {
     answers
 }
 
-/// The options the page searches under with the `held` answers into
-/// `destination`, and the one bracket rate or `None` to sweep.
+/// The options the Roth Conversions tool searches under with the `held`
+/// answers into `destination`, and the one bracket rate or `None` to sweep.
 #[must_use]
 pub fn options_into(
     held: &toml::Table,
@@ -129,7 +129,8 @@ impl Swept {
 }
 
 /// The ladders into `destination` under the `held` answers, searched as
-/// the page searches them; none where the answers do not make a search.
+/// the Roth Conversions tool searches them; none where the answers do not
+/// make a search.
 pub(crate) fn sweep_into(
     plan: &Plan,
     tables: &TaxTables,

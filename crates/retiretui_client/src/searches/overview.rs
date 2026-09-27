@@ -28,7 +28,7 @@ pub struct Found {
 }
 
 /// A Roth owner's ladders into their Roth account, `None` where the search
-/// is refused under the page's answers.
+/// is refused under the Roth Conversions answers.
 pub struct Ladder {
     /// Whose Roth account it fills.
     pub owner: String,
@@ -65,7 +65,7 @@ pub fn search(
 }
 
 /// The best ladder into `owner`'s Roth account, searched as the Roth
-/// Conversions page searches under the `answers` it holds.
+/// Conversions tool searches under the `answers` it holds.
 fn best_ladder(
     plan: &Plan,
     tables: &TaxTables,
