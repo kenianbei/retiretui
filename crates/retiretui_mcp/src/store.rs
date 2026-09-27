@@ -1,13 +1,16 @@
 use std::path::{Component, Path, PathBuf};
 
+use retiretui_client::store::Store;
 use retiretui_engine::plan::Plan;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 /// The sandboxed plan-file store. Every operation resolves its path inside
-/// the root, so containment holds by construction.
+/// the root, so containment holds by construction, and reaches the files
+/// through `files`.
 pub struct PlanStore {
     root: PathBuf,
+    files: Box<dyn Store>,
 }
 
 #[derive(Serialize, JsonSchema)]
@@ -32,20 +35,25 @@ struct NameField {
 }
 
 impl PlanStore {
-    pub fn new(root: PathBuf) -> Self {
-        Self { root }
+    pub fn new(root: PathBuf, files: Box<dyn Store>) -> Self {
+        Self { root, files }
     }
 
     pub fn read(&self, path: &str) -> Result<String, String> {
         let resolved = self.resolve_read(path)?;
-        std::fs::read_to_string(&resolved).map_err(|err| format!("{path}: {err}"))
+        self.files
+            .read(&resolved)
+            .map_err(|err| format!("{path}: {err}"))
     }
 
     /// Loads a plan or scenario file, resolving `base` chains relative to
     /// each referring file and contained in the root.
     pub fn load_plan(&self, path: &str) -> Result<Plan, String> {
         let start = self.resolve_read(path)?;
-        let text = std::fs::read_to_string(&start).map_err(|err| format!("{path}: {err}"))?;
+        let text = self
+            .files
+            .read(&start)
+            .map_err(|err| format!("{path}: {err}"))?;
         self.resolve_document(start, text)
     }
 
@@ -58,7 +66,9 @@ impl PlanStore {
 
     fn resolve_document(&self, start: PathBuf, text: String) -> Result<Plan, String> {
         let mut read = |file: &Path| {
-            std::fs::read_to_string(file).map_err(|err| format!("{}: {err}", file.display()))
+            self.files
+                .read(file)
+                .map_err(|err| format!("{}: {err}", file.display()))
         };
         let mut locate = |referrer: &Path, base: &str| self.resolve_base(referrer, base);
         retiretui_engine::plan::resolve::resolve_plan(start, text, &mut read, &mut locate)
@@ -72,8 +82,9 @@ impl PlanStore {
             return Err(format!("{base}: absolute paths are not allowed"));
         }
         let joined = referrer.parent().unwrap_or(&self.root).join(base);
-        let resolved = joined
-            .canonicalize()
+        let resolved = self
+            .files
+            .canonical(&joined)
             .map_err(|err| format!("{base}: {err}"))?;
         self.ensure_under_root(&resolved, base)?;
         Ok(resolved)
@@ -82,22 +93,24 @@ impl PlanStore {
     /// Writes atomically: staged in the same directory, then renamed over.
     pub fn write(&self, path: &str, text: &str) -> Result<(), String> {
         let resolved = self.resolve_write(path)?;
-        retiretui_client::files::write_atomic(&resolved, text)
+        self.files
+            .write(&resolved, text)
             .map_err(|err| format!("{path}: {err}"))
     }
 
     /// Every `*.toml` file under the root, in path order.
     pub fn list(&self) -> Result<Vec<PlanEntry>, String> {
         let mut plans = Vec::new();
-        collect_plans(&self.root, &self.root, &mut plans)?;
+        self.collect_plans(&self.root, &mut plans)?;
         plans.sort_by(|a, b| a.path.cmp(&b.path));
         Ok(plans)
     }
 
     fn resolve_read(&self, requested: &str) -> Result<PathBuf, String> {
         let joined = join_contained(&self.root, requested)?;
-        let resolved = joined
-            .canonicalize()
+        let resolved = self
+            .files
+            .canonical(&joined)
             .map_err(|err| format!("{requested}: {err}"))?;
         self.ensure_under_root(&resolved, requested)?;
         Ok(resolved)
@@ -109,12 +122,56 @@ impl PlanStore {
             return Err(format!("{requested}: plan files must end in .toml"));
         }
         let parent = joined.parent().unwrap_or(&self.root);
-        let resolved_parent = parent
-            .canonicalize()
+        let resolved_parent = self
+            .files
+            .canonical(parent)
             .map_err(|err| format!("{requested}: {err}"))?;
         self.ensure_under_root(&resolved_parent, requested)?;
         let file_name = joined.file_name().expect("has a .toml extension");
         Ok(resolved_parent.join(file_name))
+    }
+
+    /// Every `*.toml` file in `dir` and the directories beneath it, save
+    /// hidden entries. A linked directory is not entered, so a listing
+    /// cannot leave the root or loop.
+    fn collect_plans(&self, dir: &Path, plans: &mut Vec<PlanEntry>) -> Result<(), String> {
+        let entries = self
+            .files
+            .list(dir)
+            .map_err(|err| format!("{}: {err}", dir.display()))?;
+        for entry in entries
+            .into_iter()
+            .filter(|entry| !entry.name.starts_with('.'))
+        {
+            let path = dir.join(&entry.name);
+            if entry.is_dir && self.files.canonical(&path).is_ok_and(|real| real == path) {
+                self.collect_plans(&path, plans)?;
+            } else if path.extension().is_some_and(|ext| ext == "toml") {
+                plans.push(self.plan_entry(&path));
+            }
+        }
+        Ok(())
+    }
+
+    fn plan_entry(&self, path: &Path) -> PlanEntry {
+        let relative = path
+            .strip_prefix(&self.root)
+            .unwrap_or(path)
+            .to_string_lossy()
+            .replace('\\', "/");
+        let probe = self
+            .files
+            .read(path)
+            .ok()
+            .and_then(|text| toml::from_str::<DocumentProbe>(&text).ok());
+        PlanEntry {
+            path: relative,
+            name: probe
+                .as_ref()
+                .and_then(|probe| probe.plan.as_ref())
+                .and_then(|plan| plan.name.clone()),
+            base: probe.and_then(|probe| probe.base),
+        }
     }
 
     fn ensure_under_root(&self, resolved: &Path, requested: &str) -> Result<(), String> {
@@ -140,52 +197,15 @@ fn join_contained(root: &Path, requested: &str) -> Result<PathBuf, String> {
     Ok(root.join(path))
 }
 
-fn collect_plans(root: &Path, dir: &Path, plans: &mut Vec<PlanEntry>) -> Result<(), String> {
-    let entries = std::fs::read_dir(dir).map_err(|err| format!("{}: {err}", dir.display()))?;
-    for entry in entries {
-        let entry = entry.map_err(|err| format!("{}: {err}", dir.display()))?;
-        let path = entry.path();
-        let hidden = path
-            .file_name()
-            .is_some_and(|name| name.to_string_lossy().starts_with('.'));
-        if hidden {
-            continue;
-        }
-        let is_dir = entry.file_type().is_ok_and(|kind| kind.is_dir());
-        if is_dir {
-            collect_plans(root, &path, plans)?;
-        } else if path.extension().is_some_and(|ext| ext == "toml") {
-            plans.push(plan_entry(root, &path));
-        }
-    }
-    Ok(())
-}
-
-fn plan_entry(root: &Path, path: &Path) -> PlanEntry {
-    let relative = path
-        .strip_prefix(root)
-        .unwrap_or(path)
-        .to_string_lossy()
-        .replace('\\', "/");
-    let probe = std::fs::read_to_string(path)
-        .ok()
-        .and_then(|text| toml::from_str::<DocumentProbe>(&text).ok());
-    PlanEntry {
-        path: relative,
-        name: probe
-            .as_ref()
-            .and_then(|probe| probe.plan.as_ref())
-            .and_then(|plan| plan.name.clone()),
-        base: probe.and_then(|probe| probe.base),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    use retiretui_client::store::DiskStore;
+
     fn store() -> PlanStore {
-        PlanStore::new(std::env::temp_dir().canonicalize().expect("temp dir"))
+        let root = std::env::temp_dir().canonicalize().expect("temp dir");
+        PlanStore::new(root, Box::new(DiskStore))
     }
 
     #[test]
@@ -213,5 +233,24 @@ mod tests {
             .write("store-test.toml", "schema = 1\n")
             .expect("contained");
         assert_eq!(store.read("store-test.toml").unwrap(), "schema = 1\n");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn lists_no_plan_through_a_linked_directory() {
+        let root = std::env::temp_dir().join("retiretui-store-links");
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(root.join("inner")).unwrap();
+        std::fs::write(root.join("inner/plan.toml"), "schema = 1\n").unwrap();
+        std::os::unix::fs::symlink(root.join("inner"), root.join("linked")).unwrap();
+        std::os::unix::fs::symlink(&root, root.join("inner/loop")).unwrap();
+        let store = PlanStore::new(root.canonicalize().unwrap(), Box::new(DiskStore));
+        let paths: Vec<String> = store
+            .list()
+            .unwrap()
+            .into_iter()
+            .map(|entry| entry.path)
+            .collect();
+        assert_eq!(paths, ["inner/plan.toml"]);
     }
 }

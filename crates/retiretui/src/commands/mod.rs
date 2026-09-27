@@ -2,7 +2,6 @@ pub mod actions;
 pub mod compare;
 pub mod import;
 pub mod markets;
-pub mod mcp;
 pub mod optimize;
 pub mod project;
 

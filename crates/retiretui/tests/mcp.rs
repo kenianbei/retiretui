@@ -206,7 +206,7 @@ fn assert_quotes_every<'a>(text: &str, set: &str, words: impl IntoIterator<Item 
 
 #[test]
 fn schema_reference_names_the_full_vocabulary() {
-    let text = include_str!("../src/commands/mcp/schema.md");
+    let text = include_str!("../../retiretui_mcp/src/schema.md");
     let kinds = AccountKind::ALL.iter().map(|kind| kind.as_str());
     assert_quotes_every(text, "account kind", kinds);
     let kinds = IncomeKind::ALL.iter().map(|kind| kind.as_str());
@@ -355,7 +355,7 @@ fn market_tools_run_the_plan_and_stay_inside_the_root() {
 
 #[test]
 fn schema_reference_documents_the_market() {
-    let text = include_str!("../src/commands/mcp/schema.md");
+    let text = include_str!("../../retiretui_mcp/src/schema.md");
     for marker in ["[market]", "`allocation`"] {
         assert!(text.contains(marker), "missing market marker {marker}");
     }

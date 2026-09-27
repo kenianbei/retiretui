@@ -13,7 +13,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use super::PlanServer;
-use crate::commands::optimize::LadderConstraints;
+use retiretui_client::ladder::LadderConstraints;
 use retiretui_client::replies::{ClaimsReply, LadderReply, SweepReply};
 
 /// What the conversion tools take besides the ladder's constraints.

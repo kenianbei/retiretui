@@ -10,9 +10,9 @@ use commands::actions::ActionsArgs;
 use commands::compare::CompareArgs;
 use commands::import::ImportEarningsArgs;
 use commands::markets::{HistoricalArgs, MonteCarloArgs};
-use commands::mcp::McpArgs;
 use commands::optimize::OptimizeCommand;
 use commands::project::ProjectArgs;
+use retiretui_mcp::McpArgs;
 use retiretui_tui::terminal::TuiArgs;
 
 #[derive(Parser)]
@@ -66,6 +66,6 @@ fn main() -> anyhow::Result<()> {
         Command::MonteCarlo(args) => commands::markets::run_monte_carlo(&args),
         Command::Historical(args) => commands::markets::run_historical(&args),
         Command::ImportEarnings(args) => commands::import::run(&args),
-        Command::Mcp(args) => commands::mcp::run(&args),
+        Command::Mcp(args) => retiretui_mcp::run(&args),
     }
 }

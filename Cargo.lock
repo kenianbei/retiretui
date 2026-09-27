@@ -3198,6 +3198,7 @@ dependencies = [
  "jiff",
  "retiretui_client",
  "retiretui_engine",
+ "retiretui_mcp",
  "retiretui_tui",
  "rmcp",
  "schemars",
@@ -3231,6 +3232,22 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.21",
+ "toml",
+]
+
+[[package]]
+name = "retiretui_mcp"
+version = "0.2.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "retiretui_client",
+ "retiretui_engine",
+ "rmcp",
+ "schemars",
+ "serde",
+ "serde_json",
+ "tokio",
  "toml",
 ]
 

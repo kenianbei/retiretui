@@ -1,3 +1,8 @@
+//! The planner served to AI agents over the Model Context Protocol on stdio:
+//! plan files in one directory, and the tools that read, check, write,
+//! project and search them. Internal to the planner's own crates; it makes
+//! no promise of a stable API.
+
 mod files;
 mod markets;
 mod optimize;
@@ -8,6 +13,7 @@ use std::path::PathBuf;
 
 use anyhow::Context;
 use clap::Args;
+use retiretui_client::store::DiskStore;
 use retiretui_engine::market::History;
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::Plan;
@@ -18,7 +24,7 @@ use rmcp::transport::stdio;
 use rmcp::{ServerHandler, ServiceExt, tool_handler};
 
 /// Arguments of the `mcp` subcommand.
-#[derive(Args)]
+#[derive(Args, Debug)]
 pub struct McpArgs {
     /// Directory the server may read and write plan files in; defaults to
     /// the working directory. Tool paths cannot escape it.
@@ -29,6 +35,12 @@ pub struct McpArgs {
     pub tax_dir: Vec<PathBuf>,
 }
 
+/// Serves the plans in `args.dir` over stdio until the client hangs up.
+///
+/// # Errors
+///
+/// Where the directory cannot be opened, the tables or history cannot be
+/// loaded, or the transport fails.
 pub fn run(args: &McpArgs) -> anyhow::Result<()> {
     let root = args
         .dir
@@ -36,7 +48,8 @@ pub fn run(args: &McpArgs) -> anyhow::Result<()> {
         .with_context(|| format!("failed to open {}", args.dir.display()))?;
     let tables = retiretui_client::environment::load_tables(&args.tax_dir)?;
     let history = retiretui_client::environment::load_history(None)?;
-    let server = PlanServer::new(store::PlanStore::new(root), tables, history);
+    let store = store::PlanStore::new(root, Box::new(DiskStore));
+    let server = PlanServer::new(store, tables, history);
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?;
