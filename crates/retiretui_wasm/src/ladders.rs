@@ -255,13 +255,6 @@ impl Document {
         toml::to_string(&self.aimed()).map_err(|error| error.to_string())
     }
 
-    /// Whether the constraints name the Roth account to convert to, as a
-    /// search needs them to.
-    #[must_use]
-    pub fn is_aimed(&self) -> bool {
-        self.aimed().contains_key(DESTINATION)
-    }
-
     /// The constraints read out, each field's label beside what it holds.
     #[must_use]
     pub fn constraints_read(&self) -> Vec<[String; 2]> {
@@ -353,14 +346,6 @@ impl JsDocument {
     #[wasm_bindgen(getter, js_name = constraintsText)]
     pub fn constraints_text(&self) -> Result<String, JsError> {
         self.0.constraints_text().map_err(refused)
-    }
-
-    /// Whether the constraints name the Roth account to convert to, as a
-    /// search needs them to.
-    #[wasm_bindgen(getter, js_name = isAimed)]
-    #[must_use]
-    pub fn is_aimed(&self) -> bool {
-        self.0.is_aimed()
     }
 
     /// The constraints read out: each field's label beside what it holds.
@@ -460,7 +445,7 @@ mod tests {
     #[test]
     fn the_lone_roth_account_is_searched_into_without_being_named() {
         let document = opened();
-        assert!(document.is_aimed());
+        assert_eq!(document.destination().as_deref(), Some(ROTH));
         let answers = document.constraints_text().expect("serializes");
         assert!(answers.contains(ROTH), "{answers}");
         let reply = ladders(example(), &answers).expect("searches");

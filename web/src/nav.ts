@@ -19,6 +19,9 @@ export interface Page {
 /** The Roth Conversions tool's page. */
 export const ROTH_CONVERSIONS = "roth-conversions";
 
+/** The SSA Benefits tool's page. */
+export const SSA_BENEFITS = "ssa-benefits";
+
 /** The tools that act on the plan as a whole, in the TUI's order. */
 export const TOOLS: readonly Page[] = [
   {
@@ -27,7 +30,7 @@ export const TOOLS: readonly Page[] = [
     holds: "Conversion ladders searched bracket by bracket.",
   },
   {
-    slug: "ssa-benefits",
+    slug: SSA_BENEFITS,
     title: "SSA Benefits",
     holds: "Social Security claim ages ranked for the household.",
   },

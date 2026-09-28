@@ -1,7 +1,6 @@
 import {
   Document,
   type Editor,
-  type LadderYear,
   type PlacedIssue,
 } from "@wasm/retiretui_wasm.js";
 import {
@@ -55,21 +54,11 @@ export interface Session extends Opened {
   /** Stores the editor's item, answering where it now sits; throws the refusal. */
   apply: (editor: Editor) => number | undefined;
   /**
-   * Records a statement's earnings on the person at `index`, still called
-   * `name`, answering what was recorded; throws the refusal.
+   * Runs `act` on the open document - an edit, a step of history, or what is
+   * held beside the draft - and shows its outcome, answering what `act`
+   * answers; throws the refusal.
    */
-  importEarnings: (
-    index: number,
-    name: string,
-    xml: string,
-  ) => string | undefined;
-  /** Holds the editor's Roth Conversions constraints; throws the refusal. */
-  applyConstraints: (editor: Editor) => void;
-  /**
-   * Takes the ladder `years` into `destination` as one step of history,
-   * answering what was taken; throws the refusal.
-   */
-  takeLadder: (destination: string, years: LadderYear[]) => string | undefined;
+  change: <T>(act: (document: Document) => T) => T | undefined;
   /** Removes an item still called `name`; a refusal is reported. */
   remove: (slug: string, index: number, name: string) => void;
   undo: () => void;
@@ -234,21 +223,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         changed();
         return index;
       },
-      applyConstraints: (editor: Editor) => {
-        document?.applyConstraints(editor);
-        changed();
-      },
-      takeLadder: (destination: string, years: LadderYear[]) => {
+      change: <T,>(act: (document: Document) => T) => {
         if (!document) return undefined;
-        const said = document.takeLadder(destination, years);
+        const answer = act(document);
         changed();
-        return said;
-      },
-      importEarnings: (index: number, name: string, xml: string) => {
-        if (!document) return undefined;
-        const said = document.importEarnings(index, name, xml);
-        changed();
-        return said;
+        return answer;
       },
       remove: attempt(
         stepped((slug: string, index: number, name: string) => {

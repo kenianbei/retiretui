@@ -1,4 +1,4 @@
-import type { LadderOption } from "@wasm/retiretui_wasm.js";
+import type { Document } from "@wasm/retiretui_wasm.js";
 import { useState } from "react";
 
 import {
@@ -15,8 +15,7 @@ import { useFileActions } from "@/files/actions";
 import { NameDialog } from "@/files/name-dialog";
 import { messageOf } from "@/lib/utils";
 import { useSession } from "@/session";
-import { percentOf } from "@/tools/search";
-import { nameOf, pathOf, planName, stemOf } from "@/workspace";
+import { pathOf, planName } from "@/workspace";
 
 /** What the last action did: said, and a file to open where it wrote one. */
 interface Done {
@@ -24,24 +23,32 @@ interface Done {
   written?: string;
 }
 
-/** The file name a ladder's scenario is offered under. */
-function offeredName(path: string | null, option: LadderOption): string {
-  const stem = stemOf(nameOf(path ?? "plan"));
-  return `${stem}-ladder-${String(percentOf(option.rate))}.toml`;
+/** What is taken or written, and how each is said. */
+export interface Chosen {
+  /** What it is, after "Take " and "The ": `this ladder`, `these claims`. */
+  noun: string;
+  /** What is asked before it is taken. */
+  question: string;
+  /** What writing it does, said where its file is named. */
+  described: string;
+  /** The file name its scenario is offered under. */
+  offered: string;
+  /** Takes it into `document`, answering what was taken. */
+  take: (document: Document) => string;
+  /** It as a scenario to be written at `out` over `document`. */
+  scenario: (document: Document, out: string) => string;
 }
 
 /**
- * Takes the highlighted ladder into the draft, after asking, or writes it
+ * Takes the highlighted option into the draft, after asking, or writes it
  * as a scenario beside the document; what each did is said beneath.
  */
-export function LadderActions({
-  destination,
-  option,
+export function SearchActions({
+  chosen,
   isCurrent,
 }: {
-  destination: string;
-  option: LadderOption;
-  /** Whether the ladder was searched over the draft as it now stands. */
+  chosen: Chosen;
+  /** Whether it was searched over the draft as it now stands. */
   isCurrent: boolean;
 }) {
   const session = useSession();
@@ -66,7 +73,7 @@ export function LadderActions({
   const take = () => {
     setAsking(false);
     attempt(() => {
-      const said = session.takeLadder(destination, option.steps);
+      const said = session.change(chosen.take);
       if (said) setDone({ said });
     });
   };
@@ -74,12 +81,8 @@ export function LadderActions({
   const write = (typed: string) => {
     const name = planName(typed);
     attempt(() => {
-      const text =
-        session.document?.ladderScenario(
-          pathOf(name),
-          destination,
-          option.steps,
-        ) ?? "";
+      const document = session.document;
+      const text = document ? chosen.scenario(document, pathOf(name)) : "";
       setNaming(null);
       actions.write(name, text, () => {
         setDone({ said: `Wrote ${name}.`, written: pathOf(name) });
@@ -97,7 +100,7 @@ export function LadderActions({
               setAsking(true);
             }}
           >
-            Take this ladder
+            Take {chosen.noun}
           </Button>
         )}
         <Button
@@ -105,7 +108,7 @@ export function LadderActions({
           disabled={!isCurrent}
           onClick={() => {
             setProblem(null);
-            setNaming(offeredName(session.path, option));
+            setNaming(chosen.offered);
           }}
         >
           Write as a scenario
@@ -138,8 +141,8 @@ export function LadderActions({
       <AlertDialog open={isAsking} onOpenChange={setAsking}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Take this ladder?</AlertDialogTitle>
-            <AlertDialogDescription>{option.question}</AlertDialogDescription>
+            <AlertDialogTitle>Take {chosen.noun}?</AlertDialogTitle>
+            <AlertDialogDescription>{chosen.question}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -151,7 +154,7 @@ export function LadderActions({
         name={naming}
         setName={setNaming}
         title="Write as a scenario"
-        description={`The ${option.label} ladder is written as a scenario over this plan, to a file of this name in your workspace.`}
+        description={chosen.described}
         verb="Write"
         problem={problem}
         named={write}

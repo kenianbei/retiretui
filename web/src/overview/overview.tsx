@@ -6,11 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { IssueLink } from "@/draft/issue-link";
+import { Better } from "@/overview/better";
 import { Charts } from "@/overview/charts";
 import { BASIS_LABEL, dollars, share, type Basis } from "@/overview/words";
 import { useMonteCarlo } from "@/searches";
 import { useSession } from "@/session";
-import { basisOf } from "@/year/search";
+import { basisOf, heldOf } from "@/year/search";
 import { useYear, type ShownYear } from "@/year/use-year";
 import { BasisSwitch, YearStepper } from "@/year/year";
 
@@ -226,7 +227,9 @@ function PlanCharts({
 /** Whether the money lasts and how surely, the plan charted, and what to do in a year. */
 export function Overview() {
   const { reading, document, issues } = useSession();
-  const basis = basisOf(useSearch({ from: "/overview" }));
+  const search = useSearch({ from: "/overview" });
+  const basis = basisOf(search);
+  const held = useMemo(() => heldOf({ held: search.held }), [search.held]);
   const isValid = issues.length === 0;
   const shown = useYear();
   const plan = useMemo(
@@ -243,6 +246,7 @@ export function Overview() {
       </div>
       {issues.length > 0 && <Problems issues={issues} />}
       <Figures basis={basis} plan={plan} />
+      {plan !== null && <Better plan={plan} held={held} basis={basis} />}
       <PlanCharts basis={basis} plan={plan} shown={shown} />
       <ThisYear shown={shown} />
     </div>

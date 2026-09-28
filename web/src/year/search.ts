@@ -6,6 +6,8 @@ export interface YearSearch {
   year?: number;
   /** Nominal dollars; today's where none. */
   basis?: "nominal";
+  /** The people whose claims the claim search holds, by id, commas between. */
+  held?: string;
 }
 
 /** A whole number the address holds, as text or as a number. */
@@ -19,25 +21,38 @@ export function wholeOf(value: unknown): number | undefined {
 /** The Overview's and the Ledger's search params from whatever the address holds. */
 export function yearSearch(search: Record<string, unknown>): YearSearch {
   const year = wholeOf(search.year);
+  const held = typeof search.held === "string" ? search.held : "";
   return {
     ...(year !== undefined && { year }),
     ...(search.basis === "nominal" && { basis: "nominal" }),
+    ...(held !== "" && { held }),
   };
 }
 
 /** A search key a tab's link carries to the route it opens. */
-export type KeptKey = "year" | "basis";
+export type KeptKey = "year" | "basis" | "held";
 
 /** Of what the address holds, only the keys `keeps` names. */
 export function keptSearch(
   search: Record<string, unknown>,
   keeps: readonly KeptKey[],
 ): YearSearch {
-  const { year, basis } = yearSearch(search);
+  const { year, basis, held } = yearSearch(search);
   return {
     ...(keeps.includes("year") && year !== undefined && { year }),
     ...(keeps.includes("basis") && basis && { basis }),
+    ...(keeps.includes("held") && held && { held }),
   };
+}
+
+/** The people whose claims are held, by id. */
+export function heldOf(search: YearSearch): string[] {
+  return search.held?.split(",").filter(Boolean) ?? [];
+}
+
+/** `held` as the address keeps it; none where no one is. */
+export function heldIn(held: readonly string[]): string | undefined {
+  return held.length === 0 ? undefined : held.join(",");
 }
 
 export function basisOf(search: YearSearch): Basis {

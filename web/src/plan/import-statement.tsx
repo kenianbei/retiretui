@@ -24,7 +24,10 @@ export function ImportStatement({
     "Social Security statement",
     async (file) => {
       try {
-        const said = session.importEarnings(index, name, await file.text());
+        const xml = await file.text();
+        const said = session.change((document) =>
+          document.importEarnings(index, name, xml),
+        );
         if (said !== undefined) setOutcome({ said, isRefused: false });
       } catch (thrown) {
         setOutcome({ said: messageOf(thrown), isRefused: true });

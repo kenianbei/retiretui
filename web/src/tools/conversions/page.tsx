@@ -1,19 +1,66 @@
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
-import { ladderWords, type LadderOption } from "@wasm/retiretui_wasm.js";
+import {
+  compactMoney,
+  ladderWords,
+  type LadderOption,
+  type LaddersReply,
+} from "@wasm/retiretui_wasm.js";
 import { useMemo } from "react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useLadders } from "@/searches";
 import { useSession } from "@/session";
-import { LadderActions } from "@/tools/conversions/act";
+import { SearchActions, type Chosen } from "@/tools/act";
 import { Constraints, ConstraintsForm } from "@/tools/conversions/constraints";
 import { Conversions } from "@/tools/conversions/ladder";
-import { Options } from "@/tools/conversions/options";
+import { Options, type OptionRow } from "@/tools/options";
 import { percentOf, type ToolSearch } from "@/tools/search";
+import type { Basis } from "@/overview/words";
 import { basisOf } from "@/year/search";
 import { BasisSwitch } from "@/year/year";
+import { offeredName } from "@/workspace";
 
 const WORDS = ladderWords();
+
+/** Which of the columns a phone's row shows beside the bracket: final net. */
+const FINAL_NET = 3;
+
+/** The plan as it stands, then every bracket's ladder. */
+function rowsOf(found: LaddersReply, basis: Basis): OptionRow<LadderOption>[] {
+  const row = (label: string, amounts: number[]) => [
+    label,
+    ...amounts.map(compactMoney),
+  ];
+  const cells = [
+    { cells: row(found.current, found.baseline[basis]), option: null },
+    ...found.brackets.map((option) => ({
+      cells: row(option.label, option.figures[basis]),
+      option,
+    })),
+  ];
+  return cells.map((each) => ({
+    ...each,
+    key: each.cells[0] ?? "",
+    narrow: each.cells[0] ?? "",
+  }));
+}
+
+/** The highlighted ladder into `destination`, as it is taken or written. */
+function chosenLadder(
+  path: string | null,
+  destination: string,
+  option: LadderOption,
+): Chosen {
+  return {
+    noun: "this ladder",
+    question: option.question,
+    described: `The ${option.label} ladder is written as a scenario over this plan, to a file of this name in your workspace.`,
+    offered: offeredName(path, `ladder-${String(percentOf(option.rate))}`),
+    take: (document) => document.takeLadder(destination, option.steps),
+    scenario: (document, out) =>
+      document.ladderScenario(out, destination, option.steps),
+  };
+}
 
 /** What the search is handed: the draft and its constraints, as text. */
 function useSearched() {
@@ -24,7 +71,7 @@ function useSearched() {
     return {
       plan: document?.planText() ?? "",
       constraints: document?.constraintsText ?? "",
-      isAimed: document?.isAimed ?? false,
+      destination: document?.destination,
       isValid,
     };
   }, [reading, isValid]);
@@ -38,8 +85,15 @@ export function ConversionsPage() {
   const search: ToolSearch = useSearch({ from: "/tools/$page" });
   const navigate = useNavigate({ from: "/tools/$page" });
   const basis = basisOf(search);
-  const { plan, constraints, isAimed, isValid } = useSearched();
-  const found = useLadders(plan, constraints, isAimed && isValid);
+  const { path } = useSession();
+  const { plan, constraints, destination, isValid } = useSearched();
+  const isAimed = destination !== undefined;
+  const found = useLadders(
+    plan,
+    constraints,
+    destination ?? "",
+    isAimed && isValid,
+  );
   const reply = found.data;
   const highlighted =
     reply?.brackets.find((each) => percentOf(each.rate) === search.bracket) ??
@@ -93,8 +147,10 @@ export function ConversionsPage() {
         ) : (
           reply && (
             <Options
-              found={reply}
-              basis={basis}
+              label="Ladder options"
+              columns={reply.columns}
+              rows={rowsOf(reply, basis)}
+              narrowFigure={FINAL_NET}
               highlighted={highlighted}
               highlight={highlight}
             />
@@ -112,10 +168,9 @@ export function ConversionsPage() {
             basis={basis}
             nothing={WORDS.converts_nothing}
           />
-          <LadderActions
+          <SearchActions
             key={highlighted.label}
-            destination={reply.destination}
-            option={highlighted}
+            chosen={chosenLadder(path, reply.destination, highlighted)}
             isCurrent={isCurrent}
           />
         </section>
