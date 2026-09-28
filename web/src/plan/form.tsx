@@ -80,17 +80,15 @@ export function ItemForm({ slug, edit, field }: ItemFormProps) {
     void navigate({ search: { item: edit === "new" ? undefined : edit } });
   };
 
-  /** Stores the item, answering whether it went in. */
-  const apply = (): boolean => {
+  /** Stores the item and closes the form, or shows why it was refused. */
+  const apply = () => {
     try {
       const stored = session.apply(editor);
       setRefusal(null);
       const item = stored ?? (edit === "new" ? undefined : edit);
       void navigate({ search: { item } });
-      return true;
     } catch (thrown) {
       setRefusal(messageOf(thrown));
-      return false;
     }
   };
 
