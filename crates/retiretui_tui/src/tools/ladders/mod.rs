@@ -30,8 +30,8 @@ use crate::overview::Better;
 use crate::present::compact_dollars;
 use crate::session::Session;
 pub use retiretui_client::searches::ladders::{
-    Constraints, DESTINATION, FIELDS, Swept, aim_at, held, held_answers, only_roth, rate_label,
-    search, take_question, taken,
+    CONVERSION_COLUMNS, Constraints, DESTINATION, FIELDS, OPTION_COLUMNS, Swept, aim_at, held,
+    held_answers, only_roth, rate_label, search, take_question, taken,
 };
 
 pub type Ladders = Tool<Swept>;
@@ -68,7 +68,7 @@ impl Found for Swept {
     /// converts over its life with that bracket's ladder, and the figures.
     fn laid(&self, _plan: &Plan, nominal: bool) -> Laid {
         let deflated = !nominal;
-        let header = ["Bracket", "converted"]
+        let header = OPTION_COLUMNS
             .into_iter()
             .chain(FIGURES)
             .map(str::to_owned)

@@ -15,14 +15,6 @@ rate: number,
  */
 label: string, 
 /**
- * What it converts over the plan, in today's dollars.
- */
-converted_today: number, 
-/**
- * What it converts over the plan, nominal.
- */
-converted_nominal: number, 
-/**
  * The plan's figures with the ladder.
  */
 figures: Figures, 

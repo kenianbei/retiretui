@@ -7,6 +7,12 @@ use retiretui_engine::market::RunError;
 
 use crate::issues::issue_listing;
 
+/// What the plan's own row says first, above a search's options.
+pub const CURRENT_PLAN: &str = "Current";
+/// The figures an option is chosen by, in the order the options are ranked
+/// by and then what they cost; the rest of a summary is the Compare tab's.
+pub const FIGURES: [&str; 4] = ["unfunded", "final net", "taxes", "medicare"];
+
 /// Why a search answered nothing, as the CLI and MCP say it.
 #[must_use]
 pub fn run_refusal(error: RunError) -> String {

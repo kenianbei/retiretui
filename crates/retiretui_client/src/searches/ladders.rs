@@ -35,20 +35,28 @@ pub const FIELDS: &[FieldSpec] = &[
     FieldSpec::refers("to", "Convert to", RefSource::RothAccount)
         .help("The Roth account the conversions land in."),
     FieldSpec::whole("bracket", "Fill bracket")
+        .blank("Every bracket")
         .help("Fill this tax bracket, as a percent such as 22. Blank tries every bracket."),
     FieldSpec::whole("start_year", "First year")
+        .blank("The plan's start")
         .help("The first year to convert in. Blank means the start of the plan."),
     FieldSpec::whole("end_year", "Last year")
-        .help("The last year to convert in. Blank means the end of the plan."),
+        .blank("The year before RMDs")
+        .help("The last year to convert in. Blank means the year before the owner's RMDs begin."),
     FieldSpec::money("annual_max", "Annual cap")
+        .blank("No cap")
         .help("The most to convert in any one year. Blank sets no cap."),
     FieldSpec::money("total_max", "Total cap")
+        .blank("No cap")
         .help("The most to convert over the whole ladder. Blank sets no cap."),
     FieldSpec::money("headroom", "Headroom")
+        .blank("None")
         .help("Dollars to stay below the top of the bracket, as a margin for error."),
     FieldSpec::whole("irmaa_tier", "IRMAA tier")
+        .blank("Not held to one")
         .help("Stay under this Medicare surcharge tier; 0 avoids them all. Blank ignores it."),
     FieldSpec::money("max_magi", "MAGI cap")
+        .blank("No cap")
         .help("Keep every year's MAGI (modified adjusted gross income) under this."),
 ];
 
@@ -68,6 +76,11 @@ impl Constraints {
         Ok((options, bracket))
     }
 }
+
+/// What names an option's columns before its [`FIGURES`](super::FIGURES).
+pub const OPTION_COLUMNS: [&str; 2] = ["Bracket", "converted"];
+/// The columns a ladder's conversions are tabled under, year by year.
+pub const CONVERSION_COLUMNS: [&str; 4] = ["Year", "From", "Amount", "Taxable"];
 
 /// The key the destination account is under.
 pub const DESTINATION: &str = "to";

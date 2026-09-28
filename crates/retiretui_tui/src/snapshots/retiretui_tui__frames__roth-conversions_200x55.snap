@@ -9,14 +9,14 @@ expression: composed_frame(app)
 │▏ Roth Conversions ││                                                                                ││  Bracket converted unfunded final net taxes medicare                                          │
 │  SSA Benefits     ││▌ Convert from  Every deferred account                                          ││  Current      330k        0     2.09M  697k        0                                          │
 │  Monte Carlo      ││  Convert to    roth-ira                                                        ││▏ 22%          987k        0     2.15M  515k        0                                          │
-│  Historical       ││  Fill bracket                                                                  ││  24%          961k        0     2.13M  512k        0                                          │
-│                   ││  First year                                                                    ││  32%          957k        0     2.09M  521k        0                                          │
-│                   ││  Last year                                                                     ││  10%          388k        0     2.06M  709k        0                                          │
-│                   ││  Annual cap                                                                    ││  35%          956k        0     2.06M  527k        0                                          │
-│                   ││  Total cap                                                                     ││  12%          982k        0     2.04M  581k        0                                          │
-│                   ││  Headroom                                                                      │╰───────────────────────────────────────────────────────────────────────────────────────────────╯
-│                   ││  IRMAA tier                                                                    │╭ Conversions ──────────────────────────────────────────────────────────────────────────────────╮
-│                   ││  MAGI cap                                                                      ││  Year           From  Amount Taxable                                                          │
+│  Historical       ││  Fill bracket  Every bracket                                                   ││  24%          961k        0     2.13M  512k        0                                          │
+│                   ││  First year    The plan's start                                                ││  32%          957k        0     2.09M  521k        0                                          │
+│                   ││  Last year     The year before RMDs                                            ││  10%          388k        0     2.06M  709k        0                                          │
+│                   ││  Annual cap    No cap                                                          ││  35%          956k        0     2.06M  527k        0                                          │
+│                   ││  Total cap     No cap                                                          ││  12%          982k        0     2.04M  581k        0                                          │
+│                   ││  Headroom      None                                                            │╰───────────────────────────────────────────────────────────────────────────────────────────────╯
+│                   ││  IRMAA tier    Not held to one                                                 │╭ Conversions ──────────────────────────────────────────────────────────────────────────────────╮
+│                   ││  MAGI cap      No cap                                                          ││  Year           From  Amount Taxable                                                          │
 │                   ││                                                                                ││▏ 2026       fid-401k    125k    211k                                                          │
 │                   ││                                                                                ││  2027       fid-401k    125k    211k                                                          │
 │                   ││                                                                                ││  2028       fid-401k    125k    211k                                                          │

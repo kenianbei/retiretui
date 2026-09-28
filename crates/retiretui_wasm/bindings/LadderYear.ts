@@ -25,6 +25,10 @@ amount: number,
  */
 taxable: number, 
 /**
- * What turns the year's dollars into today's.
+ * What it converts, in today's dollars.
  */
-deflator: number, };
+amount_today: number, 
+/**
+ * The ordinary income taxed that year, in today's dollars.
+ */
+taxable_today: number, };

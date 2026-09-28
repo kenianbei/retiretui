@@ -54,11 +54,7 @@ pub(super) fn plugin_said(app: &mut App) {
     );
 }
 
-/// What the plan's own row says first.
-pub const CURRENT_PLAN: &str = "Current";
-/// The figures an option is chosen by, in the order the options are ranked
-/// by and then what they cost; the rest of a summary is the Compare tab's.
-pub const FIGURES: [&str; 4] = ["unfunded", "final net", "taxes", "medicare"];
+pub use retiretui_client::searches::{CURRENT_PLAN, FIGURES};
 
 /// A summary's [`FIGURES`].
 pub fn figures(summary: &Summary) -> [String; 4] {

@@ -7,6 +7,19 @@ import type { LadderOption } from "./LadderOption";
  */
 export type LaddersReply = { 
 /**
+ * What an option's columns are called: the bracket, what the plan
+ * converts over its life, then each of its figures.
+ */
+columns: Array<string>, 
+/**
+ * What a ladder's conversions are tabled under.
+ */
+conversion_columns: Array<string>, 
+/**
+ * What the plan's own row is called.
+ */
+current: string, 
+/**
  * The Roth account the ladders fill.
  */
 destination: string, 

@@ -7,12 +7,12 @@ use std::path::Path;
 use retiretui_client::files::{OVERLAY_SAVE_FIRST, relative_path};
 use retiretui_client::forms::{Form, details};
 use retiretui_client::searches::ladders::{
-    Constraints, DESTINATION, FIELDS, aim_at, constraints_in, only_roth, rate_label, search,
-    take_question, taken,
+    CONVERSION_COLUMNS, Constraints, DESTINATION, FIELDS, OPTION_COLUMNS, aim_at, constraints_in,
+    only_roth, rate_label, search, take_question, taken,
 };
-use retiretui_client::searches::run_refusal;
+use retiretui_client::searches::{CURRENT_PLAN, FIGURES, run_refusal};
 use retiretui_client::store::normal;
-use retiretui_client::table::account_name;
+use retiretui_client::table::{account_name, basis_amount};
 use retiretui_engine::market::Progress;
 use retiretui_engine::optimize::{
     BracketSweep, LadderStep, OptimizeOptions, SweptBracket, apply_ladder, ladder_overlay,
@@ -67,8 +67,10 @@ pub struct LadderYear {
     pub amount: Dollars,
     /// The ordinary income taxed that year with the ladder, nominal.
     pub taxable: Dollars,
-    /// What turns the year's dollars into today's.
-    pub deflator: f64,
+    /// What it converts, in today's dollars.
+    pub amount_today: Dollars,
+    /// The ordinary income taxed that year, in today's dollars.
+    pub taxable_today: Dollars,
 }
 
 /// One bracket's ladder.
@@ -79,10 +81,6 @@ pub struct LadderOption {
     pub rate: f64,
     /// The rate as a percent: `22%`.
     pub label: String,
-    /// What it converts over the plan, in today's dollars.
-    pub converted_today: Dollars,
-    /// What it converts over the plan, nominal.
-    pub converted_nominal: Dollars,
     /// The plan's figures with the ladder.
     pub figures: Figures,
     /// Its conversions, year by year.
@@ -95,6 +93,13 @@ pub struct LadderOption {
 #[derive(Serialize, Debug)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct LaddersReply {
+    /// What an option's columns are called: the bracket, what the plan
+    /// converts over its life, then each of its figures.
+    pub columns: Vec<&'static str>,
+    /// What a ladder's conversions are tabled under.
+    pub conversion_columns: Vec<&'static str>,
+    /// What the plan's own row is called.
+    pub current: &'static str,
     /// The Roth account the ladders fill.
     pub destination: String,
     /// The plan's figures as it stands.
@@ -106,6 +111,9 @@ pub struct LaddersReply {
 impl LaddersReply {
     fn new(plan: &Plan, sweep: &BracketSweep, options: &OptimizeOptions) -> Self {
         Self {
+            columns: OPTION_COLUMNS.into_iter().chain(FIGURES).collect(),
+            conversion_columns: CONVERSION_COLUMNS.to_vec(),
+            current: CURRENT_PLAN,
             destination: options.destination.clone(),
             baseline: Figures::of(&sweep.baseline),
             brackets: sweep
@@ -120,20 +128,21 @@ impl LaddersReply {
 fn option_of(plan: &Plan, bracket: &SweptBracket) -> LadderOption {
     let steps = bracket.steps.iter().map(|step| {
         let row = bracket.optimized.row(step.year);
+        let taxable = row.map_or(0, |row| row.taxes.ordinary_taxable);
+        let deflator = row.map_or(1.0, |row| row.deflator);
         LadderYear {
             year: step.year,
             source: step.source.clone(),
             from: account_name(plan, &step.source).to_owned(),
             amount: step.amount,
-            taxable: row.map_or(0, |row| row.taxes.ordinary_taxable),
-            deflator: row.map_or(1.0, |row| row.deflator),
+            taxable,
+            amount_today: basis_amount(step.amount, deflator, false),
+            taxable_today: basis_amount(taxable, deflator, false),
         }
     });
     LadderOption {
         rate: bracket.rate,
         label: rate_label(bracket.rate),
-        converted_today: bracket.converted(true),
-        converted_nominal: bracket.converted(false),
         figures: Figures::of(&bracket.optimized),
         steps: steps.collect(),
         question: take_question(bracket, plan),
@@ -398,7 +407,9 @@ mod tests {
         assert_eq!(reply.destination, ROTH);
         let best = reply.brackets.first().expect("a bracket");
         assert!(!best.steps.is_empty());
-        assert!(best.converted_today <= best.converted_nominal);
+        assert!(
+            best.figures.today.lifetime_conversions <= best.figures.nominal.lifetime_conversions
+        );
         assert_eq!(best.label, rate_label(best.rate));
         assert!(best.question.starts_with("Take the "), "{}", best.question);
         let read = document.constraints_read();
