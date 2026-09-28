@@ -16,10 +16,13 @@ export interface Page {
   holds: string | null;
 }
 
+/** The Roth Conversions tool's page. */
+export const ROTH_CONVERSIONS = "roth-conversions";
+
 /** The tools that act on the plan as a whole, in the TUI's order. */
 export const TOOLS: readonly Page[] = [
   {
-    slug: "roth-conversions",
+    slug: ROTH_CONVERSIONS,
     title: "Roth Conversions",
     holds: "Conversion ladders searched bracket by bracket.",
   },

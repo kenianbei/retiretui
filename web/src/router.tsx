@@ -13,8 +13,9 @@ import { NewPlanPage } from "@/onboarding/page";
 import { newPlanSearch } from "@/onboarding/steps";
 import { DomainPage } from "@/plan/page";
 import { planSearch } from "@/plan/search";
-import { GroupedPage, NotFound, Placeholder } from "@/pages/placeholder";
+import { NotFound, Placeholder } from "@/pages/placeholder";
 import { Shell } from "@/shell/shell";
+import { ToolPage } from "@/tools/page";
 import { toolSearch } from "@/tools/search";
 import { yearSearch, type KeptKey } from "@/year/search";
 
@@ -62,7 +63,7 @@ const tools = createRoute({
   staticData: { keeps: ["basis"] },
   validateSearch: toolSearch,
   beforeLoad: ({ params }) => ({ page: pageOf(TOOLS, params.page) }),
-  component: GroupedPage,
+  component: ToolPage,
 });
 
 const plan = createRoute({
