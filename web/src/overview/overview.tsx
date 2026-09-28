@@ -176,7 +176,7 @@ function Figures({ basis, isValid }: { basis: Basis; isValid: boolean }) {
 function ThisYear() {
   const { reading } = useSession();
   const said = useMemo(() => {
-    const year = reading.document?.thisYear(new Date().getFullYear());
+    const year = reading.document?.yearAt(null, new Date().getFullYear());
     return year === undefined ? null : reading.document?.said(year);
   }, [reading]);
   if (!said) return null;
