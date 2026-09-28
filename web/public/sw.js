@@ -47,14 +47,18 @@ async function page(request) {
   }
 }
 
-/** A built file: from the cache, or fetched and kept. */
+/** A built file: from the cache, or fetched and kept; a failed fetch as the network's error. */
 async function built(request) {
   const cache = await caches.open(CACHE);
   const kept = await cache.match(request);
   if (kept) return kept;
-  const response = await fetch(request);
-  if (response.ok) await cache.put(request, response.clone());
-  return response;
+  try {
+    const response = await fetch(request);
+    if (response.ok) await cache.put(request, response.clone());
+    return response;
+  } catch {
+    return Response.error();
+  }
 }
 
 /** Anything else: from the network and kept, or from the cache offline. */

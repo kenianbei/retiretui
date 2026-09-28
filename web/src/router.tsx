@@ -30,9 +30,14 @@ const PAGES = {
   newPlan: lazyRouteComponent(() => import("@/onboarding/page"), "NewPlanPage"),
 };
 
-/** Loads every page not yet shown, so that each is at hand offline. */
+/**
+ * Loads every page not yet shown, so that each is at hand offline; one
+ * whose load is cut short loads when it is shown instead.
+ */
 export function preloadPages() {
-  for (const page of Object.values(PAGES)) void page.preload?.();
+  for (const page of Object.values(PAGES)) {
+    page.preload?.()?.catch(() => undefined);
+  }
 }
 
 const root = createRootRoute({

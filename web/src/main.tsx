@@ -3,7 +3,10 @@ import init from "@wasm/retiretui_wasm.js";
 import "./index.css";
 
 if (import.meta.env.PROD && "serviceWorker" in navigator) {
-  void navigator.serviceWorker.register("./sw.js");
+  // A registration cut short, by a reload or offline, is tried again on the next load.
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => undefined);
+  });
 }
 
 await init();
