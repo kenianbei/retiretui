@@ -15,7 +15,6 @@ export const FEATURES = tableFeatures({
   },
 });
 
-/** Columns for a table of `Row`s. */
 export function columnsFor<Row extends RowData>() {
   return createColumnHelper<typeof FEATURES, Row>();
 }
