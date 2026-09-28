@@ -16,6 +16,8 @@ use plurimus::widgets::{
 use retiretui_engine::plan::{Dollars, Plan, TreatmentClass};
 use retiretui_engine::project::YearRow;
 
+use retiretui_client::ledger::ledger_headers;
+
 use crate::table::{Column, ages_text, basis_amount, present_classes, year_figures};
 
 use super::layout::{self, Body, filling, placed};
@@ -258,6 +260,8 @@ fn spawn_year_rows(
 
 const YEAR_COLS: u16 = 5;
 const AGE_COLS: u16 = 6;
+/// The year and the ages, lined up on the left; the figures after them.
+const TEXT_HEADERS: usize = 2;
 const SCROLL_BAR_COLS: u16 = 1;
 /// Columns of the terminal the rows never get.
 const LEDGER_CHROME: u16 = pane::BORDERS + layout::CURSOR_COLS + SCROLL_BAR_COLS;
@@ -307,16 +311,19 @@ fn ledger_constraints(classes: &[TreatmentClass]) -> Vec<Constraint> {
     constraints
 }
 
+/// The year and the ages on the left, the figures on the right.
 fn header_cells(classes: &[TreatmentClass]) -> Vec<Line<'static>> {
-    let mut cells = vec![Line::from("Year"), Line::from("Age")];
-    for label in ["Income", "Spending", "Tax", "Withdrawn"] {
-        cells.push(Line::from(label).right_aligned());
-    }
-    for &class in classes {
-        cells.push(Line::from(present::treatment_class(class)).right_aligned());
-    }
-    cells.push(Line::from("Net worth").right_aligned());
-    cells
+    let headers = ledger_headers(classes).into_iter().map(Line::from);
+    headers
+        .enumerate()
+        .map(|(at, cell)| {
+            if at < TEXT_HEADERS {
+                cell
+            } else {
+                cell.right_aligned()
+            }
+        })
+        .collect()
 }
 
 #[derive(Clone, Copy)]

@@ -6,10 +6,9 @@ use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Component, Entity, IntoScheduleConfigs, Query, With};
 use plurimus::ui::ScrollArea;
 use plurimus::widgets::WidgetSystems;
-use retiretui_engine::plan::{Dollars, Plan};
+use retiretui_client::ledger::{DetailLine, income_and_tax};
+use retiretui_engine::plan::Plan;
 use retiretui_engine::project::YearRow;
-
-use crate::table::basis_amount;
 
 use super::super::edit::table_bundle;
 use super::super::hints::Hints;
@@ -74,34 +73,15 @@ fn refresh_detail(
 }
 
 /// Income by source, then a blank line where there was any, then spending
-/// and what the year paid besides - a line only where the year paid any.
+/// and what the year paid besides.
 fn detail_rows(row: &YearRow, plan: &Plan, is_nominal: bool) -> Vec<Vec<String>> {
-    let line = |label: &str, amount: Dollars| {
-        let amount = basis_amount(amount, row.deflator, is_nominal);
-        vec![label.to_owned(), present::money(amount)]
-    };
-    let income = row
-        .income
-        .iter()
-        .map(|(source, &amount)| line(present::income_name(plan, source), amount));
-    let paid = [
-        ("Spending", row.expenses),
-        ("Ordinary tax", row.taxes.ordinary),
-        ("State tax", row.taxes.state),
-        ("Capital gains", row.taxes.ltcg),
-        ("Penalties", row.taxes.penalty),
-        ("Medicare", row.medicare),
-        ("Surplus", row.surplus),
-        ("Unfunded", row.unfunded),
-    ]
-    .into_iter()
-    .filter(|&(_, amount)| amount != 0)
-    .map(|(label, amount)| line(label, amount));
-    let mut rows: Vec<Vec<String>> = income.collect();
+    let (income, paid) = income_and_tax(plan, row, is_nominal);
+    let line = |line: DetailLine| vec![line.label, present::money(line.amount)];
+    let mut rows: Vec<Vec<String>> = income.into_iter().map(line).collect();
     if !rows.is_empty() {
         rows.push(vec![String::new(); 2]);
     }
-    rows.extend(paid);
+    rows.extend(paid.into_iter().map(line));
     rows
 }
 

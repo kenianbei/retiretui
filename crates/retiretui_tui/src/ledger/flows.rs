@@ -13,11 +13,11 @@ use plurimus::core::ratatui_core::text::Line;
 use plurimus::ui::ScrollArea;
 use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
 use plurimus::widgets::{TableColumns, WidgetSystems};
-use retiretui_engine::plan::{Dollars, Item, Plan};
-use retiretui_engine::project::{Action, ContributionNote, YearRow};
+use retiretui_client::ledger::account_flows;
+use retiretui_engine::plan::{Dollars, Plan};
+use retiretui_engine::project::YearRow;
 
-use crate::actions::{collect_warnings, note_phrase};
-use crate::table::basis_amount;
+use crate::actions::collect_warnings;
 
 use super::super::edit::table_bundle;
 use super::super::hints::Hints;
@@ -48,9 +48,6 @@ const TEXT_COLUMNS: [usize; 3] = [0, 2, 3];
 /// In and Out share what the name and the figures leave, so a narrow pane
 /// clips the end of a flow rather than every column.
 const FLOW_COLUMNS: [usize; 2] = [2, 3];
-const NOTE_JOIN: &str = " · ";
-/// Said after a conversion's counterpart, where a narrow pane clips first.
-const CONVERSION: &str = " (conversion)";
 
 #[derive(Component)]
 struct FlowsPane;
@@ -144,45 +141,32 @@ fn refresh_warnings(
 }
 
 /// A row per account the year touches, in the plan's order, and a line
-/// more under it for each further flow in or out. Every figure is
-/// deflated by `row`'s own year, so an account's line adds up.
+/// more under it for each further flow in or out.
 fn flow_rows(
     plan: &Plan,
     previous: Option<&YearRow>,
     row: &YearRow,
     is_nominal: bool,
 ) -> Vec<Vec<String>> {
-    let show = |amount: Dollars| present::money(basis_amount(amount, row.deflator, is_nominal));
-    let mut rows = Vec::new();
-    for account in &plan.accounts {
-        let id = account.id.as_str();
-        let open = previous.map_or(account.balance, |before| balance(before, id));
-        let close = balance(row, id);
-        let growth = row.growth.get(id).copied().unwrap_or(0);
-        let (ins, outs) = moves(plan, row, id, &show);
-        if open == 0 && close == 0 && growth == 0 && ins.is_empty() && outs.is_empty() {
-            continue;
-        }
-        let figures = [
-            account.display_name().to_owned(),
-            show(open),
-            signed(growth, &show),
-            show(close),
-        ];
-        rows.extend(account_lines(figures, ins, outs));
-    }
-    rows
+    account_flows(plan, previous, row, is_nominal)
+        .into_iter()
+        .flat_map(|flows| {
+            let figures = [
+                flows.account,
+                present::money(flows.open),
+                signed(flows.growth),
+                present::money(flows.close),
+            ];
+            account_lines(figures, flows.ins, flows.outs)
+        })
+        .collect()
 }
 
-fn balance(row: &YearRow, id: &str) -> Dollars {
-    row.balances.get(id).copied().unwrap_or(0)
-}
-
-fn signed(amount: Dollars, show: &impl Fn(Dollars) -> String) -> String {
+fn signed(amount: Dollars) -> String {
     match amount {
         0 => String::new(),
-        ..0 => show(amount),
-        _ => format!("+{}", show(amount)),
+        ..0 => present::money(amount),
+        _ => format!("+{}", present::money(amount)),
     }
 }
 
@@ -209,94 +193,10 @@ fn account_lines(figures: [String; 4], ins: Vec<String>, outs: Vec<String>) -> V
         .collect()
 }
 
-/// What came into the account `id` and what went out of it, each named by
-/// where it came from or went.
-fn moves(
-    plan: &Plan,
-    row: &YearRow,
-    id: &str,
-    show: &impl Fn(Dollars) -> String,
-) -> (Vec<String>, Vec<String>) {
-    let mut ins = Vec::new();
-    let mut outs = Vec::new();
-    for action in &row.actions {
-        let between = match action {
-            Action::Transfer { from, to, amount } => Some((from, to, amount, "")),
-            Action::Conversion { from, to, amount } => Some((from, to, amount, CONVERSION)),
-            _ => None,
-        };
-        if let Some((from, to, amount, kind)) = between {
-            if to == id {
-                let from = present::account_name(plan, from);
-                ins.push(format!("+{} ← {from}{kind}", show(*amount)));
-            }
-            if from == id {
-                let to = present::account_name(plan, to);
-                outs.push(format!("-{} → {to}{kind}", show(*amount)));
-            }
-            continue;
-        }
-        match action {
-            Action::Contribution {
-                account,
-                employee,
-                employer,
-                notes,
-            } if account == id => ins.extend(paid_in(plan, (*employee, *employer), notes, show)),
-            Action::Rmd { account, amount } if account == id => {
-                outs.push(format!("-{} RMD", show(*amount)));
-            }
-            Action::Withdrawal { account, amount } if account == id => {
-                outs.push(format!("-{} for spending", show(*amount)));
-            }
-            Action::Surplus { account, amount } if account == id => {
-                ins.push(format!("+{} surplus", show(*amount)));
-            }
-            _ => {}
-        }
-    }
-    (ins, outs)
-}
-
-/// A contribution's lines: the employee's and the employer's, each with the
-/// notes that say how it came to be.
-fn paid_in(
-    plan: &Plan,
-    (yours, theirs): (Dollars, Dollars),
-    notes: &[ContributionNote],
-    show: &impl Fn(Dollars) -> String,
-) -> Vec<String> {
-    let with_notes = |said: String, is_employer: bool| {
-        let phrases = notes
-            .iter()
-            .filter(|note| is_employer_note(note) == is_employer)
-            .map(|note| note_phrase(plan, note));
-        std::iter::once(said)
-            .chain(phrases)
-            .collect::<Vec<_>>()
-            .join(NOTE_JOIN)
-    };
-    let mut lines = Vec::new();
-    if yours > 0 {
-        lines.push(with_notes(format!("+{} yours", show(yours)), false));
-    }
-    if theirs > 0 {
-        lines.push(with_notes(format!("+{} employer", show(theirs)), true));
-    }
-    lines
-}
-
-const fn is_employer_note(note: &ContributionNote) -> bool {
-    matches!(
-        note,
-        ContributionNote::Match { .. } | ContributionNote::HeldToOverall
-    )
-}
-
 #[cfg(test)]
 mod tests {
     use retiretui_engine::params::TaxTables;
-    use retiretui_engine::project::deflate;
+    use retiretui_engine::project::{Action, ContributionNote, deflate};
 
     use super::super::super::support::{TEST_PLAN, projected_from, test_projected};
     use super::*;

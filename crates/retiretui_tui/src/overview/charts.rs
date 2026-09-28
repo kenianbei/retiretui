@@ -2,7 +2,6 @@
 //! treatment, net worth, and income against taxes, and the years it
 //! points out.
 
-use std::collections::BTreeMap;
 use std::iter;
 
 use bevy_ecs::change_detection::DetectChanges;
@@ -13,7 +12,8 @@ use plurimus::core::UiWidget;
 use plurimus::core::ratatui_core::style::Style;
 use plurimus::core::ratatui_core::text::{Line, Span};
 use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
-use retiretui_engine::plan::{Dollars, IncomeKind};
+use retiretui_client::ledger::salary_marks;
+use retiretui_engine::plan::Dollars;
 use retiretui_engine::project::{ClassTotals, Projection};
 
 use crate::chart::{Mark, Series, SeriesChart, Shade};
@@ -230,52 +230,21 @@ fn net_worth(projection: &Projection, nominal: bool, theme: &Theme) -> SeriesCha
 /// The year cursor, then where each earner's salary ends; a label that
 /// does not fit gives way in that order.
 fn marks(projected: &Projected, cursor: i16, theme: &Theme) -> Vec<Mark> {
-    let ends = salary_ends(projected);
-    let is_only_earner = ends.len() == 1;
     let cursor = Mark::cursor(cursor, theme);
-    let ends = ends.into_iter().map(|(owner, year)| Mark {
-        year,
-        label: if is_only_earner {
-            format!("retire {year}")
-        } else {
-            format!("{} {year}", projected.plan.person_name(owner))
-        },
-        style: theme.dimmed(),
-    });
-    iter::once(cursor).chain(ends).collect()
-}
-
-/// Each earner with the first year none of their salaries pays, earliest
-/// first and then by owner; an earner paid to the horizon has none.
-fn salary_ends(projected: &Projected) -> Vec<(&str, i16)> {
-    let years = &projected.projection.years;
-    let mut last_paid: BTreeMap<&str, i16> = BTreeMap::new();
-    let salaries = projected.plan.income.iter();
-    for income in salaries.filter(|income| income.kind == IncomeKind::Salary) {
-        let Some(row) = years
-            .iter()
-            .rev()
-            .find(|row| row.income.get(&income.id).is_some_and(|&amount| amount > 0))
-        else {
-            continue;
-        };
-        last_paid
-            .entry(&income.owner)
-            .and_modify(|last| *last = (*last).max(row.year))
-            .or_insert(row.year);
-    }
-    let horizon = years.last().map(|row| row.year);
-    let mut ends: Vec<_> = last_paid
+    let ends = salary_marks(projected)
         .into_iter()
-        .filter(|&(_, year)| Some(year) != horizon)
-        .map(|(owner, year)| (owner, year + 1))
-        .collect();
-    ends.sort_by_key(|&(_, year)| year);
-    ends
+        .map(|(label, year)| Mark {
+            year,
+            label,
+            style: theme.dimmed(),
+        });
+    iter::once(cursor).chain(ends).collect()
 }
 
 #[cfg(test)]
 mod tests {
+    use retiretui_client::ledger::salary_ends;
+
     use super::*;
     use crate::support::{TEST_PLAN, projected_from, test_projected};
 
