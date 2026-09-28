@@ -65,3 +65,18 @@ it("keeps an uploaded file flat under the root", () => {
   expect(pathOf("C:\\plans\\plan.toml")).toBe("/plan.toml");
   expect(nameOf("/plan.toml")).toBe("plan.toml");
 });
+
+it("moves a renamed file, and tells other tabs where it went", () => {
+  const workspace = new Workspace(new MemoryStorage());
+  workspace.write("/old.toml", "schema = 1");
+  workspace.remember("/old.toml");
+  workspace.rename("/old.toml", "/new.toml");
+  expect(workspace.list()).toEqual(["/new.toml"]);
+  expect(workspace.read("/new.toml")).toBe("schema = 1");
+  expect(workspace.lastOpen()).toBe("/new.toml");
+  expect(workspace.renamedTo("/old.toml")).toBe("/new.toml");
+  expect(workspace.renamedTo("/new.toml")).toBeNull();
+  workspace.remove("/new.toml");
+  expect(workspace.list()).toEqual([]);
+  expect(workspace.lastOpen()).toBeNull();
+});

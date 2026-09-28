@@ -12,6 +12,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { ManagePlans } from "@/files/manage";
 import { NameDialog } from "@/files/name-dialog";
 import { useFilePicker } from "@/files/picker";
 import { useSession } from "@/session";
@@ -31,7 +32,10 @@ interface FileActions {
   /** Writes a file without opening it, asking first where it replaces one; then `onWritten`. */
   write: (name: string, text: string, onWritten: () => void) => void;
   upload: () => void;
-  download: () => void;
+  /** Downloads `path`, or the document's file where none is named. */
+  download: (path?: string) => void;
+  /** Opens the list of plans to rename, download or delete. */
+  manage: () => void;
   /** Asks for a name, then writes the draft as a plan of that name. */
   saveAs: () => void;
 }
@@ -46,6 +50,7 @@ export function FileActionsProvider({ children }: { children: ReactNode }) {
   const session = useSession();
   const [replacing, setReplacing] = useState<Replacing | null>(null);
   const [naming, setNaming] = useState<string | null>(null);
+  const [isManaging, setManaging] = useState(false);
 
   /** Runs `replace`, asking first where it writes over a file of `name`. */
   const writing = (name: string, replace: () => void) => {
@@ -69,13 +74,13 @@ export function FileActionsProvider({ children }: { children: ReactNode }) {
     add(file.name, await file.text());
   });
 
-  const download = () => {
-    if (session.path === null) return;
-    const text = session.workspace.read(session.path);
+  const download = (path = session.path) => {
+    if (path === null) return;
+    const text = session.workspace.read(path);
     const url = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
     const link = window.document.createElement("a");
     link.href = url;
-    link.download = nameOf(session.path);
+    link.download = nameOf(path);
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -92,6 +97,9 @@ export function FileActionsProvider({ children }: { children: ReactNode }) {
     },
     upload: picker.open,
     download,
+    manage: () => {
+      setManaging(true);
+    },
     saveAs: () => {
       setNaming(session.path === null ? "" : nameOf(session.path));
     },
@@ -101,6 +109,11 @@ export function FileActionsProvider({ children }: { children: ReactNode }) {
     <FileActionsContext value={actions}>
       {children}
       {picker.element}
+      <ManagePlans
+        isOpen={isManaging}
+        setOpen={setManaging}
+        download={download}
+      />
       <AlertDialog
         open={replacing !== null}
         onOpenChange={(isOpen) => {

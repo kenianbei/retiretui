@@ -1,4 +1,4 @@
-import { Document } from "@wasm/retiretui_wasm.js";
+import { Document, baseOf } from "@wasm/retiretui_wasm.js";
 
 import { messageOf } from "@/lib/utils";
 import type { Workspace } from "@/workspace";
@@ -18,5 +18,14 @@ export function openAt(workspace: Workspace, path: string | null): Opened {
     return { path, document, error: null };
   } catch (thrown) {
     return { path, document: null, error: messageOf(thrown) };
+  }
+}
+
+/** The base a workspace file names, where it is a scenario naming one. */
+export function baseIn(workspace: Workspace, path: string): string | undefined {
+  try {
+    return baseOf(workspace.read(path));
+  } catch {
+    return undefined;
   }
 }

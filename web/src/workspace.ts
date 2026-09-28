@@ -2,6 +2,8 @@
 const PREFIX = "retiretui-app:";
 const FILE_KEY = `${PREFIX}file:`;
 const LAST_KEY = `${PREFIX}last`;
+/** The last rename, which another tab sees only as a file removed. */
+const RENAMED_KEY = `${PREFIX}renamed`;
 
 /**
  * The file a changed storage `key` holds: `undefined` for a key that holds
@@ -70,6 +72,44 @@ export class Workspace {
       .map((key) => fileAt(key))
       .filter((path) => typeof path === "string")
       .sort();
+  }
+
+  /** Deletes `path`, and forgets it as the document last open. */
+  remove(path: string): void {
+    this.storage.removeItem(FILE_KEY + path);
+    if (this.storage.getItem(LAST_KEY) === path) {
+      this.storage.removeItem(LAST_KEY);
+    }
+  }
+
+  /** Moves `from` to `to`, leaving word of it for other tabs. */
+  rename(from: string, to: string): void {
+    this.write(to, this.read(from));
+    this.storage.setItem(RENAMED_KEY, JSON.stringify({ from, to }));
+    if (this.storage.getItem(LAST_KEY) === from) this.remember(to);
+    this.remove(from);
+  }
+
+  /** Where the last rename moved `from`; `null` where it did not. */
+  renamedTo(from: string): string | null {
+    try {
+      const renamed: unknown = JSON.parse(
+        this.storage.getItem(RENAMED_KEY) ?? "null",
+      );
+      if (
+        typeof renamed === "object" &&
+        renamed !== null &&
+        "from" in renamed &&
+        "to" in renamed &&
+        renamed.from === from &&
+        typeof renamed.to === "string"
+      ) {
+        return renamed.to;
+      }
+    } catch {
+      return null;
+    }
+    return null;
   }
 
   /** The document last open, where it is still there. */

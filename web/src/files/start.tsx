@@ -4,6 +4,7 @@ import { FilePen, FileText, Upload } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useFileActions } from "@/files/actions";
+import { KeepPlans } from "@/files/manage";
 import { NEW_PLAN_START } from "@/onboarding/steps";
 import { useSession } from "@/session";
 import { nameOf } from "@/workspace";
@@ -63,6 +64,7 @@ export function Start() {
               </li>
             ))}
           </ul>
+          <KeepPlans />
         </div>
       )}
 
