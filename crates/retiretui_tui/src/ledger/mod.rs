@@ -16,6 +16,8 @@ use plurimus::widgets::{
 use retiretui_engine::plan::{Dollars, Plan, TreatmentClass};
 use retiretui_engine::project::YearRow;
 
+use retiretui_client::ledger::ledger_headers;
+
 use crate::table::{Column, ages_text, basis_amount, present_classes, year_figures};
 
 use super::layout::{self, Body, filling, placed};
@@ -307,16 +309,19 @@ fn ledger_constraints(classes: &[TreatmentClass]) -> Vec<Constraint> {
     constraints
 }
 
+/// The year and the ages on the left, the figures on the right.
 fn header_cells(classes: &[TreatmentClass]) -> Vec<Line<'static>> {
-    let mut cells = vec![Line::from("Year"), Line::from("Age")];
-    for label in ["Income", "Spending", "Tax", "Withdrawn"] {
-        cells.push(Line::from(label).right_aligned());
-    }
-    for &class in classes {
-        cells.push(Line::from(present::treatment_class(class)).right_aligned());
-    }
-    cells.push(Line::from("Net worth").right_aligned());
-    cells
+    let headers = ledger_headers(classes).into_iter();
+    headers
+        .map(|(header, is_figure)| {
+            let cell = Line::from(header);
+            if is_figure {
+                cell.right_aligned()
+            } else {
+                cell
+            }
+        })
+        .collect()
 }
 
 #[derive(Clone, Copy)]

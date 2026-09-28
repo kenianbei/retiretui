@@ -10,20 +10,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { IssueLink } from "@/draft/issue-link";
+import { isHeld } from "@/lib/keys";
 import { useSession } from "@/session";
-
-/**
- * Whether a key pressed at `target` is not the draft's: typing, or anything
- * in a form or question standing over the page, which keeps every key.
- */
-function isHeld(target: EventTarget | null): boolean {
-  return (
-    target instanceof HTMLElement &&
-    (target.isContentEditable ||
-      ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName) ||
-      target.closest('[role="dialog"], [role="alertdialog"]') !== null)
-  );
-}
 
 /** Undo, redo and save by key, wherever nothing else holds the key. */
 function useDraftKeys(actions: {

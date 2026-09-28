@@ -10,10 +10,10 @@ use retiretui_client::files::resolve_with_files;
 use retiretui_client::forms::Form;
 use retiretui_client::issues::{issue_field, issue_listing, issue_place, issue_words};
 use retiretui_client::replies::{ActionsReply, year_row};
-use retiretui_client::session::{Today, YearCursor, span};
+use retiretui_client::session::{Projected, Today, YearCursor, span};
 use retiretui_client::store::normal;
 use retiretui_engine::plan::Item;
-use retiretui_engine::project::{Projection, Summary, YearRow, project};
+use retiretui_engine::project::{Projection, Summary, YearRow};
 use serde::Serialize;
 
 use crate::domain::{list_of, name_at};
@@ -30,8 +30,9 @@ const OVER_SCENARIO: &str = "a scenario cannot be saved over; save it under a na
 pub(crate) struct Document {
     draft: Draft,
     files: Vec<PathBuf>,
-    /// The last projection of a valid draft, held while it has issues.
-    projection: Option<Projection>,
+    /// The last valid draft's plan and projection, held while it has
+    /// issues.
+    projected: Option<Projected>,
 }
 
 /// An issue beside where it is in the plan, in the forms' words.
@@ -101,11 +102,11 @@ impl Document {
         let plan = resolve_with_files(normal(Path::new(path)), read, &canonical, &mut files)?;
         let draft = Draft::validated(plan, tables(), files.len() > 1);
         let is_valid = draft.issues().is_empty();
-        let projection = is_valid.then(|| project(&draft.plan, tables()));
+        let projected = is_valid.then(|| Projected::new(draft.plan.clone(), tables()));
         Ok(Self {
             draft,
             files,
-            projection,
+            projected,
         })
     }
 
@@ -185,7 +186,7 @@ impl Document {
     /// good projection.
     fn revalidate(&mut self) {
         if self.draft.revalidate(tables()) {
-            self.projection = Some(project(&self.draft.plan, tables()));
+            self.projected = Some(Projected::new(self.draft.plan.clone(), tables()));
         }
     }
 
@@ -260,7 +261,14 @@ impl Document {
     /// The projection, where the plan passed the gate.
     #[must_use]
     pub fn projection(&self) -> Option<&Projection> {
-        self.projection.as_ref()
+        Some(&self.projected.as_ref()?.projection)
+    }
+
+    /// The plan of the last valid draft beside its projection.
+    pub(crate) fn projected(&self) -> Result<&Projected, String> {
+        self.projected
+            .as_ref()
+            .ok_or_else(|| issue_listing(self.draft.issues()))
     }
 
     /// The headline figures, in today's dollars where `deflated`.
@@ -269,12 +277,12 @@ impl Document {
         Some(self.projection()?.summary(deflated))
     }
 
-    /// The year every view starts on: `today`, held within the plan's
-    /// years; `None` while the plan has issues.
+    /// The year a view shows: `requested`, or `today` where none, held
+    /// within the plan's years; `None` while the plan has issues.
     #[must_use]
-    pub fn this_year(&self, today: i16) -> Option<i16> {
+    pub fn year_at(&self, requested: Option<i16>, today: i16) -> Option<i16> {
         let years = span(&self.projection()?.years);
-        Some(YearCursor::default().resolve(Today(today), years, years))
+        Some(YearCursor(requested).resolve(Today(today), years, years))
     }
 
     /// `year`'s recorded actions and warnings.
@@ -284,7 +292,8 @@ impl Document {
     /// Where the plan has issues, or `year` is outside its projection.
     pub fn actions(&self, year: i16) -> Result<ActionsReply, String> {
         let row = self.row(year)?;
-        let warnings = collect_warnings(&self.draft.plan, tables(), row, None);
+        let plan = &self.projected()?.plan;
+        let warnings = collect_warnings(plan, tables(), row, None);
         Ok(ActionsReply::new(row, warnings))
     }
 
@@ -295,7 +304,7 @@ impl Document {
     /// Where the plan has issues, or `year` is outside its projection.
     pub fn said(&self, year: i16) -> Result<SaidYear, String> {
         let row = self.row(year)?;
-        let plan = &self.draft.plan;
+        let plan = &self.projected()?.plan;
         let people = plan.household.people.iter();
         let ages = people.filter_map(|person| {
             let age = *row.ages.get(&person.id)?;
@@ -311,10 +320,7 @@ impl Document {
     }
 
     fn row(&self, year: i16) -> Result<&YearRow, String> {
-        let projection = self
-            .projection()
-            .ok_or_else(|| issue_listing(self.draft.issues()))?;
-        year_row(projection, year)
+        year_row(&self.projected()?.projection, year)
     }
 
     /// The resolved plan as canonical TOML.
@@ -368,8 +374,12 @@ mod tests {
         let first = projection.years[0].year;
         assert!(document.summary(true).is_some());
         assert_eq!(document.actions(first).expect("in range").year, first);
-        assert_eq!(document.this_year(first - 5), Some(first));
-        assert_eq!(document.this_year(first + 1), Some(first + 1));
+        assert_eq!(document.year_at(None, first - 5), Some(first));
+        assert_eq!(document.year_at(None, first + 1), Some(first + 1));
+        let last = projection.years.last().expect("a year").year;
+        assert_eq!(document.year_at(Some(first + 2), first), Some(first + 2));
+        assert_eq!(document.year_at(Some(first - 9), first + 3), Some(first));
+        assert_eq!(document.year_at(Some(last + 9), first), Some(last));
         let said = document.said(first).expect("in range");
         assert_eq!(said.ages, [("Sam".to_owned(), 30)]);
         assert!(
@@ -415,7 +425,7 @@ mod tests {
         assert_eq!((place.domain.as_str(), place.index), ("settings", None));
         assert_eq!(place.field, Some("inflation"));
         assert!(document.projection().is_none());
-        assert_eq!(document.this_year(2030), None);
+        assert_eq!(document.year_at(None, 2030), None);
         assert!(document.summary(false).is_none());
         assert!(document.actions(plan.plan.start_year).is_err());
     }

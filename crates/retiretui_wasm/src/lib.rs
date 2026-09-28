@@ -6,6 +6,7 @@ mod document;
 mod domain;
 mod editor;
 mod edits;
+mod ledger;
 mod searches;
 mod view;
 mod vocabulary;
@@ -46,9 +47,9 @@ fn reply<T: Serialize>(answer: Result<T, String>) -> Result<JsValue, JsError> {
 
 #[wasm_bindgen(typescript_custom_section)]
 const TYPES: &str = r#"import type {
-  ActionsReply, ClaimsReply, Domain, DomainTable, Example, FieldView,
-  HistoricalReply, Issue, MonteCarloReply, PlacedIssue, Projection, SaidYear,
-  Sort, Summary, SweepReply,
+  ActionsReply, ChartSeries, ClaimsReply, Domain, DomainTable, Example,
+  FieldView, HistoricalReply, Issue, Ledger, MonteCarloReply, PlacedIssue,
+  Projection, SaidYear, Sort, Summary, SweepReply, YearDetail,
 } from "../bindings/index";
 export type * from "../bindings/index";"#;
 
@@ -121,12 +122,12 @@ impl JsDocument {
         to_js(&self.0.summary(deflated))
     }
 
-    /// The year every view starts on: `today`, held within the plan's
-    /// years; `undefined` while the plan has issues.
-    #[wasm_bindgen(js_name = thisYear)]
+    /// The year a view shows: `requested`, or `today` where it is `null`,
+    /// held within the plan's years; `undefined` while the plan has issues.
+    #[wasm_bindgen(js_name = yearAt)]
     #[must_use]
-    pub fn this_year(&self, today: i16) -> Option<i16> {
-        self.0.this_year(today)
+    pub fn year_at(&self, requested: Option<i16>, today: i16) -> Option<i16> {
+        self.0.year_at(requested, today)
     }
 
     /// `year`'s recorded actions and warnings.
@@ -272,6 +273,7 @@ mod bindings {
     use retiretui_client::forms::sort::Sort;
 
     use crate::domain::DomainTable;
+    use crate::ledger::{ChartSeries, Ledger, YearDetail};
     use crate::searches::Example;
     use crate::view::FieldView;
     use crate::vocabulary::Domain;
@@ -300,6 +302,9 @@ mod bindings {
             DomainTable::export_all,
             Sort::export_all,
             FieldView::export_all,
+            Ledger::export_all,
+            YearDetail::export_all,
+            ChartSeries::export_all,
         ];
         for export in exports {
             export(&config).expect("exports");
