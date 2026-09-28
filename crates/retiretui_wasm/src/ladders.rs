@@ -2,12 +2,16 @@
 //! under the constraints the draft holds, in both dollar bases, and the
 //! highlighted one taken into the draft or written as a scenario.
 
+use std::path::Path;
+
+use retiretui_client::files::{OVERLAY_SAVE_FIRST, relative_path};
 use retiretui_client::forms::{Form, details};
 use retiretui_client::searches::ladders::{
     Constraints, DESTINATION, FIELDS, aim_at, constraints_in, only_roth, rate_label, search,
     take_question, taken,
 };
 use retiretui_client::searches::run_refusal;
+use retiretui_client::store::normal;
 use retiretui_client::table::account_name;
 use retiretui_engine::market::Progress;
 use retiretui_engine::optimize::{
@@ -24,6 +28,9 @@ use crate::editor::Editor;
 use crate::edits::JsEditor;
 use crate::searches::gated;
 use crate::{JsDocument, refused, reply, tables, to_js};
+
+/// A scenario written over a file it resolves through would name itself.
+const OVER_ITS_BASE: &str = "a scenario cannot be written over a file it is made from";
 
 static FORM: Form = Form::tool::<Constraints>("Constraints", FIELDS);
 
@@ -202,6 +209,13 @@ impl Document {
         toml::to_string(&self.aimed()).map_err(|error| error.to_string())
     }
 
+    /// Whether the constraints name the Roth account to convert to, as a
+    /// search needs them to.
+    #[must_use]
+    pub fn is_aimed(&self) -> bool {
+        self.aimed().contains_key(DESTINATION)
+    }
+
     /// The constraints read out, each field's label beside what it holds.
     #[must_use]
     pub fn constraints_read(&self) -> Vec<[String; 2]> {
@@ -224,20 +238,31 @@ impl Document {
         Ok(taken(&steps))
     }
 
-    /// The ladder `years` into `destination` as a scenario over the draft,
-    /// its `base` the file it names.
+    /// The ladder `years` into `destination` as a scenario to be written
+    /// at `out`, its `base` the document's file.
     ///
     /// # Errors
     ///
-    /// Where the scenario does not serialize.
+    /// Where the draft has unsaved edits, which the file on disk does not
+    /// hold, `out` is a file the document was resolved from, or the
+    /// scenario does not serialize.
     pub fn ladder_scenario(
         &self,
-        base: &str,
+        out: &str,
         destination: &str,
         years: Vec<LadderYear>,
     ) -> Result<String, String> {
+        if self.draft().is_dirty() {
+            return Err(OVERLAY_SAVE_FIRST.to_owned());
+        }
+        let out = normal(Path::new(out));
+        if self.files().contains(&out) {
+            return Err(OVER_ITS_BASE.to_owned());
+        }
+        let within = out.parent().unwrap_or(Path::new("/"));
+        let base = relative_path(within, &self.files()[0]);
         let steps = steps_of(years);
-        ladder_overlay(base, &self.draft().plan, &into(destination), &steps)
+        ladder_overlay(&base, &self.draft().plan, &into(destination), &steps)
             .map_err(|error| error.to_string())
     }
 }
@@ -271,6 +296,14 @@ impl JsDocument {
         self.0.constraints_text().map_err(refused)
     }
 
+    /// Whether the constraints name the Roth account to convert to, as a
+    /// search needs them to.
+    #[wasm_bindgen(getter, js_name = isAimed)]
+    #[must_use]
+    pub fn is_aimed(&self) -> bool {
+        self.0.is_aimed()
+    }
+
     /// The constraints read out: each field's label beside what it holds.
     ///
     /// # Errors
@@ -298,21 +331,23 @@ impl JsDocument {
             .map_err(refused)
     }
 
-    /// The ladder `years` into `destination` as a scenario over the draft,
-    /// its `base` the file named.
+    /// The ladder `years` into `destination` as a scenario to be written at
+    /// `out`, its `base` the document's file.
     ///
     /// # Errors
     ///
-    /// Where `years` are not a ladder's, or the scenario does not serialize.
+    /// Where the draft has unsaved edits, `out` is a file the document was
+    /// made from, `years` are not a ladder's, or the scenario does not
+    /// serialize.
     #[wasm_bindgen(js_name = ladderScenario)]
     pub fn ladder_scenario(
         &self,
-        base: &str,
+        out: &str,
         destination: &str,
         #[wasm_bindgen(unchecked_param_type = "LadderYear[]")] years: JsValue,
     ) -> Result<String, JsError> {
         self.0
-            .ladder_scenario(base, destination, years_of(years)?)
+            .ladder_scenario(out, destination, years_of(years)?)
             .map_err(refused)
     }
 }
@@ -356,6 +391,7 @@ mod tests {
     #[test]
     fn the_lone_roth_account_is_searched_into_without_being_named() {
         let document = opened();
+        assert!(document.is_aimed());
         let answers = document.constraints_text().expect("serializes");
         assert!(answers.contains(ROTH), "{answers}");
         let reply = ladders(example(), &answers).expect("searches");
@@ -406,8 +442,18 @@ mod tests {
             .iter()
             .filter(|c| is_ladder(c));
         assert_eq!(held.count(), count);
+        assert_eq!(
+            document.ladder_scenario("/ladder.toml", ROTH, Vec::new()),
+            Err(OVERLAY_SAVE_FIRST.to_owned()),
+            "the file on disk holds no ladder yet"
+        );
+        document.save(&mut |_| Ok(())).expect("saved");
+        assert_eq!(
+            document.ladder_scenario("/plan.toml", ROTH, Vec::new()),
+            Err(OVER_ITS_BASE.to_owned())
+        );
         let scenario = document
-            .ladder_scenario("plan.toml", ROTH, Vec::new())
+            .ladder_scenario("/ladder.toml", ROTH, Vec::new())
             .expect("written");
         assert!(scenario.contains("base = \"plan.toml\""), "{scenario}");
         assert_eq!(

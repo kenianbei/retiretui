@@ -120,8 +120,22 @@ assert.deepEqual(
 const [ladder] = found.brackets;
 assert.match(converting.takeLadder(found.destination, ladder.steps), /took \d+ conversion/);
 assert.equal(converting.canUndo, true);
+assert.throws(
+  () =>
+    converting.ladderScenario(
+      "/plans/early-ladder.toml",
+      found.destination,
+      ladder.steps,
+    ),
+  /save first/,
+);
+converting.save(() => {});
 assert.match(
-  converting.ladderScenario("early.toml", found.destination, ladder.steps),
+  converting.ladderScenario(
+    "/plans/early-ladder.toml",
+    found.destination,
+    ladder.steps,
+  ),
   /base = "early.toml"/,
 );
 assert.ok(converting.constraintsRead().some(([label]) => label === "Fill bracket"));

@@ -97,6 +97,10 @@ pub(crate) fn directory_of(path: &Path) -> &Path {
         .unwrap_or(Path::new("."))
 }
 
+/// Why an overlay is not written over a draft with unsaved edits: its
+/// `base` names the file on disk, which the draft is not.
+pub const OVERLAY_SAVE_FIRST: &str = "save first: the overlay's base is the file on disk";
+
 /// The `base` an overlay written at `out` names `plan_path` by: relative
 /// to the directory it is written into.
 ///

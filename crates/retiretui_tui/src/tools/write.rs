@@ -14,9 +14,7 @@ use crate::journal;
 use crate::session::{self, Session};
 
 pub const OVERLAY_OVER: &str = "Overwrite {}?";
-/// The overlay's `base` names the file on disk, which an unsaved draft is
-/// not.
-pub(super) const SAVE_FIRST: &str = "save first: the overlay's base is the file on disk";
+pub(super) use retiretui_client::files::OVERLAY_SAVE_FIRST as SAVE_FIRST;
 
 /// Asks where to write, once the tool has found it has something to.
 pub(super) fn open_picker(pick: FilePick, draft: &Draft, browsing: &mut Browsing) -> Outcome {
