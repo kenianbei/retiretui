@@ -2,12 +2,12 @@
 //! each year's returns and inflation as they came, worst first.
 
 use bevy_app::App;
-use retiretui_engine::market::{History, Progress, Run, RunError, RunName, Runs, historical};
+use retiretui_client::searches::markets;
+use retiretui_engine::market::{History, Progress, RunError, Runs, historical};
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::Plan;
 
-use super::assumptions::Assumption;
-use super::{MarketTool, count_text};
+use super::MarketTool;
 use crate::nav::Page;
 use crate::overview::Better;
 use crate::tools::Found;
@@ -18,7 +18,7 @@ pub fn plugin(app: &mut App) {
 }
 
 impl Found for Runs {
-    const NOTHING_SEARCHED: &'static str = super::NOTHING_SEARCHED;
+    const NOTHING_SEARCHED: &'static str = markets::NOTHING_SEARCHED;
     const IS_COUNTED: bool = true;
     const IS_PLAN_ROW_CHOSEN: bool = true;
 
@@ -29,15 +29,11 @@ impl Found for Runs {
 
 impl MarketTool for Runs {
     const PAGE: Page = Page::Historical;
-    const RUN_HEADING: &'static str = "Start Years";
     const HELP: &'static str = "Each year of the record as the plan's first, its markets and inflation as they came. Today's dollars.";
 
     const OPEN: &'static str = "open-historical-run";
     const EDIT: &'static str = "historical-assumption";
     const VIEW: &'static str = "historical-view";
-    const HEADLINE: &'static str = "survived";
-    const HAS_BY_YEAR: bool = false;
-    const VERDICT: &'static str = "Survived";
 
     fn search(
         plan: &Plan,
@@ -53,44 +49,11 @@ impl MarketTool for Runs {
         usize::try_from(market.to() - market.from() + 1).unwrap_or_default()
     }
 
-    fn runs(&self) -> &Runs {
-        self
-    }
-
     fn found_by(better: &Better, plan: &Plan) -> Option<Self> {
         better.historical(plan).cloned()
     }
 
-    fn listed(&self) -> Vec<(String, &Run)> {
-        self.worst_first()
-            .into_iter()
-            .map(|at| {
-                let run = &self.runs[at];
-                let started = match run.name {
-                    RunName::Start(year) => year.to_string(),
-                    RunName::Planned | RunName::Trial(_) => String::new(),
-                };
-                (started, run)
-            })
-            .collect()
-    }
-
     fn ledger_label(first: &str) -> String {
         format!("retiring in {first}")
-    }
-
-    fn verdict(&self) -> String {
-        format!(
-            "{} of {}",
-            count_text(self.successes),
-            count_text(self.runs.len())
-        )
-    }
-
-    fn settings(plan: &Plan) -> Vec<Assumption> {
-        let market = plan.market();
-        let wrapped = if market.wrap() { ", wrapped" } else { "" };
-        let years = format!("{}–{}{wrapped}", market.from(), market.to());
-        vec![("Years", years, Page::Market)]
     }
 }

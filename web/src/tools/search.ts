@@ -1,4 +1,4 @@
-import { keptSearch, wholeOf, type YearSearch } from "@/year/search";
+import { keptSearch, textOf, wholeOf, type YearSearch } from "@/year/search";
 
 /** What a tool's page holds in its address. */
 export interface ToolSearch extends Pick<YearSearch, "basis" | "held"> {
@@ -8,6 +8,8 @@ export interface ToolSearch extends Pick<YearSearch, "basis" | "held"> {
   claim?: string;
   /** The highlighted person, by place in the household; the first where none. */
   person?: number;
+  /** The highlighted market run: `planned`, `p90`, `worst`, a start year; the plan's own where none. */
+  run?: string;
   /** Whether the constraints are open in their form. */
   edit?: true;
 }
@@ -18,13 +20,14 @@ const CLAIM_KEY = /^\d+(-\d+)*$/;
 export function toolSearch(search: Record<string, unknown>): ToolSearch {
   const bracket = wholeOf(search.bracket);
   const person = wholeOf(search.person);
-  const claim =
-    typeof search.claim === "number" ? String(search.claim) : search.claim;
+  const claim = textOf(search.claim);
+  const run = textOf(search.run);
   return {
     ...keptSearch(search, ["basis", "held"]),
     ...(bracket !== undefined && { bracket }),
-    ...(typeof claim === "string" && CLAIM_KEY.test(claim) && { claim }),
+    ...(claim !== undefined && CLAIM_KEY.test(claim) && { claim }),
     ...(person !== undefined && person >= 0 && { person }),
+    ...(run !== undefined && { run }),
     ...((search.edit === true || search.edit === "true") && { edit: true }),
   };
 }

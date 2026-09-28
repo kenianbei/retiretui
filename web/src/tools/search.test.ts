@@ -24,6 +24,12 @@ describe("toolSearch", () => {
     expect(toolSearch({ claim: 70 })).toEqual({ claim: "70" });
   });
 
+  it("keeps a market run by its place or its start year", () => {
+    expect(toolSearch({ run: "p10" })).toEqual({ run: "p10" });
+    expect(toolSearch({ run: 1929 })).toEqual({ run: "1929" });
+    expect(toolSearch({ run: true })).toEqual({});
+  });
+
   it("reads a rate back as the percent it is kept under", () => {
     expect(percentOf(0.22)).toBe(22);
     expect(percentOf(0.1)).toBe(10);

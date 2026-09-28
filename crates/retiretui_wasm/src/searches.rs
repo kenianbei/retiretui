@@ -1,11 +1,8 @@
 //! What runs over a resolved plan's text alone, so that a worker can run
-//! it: the gate, the searches, the markets, and the example plans.
+//! it: the gate and the example plans.
 
 use retiretui_client::issues::issue_listing;
-use retiretui_client::replies::{HistoricalReply, MonteCarloReply};
-use retiretui_client::searches::run_refusal;
 use retiretui_client::setup::EXAMPLES;
-use retiretui_engine::market::{self, History, Progress};
 use retiretui_engine::plan::{Issue, Plan};
 use retiretui_engine::project::validate_plan;
 use serde::Serialize;
@@ -42,30 +39,6 @@ pub fn validate(text: &str) -> Result<Vec<Issue>, String> {
     Ok(validate_plan(&parse(text)?, tables()))
 }
 
-/// The plan through the random markets its settings draw.
-///
-/// # Errors
-///
-/// Where the plan does not pass the gate, or cannot be run.
-pub fn monte_carlo(text: &str) -> Result<MonteCarloReply, String> {
-    let plan = gated(text)?;
-    let found = market::monte_carlo(&plan, tables(), History::embedded(), &Progress::default())
-        .map_err(run_refusal)?;
-    Ok(MonteCarloReply::new(&plan, &found))
-}
-
-/// The plan from every historical start year.
-///
-/// # Errors
-///
-/// Where the plan does not pass the gate, or cannot be run.
-pub fn historical(text: &str) -> Result<HistoricalReply, String> {
-    let plan = gated(text)?;
-    let runs = market::historical(&plan, tables(), History::embedded(), &Progress::default())
-        .map_err(run_refusal)?;
-    Ok(HistoricalReply::new(&plan, &runs))
-}
-
 fn parse(text: &str) -> Result<Plan, String> {
     Plan::from_toml_str(text).map_err(|error| error.to_string())
 }
@@ -97,19 +70,10 @@ mod tests {
     }
 
     #[test]
-    fn the_searches_answer_over_an_example() {
-        let text = starter();
-        let historical = historical(text).expect("runs");
-        assert!(!historical.start_years.is_empty());
-        assert!((0.0..=1.0).contains(&historical.success_rate));
-        assert!(monte_carlo(text).expect("runs").runs > 0);
-    }
-
-    #[test]
     fn a_plan_the_gate_refuses_is_not_searched() {
         let mut plan = parse(starter()).expect("parses");
         plan.plan.inflation = 5.0;
         let text = plan.to_toml_string().expect("serializes");
-        assert!(historical(&text).is_err());
+        assert!(gated(&text).is_err());
     }
 }

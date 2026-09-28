@@ -67,9 +67,19 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Overview's Could do better card gives each Roth owner's best ladder and the
   household's best claims against the plan as it stands, each leading to its
   tool, a ladder's aimed at that owner's account; what it finds is what the
-  tools then show without searching again. Compare and the market tools are
-  named but not yet built. Light or dark follows the system, and navigation is a
-  bottom bar on a phone and a sidebar on a wider screen.
+  tools then show without searching again. The Monte Carlo and Historical tools
+  run the plan through a thousand random markets, or from every historical start
+  year worst first, and say how it fared in the colour of its zone - as the
+  Overview's figure is coloured - beside what the runs were made under, each a
+  link to the Market field it is edited at; the runs singled out are charted as
+  the spread of net worth under the highlighted run's line, net worth by year at
+  each percentile (Monte Carlo only), the share still funded, and what the runs
+  end with. The highlighted run opens in the Ledger, replayed through its market
+  and named by it - a random market's number, or the year retired into - kept in
+  the address through the year, the dollars and edits, with a link back to the
+  plan's own. Compare is named but not yet built. Light or dark follows the
+  system, and navigation is a bottom bar on a phone and a sidebar on a wider
+  screen.
 
 ### Changed
 

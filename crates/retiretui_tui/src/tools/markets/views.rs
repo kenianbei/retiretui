@@ -19,8 +19,8 @@ use plurimus::core::ratatui_core::style::Style;
 use plurimus::ui::ScrollArea;
 use plurimus::widgets::WidgetSystems;
 use plurimus::widgets::ratatui_widgets::barchart::{Bar, BarChart};
-use retiretui_engine::market::{BAND_PERCENTILES, Runs};
-use retiretui_engine::plan::Dollars;
+use retiretui_client::searches::markets;
+use retiretui_engine::market::Runs;
 
 use super::{MarketTool, count_text};
 use crate::chart::{Series, SeriesChart};
@@ -28,7 +28,6 @@ use crate::command::Outcome;
 use crate::edit::table_bundle;
 use crate::layout::{self, filling, placed};
 use crate::nav::Page;
-use crate::present::{compact_dollars, rate};
 use crate::tabulate;
 use crate::theme::Theme;
 use crate::tools::Tool;
@@ -75,10 +74,6 @@ const BY_YEAR_TITLE: &str = "By Year · today's dollars";
 const FUNDED_TITLE: &str = "Still Funded · share of runs";
 const FUNDED_SERIES: usize = 0;
 const PERCENT: f64 = 100.0;
-const SHORT: &str = "short";
-/// Where the ending buckets break, in today's dollars: under the first,
-/// between each two, and over the last.
-const ENDING_BREAKS: [Dollars; 4] = [1_000_000, 2_000_000, 4_000_000, 8_000_000];
 const GAP: u16 = 1;
 
 pub(super) fn install<R: MarketTool>(app: &mut App) {
@@ -191,23 +186,7 @@ fn refresh_views<R: MarketTool>(
 
 /// Net worth at each percentile, and the share still funded, year by year.
 fn fill_by_year(commands: &mut Commands, (table, scroll): (Entity, &mut ScrollArea), runs: &Runs) {
-    let mut header = vec!["Year".to_owned()];
-    header.extend(
-        BAND_PERCENTILES
-            .iter()
-            .map(|percentile| format!("{percentile}th")),
-    );
-    header.push("Funded".to_owned());
-    let rows: Vec<Vec<String>> = runs
-        .bands
-        .iter()
-        .map(|band| {
-            let mut cells = vec![band.year.to_string()];
-            cells.extend(band.net_worth.iter().map(|&worth| compact_dollars(worth)));
-            cells.push(rate(band.funded));
-            cells
-        })
-        .collect();
+    let (header, rows) = markets::by_year(runs);
     let columns = tabulate::gapped_columns((&header, &rows), GAP);
     commands.entity(table).insert(columns);
     tabulate::refill(commands, (table, scroll), (&header, &rows), &[0]);
@@ -233,24 +212,12 @@ fn still_funded(runs: &Runs, theme: &Theme) -> SeriesChart {
 
 /// How many runs end in each bucket, those that fell short first.
 fn endings_chart(runs: &Runs, theme: &Theme) -> BarChart<'static> {
-    let mut counts = vec![0_u64; ENDING_BREAKS.len() + 2];
-    for run in &runs.runs {
-        let at = if run.first_short.is_some() {
-            0
-        } else {
-            1 + ENDING_BREAKS
-                .iter()
-                .filter(|&&edge| run.ending >= edge)
-                .count()
-        };
-        counts[at] += 1;
-    }
-    let bars: Vec<Bar<'static>> = counts
-        .iter()
-        .enumerate()
-        .map(|(at, &count)| {
-            let bar = Bar::with_label(bucket_label(at), count).text_value(count.to_string());
-            if at == 0 {
+    let bars: Vec<Bar<'static>> = markets::endings(runs)
+        .into_iter()
+        .map(|ending| {
+            let bar =
+                Bar::with_label(ending.label, ending.count).text_value(ending.count.to_string());
+            if ending.is_short {
                 bar.style(theme.exceeded())
             } else {
                 bar.style(Style::new().fg(theme.series(FUNDED_SERIES)))
@@ -262,21 +229,4 @@ fn endings_chart(runs: &Runs, theme: &Theme) -> BarChart<'static> {
         .bar_width(1)
         .bar_gap(0)
         .label_style(theme.dimmed())
-}
-
-/// The words for bucket `at`: short, then each span between the breaks.
-fn bucket_label(at: usize) -> String {
-    match at {
-        0 => SHORT.to_owned(),
-        1 => format!("<{}", compact_dollars(ENDING_BREAKS[0])),
-        _ if at > ENDING_BREAKS.len() => format!(
-            "{}+",
-            compact_dollars(ENDING_BREAKS[ENDING_BREAKS.len() - 1])
-        ),
-        _ => format!(
-            "{}–{}",
-            compact_dollars(ENDING_BREAKS[at - 2]),
-            compact_dollars(ENDING_BREAKS[at - 1])
-        ),
-    }
 }

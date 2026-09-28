@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { basisOf, yearSearch } from "@/year/search";
+import { basisOf, ledgerSearch, yearSearch } from "@/year/search";
 
 describe("yearSearch", () => {
   it("keeps a whole year and the nominal basis", () => {
@@ -19,5 +19,20 @@ describe("yearSearch", () => {
   it("reads no basis as today's dollars", () => {
     expect(basisOf({})).toBe("today");
     expect(basisOf({ basis: "nominal" })).toBe("nominal");
+  });
+});
+
+describe("ledgerSearch", () => {
+  it("keeps the market a run went through beside the year", () => {
+    expect(ledgerSearch({ year: 2040, market: "trial-423" })).toEqual({
+      year: 2040,
+      market: "trial-423",
+    });
+    expect(ledgerSearch({ market: 1929 })).toEqual({ market: "1929" });
+  });
+
+  it("drops a market that is not text, or is none", () => {
+    expect(ledgerSearch({ market: ["1929"] })).toEqual({});
+    expect(ledgerSearch({ market: "" })).toEqual({});
   });
 });

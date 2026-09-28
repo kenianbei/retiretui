@@ -13,6 +13,8 @@ const {
   examples,
   historical,
   ladders,
+  marketWords,
+  monteCarlo,
   percentileLabel,
   setupSteps,
   statementPage,
@@ -76,7 +78,22 @@ assert.deepEqual(sortPressed(null, 1), { column: 1, is_descending: false });
 
 const plan = document.planText();
 assert.deepEqual(validate(plan), []);
-assert.ok(historical(plan).start_years.length > 0);
+const starts = historical(plan);
+assert.ok(starts.runs.length > 1);
+assert.equal(starts.by_year, null);
+const markets = monteCarlo(plan);
+assert.deepEqual(
+  markets.runs.map(({ key }) => key),
+  ["planned", "p90", "p75", "p50", "p25", "p10", "worst"],
+);
+assert.ok(marketWords().nothing_searched.length > 0);
+const worst = markets.runs.at(-1).market;
+const replayed = document.ledger(false, worst);
+assert.equal(replayed.rows.length, ledger.rows.length);
+assert.notDeepEqual(replayed.rows, ledger.rows);
+assert.ok(document.yearDetail(first.year, false, starts.runs[1].market));
+assert.match(document.marketSaid(worst), /^random market \d+$/);
+assert.throws(() => document.ledger(false, "p10"), /no market is called p10/);
 
 assert.throws(() => Document.open("/plans/gone.toml", read), /no file at/);
 

@@ -18,6 +18,12 @@ export function wholeOf(value: unknown): number | undefined {
     : undefined;
 }
 
+/** Text the address holds, a number-like value the router read as a number turned back into text. */
+export function textOf(value: unknown): string | undefined {
+  if (typeof value === "number") return String(value);
+  return typeof value === "string" ? value : undefined;
+}
+
 /** The Overview's and the Ledger's search params from whatever the address holds. */
 export function yearSearch(search: Record<string, unknown>): YearSearch {
   const year = wholeOf(search.year);
@@ -26,6 +32,21 @@ export function yearSearch(search: Record<string, unknown>): YearSearch {
     ...(year !== undefined && { year }),
     ...(search.basis === "nominal" && { basis: "nominal" }),
     ...(held !== "" && { held }),
+  };
+}
+
+/** What the Ledger holds in its address besides the year and the basis. */
+export interface LedgerSearch extends YearSearch {
+  /** The market the plan is shown in: `trial-423`, `1929`; its own where none. */
+  market?: string;
+}
+
+/** The Ledger's search params from whatever the address holds. */
+export function ledgerSearch(search: Record<string, unknown>): LedgerSearch {
+  const market = textOf(search.market);
+  return {
+    ...yearSearch(search),
+    ...(market !== undefined && market !== "" && { market }),
   };
 }
 

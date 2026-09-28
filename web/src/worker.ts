@@ -1,21 +1,24 @@
 import init, {
   claims,
+  historical,
   ladders,
   monteCarlo,
   type ClaimsOptions,
   type LaddersReply,
-  type MonteCarloReply,
+  type MarketRuns,
 } from "@wasm/retiretui_wasm.js";
 
 /** What a search is asked, by the kind of search it is. */
 export type Search =
   | { kind: "monteCarlo"; plan: string }
+  | { kind: "historical"; plan: string }
   | { kind: "ladders"; plan: string; constraints: string; destination: string }
   | { kind: "claims"; plan: string; held: string[] };
 
 /** What each kind of search replies. */
 export interface Replies {
-  monteCarlo: MonteCarloReply;
+  monteCarlo: MarketRuns;
+  historical: MarketRuns;
   ladders: LaddersReply;
   claims: ClaimsOptions;
 }
@@ -33,6 +36,8 @@ function answer(search: Search): Replies[Search["kind"]] {
   switch (search.kind) {
     case "monteCarlo":
       return monteCarlo(search.plan);
+    case "historical":
+      return historical(search.plan);
     case "ladders":
       return ladders(search.plan, search.constraints, search.destination);
     case "claims":

@@ -128,11 +128,14 @@ depends on UI.
   a partner only where the household files jointly, in the steps a page asks
   them in - or an example; a statement's earnings recorded on a person; the
   searches the tools and the overview share, the words their options and what
-  the overview finds better are said in, and what can be done for a person
-  beside the claim search, each edit said and refused in its own words; and the
-  shapes a search or a year's actions are replied in as data. Where there is a
-  machine beneath it, what that machine supplies: the user's own tax tables,
-  market history and directories.
+  the overview finds better are said in - the market runs' among them: how the
+  plan fared and in which zone, what the runs were made under and where each is
+  edited, how they end, and the market a run went through as an address keeps it
+  and as it is named - and what can be done for a person beside the claim
+  search, each edit said and refused in its own words; and the shapes a search
+  or a year's actions are replied in as data. Where there is a machine beneath
+  it, what that machine supplies: the user's own tax tables, market history and
+  directories.
 - `retiretui_tui` - the interactive planner described under `tui` below, as a
   library over the client and above whatever backend draws it, mapping each
   editing domain to its page. It runs each search beside the frames: on a thread
@@ -339,17 +342,21 @@ depends on UI.
   and field it is about, and from its last draft without any - kept beside the
   plan it was projected from, so what is said of it names what the projection
   holds - come its projection, summary, the year a view shows held within the
-  plan's years, the Ledger's years, a year's flows, income and what it paid, the
-  series the Overview charts, and a year's actions both as data and said as
-  every surface says them - with the client's names for the editing domains and
-  its count of issues, and, over a plan's text alone so that a worker can run
-  them, the gate, the conversion search into a given account and the claim
-  search with the people held out of it, the market runs and the example plans,
-  each answered in the shapes the command line's JSON and the MCP server reply
-  in - save the conversion and claim searches, whose every option comes in both
-  dollar bases, with the words the tools table them in and what the best does
-  better than the plan. Values cross as plain objects, typed by TypeScript
-  generated from the Rust types; the build fails where the two have drifted.
+  plan's years, the Ledger's years, a year's flows, income and what it paid -
+  these last in the plan's own market or one a run went through, replayed once
+  and kept until the draft changes - the series the Overview charts, and a
+  year's actions both as data and said as every surface says them - with the
+  client's names for the editing domains and its count of issues, and, over a
+  plan's text alone so that a worker can run them, the gate, the conversion
+  search into a given account and the claim search with the people held out of
+  it, the market runs through random markets or from every historical start, and
+  the example plans - each search in the words the tools table it in: the
+  conversion and claim searches' every option in both dollar bases, with what
+  the best does better than the plan, and the market runs' verdict in its zone,
+  each run singled out with its net worth year by year and the market it went
+  through, their spread, and what they were made under with where each is
+  edited. Values cross as plain objects, typed by TypeScript generated from the
+  Rust types; the build fails where the two have drifted.
 - `web/` - outside the cargo workspace, the web app, published at the Pages
   site's root with each release: a React page over `retiretui_wasm` for a phone
   or a desktop. Its plan files are kept in the page's own storage, under keys
@@ -385,7 +392,14 @@ depends on UI.
   estimated benefit, with what can be done for the highlighted one, over every
   claim age for the household ranked the same way and taken or written the same
   way, a held claim left as the plan states it; what the Overview found is what
-  each tool shows, a search answered once for both. What is applied is a step of
+  each tool shows, a search answered once for both. Its Monte Carlo and
+  Historical pages say how the plan fared through random markets or from every
+  historical start, in the colour of its zone, beside what the runs were made
+  under - each a link to the field it is edited at - over the runs singled out,
+  the highlighted one kept in the address, and four views of their spread; the
+  highlighted run opens in the Ledger, which shows the plan replayed through its
+  market, named by it and kept in the address through the year, the basis and
+  edits, until a link returns it to the plan's own. What is applied is a step of
   the draft's history, undone and redone from the header, which saves it or
   saves it under another name; edits not yet applied or saved are asked about
   before they are dropped, and a file another tab changes under unsaved edits is

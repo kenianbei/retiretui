@@ -1,8 +1,6 @@
 import {
-  bandPercentiles,
   compactMoney,
-  percentileLabel,
-  type Band,
+  type ChartMark,
   type ChartSeries,
 } from "@wasm/retiretui_wasm.js";
 import { useMemo, type ReactNode } from "react";
@@ -28,13 +26,17 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BASIS_LABEL, dollars, type Basis } from "@/overview/words";
-import { useMonteCarlo } from "@/searches";
+import {
+  bandAreas,
+  bandData,
+  bandsConfig,
+  PLOT_SIZE,
+  SERIES,
+} from "@/overview/bands";
+import { useMarkets } from "@/searches";
 
-/** The colour roles a chart's series take, in turn. */
-const SERIES = [1, 2, 3, 4, 5].map((at) => `var(--chart-${String(at)})`);
 const FOREGROUND = "var(--foreground)";
 const MUTED = "var(--muted-foreground)";
-const PLOT_SIZE = "aspect-[4/3] w-full sm:aspect-[5/2]";
 
 interface ChartsProps {
   series: ChartSeries;
@@ -68,22 +70,26 @@ function tooltip(config: ChartConfig) {
   );
 }
 
-interface PlotProps extends Omit<ChartsProps, "basis" | "plan"> {
+interface PlotProps {
   config: ChartConfig;
   data: object[];
   label: string;
+  /** The years marked, each salary's end. */
+  marks?: readonly ChartMark[];
+  year?: number;
+  onYear?: (year: number) => void;
   children: ReactNode;
 }
 
 /**
- * A plot of years across and dollars up, the year shown and each salary's
- * end marked, a click choosing the year under it.
+ * A plot of years across and dollars up, the year shown and `marks` marked,
+ * a click choosing the year under it where `onYear` takes one.
  */
-function Plot({
+export function Plot({
   config,
   data,
   label,
-  series,
+  marks = [],
   year,
   onYear,
   children,
@@ -97,9 +103,9 @@ function Plot({
         throttledEvents={[]}
         onClick={(state) => {
           const clicked = Number(state.activeLabel);
-          if (Number.isInteger(clicked)) onYear(clicked);
+          if (onYear && Number.isInteger(clicked)) onYear(clicked);
         }}
-        className="cursor-pointer"
+        className={onYear && "cursor-pointer"}
       >
         <CartesianGrid vertical={false} />
         <XAxis dataKey="year" tickLine={false} minTickGap={24} />
@@ -112,7 +118,7 @@ function Plot({
         {tooltip(config)}
         <ChartLegend content={<ChartLegendContent />} />
         {children}
-        {series.marks.map((mark) => (
+        {marks.map((mark) => (
           <ReferenceLine
             key={mark.label}
             x={mark.year}
@@ -171,6 +177,7 @@ function Balances(props: ChartsProps) {
   return (
     <Plot
       {...props}
+      marks={props.series.marks}
       config={config}
       data={data}
       label="Balances by tax treatment"
@@ -200,6 +207,7 @@ function NetWorth(props: ChartsProps) {
   return (
     <Plot
       {...props}
+      marks={props.series.marks}
       config={NET_WORTH}
       data={props.series.years}
       label="Net worth"
@@ -218,6 +226,7 @@ function IncomeAndTax(props: ChartsProps) {
   return (
     <Plot
       {...props}
+      marks={props.series.marks}
       config={INCOME_AND_TAX}
       data={props.series.years}
       label="Income against taxes"
@@ -226,29 +235,6 @@ function IncomeAndTax(props: ChartsProps) {
       {seriesLine("taxes")}
     </Plot>
   );
-}
-
-function bandsConfig(): ChartConfig {
-  const [low, lower, median, upper, high] = bandPercentiles();
-  const span = (from: number, to: number) =>
-    `${percentileLabel(from)} – ${percentileLabel(to)}`;
-  return {
-    outer: { label: span(low, high), color: SERIES[0] },
-    inner: { label: span(lower, upper), color: SERIES[0] },
-    median: { label: percentileLabel(median), color: SERIES[0] },
-  };
-}
-
-function bandData(bands: Band[]) {
-  return bands.map((band) => {
-    const [low, lower, median, upper, high] = band.net_worth;
-    return {
-      year: band.year,
-      outer: [low, high],
-      inner: [lower, upper],
-      median,
-    };
-  });
 }
 
 function MarketRuns(props: ChartsProps) {
@@ -263,7 +249,7 @@ function MarketRuns(props: ChartsProps) {
 }
 
 function Bands(props: ChartsProps & { plan: string }) {
-  const markets = useMonteCarlo(props.plan);
+  const markets = useMarkets("monteCarlo", props.plan, true);
   const config = useMemo(() => bandsConfig(), []);
   const data = useMemo(
     () => (markets.data ? bandData(markets.data.bands) : []),
@@ -276,30 +262,18 @@ function Bands(props: ChartsProps & { plan: string }) {
       </p>
     );
   }
-  if (!markets.data) return <Skeleton className={PLOT_SIZE} />;
+  if (!markets.data || markets.isPlaceholderData) {
+    return <Skeleton className={PLOT_SIZE} />;
+  }
   return (
     <Plot
       {...props}
+      marks={props.series.marks}
       config={config}
       data={data}
       label="Net worth through random markets"
     >
-      <Area
-        isAnimationActive={false}
-        dataKey="outer"
-        type="monotone"
-        fill="var(--color-outer)"
-        fillOpacity={0.15}
-        stroke="none"
-      />
-      <Area
-        isAnimationActive={false}
-        dataKey="inner"
-        type="monotone"
-        fill="var(--color-inner)"
-        fillOpacity={0.35}
-        stroke="none"
-      />
+      {bandAreas()}
       {seriesLine("median")}
     </Plot>
   );

@@ -8,16 +8,16 @@ use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Component, Entity, IntoScheduleConfigs, Query, Res};
 use plurimus::ui::ScrollArea;
 use plurimus::widgets::{ActiveDescendant, WidgetSystems};
-use retiretui_engine::plan::{Account, AssetClass, Item, Plan};
+use retiretui_client::searches::markets;
+use retiretui_engine::plan::Plan;
 
 use super::MarketTool;
 use crate::command::Outcome;
-use crate::edit::{Draft, table_bundle};
+use crate::edit::{Draft, page_of, table_bundle};
 use crate::hints::Hints;
 use crate::layout::{self, filling, placed};
 use crate::nav::{FocusStop, Page, Turn};
 use crate::pane::Pane;
-use crate::present::{money, rate};
 use crate::tabulate;
 use crate::tools::{EnterRuns, Tool, handle_enter};
 
@@ -56,62 +56,16 @@ pub(super) fn spawn_pane<R: MarketTool>(commands: &mut Commands, row: Entity, co
 }
 
 /// A row: what it says, and the page it is edited on.
-pub(crate) type Assumption = (&'static str, String, Page);
+type Row = (&'static str, String, Page);
 
-/// What success means under the plan's `[market]`.
-fn success(plan: &Plan) -> String {
-    plan.market().leave_at_least().map_or_else(
-        || "Never short".to_owned(),
-        |floor| format!("Leaves {}", money(floor)),
-    )
-}
-
-/// Each asset class's return and inflation's, as the plan assumes them.
-pub(super) fn assumed(plan: &Plan) -> Vec<Assumption> {
-    let market = plan.market();
-    let mut rows: Vec<Assumption> = [
-        ("Stocks", AssetClass::Stocks),
-        ("Bonds", AssetClass::Bonds),
-        ("Cash", AssetClass::Cash),
-    ]
-    .into_iter()
-    .map(|(label, class)| {
-        let spread = format!(
-            "{} ± {}",
-            rate(market.mean(class)),
-            rate(market.volatility(class))
-        );
-        (label, spread, Page::Market)
-    })
-    .collect();
-    let inflation = format!(
-        "{} ± {}",
-        rate(plan.plan.inflation),
-        rate(market.inflation_volatility())
-    );
-    rows.push(("Inflation", inflation, Page::Market));
-    rows
-}
-
-/// The accounts no mix is held in, which every market leaves alone.
-fn unmixed(plan: &Plan) -> Option<Assumption> {
-    let names: Vec<&str> = plan
-        .accounts
-        .iter()
-        .filter(|account| account.allocation.is_none())
-        .map(Account::display_name)
-        .collect();
-    (!names.is_empty()).then(|| ("No mix", names.join(", "), Page::Accounts))
-}
-
-fn rows<R: MarketTool>(plan: &Plan, found: Option<&R>) -> Vec<Assumption> {
+fn rows<R: MarketTool>(plan: &Plan, found: Option<&R>) -> Vec<Row> {
     let verdict = found.map_or_else(|| NOT_YET.to_owned(), R::verdict);
-    let mut rows = vec![
-        (R::VERDICT, verdict, Page::Market),
-        ("Success", success(plan), Page::Market),
-    ];
-    rows.extend(R::settings(plan));
-    rows.extend(unmixed(plan));
+    let mut rows = vec![(R::VERDICT, verdict, Page::Market)];
+    rows.extend(
+        markets::assumptions::<R>(plan)
+            .into_iter()
+            .map(|row| (row.label, row.value, page_of(row.domain))),
+    );
     rows
 }
 
