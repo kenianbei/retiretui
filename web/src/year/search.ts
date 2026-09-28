@@ -46,7 +46,7 @@ export function ledgerSearch(search: Record<string, unknown>): LedgerSearch {
   const market = textOf(search.market);
   return {
     ...yearSearch(search),
-    ...(market !== undefined && { market }),
+    ...(market !== undefined && market !== "" && { market }),
   };
 }
 

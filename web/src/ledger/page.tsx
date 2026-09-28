@@ -44,17 +44,17 @@ export function LedgerPage() {
   const shown = useYear();
   const { year, setYear } = shown;
   const replayed = useMemo(() => {
+    const document = reading.document;
     try {
-      return { ledger: reading.document?.ledger(isNominal, market) };
+      return {
+        ledger: document?.ledger(isNominal, market),
+        said: market === undefined ? "" : document?.marketSaid(market),
+      };
     } catch (thrown) {
       return { refusal: messageOf(thrown) };
     }
   }, [reading, isNominal, market]);
   const ledger = replayed.ledger;
-  const said = useMemo(
-    () => (market === undefined ? "" : reading.document?.marketSaid(market)),
-    [reading, market],
-  );
   const detail = useMemo(
     () =>
       ledger && year !== undefined
@@ -120,7 +120,7 @@ export function LedgerPage() {
       </div>
       {market !== undefined && (
         <p className="border-primary bg-card rounded-md border-l-4 px-3 py-2 text-sm first-letter:uppercase">
-          {said}: the plan as a market tool ran it. <BackToPlan />
+          {replayed.said}: the plan as a market tool ran it. <BackToPlan />
         </p>
       )}
       {issues.length > 0 && (
