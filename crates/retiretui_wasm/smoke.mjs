@@ -12,6 +12,7 @@ const {
   historical,
   percentileLabel,
   setupSteps,
+  statementPage,
   sortPressed,
   validate,
 } = wasm;
@@ -101,4 +102,5 @@ files.set("/plans/born.toml", made.text.replace(/birth = \S+/, "birth = 1975-06-
 const born = Document.open("/plans/born.toml", read);
 assert.match(born.importEarnings(0, statement), /recorded 3 year\(s\)/);
 assert.equal(born.canUndo, true);
+assert.equal(statementPage(), "people");
 console.log("smoke: ok");

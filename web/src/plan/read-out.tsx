@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { statementPage } from "@wasm/retiretui_wasm.js";
 import { Pencil, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -13,7 +14,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { ImportStatement } from "@/plan/import-statement";
 import { useSession } from "@/session";
+
+const STATEMENT_PAGE = statementPage();
 
 /** An item's every field it has a use for, in the form's words. */
 export function ReadOut({
@@ -50,6 +54,9 @@ export function ReadOut({
           </Link>
         </Button>
         {name && <DeleteItem slug={slug} index={index} name={name} />}
+        {slug === STATEMENT_PAGE && reading.document?.isReadOnly === false && (
+          <ImportStatement key={index} index={index} />
+        )}
       </div>
       <dl className="bg-card divide-y rounded-md border text-sm">
         {rows.map(([label, text]) => (

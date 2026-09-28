@@ -2,7 +2,7 @@
 //! statement's earnings recorded on a person of the open document.
 
 use retiretui_client::draft::Draft;
-use retiretui_client::forms::Form;
+use retiretui_client::forms::{DomainId, Form};
 use retiretui_client::setup::{self, FIELDS, STEPS, SetupAnswers, blank_plan};
 use retiretui_engine::plan::{Item, Plan};
 use serde::Serialize;
@@ -10,6 +10,7 @@ use toml::Table;
 use wasm_bindgen::prelude::{JsError, JsValue, wasm_bindgen};
 
 use crate::editor::Editor;
+use crate::vocabulary::slug_of;
 use crate::{JsDocument, refused, tables, to_js};
 
 static FORM: Form = Form::tool::<SetupAnswers>("New plan", FIELDS);
@@ -184,6 +185,13 @@ pub fn setup_steps() -> Result<JsValue, JsError> {
         keys: step.keys.to_vec(),
     });
     to_js(&steps.collect::<Vec<_>>())
+}
+
+/// The address of the page whose people a statement is recorded on.
+#[wasm_bindgen(js_name = statementPage)]
+#[must_use]
+pub fn statement_page() -> String {
+    slug_of(DomainId::People)
 }
 
 #[wasm_bindgen(js_class = Document)]

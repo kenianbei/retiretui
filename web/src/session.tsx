@@ -48,6 +48,11 @@ export interface Session extends Opened {
   place: (name: string, text: string) => void;
   /** Stores the editor's item, answering where it now sits; throws the refusal. */
   apply: (editor: Editor) => number | undefined;
+  /**
+   * Records a statement's earnings on the person at `index`, answering what
+   * was recorded; throws the refusal.
+   */
+  importEarnings: (index: number, xml: string) => string | undefined;
   /** Removes an item still called `name`; a refusal is reported. */
   remove: (slug: string, index: number, name: string) => void;
   undo: () => void;
@@ -202,6 +207,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         const index = document.apply(editor);
         changed();
         return index;
+      },
+      importEarnings: (index: number, xml: string) => {
+        if (!document) return undefined;
+        const said = document.importEarnings(index, xml);
+        changed();
+        return said;
       },
       remove: attempt(
         stepped((slug: string, index: number, name: string) => {
