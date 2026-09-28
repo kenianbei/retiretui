@@ -148,7 +148,7 @@ pub fn write_new(In(path): In<PathBuf>, world: &mut World) {
     let Some(plan) = world.resource_mut::<Composed>().plan.take() else {
         return;
     };
-    let draft = Draft::validated(plan, &world.resource::<Session>().tables);
+    let draft = Draft::validated(plan, &world.resource::<Session>().tables, false);
     let store = world.resource::<Session>().store.as_ref();
     if let Err(refusal) = edit::write_draft(store, &draft, &path) {
         journal::warn(refusal);

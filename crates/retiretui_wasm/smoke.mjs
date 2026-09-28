@@ -20,6 +20,12 @@ assert.equal(document.actions(first.year).year, first.year);
 assert.equal(document.thisYear(first.year - 1), first.year);
 assert.deepEqual(document.said(first.year).ages, [["Sam", 30]]);
 
+const accounts = document.table("accounts", 0, true);
+assert.ok(accounts.rows.length > 0);
+assert.equal(accounts.columns.length, accounts.rows[0].cells.length);
+assert.ok(document.readOut("settings", 0).length > 0);
+assert.throws(() => document.table("settings", null, false), /not a table/);
+
 const plan = document.planText();
 assert.deepEqual(validate(plan), []);
 assert.ok(historical(plan).start_years.length > 0);

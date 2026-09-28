@@ -17,11 +17,17 @@ pub struct Sort {
 }
 
 impl Sort {
-    const fn ascending(column: usize) -> Self {
+    /// The order by `column`, down where `is_descending`.
+    #[must_use]
+    pub const fn new(column: usize, is_descending: bool) -> Self {
         Self {
             column,
-            is_descending: false,
+            is_descending,
         }
+    }
+
+    const fn ascending(column: usize) -> Self {
+        Self::new(column, false)
     }
 
     /// What a press on `column`'s header makes of the order held: up, then

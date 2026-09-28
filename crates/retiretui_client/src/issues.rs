@@ -95,6 +95,13 @@ pub fn issue_place(path: &str) -> Option<(DomainId, Option<usize>)> {
     Some((located.form.domain?, located.index))
 }
 
+/// The key of the field an issue at `path` is about, where a form has one
+/// for it.
+#[must_use]
+pub fn issue_field(path: &str) -> Option<&'static str> {
+    locate(path)?.field.map(|spec| spec.key)
+}
+
 /// What separates an issue's place words: domain, item, field.
 pub(crate) const PLACE_SEPARATOR: &str = " \u{203a} ";
 

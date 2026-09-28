@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use retiretui_client::actions::{collect_warnings, sentence};
 use retiretui_client::draft::Draft;
 use retiretui_client::files::resolve_with_files;
-use retiretui_client::issues::{issue_listing, issue_words};
+use retiretui_client::issues::{issue_field, issue_listing, issue_place, issue_words};
 use retiretui_client::replies::{ActionsReply, year_row};
 use retiretui_client::session::{Today, YearCursor, span};
 use retiretui_client::store::normal;
@@ -16,6 +16,7 @@ use retiretui_engine::project::{Projection, Summary, YearRow, project};
 use serde::Serialize;
 
 use crate::tables;
+use crate::vocabulary::slug_of;
 
 /// A resolved plan and what the gate made of it.
 #[derive(Debug)]
@@ -36,6 +37,29 @@ pub struct PlacedIssue {
     /// The domain, the item by its display name and the field's label,
     /// then the message; the engine's own words where no domain holds it.
     pub words: String,
+    /// Where a form edits what it is about; `null` where none does.
+    pub place: Option<Place>,
+}
+
+/// Where in the plan's pages an issue is.
+#[derive(Serialize, PartialEq, Debug)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+pub struct Place {
+    /// The domain's page address.
+    pub domain: String,
+    /// The item, where the domain holds many.
+    pub index: Option<usize>,
+    /// The key of the field, where a form has one for it.
+    pub field: Option<&'static str>,
+}
+
+fn place_of(path: &str) -> Option<Place> {
+    let (domain, index) = issue_place(path)?;
+    Some(Place {
+        domain: slug_of(domain),
+        index,
+        field: issue_field(path),
+    })
 }
 
 /// A year as every surface says it: what to do, what to watch, and how old
@@ -67,7 +91,7 @@ impl Document {
         let mut files = Vec::new();
         let canonical = |path: &Path| Ok(normal(path));
         let plan = resolve_with_files(normal(Path::new(path)), read, &canonical, &mut files)?;
-        let draft = Draft::validated(plan, tables());
+        let draft = Draft::validated(plan, tables(), files.len() > 1);
         let is_valid = draft.issues().is_empty();
         let projection = is_valid.then(|| project(&draft.plan, tables()));
         Ok(Self {
@@ -79,8 +103,14 @@ impl Document {
 
     /// Whether it is a scenario, which cannot be written back as it stands.
     #[must_use]
-    pub fn is_read_only(&self) -> bool {
-        self.files.len() > 1
+    pub const fn is_read_only(&self) -> bool {
+        self.draft.is_read_only()
+    }
+
+    /// The draft every edit lands in.
+    #[must_use]
+    pub const fn draft(&self) -> &Draft {
+        &self.draft
     }
 
     /// Every file the resolution read, the document's own first.
@@ -98,6 +128,7 @@ impl Document {
                 path: issue.path.clone(),
                 message: issue.message.clone(),
                 words: issue_words(issue, &self.draft),
+                place: place_of(&issue.path),
             })
             .collect()
     }
@@ -256,6 +287,9 @@ mod tests {
         let issue = issues.first().expect("an issue");
         assert!(issue.words.starts_with("Settings"), "{}", issue.words);
         assert!(issue.words.ends_with(&issue.message));
+        let place = issue.place.as_ref().expect("a place");
+        assert_eq!((place.domain.as_str(), place.index), ("settings", None));
+        assert_eq!(place.field, Some("inflation"));
         assert!(document.projection().is_none());
         assert_eq!(document.this_year(2030), None);
         assert!(document.summary(false).is_none());

@@ -67,14 +67,14 @@ impl Draft {
         }
     }
 
-    /// `plan` as a draft of its own, its issues found against `tables`, for
-    /// a write with no session behind it.
+    /// `plan` as a draft of its own, its issues found against `tables`;
+    /// read-only where it was resolved from a scenario.
     #[must_use]
-    pub fn validated(plan: Plan, tables: &TaxTables) -> Self {
+    pub fn validated(plan: Plan, tables: &TaxTables, is_read_only: bool) -> Self {
         let issues = validate_plan(&plan, tables);
         Self {
             issues,
-            ..Self::new(plan, false)
+            ..Self::new(plan, is_read_only)
         }
     }
 
@@ -142,6 +142,18 @@ impl Draft {
             self.undone.pop_front();
         }
         self.redone.clear();
+    }
+
+    /// Whether there is an edit to step back over.
+    #[must_use]
+    pub fn can_undo(&self) -> bool {
+        !self.undone.is_empty()
+    }
+
+    /// Whether there is an undone edit to step forward over.
+    #[must_use]
+    pub const fn can_redo(&self) -> bool {
+        !self.redone.is_empty()
     }
 
     /// Steps back over the last recorded edit, answering whether there was

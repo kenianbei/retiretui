@@ -3,6 +3,7 @@
 //! a plan's text. Values cross as plain objects, typed by `bindings/`.
 
 mod document;
+mod domain;
 mod searches;
 mod vocabulary;
 
@@ -42,8 +43,9 @@ fn reply<T: Serialize>(answer: Result<T, String>) -> Result<JsValue, JsError> {
 
 #[wasm_bindgen(typescript_custom_section)]
 const TYPES: &str = r#"import type {
-  ActionsReply, ClaimsReply, Domain, Example, HistoricalReply, Issue,
-  MonteCarloReply, PlacedIssue, Projection, SaidYear, Summary, SweepReply,
+  ActionsReply, ClaimsReply, Domain, DomainTable, Example, HistoricalReply,
+  Issue, MonteCarloReply, PlacedIssue, Projection, SaidYear, Summary,
+  SweepReply,
 } from "../bindings/index";
 export type * from "../bindings/index";"#;
 
@@ -258,6 +260,7 @@ mod bindings {
     use ts_rs::{Config, TS};
 
     use crate::document::{PlacedIssue, SaidYear};
+    use crate::domain::DomainTable;
     use crate::searches::Example;
     use crate::vocabulary::Domain;
 
@@ -282,6 +285,7 @@ mod bindings {
             HistoricalReply::export_all,
             Example::export_all,
             Domain::export_all,
+            DomainTable::export_all,
         ];
         for export in exports {
             export(&config).expect("exports");
