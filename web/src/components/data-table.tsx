@@ -42,6 +42,8 @@ export function DataTable<Row extends RowData>({
   });
   const pinned = (at: number) =>
     isFirstPinned && at === 0 && "bg-inherit sticky left-0 z-10";
+  const pinnedHeader = (at: number) =>
+    isFirstPinned && at === 0 && "left-0 z-30";
   const aligned = (isNumeric: boolean | undefined) =>
     isNumeric ? "text-right tabular-nums" : "text-left";
   const press = (row: Row) => (event: KeyboardEvent) => {
@@ -50,20 +52,20 @@ export function DataTable<Row extends RowData>({
     onSelect?.(row);
   };
   return (
-    <div className={cn("bg-card overflow-x-auto rounded-md border", className)}>
+    <div className={cn("bg-card overflow-auto rounded-md border", className)}>
       <table aria-label={label} className="w-full text-sm">
-        <thead className="bg-card border-b">
+        <thead className="border-b">
           {table.getHeaderGroups().map((group) => (
-            <tr key={group.id}>
+            <tr key={group.id} className="bg-card">
               {group.headers.map((header, at) => (
                 <th
                   key={header.id}
                   scope="col"
                   aria-sort={header.column.columnDef.meta?.sorted}
                   className={cn(
-                    "px-3 py-2 font-medium whitespace-nowrap",
+                    "bg-card sticky top-0 z-20 px-3 py-2 font-medium whitespace-nowrap",
                     aligned(header.column.columnDef.meta?.isNumeric),
-                    pinned(at),
+                    pinnedHeader(at),
                   )}
                 >
                   {flexRender(

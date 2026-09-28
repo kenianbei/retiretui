@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-router";
 
 import { DOMAINS, TOOLS, pageOf } from "@/nav";
+import { LedgerPage } from "@/ledger/page";
 import { Overview } from "@/overview/overview";
 import { DomainPage } from "@/plan/page";
 import { planSearch } from "@/plan/search";
@@ -36,12 +37,7 @@ const ledger = createRoute({
   getParentRoute: () => root,
   path: "/ledger",
   validateSearch: yearSearch,
-  component: () => (
-    <Placeholder
-      title="Ledger"
-      holds="The plan year by year: every account's flows, income and tax."
-    />
-  ),
+  component: LedgerPage,
 });
 
 const compare = createRoute({
