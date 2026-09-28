@@ -231,7 +231,7 @@ pub(crate) const INFLATION: f64 = 0.025;
 /// The smallest plan that validates: one person and the cash account
 /// surplus lands in, starting `start_year`.
 #[must_use]
-pub(crate) fn blank_plan(start_year: i16) -> String {
+pub fn blank_plan(start_year: i16) -> String {
     format!(
         r#"schema = 1
 

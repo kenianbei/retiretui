@@ -11,6 +11,7 @@ use retiretui_client::forms::Form;
 use retiretui_client::issues::{issue_field, issue_listing, issue_place, issue_words};
 use retiretui_client::replies::{ActionsReply, year_row};
 use retiretui_client::session::{Projected, Today, YearCursor, span};
+use retiretui_client::statement::{self, recorded};
 use retiretui_client::store::normal;
 use retiretui_engine::plan::Item;
 use retiretui_engine::project::{Projection, Summary, YearRow};
@@ -175,6 +176,29 @@ impl Document {
         (list.remove)(&mut self.draft.plan, index);
         self.commit();
         Ok(())
+    }
+
+    /// Records the statement `xml` on the person at `index` as one step of
+    /// history, answering what was recorded.
+    ///
+    /// # Errors
+    ///
+    /// Where the draft is read-only, no person is at `index`, or the
+    /// statement does not parse or is not theirs.
+    pub fn import_earnings(&mut self, index: usize, xml: &str) -> Result<String, String> {
+        if let Some(reason) = self.draft.refuse_if_read_only() {
+            return Err(reason);
+        }
+        let people = &self.draft.plan.household.people;
+        let person = people
+            .get(index)
+            .ok_or("no one is at that place")?
+            .id
+            .clone();
+        let statement = statement::record(&mut self.draft.plan, &person, xml)?;
+        let said = recorded(self.draft.plan.person_name(&person), &statement);
+        self.commit();
+        Ok(said)
     }
 
     fn commit(&mut self) {
