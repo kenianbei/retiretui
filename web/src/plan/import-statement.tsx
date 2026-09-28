@@ -1,57 +1,51 @@
 import { FileUp } from "lucide-react";
-import { useRef, useState, type ChangeEvent } from "react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { messageOf } from "@/lib/utils";
+import { useFilePicker } from "@/files/picker";
+import { cn, messageOf } from "@/lib/utils";
 import { useSession } from "@/session";
 
-/** The person at `index`'s earnings recorded from an ssa.gov statement. */
-export function ImportStatement({ index }: { index: number }) {
+/** The earnings of the person at `index`, called `name`, from an ssa.gov statement. */
+export function ImportStatement({
+  index,
+  name,
+}: {
+  index: number;
+  name: string;
+}) {
   const session = useSession();
-  const picker = useRef<HTMLInputElement>(null);
   const [outcome, setOutcome] = useState<{
     said: string;
     isRefused: boolean;
   } | null>(null);
-
-  const record = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-    try {
-      const said = session.importEarnings(index, await file.text());
-      if (said !== undefined) setOutcome({ said, isRefused: false });
-    } catch (thrown) {
-      setOutcome({ said: messageOf(thrown), isRefused: true });
-    }
-  };
+  const picker = useFilePicker(
+    ".xml",
+    "Social Security statement",
+    async (file) => {
+      try {
+        const said = session.importEarnings(index, name, await file.text());
+        if (said !== undefined) setOutcome({ said, isRefused: false });
+      } catch (thrown) {
+        setOutcome({ said: messageOf(thrown), isRefused: true });
+      }
+    },
+  );
 
   return (
     <>
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={() => picker.current?.click()}
-      >
+      <Button size="sm" variant="outline" onClick={picker.open}>
         <FileUp aria-hidden />
         Import statement
       </Button>
-      <input
-        ref={picker}
-        type="file"
-        accept=".xml"
-        hidden
-        aria-label="Social Security statement"
-        onChange={(event) => void record(event)}
-      />
+      {picker.element}
       {outcome && (
         <p
           role={outcome.isRefused ? "alert" : "status"}
-          className={
-            outcome.isRefused
-              ? "text-destructive w-full text-sm"
-              : "text-muted-foreground w-full text-sm"
-          }
+          className={cn(
+            "w-full text-sm",
+            outcome.isRefused ? "text-destructive" : "text-muted-foreground",
+          )}
         >
           {outcome.said}
         </p>

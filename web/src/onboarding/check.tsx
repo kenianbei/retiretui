@@ -1,30 +1,24 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import type { FieldView } from "@wasm/retiretui_wasm.js";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useFileActions } from "@/files/actions";
 import { INPUT, messageOf } from "@/lib/utils";
 import type { Answering } from "@/onboarding/page";
-import { keepAnswers } from "@/onboarding/steps";
-import { useSession } from "@/session";
-import { pathOf, planName } from "@/workspace";
+import { planName } from "@/workspace";
 
-/** What a field holds, as its control shows it: an empty pick its first offer. */
+/** What a field holds, as its control shows it. */
 function answerOf(view: FieldView): string {
-  const offer =
-    view.offers.find((each) => each.value === view.text) ??
-    (view.text ? undefined : view.offers[0]);
+  const offer = view.offers.find((each) => each.value === view.text);
   return offer?.label ?? (view.text || view.blank);
 }
 
 /** Every answer read back, each to be changed, then the plan named and made. */
 export function CheckAnswers({ answering }: { answering: Answering }) {
-  const { answers, steps, views, order } = answering;
-  const session = useSession();
+  const { answers, asked, views } = answering;
   const actions = useFileActions();
-  const navigate = useNavigate();
   const made = useMemo(() => {
     try {
       return { plan: answers.create(), problem: null };
@@ -33,23 +27,7 @@ export function CheckAnswers({ answering }: { answering: Answering }) {
     }
   }, [answers]);
   const [name, setName] = useState(made.plan?.name ?? "");
-  /** The file Create writes, and the document open when it was pressed. */
-  const [placing, setPlacing] = useState<{
-    path: string;
-    from: typeof session.document;
-  } | null>(null);
 
-  useEffect(() => {
-    const isOpened =
-      placing !== null &&
-      session.path === placing.path &&
-      session.document !== placing.from;
-    if (!isOpened) return;
-    keepAnswers(sessionStorage, null);
-    void navigate({ to: "/overview" });
-  }, [placing, session.path, session.document, navigate]);
-
-  const asked = steps.filter((step) => order.includes(step.slug));
   return (
     <section className="max-w-prose space-y-8">
       <h1 className="text-2xl font-semibold tracking-tight">
@@ -72,7 +50,7 @@ export function CheckAnswers({ answering }: { answering: Answering }) {
                     <Link
                       to="/new/$step"
                       params={{ step: step.slug }}
-                      search={{ field: view.key, isChanging: true }}
+                      search={{ field: view.key }}
                       className="underline underline-offset-4"
                     >
                       Change<span className="sr-only"> {view.label}</span>
@@ -93,9 +71,7 @@ export function CheckAnswers({ answering }: { answering: Answering }) {
           onSubmit={(event) => {
             event.preventDefault();
             if (!name.trim()) return;
-            const file = planName(name);
-            setPlacing({ path: pathOf(file), from: session.document });
-            actions.add(file, made.plan.text);
+            actions.add(planName(name), made.plan.text, answering.leave);
           }}
         >
           <div className="grid gap-1.5">
@@ -114,7 +90,7 @@ export function CheckAnswers({ answering }: { answering: Answering }) {
           </div>
           <div className="flex flex-wrap gap-2">
             <Button type="submit">Create plan</Button>
-            <Button type="button" variant="ghost" onClick={answering.cancel}>
+            <Button type="button" variant="ghost" onClick={answering.leave}>
               Cancel
             </Button>
           </div>

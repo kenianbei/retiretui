@@ -6,7 +6,7 @@ import {
   keepAnswers,
   keptAnswers,
   newPlanSearch,
-  stepsShown,
+  stepsAsked,
 } from "@/onboarding/steps";
 
 const STEPS = [
@@ -17,22 +17,25 @@ const STEPS = [
 
 describe("the steps", () => {
   it("skip a step with nothing on show and end at the check", () => {
-    const order = stepsShown(STEPS, new Set(["filing", "name"]));
-    expect(order).toEqual(["household", "you", CHECK]);
-    expect(around(order, "you")).toEqual({ before: "household", after: CHECK });
-    expect(around(order, "household").before).toBeUndefined();
+    const asked = stepsAsked(STEPS, new Set(["filing", "name"]));
+    expect(asked.map((step) => step.slug)).toEqual(["household", "you"]);
+    expect(around(asked, "you")).toMatchObject({
+      isAsked: true,
+      place: 2,
+      count: 3,
+      before: "household",
+      after: CHECK,
+    });
+    expect(around(asked, "household").before).toBeUndefined();
+    expect(around(asked, CHECK).after).toBeUndefined();
+    expect(around(asked, "partner").isAsked).toBe(false);
   });
 
-  it("send a step no longer asked on to the first", () => {
-    const order = stepsShown(STEPS, new Set(["filing"]));
-    expect(around(order, "partner")).toEqual({ after: "household" });
-  });
-
-  it("read only what they hold from the address", () => {
-    expect(
-      newPlanSearch({ field: "name", isChanging: true, other: 1 }),
-    ).toEqual({ field: "name", isChanging: true });
-    expect(newPlanSearch({ isChanging: "yes" })).toEqual({});
+  it("read only a field from the address", () => {
+    expect(newPlanSearch({ field: "name", other: 1 })).toEqual({
+      field: "name",
+    });
+    expect(newPlanSearch({ field: 3 })).toEqual({});
   });
 });
 

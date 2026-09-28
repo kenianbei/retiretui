@@ -9,7 +9,7 @@ import {
   NewPlan,
   setupSteps,
   type FieldView,
-  type SetupStep,
+  type Step as SetupStep,
 } from "@wasm/retiretui_wasm.js";
 import { useEffect, useMemo, useState } from "react";
 
@@ -20,10 +20,10 @@ import {
   around,
   keepAnswers,
   keptAnswers,
-  stepsShown,
+  stepsAsked,
 } from "@/onboarding/steps";
 import { Field } from "@/plan/fields";
-import { fieldId } from "@/plan/search";
+import { fieldId, landOnField } from "@/plan/search";
 
 /** The answers kept this tab, or none where they no longer read. */
 function resume(): NewPlan {
@@ -35,16 +35,15 @@ function resume(): NewPlan {
   }
 }
 
-/** What every step shares: the answers, what is on show, and the order. */
+/** What every step shares: the answers, what is on show, and the steps asked. */
 export interface Answering {
   answers: NewPlan;
-  steps: SetupStep[];
+  asked: SetupStep[];
   views: FieldView[];
-  order: string[];
   changed: () => void;
   focus: (key: string | null) => void;
-  /** Forgets the answers and leaves. */
-  cancel: () => void;
+  /** Forgets the answers and goes to the Overview. */
+  leave: () => void;
 }
 
 /** The new-plan questions a step at a time, then read back to be made. */
@@ -60,50 +59,47 @@ export function NewPlanPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the answers change in place; the count says when
     [answers, focused, changes],
   );
-  const order = stepsShown(steps, new Set(views.map((view) => view.key)));
+  const asked = stepsAsked(steps, new Set(views.map((view) => view.key)));
   const answering: Answering = {
     answers,
-    steps,
+    asked,
     views,
-    order,
     changed: () => {
       keepAnswers(sessionStorage, answers.answers);
       setChanges((count) => count + 1);
     },
     focus: setFocused,
-    cancel: () => {
+    leave: () => {
       keepAnswers(sessionStorage, null);
       void navigate({ to: "/overview" });
     },
   };
 
-  if (!order.includes(step)) {
-    const { after } = around(order, step);
-    return <Navigate to="/new/$step" params={{ step: after ?? CHECK }} />;
-  }
   if (step === CHECK) return <CheckAnswers answering={answering} />;
-  const shown = steps.find((each) => each.slug === step);
-  return shown ? <Step step={shown} answering={answering} /> : null;
+  const shown = asked.find((each) => each.slug === step);
+  if (!shown) {
+    return (
+      <Navigate to="/new/$step" params={{ step: asked[0]?.slug ?? CHECK }} />
+    );
+  }
+  return <Step step={shown} answering={answering} />;
 }
 
 function Step({ step, answering }: { step: SetupStep; answering: Answering }) {
-  const { field, isChanging } = useSearch({ from: "/new/$step" });
+  const { field } = useSearch({ from: "/new/$step" });
   const navigate = useNavigate();
-  const { answers, views, order } = answering;
-  const { before, after } = around(order, step.slug);
+  const { answers, asked, views } = answering;
+  const { place, count, before, after } = around(asked, step.slug);
 
   useEffect(() => {
-    if (field === undefined) return;
-    const shown = document.getElementById(fieldId({ key: field, place: null }));
-    shown?.scrollIntoView({ block: "center" });
-    shown?.focus();
+    if (field !== undefined) landOnField(document, field);
   }, [field]);
 
   return (
     <section className="max-w-prose space-y-6">
       <div className="space-y-1">
         <p className="text-muted-foreground text-sm">
-          New plan · step {order.indexOf(step.slug) + 1} of {order.length}
+          New plan · step {place} of {count}
         </p>
         <h1 className="text-2xl font-semibold tracking-tight">{step.title}</h1>
       </div>
@@ -111,10 +107,8 @@ function Step({ step, answering }: { step: SetupStep; answering: Answering }) {
         className="space-y-5"
         onSubmit={(event) => {
           event.preventDefault();
-          void navigate({
-            to: "/new/$step",
-            params: { step: isChanging ? CHECK : (after ?? CHECK) },
-          });
+          const next = field === undefined ? after : CHECK;
+          void navigate({ to: "/new/$step", params: { step: next ?? CHECK } });
         }}
       >
         {views
@@ -137,7 +131,7 @@ function Step({ step, answering }: { step: SetupStep; answering: Answering }) {
               </Link>
             </Button>
           )}
-          <Button type="button" variant="ghost" onClick={answering.cancel}>
+          <Button type="button" variant="ghost" onClick={answering.leave}>
             Cancel
           </Button>
         </div>

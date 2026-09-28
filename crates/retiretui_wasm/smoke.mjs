@@ -97,10 +97,10 @@ const statement = readFileSync(
   new URL("../retiretui_engine/tests/fixtures/statement.xml", import.meta.url),
   "utf8",
 );
-assert.throws(() => document.importEarnings(0, statement), /was born/);
+assert.throws(() => document.importEarnings(0, "Sam", statement), /was born/);
 files.set("/plans/born.toml", made.text.replace(/birth = \S+/, "birth = 1975-06-14"));
 const born = Document.open("/plans/born.toml", read);
-assert.match(born.importEarnings(0, statement), /recorded 3 year\(s\)/);
+assert.match(born.importEarnings(0, "Jordan", statement), /recorded 3 year\(s\)/);
 assert.equal(born.canUndo, true);
 assert.equal(statementPage(), "people");
 console.log("smoke: ok");

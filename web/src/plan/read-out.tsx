@@ -54,9 +54,11 @@ export function ReadOut({
           </Link>
         </Button>
         {name && <DeleteItem slug={slug} index={index} name={name} />}
-        {slug === STATEMENT_PAGE && reading.document?.isReadOnly === false && (
-          <ImportStatement key={index} index={index} />
-        )}
+        {name &&
+          slug === STATEMENT_PAGE &&
+          reading.document?.isReadOnly === false && (
+            <ImportStatement key={index} index={index} name={name} />
+          )}
       </div>
       <dl className="bg-card divide-y rounded-md border text-sm">
         {rows.map(([label, text]) => (

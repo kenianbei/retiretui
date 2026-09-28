@@ -71,6 +71,7 @@ const plan = createRoute({
 const newPlan = createRoute({
   getParentRoute: () => root,
   path: "/new/$step",
+  staticData: { isWithoutDocument: true },
   validateSearch: newPlanSearch,
   component: NewPlanPage,
 });
@@ -91,5 +92,9 @@ export const router = createRouter({
 declare module "@tanstack/react-router" {
   interface Register {
     router: typeof router;
+  }
+  interface StaticDataRouteOption {
+    /** A page shown whether or not a document is open. */
+    isWithoutDocument?: boolean;
   }
 }

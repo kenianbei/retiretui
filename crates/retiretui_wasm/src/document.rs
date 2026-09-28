@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use retiretui_client::actions::{collect_warnings, sentence};
 use retiretui_client::draft::Draft;
 use retiretui_client::files::resolve_with_files;
-use retiretui_client::forms::Form;
+use retiretui_client::forms::{DomainId, Form, ListOps};
 use retiretui_client::issues::{issue_field, issue_listing, issue_place, issue_words};
 use retiretui_client::replies::{ActionsReply, year_row};
 use retiretui_client::session::{Projected, Today, YearCursor, span};
@@ -20,7 +20,7 @@ use serde::Serialize;
 use crate::domain::{list_of, name_at};
 use crate::editor::Editor;
 use crate::tables;
-use crate::vocabulary::slug_of;
+use crate::vocabulary::{form_at, slug_of};
 
 /// A scenario holds only its changes to a base; the plan resolved from it
 /// written in its place would lose which were its own.
@@ -169,32 +169,41 @@ impl Document {
         if let Some(reason) = self.draft.refuse_if_read_only() {
             return Err(reason);
         }
-        let list = list_of(form)?;
-        if name_at(&self.draft, form, list, index).as_deref() != Some(name) {
-            return Err(format!("{name} is no longer where it was in the plan"));
-        }
+        let list = self.still_at(form, index, name)?;
         (list.remove)(&mut self.draft.plan, index);
         self.commit();
         Ok(())
     }
 
-    /// Records the statement `xml` on the person at `index` as one step of
-    /// history, answering what was recorded.
+    /// The list `form` edits, where item `index` of it is still the one
+    /// called `name`.
+    fn still_at(&self, form: &Form, index: usize, name: &str) -> Result<ListOps, String> {
+        let list = list_of(form)?;
+        if name_at(&self.draft, form, list, index).as_deref() != Some(name) {
+            return Err(format!("{name} is no longer where it was in the plan"));
+        }
+        Ok(list)
+    }
+
+    /// Records the statement `xml` on the person at `index`, where they are
+    /// still the one called `name`, as one step of history, answering what
+    /// was recorded.
     ///
     /// # Errors
     ///
-    /// Where the draft is read-only, no person is at `index`, or the
-    /// statement does not parse or is not theirs.
-    pub fn import_earnings(&mut self, index: usize, xml: &str) -> Result<String, String> {
+    /// Where the draft is read-only, the person there is no longer them, or
+    /// the statement does not parse or is not theirs.
+    pub fn import_earnings(
+        &mut self,
+        index: usize,
+        name: &str,
+        xml: &str,
+    ) -> Result<String, String> {
         if let Some(reason) = self.draft.refuse_if_read_only() {
             return Err(reason);
         }
-        let people = &self.draft.plan.household.people;
-        let person = people
-            .get(index)
-            .ok_or("no one is at that place")?
-            .id
-            .clone();
+        self.still_at(form_at(&slug_of(DomainId::People))?, index, name)?;
+        let person = self.draft.plan.household.people[index].id.clone();
         let statement = statement::record(&mut self.draft.plan, &person, xml)?;
         let said = recorded(self.draft.plan.person_name(&person), &statement);
         self.commit();

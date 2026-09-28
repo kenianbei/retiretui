@@ -1,4 +1,4 @@
-import { Link, Outlet, useLocation } from "@tanstack/react-router";
+import { Link, Outlet, useLocation, useMatches } from "@tanstack/react-router";
 
 import type { ReactNode } from "react";
 
@@ -171,8 +171,9 @@ function GroupPages() {
 
 export function Shell() {
   const { document } = useSession();
-  const isNewPlan = useLocation({
-    select: (location) => location.pathname.startsWith("/new/"),
+  const isWithoutDocument = useMatches({
+    select: (matches) =>
+      matches.some((match) => match.staticData.isWithoutDocument === true),
   });
   return (
     <FileActionsProvider>
@@ -188,7 +189,7 @@ export function Shell() {
           </header>
           <main className="flex-1 px-4 py-6 md:px-8">
             <DraftNotices />
-            {isNewPlan ? (
+            {isWithoutDocument ? (
               <Outlet />
             ) : document ? (
               <>

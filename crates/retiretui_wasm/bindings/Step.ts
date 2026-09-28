@@ -3,7 +3,7 @@
 /**
  * One step of the new-plan questions.
  */
-export type SetupStep = { 
+export type Step = { 
 /**
  * How the step is addressed.
  */

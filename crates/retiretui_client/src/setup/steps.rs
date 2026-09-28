@@ -1,7 +1,10 @@
 //! The new-plan questions in the steps a page asks them in.
 
+use serde::Serialize;
+
 /// One step of the new-plan questions.
-#[derive(Debug)]
+#[derive(Serialize, Debug)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct Step {
     /// How the step is addressed.
     pub slug: &'static str,

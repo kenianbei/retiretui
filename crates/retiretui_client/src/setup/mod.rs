@@ -205,6 +205,17 @@ impl ToolAnswers for SetupAnswers {
     const SLOT: &'static str = "new-plan";
 }
 
+/// The answers a form starts from: the filing status and life stage that
+/// blank ones make a plan with, stated so that they read as what they are.
+#[must_use]
+pub fn starting_answers() -> Table {
+    let blank = SetupAnswers::default();
+    let mut answers = Table::new();
+    answers.insert("filing".to_owned(), blank.filing().as_str().into());
+    answers.insert("stage".to_owned(), blank.stage().as_str().into());
+    answers
+}
+
 /// The plan the new-plan form's `answers` make, starting `start_year`: the
 /// example they name, beside the name it is offered under, or one built
 /// from the household they describe.

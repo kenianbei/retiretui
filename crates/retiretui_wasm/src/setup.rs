@@ -1,31 +1,16 @@
-//! A first plan from the new-plan questions, asked a step at a time, and a
-//! statement's earnings recorded on a person of the open document.
+//! A first plan from the new-plan questions, asked a step at a time.
 
 use retiretui_client::draft::Draft;
-use retiretui_client::forms::{DomainId, Form};
-use retiretui_client::setup::{self, FIELDS, STEPS, SetupAnswers, blank_plan};
+use retiretui_client::forms::Form;
+use retiretui_client::setup::{self, FIELDS, STEPS, SetupAnswers, blank_plan, starting_answers};
 use retiretui_engine::plan::{Item, Plan};
 use serde::Serialize;
-use toml::Table;
 use wasm_bindgen::prelude::{JsError, JsValue, wasm_bindgen};
 
 use crate::editor::Editor;
-use crate::vocabulary::slug_of;
-use crate::{JsDocument, refused, tables, to_js};
+use crate::{refused, reply, tables, to_js};
 
 static FORM: Form = Form::tool::<SetupAnswers>("New plan", FIELDS);
-
-/// One step of the new-plan questions.
-#[derive(Serialize, Debug)]
-#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
-pub struct SetupStep {
-    /// How the step is addressed.
-    pub slug: &'static str,
-    /// What the step is headed.
-    pub title: &'static str,
-    /// The keys of the fields it asks, in the form's order.
-    pub keys: Vec<&'static str>,
-}
 
 /// The plan the answers made, and the name it is offered under.
 #[derive(Serialize, Debug)]
@@ -53,10 +38,11 @@ impl NewPlan {
     pub fn new(answers: Option<&str>, today: i16) -> Result<Self, String> {
         let host = Plan::from_toml_str(&blank_plan(today)).map_err(|error| error.to_string())?;
         let mut draft = Draft::new(host, false);
-        if let Some(text) = answers {
-            let table: Table = toml::from_str(text).map_err(|error| error.to_string())?;
-            draft.set_answers::<SetupAnswers>(table);
-        }
+        let answers = match answers {
+            Some(text) => toml::from_str(text).map_err(|error| error.to_string())?,
+            None => starting_answers(),
+        };
+        draft.set_answers::<SetupAnswers>(answers);
         let editor = Editor::open(&FORM, &draft, Some(0));
         Ok(Self {
             draft,
@@ -168,7 +154,7 @@ impl JsNewPlan {
     /// Where a field does not yet hold a value, or the answers make no plan.
     #[wasm_bindgen(unchecked_return_type = "NewPlanMade")]
     pub fn create(&mut self) -> Result<JsValue, JsError> {
-        to_js(&self.0.create().map_err(refused)?)
+        reply(self.0.create())
     }
 }
 
@@ -177,36 +163,9 @@ impl JsNewPlan {
 /// # Errors
 ///
 /// Where they do not convert.
-#[wasm_bindgen(js_name = setupSteps, unchecked_return_type = "SetupStep[]")]
+#[wasm_bindgen(js_name = setupSteps, unchecked_return_type = "Step[]")]
 pub fn setup_steps() -> Result<JsValue, JsError> {
-    let steps = STEPS.iter().map(|step| SetupStep {
-        slug: step.slug,
-        title: step.title,
-        keys: step.keys.to_vec(),
-    });
-    to_js(&steps.collect::<Vec<_>>())
-}
-
-/// The address of the page whose people a statement is recorded on.
-#[wasm_bindgen(js_name = statementPage)]
-#[must_use]
-pub fn statement_page() -> String {
-    slug_of(DomainId::People)
-}
-
-#[wasm_bindgen(js_class = Document)]
-impl JsDocument {
-    /// Records the statement `xml` on the person at `index` of the People
-    /// page as one step of history, answering what it recorded.
-    ///
-    /// # Errors
-    ///
-    /// Where the draft is read-only, no person is at `index`, the statement
-    /// does not parse, or its birth date is not theirs.
-    #[wasm_bindgen(js_name = importEarnings)]
-    pub fn import_earnings(&mut self, index: usize, xml: &str) -> Result<String, JsError> {
-        self.0.import_earnings(index, xml).map_err(refused)
-    }
+    to_js(&STEPS)
 }
 
 #[cfg(test)]
@@ -256,7 +215,9 @@ mod tests {
     #[test]
     fn a_statement_is_recorded_as_one_step_of_history() {
         let mut document = born_as_the_statement_says(&blank_plan(TODAY));
-        let said = document.import_earnings(0, STATEMENT).expect("recorded");
+        let said = document
+            .import_earnings(0, "me", STATEMENT)
+            .expect("recorded");
         assert!(said.starts_with("recorded 3 year(s) of earnings for"));
         assert_eq!(document.draft().plan.household.people[0].earnings.len(), 3);
         assert!(document.undo());
@@ -265,7 +226,8 @@ mod tests {
                 .earnings
                 .is_empty()
         );
-        assert!(document.import_earnings(1, STATEMENT).is_err());
+        assert!(document.import_earnings(0, "Alex", STATEMENT).is_err());
+        assert!(document.import_earnings(1, "me", STATEMENT).is_err());
     }
 
     #[test]
@@ -280,6 +242,6 @@ mod tests {
             })
         };
         let mut document = Document::open("/early.toml", &mut read).expect("opens");
-        assert!(document.import_earnings(0, STATEMENT).is_err());
+        assert!(document.import_earnings(0, "me", STATEMENT).is_err());
     }
 }
