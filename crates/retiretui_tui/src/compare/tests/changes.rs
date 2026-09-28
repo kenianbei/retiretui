@@ -1,7 +1,7 @@
 use plurimus::ui::{ComputedWidgetArea, UiLabel};
 
-use super::super::changes::{THE_BASELINE, THE_SAME};
 use super::*;
+use retiretui_client::compare::{THE_BASELINE, THE_SAME};
 
 /// The Changes pane's rows, as they read.
 fn rows(app: &mut App) -> Vec<String> {

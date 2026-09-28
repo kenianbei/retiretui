@@ -5,6 +5,7 @@
 
 pub mod actions;
 pub mod codec;
+pub mod compare;
 pub mod draft;
 #[cfg(feature = "native")]
 pub mod environment;

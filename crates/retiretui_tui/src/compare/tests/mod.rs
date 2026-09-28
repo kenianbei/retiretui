@@ -12,11 +12,13 @@ use super::plans::PlansTable;
 use super::views::{CompareChart, GridChart};
 use super::*;
 use crate::pane::Framed;
+use crate::present::compact_money;
 use crate::session::{Projected, RowYear, YearCursor};
 use crate::support::{
     ROOMY, SIZE, cell_fg, cell_of, commit_edit, composed_frame, headless_app_at, press_key,
     redrawn, run_command, said, scratch_workspace, show, test_plan_briefly_run, type_text,
 };
+use crate::table::basis_amount;
 
 fn compared(app: &App) -> Vec<String> {
     app.world()

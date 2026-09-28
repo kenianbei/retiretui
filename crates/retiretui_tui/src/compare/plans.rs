@@ -11,24 +11,18 @@ use plurimus::core::ratatui_core::layout::Constraint;
 use plurimus::core::ratatui_core::style::{Color, Style};
 use plurimus::ui::{ComputedWidgetArea, ScrollArea, UiStyle};
 use plurimus::widgets::{ActiveDescendant, TableColumns};
-use retiretui_engine::plan::Dollars;
-use retiretui_engine::project::Summary;
+use retiretui_client::compare::{self, Figured, PLAN};
 
 use super::Plans;
 use crate::edit::table_bundle;
 use crate::hints::Hints;
 use crate::layout::{self, CURSOR_COLS, filling, fixed, placed};
-use crate::metric::Metric;
 use crate::nav::FocusStop;
 use crate::pane::{Framed, Pane};
-use crate::present::{
-    self, ENDS_WITH, LIFETIME_TAXES, MONEY_LASTS, PEAKS_AT, compact_money, signed_money,
-};
-use crate::success::Success;
+use crate::present;
 use crate::tabulate::{self, SWATCH_COLS};
 
 const TITLE: &str = "Plans";
-const PLAN: &str = "Plan";
 /// Cells between columns past the one the table leaves.
 const GAP: u16 = 1;
 /// The most of the page the row takes, in percent: the chart keeps the
@@ -39,101 +33,6 @@ const FRAME_ROWS: usize = 3;
 /// The fewest rows the row takes, borders included, so the Changes pane
 /// beside the table has room however few plans there are.
 const LEAST_ROWS: usize = 8;
-
-/// A figure the table can show of each plan.
-pub(super) struct Column {
-    pub(super) header: &'static str,
-    figure: Figure,
-}
-
-impl Column {
-    /// The header; the charted metric's in the cursor year names both.
-    fn heading(&self, metric: Metric, year: i16) -> String {
-        match self.figure {
-            Figure::InYear => format!("{} {year}", metric.title()),
-            _ => self.header.to_owned(),
-        }
-    }
-}
-
-enum Figure {
-    Money(fn(&Summary) -> Dollars),
-    Lasts,
-    Success,
-    /// The charted metric in the cursor year.
-    InYear,
-    Peaks,
-}
-
-/// What a row's figures are read from.
-struct Figured {
-    summary: Summary,
-    success: Success,
-    in_year: String,
-}
-
-impl Figure {
-    /// The figure of `own`, or its difference from `base`'s.
-    fn cell(&self, own: &Figured, base: Option<&Figured>) -> String {
-        let summary = &own.summary;
-        match (self, base) {
-            (Self::Money(of), None) => compact_money(of(summary)),
-            (Self::Money(of), Some(base)) => signed_money(of(summary) - of(&base.summary)),
-            (Self::Lasts, None) => present::money_lasts(summary),
-            (Self::Lasts, Some(base)) => present::money_lasts_against(summary, &base.summary),
-            (Self::Success, None) => own.success.text(),
-            (Self::Success, Some(base)) => own.success.against(base.success),
-            (Self::InYear, _) => own.in_year.clone(),
-            (Self::Peaks, None) => present::peaks_at(summary),
-            (Self::Peaks, Some(base)) => present::peaks_at_against(summary, &base.summary),
-        }
-    }
-}
-
-/// Every column after the plan's name, most wanted first: a narrow pane
-/// drops them from the end.
-pub(super) const COLUMNS: [Column; 10] = [
-    Column {
-        header: ENDS_WITH,
-        figure: Figure::Money(|summary| summary.final_net_worth),
-    },
-    Column {
-        header: MONEY_LASTS,
-        figure: Figure::Lasts,
-    },
-    Column {
-        header: "Success",
-        figure: Figure::Success,
-    },
-    Column {
-        header: "",
-        figure: Figure::InYear,
-    },
-    Column {
-        header: LIFETIME_TAXES,
-        figure: Figure::Money(|summary| summary.lifetime_taxes),
-    },
-    Column {
-        header: PEAKS_AT,
-        figure: Figure::Peaks,
-    },
-    Column {
-        header: "Medicare",
-        figure: Figure::Money(|summary| summary.lifetime_medicare),
-    },
-    Column {
-        header: "Lifetime conversions",
-        figure: Figure::Money(|summary| summary.lifetime_conversions),
-    },
-    Column {
-        header: "Unfunded",
-        figure: Figure::Money(|summary| summary.lifetime_unfunded),
-    },
-    Column {
-        header: "Pre-tax at end",
-        figure: Figure::Money(|summary| summary.final_deferred),
-    },
-];
 
 #[derive(Component)]
 pub(crate) struct PlansTable;
@@ -280,7 +179,7 @@ fn laid(plans: &Plans, given: u16) -> (Vec<String>, Vec<Vec<String>>) {
     let (deflated, year) = (!plans.shown.basis.nominal, plans.year());
     let metric = plans.charted.metric;
     let header: Vec<String> = std::iter::once(PLAN.to_owned())
-        .chain(COLUMNS.iter().map(|column| column.heading(metric, year)))
+        .chain(compare::headers(metric, year))
         .collect();
     let in_year = plans.figures_in(&plans.amounts(metric), year);
     let figured: Vec<Figured> = (plans.each().zip(plans.each_plan()).zip(in_year))
@@ -295,8 +194,9 @@ fn laid(plans: &Plans, given: u16) -> (Vec<String>, Vec<Vec<String>>) {
         .map(|(place, (name, _))| {
             let own = &figured[place];
             let base = against.filter(|&at| at != place).map(|at| &figured[at]);
-            let cells = COLUMNS.iter().map(|column| column.figure.cell(own, base));
-            std::iter::once(name.into_owned()).chain(cells).collect()
+            std::iter::once(name.into_owned())
+                .chain(compare::cells(own, base))
+                .collect()
         })
         .collect();
     let count = fitting(&tabulate::gapped_columns((&header, &rows), GAP), given);
