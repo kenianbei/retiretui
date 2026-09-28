@@ -11,7 +11,7 @@ use crate::{JsDocument, refused, thrown_message, to_js};
 
 /// One item open in its form.
 #[wasm_bindgen(js_name = Editor)]
-pub struct JsEditor(Editor);
+pub struct JsEditor(pub(crate) Editor);
 
 #[wasm_bindgen(js_class = Editor)]
 impl JsEditor {

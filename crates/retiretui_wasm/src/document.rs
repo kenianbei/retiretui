@@ -13,7 +13,7 @@ use retiretui_client::replies::{ActionsReply, year_row};
 use retiretui_client::session::{Projected, Today, YearCursor, span};
 use retiretui_client::statement::{self, recorded};
 use retiretui_client::store::normal;
-use retiretui_engine::plan::Item;
+use retiretui_engine::plan::{Item, Plan};
 use retiretui_engine::project::{Projection, Summary, YearRow};
 use serde::Serialize;
 
@@ -208,6 +208,25 @@ impl Document {
         let said = recorded(self.draft.plan.person_name(&person), &statement);
         self.commit();
         Ok(said)
+    }
+
+    /// What is held beside the plan rather than in it: a tool's answers.
+    pub(crate) const fn draft_mut(&mut self) -> &mut Draft {
+        &mut self.draft
+    }
+
+    /// Changes the plan by `change` as one step of history.
+    ///
+    /// # Errors
+    ///
+    /// Where the draft is read-only.
+    pub(crate) fn step(&mut self, change: impl FnOnce(&mut Plan)) -> Result<(), String> {
+        if let Some(reason) = self.draft.refuse_if_read_only() {
+            return Err(reason);
+        }
+        change(&mut self.draft.plan);
+        self.commit();
+        Ok(())
     }
 
     fn commit(&mut self) {

@@ -157,7 +157,16 @@ fn said(steps: &[LadderStep]) -> String {
 ///
 /// Where the answers do not read, or name no destination.
 pub fn held(draft: &Draft) -> Result<(OptimizeOptions, Option<f64>), String> {
-    from_table::<Constraints>(draft.answers::<Constraints>()).and_then(Constraints::options)
+    constraints_in(draft.answers::<Constraints>())
+}
+
+/// What the engine is to be asked under `answers`, the form's table.
+///
+/// # Errors
+///
+/// Where the answers do not read, or name no destination.
+pub fn constraints_in(answers: toml::Table) -> Result<(OptimizeOptions, Option<f64>), String> {
+    from_table::<Constraints>(answers).and_then(Constraints::options)
 }
 
 /// What a search found, and what it was searched under.
