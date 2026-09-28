@@ -8,7 +8,8 @@ import { cn } from "@/lib/utils";
 import { IssueLink } from "@/draft/issue-link";
 import { Better } from "@/overview/better";
 import { Charts } from "@/overview/charts";
-import { BASIS_LABEL, dollars, share, type Basis } from "@/overview/words";
+import { dollars, share, type Basis } from "@/overview/words";
+import { BASIS_LABEL } from "@/overview/view-words";
 import { useMarkets } from "@/searches";
 import { useSession } from "@/session";
 import { ZONE_CLASS } from "@/tools/markets/zone";
@@ -174,7 +175,7 @@ function ThisYear({ shown }: { shown: ShownYear }) {
           <YearStepper shown={shown} />
         </div>
         <p className="text-muted-foreground text-sm">
-          {[...ages, "amounts in nominal $"].join(" · ")}
+          {[...ages, `amounts in ${BASIS_LABEL.nominal}`].join(" · ")}
         </p>
       </div>
       {said.actions.length === 0 ? (

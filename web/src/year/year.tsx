@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { isHeld } from "@/lib/keys";
 import { cn } from "@/lib/utils";
-import { BASIS_LABEL } from "@/overview/words";
+import { BASIS_LABEL } from "@/overview/view-words";
 import { basisOf, type YearSearch } from "@/year/search";
 import type { ShownYear } from "@/year/use-year";
 

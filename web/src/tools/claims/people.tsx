@@ -101,6 +101,7 @@ export function People({
                 key={offered.action}
                 index={at}
                 name={person.name}
+                label={offered.label}
               />
             ) : (
               <Button

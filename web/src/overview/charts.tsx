@@ -25,7 +25,8 @@ import {
 } from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BASIS_LABEL, dollars, type Basis } from "@/overview/words";
+import { dollars, type Basis } from "@/overview/words";
+import { BASIS_LABEL, VIEW_WORDS, metricTitle } from "@/overview/view-words";
 import {
   bandAreas,
   bandData,
@@ -163,7 +164,7 @@ function Balances(props: ChartsProps) {
     );
     const shown: ChartConfig = {
       ...Object.fromEntries(classes),
-      net_worth: { label: "Net worth", color: FOREGROUND },
+      net_worth: { label: metricTitle("net-worth"), color: FOREGROUND },
     };
     const rows = series.years.map((row) => ({
       year: row.year,
@@ -180,7 +181,7 @@ function Balances(props: ChartsProps) {
       marks={props.series.marks}
       config={config}
       data={data}
-      label="Balances by tax treatment"
+      label={VIEW_WORDS.balances_chart}
     >
       {series.classes.map((_, at) => (
         <Area
@@ -200,7 +201,7 @@ function Balances(props: ChartsProps) {
 }
 
 const NET_WORTH: ChartConfig = {
-  net_worth: { label: "Net worth", color: SERIES[0] },
+  net_worth: { label: metricTitle("net-worth"), color: SERIES[0] },
 };
 
 function NetWorth(props: ChartsProps) {
@@ -210,7 +211,7 @@ function NetWorth(props: ChartsProps) {
       marks={props.series.marks}
       config={NET_WORTH}
       data={props.series.years}
-      label="Net worth"
+      label={VIEW_WORDS.net_worth_chart}
     >
       {seriesLine("net_worth")}
     </Plot>
@@ -218,8 +219,8 @@ function NetWorth(props: ChartsProps) {
 }
 
 const INCOME_AND_TAX: ChartConfig = {
-  income: { label: "Income", color: SERIES[1] },
-  taxes: { label: "Taxes", color: SERIES[3] },
+  income: { label: metricTitle("income"), color: SERIES[1] },
+  taxes: { label: metricTitle("taxes"), color: SERIES[3] },
 };
 
 function IncomeAndTax(props: ChartsProps) {
@@ -229,7 +230,7 @@ function IncomeAndTax(props: ChartsProps) {
       marks={props.series.marks}
       config={INCOME_AND_TAX}
       data={props.series.years}
-      label="Income against taxes"
+      label={VIEW_WORDS.income_chart}
     >
       {seriesLine("income")}
       {seriesLine("taxes")}

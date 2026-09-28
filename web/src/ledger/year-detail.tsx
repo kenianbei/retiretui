@@ -7,6 +7,7 @@ import type {
 import { columnsFor } from "@/components/columns";
 import { DataTable } from "@/components/data-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { VIEW_WORDS } from "@/overview/view-words";
 
 /** One line of an account's year: its figures on the first, a flow on each. */
 interface FlowLine {
@@ -41,13 +42,14 @@ const flowColumn = (key: keyof FlowLine, header: string, isNumeric: boolean) =>
     meta: { isNumeric },
     cell: ({ row }) => row.original[key],
   });
+const [ACCOUNT, OPEN, IN, OUT, GROWTH, CLOSE] = VIEW_WORDS.flow_headers;
 const FLOW_COLUMNS = [
-  flowColumn("account", "Account", false),
-  flowColumn("open", "Open", true),
-  flowColumn("came", "In", false),
-  flowColumn("went", "Out", false),
-  flowColumn("growth", "Growth", true),
-  flowColumn("close", "Close", true),
+  flowColumn("account", ACCOUNT, false),
+  flowColumn("open", OPEN, true),
+  flowColumn("came", IN, false),
+  flowColumn("went", OUT, false),
+  flowColumn("growth", GROWTH, true),
+  flowColumn("close", CLOSE, true),
 ];
 
 function Lines({ label, lines }: { label: string; lines: DetailLine[] }) {
@@ -78,11 +80,11 @@ export function YearDetailCards({
     <>
       <Card className="gap-3 py-4">
         <CardHeader className="px-4">
-          <CardTitle>{title("Flows")}</CardTitle>
+          <CardTitle>{title(VIEW_WORDS.flows)}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 px-4">
           <DataTable
-            label={title("Flows")}
+            label={title(VIEW_WORDS.flows)}
             columns={FLOW_COLUMNS}
             rows={detail.flows.flatMap(linesOf)}
             rowKey={(line) => line.key}
@@ -101,7 +103,7 @@ export function YearDetailCards({
       </Card>
       <Card className="gap-3 py-4">
         <CardHeader className="px-4">
-          <CardTitle>{title("Income & Tax")}</CardTitle>
+          <CardTitle>{title(VIEW_WORDS.income_and_tax)}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 px-4">
           {detail.income.length > 0 && (

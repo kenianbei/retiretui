@@ -10,9 +10,12 @@ import { useSession } from "@/session";
 export function ImportStatement({
   index,
   name,
+  label = "Import statement",
 }: {
   index: number;
   name: string;
+  /** What the button says, where the client has said it. */
+  label?: string;
 }) {
   const session = useSession();
   const [outcome, setOutcome] = useState<{
@@ -39,7 +42,7 @@ export function ImportStatement({
     <>
       <Button size="sm" variant="outline" onClick={picker.open}>
         <FileUp aria-hidden />
-        Import statement
+        {label}
       </Button>
       {picker.element}
       {outcome && (
