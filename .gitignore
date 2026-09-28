@@ -9,3 +9,6 @@ debug
 /web/*.tsbuildinfo
 /web/test-results
 /web/playwright-report
+/PRODUCT.md
+/DESIGN.md
+/.impeccable
