@@ -81,8 +81,8 @@ pub struct JsNewPlan(NewPlan);
 
 #[wasm_bindgen(js_class = NewPlan)]
 impl JsNewPlan {
-    /// The questions answered as `answers` - text from `answers` - holds,
-    /// as of the calendar year `today`.
+    /// The questions answered as `answers` holds - the text the `answers`
+    /// getter gave, or none - as of the calendar year `today`.
     ///
     /// # Errors
     ///
