@@ -1,8 +1,7 @@
-import {
-  money,
-  type AccountFlows,
-  type DetailLine,
-  type YearDetail,
+import type {
+  AccountFlows,
+  DetailLine,
+  YearDetail,
 } from "@wasm/retiretui_wasm.js";
 
 import { columnsFor } from "@/components/columns";
@@ -20,22 +19,17 @@ interface FlowLine {
   close: string;
 }
 
-function signed(amount: number): string {
-  if (amount === 0) return "";
-  return amount > 0 ? `+${money(amount)}` : money(amount);
-}
-
 /** An account's figures beside its first flow in and out, then a line per further flow. */
 function linesOf(flows: AccountFlows): FlowLine[] {
   const count = Math.max(flows.ins.length, flows.outs.length, 1);
   return Array.from({ length: count }, (_, at) => ({
     key: `${flows.account}:${String(at)}`,
     account: at === 0 ? flows.account : "",
-    open: at === 0 ? money(flows.open) : "",
+    open: at === 0 ? flows.open : "",
     came: flows.ins[at] ?? "",
     went: flows.outs[at] ?? "",
-    growth: at === 0 ? signed(flows.growth) : "",
-    close: at === 0 ? money(flows.close) : "",
+    growth: at === 0 ? flows.growth : "",
+    close: at === 0 ? flows.close : "",
   }));
 }
 
@@ -62,7 +56,7 @@ function Lines({ label, lines }: { label: string; lines: DetailLine[] }) {
       {lines.map((line) => (
         <div key={line.label} className="flex justify-between gap-4 py-1.5">
           <dt>{line.label}</dt>
-          <dd className="tabular-nums">{money(line.amount)}</dd>
+          <dd className="tabular-nums">{line.amount}</dd>
         </div>
       ))}
     </dl>

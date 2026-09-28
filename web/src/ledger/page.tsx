@@ -14,6 +14,10 @@ import { BasisSwitch, YearStepper } from "@/year/year";
 /** Where the table scrolls within its own half of the screen, the detail under it. */
 const WIDE = "(min-width: 1024px)";
 
+function isWide(): boolean {
+  return window.matchMedia(WIDE).matches;
+}
+
 const column = columnsFor<LedgerRow>();
 
 /** The plan year by year, and the year shown's flows, income and tax. */
@@ -23,13 +27,10 @@ export function LedgerPage() {
   const isNominal = basis === "nominal";
   const shown = useYear();
   const { year, setYear } = shown;
-  const ledger = useMemo(() => {
-    try {
-      return reading.document?.ledger(isNominal);
-    } catch {
-      return undefined;
-    }
-  }, [reading, isNominal]);
+  const ledger = useMemo(
+    () => reading.document?.ledger(isNominal),
+    [reading, isNominal],
+  );
   const detail = useMemo(
     () =>
       ledger && year !== undefined
@@ -52,7 +53,7 @@ export function LedgerPage() {
   const table = useRef<HTMLDivElement>(null);
   const details = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!window.matchMedia(WIDE).matches) return;
+    if (!isWide()) return;
     table.current
       ?.querySelector('[aria-selected="true"]')
       ?.scrollIntoView({ block: "nearest" });
@@ -98,7 +99,7 @@ export function LedgerPage() {
           isExceeded={(row) => row.is_exceeded}
           onSelect={(row) => {
             setYear(row.year);
-            if (!window.matchMedia(WIDE).matches) {
+            if (!isWide()) {
               details.current?.scrollIntoView({ block: "start" });
             }
           }}

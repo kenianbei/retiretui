@@ -11,15 +11,13 @@ use retiretui_client::session::Projected;
 use retiretui_client::table::{
     Column, ages_text, basis_amount, percentile_label, present_classes, year_figures,
 };
+use retiretui_engine::market::BAND_PERCENTILES;
 use retiretui_engine::plan::Dollars;
 use serde::Serialize;
 use wasm_bindgen::prelude::{JsError, JsValue, wasm_bindgen};
 
 use crate::domain::TableColumn;
-use crate::{JsDocument, reply, tables};
-
-/// The year and the ages, the columns that are not figures.
-const TEXT_COLUMNS: usize = 2;
+use crate::{JsDocument, reply, tables, to_js};
 
 /// Every projected year as the Ledger's table shows it.
 #[derive(Serialize, Debug)]
@@ -100,11 +98,7 @@ pub fn ledger(projected: &Projected, is_nominal: bool) -> Ledger {
     let classes = present_classes(&projected.plan);
     let columns = ledger_headers(&classes)
         .into_iter()
-        .enumerate()
-        .map(|(at, header)| TableColumn {
-            header,
-            is_numeric: at >= TEXT_COLUMNS,
-        });
+        .map(|(header, is_numeric)| TableColumn { header, is_numeric });
     let balances: Vec<Column> = classes.into_iter().map(Column::Class).collect();
     let rows = projected.projection.years.iter().map(|row| {
         let figures = year_figures(row, &balances).into_iter();
@@ -171,18 +165,15 @@ pub fn chart(projected: &Projected, is_nominal: bool) -> ChartSeries {
 #[wasm_bindgen(js_class = Document)]
 impl JsDocument {
     /// Every projected year as the Ledger's table shows it, nominal or in
-    /// today's dollars.
+    /// today's dollars; `null` while no valid draft has been projected.
     ///
     /// # Errors
     ///
-    /// Where no valid draft has been projected.
-    #[wasm_bindgen(unchecked_return_type = "Ledger")]
+    /// Where the table does not convert.
+    #[wasm_bindgen(unchecked_return_type = "Ledger | null")]
     pub fn ledger(&self, nominal: bool) -> Result<JsValue, JsError> {
-        reply(
-            self.0
-                .projected()
-                .map(|projected| ledger(projected, nominal)),
-        )
+        let projected = self.0.projected().ok();
+        to_js(&projected.map(|projected| ledger(projected, nominal)))
     }
 
     /// `year`'s flows, income, payments and warnings, nominal or in
@@ -201,26 +192,16 @@ impl JsDocument {
     }
 
     /// The projection as the Overview charts it, nominal or in today's
-    /// dollars.
+    /// dollars; `null` while no valid draft has been projected.
     ///
     /// # Errors
     ///
-    /// Where no valid draft has been projected.
-    #[wasm_bindgen(unchecked_return_type = "ChartSeries")]
+    /// Where the series does not convert.
+    #[wasm_bindgen(unchecked_return_type = "ChartSeries | null")]
     pub fn chart(&self, nominal: bool) -> Result<JsValue, JsError> {
-        reply(
-            self.0
-                .projected()
-                .map(|projected| chart(projected, nominal)),
-        )
+        let projected = self.0.projected().ok();
+        to_js(&projected.map(|projected| chart(projected, nominal)))
     }
-}
-
-/// `amount` in whole dollars with separators, as every surface writes it.
-#[wasm_bindgen(js_name = money)]
-#[must_use]
-pub fn js_money(amount: f64) -> String {
-    money(whole(amount))
 }
 
 /// `amount` shortened to fit an axis: `$2.58M`, `-$42k`.
@@ -228,6 +209,19 @@ pub fn js_money(amount: f64) -> String {
 #[must_use]
 pub fn js_compact_money(amount: f64) -> String {
     compact_money(whole(amount))
+}
+
+/// The percentiles each band's net worth is at, lowest first.
+///
+/// # Errors
+///
+/// Where they do not convert.
+#[wasm_bindgen(
+    js_name = bandPercentiles,
+    unchecked_return_type = "[number, number, number, number, number]"
+)]
+pub fn band_percentiles() -> Result<JsValue, JsError> {
+    to_js(&BAND_PERCENTILES)
 }
 
 /// How the market at `percentile` is named.
@@ -247,14 +241,12 @@ fn whole(amount: f64) -> Dollars {
 mod tests {
     use retiretui_client::setup::EXAMPLES;
     use retiretui_engine::plan::Plan;
-    use retiretui_engine::project::project;
 
     use super::*;
 
     fn projected() -> Projected {
         let plan = Plan::from_toml_str(EXAMPLES[0].2).expect("parses");
-        let projection = project(&plan, tables());
-        Projected { plan, projection }
+        Projected::new(plan, tables())
     }
 
     #[test]

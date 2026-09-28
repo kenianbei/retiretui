@@ -4,10 +4,10 @@ import wasm from "./pkg/retiretui_wasm.js";
 
 const {
   Document,
+  bandPercentiles,
   compactMoney,
   examples,
   historical,
-  money,
   percentileLabel,
   sortPressed,
   validate,
@@ -38,7 +38,7 @@ assert.ok(detail.paid.some((line) => line.label === "Spending"));
 assert.throws(() => document.yearDetail(first.year - 99, true));
 const chart = document.chart(true);
 assert.equal(chart.years[0].classes.length, chart.classes.length);
-assert.equal(money(1234567), "$1,234,567");
+assert.deepEqual(bandPercentiles(), [10, 25, 50, 75, 90]);
 assert.equal(compactMoney(1234567), "$1.23M");
 assert.equal(percentileLabel(90), "90th percentile");
 assert.deepEqual(document.said(first.year).ages, [["Sam", 30]]);

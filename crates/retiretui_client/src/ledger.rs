@@ -16,22 +16,22 @@ use crate::table::basis_amount;
 const NOTE_JOIN: &str = " · ";
 /// Said after a conversion's counterpart, where a narrow pane clips first.
 const CONVERSION: &str = " (conversion)";
-const LEADING_HEADERS: [&str; 6] = ["Year", "Age", "Income", "Spending", "Tax", "Withdrawn"];
+const TEXT_HEADERS: [&str; 2] = ["Year", "Age"];
+const FIGURE_HEADERS: [&str; 4] = ["Income", "Spending", "Tax", "Withdrawn"];
 const NET_WORTH: &str = "Net worth";
 
-/// The year table's headers: the year, ages and the figures
-/// [`crate::table::year_figures`] gives over `classes`.
+/// The year table's headers, each beside whether its column holds figures:
+/// the year, ages and the figures [`crate::table::year_figures`] gives over
+/// `classes`.
 #[must_use]
-pub fn ledger_headers(classes: &[TreatmentClass]) -> Vec<&'static str> {
+pub fn ledger_headers(classes: &[TreatmentClass]) -> Vec<(&'static str, bool)> {
     let classes = classes.iter().map(|&class| treatment_class(class));
-    LEADING_HEADERS
-        .into_iter()
-        .chain(classes)
-        .chain([NET_WORTH])
-        .collect()
+    let figures = FIGURE_HEADERS.into_iter().chain(classes).chain([NET_WORTH]);
+    let text = TEXT_HEADERS.into_iter().map(|header| (header, false));
+    text.chain(figures.map(|header| (header, true))).collect()
 }
 
-/// An account's year: what it opened on, what came in and went out -
+/// An account's year, said: what it opened on, what came in and went out -
 /// each named by where from or to - what it grew, and what it closed on.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
@@ -39,15 +39,15 @@ pub struct AccountFlows {
     /// The account's display name.
     pub account: String,
     /// Its balance as the year opened.
-    pub open: Dollars,
+    pub open: String,
     /// What came in, said.
     pub ins: Vec<String>,
     /// What went out, said.
     pub outs: Vec<String>,
-    /// What it grew.
-    pub growth: Dollars,
+    /// What it grew, signed; blank where it did not.
+    pub growth: String,
     /// Its balance as the year closed.
-    pub close: Dollars,
+    pub close: String,
 }
 
 /// Each account the year touches, in the plan's order. Every figure is on
@@ -60,8 +60,7 @@ pub fn account_flows(
     row: &YearRow,
     is_nominal: bool,
 ) -> Vec<AccountFlows> {
-    let at_basis = |amount: Dollars| basis_amount(amount, row.deflator, is_nominal);
-    let show = |amount: Dollars| money(at_basis(amount));
+    let show = |amount: Dollars| money(basis_amount(amount, row.deflator, is_nominal));
     plan.accounts
         .iter()
         .filter_map(|account| {
@@ -73,14 +72,22 @@ pub fn account_flows(
             let is_idle = open == 0 && close == 0 && growth == 0;
             (!is_idle || !ins.is_empty() || !outs.is_empty()).then(|| AccountFlows {
                 account: account.display_name().to_owned(),
-                open: at_basis(open),
+                open: show(open),
                 ins,
                 outs,
-                growth: at_basis(growth),
-                close: at_basis(close),
+                growth: signed(growth, &show),
+                close: show(close),
             })
         })
         .collect()
+}
+
+fn signed(amount: Dollars, show: &impl Fn(Dollars) -> String) -> String {
+    match amount {
+        0 => String::new(),
+        ..0 => show(amount),
+        _ => format!("+{}", show(amount)),
+    }
 }
 
 fn balance(row: &YearRow, id: &str) -> Dollars {
@@ -169,14 +176,14 @@ const fn is_employer_note(note: &ContributionNote) -> bool {
     )
 }
 
-/// One labelled amount of a year's income or of what it paid.
+/// One labelled amount of a year's income or of what it paid, said.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct DetailLine {
     /// What the amount is.
     pub label: String,
     /// The amount, on the basis asked for.
-    pub amount: Dollars,
+    pub amount: String,
 }
 
 /// The year's income by source, and then its spending and what it paid
@@ -189,7 +196,7 @@ pub fn income_and_tax(
 ) -> (Vec<DetailLine>, Vec<DetailLine>) {
     let line = |label: &str, amount: Dollars| DetailLine {
         label: label.to_owned(),
-        amount: basis_amount(amount, row.deflator, is_nominal),
+        amount: money(basis_amount(amount, row.deflator, is_nominal)),
     };
     let income = row
         .income
@@ -264,7 +271,6 @@ pub fn salary_marks(projected: &Projected) -> Vec<(String, i16)> {
 #[cfg(test)]
 mod tests {
     use retiretui_engine::params::TaxTables;
-    use retiretui_engine::project::project;
 
     use super::*;
 
@@ -273,32 +279,27 @@ mod tests {
             "../../retiretui_engine/tests/fixtures/full.toml"
         ))
         .unwrap();
-        let projection = project(&plan, &TaxTables::embedded());
-        Projected { plan, projection }
+        Projected::new(plan, &TaxTables::embedded())
     }
 
     #[test]
     fn headers_frame_the_classes() {
         let headers = ledger_headers(&[TreatmentClass::Roth]);
-        assert_eq!(headers[..2], ["Year", "Age"]);
-        assert_eq!(headers[6], treatment_class(TreatmentClass::Roth));
-        assert_eq!(headers.last(), Some(&NET_WORTH));
+        assert_eq!(headers[..2], [("Year", false), ("Age", false)]);
+        assert_eq!(headers[6], (treatment_class(TreatmentClass::Roth), true));
+        assert_eq!(headers.last(), Some(&(NET_WORTH, true)));
     }
 
     #[test]
-    fn the_closes_add_up_to_the_balances() {
+    fn every_account_holding_money_closes_on_it() {
         let projected = full();
         let years = &projected.projection.years;
         for (at, row) in years.iter().enumerate() {
             let previous = at.checked_sub(1).map(|before| &years[before]);
             let flows = account_flows(&projected.plan, previous, row, true);
-            let closed: Dollars = flows.iter().map(|flow| flow.close).sum();
-            assert_eq!(
-                closed,
-                row.balances.values().sum::<Dollars>(),
-                "{}",
-                row.year
-            );
+            let closes = flows.iter().filter(|flow| flow.close != money(0));
+            let held = row.balances.values().filter(|&&balance| balance != 0);
+            assert_eq!(closes.count(), held.count(), "{}", row.year);
         }
     }
 
@@ -309,7 +310,7 @@ mod tests {
         let (income, paid) = income_and_tax(&projected.plan, row, true);
         assert!(!income.is_empty());
         assert_eq!(paid[0].label, "Spending");
-        assert!(paid.iter().all(|line| line.amount != 0));
+        assert!(paid.iter().all(|line| line.amount != money(0)));
         let (deflated, _) = income_and_tax(&projected.plan, row, false);
         assert_ne!(income, deflated);
     }

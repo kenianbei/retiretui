@@ -1,11 +1,11 @@
 import {
+  bandPercentiles,
   compactMoney,
-  money,
   percentileLabel,
   type Band,
   type ChartSeries,
 } from "@wasm/retiretui_wasm.js";
-import type { ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 import {
   Area,
   CartesianGrid,
@@ -27,37 +27,22 @@ import {
 } from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BASIS_LABEL, type Basis } from "@/overview/words";
+import { BASIS_LABEL, dollars, type Basis } from "@/overview/words";
 import { useMonteCarlo } from "@/searches";
 
 /** The colour roles a chart's series take, in turn. */
 const SERIES = [1, 2, 3, 4, 5].map((at) => `var(--chart-${String(at)})`);
 const FOREGROUND = "var(--foreground)";
 const MUTED = "var(--muted-foreground)";
-/** The percentiles a band spans, as `Band.net_worth` holds them: 10, 25, 50, 75, 90. */
-const PERCENTILES = [10, 25, 50, 75, 90] as const;
+const PLOT_SIZE = "aspect-[4/3] w-full sm:aspect-[5/2]";
 
-interface Marks {
+interface ChartsProps {
+  series: ChartSeries;
+  basis: Basis;
+  /** The plan's text for its market runs; none while it has issues. */
+  plan: string | null;
   year: number | undefined;
-  marks: ChartSeries["marks"];
-}
-
-/** The year shown and where each salary ends, as lines across the plot. */
-function markLines({ year, marks }: Marks) {
-  return [
-    ...marks.map((mark) => (
-      <ReferenceLine
-        key={mark.label}
-        x={mark.year}
-        stroke={MUTED}
-        strokeDasharray="2 4"
-        label={{ value: mark.label, position: "insideTopLeft", fontSize: 11 }}
-      />
-    )),
-    year !== undefined && (
-      <ReferenceLine key="year" x={year} stroke={FOREGROUND} />
-    ),
-  ];
+  onYear: (year: number) => void;
 }
 
 function tooltip(config: ChartConfig) {
@@ -72,8 +57,8 @@ function tooltip(config: ChartConfig) {
               </span>
               <span className="tabular-nums">
                 {Array.isArray(value)
-                  ? value.map((each) => money(Number(each))).join(" – ")
-                  : money(Number(value))}
+                  ? value.map((each) => dollars(Number(each))).join(" – ")
+                  : dollars(Number(value))}
               </span>
             </div>
           )}
@@ -83,30 +68,36 @@ function tooltip(config: ChartConfig) {
   );
 }
 
-interface PlotProps {
+interface PlotProps extends Omit<ChartsProps, "basis" | "plan"> {
   config: ChartConfig;
   data: object[];
   label: string;
-  onYear: (year: number) => void;
   children: ReactNode;
 }
 
-/** A plot of years across and dollars up, a click choosing the year under it. */
-function Plot({ config, data, label, onYear, children }: PlotProps) {
+/**
+ * A plot of years across and dollars up, the year shown and each salary's
+ * end marked, a click choosing the year under it.
+ */
+function Plot({
+  config,
+  data,
+  label,
+  series,
+  year,
+  onYear,
+  children,
+}: PlotProps) {
   return (
-    <ChartContainer
-      config={config}
-      aria-label={label}
-      className="aspect-[4/3] w-full sm:aspect-[5/2]"
-    >
+    <ChartContainer config={config} aria-label={label} className={PLOT_SIZE}>
       <ComposedChart
         data={data}
         margin={{ left: 8, right: 8, top: 16 }}
         // A tap's move and click come together; the click must see the move.
         throttledEvents={[]}
         onClick={(state) => {
-          const year = Number(state.activeLabel);
-          if (Number.isInteger(year)) onYear(year);
+          const clicked = Number(state.activeLabel);
+          if (Number.isInteger(clicked)) onYear(clicked);
         }}
         className="cursor-pointer"
       >
@@ -121,120 +112,131 @@ function Plot({ config, data, label, onYear, children }: PlotProps) {
         {tooltip(config)}
         <ChartLegend content={<ChartLegendContent />} />
         {children}
+        {series.marks.map((mark) => (
+          <ReferenceLine
+            key={mark.label}
+            x={mark.year}
+            stroke={MUTED}
+            strokeDasharray="2 4"
+            label={{
+              value: mark.label,
+              position: "insideTopLeft",
+              fontSize: 11,
+            }}
+          />
+        ))}
+        {year !== undefined && <ReferenceLine x={year} stroke={FOREGROUND} />}
       </ComposedChart>
     </ChartContainer>
   );
 }
 
-interface ChartsProps extends Marks {
-  series: ChartSeries;
-  basis: Basis;
-  /** The plan's text for its market runs; none while it has issues. */
-  plan: string | null;
-  onYear: (year: number) => void;
+function seriesLine(key: string, width = 2) {
+  return (
+    <Line
+      isAnimationActive={false}
+      dataKey={key}
+      type="monotone"
+      stroke={`var(--color-${key})`}
+      strokeWidth={width}
+      dot={false}
+    />
+  );
 }
 
-function Balances({ series, year, marks, onYear }: ChartsProps) {
-  const config: ChartConfig = {
-    net_worth: { label: "Net worth", color: FOREGROUND },
-  };
-  series.classes.forEach((label, at) => {
-    config[`class${String(at)}`] = {
-      label,
-      color: SERIES[at % SERIES.length],
+const classKey = (at: number) => `class${String(at)}`;
+
+function Balances(props: ChartsProps) {
+  const { series } = props;
+  const [config, data] = useMemo(() => {
+    const classes = series.classes.map(
+      (label, at): [string, ChartConfig[string]] => [
+        classKey(at),
+        { label, color: SERIES[at % SERIES.length] },
+      ],
+    );
+    const shown: ChartConfig = {
+      ...Object.fromEntries(classes),
+      net_worth: { label: "Net worth", color: FOREGROUND },
     };
-  });
-  const data = series.years.map((row) => ({
-    year: row.year,
-    net_worth: row.net_worth,
-    ...Object.fromEntries(
-      row.classes.map((amount, at) => [`class${String(at)}`, amount]),
-    ),
-  }));
+    const rows = series.years.map((row) => ({
+      year: row.year,
+      net_worth: row.net_worth,
+      ...Object.fromEntries(
+        row.classes.map((amount, at) => [classKey(at), amount]),
+      ),
+    }));
+    return [shown, rows] as const;
+  }, [series]);
   return (
     <Plot
+      {...props}
       config={config}
       data={data}
       label="Balances by tax treatment"
-      onYear={onYear}
     >
-      {series.classes.map((_, at) => {
-        const key = `class${String(at)}`;
-        return (
-          <Area
-            isAnimationActive={false}
-            key={key}
-            dataKey={key}
-            stackId="classes"
-            type="monotone"
-            fill={`var(--color-${key})`}
-            stroke={`var(--color-${key})`}
-            fillOpacity={0.5}
-          />
-        );
-      })}
-      <Line
-        isAnimationActive={false}
-        dataKey="net_worth"
-        type="monotone"
-        stroke="var(--color-net_worth)"
-        dot={false}
-      />
-      {markLines({ year, marks })}
+      {series.classes.map((_, at) => (
+        <Area
+          isAnimationActive={false}
+          key={classKey(at)}
+          dataKey={classKey(at)}
+          stackId="classes"
+          type="monotone"
+          fill={`var(--color-${classKey(at)})`}
+          stroke={`var(--color-${classKey(at)})`}
+          fillOpacity={0.5}
+        />
+      ))}
+      {seriesLine("net_worth", 1)}
     </Plot>
   );
 }
 
-function NetWorth({ series, year, marks, onYear }: ChartsProps) {
-  const config: ChartConfig = {
-    net_worth: { label: "Net worth", color: SERIES[0] },
-  };
-  return (
-    <Plot config={config} data={series.years} label="Net worth" onYear={onYear}>
-      <Line
-        isAnimationActive={false}
-        dataKey="net_worth"
-        type="monotone"
-        stroke="var(--color-net_worth)"
-        strokeWidth={2}
-        dot={false}
-      />
-      {markLines({ year, marks })}
-    </Plot>
-  );
-}
+const NET_WORTH: ChartConfig = {
+  net_worth: { label: "Net worth", color: SERIES[0] },
+};
 
-function IncomeAndTax({ series, year, marks, onYear }: ChartsProps) {
-  const config: ChartConfig = {
-    income: { label: "Income", color: SERIES[1] },
-    taxes: { label: "Taxes", color: SERIES[3] },
-  };
+function NetWorth(props: ChartsProps) {
   return (
     <Plot
-      config={config}
-      data={series.years}
-      label="Income against taxes"
-      onYear={onYear}
+      {...props}
+      config={NET_WORTH}
+      data={props.series.years}
+      label="Net worth"
     >
-      <Line
-        isAnimationActive={false}
-        dataKey="income"
-        type="monotone"
-        stroke="var(--color-income)"
-        strokeWidth={2}
-        dot={false}
-      />
-      <Line
-        isAnimationActive={false}
-        dataKey="taxes"
-        type="monotone"
-        stroke="var(--color-taxes)"
-        strokeWidth={2}
-        dot={false}
-      />
-      {markLines({ year, marks })}
+      {seriesLine("net_worth")}
     </Plot>
   );
+}
+
+const INCOME_AND_TAX: ChartConfig = {
+  income: { label: "Income", color: SERIES[1] },
+  taxes: { label: "Taxes", color: SERIES[3] },
+};
+
+function IncomeAndTax(props: ChartsProps) {
+  return (
+    <Plot
+      {...props}
+      config={INCOME_AND_TAX}
+      data={props.series.years}
+      label="Income against taxes"
+    >
+      {seriesLine("income")}
+      {seriesLine("taxes")}
+    </Plot>
+  );
+}
+
+function bandsConfig(): ChartConfig {
+  const [low, lower, median, upper, high] = bandPercentiles();
+  const span = (from: number, to: number) =>
+    `${percentileLabel(from)} – ${percentileLabel(to)}`;
+  return {
+    outer: { label: span(low, high), color: SERIES[0] },
+    inner: { label: span(lower, upper), color: SERIES[0] },
+    median: { label: percentileLabel(median), color: SERIES[0] },
+  };
 }
 
 function bandData(bands: Band[]) {
@@ -260,8 +262,13 @@ function MarketRuns(props: ChartsProps) {
   return <Bands {...props} plan={props.plan} />;
 }
 
-function Bands({ plan, year, marks, onYear }: ChartsProps & { plan: string }) {
-  const markets = useMonteCarlo(plan);
+function Bands(props: ChartsProps & { plan: string }) {
+  const markets = useMonteCarlo(props.plan);
+  const config = useMemo(() => bandsConfig(), []);
+  const data = useMemo(
+    () => (markets.data ? bandData(markets.data.bands) : []),
+    [markets.data],
+  );
   if (markets.error) {
     return (
       <p className="text-muted-foreground py-8 text-sm">
@@ -269,22 +276,13 @@ function Bands({ plan, year, marks, onYear }: ChartsProps & { plan: string }) {
       </p>
     );
   }
-  if (!markets.data)
-    return <Skeleton className="aspect-[4/3] sm:aspect-[5/2]" />;
-  const [low, lower, median, upper, high] = PERCENTILES;
-  const span = (from: number, to: number) =>
-    `${percentileLabel(from)} – ${percentileLabel(to)}`;
-  const config: ChartConfig = {
-    outer: { label: span(low, high), color: SERIES[0] },
-    inner: { label: span(lower, upper), color: SERIES[0] },
-    median: { label: percentileLabel(median), color: SERIES[0] },
-  };
+  if (!markets.data) return <Skeleton className={PLOT_SIZE} />;
   return (
     <Plot
+      {...props}
       config={config}
-      data={bandData(markets.data.bands)}
+      data={data}
       label="Net worth through random markets"
-      onYear={onYear}
     >
       <Area
         isAnimationActive={false}
@@ -302,15 +300,7 @@ function Bands({ plan, year, marks, onYear }: ChartsProps & { plan: string }) {
         fillOpacity={0.35}
         stroke="none"
       />
-      <Line
-        isAnimationActive={false}
-        dataKey="median"
-        type="monotone"
-        stroke="var(--color-median)"
-        strokeWidth={2}
-        dot={false}
-      />
-      {markLines({ year, marks })}
+      {seriesLine("median")}
     </Plot>
   );
 }
@@ -323,8 +313,7 @@ const TABS = [
 ] as const;
 
 /** What the plan holds and earns year by year, and how random markets spread it. */
-export function Charts(props: Omit<ChartsProps, "marks">) {
-  const chartProps = { ...props, marks: props.series.marks };
+export function Charts(props: ChartsProps) {
   const unit = (value: string) =>
     BASIS_LABEL[value === "markets" ? "today" : props.basis];
   return (
@@ -346,7 +335,7 @@ export function Charts(props: Omit<ChartsProps, "marks">) {
               <p className="text-muted-foreground text-xs">
                 {title} · {unit(value)} · click a year to show it
               </p>
-              <Chart {...chartProps} />
+              <Chart {...props} />
             </TabsContent>
           ))}
         </CardContent>

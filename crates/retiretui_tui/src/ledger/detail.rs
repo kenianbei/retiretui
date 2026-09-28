@@ -15,7 +15,6 @@ use super::super::hints::Hints;
 use super::super::layout::{self, filling, placed};
 use super::super::nav::FocusStop;
 use super::super::pane::Pane;
-use super::super::present;
 use super::super::session::Shown;
 use super::super::tabulate;
 use super::DETAIL_GAP;
@@ -76,7 +75,7 @@ fn refresh_detail(
 /// and what the year paid besides.
 fn detail_rows(row: &YearRow, plan: &Plan, is_nominal: bool) -> Vec<Vec<String>> {
     let (income, paid) = income_and_tax(plan, row, is_nominal);
-    let line = |line: DetailLine| vec![line.label, present::money(line.amount)];
+    let line = |line: DetailLine| vec![line.label, line.amount];
     let mut rows: Vec<Vec<String>> = income.into_iter().map(line).collect();
     if !rows.is_empty() {
         rows.push(vec![String::new(); 2]);

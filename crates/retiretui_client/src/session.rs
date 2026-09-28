@@ -108,6 +108,13 @@ pub fn file_name(path: &Path) -> Cow<'_, str> {
 }
 
 impl Projected {
+    /// `plan` beside its projection.
+    #[must_use]
+    pub fn new(plan: Plan, tables: &TaxTables) -> Self {
+        let projection = project(&plan, tables);
+        Self { plan, projection }
+    }
+
     /// What the empty shell holds behind its hidden pages.
     ///
     /// # Panics
@@ -116,8 +123,7 @@ impl Projected {
     #[must_use]
     pub fn blank(tables: &TaxTables, today: Today) -> Self {
         let plan = Plan::from_toml_str(&blank_plan(today.0)).expect("the blank plan parses");
-        let projection = project(&plan, tables);
-        Self { plan, projection }
+        Self::new(plan, tables)
     }
 }
 
@@ -204,10 +210,7 @@ pub fn load_projected(
     tables: &TaxTables,
 ) -> (Result<Projected, Invalid>, Stamped) {
     let (plan, files) = crate::files::validated_plan_with_files(store, path, tables);
-    let projected = plan.map(|plan| {
-        let projection = project(&plan, tables);
-        Projected { plan, projection }
-    });
+    let projected = plan.map(|plan| Projected::new(plan, tables));
     (projected, stamp(store, files))
 }
 

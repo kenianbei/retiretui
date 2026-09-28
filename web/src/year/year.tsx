@@ -10,7 +10,7 @@ import { basisOf, type YearSearch } from "@/year/search";
 import type { ShownYear } from "@/year/use-year";
 
 /** ← and → step the year wherever nothing else holds the key. */
-function useYearKeys({ year, before, after, setYear }: ShownYear) {
+function useYearKeys({ before, after, setYear }: ShownYear) {
   useEffect(() => {
     const press = (event: KeyboardEvent) => {
       if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) {
@@ -30,7 +30,7 @@ function useYearKeys({ year, before, after, setYear }: ShownYear) {
           : event.key === "ArrowRight"
             ? after
             : undefined;
-      if (next === undefined || next === year) return;
+      if (next === undefined) return;
       event.preventDefault();
       setYear(next);
     };
@@ -38,7 +38,7 @@ function useYearKeys({ year, before, after, setYear }: ShownYear) {
     return () => {
       window.removeEventListener("keydown", press);
     };
-  }, [year, before, after, setYear]);
+  }, [before, after, setYear]);
 }
 
 /** The year shown between the years either side; ← and → step it too. */
@@ -47,7 +47,7 @@ export function YearStepper({ shown }: { shown: ShownYear }) {
   const { year, before, after, setYear } = shown;
   if (year === undefined) return null;
   const step = (to: number | undefined) =>
-    to === undefined || to === year
+    to === undefined
       ? undefined
       : () => {
           setYear(to);

@@ -13,7 +13,7 @@ use retiretui_client::replies::{ActionsReply, year_row};
 use retiretui_client::session::{Projected, Today, YearCursor, span};
 use retiretui_client::store::normal;
 use retiretui_engine::plan::Item;
-use retiretui_engine::project::{Projection, Summary, YearRow, project};
+use retiretui_engine::project::{Projection, Summary, YearRow};
 use serde::Serialize;
 
 use crate::domain::{list_of, name_at};
@@ -102,7 +102,7 @@ impl Document {
         let plan = resolve_with_files(normal(Path::new(path)), read, &canonical, &mut files)?;
         let draft = Draft::validated(plan, tables(), files.len() > 1);
         let is_valid = draft.issues().is_empty();
-        let projected = is_valid.then(|| projected(&draft));
+        let projected = is_valid.then(|| Projected::new(draft.plan.clone(), tables()));
         Ok(Self {
             draft,
             files,
@@ -186,7 +186,7 @@ impl Document {
     /// good projection.
     fn revalidate(&mut self) {
         if self.draft.revalidate(tables()) {
-            self.projected = Some(projected(&self.draft));
+            self.projected = Some(Projected::new(self.draft.plan.clone(), tables()));
         }
     }
 
@@ -332,12 +332,6 @@ impl Document {
         let plan = &self.draft.plan;
         plan.to_toml_string().map_err(|error| error.to_string())
     }
-}
-
-fn projected(draft: &Draft) -> Projected {
-    let plan = draft.plan.clone();
-    let projection = project(&plan, tables());
-    Projected { plan, projection }
 }
 
 #[cfg(test)]

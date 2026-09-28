@@ -260,8 +260,6 @@ fn spawn_year_rows(
 
 const YEAR_COLS: u16 = 5;
 const AGE_COLS: u16 = 6;
-/// The year and the ages, lined up on the left; the figures after them.
-const TEXT_HEADERS: usize = 2;
 const SCROLL_BAR_COLS: u16 = 1;
 /// Columns of the terminal the rows never get.
 const LEDGER_CHROME: u16 = pane::BORDERS + layout::CURSOR_COLS + SCROLL_BAR_COLS;
@@ -313,14 +311,14 @@ fn ledger_constraints(classes: &[TreatmentClass]) -> Vec<Constraint> {
 
 /// The year and the ages on the left, the figures on the right.
 fn header_cells(classes: &[TreatmentClass]) -> Vec<Line<'static>> {
-    let headers = ledger_headers(classes).into_iter().map(Line::from);
+    let headers = ledger_headers(classes).into_iter();
     headers
-        .enumerate()
-        .map(|(at, cell)| {
-            if at < TEXT_HEADERS {
-                cell
-            } else {
+        .map(|(header, is_figure)| {
+            let cell = Line::from(header);
+            if is_figure {
                 cell.right_aligned()
+            } else {
+                cell
             }
         })
         .collect()

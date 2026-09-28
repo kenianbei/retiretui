@@ -14,7 +14,7 @@ use plurimus::ui::ScrollArea;
 use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
 use plurimus::widgets::{TableColumns, WidgetSystems};
 use retiretui_client::ledger::account_flows;
-use retiretui_engine::plan::{Dollars, Plan};
+use retiretui_engine::plan::Plan;
 use retiretui_engine::project::YearRow;
 
 use crate::actions::collect_warnings;
@@ -151,23 +151,10 @@ fn flow_rows(
     account_flows(plan, previous, row, is_nominal)
         .into_iter()
         .flat_map(|flows| {
-            let figures = [
-                flows.account,
-                present::money(flows.open),
-                signed(flows.growth),
-                present::money(flows.close),
-            ];
+            let figures = [flows.account, flows.open, flows.growth, flows.close];
             account_lines(figures, flows.ins, flows.outs)
         })
         .collect()
-}
-
-fn signed(amount: Dollars) -> String {
-    match amount {
-        0 => String::new(),
-        ..0 => present::money(amount),
-        _ => format!("+{}", present::money(amount)),
-    }
 }
 
 /// The account's name, open, growth and close beside its first flow in and

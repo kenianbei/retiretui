@@ -40,17 +40,21 @@ export function DataTable<Row extends RowData>({
     data: rows,
     getRowId: rowKey,
   });
-  const pinned = (at: number) =>
-    isFirstPinned && at === 0 && "bg-inherit sticky left-0 z-10";
-  const pinnedHeader = (at: number) =>
-    isFirstPinned && at === 0 && "left-0 z-30";
+  const isPinned = (at: number) => isFirstPinned && at === 0;
   const aligned = (isNumeric: boolean | undefined) =>
     isNumeric ? "text-right tabular-nums" : "text-left";
-  const press = (row: Row) => (event: KeyboardEvent) => {
-    if (event.key !== "Enter") return;
-    event.preventDefault();
-    onSelect?.(row);
-  };
+  const selecting = (row: Row) =>
+    onSelect && {
+      tabIndex: 0,
+      onClick: () => {
+        onSelect(row);
+      },
+      onKeyDown: (event: KeyboardEvent) => {
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        onSelect(row);
+      },
+    };
   return (
     <div className={cn("bg-card overflow-auto rounded-md border", className)}>
       <table aria-label={label} className="w-full text-sm">
@@ -65,7 +69,7 @@ export function DataTable<Row extends RowData>({
                   className={cn(
                     "bg-card sticky top-0 z-20 px-3 py-2 font-medium whitespace-nowrap",
                     aligned(header.column.columnDef.meta?.isNumeric),
-                    pinnedHeader(at),
+                    isPinned(at) && "left-0 z-30",
                   )}
                 >
                   {flexRender(
@@ -84,15 +88,7 @@ export function DataTable<Row extends RowData>({
               <tr
                 key={row.id}
                 aria-selected={onSelect ? isRowSelected : undefined}
-                tabIndex={onSelect ? 0 : undefined}
-                onClick={
-                  onSelect
-                    ? () => {
-                        onSelect(row.original);
-                      }
-                    : undefined
-                }
-                onKeyDown={onSelect ? press(row.original) : undefined}
+                {...selecting(row.original)}
                 className={cn(
                   "bg-card hover:bg-muted",
                   onSelect && "cursor-pointer",
@@ -106,7 +102,7 @@ export function DataTable<Row extends RowData>({
                     className={cn(
                       "px-3 py-2 whitespace-nowrap",
                       aligned(cell.column.columnDef.meta?.isNumeric),
-                      pinned(at),
+                      isPinned(at) && "sticky left-0 z-10 bg-inherit",
                     )}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}

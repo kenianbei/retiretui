@@ -11,7 +11,7 @@ import { BASIS_LABEL, dollars, share, type Basis } from "@/overview/words";
 import { useMonteCarlo } from "@/searches";
 import { useSession } from "@/session";
 import { basisOf } from "@/year/search";
-import { useYear } from "@/year/use-year";
+import { useYear, type ShownYear } from "@/year/use-year";
 import { BasisSwitch, YearStepper } from "@/year/year";
 
 function Problems({ issues }: { issues: PlacedIssue[] }) {
@@ -148,9 +148,8 @@ function Figures({ basis, plan }: { basis: Basis; plan: string | null }) {
   );
 }
 
-function ThisYear() {
+function ThisYear({ shown }: { shown: ShownYear }) {
   const { reading } = useSession();
-  const shown = useYear();
   const { year } = shown;
   const said = useMemo(
     () => (year === undefined ? null : reading.document?.said(year)),
@@ -197,16 +196,21 @@ function ThisYear() {
 }
 
 /** The plan charted year by year, a click choosing the year shown. */
-function PlanCharts({ basis, plan }: { basis: Basis; plan: string | null }) {
+function PlanCharts({
+  basis,
+  plan,
+  shown,
+}: {
+  basis: Basis;
+  plan: string | null;
+  shown: ShownYear;
+}) {
   const { reading } = useSession();
-  const { year, setYear } = useYear();
-  const series = useMemo(() => {
-    try {
-      return reading.document?.chart(basis === "nominal");
-    } catch {
-      return undefined;
-    }
-  }, [reading, basis]);
+  const { year, setYear } = shown;
+  const series = useMemo(
+    () => reading.document?.chart(basis === "nominal"),
+    [reading, basis],
+  );
   if (!series) return null;
   return (
     <Charts
@@ -224,6 +228,7 @@ export function Overview() {
   const { reading, document, issues } = useSession();
   const basis = basisOf(useSearch({ from: "/overview" }));
   const isValid = issues.length === 0;
+  const shown = useYear();
   const plan = useMemo(
     () => (isValid ? (reading.document?.planText() ?? null) : null),
     [reading, isValid],
@@ -238,8 +243,8 @@ export function Overview() {
       </div>
       {issues.length > 0 && <Problems issues={issues} />}
       <Figures basis={basis} plan={plan} />
-      <PlanCharts basis={basis} plan={plan} />
-      <ThisYear />
+      <PlanCharts basis={basis} plan={plan} shown={shown} />
+      <ThisYear shown={shown} />
     </div>
   );
 }
