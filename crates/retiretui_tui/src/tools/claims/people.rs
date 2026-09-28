@@ -14,8 +14,9 @@ use bevy_ecs::prelude::{
     With,
 };
 use plurimus::widgets::{ActiveDescendant, WidgetSystems};
+use retiretui_client::searches::claims::{PEOPLE_COLUMNS, person_row};
 use retiretui_engine::optimize::benefit_estimates;
-use retiretui_engine::plan::{Dollars, Income, Item, Person, Plan};
+use retiretui_engine::plan::{Dollars, Person, Plan};
 
 use super::super::{EnterRuns, Keyed, handle_enter};
 use super::guide;
@@ -24,7 +25,6 @@ use crate::hints::Hints;
 use crate::layout::{self, filling, placed};
 use crate::nav::{self, FocusStop, Page, ShownSurface};
 use crate::pane::Pane;
-use crate::present::compact_money;
 use crate::session::Session;
 use crate::tabulate;
 use crate::theme::Repainted;
@@ -50,8 +50,6 @@ const TITLE: &str = "People";
 /// The cells between columns, past the one the table leaves: the pane is
 /// wide enough to space them out.
 const GAP: u16 = 1;
-const HEADER: [&str; 6] = ["Person", "Record", "Income", "62", "FRA", "70"];
-pub(super) const NOBODY: &str = "no one in the household";
 
 /// The person the page's commands act on, by place in the household.
 #[derive(Resource, Default, PartialEq, Eq, Debug)]
@@ -97,13 +95,6 @@ pub(super) struct PeopleTable;
 /// A person's row, by place in the household.
 #[derive(Component)]
 struct PersonRow(usize);
-
-/// The person's `social-security` income, where they have one.
-pub(super) fn benefit<'a>(plan: &'a Plan, person: &str) -> Option<&'a Income> {
-    plan.income
-        .iter()
-        .find(|income| income.is_benefit_of(person))
-}
 
 /// The pane, sharing the row with the claim options.
 pub fn spawn_pane(commands: &mut Commands, row: Entity) {
@@ -174,7 +165,7 @@ fn refresh_people(
     if !draft.is_changed() && !estimates.is_changed() && !held.is_changed() {
         return;
     }
-    let header: Vec<String> = HEADER.map(str::to_owned).to_vec();
+    let header: Vec<String> = PEOPLE_COLUMNS.map(str::to_owned).to_vec();
     let rows = people_rows(&draft.plan, &estimates, &held);
     let at = cursor.index(&draft.plan);
     for table in &tables {
@@ -192,19 +183,8 @@ fn people_rows(plan: &Plan, estimates: &Estimates, held: &HeldClaims) -> Vec<Vec
     let people = plan.household.people.iter().enumerate();
     people
         .map(|(at, person)| {
-            let income = if held.0.contains(&person.id) {
-                "held"
-            } else {
-                income(plan, person)
-            };
-            let mut row = vec![
-                person.display_name().to_owned(),
-                record(person),
-                income.to_owned(),
-            ];
             let figures = estimates.shown.get(at).copied().unwrap_or_default();
-            row.extend(figures.map(|figure| figure.map_or_else(|| "-".to_owned(), compact_money)));
-            row
+            person_row(plan, person, held.0.contains(&person.id), figures)
         })
         .collect()
 }
@@ -219,21 +199,5 @@ fn follow_cursor(
         if let Some(&PersonRow(index)) = on.0.and_then(|row| rows.get(row).ok()) {
             cursor.set_if_neq(PersonCursor(index));
         }
-    }
-}
-
-fn record(person: &Person) -> String {
-    match person.earnings.len() {
-        0 => "none".to_owned(),
-        years => format!("{years}y"),
-    }
-}
-
-/// The person's `social-security` income: computed, typed, or none.
-fn income(plan: &Plan, person: &Person) -> &'static str {
-    match benefit(plan, &person.id).map(|income| income.amount) {
-        None => "none",
-        Some(None) => "computed",
-        Some(Some(_)) => "typed",
     }
 }

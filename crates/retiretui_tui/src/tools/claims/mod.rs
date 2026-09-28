@@ -37,6 +37,7 @@ use crate::session::Session;
 pub(crate) use people::HeldClaims;
 #[cfg(test)]
 pub(crate) use people::is_estimating;
+use retiretui_client::searches::claims;
 
 pub type Claims = Tool<ClaimSearch>;
 
@@ -66,34 +67,18 @@ const PAGE: ToolPage = ToolPage {
     },
 };
 
-/// What a claim the plan does not pay says.
-const NO_CLAIM: &str = "none";
-
 impl Found for ClaimSearch {
-    const NOTHING_SEARCHED: &'static str = "Every age each computed Social Security benefit can be claimed at is ranked here, jointly for the household, as soon as the plan is valid.";
+    const NOTHING_SEARCHED: &'static str = claims::NOTHING_SEARCHED;
 
     /// The header names each person, then the figures; the plan's own row
     /// gives each claim age the plan states, and each option the ages tried.
     fn laid(&self, plan: &Plan, is_nominal: bool) -> Laid {
         let deflated = !is_nominal;
-        let owners: Vec<String> = self
-            .candidates
-            .first()
-            .map(|best| {
-                best.claims
-                    .iter()
-                    .map(|claim| plan.person_name(&claim.owner).to_owned())
-                    .collect()
-            })
-            .unwrap_or_default();
         let header = std::iter::once(String::new())
-            .chain(owners)
+            .chain(claims::claimants(plan, self))
             .chain(FIGURES.map(str::to_owned))
             .collect();
-        let ages = self
-            .current
-            .iter()
-            .map(|age| age.map_or_else(|| NO_CLAIM.to_owned(), |age| age.to_string()));
+        let ages = self.current.iter().copied().map(claims::age_cell);
         let current = std::iter::once(CURRENT_PLAN.to_owned())
             .chain(ages)
             .chain(figures(&self.baseline.summary(deflated)))
@@ -177,7 +162,7 @@ pub fn adopt(claims: Res<Claims>, draft: Res<Draft>, mut confirm: ResMut<Confirm
         .primary(),
     ];
     confirm.ask_among(
-        format!("Take these claims? {}.", said(&candidate.claims)),
+        claims::take_question(&draft.plan, &candidate.claims),
         answers,
     );
     Outcome::Done
@@ -187,16 +172,7 @@ pub fn adopt(claims: Res<Claims>, draft: Res<Draft>, mut confirm: ResMut<Confirm
 fn take(In((added, claims)): In<(Vec<Income>, Vec<Claim>)>, mut editor: DraftEditor) {
     apply_claims(&mut editor.draft.plan, &added, &claims);
     editor.commit();
-    journal::say(format!("claimed {}", said(&claims)));
-}
-
-/// Claims as a sentence says them: `ss-me at 70, ss-you at 67`.
-fn said(claims: &[Claim]) -> String {
-    let each: Vec<String> = claims
-        .iter()
-        .map(|claim| format!("{} at {}", claim.income, claim.age))
-        .collect();
-    each.join(", ")
+    journal::say(claims::taken(&editor.draft.plan, &claims));
 }
 
 /// The `write-claims` command: asks where to write the highlighted

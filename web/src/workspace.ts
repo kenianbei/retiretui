@@ -32,6 +32,11 @@ export function stemOf(name: string): string {
     : name;
 }
 
+/** The file name a scenario over `path` is offered under: its stem, then `suffix`. */
+export function offeredName(path: string | null, suffix: string): string {
+  return `${stemOf(nameOf(path ?? "plan"))}-${suffix}.toml`;
+}
+
 /** What a path is shown as. */
 export function nameOf(path: string): string {
   return path.replace(/^\//, "");

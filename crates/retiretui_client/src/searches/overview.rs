@@ -10,8 +10,24 @@ use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::{Plan, TreatmentClass};
 use retiretui_engine::project::Projection;
 
-use super::ladders::Swept;
+use super::claims::said;
+use super::ladders::{Swept, rate_label};
 use crate::present::signed_money;
+
+/// The card's title.
+pub const COULD_DO_BETTER: &str = "Could do better";
+
+/// What a Roth owner's row says where no ladder beats the plan.
+pub const NO_LADDER: &str = "no conversion ladder beats the plan";
+
+/// What a Roth owner's row says where the search is refused.
+pub const REFUSED: &str = "not searchable under the Roth Conversions answers";
+
+/// What the claims row says where no claims beat the plan's own.
+pub const CLAIMS_AS_PLANNED: &str = "Claims as planned are best";
+
+/// What the card says where there is nothing to search.
+pub const NOTHING_TO_SEARCH: &str = "No conversion or claim to search";
 
 /// A plan, the people whose claims are held as it states them, and the
 /// conversion answers held but the destination.
@@ -81,7 +97,7 @@ fn best_ladder(
 }
 
 /// Each person with a Roth account, and the first they own.
-fn roth_owners(plan: &Plan) -> impl Iterator<Item = (&str, &str)> {
+pub fn roth_owners(plan: &Plan) -> impl Iterator<Item = (&str, &str)> {
     plan.household.people.iter().filter_map(|person| {
         let roth = plan.accounts.iter().find(|account| {
             account.owner == person.id && account.treatment() == TreatmentClass::Roth
@@ -108,6 +124,40 @@ pub fn gain(option: &Projection, current: &Projection, nominal: bool) -> String 
     } else {
         format!("ends {ends}, unfunded {}", signed_money(unfunded))
     }
+}
+
+/// What a Roth owner's row says of `swept`, their ladders, against
+/// `current`: the best bracket and its gain where it beats the plan.
+#[must_use]
+pub fn ladder_said(swept: Option<&Swept>, current: &Projection, nominal: bool) -> String {
+    match swept.and_then(Swept::best) {
+        None => REFUSED.to_owned(),
+        Some(best) if beats(&best.optimized, current) => format!(
+            "convert to {}, {}",
+            rate_label(best.rate),
+            gain(&best.optimized, current, nominal)
+        ),
+        Some(_) => NO_LADDER.to_owned(),
+    }
+}
+
+/// What the claims row says of `search` over `plan` against `current`: the
+/// best claims and their gain where they beat the plan's own.
+#[must_use]
+pub fn claims_said(
+    plan: &Plan,
+    search: &ClaimSearch,
+    current: &Projection,
+    nominal: bool,
+) -> String {
+    let Some(best) = search.candidates.first() else {
+        return CLAIMS_AS_PLANNED.to_owned();
+    };
+    if !beats(&best.projection, current) {
+        return CLAIMS_AS_PLANNED.to_owned();
+    }
+    let gain = gain(&best.projection, current, nominal);
+    format!("Claim {}: {gain}", said(plan, &best.claims))
 }
 
 #[cfg(test)]

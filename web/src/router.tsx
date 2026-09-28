@@ -33,7 +33,7 @@ const index = createRoute({
 const overview = createRoute({
   getParentRoute: () => root,
   path: "/overview",
-  staticData: { keeps: ["year", "basis"] },
+  staticData: { keeps: ["year", "basis", "held"] },
   validateSearch: yearSearch,
   component: Overview,
 });
@@ -41,7 +41,7 @@ const overview = createRoute({
 const ledger = createRoute({
   getParentRoute: () => root,
   path: "/ledger",
-  staticData: { keeps: ["year", "basis"] },
+  staticData: { keeps: ["year", "basis", "held"] },
   validateSearch: yearSearch,
   component: LedgerPage,
 });
@@ -60,7 +60,7 @@ const compare = createRoute({
 const tools = createRoute({
   getParentRoute: () => root,
   path: "/tools/$page",
-  staticData: { keeps: ["basis"] },
+  staticData: { keeps: ["basis", "held"] },
   validateSearch: toolSearch,
   beforeLoad: ({ params }) => ({ page: pageOf(TOOLS, params.page) }),
   component: ToolPage,

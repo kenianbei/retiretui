@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { percentOf, toolSearch } from "@/tools/search";
-import { keptSearch } from "@/year/search";
+import { heldIn, heldOf, keptSearch } from "@/year/search";
 
 describe("toolSearch", () => {
   it("keeps a whole bracket, the nominal basis, and an open form", () => {
@@ -14,6 +14,14 @@ describe("toolSearch", () => {
     expect(toolSearch({ bracket: "high", basis: "today", edit: 1 })).toEqual(
       {},
     );
+    expect(toolSearch({ claim: "70-", person: -1, held: "" })).toEqual({});
+  });
+
+  it("keeps the claims by their ages, a person, and who is held", () => {
+    expect(
+      toolSearch({ claim: "70-67", person: "1", held: "ann,bob" }),
+    ).toEqual({ claim: "70-67", person: 1, held: "ann,bob" });
+    expect(toolSearch({ claim: 70 })).toEqual({ claim: "70" });
   });
 
   it("reads a rate back as the percent it is kept under", () => {
@@ -24,6 +32,13 @@ describe("toolSearch", () => {
 
 describe("keptSearch", () => {
   const held = { year: 2030, basis: "nominal", bracket: 22 };
+
+  it("reads who is held and writes them back", () => {
+    expect(heldOf({ held: "ann,bob" })).toEqual(["ann", "bob"]);
+    expect(heldOf({})).toEqual([]);
+    expect(heldIn(["ann"])).toBe("ann");
+    expect(heldIn([])).toBeUndefined();
+  });
 
   it("carries only the keys a route keeps", () => {
     expect(keptSearch(held, ["year", "basis"])).toEqual({

@@ -8,15 +8,16 @@ use retiretui_client::files::{OVERLAY_SAVE_FIRST, relative_path};
 use retiretui_client::forms::{Form, details};
 use retiretui_client::searches::ladders::{
     CONVERSION_COLUMNS, CONVERTS_NOTHING, Constraints, DESTINATION, FIELDS, NO_BRACKET,
-    OPTION_COLUMNS, PICK_DESTINATION, constraints_in, only_roth, option_amounts, rate_label,
-    search, take_question, taken, taxed_in,
+    OPTION_COLUMNS, PICK_DESTINATION, Swept, constraints_in, held_answers, only_roth,
+    option_amounts, rate_label, search, take_question, taken, taxed_in,
 };
+use retiretui_client::searches::overview::ladder_said;
 use retiretui_client::searches::{CURRENT_PLAN, FIGURES, run_refusal};
 use retiretui_client::store::normal;
 use retiretui_client::table::{account_name, basis_amount};
 use retiretui_engine::market::Progress;
 use retiretui_engine::optimize::{
-    BracketSweep, LadderStep, OptimizeOptions, SweptBracket, apply_ladder, ladder_overlay,
+    LadderStep, OptimizeOptions, SweptBracket, apply_ladder, ladder_overlay,
 };
 use retiretui_engine::plan::{Dollars, Plan};
 use retiretui_engine::project::Projection;
@@ -27,31 +28,18 @@ use crate::document::Document;
 use crate::editor::Editor;
 use crate::edits::JsEditor;
 use crate::searches::gated;
-use crate::{JsDocument, from_js, refused, reply, tables, to_js};
+use crate::{Bases, JsDocument, from_js, refused, reply, tables, to_js};
 
 /// A scenario written over a file it resolves through would name itself.
 const OVER_ITS_BASE: &str = "a scenario cannot be written over a file it is made from";
 
 static FORM: Form = Form::tool::<Constraints>("Constraints", FIELDS);
 
-/// An option's amounts under the reply's columns past the first, in
-/// either dollar basis.
-#[derive(Serialize, Debug)]
-#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
-pub struct Figures {
-    /// In today's dollars.
-    pub today: [Dollars; 5],
-    /// In the dollars of each year.
-    pub nominal: [Dollars; 5],
-}
+/// An option's amounts under the reply's columns past the first.
+type Figures = Bases<[Dollars; 5]>;
 
-impl Figures {
-    fn of(projection: &Projection) -> Self {
-        Self {
-            today: option_amounts(&projection.summary(true)),
-            nominal: option_amounts(&projection.summary(false)),
-        }
-    }
+fn figures_of(projection: &Projection) -> Figures {
+    Bases::of(|nominal| option_amounts(&projection.summary(!nominal)))
 }
 
 /// What the tool says of itself, beside what a search replies.
@@ -119,21 +107,26 @@ pub struct LaddersReply {
     pub baseline: Figures,
     /// One option per bracket searched, best first.
     pub brackets: Vec<LadderOption>,
+    /// What the best ladder does better than the plan, in either basis.
+    pub better: Bases<String>,
 }
 
 impl LaddersReply {
-    fn new(plan: &Plan, sweep: &BracketSweep, options: &OptimizeOptions) -> Self {
+    fn new(plan: &Plan, swept: &Swept) -> Self {
+        let Swept { sweep, options } = swept;
+        let baseline = &sweep.baseline;
         Self {
             columns: OPTION_COLUMNS.into_iter().chain(FIGURES).collect(),
             conversion_columns: CONVERSION_COLUMNS.to_vec(),
             current: CURRENT_PLAN,
             destination: options.destination.clone(),
-            baseline: Figures::of(&sweep.baseline),
+            baseline: figures_of(&sweep.baseline),
             brackets: sweep
                 .brackets
                 .iter()
                 .map(|bracket| option_of(plan, bracket))
                 .collect(),
+            better: Bases::of(|nominal| ladder_said(Some(swept), baseline, nominal)),
         }
     }
 }
@@ -154,26 +147,27 @@ fn option_of(plan: &Plan, bracket: &SweptBracket) -> LadderOption {
     LadderOption {
         rate: bracket.rate,
         label: rate_label(bracket.rate),
-        figures: Figures::of(&bracket.optimized),
+        figures: figures_of(&bracket.optimized),
         steps: steps.collect(),
         question: take_question(bracket, plan),
     }
 }
 
-/// Every bracket's ladder in `text`, a plan, under `answers`, the
-/// constraints as TOML.
+/// Every bracket's ladder into `destination` in `text`, a plan, under
+/// `answers`, the rest of the constraints as TOML.
 ///
 /// # Errors
 ///
-/// Where the plan does not pass the gate, the answers do not read or name
-/// no destination, or the search refuses them.
-pub fn ladders(text: &str, answers: &str) -> Result<LaddersReply, String> {
+/// Where the plan does not pass the gate, the answers do not read, or the
+/// search refuses them.
+pub fn ladders(text: &str, answers: &str, destination: &str) -> Result<LaddersReply, String> {
     let plan = gated(text)?;
-    let answers = toml::from_str(answers).map_err(|error| error.to_string())?;
+    let mut answers: toml::Table = toml::from_str(answers).map_err(|error| error.to_string())?;
+    answers.insert(DESTINATION.to_owned(), destination.into());
     let (options, rate) = constraints_in(answers)?;
     let sweep =
         search(&plan, tables(), &options, rate, &Progress::default()).map_err(run_refusal)?;
-    Ok(LaddersReply::new(&plan, &sweep, &options))
+    Ok(LaddersReply::new(&plan, &Swept { sweep, options }))
 }
 
 /// The options a ladder into `destination` is taken or written under: the
@@ -218,20 +212,21 @@ impl Document {
         self.hold(editor)
     }
 
-    /// The constraints as TOML, what a search is handed.
+    /// The constraints but the destination as TOML, what a search into
+    /// any account is handed.
     ///
     /// # Errors
     ///
     /// Where they do not serialize.
     pub fn constraints_text(&self) -> Result<String, String> {
-        toml::to_string(&self.aimed()).map_err(|error| error.to_string())
+        toml::to_string(&held_answers(self.draft())).map_err(|error| error.to_string())
     }
 
-    /// Whether the constraints name the Roth account to convert to, as a
-    /// search needs them to.
+    /// The account the constraints aim at, where they name one.
     #[must_use]
-    pub fn is_aimed(&self) -> bool {
-        self.aimed().contains_key(DESTINATION)
+    pub fn destination(&self) -> Option<String> {
+        let answers = self.aimed();
+        Some(answers.get(DESTINATION)?.as_str()?.to_owned())
     }
 
     /// The constraints read out, each field's label beside what it holds.
@@ -272,6 +267,20 @@ impl Document {
         destination: &str,
         years: Vec<LadderYear>,
     ) -> Result<String, String> {
+        let base = self.scenario_base(out)?;
+        let steps = steps_of(years);
+        ladder_overlay(&base, &self.draft().plan, &into(destination), &steps)
+            .map_err(|error| error.to_string())
+    }
+
+    /// The `base` a scenario written at `out` names: the document's file,
+    /// relative to `out`.
+    ///
+    /// # Errors
+    ///
+    /// Where the draft has unsaved edits, which the file on disk does not
+    /// hold, or `out` is a file the document was resolved from.
+    pub(crate) fn scenario_base(&self, out: &str) -> Result<String, String> {
         if self.draft().is_dirty() {
             return Err(OVERLAY_SAVE_FIRST.to_owned());
         }
@@ -280,10 +289,7 @@ impl Document {
             return Err(OVER_ITS_BASE.to_owned());
         }
         let within = out.parent().unwrap_or(Path::new("/"));
-        let base = relative_path(within, &self.files()[0]);
-        let steps = steps_of(years);
-        ladder_overlay(&base, &self.draft().plan, &into(destination), &steps)
-            .map_err(|error| error.to_string())
+        Ok(relative_path(within, &self.files()[0]))
     }
 }
 
@@ -306,7 +312,8 @@ impl JsDocument {
         self.0.apply_constraints(&mut editor.0).map_err(refused)
     }
 
-    /// The constraints as TOML, what a search is handed.
+    /// The constraints but the destination as TOML, what a search into
+    /// any account is handed.
     ///
     /// # Errors
     ///
@@ -314,14 +321,6 @@ impl JsDocument {
     #[wasm_bindgen(getter, js_name = constraintsText)]
     pub fn constraints_text(&self) -> Result<String, JsError> {
         self.0.constraints_text().map_err(refused)
-    }
-
-    /// Whether the constraints name the Roth account to convert to, as a
-    /// search needs them to.
-    #[wasm_bindgen(getter, js_name = isAimed)]
-    #[must_use]
-    pub fn is_aimed(&self) -> bool {
-        self.0.is_aimed()
     }
 
     /// The constraints read out: each field's label beside what it holds.
@@ -386,16 +385,16 @@ pub fn ladder_words() -> Result<JsValue, JsError> {
     })
 }
 
-/// Every bracket's ladder in `plan` under `constraints`, the constraints as
-/// TOML, best first.
+/// Every bracket's ladder into `destination` in `plan` under
+/// `constraints`, the rest of the constraints as TOML, best first.
 ///
 /// # Errors
 ///
-/// Where the plan does not pass the gate, the constraints name no
-/// destination, or the search refuses them.
+/// Where the plan does not pass the gate, or the search refuses the
+/// constraints.
 #[wasm_bindgen(js_name = ladders, unchecked_return_type = "LaddersReply")]
-pub fn js_ladders(plan: &str, constraints: &str) -> Result<JsValue, JsError> {
-    reply(ladders(plan, constraints))
+pub fn js_ladders(plan: &str, constraints: &str, destination: &str) -> Result<JsValue, JsError> {
+    reply(ladders(plan, constraints, destination))
 }
 
 #[cfg(test)]
@@ -421,10 +420,13 @@ mod tests {
     #[test]
     fn the_lone_roth_account_is_searched_into_without_being_named() {
         let document = opened();
-        assert!(document.is_aimed());
+        assert_eq!(document.destination().as_deref(), Some(ROTH));
         let answers = document.constraints_text().expect("serializes");
-        assert!(answers.contains(ROTH), "{answers}");
-        let reply = ladders(example(), &answers).expect("searches");
+        assert!(
+            !answers.contains(ROTH),
+            "the destination is its own: {answers}"
+        );
+        let reply = ladders(example(), &answers, ROTH).expect("searches");
         assert_eq!(reply.destination, ROTH);
         let best = reply.brackets.first().expect("a bracket");
         assert!(!best.steps.is_empty());
@@ -450,12 +452,12 @@ mod tests {
         assert!(!document.draft().can_undo(), "no step of history");
         assert!(!document.draft().is_dirty());
         let answers = document.constraints_text().expect("serializes");
-        let reply = ladders(example(), &answers).expect("searches");
+        let reply = ladders(example(), &answers, ROTH).expect("searches");
         let rates: Vec<f64> = reply.brackets.iter().map(|b| b.rate).collect();
         assert_eq!(rates, [0.22]);
         assert!(
-            ladders(example(), "bracket = 22").is_err(),
-            "no destination"
+            ladders(example(), "bracket = 22", "nowhere").is_err(),
+            "no such account"
         );
     }
 
@@ -463,7 +465,7 @@ mod tests {
     fn a_ladder_is_taken_as_one_step_and_written_over_the_draft() {
         let mut document = opened();
         let answers = document.constraints_text().expect("serializes");
-        let reply = ladders(example(), &answers).expect("searches");
+        let reply = ladders(example(), &answers, ROTH).expect("searches");
         let years = || reply.brackets[0].steps.clone();
         let count = reply.brackets[0].steps.len();
         let said = document.take_ladder(ROTH, years()).expect("taken");

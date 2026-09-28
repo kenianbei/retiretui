@@ -19,15 +19,12 @@ use crate::edit::Draft;
 use crate::nav::{Page, ShownSurface};
 use crate::session::{Projected, Session};
 use crate::tools::claims::HeldClaims;
-use crate::tools::ladders::{self, Swept, rate_label};
+use crate::tools::ladders::{self, Swept};
 use crate::tools::markets::MarketHistory;
 use crate::tools::{Keyed, Searches};
-use retiretui_client::searches::overview::{Found, Searched, beats, gain, search};
-
-const NO_LADDER: &str = "no conversion ladder beats the plan";
-const REFUSED: &str = "not searchable under the Roth Conversions answers";
-const CLAIMS_AS_PLANNED: &str = "Claims as planned are best";
-const NOTHING_TO_SEARCH: &str = "No conversion or claim to search";
+use retiretui_client::searches::overview::{
+    Found, NOTHING_TO_SEARCH, Searched, claims_said, ladder_said, search,
+};
 
 /// What the searches found, and what they were made over.
 #[derive(Resource, Default)]
@@ -171,33 +168,14 @@ pub(super) fn entries(better: &Better, projected: &Projected, nominal: bool) -> 
         .ladders
         .iter()
         .map(|ladder| {
-            let said = match ladder.swept.as_ref().and_then(Swept::best) {
-                None => REFUSED.to_owned(),
-                Some(best) if beats(&best.optimized, current) => {
-                    let rate = rate_label(best.rate);
-                    format!(
-                        "convert to {rate}, {}",
-                        gain(&best.optimized, current, nominal)
-                    )
-                }
-                Some(_) => NO_LADDER.to_owned(),
-            };
+            let said = ladder_said(ladder.swept.as_ref(), current, nominal);
             let text = format!("{}: {said}", plan.person_name(&ladder.owner));
             let aim = Some(ladder.destination.clone());
             Entry::leading(text, (Page::RothConversions, aim))
         })
         .collect();
     rows.extend(found.claims.as_ref().map(|search| {
-        let best = search.best();
-        let text = if beats(&best.projection, current) {
-            let claims: Vec<String> = (best.claims.iter())
-                .map(|claim| format!("{} at {}", plan.person_name(&claim.owner), claim.age))
-                .collect();
-            let gain = gain(&best.projection, current, nominal);
-            format!("Claim {}: {gain}", claims.join(", "))
-        } else {
-            CLAIMS_AS_PLANNED.to_owned()
-        };
+        let text = claims_said(plan, search, current, nominal);
         Entry::leading(text, (Page::SsaBenefits, None))
     }));
     if rows.is_empty() {

@@ -1,5 +1,6 @@
 //! The searches every interface runs over a plan, beyond the engine's own.
 
+pub mod claims;
 pub mod ladders;
 pub mod overview;
 

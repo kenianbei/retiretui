@@ -56,7 +56,9 @@ export function ConstraintsForm() {
 
   const apply = () => {
     try {
-      session.applyConstraints(editor);
+      session.change((document) => {
+        document.applyConstraints(editor);
+      });
       setRefusal(null);
       close();
     } catch (thrown) {

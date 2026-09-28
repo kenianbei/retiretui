@@ -127,10 +127,12 @@ depends on UI.
   with its whole-plan history. A first plan from the new-plan answers - asked of
   a partner only where the household files jointly, in the steps a page asks
   them in - or an example; a statement's earnings recorded on a person; the
-  searches the tools and the overview share, and the words their options are
-  said in; and the shapes a search or a year's actions are replied in as data.
-  Where there is a machine beneath it, what that machine supplies: the user's
-  own tax tables, market history and directories.
+  searches the tools and the overview share, the words their options and what
+  the overview finds better are said in, and what can be done for a person
+  beside the claim search, each edit said and refused in its own words; and the
+  shapes a search or a year's actions are replied in as data. Where there is a
+  machine beneath it, what that machine supplies: the user's own tax tables,
+  market history and directories.
 - `retiretui_tui` - the interactive planner described under `tui` below, as a
   library over the client and above whatever backend draws it, mapping each
   editing domain to its page. It runs each search beside the frames: on a thread
@@ -327,23 +329,27 @@ depends on UI.
   whatever writes the page's files, under the same gate as every write; a
   statement's earnings recorded on a person, still the one named, as one more
   such step; the Roth Conversions tool's constraints, held beside the draft and
-  outside its history, and a searched ladder taken into the draft as one more
-  step or made a scenario beside the document's saved file, never over a file it
-  was made from; and a first plan made from the new-plan questions, answered a
-  field at a time and kept as text between visits. Its issues are in the forms'
-  words, each with the page, item and field it is about, and from its last draft
-  without any - kept beside the plan it was projected from, so what is said of
-  it names what the projection holds - come its projection, summary, the year a
-  view shows held within the plan's years, the Ledger's years, a year's flows,
-  income and what it paid, the series the Overview charts, and a year's actions
-  both as data and said as every surface says them - with the client's names for
-  the editing domains and its count of issues, and, over a plan's text alone so
-  that a worker can run them, the gate, the conversion and claim searches, the
-  market runs and the example plans, each answered in the shapes the command
-  line's JSON and the MCP server reply in - save the conversion search, whose
-  every ladder comes year by year in both dollar bases, with the words the tool
-  tables it in. Values cross as plain objects, typed by TypeScript generated
-  from the Rust types; the build fails where the two have drifted.
+  outside its history and aimed at any Roth account there, and a searched ladder
+  or set of claims taken into the draft as one more step or made a scenario
+  beside the document's saved file, never over a file it was made from; each
+  person's row of the SSA Benefits page, their benefit estimated once for each
+  projection, and what is done for them as one more step; and a first plan made
+  from the new-plan questions, answered a field at a time and kept as text
+  between visits. Its issues are in the forms' words, each with the page, item
+  and field it is about, and from its last draft without any - kept beside the
+  plan it was projected from, so what is said of it names what the projection
+  holds - come its projection, summary, the year a view shows held within the
+  plan's years, the Ledger's years, a year's flows, income and what it paid, the
+  series the Overview charts, and a year's actions both as data and said as
+  every surface says them - with the client's names for the editing domains and
+  its count of issues, and, over a plan's text alone so that a worker can run
+  them, the gate, the conversion search into a given account and the claim
+  search with the people held out of it, the market runs and the example plans,
+  each answered in the shapes the command line's JSON and the MCP server reply
+  in - save the conversion and claim searches, whose every option comes in both
+  dollar bases, with the words the tools table them in and what the best does
+  better than the plan. Values cross as plain objects, typed by TypeScript
+  generated from the Rust types; the build fails where the two have drifted.
 - `web/` - outside the cargo workspace, the web app, published at the Pages
   site's root with each release: a React page over `retiretui_wasm` for a phone
   or a desktop. Its plan files are kept in the page's own storage, under keys
@@ -354,35 +360,43 @@ depends on UI.
   an upload, or the file last open, and downloaded back out. The terminal's five
   tabs are a bar along a phone's bottom edge and a sidebar on a wider screen,
   their addresses in the page's hash. The Overview and the Ledger share a year
-  and a basis, both in that address and kept by the links between them - each
-  route naming what of the address a tab's link carries to it, the tools the
-  basis alone: the Overview charts the plan's balances by treatment, its net
-  worth, its income against its taxes, and its net worth through random markets
-  as percentile bands in today's dollars, a click choosing the year its actions
-  are for; the Ledger is every year in a table whose year column stays in view,
-  over the chosen year's flows through each account and its income and tax, the
-  arrow keys stepping the year on both. The Plan tab's pages are the plan's
-  editing domains: a table - rows of a name and one figure on a phone - beside
-  the highlighted item read out, or a domain's one item read out alone, and one
-  item at a time edited in a form over the page, a sheet or a phone's whole
-  screen, whose address names the item and the field an issue's link lands on. A
-  Social Security statement downloaded from ssa.gov is recorded on a person from
-  the People page. The Tools tab's Roth Conversions page reads out the
-  constraints its ladders are searched under, edited in the same sheet as an
-  item, over every fillable bracket's ladder ranked under the plan as it stands,
-  the highlighted one - kept in the address - year by year, taken into the draft
-  after asking or written as a scenario beside the saved plan; it searches again
-  whenever the plan or the constraints change. What is applied is a step of the
-  draft's history, undone and redone from the header, which saves it or saves it
-  under another name; edits not yet applied or saved are asked about before they
-  are dropped, and a file another tab changes under unsaved edits is reported
-  rather than reopened. What it says of a plan - a year's actions, where an
-  issue is, the domains' names, a form's fields - is the client's words through
-  the bindings, never its own. Each kind of search runs in a Web Worker kept
-  loaded for it between searches; stopping one, or a newer search of its kind,
-  terminates that worker and loads another. Its colours are the terminal theme's
-  roles, light or dark as the system is, each held to a readable contrast by a
-  test. A page not yet built says so.
+  and a basis, and with the tools the people whose claims are held, all in that
+  address and kept by the links between them - each route naming what of the
+  address a tab's link carries to it, the tools all but the year: the Overview
+  says what each Roth owner's best ladder and the household's best claims do
+  better than the plan, each leading to its tool, and charts the plan's balances
+  by treatment, its net worth, its income against its taxes, and its net worth
+  through random markets as percentile bands in today's dollars, a click
+  choosing the year its actions are for; the Ledger is every year in a table
+  whose year column stays in view, over the chosen year's flows through each
+  account and its income and tax, the arrow keys stepping the year on both. The
+  Plan tab's pages are the plan's editing domains: a table - rows of a name and
+  one figure on a phone - beside the highlighted item read out, or a domain's
+  one item read out alone, and one item at a time edited in a form over the
+  page, a sheet or a phone's whole screen, whose address names the item and the
+  field an issue's link lands on. A Social Security statement downloaded from
+  ssa.gov is recorded on a person from the People page. The Tools tab's Roth
+  Conversions page reads out the constraints its ladders are searched under,
+  edited in the same sheet as an item, over every fillable bracket's ladder
+  ranked under the plan as it stands, the highlighted one - kept in the
+  address - year by year, taken into the draft after asking or written as a
+  scenario beside the saved plan; it searches again whenever the plan or the
+  constraints change. Its SSA Benefits page is each person's record, income and
+  estimated benefit, with what can be done for the highlighted one, over every
+  claim age for the household ranked the same way and taken or written the same
+  way, a held claim left as the plan states it; what the Overview found is what
+  each tool shows, a search answered once for both. What is applied is a step of
+  the draft's history, undone and redone from the header, which saves it or
+  saves it under another name; edits not yet applied or saved are asked about
+  before they are dropped, and a file another tab changes under unsaved edits is
+  reported rather than reopened. What it says of a plan - a year's actions,
+  where an issue is, the domains' names, a form's fields - is the client's words
+  through the bindings, never its own. Each kind of search runs in a Web Worker
+  kept loaded for it between searches - a ladder search one for each account it
+  fills, so that owners' ladders run side by side; stopping one, or a newer
+  search in its worker, terminates that worker and loads another. Its colours
+  are the terminal theme's roles, light or dark as the system is, each held to a
+  readable contrast by a test. A page not yet built says so.
 
 Plans express timing through a closed trigger vocabulary - a fixed date, a
 person's age, or a reference to a named event or income source with a whole year

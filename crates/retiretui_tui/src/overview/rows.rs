@@ -21,6 +21,7 @@ use crate::nav::Page;
 use crate::session::{LedgerRun, RowYear, Shown, YearCursor};
 use crate::theme::Theme;
 use crate::tools::ladders;
+use retiretui_client::searches::overview::COULD_DO_BETTER;
 
 const HINTS: Hints = Hints(&[("↑↓", "scroll"), ("⏎", "open")]);
 pub(super) const NOTHING_TO_EDIT: &str = "Nothing in the plan to edit here";
@@ -104,7 +105,7 @@ impl List {
         match self {
             Self::Milestones => "Milestones",
             Self::Attention => "Needs attention",
-            Self::Better => "Could do better",
+            Self::Better => COULD_DO_BETTER,
         }
     }
 }
