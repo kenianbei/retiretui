@@ -7,15 +7,6 @@ const DOLLARS = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0,
 });
 
-const SHARE = new Intl.NumberFormat("en-US", {
-  style: "percent",
-  maximumFractionDigits: 0,
-});
-
 export function dollars(amount: number): string {
   return DOLLARS.format(amount);
-}
-
-export function share(rate: number): string {
-  return SHARE.format(rate);
 }

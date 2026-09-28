@@ -1,12 +1,12 @@
-import { Link } from "@tanstack/react-router";
 import {
   claimWords,
   type Bases,
   type RothOwner,
 } from "@wasm/retiretui_wasm.js";
-import { useMemo, type ReactNode } from "react";
+import { useMemo } from "react";
 
-import { ROTH_CONVERSIONS, SSA_BENEFITS } from "@/nav";
+import { ROTH_CONVERSIONS, SSA_BENEFITS, TOOLS } from "@/nav";
+import { Rows, ToolRow } from "@/overview/lists";
 import type { Basis } from "@/overview/words";
 import { useClaims, useLadders } from "@/searches";
 import { useSession } from "@/session";
@@ -14,9 +14,8 @@ import { useSession } from "@/session";
 const WORDS = claimWords();
 const SEARCHING = "Searching…";
 
-function Row({ children }: { children: ReactNode }) {
-  return <li className="px-4 py-3">{children}</li>;
-}
+const title = (page: string) =>
+  TOOLS.find((tool) => tool.slug === page)?.title ?? page;
 
 /** A Roth owner's best ladder, leading to the tool aimed at their account. */
 function LadderRow({
@@ -41,21 +40,17 @@ function LadderRow({
       ? WORDS.refused
       : SEARCHING;
   return (
-    <Row>
-      <Link
-        to="/tools/$page"
-        params={{ page: ROTH_CONVERSIONS }}
-        search={(kept) => ({ basis: kept.basis, held: kept.held })}
-        onClick={() => {
-          session.change((document) => {
-            document.aimAt(owner.destination);
-          });
-        }}
-        className="underline-offset-4 hover:underline"
-      >
-        {owner.name}: {said}
-      </Link>
-    </Row>
+    <ToolRow
+      page={ROTH_CONVERSIONS}
+      title={title(ROTH_CONVERSIONS)}
+      onClick={() => {
+        session.change((document) => {
+          document.aimAt(owner.destination);
+        });
+      }}
+    >
+      {owner.name}: {said}
+    </ToolRow>
   );
 }
 
@@ -69,16 +64,9 @@ function ClaimsRow({
 }) {
   if (found.error) return null;
   return (
-    <Row>
-      <Link
-        to="/tools/$page"
-        params={{ page: SSA_BENEFITS }}
-        search={(kept) => ({ basis: kept.basis, held: kept.held })}
-        className="underline-offset-4 hover:underline"
-      >
-        {found.data?.better[basis] ?? SEARCHING}
-      </Link>
-    </Row>
+    <ToolRow page={SSA_BENEFITS} title={title(SSA_BENEFITS)}>
+      {found.data?.better[basis] ?? SEARCHING}
+    </ToolRow>
   );
 }
 
@@ -105,7 +93,7 @@ export function Better({
       <h2 id="better" className="text-lg font-semibold">
         {WORDS.could_do_better}
       </h2>
-      <ul className="bg-card divide-y rounded-md border">
+      <Rows>
         {owners.map((owner) => (
           <LadderRow
             key={owner.destination}
@@ -116,13 +104,11 @@ export function Better({
         ))}
         <ClaimsRow found={claims} basis={basis} />
         {isNothing && (
-          <Row>
-            <span className="text-muted-foreground">
-              {WORDS.nothing_to_search}
-            </span>
-          </Row>
+          <li className="text-muted-foreground px-4 py-2.5 text-sm">
+            {WORDS.nothing_to_search}
+          </li>
         )}
-      </ul>
+      </Rows>
     </section>
   );
 }

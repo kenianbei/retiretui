@@ -81,7 +81,8 @@ const TYPES: &str = r#"import type {
   ActionsReply, ChartSeries, Claim, ClaimWords, ClaimsOptions, CompareView, CompareWords,
   Domain, DomainTable,
   Example, FieldView, Issue, LadderWords, LadderYear, LaddersReply,
-  Ledger, MarketRuns, MarketWords, Metric, PersonAction, PersonRow, PlacedIssue, NewPlanMade,
+  Ledger, MarketRuns, MarketWords, Metric, OverviewView, PersonAction, PersonRow, PlacedIssue,
+  NewPlanMade,
   Projection, RothOwner, SaidYear, Searched, Sort, Step, Summary, TablesView, ViewWords,
   YearDetail, YearFigure, YearTables,
 } from "../bindings/index";
