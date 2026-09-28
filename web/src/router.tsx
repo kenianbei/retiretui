@@ -65,7 +65,7 @@ const compare = createRoute({
 const tools = createRoute({
   getParentRoute: () => root,
   path: "/tools/$page",
-  staticData: { keeps: ["basis", "held"] },
+  staticData: { keeps: ["year", "basis", "held"] },
   validateSearch: toolSearch,
   beforeLoad: ({ params }) => ({ page: pageOf(TOOLS, params.page) }),
   component: ToolPage,

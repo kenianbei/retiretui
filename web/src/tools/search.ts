@@ -1,7 +1,7 @@
 import { keptSearch, textOf, wholeOf, type YearSearch } from "@/year/search";
 
 /** What a tool's page holds in its address. */
-export interface ToolSearch extends Pick<YearSearch, "basis" | "held"> {
+export interface ToolSearch extends YearSearch {
   /** The highlighted option's bracket, as a whole percent; the best where none. */
   bracket?: number;
   /** The highlighted claims, their ages joined: `70-67`; the best where none. */
@@ -12,6 +12,10 @@ export interface ToolSearch extends Pick<YearSearch, "basis" | "held"> {
   run?: string;
   /** Whether the constraints are open in their form. */
   edit?: true;
+  /** The filing status whose tax tables are shown; the plan's where none. */
+  status?: string;
+  /** The state whose tax tables are shown; the plan's that year where none. */
+  state?: string;
 }
 
 const CLAIM_KEY = /^\d+(-\d+)*$/;
@@ -22,13 +26,17 @@ export function toolSearch(search: Record<string, unknown>): ToolSearch {
   const person = wholeOf(search.person);
   const claim = textOf(search.claim);
   const run = textOf(search.run);
+  const status = textOf(search.status);
+  const state = textOf(search.state);
   return {
-    ...keptSearch(search, ["basis", "held"]),
+    ...keptSearch(search, ["year", "basis", "held"]),
     ...(bracket !== undefined && { bracket }),
     ...(claim !== undefined && CLAIM_KEY.test(claim) && { claim }),
     ...(person !== undefined && person >= 0 && { person }),
     ...(run !== undefined && { run }),
     ...((search.edit === true || search.edit === "true") && { edit: true }),
+    ...(status && { status }),
+    ...(state && { state }),
   };
 }
 
