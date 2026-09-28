@@ -82,8 +82,8 @@ assert.deepEqual(
   ["household", "you", "partner"],
 );
 const answering = new NewPlan(null, first.year);
-answering.set("filing", "single");
-answering.set("name", "Jordan");
+answering.set("filing", undefined, "single");
+answering.set("name", undefined, "Jordan");
 const shown = answering.view().map((field) => field.key);
 assert.ok(shown.includes("name") && !shown.includes("partner_name"));
 const resumed = new NewPlan(answering.answers, first.year);

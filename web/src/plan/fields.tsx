@@ -12,7 +12,7 @@ import { fieldId } from "@/plan/search";
 /** What a field's control changes, and whom it tells. */
 export interface FieldProps {
   view: FieldView;
-  editor: Editor;
+  editor: Pick<Editor, "set" | "tick" | "setTrigger">;
   /** Re-reads the editor after it changed. */
   changed: () => void;
   /** Says which field is being typed into; `null` once none is. */

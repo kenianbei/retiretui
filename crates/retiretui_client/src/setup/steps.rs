@@ -50,8 +50,11 @@ pub const STEPS: &[Step] = &[
 mod tests {
     use toml::Table;
 
+    use retiretui_engine::tax::FIRST_WORKING_AGE;
+
     use super::STEPS;
     use crate::setup::FIELDS;
+    use crate::setup::generate::{DEFAULT_CLAIM_AGE, DEFAULT_RETIREMENT_AGE};
 
     #[test]
     fn the_steps_hold_every_answer_once_in_the_form_s_order() {
@@ -76,5 +79,18 @@ mod tests {
     fn only_a_joint_filer_is_asked_about_a_partner() {
         assert!(shown("single").is_empty());
         assert_eq!(shown("married-joint").len(), 7);
+    }
+
+    #[test]
+    fn a_blank_reads_as_what_the_plan_is_made_with() {
+        let blank = |key: &str| {
+            let spec = FIELDS.iter().find(|spec| spec.key == key);
+            spec.expect("a field").blank_word()
+        };
+        assert_eq!(blank("retirement_age"), DEFAULT_RETIREMENT_AGE.to_string());
+        assert_eq!(blank("claim_age"), DEFAULT_CLAIM_AGE.to_string());
+        assert_eq!(blank("partner_claim_age"), DEFAULT_CLAIM_AGE.to_string());
+        assert!(blank("working_since").ends_with(&FIRST_WORKING_AGE.to_string()));
+        assert!(blank("partner_working_since").ends_with(&FIRST_WORKING_AGE.to_string()));
     }
 }

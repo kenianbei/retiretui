@@ -9,6 +9,8 @@ import {
 import { DOMAINS, TOOLS, pageOf } from "@/nav";
 import { LedgerPage } from "@/ledger/page";
 import { Overview } from "@/overview/overview";
+import { NewPlanPage } from "@/onboarding/page";
+import { newPlanSearch } from "@/onboarding/steps";
 import { DomainPage } from "@/plan/page";
 import { planSearch } from "@/plan/search";
 import { GroupedPage, NotFound, Placeholder } from "@/pages/placeholder";
@@ -66,8 +68,23 @@ const plan = createRoute({
   component: DomainPage,
 });
 
+const newPlan = createRoute({
+  getParentRoute: () => root,
+  path: "/new/$step",
+  validateSearch: newPlanSearch,
+  component: NewPlanPage,
+});
+
 export const router = createRouter({
-  routeTree: root.addChildren([index, overview, ledger, compare, tools, plan]),
+  routeTree: root.addChildren([
+    index,
+    overview,
+    ledger,
+    compare,
+    tools,
+    plan,
+    newPlan,
+  ]),
   history: createHashHistory(),
 });
 

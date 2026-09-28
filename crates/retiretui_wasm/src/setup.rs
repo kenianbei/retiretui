@@ -118,13 +118,36 @@ impl JsNewPlan {
         to_js(&editor.view(draft, focused.as_deref()))
     }
 
-    /// Writes `text` into the field `key`.
+    /// Writes `text` into the field `key`, the row at `place` of a list.
     ///
     /// # Errors
     ///
     /// Where there is no such field, or it is not typed or picked.
-    pub fn set(&mut self, key: &str, text: &str) -> Result<(), JsError> {
-        self.0.editor.set(key, None, text).map_err(refused)
+    pub fn set(&mut self, key: &str, place: Option<usize>, text: &str) -> Result<(), JsError> {
+        self.0.editor.set(key, place, text).map_err(refused)
+    }
+
+    /// Ticks or clears the flag or tick `key`.
+    ///
+    /// # Errors
+    ///
+    /// Where there is no such field, or it is not ticked.
+    pub fn tick(
+        &mut self,
+        key: &str,
+        #[wasm_bindgen(js_name = isTicked)] is_ticked: bool,
+    ) -> Result<(), JsError> {
+        self.0.editor.tick(key, is_ticked).map_err(refused)
+    }
+
+    /// Writes `text` into `part` of the trigger `key`.
+    ///
+    /// # Errors
+    ///
+    /// Where there is no such trigger, or a trigger no such part.
+    #[wasm_bindgen(js_name = setTrigger)]
+    pub fn set_trigger(&mut self, key: &str, part: &str, text: &str) -> Result<(), JsError> {
+        self.0.editor.set_trigger(key, part, text).map_err(refused)
     }
 
     /// What has been answered, as text a new `NewPlan` reads back.

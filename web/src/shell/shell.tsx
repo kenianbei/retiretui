@@ -171,6 +171,9 @@ function GroupPages() {
 
 export function Shell() {
   const { document } = useSession();
+  const isNewPlan = useLocation({
+    select: (location) => location.pathname.startsWith("/new/"),
+  });
   return (
     <FileActionsProvider>
       <div className="min-h-dvh md:grid md:grid-cols-[15rem_1fr]">
@@ -185,7 +188,9 @@ export function Shell() {
           </header>
           <main className="flex-1 px-4 py-6 md:px-8">
             <DraftNotices />
-            {document ? (
+            {isNewPlan ? (
+              <Outlet />
+            ) : document ? (
               <>
                 <GroupPages />
                 <Outlet />

@@ -157,18 +157,22 @@ pub const FIELDS: &[FieldSpec] = &[
         .shown_when(is_answered),
     FieldSpec::whole("retirement_age", "Retirement age")
         .help("The age you stop working, or stopped. Your salary ends that year.")
+        .blank("65")
         .shown_when(is_answered),
     FieldSpec::whole("working_since", "Working since")
         .help("The year you started working. Blank means the year you turned 22.")
+        .blank("The year you turned 22")
         .shown_when(is_answered),
     FieldSpec::money("salary", "Salary")
         .help("What you earn per year before tax, or last earned, in today's dollars.")
         .shown_when(is_answered),
     FieldSpec::money("social_security", "Social Security")
         .help("Your yearly benefit at the age you claim, from your SSA statement. Blank computes it from your salary.")
+        .blank("Computed from your salary")
         .shown_when(is_answered),
     FieldSpec::whole("claim_age", "Claim age")
         .help("The age you start Social Security, from 62 to 70. Blank means 67.")
+        .blank("67")
         .shown_when(is_answered),
     FieldSpec::text("partner_name", "Partner's name")
         .help("Your partner's first name.")
@@ -178,18 +182,22 @@ pub const FIELDS: &[FieldSpec] = &[
         .shown_when(is_joint),
     FieldSpec::whole("partner_retirement_age", "Partner's retirement age")
         .help("The age your partner stops working, or stopped. Blank means the same age as you.")
+        .blank("The same as yours")
         .shown_when(is_joint),
     FieldSpec::whole("partner_working_since", "Partner's working since")
         .help("The year your partner started working. Blank means the year they turned 22.")
+        .blank("The year they turned 22")
         .shown_when(is_joint),
     FieldSpec::money("partner_salary", "Partner's salary")
         .help("What your partner earns per year before tax, or last earned, in today's dollars.")
         .shown_when(is_joint),
     FieldSpec::money("partner_social_security", "Partner's Social Security")
         .help("Your partner's yearly benefit at the age they claim. Blank computes it from their salary.")
+        .blank("Computed from their salary")
         .shown_when(is_joint),
     FieldSpec::whole("partner_claim_age", "Partner's claim age")
         .help("The age your partner starts Social Security. Blank means 67.")
+        .blank("67")
         .shown_when(is_joint),
 ];
 

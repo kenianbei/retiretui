@@ -35,8 +35,8 @@ const SPENT_OF_SALARY: f64 = 0.7;
 const DEFAULT_LIVING: Dollars = 60_000;
 
 const DEFAULT_AGE: i16 = 40;
-const DEFAULT_RETIREMENT_AGE: u8 = 65;
-const DEFAULT_CLAIM_AGE: u8 = 67;
+pub(crate) const DEFAULT_RETIREMENT_AGE: u8 = 65;
+pub(crate) const DEFAULT_CLAIM_AGE: u8 = 67;
 
 /// The oldest a person may be taken to be, which keeps a birth year a
 /// date the schema can parse.
