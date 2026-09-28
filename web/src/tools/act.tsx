@@ -1,6 +1,8 @@
+import { Link, useNavigate } from "@tanstack/react-router";
 import type { Document } from "@wasm/retiretui_wasm.js";
 import { useState } from "react";
 
+import { withIn } from "@/compare/search";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -16,6 +18,7 @@ import { NameDialog } from "@/files/name-dialog";
 import { messageOf } from "@/lib/utils";
 import { useSession } from "@/session";
 import { pathOf, planName } from "@/workspace";
+import { keptSearch } from "@/year/search";
 
 /** What the last action did: said, and a file to open where it wrote one. */
 interface Done {
@@ -57,6 +60,7 @@ export function SearchActions({
   const [naming, setNaming] = useState<string | null>(null);
   const [done, setDone] = useState<Done | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
+  const navigate = useNavigate();
   const canTake = session.document?.isReadOnly === false;
   const written = done?.written;
 
@@ -84,8 +88,20 @@ export function SearchActions({
       const document = session.document;
       const text = document ? chosen.scenario(document, pathOf(name)) : "";
       setNaming(null);
+      const written = pathOf(name);
       actions.write(name, text, () => {
-        setDone({ said: `Wrote ${name}.`, written: pathOf(name) });
+        setDone({ said: `Wrote ${name}, compared.`, written });
+        void navigate({
+          to: ".",
+          search: (prev) => ({
+            ...prev,
+            with: withIn([
+              ...(prev.with ?? []).filter((path) => path !== written),
+              written,
+            ]),
+          }),
+          replace: true,
+        });
       });
     });
   };
@@ -134,6 +150,15 @@ export function SearchActions({
               >
                 Open it
               </Button>
+            )}
+            {written && (
+              <Link
+                to="/compare"
+                search={(kept) => keptSearch(kept, ["year", "basis", "held"])}
+                className="text-primary underline-offset-4 hover:underline"
+              >
+                Compare
+              </Link>
             )}
           </p>
         )}
