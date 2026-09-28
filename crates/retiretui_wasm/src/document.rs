@@ -21,6 +21,10 @@ use crate::editor::Editor;
 use crate::tables;
 use crate::vocabulary::slug_of;
 
+/// A scenario holds only its changes to a base; the plan resolved from it
+/// written in its place would lose which were its own.
+const OVER_SCENARIO: &str = "a scenario cannot be saved over; save it under a name of its own";
+
 /// A resolved plan and what the gate made of it.
 #[derive(Debug)]
 pub(crate) struct Document {
@@ -226,15 +230,20 @@ impl Document {
     ///
     /// # Errors
     ///
-    /// Where the draft has issues, or `write` fails.
+    /// Where the draft has issues, `path` is the scenario it was resolved
+    /// from, which the plan would replace, or `write` fails.
     pub fn save_as(
         &mut self,
         path: &str,
         write: &mut dyn FnMut(&str) -> Result<(), String>,
     ) -> Result<(), String> {
+        let path = normal(Path::new(path));
+        if self.is_read_only() && self.files.first() == Some(&path) {
+            return Err(OVER_SCENARIO.to_owned());
+        }
         self.write_through(write)?;
         self.draft.saved_as();
-        self.files = vec![normal(Path::new(path))];
+        self.files = vec![path];
         Ok(())
     }
 

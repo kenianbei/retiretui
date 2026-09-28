@@ -55,9 +55,7 @@ export function FileActionsProvider({ children }: { children: ReactNode }) {
 
   /** Runs `replace`, asking first where it writes over a file of `name`. */
   const writing = (name: string, replace: () => void) => {
-    const path = pathOf(name);
-    if (session.workspace.has(path) && path !== session.path)
-      setReplacing({ name, replace });
+    if (session.workspace.has(pathOf(name))) setReplacing({ name, replace });
     else replace();
   };
 

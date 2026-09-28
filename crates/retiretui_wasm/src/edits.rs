@@ -281,6 +281,8 @@ mod tests {
         let mut document =
             Document::open("/what-if/early.toml", &mut reader(&files)).expect("opens");
         assert!(saved(&mut document).is_err());
+        let over = document.save_as("/what-if/early.toml", &mut |_| Ok(()));
+        assert!(over.is_err(), "the scenario's own file is not replaced");
         let mut editor = Editor::open(
             form_at("accounts").expect("a domain"),
             document.draft(),
