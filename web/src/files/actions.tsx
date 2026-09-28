@@ -20,12 +20,22 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useSession } from "@/session";
+import { Button } from "@/components/ui/button";
+import { messageOf, useSession } from "@/session";
 import { nameOf, pathOf } from "@/workspace";
 
-interface Incoming {
+/** A file about to be written over another of the same name. */
+interface Replacing {
   name: string;
-  text: string;
+  replace: () => void;
+}
+
+const PLAN_EXTENSION = ".toml";
+
+/** A typed name as a plan file's: `.toml` added where it is missing. */
+export function planName(typed: string): string {
+  const name = typed.trim();
+  return name.endsWith(PLAN_EXTENSION) ? name : `${name}${PLAN_EXTENSION}`;
 }
 
 /** What can be done with files, wherever a page offers it. */
@@ -34,6 +44,8 @@ interface FileActions {
   add: (name: string, text: string) => void;
   upload: () => void;
   download: () => void;
+  /** Asks for a name, then writes the draft as a plan of that name. */
+  saveAs: () => void;
 }
 
 const FileActionsContext = createContext<FileActions | null>(null);
@@ -44,12 +56,33 @@ const FileActionsContext = createContext<FileActions | null>(null);
  */
 export function FileActionsProvider({ children }: { children: ReactNode }) {
   const session = useSession();
-  const [replacing, setReplacing] = useState<Incoming | null>(null);
+  const [replacing, setReplacing] = useState<Replacing | null>(null);
+  const [naming, setNaming] = useState<string | null>(null);
   const picker = useRef<HTMLInputElement>(null);
 
+  /** Runs `replace`, asking first where it writes over a file of `name`. */
+  const writing = (name: string, replace: () => void) => {
+    const path = pathOf(name);
+    if (session.workspace.has(path) && path !== session.path)
+      setReplacing({ name, replace });
+    else replace();
+  };
+
   const add = (name: string, text: string) => {
-    if (session.workspace.has(pathOf(name))) setReplacing({ name, text });
-    else session.place(name, text);
+    writing(name, () => {
+      session.place(name, text);
+    });
+  };
+
+  const saveUnder = (name: string) => {
+    writing(name, () => {
+      try {
+        session.saveAs(name);
+        session.report(null);
+      } catch (thrown) {
+        session.report(messageOf(thrown));
+      }
+    });
   };
 
   const readPicked = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -75,6 +108,9 @@ export function FileActionsProvider({ children }: { children: ReactNode }) {
     add,
     upload: () => picker.current?.click(),
     download,
+    saveAs: () => {
+      setNaming(session.path === null ? "" : nameOf(session.path));
+    },
   };
 
   return (
@@ -105,12 +141,55 @@ export function FileActionsProvider({ children }: { children: ReactNode }) {
             <AlertDialogCancel>Keep the one I have</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                if (replacing) session.place(replacing.name, replacing.text);
+                replacing?.replace();
               }}
             >
               Replace it
             </AlertDialogAction>
           </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog
+        open={naming !== null}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setNaming(null);
+        }}
+      >
+        <AlertDialogContent>
+          <form
+            className="grid gap-4"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (naming === null || naming.trim() === "") return;
+              setNaming(null);
+              saveUnder(planName(naming));
+            }}
+          >
+            <AlertDialogHeader>
+              <AlertDialogTitle>Save as</AlertDialogTitle>
+              <AlertDialogDescription>
+                The plan is written to a file of this name in your workspace,
+                and stays open as that file.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <label className="grid gap-1.5 text-sm font-medium">
+              File name
+              <input
+                autoFocus
+                className="border-input bg-background h-9 rounded-md border px-3 text-base md:text-sm"
+                value={naming ?? ""}
+                onChange={(event) => {
+                  setNaming(event.target.value);
+                }}
+              />
+            </label>
+            <AlertDialogFooter>
+              <AlertDialogCancel type="button">Cancel</AlertDialogCancel>
+              <Button type="submit" disabled={naming?.trim() === ""}>
+                Save
+              </Button>
+            </AlertDialogFooter>
+          </form>
         </AlertDialogContent>
       </AlertDialog>
     </FileActionsContext>

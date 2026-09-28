@@ -1,4 +1,11 @@
-import { Download, FolderOpen, Menu, Sparkles, Upload } from "lucide-react";
+import {
+  Download,
+  FilePlus2,
+  FolderOpen,
+  Menu,
+  Sparkles,
+  Upload,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -76,6 +83,13 @@ export function FileMenu() {
             </DropdownMenuSubContent>
           </DropdownMenuSub>
           <DropdownMenuSeparator />
+          <DropdownMenuItem
+            disabled={session.document === null}
+            onSelect={actions.saveAs}
+          >
+            <FilePlus2 aria-hidden />
+            Save as…
+          </DropdownMenuItem>
           <DropdownMenuItem onSelect={actions.upload}>
             <Upload aria-hidden />
             Upload a plan…

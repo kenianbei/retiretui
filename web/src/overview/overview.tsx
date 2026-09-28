@@ -9,6 +9,7 @@ import { useMemo, type ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { placeSearch } from "@/plan/search";
 import { BASIS_LABEL, dollars, share, type Basis } from "@/overview/words";
 import { useMonteCarlo } from "@/searches";
 import { useSession } from "@/session";
@@ -49,11 +50,24 @@ function Problems({ issues }: { issues: PlacedIssue[] }) {
       </h2>
       <ul className="list-disc space-y-1 pl-5">
         {issues.map((issue) => (
-          <li key={issue.words}>{issue.words}</li>
+          <li key={issue.words}>
+            {issue.place ? (
+              <Link
+                to="/plan/$page"
+                params={{ page: placeSearch(issue.place).page }}
+                search={placeSearch(issue.place).search}
+                className="underline underline-offset-4"
+              >
+                {issue.words}
+              </Link>
+            ) : (
+              issue.words
+            )}
+          </li>
         ))}
       </ul>
       <p className="text-muted-foreground text-sm">
-        The figures appear once the plan file is fixed and uploaded again.
+        The figures below are the last ones the plan had without issues.
       </p>
     </section>
   );
@@ -122,12 +136,25 @@ function Success({ plan }: { plan: string }) {
   );
 }
 
-function Figures({ document, basis }: { document: Document; basis: Basis }) {
+function Figures({
+  document,
+  basis,
+  revision,
+}: {
+  document: Document;
+  basis: Basis;
+  revision: number;
+}) {
   const summary = useMemo(
     () => document.summary(basis === "today"),
-    [document, basis],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the document changes in place
+    [document, basis, revision],
   );
-  const plan = useMemo(() => document.planText(), [document]);
+  const plan = useMemo(
+    () => document.planText(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the document changes in place
+    [document, revision],
+  );
   if (!summary) return null;
   const unit = BASIS_LABEL[basis];
   const firstShort = summary.first_unfunded_year;
@@ -166,11 +193,21 @@ function Figures({ document, basis }: { document: Document; basis: Basis }) {
   );
 }
 
-function ThisYear({ document }: { document: Document }) {
-  const said = useMemo(() => {
-    const year = document.thisYear(new Date().getFullYear());
-    return year === undefined ? null : document.said(year);
-  }, [document]);
+function ThisYear({
+  document,
+  revision,
+}: {
+  document: Document;
+  revision: number;
+}) {
+  const said = useMemo(
+    () => {
+      const year = document.thisYear(new Date().getFullYear());
+      return year === undefined ? null : document.said(year);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the document changes in place
+    [document, revision],
+  );
   if (!said) return null;
   const ages = said.ages.map(([name, age]) => `${name} turns ${String(age)}`);
 
@@ -210,25 +247,24 @@ function ThisYear({ document }: { document: Document }) {
 
 /** Whether the money lasts and how surely, and what to do this year. */
 export function Overview() {
-  const { document } = useSession();
+  const { document, revision } = useSession();
   const { basis } = useSearch({ from: "/overview" });
-  const issues = useMemo(() => document?.issues() ?? [], [document]);
+  const issues = useMemo(
+    () => document?.issues() ?? [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the document changes in place
+    [document, revision],
+  );
   if (!document) return null;
 
   return (
     <div className="max-w-5xl space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>
-        {issues.length === 0 && <BasisSwitch basis={basis} />}
+        <BasisSwitch basis={basis} />
       </div>
-      {issues.length > 0 ? (
-        <Problems issues={issues} />
-      ) : (
-        <>
-          <Figures document={document} basis={basis} />
-          <ThisYear document={document} />
-        </>
-      )}
+      {issues.length > 0 && <Problems issues={issues} />}
+      <Figures document={document} basis={basis} revision={revision} />
+      <ThisYear document={document} revision={revision} />
     </div>
   );
 }

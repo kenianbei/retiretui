@@ -16,7 +16,14 @@ export default tseslint.config(
     rules: {
       "react-refresh/only-export-components": [
         "error",
-        { allowExportNames: ["useSession", "useFileActions"] },
+        {
+          allowExportNames: [
+            "useSession",
+            "useFileActions",
+            "messageOf",
+            "planName",
+          ],
+        },
       ],
     },
     files: ["**/*.{ts,tsx}"],
