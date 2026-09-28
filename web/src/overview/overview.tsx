@@ -155,12 +155,15 @@ function Figures({ basis, plan }: { basis: Basis; plan: string | null }) {
   );
 }
 
-function ThisYear({ shown }: { shown: ShownYear }) {
+function ThisYear({ shown, basis }: { shown: ShownYear; basis: Basis }) {
   const { reading } = useSession();
   const { year } = shown;
   const said = useMemo(
-    () => (year === undefined ? null : reading.document?.said(year)),
-    [reading, year],
+    () =>
+      year === undefined
+        ? null
+        : reading.document?.said(year, basis === "nominal"),
+    [reading, year, basis],
   );
   if (!said) return null;
   const ages = said.ages.map(([name, age]) => `${name} turns ${String(age)}`);
@@ -175,7 +178,7 @@ function ThisYear({ shown }: { shown: ShownYear }) {
           <YearStepper shown={shown} />
         </div>
         <p className="text-muted-foreground text-sm">
-          {[...ages, `amounts in ${BASIS_LABEL.nominal}`].join(" · ")}
+          {[...ages, `amounts in ${BASIS_LABEL[basis]}`].join(" · ")}
         </p>
       </div>
       {said.actions.length === 0 ? (
@@ -254,7 +257,7 @@ export function Overview() {
       <Figures basis={basis} plan={plan} />
       {plan !== null && <Better plan={plan} held={held} basis={basis} />}
       <PlanCharts basis={basis} plan={plan} shown={shown} />
-      <ThisYear shown={shown} />
+      <ThisYear shown={shown} basis={basis} />
     </div>
   );
 }

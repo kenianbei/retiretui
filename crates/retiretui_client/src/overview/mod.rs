@@ -13,6 +13,11 @@ use crate::forms::DomainId;
 pub use attention::{NOTHING, attention, issue_rows};
 pub use milestones::milestones;
 
+/// What the Overview titles its lists.
+pub const ATTENTION: &str = "Needs attention";
+/// See [`ATTENTION`].
+pub const MILESTONES: &str = "Milestones";
+
 /// A domain, and the item of its table where it has one.
 pub type Place = (DomainId, Option<usize>);
 

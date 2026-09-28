@@ -21,7 +21,7 @@ use crate::nav::Page;
 use crate::session::{LedgerRun, RowYear, Shown, YearCursor};
 use crate::theme::Theme;
 use crate::tools::ladders;
-use retiretui_client::overview::{Row, milestones};
+use retiretui_client::overview::{ATTENTION, MILESTONES, Row, milestones};
 use retiretui_client::searches::overview::COULD_DO_BETTER;
 
 const HINTS: Hints = Hints(&[("↑↓", "scroll"), ("⏎", "open")]);
@@ -113,8 +113,8 @@ pub(super) enum List {
 impl List {
     const fn title(self) -> &'static str {
         match self {
-            Self::Milestones => "Milestones",
-            Self::Attention => "Needs attention",
+            Self::Milestones => MILESTONES,
+            Self::Attention => ATTENTION,
             Self::Better => COULD_DO_BETTER,
         }
     }

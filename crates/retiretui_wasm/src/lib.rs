@@ -11,6 +11,7 @@ mod edits;
 mod ladders;
 mod ledger;
 mod markets;
+mod overview;
 mod searches;
 mod setup;
 mod tax_tables;
@@ -180,14 +181,15 @@ impl JsDocument {
         reply(self.0.actions(year))
     }
 
-    /// `year` in words: its actions, its warnings, and everyone's age.
+    /// `year` in words: its actions and warnings, nominal or in today's
+    /// dollars, and everyone's age.
     ///
     /// # Errors
     ///
     /// Where the plan has issues, or `year` is outside its projection.
     #[wasm_bindgen(unchecked_return_type = "SaidYear")]
-    pub fn said(&self, year: i16) -> Result<JsValue, JsError> {
-        reply(self.0.said(year))
+    pub fn said(&self, year: i16, nominal: bool) -> Result<JsValue, JsError> {
+        reply(self.0.said(year, nominal))
     }
 
     /// The resolved plan as canonical TOML: what a worker is handed, and
@@ -293,6 +295,7 @@ mod bindings {
     use crate::ladders::{LadderWords, LaddersReply};
     use crate::ledger::{ChartSeries, Ledger, ViewWords, YearDetail};
     use crate::markets::{MarketRuns, MarketWords};
+    use crate::overview::OverviewView;
     use crate::searches::Example;
     use crate::setup::NewPlanMade;
     use crate::view::FieldView;
@@ -331,6 +334,7 @@ mod bindings {
         YearDetail::export_all,
         ChartSeries::export_all,
         ViewWords::export_all,
+        OverviewView::export_all,
         TablesView::export_all,
         YearTables::export_all,
         Step::export_all,

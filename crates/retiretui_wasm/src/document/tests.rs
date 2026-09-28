@@ -42,13 +42,18 @@ fn a_plan_opens_projected() {
     assert_eq!(document.year_at(Some(first + 2), first), Some(first + 2));
     assert_eq!(document.year_at(Some(first - 9), first + 3), Some(first));
     assert_eq!(document.year_at(Some(last + 9), first), Some(last));
-    let said = document.said(first).expect("in range");
+    let said = document.said(first, true).expect("in range");
     assert_eq!(said.ages, [("Sam".to_owned(), 30)]);
     assert!(
         said.actions
             .iter()
             .any(|action| action.contains("Sam's Roth IRA"))
     );
+    let later = first + 10;
+    let nominal = document.said(later, true).expect("in range").actions;
+    let today = document.said(later, false).expect("in range").actions;
+    assert_eq!(nominal.len(), today.len());
+    assert_ne!(nominal, today, "a later year's amounts follow the basis");
     let reopened = Plan::from_toml_str(&document.plan_text().expect("serializes"));
     assert_eq!(reopened.expect("parses"), document.draft.plan);
 }

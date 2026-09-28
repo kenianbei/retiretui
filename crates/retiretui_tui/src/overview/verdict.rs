@@ -15,7 +15,7 @@ use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
 use crate::hints::Hints;
 use crate::layout::{fixed, placed};
 use crate::nav::{FocusStop, Page};
-use crate::present::{self, ENDS_WITH, LIFETIME_TAXES, MONEY_LASTS, compact_money};
+use crate::present::{self, ENDS_WITH, LIFETIME_TAXES, MONEY_LASTS, SUCCESS, compact_money};
 use crate::session::{Basis, Projected};
 use crate::success::{Success, Successes};
 use crate::theme::Theme;
@@ -24,7 +24,6 @@ use crate::tools::{EnterRuns, count_text, handle_enter};
 /// A tile's label over its value.
 const STRIP_ROWS: f32 = 2.0;
 const TILE_COUNT: usize = 4;
-const SUCCESS: &str = "Success";
 /// The Success tile's place in the strip.
 const SUCCESS_AT: usize = 1;
 

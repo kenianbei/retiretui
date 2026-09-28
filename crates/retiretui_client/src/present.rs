@@ -212,6 +212,8 @@ pub const ENDS_WITH: &str = "Ends with";
 /// See [`ENDS_WITH`].
 pub const MONEY_LASTS: &str = "Money lasts";
 /// See [`ENDS_WITH`].
+pub const SUCCESS: &str = "Success";
+/// See [`ENDS_WITH`].
 pub const PEAKS_AT: &str = "Peaks at";
 /// See [`ENDS_WITH`].
 pub const LIFETIME_TAXES: &str = "Lifetime taxes";
