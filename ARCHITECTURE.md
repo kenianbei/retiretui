@@ -116,17 +116,19 @@ depends on UI.
   for it, the choices a closed set or the plan's own ids offer - and the item
   open in a form: what its fields hold, applied whole into the draft or refused
   with why, a trigger or a list made from the parts it is entered in, a table's
-  items ordered by a column, and an item read out in the form's words. The
-  load-and-validate gate, a scenario's base chain followed over whatever reads
-  its files, and every plan file read, written, listed and stamped through one
-  store - the disk, or files kept as keys of a browser's storage, each file's
-  count of writes its stamp. The document a shell holds open, its projection,
-  and the draft every edit lands in with its whole-plan history. A first plan
-  from the new-plan answers or an example; a statement's earnings recorded on a
-  person; the searches the tools and the overview share; and the shapes a search
-  or a year's actions are replied in as data. Where there is a machine beneath
-  it, what that machine supplies: the user's own tax tables, market history and
-  directories.
+  items ordered by a column, and an item read out in the form's words. A year's
+  ledger in those words: its columns, each account's flows from its open to its
+  close named by where each came from or went, its income and what it paid, and
+  the years each earner's salary ends. The load-and-validate gate, a scenario's
+  base chain followed over whatever reads its files, and every plan file read,
+  written, listed and stamped through one store - the disk, or files kept as
+  keys of a browser's storage, each file's count of writes its stamp. The
+  document a shell holds open, its projection, and the draft every edit lands in
+  with its whole-plan history. A first plan from the new-plan answers or an
+  example; a statement's earnings recorded on a person; the searches the tools
+  and the overview share; and the shapes a search or a year's actions are
+  replied in as data. Where there is a machine beneath it, what that machine
+  supplies: the user's own tax tables, market history and directories.
 - `retiretui_tui` - the interactive planner described under `tui` below, as a
   library over the client and above whatever backend draws it, mapping each
   editing domain to its page. It runs each search beside the frames: on a thread
@@ -322,14 +324,17 @@ depends on UI.
   history, undone and redone, and the draft saved as canonical text through
   whatever writes the page's files, under the same gate as every write. Its
   issues are in the forms' words, each with the page, item and field it is
-  about, and from its last draft without any come its projection, summary, the
-  year a view starts on, and a year's actions both as data and said as every
-  surface says them - with the client's names for the editing domains and its
-  count of issues, and, over a plan's text alone so that a worker can run them,
-  the gate, the conversion and claim searches, the market runs and the example
-  plans, each answered in the shapes the command line's JSON and the MCP server
-  reply in. Values cross as plain objects, typed by TypeScript generated from
-  the Rust types; the build fails where the two have drifted.
+  about, and from its last draft without any - kept beside the plan it was
+  projected from, so what is said of it names what the projection holds - come
+  its projection, summary, the year a view shows held within the plan's years,
+  the Ledger's years, a year's flows, income and what it paid, the series the
+  Overview charts, and a year's actions both as data and said as every surface
+  says them - with the client's names for the editing domains and its count of
+  issues, and, over a plan's text alone so that a worker can run them, the gate,
+  the conversion and claim searches, the market runs and the example plans, each
+  answered in the shapes the command line's JSON and the MCP server reply in.
+  Values cross as plain objects, typed by TypeScript generated from the Rust
+  types; the build fails where the two have drifted.
 - `web/` - outside the cargo workspace, the web app, published at the Pages
   site's root with each release: a React page over `retiretui_wasm` for a phone
   or a desktop. Its plan files are kept in the page's own storage, under keys
@@ -337,6 +342,13 @@ depends on UI.
   document is opened from an example plan, an upload, or the file last open, and
   downloaded back out. The terminal's five tabs are a bar along a phone's bottom
   edge and a sidebar on a wider screen, their addresses in the page's hash. The
+  Overview and the Ledger share a year and a basis, both in that address and
+  kept by the links between them: the Overview charts the plan's balances by
+  treatment, its net worth, its income against its taxes, and its net worth
+  through random markets as percentile bands in today's dollars, a click
+  choosing the year its actions are for; the Ledger is every year in a table
+  whose year column stays in view, over the chosen year's flows through each
+  account and its income and tax, the arrow keys stepping the year on both. The
   Plan tab's pages are the plan's editing domains: a table - rows of a name and
   one figure on a phone - beside the highlighted item read out, or a domain's
   one item read out alone, and one item at a time edited in a form over the

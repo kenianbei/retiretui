@@ -14,16 +14,25 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   offers the example plans or an upload to start from, reopens the plan last
   open, and downloads the open plan. Its Overview shows whether the money
   lasts - its headline figures in today's or nominal dollars, and the share of a
-  thousand random markets it survives, run off the page's thread - and what to
-  do this year, said as the terminal says it. The Plan pages edit the plan: each
-  domain's items are a table sortable by its columns, or rows with a Sort by on
-  a phone, beside the highlighted item read out in the form's words, and a
-  domain there is one of is that read-out alone. Edit, Add and Delete work one
-  item at a time; the form is a sheet, full screen on a phone, whose fields are
-  entered by their kind - picks from the schema's sets and the plan's own ids, a
-  searched list for a country or U.S. state, a slider beside a rate, a trigger
-  as its kind and sentence - and applying stores the whole item or says why not.
-  Every applied item or deletion is a step Undo and Redo walk, by button or
+  thousand random markets it survives, run off the page's thread - and charts
+  the plan: its balances by tax treatment under its net worth, its net worth,
+  its income against its taxes, and its net worth through the random markets as
+  percentile bands, each salary's end marked. Beneath them is what to do in the
+  year shown, said as the terminal says it: today's by default, stepped by
+  button or the arrow keys, or chosen with a click on a chart. The Ledger shows
+  the plan year by year, the year column staying in view as a phone scrolls
+  sideways, over the chosen year's flows through each account - where each came
+  from or went, with the year's warnings - and its income and what it paid. The
+  year and the dollars are in the page's address, kept between the Overview and
+  the Ledger and across a reload. The Plan pages edit the plan: each domain's
+  items are a table sortable by its columns, or rows with a Sort by on a phone,
+  beside the highlighted item read out in the form's words, and a domain there
+  is one of is that read-out alone. Edit, Add and Delete work one item at a
+  time; the form is a sheet, full screen on a phone, whose fields are entered by
+  their kind - picks from the schema's sets and the plan's own ids, a searched
+  list for a country or U.S. state, a slider beside a rate, a trigger as its
+  kind and sentence - and applying stores the whole item or says why not. Every
+  applied item or deletion is a step Undo and Redo walk, by button or
   Ctrl/Cmd+Z, and Save or Ctrl/Cmd+S writes the plan back through the same
   validation as every other surface; Save as… writes it under another name, the
   one way to keep a scenario's edits. Unsaved edits are asked about before a
