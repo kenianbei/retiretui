@@ -3,6 +3,7 @@
 //! a plan's text. Values cross as plain objects, typed by `bindings/`.
 
 mod claims;
+mod compare;
 mod document;
 mod domain;
 mod editor;
@@ -75,10 +76,11 @@ fn reply<T: Serialize>(answer: Result<T, String>) -> Result<JsValue, JsError> {
 
 #[wasm_bindgen(typescript_custom_section)]
 const TYPES: &str = r#"import type {
-  ActionsReply, ChartSeries, Claim, ClaimWords, ClaimsOptions, Domain, DomainTable,
+  ActionsReply, ChartSeries, Claim, ClaimWords, ClaimsOptions, CompareView, CompareWords,
+  Domain, DomainTable,
   Example, FieldView, Issue, LadderWords, LadderYear, LaddersReply,
-  Ledger, MarketRuns, MarketWords, PersonAction, PersonRow, PlacedIssue, NewPlanMade, Projection, RothOwner,
-  SaidYear, Sort, Step, Summary, YearDetail,
+  Ledger, MarketRuns, MarketWords, Metric, PersonAction, PersonRow, PlacedIssue, NewPlanMade,
+  Projection, RothOwner, SaidYear, Searched, Sort, Step, Summary, YearDetail, YearFigure,
 } from "../bindings/index";
 export type * from "../bindings/index";"#;
 
@@ -253,12 +255,13 @@ mod bindings {
     use retiretui_client::replies::ActionsReply;
     use retiretui_engine::plan::Issue;
     use retiretui_engine::project::{Projection, Summary};
-    use ts_rs::{Config, TS};
+    use ts_rs::{Config, ExportError, TS};
 
     use crate::claims::{ClaimWords, ClaimsOptions, PersonRow, RothOwner};
     use crate::document::{PlacedIssue, SaidYear};
     use retiretui_client::forms::sort::Sort;
 
+    use crate::compare::{CompareView, CompareWords, Searched, YearFigure};
     use crate::domain::DomainTable;
     use crate::ladders::{LadderWords, LaddersReply};
     use crate::ledger::{ChartSeries, Ledger, YearDetail};
@@ -271,39 +274,45 @@ mod bindings {
 
     const BINDINGS: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/bindings");
 
+    /// Every type the page is typed by, with the types they name.
+    const EXPORTS: [fn(&Config) -> Result<(), ExportError>; 28] = [
+        Issue::export_all,
+        PlacedIssue::export_all,
+        SaidYear::export_all,
+        Projection::export_all,
+        Summary::export_all,
+        ActionsReply::export_all,
+        LaddersReply::export_all,
+        LadderWords::export_all,
+        ClaimsOptions::export_all,
+        ClaimWords::export_all,
+        PersonRow::export_all,
+        RothOwner::export_all,
+        MarketRuns::export_all,
+        MarketWords::export_all,
+        CompareView::export_all,
+        Searched::export_all,
+        YearFigure::export_all,
+        CompareWords::export_all,
+        Example::export_all,
+        Domain::export_all,
+        DomainTable::export_all,
+        Sort::export_all,
+        FieldView::export_all,
+        Ledger::export_all,
+        YearDetail::export_all,
+        ChartSeries::export_all,
+        Step::export_all,
+        NewPlanMade::export_all,
+    ];
+
     #[test]
     fn export_bindings() {
         let _ = fs::remove_dir_all(BINDINGS);
         let config = Config::new()
             .with_large_int("number")
             .with_out_dir(BINDINGS);
-        let exports = [
-            Issue::export_all,
-            PlacedIssue::export_all,
-            SaidYear::export_all,
-            Projection::export_all,
-            Summary::export_all,
-            ActionsReply::export_all,
-            LaddersReply::export_all,
-            LadderWords::export_all,
-            ClaimsOptions::export_all,
-            ClaimWords::export_all,
-            PersonRow::export_all,
-            RothOwner::export_all,
-            MarketRuns::export_all,
-            MarketWords::export_all,
-            Example::export_all,
-            Domain::export_all,
-            DomainTable::export_all,
-            Sort::export_all,
-            FieldView::export_all,
-            Ledger::export_all,
-            YearDetail::export_all,
-            ChartSeries::export_all,
-            Step::export_all,
-            NewPlanMade::export_all,
-        ];
-        for export in exports {
+        for export in EXPORTS {
             export(&config).expect("exports");
         }
         let mut names: Vec<String> = fs::read_dir(BINDINGS)

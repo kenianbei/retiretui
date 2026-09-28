@@ -2,10 +2,14 @@
 
 use retiretui_engine::plan::Dollars;
 use retiretui_engine::project::YearRow;
+use serde::{Deserialize, Serialize};
 
-/// A projected quantity comparable year by year.
-#[derive(Clone, Copy, PartialEq, Eq, Default, Debug)]
+/// A projected quantity comparable year by year, kept as its kebab-case
+/// name.
+#[derive(Clone, Copy, PartialEq, Eq, Default, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub enum Metric {
     /// Sum of all end-of-year balances.
     #[default]
