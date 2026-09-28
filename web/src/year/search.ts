@@ -18,7 +18,7 @@ export function wholeOf(value: unknown): number | undefined {
     : undefined;
 }
 
-/** Text the address holds, which reads a number-like value back as a number. */
+/** Text the address holds, a number-like value the router read as a number turned back into text. */
 export function textOf(value: unknown): string | undefined {
   if (typeof value === "number") return String(value);
   return typeof value === "string" ? value : undefined;
