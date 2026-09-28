@@ -6,7 +6,7 @@ use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Component, Entity, IntoScheduleConfigs, Query, With};
 use plurimus::ui::ScrollArea;
 use plurimus::widgets::WidgetSystems;
-use retiretui_client::ledger::{DetailLine, income_and_tax};
+use retiretui_client::ledger::{DetailLine, INCOME_AND_TAX, income_and_tax};
 use retiretui_engine::plan::Plan;
 use retiretui_engine::project::YearRow;
 
@@ -28,7 +28,6 @@ pub fn plugin(app: &mut App) {
     );
 }
 
-const TITLE: &str = "Income & Tax";
 const HEADER: [&str; 2] = ["", "Amount"];
 /// The pane's width, borders included: the longest label and a
 /// seven-figure amount.
@@ -38,7 +37,9 @@ const DETAIL_COLS: f32 = 30.0;
 struct DetailTable;
 
 pub(super) fn spawn_pane(commands: &mut Commands, parent: Entity) {
-    let pane = Pane::new(TITLE).wide(DETAIL_COLS).spawn(commands, parent);
+    let pane = Pane::new(INCOME_AND_TAX)
+        .wide(DETAIL_COLS)
+        .spawn(commands, parent);
     commands.spawn((
         table_bundle(),
         DetailTable,

@@ -23,3 +23,4 @@ pub mod setup;
 pub mod statement;
 pub mod store;
 pub mod table;
+pub mod tax_tables;

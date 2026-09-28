@@ -20,6 +20,13 @@ const TEXT_HEADERS: [&str; 2] = ["Year", "Age"];
 const FIGURE_HEADERS: [&str; 4] = ["Income", "Spending", "Tax", "Withdrawn"];
 const NET_WORTH: &str = "Net worth";
 
+/// The year's flows through each account, as every surface titles them.
+pub const FLOWS: &str = "Flows";
+/// The flows table's headers.
+pub const FLOW_HEADERS: [&str; 6] = ["Account", "Open", "In", "Out", "Growth", "Close"];
+/// The year's income beside what it paid, as every surface titles it.
+pub const INCOME_AND_TAX: &str = "Income & Tax";
+
 /// The year table's headers, each beside whether its column holds figures:
 /// the year, ages and the figures [`crate::table::year_figures`] gives over
 /// `classes`.

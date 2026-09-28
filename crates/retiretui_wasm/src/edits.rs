@@ -270,6 +270,40 @@ mod tests {
     }
 
     #[test]
+    fn a_relocated_plan_keeps_its_unsaved_draft_and_a_scenario_is_refused() {
+        let mut document = opened();
+        let accounts = form_at("accounts").expect("a domain");
+        let mut editor = Editor::open(accounts, document.draft(), Some(0));
+        editor.set("name", None, "Renamed").expect("a field");
+        document.apply(&mut editor).expect("applied");
+        document.relocate("/renamed.toml").expect("a plan");
+        assert_eq!(
+            document.files(),
+            [std::path::PathBuf::from("/renamed.toml")]
+        );
+        assert!(document.draft().is_dirty());
+        let scenario = "schema = 1\nbase = \"renamed.toml\"\n".to_owned();
+        let text = saved(&mut document).expect("saved");
+        let mut read = |path: &std::path::Path| {
+            Ok(if path.ends_with("what-if.toml") {
+                scenario.clone()
+            } else {
+                text.clone()
+            })
+        };
+        let mut over = Document::open("/what-if.toml", &mut read).expect("opens");
+        assert!(over.relocate("/moved.toml").is_err());
+        let rebased =
+            retiretui_client::files::rebased(&scenario, "moved.toml").expect("a scenario");
+        assert_eq!(
+            retiretui_client::files::base_named(&rebased).as_deref(),
+            Some("moved.toml")
+        );
+        assert_eq!(retiretui_client::files::base_named(&text), None);
+        assert!(retiretui_client::files::rebased(&text, "moved.toml").is_err());
+    }
+
+    #[test]
     fn an_applied_edit_is_one_step_undone_redone_and_saved() {
         let mut document = opened();
         let accounts = form_at("accounts").expect("a domain");

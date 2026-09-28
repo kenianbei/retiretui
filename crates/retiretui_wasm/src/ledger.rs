@@ -3,9 +3,13 @@
 
 use retiretui_client::actions::collect_warnings;
 use retiretui_client::ledger::{
-    AccountFlows, DetailLine, account_flows, income_and_tax, ledger_headers, salary_marks,
+    AccountFlows, DetailLine, FLOW_HEADERS, FLOWS, INCOME_AND_TAX, account_flows, income_and_tax,
+    ledger_headers, salary_marks,
 };
-use retiretui_client::present::{compact_money, money, treatment_class};
+use retiretui_client::present::{
+    BALANCES_CHART, INCOME_CHART, NET_WORTH_CHART, basis_name, compact_money, money,
+    treatment_class,
+};
 use retiretui_client::replies::year_row;
 use retiretui_client::session::Projected;
 use retiretui_client::table::{
@@ -17,7 +21,7 @@ use serde::Serialize;
 use wasm_bindgen::prelude::{JsError, JsValue, wasm_bindgen};
 
 use crate::domain::TableColumn;
-use crate::{JsDocument, reply, tables, to_js};
+use crate::{Bases, JsDocument, reply, tables, to_js};
 
 /// Every projected year as the Ledger's table shows it.
 #[derive(Serialize, Debug)]
@@ -239,6 +243,44 @@ pub fn band_percentiles() -> Result<JsValue, JsError> {
 #[must_use]
 pub fn js_percentile_label(percentile: u8) -> String {
     percentile_label(percentile)
+}
+
+/// What the Overview, the Ledger and Compare call what they show.
+#[derive(Serialize, Debug)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+pub struct ViewWords {
+    /// The dollars figures are shown in.
+    pub basis: Bases<&'static str>,
+    /// The year's flows through each account.
+    pub flows: &'static str,
+    /// The flows table's headers.
+    pub flow_headers: [&'static str; 6],
+    /// The year's income beside what it paid.
+    pub income_and_tax: &'static str,
+    /// The balances chart.
+    pub balances_chart: &'static str,
+    /// The net worth chart.
+    pub net_worth_chart: &'static str,
+    /// The income chart.
+    pub income_chart: &'static str,
+}
+
+/// What the Overview, the Ledger and Compare call what they show.
+///
+/// # Errors
+///
+/// Where the words do not convert.
+#[wasm_bindgen(js_name = viewWords, unchecked_return_type = "ViewWords")]
+pub fn view_words() -> Result<JsValue, JsError> {
+    to_js(&ViewWords {
+        basis: Bases::of(basis_name),
+        flows: FLOWS,
+        flow_headers: FLOW_HEADERS,
+        income_and_tax: INCOME_AND_TAX,
+        balances_chart: BALANCES_CHART,
+        net_worth_chart: NET_WORTH_CHART,
+        income_chart: INCOME_CHART,
+    })
 }
 
 /// A chart's figure as whole dollars; a figure past what a plan can hold is

@@ -24,6 +24,14 @@ fn residence_in<'plan>(
         .map(|(_, at, residency)| (at, residency))
 }
 
+/// The lowercase code of the U.S. state taxing `plan`'s `year`, as its
+/// projection taxes it. `None` abroad and where the plan states no
+/// residency, which owe no state tax.
+#[must_use]
+pub fn state_lived_in(plan: &Plan, year: i16) -> Option<&str> {
+    state_in(plan, &Resolver::new(plan), year)
+}
+
 /// The U.S. state taxing `year`. `None` abroad and where the plan states no
 /// residency, which owe no state tax.
 pub(super) fn state_in<'plan>(

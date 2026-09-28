@@ -16,9 +16,10 @@ mod resolve;
 mod settle;
 mod year;
 
-pub(crate) use benefit::benefit_params;
+pub use benefit::benefit_params;
 pub use path::MarketPath;
 use residence::check_modeled_states;
+pub use residence::state_lived_in;
 pub use resolve::{Timeline, Window};
 
 use std::collections::BTreeMap;

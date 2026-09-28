@@ -74,7 +74,7 @@ pub(crate) const fn income_kind(kind: IncomeKind) -> &'static str {
 
 /// A filing status as a person says it.
 #[must_use]
-pub(crate) const fn filing_status(status: FilingStatus) -> &'static str {
+pub const fn filing_status(status: FilingStatus) -> &'static str {
     match status {
         FilingStatus::Single => "Single",
         FilingStatus::MarriedJoint => "Married filing jointly",
@@ -214,6 +214,13 @@ pub const MONEY_LASTS: &str = "Money lasts";
 pub const PEAKS_AT: &str = "Peaks at";
 /// See [`ENDS_WITH`].
 pub const LIFETIME_TAXES: &str = "Lifetime taxes";
+
+/// The Overview's charts, as every surface titles them.
+pub const BALANCES_CHART: &str = "Balances by tax treatment";
+/// See [`BALANCES_CHART`].
+pub const NET_WORTH_CHART: &str = "Net worth";
+/// See [`BALANCES_CHART`].
+pub const INCOME_CHART: &str = "Income against taxes";
 
 /// What reads as no difference from the baseline.
 pub const SAME: &str = "same";
