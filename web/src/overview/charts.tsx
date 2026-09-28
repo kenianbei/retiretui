@@ -1,9 +1,10 @@
+import { Link } from "@tanstack/react-router";
 import {
   compactMoney,
   type ChartMark,
   type ChartSeries,
 } from "@wasm/retiretui_wasm.js";
-import { useMemo, type ReactNode } from "react";
+import { useId, useMemo, type ReactNode } from "react";
 import {
   Area,
   CartesianGrid,
@@ -35,6 +36,7 @@ import {
   SERIES,
 } from "@/overview/bands";
 import { useMarkets } from "@/searches";
+import { keptSearch } from "@/year/search";
 
 const FOREGROUND = "var(--foreground)";
 const MUTED = "var(--muted-foreground)";
@@ -82,9 +84,28 @@ interface PlotProps {
   children: ReactNode;
 }
 
+/** The key to a mark: the dashed line the plot draws it as. */
+function MarkKey() {
+  return (
+    <svg aria-hidden width="16" height="8" className="shrink-0">
+      <line
+        x1="0"
+        x2="16"
+        y1="4"
+        y2="4"
+        stroke={MUTED}
+        strokeDasharray="2 4"
+        strokeWidth="1.5"
+      />
+    </svg>
+  );
+}
+
 /**
- * A plot of years across and dollars up, the year shown and `marks` marked,
- * a click choosing the year under it where `onYear` takes one.
+ * A plot of years across and dollars up, the year shown and `marks` marked
+ * and listed under it, a click choosing the year under it where `onYear`
+ * takes one. It reads as one image named by `label`; the year stepper
+ * beside it is the keyboard's way to a year.
  */
 export function Plot({
   config,
@@ -95,46 +116,60 @@ export function Plot({
   onYear,
   children,
 }: PlotProps) {
+  const marksId = useId();
   return (
-    <ChartContainer config={config} aria-label={label} className={PLOT_SIZE}>
-      <ComposedChart
-        data={data}
-        margin={{ left: 8, right: 8, top: 16 }}
-        // A tap's move and click come together; the click must see the move.
-        throttledEvents={[]}
-        onClick={(state) => {
-          const clicked = Number(state.activeLabel);
-          if (onYear && Number.isInteger(clicked)) onYear(clicked);
-        }}
-        className={onYear && "cursor-pointer"}
+    <div className="space-y-2">
+      <ChartContainer
+        config={config}
+        role="img"
+        aria-label={label}
+        aria-describedby={marks.length > 0 ? marksId : undefined}
+        className={PLOT_SIZE}
       >
-        <CartesianGrid vertical={false} />
-        <XAxis dataKey="year" tickLine={false} minTickGap={24} />
-        <YAxis
-          width={64}
-          tickLine={false}
-          axisLine={false}
-          tickFormatter={(amount: number) => compactMoney(amount)}
-        />
-        {tooltip(config)}
-        <ChartLegend content={<ChartLegendContent />} />
-        {children}
-        {marks.map((mark) => (
-          <ReferenceLine
-            key={mark.label}
-            x={mark.year}
-            stroke={MUTED}
-            strokeDasharray="2 4"
-            label={{
-              value: mark.label,
-              position: "insideTopLeft",
-              fontSize: 11,
-            }}
+        <ComposedChart
+          accessibilityLayer={false}
+          data={data}
+          margin={{ left: 8, right: 8, top: 16 }}
+          // A tap's move and click come together; the click must see the move.
+          throttledEvents={[]}
+          onClick={(state) => {
+            const clicked = Number(state.activeLabel);
+            if (onYear && Number.isInteger(clicked)) onYear(clicked);
+          }}
+          className={onYear && "cursor-pointer"}
+        >
+          <CartesianGrid vertical={false} />
+          <XAxis dataKey="year" tickLine={false} minTickGap={24} />
+          <YAxis
+            width={64}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={(amount: number) => compactMoney(amount)}
           />
-        ))}
-        {year !== undefined && <ReferenceLine x={year} stroke={FOREGROUND} />}
-      </ComposedChart>
-    </ChartContainer>
+          {tooltip(config)}
+          <ChartLegend content={<ChartLegendContent />} />
+          {children}
+          {marks.map((mark) => (
+            <ReferenceLine
+              key={mark.label}
+              x={mark.year}
+              stroke={MUTED}
+              strokeDasharray="2 4"
+            />
+          ))}
+          {year !== undefined && <ReferenceLine x={year} stroke={FOREGROUND} />}
+        </ComposedChart>
+      </ChartContainer>
+      {marks.length > 0 && (
+        <p
+          id={marksId}
+          className="text-muted-foreground flex flex-wrap items-center gap-x-2 text-xs"
+        >
+          <MarkKey />
+          {marks.map((mark) => mark.label).join(" · ")}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -313,6 +348,13 @@ export function Charts(props: ChartsProps) {
               <Chart {...props} />
             </TabsContent>
           ))}
+          <Link
+            to="/ledger"
+            search={(kept) => keptSearch(kept, ["year", "basis", "held"])}
+            className="text-primary mt-3 inline-block text-sm underline-offset-4 hover:underline"
+          >
+            Every year in the Ledger
+          </Link>
         </CardContent>
       </Tabs>
     </Card>

@@ -77,3 +77,73 @@ test("the year steps by button and key, within the plan's years", async ({
     page.getByRole("button", { name: "The year before" }),
   ).toBeDisabled();
 });
+
+test("the strip reads the plan, and a plan that runs short says where", async ({
+  page,
+}) => {
+  const short = example("starter.toml").replace(
+    "amount = 24000",
+    "amount = 240000",
+  );
+  await seed(page, { "/short.toml": short }, "/short.toml");
+  await expect(page.getByRole("term")).toHaveText([
+    "Money lasts",
+    "Success",
+    "Ends with",
+    "Lifetime taxes",
+  ]);
+  const note = page.getByText(/^Runs short from \d{4}: /);
+  await expect(note).toBeVisible();
+  const year = /from (\d{4})/.exec((await note.textContent()) ?? "")?.[1];
+  await expect(page.getByText(/^Short \$.* from \d{4}$/)).toBeVisible();
+  await expect(page.getByRole("term")).toHaveCount(4);
+  await expect(page.getByText("through random markets")).toBeVisible(SEARCH);
+  await expectAccessible(page);
+
+  await page
+    .getByRole("link", { name: `${year ?? ""} in the Ledger` })
+    .first()
+    .click();
+  await page.waitForURL(new RegExp(`#/ledger\\?.*year=${year ?? ""}`));
+  await page.goBack();
+  await page.getByRole("link", { name: "Expenses", exact: true }).click();
+  await page.waitForURL(/#\/plan\/expenses/);
+});
+
+test("an issue leads to its field", async ({ page }) => {
+  const broken = example("starter.toml").replace(
+    /balance = \d+/,
+    "balance = -1",
+  );
+  await seed(page, { "/broken.toml": broken }, "/broken.toml");
+  const problems = page.getByRole("region", { name: "This plan has 1 issue" });
+  await expect(problems).toContainText("Its figures show once they are fixed.");
+  await expect(page.getByRole("term")).toHaveCount(0);
+  await expectAccessible(page);
+  await problems
+    .getByRole("link", { name: /Balance: must not be negative/ })
+    .click();
+  await page.waitForURL(/#\/plan\/accounts\?.*field=balance/);
+});
+
+test("a milestone leads to its year in the Ledger", async ({ page }) => {
+  await seed(
+    page,
+    { "/couple.toml": example("mid-career-couple.toml") },
+    "/couple.toml",
+  );
+  const milestones = page.getByRole("region", { name: "Milestones" });
+  await milestones.getByRole("link", { name: /^2043 Priya retires/ }).click();
+  await page.waitForURL(/#\/ledger\?.*year=2043/);
+});
+
+test("this year's actions are in the dollars shown", async ({ page }) => {
+  await seed(page, FILES, "/starter.toml", "#/overview?year=2045");
+  const actions = page.getByRole("region", { name: /^What to do in 2045/ });
+  const today = await actions.getByRole("listitem").first().textContent();
+  await page.getByRole("link", { name: "future dollars" }).click();
+  await page.waitForURL(/basis=nominal/);
+  await expect(actions.getByRole("listitem").first()).not.toHaveText(
+    today ?? "",
+  );
+});
