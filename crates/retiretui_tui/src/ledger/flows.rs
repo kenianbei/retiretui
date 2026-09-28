@@ -41,8 +41,6 @@ pub fn plugin(app: &mut App) {
     );
 }
 
-/// The columns written as text, lined up on the left; the rest are figures.
-const TEXT_COLUMNS: [usize; 3] = [0, 2, 3];
 /// In and Out share what the name and the figures leave, so a narrow pane
 /// clips the end of a flow rather than every column.
 const FLOW_COLUMNS: [usize; 2] = [2, 3];
@@ -92,7 +90,10 @@ fn refresh_flows(
     };
     let previous = shown.ledger().projection.row(row.year - 1);
     let rows = flow_rows(&shown.ledger().plan, previous, row, shown.basis.nominal);
-    let header = FLOW_HEADERS.map(str::to_owned);
+    let header = FLOW_HEADERS.map(|(header, _)| header.to_owned());
+    let text: Vec<usize> = (FLOW_HEADERS.iter().enumerate())
+        .filter_map(|(at, &(_, is_figure))| (!is_figure).then_some(at))
+        .collect();
     let TableColumns(mut widths) = tabulate::columns((&header, &rows), DETAIL_GAP);
     for at in FLOW_COLUMNS {
         widths[at] = Constraint::Fill(1);
@@ -100,7 +101,7 @@ fn refresh_flows(
     for (table, mut scroll) in &mut tables {
         commands.entity(table).insert(TableColumns(widths.clone()));
         let scrolled = (table, &mut *scroll);
-        tabulate::refill(&mut commands, scrolled, (&header, &rows), &TEXT_COLUMNS);
+        tabulate::refill(&mut commands, scrolled, (&header, &rows), &text);
     }
     let title = format!(
         "{} {FLOWS} · {}",

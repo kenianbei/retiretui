@@ -4,6 +4,7 @@ import {
   expect,
   expectAccessible,
   isPhone,
+  searchesDone,
   seed,
   test,
 } from "./support";
@@ -75,7 +76,7 @@ test("each Roth owner's ladder and the household's claims are searched and taken
   await expect(
     claims.getByRole("button", { name: "Take these claims" }),
   ).toBeVisible(SEARCH);
-  await expect(page.getByText("Searching…")).toHaveCount(0, SEARCH);
+  await searchesDone(page);
   await expectAccessible(page);
   if (!phone) {
     await expect(claims.getByRole("table").locator("thead")).toContainText(
@@ -88,7 +89,7 @@ test("each Roth owner's ladder and the household's claims are searched and taken
   await act("Hold claim").click();
   await page.waitForURL(/held=priya/);
   await expect(act("Let claim vary")).toBeVisible();
-  await expect(page.getByText("Searching…")).toHaveCount(0, SEARCH);
+  await searchesDone(page);
   if (!phone) {
     await expect(claims.getByRole("table").locator("thead")).not.toContainText(
       "Priya",
@@ -107,7 +108,7 @@ test("each Roth owner's ladder and the household's claims are searched and taken
   await page.goto("#/tools/ssa-benefits?person=0&held=priya");
   await act("Let claim vary").click();
   await page.waitForURL((url) => !url.hash.includes("held="));
-  await expect(page.getByText("Searching…")).toHaveCount(0, SEARCH);
+  await searchesDone(page);
 
   await page.getByRole("button", { name: /^Save/ }).first().click();
   const options = phone
@@ -122,7 +123,7 @@ test("each Roth owner's ladder and the household's claims are searched and taken
   ).toBeVisible(SEARCH);
   expect(page.url()).toContain(`claim=${key}`);
   const [priya, marcusAge] = key.split("-");
-  await expect(page.getByText("Searching…")).toHaveCount(0, SEARCH);
+  await searchesDone(page);
   await claims.getByRole("button", { name: "Take these claims" }).click();
   const asked = page.getByRole("alertdialog");
   await expect(
@@ -136,7 +137,7 @@ test("each Roth owner's ladder and the household's claims are searched and taken
       `claimed Priya at ${priya ?? ""}, Marcus at ${marcusAge ?? ""}`,
     ),
   ).toBeVisible();
-  await expect(page.getByText("Searching…")).toHaveCount(0, SEARCH);
+  await searchesDone(page);
   await claims.getByRole("button", { name: "Write as a scenario" }).click();
   await asked.getByRole("button", { name: "Write" }).click();
   await expect(asked.getByText(/save first/)).toBeVisible();
@@ -163,7 +164,7 @@ test("each Roth owner's ladder and the household's claims are searched and taken
   await undo.click();
   await undo.click();
   await page.getByRole("button", { name: /^Save/ }).first().click();
-  await expect(page.getByText("Searching…")).toHaveCount(0, SEARCH);
+  await searchesDone(page);
   await claims.getByRole("button", { name: "Write as a scenario" }).click();
   await asked.getByRole("button", { name: "Write" }).click();
   await expect(

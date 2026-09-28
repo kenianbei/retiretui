@@ -3,12 +3,15 @@
 //! benefit formula's amounts, and a state's income tax, each a section of
 //! rows in the words every other table is said in.
 
-use retiretui_engine::params::{Bracket, Inflation, PerStatus, PhaseOut, TaxParams, TaxTables};
+use retiretui_engine::params::{
+    BenefitParams, Bracket, Inflation, IrmaaTier, PerStatus, PhaseOut, RmdDivisor, TaxParams,
+    TaxTables,
+};
 use retiretui_engine::plan::{Dollars, FilingStatus, Plan, US_STATES, place_name};
 use retiretui_engine::project::{benefit_params, state_lived_in};
 use serde::{Deserialize, Serialize};
 
-use crate::present::filing_status;
+use crate::forms::offers::{Offer, Vocabulary};
 use crate::table::{money, rate};
 
 /// Which tables are asked for: a year, and a status and state other than
@@ -27,16 +30,6 @@ pub struct TablesView {
     #[serde(default)]
     #[cfg_attr(feature = "ts", ts(optional))]
     pub state: Option<String>,
-}
-
-/// Something the tables can be shown for, by the key the view names it.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
-pub struct TablesChoice {
-    /// What the view names it by.
-    pub key: String,
-    /// What it is called.
-    pub title: String,
 }
 
 /// One table of the year's: a title, its columns and its rows, or a note
@@ -66,9 +59,9 @@ pub struct YearTables {
     /// The state shown, where there is one.
     pub state: Option<String>,
     /// Every filing status.
-    pub statuses: Vec<TablesChoice>,
+    pub statuses: Vec<Offer>,
     /// Every state the year's tables model.
-    pub states: Vec<TablesChoice>,
+    pub states: Vec<Offer>,
     /// The tables, federal first.
     pub sections: Vec<TaxSection>,
 }
@@ -102,36 +95,27 @@ pub fn year_tables(plan: &Plan, tables: &TaxTables, view: &TablesView) -> YearTa
         .clone()
         .or_else(|| state_lived_in(plan, year).map(str::to_owned));
     let mut sections = federal(&params, status);
-    sections.push(social_security(plan, tables, &params, status, year));
+    sections.push(social_security(
+        &params,
+        benefit_params(plan, tables).as_ref(),
+        status,
+        year,
+    ));
     sections.extend(state_sections(&params, status, state.as_deref(), year));
     YearTables {
         year,
         status: status.as_str().to_owned(),
         state,
-        statuses: FilingStatus::ALL
-            .iter()
-            .map(|&each| status_choice(each))
-            .collect(),
-        states: params
-            .states
-            .keys()
-            .map(|code| state_choice(code))
-            .collect(),
+        statuses: Vocabulary::FilingStatus.offers(),
+        states: params.states.keys().map(|code| state_offer(code)).collect(),
         sections,
     }
 }
 
-fn status_choice(status: FilingStatus) -> TablesChoice {
-    TablesChoice {
-        key: status.as_str().to_owned(),
-        title: filing_status(status).to_owned(),
-    }
-}
-
-fn state_choice(code: &str) -> TablesChoice {
-    TablesChoice {
-        key: code.to_owned(),
-        title: state_name(code).to_owned(),
+fn state_offer(code: &str) -> Offer {
+    Offer {
+        value: code.to_owned(),
+        label: state_name(code).to_owned(),
     }
 }
 
@@ -192,7 +176,6 @@ fn federal(params: &TaxParams, status: FilingStatus) -> Vec<TaxSection> {
         let rows = params.irmaa.iter().map(tier).collect();
         section("Medicare surcharges (IRMAA)", &IRMAA_COLUMNS, rows)
     };
-    let divisor = |row: &_| rmd_row(row);
     vec![
         section(
             "Income tax brackets",
@@ -210,12 +193,12 @@ fn federal(params: &TaxParams, status: FilingStatus) -> Vec<TaxSection> {
         section(
             "Required minimum distributions",
             &RMD_COLUMNS,
-            params.rmd.divisors.iter().map(divisor).collect(),
+            params.rmd.divisors.iter().map(rmd_row).collect(),
         ),
     ]
 }
 
-fn irmaa_row(tier: &retiretui_engine::params::IrmaaTier, status: FilingStatus) -> Vec<String> {
+fn irmaa_row(tier: &IrmaaTier, status: FilingStatus) -> Vec<String> {
     vec![
         money(tier.magi_over.get(status)),
         money(tier.part_b),
@@ -223,7 +206,7 @@ fn irmaa_row(tier: &retiretui_engine::params::IrmaaTier, status: FilingStatus) -
     ]
 }
 
-fn rmd_row(row: &retiretui_engine::params::RmdDivisor) -> Vec<String> {
+fn rmd_row(row: &RmdDivisor) -> Vec<String> {
     vec![row.age.to_string(), format!("{:.1}", row.divisor)]
 }
 
@@ -262,9 +245,8 @@ fn limits(params: &TaxParams, status: FilingStatus) -> Vec<Vec<String>> {
 }
 
 fn social_security(
-    plan: &Plan,
-    tables: &TaxTables,
     params: &TaxParams,
+    formula: Option<&BenefitParams>,
     status: FilingStatus,
     year: i16,
 ) -> TaxSection {
@@ -279,12 +261,12 @@ fn social_security(
             money(thresholds.provisional_upper.get(status)),
         ),
     ];
-    if let Some(formula) = benefit_params(plan, tables) {
+    if let Some(formula) = formula {
         let [first, second] = formula.bend_points(year);
         let cola = formula
             .cola
             .get(&year)
-            .map_or(NOT_PUBLISHED.to_owned(), |&each| rate(each));
+            .map_or_else(|| NOT_PUBLISHED.to_owned(), |&each| rate(each));
         rows.extend([
             labelled("Wage base", money(formula.wage_base(year))),
             labelled(
@@ -337,13 +319,11 @@ fn state_sections(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::setup::EXAMPLES;
+    use crate::setup::examples::named;
 
     fn moving() -> Plan {
-        let example = EXAMPLES
-            .iter()
-            .find(|(file, ..)| *file == "moving-states.toml");
-        Plan::from_toml_str(example.expect("the example").2).unwrap()
+        let (_, _, text) = named("moving-states.toml").expect("the example");
+        Plan::from_toml_str(text).unwrap()
     }
 
     fn asked(year: i16) -> TablesView {
@@ -386,7 +366,7 @@ mod tests {
             .iter()
             .find(|each| each.title == "Washington brackets");
         assert_eq!(washington.unwrap().note.as_deref(), Some(NO_INCOME_TAX));
-        assert!(tables.states.iter().any(|state| state.title == "Oregon"));
+        assert!(tables.states.iter().any(|state| state.label == "Oregon"));
     }
 
     #[test]

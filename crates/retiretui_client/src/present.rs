@@ -10,6 +10,7 @@ use retiretui_engine::project::Summary;
 use toml::Value;
 
 use crate::codec::from_table;
+use crate::metric::Metric;
 pub use crate::table::{account_name, event_name, income_name, money, rate};
 
 /// The dollars figures are shown in.
@@ -74,7 +75,7 @@ pub(crate) const fn income_kind(kind: IncomeKind) -> &'static str {
 
 /// A filing status as a person says it.
 #[must_use]
-pub const fn filing_status(status: FilingStatus) -> &'static str {
+pub(crate) const fn filing_status(status: FilingStatus) -> &'static str {
     match status {
         FilingStatus::Single => "Single",
         FilingStatus::MarriedJoint => "Married filing jointly",
@@ -218,7 +219,7 @@ pub const LIFETIME_TAXES: &str = "Lifetime taxes";
 /// The Overview's charts, as every surface titles them.
 pub const BALANCES_CHART: &str = "Balances by tax treatment";
 /// See [`BALANCES_CHART`].
-pub const NET_WORTH_CHART: &str = "Net worth";
+pub const NET_WORTH_CHART: &str = Metric::NetWorth.title();
 /// See [`BALANCES_CHART`].
 pub const INCOME_CHART: &str = "Income against taxes";
 

@@ -1,4 +1,11 @@
-import { example, expect, expectAccessible, seed, test } from "./support";
+import {
+  SEARCH,
+  example,
+  expect,
+  expectAccessible,
+  seed,
+  test,
+} from "./support";
 
 const FILES = { "/starter.toml": example("starter.toml") };
 
@@ -21,9 +28,7 @@ test("the Overview charts the plan, and a click chooses the year", async ({
   }
   await page.getByRole("tab", { name: "Market runs" }).click();
   const markets = page.getByRole("tabpanel");
-  await expect(markets.locator(".recharts-area").first()).toBeVisible({
-    timeout: 90_000,
-  });
+  await expect(markets.locator(".recharts-area").first()).toBeVisible(SEARCH);
   await expect(markets).toContainText("today's dollars");
   await expectAccessible(page);
 

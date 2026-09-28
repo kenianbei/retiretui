@@ -17,18 +17,12 @@ import {
 import { scenariosOver } from "@/files/chain";
 import { messageOf } from "@/lib/utils";
 import { baseIn, openAt, type Opened } from "@/opened";
-import { Workspace, fileAt, nameOf, pathOf } from "@/workspace";
+import { Workspace, fileAt, nameOf, pathOf, renameAt } from "@/workspace";
 
 /** The open document, and how many changes it has seen. */
 export interface Reading {
   document: Document | null;
   revision: number;
-}
-
-/** A file renamed, or deleted where `to` is `null`: what else follows it. */
-export interface Moved {
-  from: string;
-  to: string | null;
 }
 
 /** What becomes of a draft's unsaved edits before something replaces it. */
@@ -56,15 +50,13 @@ export interface Session extends Opened {
   /** Writes `text` as the file `name`, replacing any such file, without opening it. */
   write: (name: string, text: string) => void;
   /** Deletes `path`, closing the document where it was the document's own file. */
-  remove: (path: string) => void;
+  removeFile: (path: string) => void;
   /**
    * Moves `from` to `to` - which no file is - and every scenario over it
    * to name it there, the document following with its draft; a refusal is
    * reported.
    */
   rename: (from: string, to: string) => void;
-  /** The last file renamed or deleted here. */
-  moved: Moved | null;
   /** Stores the editor's item, answering where it now sits; throws the refusal. */
   apply: (editor: Editor) => number | undefined;
   /**
@@ -74,7 +66,7 @@ export interface Session extends Opened {
    */
   change: <T>(act: (document: Document) => T) => T | undefined;
   /** Removes an item still called `name`; a refusal is reported. */
-  removeItem: (slug: string, index: number, name: string) => void;
+  remove: (slug: string, index: number, name: string) => void;
   undo: () => void;
   redo: () => void;
   /** Writes the draft back to its file; a refusal is reported. */
@@ -111,7 +103,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [isChangedElsewhere, setChangedElsewhere] = useState(false);
   const [waiting, setWaiting] = useState<(() => void) | null>(null);
   const [problem, report] = useState<string | null>(null);
-  const [moved, setMoved] = useState<Moved | null>(null);
   const { document, path } = opened;
 
   const changed = useCallback(() => {
@@ -167,27 +158,20 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [workspace, listed],
   );
 
-  /** Takes `to` as the document's file where `from` was it, keeping its draft. */
+  /** Takes `to` wherever `from` was among the document's files, keeping its draft. */
   const followed = useCallback(
     (from: string, to: string) => {
-      if (!document || path !== from) return false;
-      if (document.isReadOnly) {
-        openNow(to);
-        return true;
-      }
-      document.relocate(to);
-      workspace.remember(to);
-      setOpened({ path: to, document, error: null });
+      if (!document?.files().includes(from)) return;
+      document.relocate(from, to);
+      if (path === from) setOpened({ path: to, document, error: null });
       changed();
-      return true;
     },
-    [document, path, workspace, openNow, changed],
+    [document, path, changed],
   );
 
-  const remove = useCallback(
+  const removeFile = useCallback(
     (removed: string) => {
       workspace.remove(removed);
-      setMoved({ from: removed, to: null });
       listed();
       if (!document?.files().includes(removed)) return;
       setOpened(openAt(workspace, removed === path ? null : path));
@@ -200,23 +184,20 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       try {
         const base = (each: string) => baseIn(workspace, each);
         const over = scenariosOver(from, workspace.list(), base);
+        workspace.rename(from, to);
         for (const scenario of over) {
           workspace.write(
             scenario,
             rebased(workspace.read(scenario), nameOf(to)),
           );
         }
-        workspace.rename(from, to);
-        setMoved({ from, to });
         listed();
-        const touched = [from, ...over];
-        if (!document?.files().some((file) => touched.includes(file))) return;
-        if (!followed(from, to) && path !== null) openNow(path);
+        followed(from, to);
       } catch (thrown) {
         report(messageOf(thrown));
       }
     },
-    [workspace, document, path, listed, followed, openNow],
+    [workspace, listed, followed],
   );
 
   /** Runs `action`, reporting what it throws and clearing what was reported. */
@@ -293,7 +274,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         changed();
         return answer;
       },
-      removeItem: attempt(
+      remove: attempt(
         stepped((slug: string, index: number, name: string) => {
           document?.remove(slug, index, name);
         }),
@@ -310,15 +291,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const follow = (event: StorageEvent) => {
+      const renamed = renameAt(event.key, event.newValue);
+      if (renamed) {
+        followed(renamed.from, renamed.to);
+        return;
+      }
       const file = fileAt(event.key);
       if (file === undefined) return;
       listed();
       const isOurs = file === null || document?.files().includes(file) === true;
       if (!isOurs) return;
-      if (file !== null && event.newValue === null) {
-        const to = workspace.renamedTo(file);
-        if (to !== null && followed(file, to)) return;
-      }
       if (document?.isDirty) setChangedElsewhere(true);
       else setOpened((now) => openAt(workspace, now.path));
     };
@@ -351,9 +333,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       open,
       place,
       write,
-      remove,
+      removeFile,
       rename,
-      moved,
       ...edits,
       isChangedElsewhere,
       reload: () => {
@@ -374,9 +355,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       open,
       place,
       write,
-      remove,
+      removeFile,
       rename,
-      moved,
       edits,
       isChangedElsewhere,
       path,

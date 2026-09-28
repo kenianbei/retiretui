@@ -106,14 +106,11 @@ impl JsDocument {
         Document::open(path, &mut read).map(Self).map_err(refused)
     }
 
-    /// Takes `path` as the plan's file, its draft kept and nothing written:
-    /// the file it was opened from has been renamed.
-    ///
-    /// # Errors
-    ///
-    /// Where it is a scenario, whose files are read again instead.
-    pub fn relocate(&mut self, path: &str) -> Result<(), JsError> {
-        self.0.relocate(path).map_err(refused)
+    /// Takes `to` wherever `from` is among the files the document was
+    /// resolved from, nothing read again or written: the file was renamed,
+    /// and holds what it held.
+    pub fn relocate(&mut self, from: &str, to: &str) {
+        self.0.relocate(from, to);
     }
 
     /// Whether it is a scenario, which cannot be written back as it stands.
@@ -242,12 +239,12 @@ pub fn domains() -> Result<JsValue, JsError> {
     to_js(&vocabulary::domains())
 }
 
-/// The base a scenario's `text` names, as it is written; `undefined` for a
-/// plan, or for text that does not read as either.
+/// The file the scenario `text`, kept at `path`, is resolved over: its
+/// `base`, beside it; `undefined` for a plan, or text that reads as neither.
 #[wasm_bindgen(js_name = baseOf)]
 #[must_use]
-pub fn base_of(text: &str) -> Option<String> {
-    retiretui_client::files::base_named(text)
+pub fn base_of(path: &str, text: &str) -> Option<String> {
+    retiretui_client::files::base_of(path, text)
 }
 
 /// `text`, a scenario, naming `base` in place of the base it names.

@@ -10,15 +10,18 @@ use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::{Issue, Plan, Scenario};
 use retiretui_engine::project::validate_plan;
 
-use crate::store::Store;
+use crate::store::{Store, normal};
 use retiretui_engine::plan::resolve;
 
-/// The base a scenario's `text` names, as it is written; none for a plan,
-/// or for text that does not read as either.
+/// The file the scenario `text`, kept at `path`, is resolved over: its
+/// `base`, beside it, as every read resolves it; none for a plan, or text
+/// that reads as neither.
 #[must_use]
-pub fn base_named(text: &str) -> Option<String> {
+pub fn base_of(path: &str, text: &str) -> Option<String> {
     let scenario = Scenario::from_toml_str(text).ok()??;
-    Some(scenario.base().to_owned())
+    let beside = Path::new(path).parent().unwrap_or(Path::new("/"));
+    let base = normal(&beside.join(scenario.base()));
+    Some(base.to_string_lossy().into_owned())
 }
 
 /// `text`, a scenario, naming `base` in place of the base it names,

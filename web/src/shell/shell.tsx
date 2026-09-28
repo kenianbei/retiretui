@@ -7,13 +7,7 @@ import {
 } from "@tanstack/react-router";
 
 import { Search } from "lucide-react";
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { useComparedFollowDocument } from "@/compare/use-compared";
 import { DraftNotices, UnsavedQuestion } from "@/draft/notices";
@@ -24,11 +18,10 @@ import { Start } from "@/files/start";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/session";
-import { tabTarget } from "@/shell/go";
+import { useTabTarget } from "@/shell/go";
 import { KeysSheet } from "@/shell/keys";
 import { useShellKeys } from "@/shell/use-keys";
 import { Palette } from "@/shell/palette";
-import { keptSearch } from "@/year/search";
 import {
   TABS,
   isGroup,
@@ -54,11 +47,10 @@ interface TabLinkProps {
 
 /** A link to a tab's own page, or to one of its group's. */
 function TabLink({ tab, page, className, children, isCurrent }: TabLinkProps) {
-  const keeps = useRouter().routesByPath[tab.path].options.staticData?.keeps;
+  const target = useTabTarget();
   return (
     <Link
-      {...tabTarget(tab, page)}
-      search={(prev) => keptSearch(prev, keeps ?? [])}
+      {...target(tab, page)}
       className={className}
       aria-current={isCurrent ? "page" : undefined}
     >
@@ -189,25 +181,33 @@ function GroupPages() {
 /**
  * Moves focus to the page's heading once a navigation to another page has
  * shown it, so that a screen reader says where it now is - unless the page
- * has put it somewhere of its own, such as the field a link names.
+ * has put focus in itself, such as on the field a link names.
  */
 function useFocusOnNavigation() {
   const router = useRouter();
-  useEffect(
-    () =>
-      router.subscribe("onResolved", (event) => {
-        if (!event.pathChanged || !event.fromLocation) return;
-        requestAnimationFrame(() => {
-          const main = window.document.querySelector("main");
-          const heading = main?.querySelector("h1");
-          const focused = window.document.activeElement;
-          if (!heading || (focused !== main && main?.contains(focused))) return;
-          heading.tabIndex = -1;
-          heading.focus();
-        });
-      }),
-    [router],
-  );
+  useEffect(() => {
+    let before: Element | null = null;
+    const leaving = router.subscribe("onBeforeNavigate", () => {
+      before = window.document.activeElement;
+    });
+    const arrived = router.subscribe("onResolved", (event) => {
+      if (!event.pathChanged || !event.fromLocation) return;
+      requestAnimationFrame(() => {
+        const main = window.document.querySelector("main");
+        const heading = main?.querySelector("h1");
+        const focused = window.document.activeElement;
+        const isPlaced =
+          focused !== before && focused !== main && main?.contains(focused);
+        if (!heading || isPlaced) return;
+        heading.tabIndex = -1;
+        heading.focus();
+      });
+    });
+    return () => {
+      leaving();
+      arrived();
+    };
+  }, [router]);
 }
 
 export function Shell() {
@@ -217,13 +217,7 @@ export function Shell() {
   const main = useRef<HTMLElement>(null);
   const [isFinding, setFinding] = useState(false);
   const [isListingKeys, setListingKeys] = useState(false);
-  const find = useCallback(() => {
-    setFinding(true);
-  }, []);
-  const listKeys = useCallback(() => {
-    setListingKeys(true);
-  }, []);
-  useShellKeys(find, listKeys);
+  useShellKeys(setFinding, setListingKeys);
   const isWithoutDocument = useMatches({
     select: (matches) =>
       matches.some((match) => match.staticData.isWithoutDocument === true),
@@ -253,7 +247,9 @@ export function Shell() {
               size="sm"
               aria-label="Find a page, a plan or an action"
               title="Find a page, a plan or an action (Ctrl K)"
-              onClick={find}
+              onClick={() => {
+                setFinding(true);
+              }}
               className="hidden sm:inline-flex"
             >
               <Search aria-hidden />
@@ -285,7 +281,13 @@ export function Shell() {
         <BottomBar />
       </div>
       <UnsavedQuestion />
-      <Palette isOpen={isFinding} setOpen={setFinding} showKeys={listKeys} />
+      <Palette
+        isOpen={isFinding}
+        setOpen={setFinding}
+        showKeys={() => {
+          setListingKeys(true);
+        }}
+      />
       <KeysSheet isOpen={isListingKeys} setOpen={setListingKeys} />
     </FileActionsProvider>
   );

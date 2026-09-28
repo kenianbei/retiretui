@@ -1,4 +1,11 @@
-import { example, expect, expectAccessible, seed, test } from "./support";
+import {
+  compareWith,
+  example,
+  expect,
+  expectAccessible,
+  seed,
+  test,
+} from "./support";
 
 test("the Start page starts a plan from an example or an upload", async ({
   page,
@@ -49,10 +56,7 @@ test("opening any plan but a compared one leaves nothing compared", async ({
   );
   const compare = async () => {
     await page.goto("#/compare");
-    await page.getByRole("button", { name: "Compare with" }).click();
-    await page.getByRole("menuitemcheckbox", { name: "couple.toml" }).click();
-    await page.keyboard.press("Escape");
-    await page.waitForURL(/with=/);
+    await compareWith(page, "couple.toml");
   };
   const dropped = () =>
     page.waitForFunction(() => !location.hash.includes("with="));

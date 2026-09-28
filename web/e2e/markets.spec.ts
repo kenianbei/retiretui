@@ -4,6 +4,7 @@ import {
   expect,
   expectAccessible,
   isPhone,
+  rowNamed,
   seed,
   test,
 } from "./support";
@@ -15,10 +16,7 @@ test("the plan through random markets and history, a run opened in the Ledger", 
 }, testInfo) => {
   const phone = isPhone(testInfo);
   await seed(page, { "/mix.toml": example("market-mix.toml") }, "/mix.toml");
-  const row = (name: string) =>
-    phone
-      ? page.getByRole("button", { name: new RegExp(`^${name}`) })
-      : page.getByRole("row", { name: new RegExp(`^${name}`) });
+  const row = (name: string) => rowNamed(page, testInfo, name);
 
   const figure = page.getByText(/^\d+(\.\d+)?%$/).first();
   await expect(figure).toHaveClass(ZONED, SEARCH);

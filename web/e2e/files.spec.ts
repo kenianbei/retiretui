@@ -1,4 +1,11 @@
-import { example, expect, expectAccessible, seed, test } from "./support";
+import {
+  compareWith,
+  example,
+  expect,
+  expectAccessible,
+  seed,
+  test,
+} from "./support";
 
 test("plans are renamed, their scenarios following, and deleted", async ({
   page,
@@ -15,10 +22,7 @@ test("plans are renamed, their scenarios following, and deleted", async ({
     "/early.toml",
     "#/compare",
   );
-  await page.getByRole("button", { name: "Compare with" }).click();
-  await page.getByRole("menuitemcheckbox", { name: "couple.toml" }).click();
-  await page.keyboard.press("Escape");
-  await page.waitForURL(/with=/);
+  await compareWith(page, "couple.toml");
 
   const manage = async () => {
     await page.getByRole("button", { name: "File" }).click();

@@ -42,15 +42,18 @@ const flowColumn = (key: keyof FlowLine, header: string, isNumeric: boolean) =>
     meta: { isNumeric },
     cell: ({ row }) => row.original[key],
   });
-const [ACCOUNT, OPEN, IN, OUT, GROWTH, CLOSE] = VIEW_WORDS.flow_headers;
-const FLOW_COLUMNS = [
-  flowColumn("account", ACCOUNT, false),
-  flowColumn("open", OPEN, true),
-  flowColumn("came", IN, false),
-  flowColumn("went", OUT, false),
-  flowColumn("growth", GROWTH, true),
-  flowColumn("close", CLOSE, true),
-];
+/** Each flows column's key, in the order the client heads them. */
+const FLOW_KEYS = [
+  "account",
+  "open",
+  "came",
+  "went",
+  "growth",
+  "close",
+] as const;
+const FLOW_COLUMNS = VIEW_WORDS.flow_headers.map(([header, isFigure], at) =>
+  flowColumn(FLOW_KEYS[at] ?? "account", header, isFigure),
+);
 
 function Lines({ label, lines }: { label: string; lines: DetailLine[] }) {
   return (

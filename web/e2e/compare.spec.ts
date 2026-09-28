@@ -1,9 +1,13 @@
 import {
   SEARCH,
+  compareWith,
   example,
   expect,
   expectAccessible,
   isPhone,
+  openPlan,
+  rowNamed,
+  searchesDone,
   seed,
   test,
 } from "./support";
@@ -23,12 +27,7 @@ test("plans compared against a baseline, and a written scenario compared at once
     "#/compare",
   );
   await expect(page.getByText(/Compare with adds one/)).toBeVisible();
-  const row = (name: string) => {
-    const named = new RegExp(`^${name.replace(".", "\\.")}`);
-    return phone
-      ? page.getByRole("button", { name: named })
-      : page.getByRole("row", { name: named });
-  };
+  const row = (name: string) => rowNamed(page, testInfo, name);
   const tab = (name: string) =>
     page
       .getByRole("link", { name, exact: true })
@@ -36,10 +35,7 @@ test("plans compared against a baseline, and a written scenario compared at once
       .first();
   const hash = () => decodeURIComponent(new URL(page.url()).hash);
 
-  await page.getByRole("button", { name: "Compare with" }).click();
-  await page.getByRole("menuitemcheckbox", { name: "couple.toml" }).click();
-  await page.keyboard.press("Escape");
-  await page.waitForURL(/with=/);
+  await compareWith(page, "couple.toml");
   expect(hash()).toContain("couple.toml");
   await expect(row("couple.toml")).toBeVisible();
   if (!phone) {
@@ -109,21 +105,17 @@ test("plans compared against a baseline, and a written scenario compared at once
   expect(hash()).not.toContain("couple.toml");
   await expect(page.locator("header").getByText("couple.toml")).toBeVisible();
 
-  await page.getByRole("button", { name: "File" }).click();
-  await page.getByRole("menuitem", { name: "Open" }).click();
-  await page.getByRole("menuitem", { name: "starter.toml" }).click();
+  await openPlan(page, "starter.toml");
   await expect.poll(hash).not.toContain("with=");
   await expect(page.getByText(/Compare with adds one/)).toBeVisible();
 
-  await page.getByRole("button", { name: "File" }).click();
-  await page.getByRole("menuitem", { name: "Open" }).click();
-  await page.getByRole("menuitem", { name: "early.toml" }).click();
+  await openPlan(page, "early.toml");
   await expect(page.locator("header").getByText("early.toml")).toBeVisible();
   await page.goto("#/tools/roth-conversions");
   await expect(
     page.getByRole("heading", { name: /^Conversions \(/ }),
   ).toBeVisible(SEARCH);
-  await expect(page.getByText("Searching…")).toHaveCount(0, SEARCH);
+  await searchesDone(page);
   await page.getByRole("button", { name: "Write as a scenario" }).click();
   await page
     .getByRole("alertdialog")

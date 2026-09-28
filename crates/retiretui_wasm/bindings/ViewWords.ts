@@ -14,9 +14,9 @@ basis: Bases<string>,
  */
 flows: string, 
 /**
- * The flows table's headers.
+ * The flows table's headers, each beside whether its column holds figures.
  */
-flow_headers: [string, string, string, string, string, string], 
+flow_headers: [[string, boolean], [string, boolean], [string, boolean], [string, boolean], [string, boolean], [string, boolean]], 
 /**
  * The year's income beside what it paid.
  */

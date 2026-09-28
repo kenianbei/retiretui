@@ -1,5 +1,5 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import type { TablesChoice, TaxSection } from "@wasm/retiretui_wasm.js";
+import type { Offer, TaxSection } from "@wasm/retiretui_wasm.js";
 import { useMemo } from "react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +17,7 @@ interface PickerProps {
   /** What the plan itself is shown under, where nothing is picked. */
   own: string;
   value: string | undefined;
-  choices: TablesChoice[];
+  choices: Offer[];
   pick: (key: string | undefined) => void;
 }
 
@@ -36,8 +36,8 @@ function Picker({ label, own, value, choices, pick }: PickerProps) {
       >
         <option value={THE_PLAN_S}>{own}</option>
         {choices.map((choice) => (
-          <option key={choice.key} value={choice.key}>
-            {choice.title}
+          <option key={choice.value} value={choice.value}>
+            {choice.label}
           </option>
         ))}
       </select>
@@ -111,8 +111,8 @@ export function TaxTablesPage({ title }: { title: string }) {
     () =>
       reading.document?.taxTables({
         year,
-        ...(search.status && { status: search.status }),
-        ...(search.state && { state: search.state }),
+        status: search.status,
+        state: search.state,
       }),
     [reading, year, search.status, search.state],
   );
@@ -123,8 +123,8 @@ export function TaxTablesPage({ title }: { title: string }) {
       replace: true,
     });
   };
-  const named = (choices: TablesChoice[], key: string | null) =>
-    choices.find((choice) => choice.key === key)?.title ?? "none";
+  const named = (choices: Offer[], key: string | null) =>
+    choices.find((choice) => choice.value === key)?.label ?? "none";
 
   return (
     <div className="max-w-6xl space-y-4">

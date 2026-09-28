@@ -1,21 +1,13 @@
-/** Where a scenario's `base` puts its base: beside it, in the flat workspace. */
-export function basePath(base: string): string {
-  return base.startsWith("/") ? base : `/${base.replace(/^\.\//, "")}`;
-}
-
-/** What each file's `base` names, where it names one. */
+/** The file each file is a scenario over, where it is one. */
 export type BaseAt = (path: string) => string | undefined;
 
-/** The files of `paths` whose `base` is `path`. */
+/** The files of `paths` that are scenarios over `path`. */
 export function scenariosOver(
   path: string,
   paths: readonly string[],
   baseAt: BaseAt,
 ): string[] {
-  return paths.filter((each) => {
-    const base = baseAt(each);
-    return base !== undefined && basePath(base) === path;
-  });
+  return paths.filter((each) => baseAt(each) === path);
 }
 
 /** The files of `paths` built on `path`, directly or through one another. */
@@ -24,13 +16,13 @@ export function builtOn(
   paths: readonly string[],
   baseAt: BaseAt,
 ): string[] {
-  const found: string[] = [];
+  const found = new Set<string>();
   let over = [path];
   while (over.length > 0) {
     over = over
       .flatMap((base) => scenariosOver(base, paths, baseAt))
-      .filter((each) => each !== path && !found.includes(each));
-    found.push(...over);
+      .filter((each) => each !== path && !found.has(each));
+    over.forEach((each) => found.add(each));
   }
-  return [...new Set(found)];
+  return [...found];
 }

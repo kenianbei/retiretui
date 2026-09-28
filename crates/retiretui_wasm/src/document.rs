@@ -29,7 +29,6 @@ use crate::vocabulary::{form_at, slug_of};
 
 /// A scenario holds only its changes to a base; the plan resolved from it
 /// written in its place would lose which were its own.
-const RELOCATE_SCENARIO: &str = "a scenario is opened again from its renamed file";
 const OVER_SCENARIO: &str = "a scenario cannot be saved over; save it under a name of its own";
 
 /// A resolved plan and what the gate made of it.
@@ -371,18 +370,16 @@ impl Document {
         Ok(())
     }
 
-    /// Takes `path` as the plan's file, its draft kept and nothing written:
-    /// the file it was opened from has been renamed.
-    ///
-    /// # Errors
-    ///
-    /// Where it is a scenario, whose files are read again instead.
-    pub fn relocate(&mut self, path: &str) -> Result<(), String> {
-        if self.is_read_only() {
-            return Err(RELOCATE_SCENARIO.to_owned());
+    /// Takes `to` wherever `from` is among the files the document was
+    /// resolved from, nothing read again or written: the file was renamed,
+    /// and holds what it held.
+    pub fn relocate(&mut self, from: &str, to: &str) {
+        let from = normal(Path::new(from));
+        for file in &mut self.files {
+            if *file == from {
+                *file = normal(Path::new(to));
+            }
         }
-        self.files = vec![normal(Path::new(path))];
-        Ok(())
     }
 
     fn write_through(

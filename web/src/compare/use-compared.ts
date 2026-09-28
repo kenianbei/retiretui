@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { swapped, withIn, type WithSearch } from "@/compare/search";
 import { releaseLane, useSuccesses } from "@/searches";
 import { openAt } from "@/opened";
-import { useSession, type Moved } from "@/session";
+import { useSession } from "@/session";
 
 /** A compared file, or why it would not open. */
 export interface ComparedFile {
@@ -113,49 +113,52 @@ function useReleased(lanes: readonly string[]) {
   );
 }
 
-/** `path` where `moved` leaves it: at its new name, or gone. */
-function movedPath(path: string | undefined, moved: Moved) {
-  if (path !== moved.from) return path;
-  return moved.to ?? undefined;
+/** `path` once `from` is renamed `to`, or deleted where `to` is `null`. */
+function movedPath(path: string | undefined, from: string, to: string | null) {
+  return path === from ? (to ?? undefined) : path;
+}
+
+/**
+ * Follows a compared file renamed or deleted: under its new name, or gone,
+ * in the compared files, the baseline and the highlight.
+ */
+export function useComparedFollowMove() {
+  const navigate = useNavigate();
+  const { with: compared }: WithSearch = useSearch({ strict: false });
+  return (from: string, to: string | null) => {
+    if (!compared?.includes(from)) return;
+    const moved = (path: string) => movedPath(path, from, to) ?? [];
+    void navigate({
+      to: ".",
+      search: (prev) => ({
+        ...prev,
+        with: withIn(compared.flatMap(moved)),
+        baseline: movedPath(prev.baseline, from, to),
+        plan: movedPath(prev.plan, from, to),
+      }),
+      replace: true,
+    });
+  };
 }
 
 /**
  * Keeps the compared files in step with the document: a compared file
  * opened in its place leaves them, the document it replaces joining them
  * where it was, the baseline and the highlight following their rows; any
- * other file opened leaves nothing compared with it. A compared file
- * renamed or deleted is followed there, and the document renamed stays
- * compared with them.
+ * other file opened leaves nothing compared with it.
  */
 export function useComparedFollowDocument() {
-  const { path, document, moved } = useSession();
+  const { path, document } = useSession();
   const navigate = useNavigate();
   const { with: compared }: WithSearch = useSearch({ strict: false });
   const shown = useRef({ path, document });
-  const followed = useRef(moved);
-  useEffect(() => {
-    if (!moved || followed.current === moved) return;
-    followed.current = moved;
-    if (!compared?.includes(moved.from)) return;
-    void navigate({
-      to: ".",
-      search: (prev) => ({
-        ...prev,
-        with: withIn(compared.flatMap((each) => movedPath(each, moved) ?? [])),
-        baseline: movedPath(prev.baseline, moved),
-        plan: movedPath(prev.plan, moved),
-      }),
-      replace: true,
-    });
-  }, [moved, compared, navigate]);
   useEffect(() => {
     const left = shown.current;
     shown.current = { path, document };
     if (
       left.document === document ||
       left.path === path ||
-      left.path === null ||
-      (moved?.from === left.path && moved.to === path)
+      left.path === null
     ) {
       return;
     }
@@ -174,5 +177,5 @@ export function useComparedFollowDocument() {
       }),
       replace: true,
     });
-  }, [path, document, moved, compared, navigate]);
+  }, [path, document, compared, navigate]);
 }

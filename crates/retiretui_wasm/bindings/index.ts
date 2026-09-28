@@ -53,7 +53,6 @@ export type { Summary } from "./Summary";
 export type { Table } from "./Table";
 export type { TableColumn } from "./TableColumn";
 export type { TableRow } from "./TableRow";
-export type { TablesChoice } from "./TablesChoice";
 export type { TablesView } from "./TablesView";
 export type { TaxSection } from "./TaxSection";
 export type { Taxes } from "./Taxes";

@@ -1,6 +1,5 @@
 // The app offline: the page from the network when there is one and from
-// the cache when there is not, and each built file, whose name changes
-// with its content, from the cache once it has been fetched.
+// the cache when there is not; each built file, named by its content, kept.
 
 const CACHE = "retiretui-app";
 const SCOPE = new URL(self.registration.scope);
@@ -23,53 +22,52 @@ self.addEventListener("fetch", (event) => {
   const within = url.pathname.slice(SCOPE.pathname.length);
   if (within.startsWith(APART)) return;
   if (request.mode === "navigate") {
-    event.respondWith(page(request));
+    event.respondWith(page(event));
   } else if (within.startsWith(BUILT)) {
-    event.respondWith(built(request));
+    event.respondWith(built(event));
   } else {
-    event.respondWith(fresh(request));
+    event.respondWith(fresh(event));
   }
 });
 
-/** The page, kept under the scope; a new one drops the files of the old. */
-async function page(request) {
-  const cache = await caches.open(CACHE);
+/** The page, fetched and kept under the scope once it is sent; the cache's offline. */
+async function page(event) {
   try {
-    const response = await fetch(request);
-    if (!response.ok) return response;
-    const kept = await cache.match(SCOPE.href);
-    const text = await response.clone().text();
-    if (kept && (await kept.text()) !== text) await dropBuilt(cache);
-    await cache.put(SCOPE.href, response.clone());
+    const response = await fetch(event.request);
+    if (response.ok) event.waitUntil(keepPage(response.clone()));
     return response;
   } catch {
-    return (await cache.match(SCOPE.href)) ?? Response.error();
+    return (await caches.match(SCOPE.href)) ?? Response.error();
   }
 }
 
-/** A built file: from the cache, or fetched and kept; a failed fetch as the network's error. */
-async function built(request) {
+/** Keeps a page fetched; one unlike the page kept drops the old build's files. */
+async function keepPage(response) {
   const cache = await caches.open(CACHE);
-  const kept = await cache.match(request);
-  if (kept) return kept;
-  try {
-    const response = await fetch(request);
-    if (response.ok) await cache.put(request, response.clone());
-    return response;
-  } catch {
-    return Response.error();
-  }
+  const kept = await cache.match(SCOPE.href);
+  const text = await response.clone().text();
+  if (kept && (await kept.text()) !== text) await dropBuilt(cache);
+  await cache.put(SCOPE.href, response);
 }
 
-/** Anything else: from the network and kept, or from the cache offline. */
-async function fresh(request) {
-  const cache = await caches.open(CACHE);
+/** A built file: the cache's, or fetched as anything else is. */
+async function built(event) {
+  return (await caches.match(event.request)) ?? fresh(event);
+}
+
+/** Anything else: fetched and kept once it is sent, or the cache's offline. */
+async function fresh(event) {
   try {
-    const response = await fetch(request);
-    if (response.ok) await cache.put(request, response.clone());
+    const response = await fetch(event.request);
+    if (response.ok) {
+      const kept = response.clone();
+      event.waitUntil(
+        caches.open(CACHE).then((cache) => cache.put(event.request, kept)),
+      );
+    }
     return response;
   } catch {
-    return (await cache.match(request)) ?? Response.error();
+    return (await caches.match(event.request)) ?? Response.error();
   }
 }
 

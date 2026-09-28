@@ -7,12 +7,8 @@ test("a year's tax tables, the plan's by default and any other picked", async ({
     page,
     { "/moving.toml": example("moving-states.toml") },
     "/moving.toml",
-    "#/overview?year=2027",
+    "#/tools/tax-tables?year=2027",
   );
-  await expect(
-    page.getByRole("heading", { name: "Overview", level: 1 }),
-  ).toBeVisible();
-  await page.goto("#/tools/tax-tables?year=2027");
   await expect(
     page.getByRole("heading", { name: "Tax Tables", level: 1 }),
   ).toBeVisible();

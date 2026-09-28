@@ -4,6 +4,7 @@ import {
   expect,
   expectAccessible,
   isPhone,
+  searchesDone,
   seed,
   test,
 } from "./support";
@@ -55,7 +56,7 @@ test("ladders are searched, highlighted, taken and written as a scenario", async
   await expect(
     page.getByRole("heading", { name: "Conversions (12%)" }),
   ).toBeVisible(SEARCH);
-  await expect(page.getByText("Searching…")).toHaveCount(0, SEARCH);
+  await searchesDone(page);
   await expect(options).toHaveCount(phone ? 1 : 2);
   const undo = page.getByRole("button", { name: "Undo" }).first();
   await expect(undo).toBeDisabled();
@@ -71,7 +72,7 @@ test("ladders are searched, highlighted, taken and written as a scenario", async
   ).toBeVisible();
   await expect(undo).toBeEnabled();
 
-  await expect(page.getByText("Searching…")).toHaveCount(0, SEARCH);
+  await searchesDone(page);
   await page.getByRole("button", { name: "Write as a scenario" }).click();
   await asked.getByRole("button", { name: "Write" }).click();
   await expect(asked.getByText(/save first/)).toBeVisible();

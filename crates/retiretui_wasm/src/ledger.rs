@@ -253,8 +253,8 @@ pub struct ViewWords {
     pub basis: Bases<&'static str>,
     /// The year's flows through each account.
     pub flows: &'static str,
-    /// The flows table's headers.
-    pub flow_headers: [&'static str; 6],
+    /// The flows table's headers, each beside whether its column holds figures.
+    pub flow_headers: [(&'static str, bool); 6],
     /// The year's income beside what it paid.
     pub income_and_tax: &'static str,
     /// The balances chart.

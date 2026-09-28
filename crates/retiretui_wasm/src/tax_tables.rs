@@ -22,33 +22,3 @@ impl JsDocument {
         to_js(&year_tables(&self.0.draft().plan, tables(), &view))
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use retiretui_client::setup::EXAMPLES;
-
-    use crate::document::Document;
-
-    #[test]
-    fn a_document_s_tables_are_its_plan_s_in_the_year_asked() {
-        let (file, _, text) = EXAMPLES[0];
-        let path = format!("/{file}");
-        let mut read = |_: &std::path::Path| Ok(text.to_owned());
-        let document = Document::open(&path, &mut read).unwrap();
-        let view = retiretui_client::tax_tables::TablesView {
-            year: 2027,
-            ..Default::default()
-        };
-        let said = retiretui_client::tax_tables::year_tables(
-            &document.draft().plan,
-            crate::tables(),
-            &view,
-        );
-        assert_eq!(said.year, 2027);
-        assert!(
-            said.sections
-                .iter()
-                .any(|section| section.title == "Income tax brackets")
-        );
-    }
-}

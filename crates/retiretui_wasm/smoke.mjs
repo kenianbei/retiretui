@@ -215,11 +215,14 @@ assert.match(claiming.act("remove-benefit", 0, person.name), /^removed /);
 assert.throws(() => claims(claiming.planText(), [person.id]));
 
 const scenario = files.get("/plans/claimed.toml") ?? 'schema = 1\nbase = "claiming.toml"\n';
-assert.equal(baseOf(scenario), "claiming.toml");
-assert.equal(baseOf(starter.text), undefined);
-assert.equal(baseOf(rebased(scenario, "renamed.toml")), "renamed.toml");
+assert.equal(baseOf("/plans/claimed.toml", scenario), "/plans/claiming.toml");
+assert.equal(baseOf("/plans/starter.toml", starter.text), undefined);
+assert.equal(
+  baseOf("/plans/claimed.toml", rebased(scenario, "renamed.toml")),
+  "/plans/renamed.toml",
+);
 assert.throws(() => rebased(starter.text, "renamed.toml"), /no base/);
-claiming.relocate("/plans/renamed.toml");
+claiming.relocate("/plans/claiming.toml", "/plans/renamed.toml");
 assert.deepEqual(claiming.files(), ["/plans/renamed.toml"]);
 const taxed = claiming.taxTables({ year: first.year });
 assert.equal(taxed.year, first.year);
@@ -227,5 +230,5 @@ assert.ok(taxed.sections.some(({ title }) => title === "Income tax brackets"));
 assert.equal(claiming.taxTables({ year: first.year, status: "single" }).status, "single");
 const said = viewWords();
 assert.equal(said.basis.nominal, "future dollars");
-assert.equal(said.flow_headers.length, 6);
+assert.deepEqual(said.flow_headers[1], ["Open", true]);
 console.log("smoke: ok");

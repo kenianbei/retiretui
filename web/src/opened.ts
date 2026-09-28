@@ -21,10 +21,10 @@ export function openAt(workspace: Workspace, path: string | null): Opened {
   }
 }
 
-/** The base a workspace file names, where it is a scenario naming one. */
+/** The file a workspace file is a scenario over, where it is one. */
 export function baseIn(workspace: Workspace, path: string): string | undefined {
   try {
-    return baseOf(workspace.read(path));
+    return baseOf(path, workspace.read(path));
   } catch {
     return undefined;
   }

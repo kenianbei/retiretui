@@ -1,10 +1,15 @@
-import { example, expect, seed, test } from "./support";
+import type { Page } from "@playwright/test";
 
-/**
- * The pages loaded once idle rather than at first: the Ledger, Compare,
- * the tools, the Plan pages and the new-plan questions.
- */
-const LAZY_PAGES = 5;
+import { SEARCH, example, expect, seed, test } from "./support";
+
+/** How many built files the page has cached. */
+function cachedBuilt(page: Page): Promise<number> {
+  return page.evaluate(async () => {
+    const cache = await caches.open("retiretui-app");
+    const kept = await cache.keys();
+    return kept.filter((request) => request.url.includes("/assets/")).length;
+  });
+}
 
 test("after one visit every page opens offline, searches and all", async ({
   page,
@@ -35,16 +40,18 @@ test("after one visit every page opens offline, searches and all", async ({
   await expect(
     page.getByRole("heading", { name: "Overview", level: 1 }),
   ).toBeVisible();
+  let last = -1;
   await expect
-    .poll(() =>
-      page.evaluate(async () => {
-        const cache = await caches.open("retiretui-app");
-        return (await cache.keys()).filter((kept) =>
-          kept.url.includes("/assets/page-"),
-        ).length;
-      }),
+    .poll(
+      async () => {
+        const now = await cachedBuilt(page);
+        const isSettled = now === last;
+        last = now;
+        return isSettled;
+      },
+      { intervals: [1_000] },
     )
-    .toBe(LAZY_PAGES);
+    .toBe(true);
 
   await context.setOffline(true);
   await page.reload();
@@ -65,6 +72,6 @@ test("after one visit every page opens offline, searches and all", async ({
   }
   await expect(
     page.getByText(/^money lasts in [\d.]+% of [\d,]+$/),
-  ).toBeVisible({ timeout: 110_000 });
+  ).toBeVisible(SEARCH);
   await context.setOffline(false);
 });

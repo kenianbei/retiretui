@@ -4,6 +4,7 @@ import {
   expect,
   expectAccessible,
   isPhone,
+  openPlan,
   seed,
   test,
 } from "./support";
@@ -46,6 +47,7 @@ test("edits not applied are asked about before they are left", async ({
     page,
     { "/early.toml": example("early-retiree.toml") },
     "/early.toml",
+    "#/plan/accounts",
   );
   for (const [base, address, field] of [
     ["#/plan/settings", "#/plan/settings?edit=0", "Inflation"],
@@ -99,9 +101,7 @@ test("a statement's earnings are recorded on the person it names", async ({
     page.getByRole("button", { name: "Undo" }).first(),
   ).toBeDisabled();
 
-  await page.getByRole("button", { name: "File" }).click();
-  await page.getByRole("menuitem", { name: "Open" }).click();
-  await page.getByRole("menuitem", { name: "other.toml" }).click();
+  await openPlan(page, "other.toml");
   await page.getByRole("button", { name: "Discard edits" }).click();
   await expect(page.locator("header").getByText("other.toml")).toBeVisible();
   await page.goto("#/plan/people?item=0");
@@ -110,9 +110,7 @@ test("a statement's earnings are recorded on the person it names", async ({
     page.getByRole("alert").filter({ hasText: /was born 1996-03-10/ }),
   ).toBeVisible();
 
-  await page.getByRole("button", { name: "File" }).click();
-  await page.getByRole("menuitem", { name: "Open" }).click();
-  await page.getByRole("menuitem", { name: "what-if.toml" }).click();
+  await openPlan(page, "what-if.toml");
   await expect(page.getByText("Scenario · read-only").first()).toBeAttached();
   await page.goto("#/plan/people?item=0");
   await expect(page.getByRole("link", { name: "Edit" }).first()).toBeVisible();

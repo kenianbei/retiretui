@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { Workspace, fileAt, nameOf, pathOf } from "@/workspace";
+import { Workspace, fileAt, nameOf, pathOf, renameAt } from "@/workspace";
 
 /** `Storage` over a map, as a browser's `localStorage` behaves. */
 class MemoryStorage implements Storage {
@@ -67,15 +67,21 @@ it("keeps an uploaded file flat under the root", () => {
 });
 
 it("moves a renamed file, and tells other tabs where it went", () => {
-  const workspace = new Workspace(new MemoryStorage());
+  const storage = new MemoryStorage();
+  const workspace = new Workspace(storage);
   workspace.write("/old.toml", "schema = 1");
   workspace.remember("/old.toml");
   workspace.rename("/old.toml", "/new.toml");
   expect(workspace.list()).toEqual(["/new.toml"]);
   expect(workspace.read("/new.toml")).toBe("schema = 1");
   expect(workspace.lastOpen()).toBe("/new.toml");
-  expect(workspace.renamedTo("/old.toml")).toBe("/new.toml");
-  expect(workspace.renamedTo("/new.toml")).toBeNull();
+  const key = "retiretui-app:renamed";
+  expect(renameAt(key, storage.getItem(key))).toEqual({
+    from: "/old.toml",
+    to: "/new.toml",
+  });
+  expect(renameAt("retiretui-app:last", "/new.toml")).toBeNull();
+  expect(renameAt(key, "not json")).toBeNull();
   workspace.remove("/new.toml");
   expect(workspace.list()).toEqual([]);
   expect(workspace.lastOpen()).toBeNull();

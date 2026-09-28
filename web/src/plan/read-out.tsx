@@ -118,7 +118,7 @@ function DeleteItem({
             <AlertDialogCancel>Keep it</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                session.removeItem(slug, index, name);
+                session.remove(slug, index, name);
               }}
             >
               Delete
