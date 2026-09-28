@@ -10,6 +10,7 @@ const {
   compactMoney,
   examples,
   historical,
+  ladders,
   percentileLabel,
   setupSteps,
   statementPage,
@@ -103,4 +104,39 @@ const born = Document.open("/plans/born.toml", read);
 assert.match(born.importEarnings(0, "Jordan", statement), /recorded 3 year\(s\)/);
 assert.equal(born.canUndo, true);
 assert.equal(statementPage(), "people");
+
+const early = examples().find((each) => each.file === "early-retiree.toml");
+files.set("/plans/early.toml", early.text);
+const converting = Document.open("/plans/early.toml", read);
+const constraints = converting.constraints();
+constraints.set("bracket", undefined, "12");
+converting.applyConstraints(constraints);
+assert.equal(converting.canUndo, false);
+const found = ladders(converting.planText(), converting.constraintsText);
+assert.deepEqual(
+  found.brackets.map((bracket) => bracket.label),
+  ["12%"],
+);
+const [ladder] = found.brackets;
+assert.match(converting.takeLadder(found.destination, ladder.steps), /took \d+ conversion/);
+assert.equal(converting.canUndo, true);
+assert.throws(
+  () =>
+    converting.ladderScenario(
+      "/plans/early-ladder.toml",
+      found.destination,
+      ladder.steps,
+    ),
+  /save first/,
+);
+converting.save(() => {});
+assert.match(
+  converting.ladderScenario(
+    "/plans/early-ladder.toml",
+    found.destination,
+    ladder.steps,
+  ),
+  /base = "early.toml"/,
+);
+assert.ok(converting.constraintsRead().some(([label]) => label === "Fill bracket"));
 console.log("smoke: ok");

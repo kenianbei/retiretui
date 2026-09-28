@@ -13,7 +13,7 @@ use bevy_app::{App, Update};
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
 use bevy_ecs::prelude::{Commands, In, IntoScheduleConfigs, Local, Res, ResMut, World};
 use retiretui_engine::optimize::{
-    LadderStep, OptimizeOptions, SweptBracket, apply_ladder, is_ladder, ladder_overlay,
+    LadderStep, OptimizeOptions, SweptBracket, apply_ladder, ladder_overlay,
 };
 use retiretui_engine::plan::Plan;
 use retiretui_engine::project::Projection;
@@ -23,14 +23,16 @@ use super::{Found, NOTHING_SEARCHED_YET, Tool, ToolPage, write};
 use crate::command::Outcome;
 use crate::confirm::{Answer, Confirm};
 use crate::documents::{Browsing, Pickers};
-use crate::edit::{self, Draft, DraftEditor, FormButton, Ops, RefSource};
+use crate::edit::{self, Draft, DraftEditor, FormButton, Ops};
 use crate::journal;
 use crate::nav::{self, Page, ShownSurface};
 use crate::overview::Better;
 use crate::present::compact_dollars;
 use crate::session::Session;
 pub use retiretui_client::searches::ladders::{
-    Constraints, DESTINATION, FIELDS, Swept, aim_at, held, held_answers, rate_label, search,
+    CONVERSION_COLUMNS, CONVERTS_NOTHING, Constraints, DESTINATION, FIELDS, NO_BRACKET,
+    OPTION_COLUMNS, PICK_DESTINATION, Swept, aim_at, held, held_answers, only_roth, rate_label,
+    search, take_question, taken, taxed_in,
 };
 
 pub type Ladders = Tool<Swept>;
@@ -55,7 +57,6 @@ const _: () = assert!(
     edit::help_fits(OPS.form.fields),
     "a field's help is missing or too long"
 );
-const NO_BRACKET: &str = "no bracket can be filled";
 const PAGE: ToolPage = ToolPage {
     surface: Page::RothConversions,
     panes: panes::spawn_panes,
@@ -67,7 +68,7 @@ impl Found for Swept {
     /// converts over its life with that bracket's ladder, and the figures.
     fn laid(&self, _plan: &Plan, nominal: bool) -> Laid {
         let deflated = !nominal;
-        let header = ["Bracket", "converted"]
+        let header = OPTION_COLUMNS
             .into_iter()
             .chain(FIGURES)
             .map(str::to_owned)
@@ -122,14 +123,9 @@ fn aim_at_only_roth(shown: ShownSurface, mut draft: ResMut<Draft>) {
     if !is_moved {
         return;
     }
-    if draft.answers::<Constraints>().contains_key(DESTINATION) {
-        return;
+    if let Some(only) = only_roth(&draft) {
+        aim_at(&mut draft, &only);
     }
-    let offered = edit::ref_offers(&draft.plan, RefSource::RothAccount);
-    let [only] = offered.as_slice() else {
-        return;
-    };
-    aim_at(&mut draft, &only.value);
 }
 
 /// Searches again whenever the page is on show over a valid draft whose
@@ -189,16 +185,7 @@ pub fn adopt(ladders: Res<Ladders>, draft: Res<Draft>, mut confirm: ResMut<Confi
     let Some(bracket) = ladders.highlighted_bracket() else {
         return Outcome::Refused(NO_BRACKET.to_owned());
     };
-    let replacing = if draft.plan.conversions.iter().any(is_ladder) {
-        ", in place of the ladder taken before"
-    } else {
-        ""
-    };
-    let question = format!(
-        "Take the {} ladder? {}{replacing}.",
-        rate_label(bracket.rate),
-        said(&bracket.steps)
-    );
+    let question = take_question(bracket, &draft.plan);
     let asked = (swept.options.clone(), bracket.steps.clone());
     let answers = vec![
         Answer::closing("Cancel"),
@@ -215,20 +202,7 @@ pub fn adopt(ladders: Res<Ladders>, draft: Res<Draft>, mut confirm: ResMut<Confi
 fn take(In((options, steps)): In<(OptimizeOptions, Vec<LadderStep>)>, mut editor: DraftEditor) {
     apply_ladder(&mut editor.draft.plan, &options, &steps);
     editor.commit();
-    journal::say(format!("took {} conversion(s) into the plan", steps.len()));
-}
-
-/// A ladder as a sentence says it: `9 conversion(s), 2027–2035`.
-fn said(steps: &[LadderStep]) -> String {
-    match (steps.first(), steps.last()) {
-        (Some(first), Some(last)) => format!(
-            "{} conversion(s), {}–{}",
-            steps.len(),
-            first.year,
-            last.year
-        ),
-        _ => "It converts nothing".to_owned(),
-    }
+    journal::say(taken(&steps));
 }
 
 /// The `write-ladder` command: asks where to write the highlighted

@@ -1,19 +1,43 @@
 import init, {
+  ladders,
   monteCarlo,
+  type LaddersReply,
   type MonteCarloReply,
 } from "@wasm/retiretui_wasm.js";
 
-/** A plan's text through random markets, off the page's thread. */
-export type Answer = { reply: MonteCarloReply } | { error: string };
+/** What a search is asked, by the kind of search it is. */
+export type Search =
+  | { kind: "monteCarlo"; plan: string }
+  | { kind: "ladders"; plan: string; constraints: string };
+
+/** What each kind of search replies. */
+export interface Replies {
+  monteCarlo: MonteCarloReply;
+  ladders: LaddersReply;
+}
+
+/** A search's reply, off the page's thread, or why there is none. */
+export type Answer<Kind extends Search["kind"] = Search["kind"]> =
+  | { reply: Replies[Kind] }
+  | { error: string };
 
 declare const self: DedicatedWorkerGlobalScope;
 
 const ready = init();
 
-self.addEventListener("message", (event: MessageEvent<string>) => {
+function answer(search: Search): Replies[Search["kind"]] {
+  switch (search.kind) {
+    case "monteCarlo":
+      return monteCarlo(search.plan);
+    case "ladders":
+      return ladders(search.plan, search.constraints);
+  }
+}
+
+self.addEventListener("message", (event: MessageEvent<Search>) => {
   void ready.then(() => {
     try {
-      self.postMessage({ reply: monteCarlo(event.data) } satisfies Answer);
+      self.postMessage({ reply: answer(event.data) } satisfies Answer);
     } catch (thrown) {
       const error = thrown instanceof Error ? thrown.message : String(thrown);
       self.postMessage({ error } satisfies Answer);

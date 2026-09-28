@@ -46,7 +46,15 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   by the page, item and field it is about, each a link to that field in its
   form, while the figures keep the last ones it had without issues. A Social
   Security statement downloaded from ssa.gov is imported onto a person from the
-  People page as one step of history. The other pages are named but not yet
+  People page as one step of history. The Roth Conversions tool searches every
+  fillable bracket's conversion ladder under constraints read out on the page
+  and edited in a sheet, ranks them under the plan as it stands, and shows the
+  highlighted one's conversions year by year, in either dollar basis; it
+  searches again whenever the plan or the constraints change, and takes the
+  plan's one Roth account as the destination where there is only one. The
+  highlighted ladder is taken into the plan after asking, as one step of history
+  in place of any ladder taken before, or written as a scenario beside the saved
+  plan and offered to open. Compare and the other tools are named but not yet
   built. Light or dark follows the system, and navigation is a bottom bar on a
   phone and a sidebar on a wider screen.
 
@@ -67,6 +75,9 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   chains itself, as `plan::resolve`.
 - The terminal's new-plan form asks about a partner only once the household
   files jointly.
+- The Roth Conversions constraints read a blank as what the search assumes -
+  every bracket, the plan's start, no cap - and a blank last year is said to be
+  the year before the owner's RMDs begin, as the search has always taken it.
 - The command line and the MCP server are library crates of their own,
   `retiretui_cli` and `retiretui_mcp`, and the terminal launcher is
   `retiretui_tui`'s `terminal` feature, off by default; `retiretui` composes the

@@ -6,6 +6,7 @@ mod document;
 mod domain;
 mod editor;
 mod edits;
+mod ladders;
 mod ledger;
 mod searches;
 mod setup;
@@ -38,6 +39,10 @@ fn to_js<T: Serialize>(value: &T) -> Result<JsValue, JsError> {
         .map_err(|error| JsError::new(&error.to_string()))
 }
 
+fn from_js<T: serde::de::DeserializeOwned>(value: JsValue) -> Result<T, JsError> {
+    serde_wasm_bindgen::from_value(value).map_err(|error| JsError::new(&error.to_string()))
+}
+
 fn refused(message: String) -> JsError {
     JsError::new(&message)
 }
@@ -49,9 +54,9 @@ fn reply<T: Serialize>(answer: Result<T, String>) -> Result<JsValue, JsError> {
 #[wasm_bindgen(typescript_custom_section)]
 const TYPES: &str = r#"import type {
   ActionsReply, ChartSeries, ClaimsReply, Domain, DomainTable, Example,
-  FieldView, HistoricalReply, Issue, Ledger, MonteCarloReply, PlacedIssue,
-  NewPlanMade, Projection, SaidYear, Sort, Step, Summary, SweepReply,
-  YearDetail,
+  FieldView, HistoricalReply, Issue, LadderWords, LadderYear, LaddersReply, Ledger,
+  MonteCarloReply, PlacedIssue, NewPlanMade, Projection, SaidYear, Sort, Step,
+  Summary, YearDetail,
 } from "../bindings/index";
 export type * from "../bindings/index";"#;
 
@@ -218,17 +223,6 @@ pub fn validate(plan: &str) -> Result<JsValue, JsError> {
     reply(searches::validate(plan))
 }
 
-/// Every bracket's conversion ladder into the `destination` account, best
-/// first.
-///
-/// # Errors
-///
-/// Where the plan does not pass the gate, or the search refuses it.
-#[wasm_bindgen(js_name = sweepBrackets, unchecked_return_type = "SweepReply")]
-pub fn sweep_brackets(plan: &str, destination: &str, deflated: bool) -> Result<JsValue, JsError> {
-    reply(searches::sweep(plan, destination, deflated))
-}
-
 /// Every claim age for the household's computed benefits, best first.
 ///
 /// # Errors
@@ -264,9 +258,7 @@ mod bindings {
     use std::fmt::Write;
     use std::fs;
 
-    use retiretui_client::replies::{
-        ActionsReply, ClaimsReply, HistoricalReply, MonteCarloReply, SweepReply,
-    };
+    use retiretui_client::replies::{ActionsReply, ClaimsReply, HistoricalReply, MonteCarloReply};
     use retiretui_engine::plan::Issue;
     use retiretui_engine::project::{Projection, Summary};
     use ts_rs::{Config, TS};
@@ -275,6 +267,7 @@ mod bindings {
     use retiretui_client::forms::sort::Sort;
 
     use crate::domain::DomainTable;
+    use crate::ladders::{LadderWords, LaddersReply};
     use crate::ledger::{ChartSeries, Ledger, YearDetail};
     use crate::searches::Example;
     use crate::setup::NewPlanMade;
@@ -297,7 +290,8 @@ mod bindings {
             Projection::export_all,
             Summary::export_all,
             ActionsReply::export_all,
-            SweepReply::export_all,
+            LaddersReply::export_all,
+            LadderWords::export_all,
             ClaimsReply::export_all,
             MonteCarloReply::export_all,
             HistoricalReply::export_all,

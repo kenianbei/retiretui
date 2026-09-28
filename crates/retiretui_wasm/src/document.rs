@@ -7,13 +7,13 @@ use std::path::{Path, PathBuf};
 use retiretui_client::actions::{collect_warnings, sentence};
 use retiretui_client::draft::Draft;
 use retiretui_client::files::resolve_with_files;
-use retiretui_client::forms::{DomainId, Form, ListOps};
+use retiretui_client::forms::{DomainId, Form, ListOps, ToolAnswers};
 use retiretui_client::issues::{issue_field, issue_listing, issue_place, issue_words};
 use retiretui_client::replies::{ActionsReply, year_row};
 use retiretui_client::session::{Projected, Today, YearCursor, span};
 use retiretui_client::statement::{self, recorded};
 use retiretui_client::store::normal;
-use retiretui_engine::plan::Item;
+use retiretui_engine::plan::{Item, Plan};
 use retiretui_engine::project::{Projection, Summary, YearRow};
 use serde::Serialize;
 
@@ -166,13 +166,11 @@ impl Document {
     /// Where the draft is read-only, the domain is a single item, or the
     /// item at `index` is no longer the one named.
     pub fn remove(&mut self, form: &Form, index: usize, name: &str) -> Result<(), String> {
-        if let Some(reason) = self.draft.refuse_if_read_only() {
-            return Err(reason);
-        }
         let list = self.still_at(form, index, name)?;
-        (list.remove)(&mut self.draft.plan, index);
-        self.commit();
-        Ok(())
+        self.step(|plan| {
+            (list.remove)(plan, index);
+            Ok(())
+        })
     }
 
     /// The list `form` edits, where item `index` of it is still the one
@@ -199,15 +197,46 @@ impl Document {
         name: &str,
         xml: &str,
     ) -> Result<String, String> {
+        self.still_at(form_at(&slug_of(DomainId::People))?, index, name)?;
+        let person = self.draft.plan.household.people[index].id.clone();
+        self.step(|plan| {
+            let statement = statement::record(plan, &person, xml)?;
+            Ok(recorded(plan.person_name(&person), &statement))
+        })
+    }
+
+    /// Changes the plan by `change` as one step of history, answering what
+    /// it answers; a change that fails is no step.
+    ///
+    /// # Errors
+    ///
+    /// Where the draft is read-only, or `change` fails.
+    pub(crate) fn step<T>(
+        &mut self,
+        change: impl FnOnce(&mut Plan) -> Result<T, String>,
+    ) -> Result<T, String> {
         if let Some(reason) = self.draft.refuse_if_read_only() {
             return Err(reason);
         }
-        self.still_at(form_at(&slug_of(DomainId::People))?, index, name)?;
-        let person = self.draft.plan.household.people[index].id.clone();
-        let statement = statement::record(&mut self.draft.plan, &person, xml)?;
-        let said = recorded(self.draft.plan.person_name(&person), &statement);
+        let answer = change(&mut self.draft.plan)?;
         self.commit();
-        Ok(said)
+        Ok(answer)
+    }
+
+    /// Holds `answers` as tool `T`'s, beside the plan and outside its
+    /// history.
+    pub(crate) fn hold_answers<T: ToolAnswers>(&mut self, answers: toml::Table) {
+        self.draft.set_answers::<T>(answers);
+    }
+
+    /// Stores what the tool form `editor` holds as that tool's answers,
+    /// outside the plan's history.
+    ///
+    /// # Errors
+    ///
+    /// Why they were not stored, in the form's words.
+    pub(crate) fn hold(&mut self, editor: &mut Editor) -> Result<(), String> {
+        editor.edit.apply(&mut self.draft, None).map(drop)
     }
 
     fn commit(&mut self) {

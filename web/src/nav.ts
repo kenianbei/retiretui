@@ -16,10 +16,13 @@ export interface Page {
   holds: string | null;
 }
 
+/** The Roth Conversions tool's page. */
+export const ROTH_CONVERSIONS = "roth-conversions";
+
 /** The tools that act on the plan as a whole, in the TUI's order. */
 export const TOOLS: readonly Page[] = [
   {
-    slug: "roth-conversions",
+    slug: ROTH_CONVERSIONS,
     title: "Roth Conversions",
     holds: "Conversion ladders searched bracket by bracket.",
   },
@@ -58,11 +61,6 @@ export type GroupTab = Extract<Tab, { pages: readonly Page[] }>;
 
 export function isGroup(tab: Tab): tab is GroupTab {
   return "pages" in tab;
-}
-
-/** A tab showing a year of the plan, which a link to it keeps. */
-export function isYearTab(tab: Tab): boolean {
-  return tab.path === "/overview" || tab.path === "/ledger";
 }
 
 export const TABS: readonly Tab[] = [

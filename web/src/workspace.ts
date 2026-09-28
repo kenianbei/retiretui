@@ -25,6 +25,13 @@ export function planName(typed: string): string {
   return name.endsWith(PLAN_EXTENSION) ? name : `${name}${PLAN_EXTENSION}`;
 }
 
+/** A plan file's name without its extension. */
+export function stemOf(name: string): string {
+  return name.endsWith(PLAN_EXTENSION)
+    ? name.slice(0, -PLAN_EXTENSION.length)
+    : name;
+}
+
 /** What a path is shown as. */
 export function nameOf(path: string): string {
   return path.replace(/^\//, "");

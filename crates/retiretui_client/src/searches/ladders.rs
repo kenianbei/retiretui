@@ -3,15 +3,17 @@
 
 use retiretui_engine::market::{Progress, RunError};
 use retiretui_engine::optimize::{
-    BracketSweep, OptimizeOptions, SweptBracket, optimize_conversions, sweep_brackets,
+    BracketSweep, LadderStep, OptimizeOptions, SweptBracket, is_ladder, optimize_conversions,
+    sweep_brackets,
 };
 use retiretui_engine::params::TaxTables;
-use retiretui_engine::plan::Plan;
+use retiretui_engine::plan::{Dollars, Plan};
+use retiretui_engine::project::Summary;
 use serde::Deserialize;
 
 use crate::codec::from_table;
 use crate::draft::Draft;
-use crate::forms::offers::RefSource;
+use crate::forms::offers::{RefSource, ref_offers};
 use crate::forms::{FieldSpec, ToolAnswers};
 use crate::ladder::LadderConstraints;
 
@@ -34,20 +36,28 @@ pub const FIELDS: &[FieldSpec] = &[
     FieldSpec::refers("to", "Convert to", RefSource::RothAccount)
         .help("The Roth account the conversions land in."),
     FieldSpec::whole("bracket", "Fill bracket")
+        .blank("Every bracket")
         .help("Fill this tax bracket, as a percent such as 22. Blank tries every bracket."),
     FieldSpec::whole("start_year", "First year")
+        .blank("The plan's start")
         .help("The first year to convert in. Blank means the start of the plan."),
     FieldSpec::whole("end_year", "Last year")
-        .help("The last year to convert in. Blank means the end of the plan."),
+        .blank("The year before RMDs")
+        .help("The last year to convert in. Blank means the year before the owner's RMDs begin."),
     FieldSpec::money("annual_max", "Annual cap")
+        .blank("No cap")
         .help("The most to convert in any one year. Blank sets no cap."),
     FieldSpec::money("total_max", "Total cap")
+        .blank("No cap")
         .help("The most to convert over the whole ladder. Blank sets no cap."),
     FieldSpec::money("headroom", "Headroom")
+        .blank("None")
         .help("Dollars to stay below the top of the bracket, as a margin for error."),
     FieldSpec::whole("irmaa_tier", "IRMAA tier")
+        .blank("Not held to one")
         .help("Stay under this Medicare surcharge tier; 0 avoids them all. Blank ignores it."),
     FieldSpec::money("max_magi", "MAGI cap")
+        .blank("No cap")
         .help("Keep every year's MAGI (modified adjusted gross income) under this."),
 ];
 
@@ -66,6 +76,38 @@ impl Constraints {
         let bracket = self.bracket.map(|percent| f64::from(percent) / 100.0);
         Ok((options, bracket))
     }
+}
+
+/// What names an option's columns before its [`FIGURES`](super::FIGURES).
+pub const OPTION_COLUMNS: [&str; 2] = ["Bracket", "converted"];
+/// The columns a ladder's conversions are tabled under, year by year.
+pub const CONVERSION_COLUMNS: [&str; 4] = ["Year", "From", "Amount", "Taxable"];
+
+/// What is said while no Roth account is named to convert to.
+pub const PICK_DESTINATION: &str = "Pick the Roth account to convert to under Constraints, and every bracket's ladder is searched.";
+/// What is said where the constraints leave no bracket to fill.
+pub const NO_BRACKET: &str = "no bracket can be filled";
+/// What is said in place of a ladder that converts nothing.
+pub const CONVERTS_NOTHING: &str = "This ladder converts nothing under these constraints.";
+
+/// A summary's amounts under [`OPTION_COLUMNS`] past the bracket, then
+/// its [`FIGURES`](super::FIGURES): what the plan converts over its life,
+/// and what the option is chosen by.
+#[must_use]
+pub const fn option_amounts(summary: &Summary) -> [Dollars; 5] {
+    let [unfunded, net, taxes, medicare] = super::figure_amounts(summary);
+    [summary.lifetime_conversions, unfunded, net, taxes, medicare]
+}
+
+/// The ordinary income taxed in `year` with `bracket`'s ladder, nominal,
+/// and the year's deflator.
+#[must_use]
+pub fn taxed_in(bracket: &SweptBracket, year: i16) -> (Dollars, f64) {
+    let row = bracket.optimized.row(year);
+    (
+        row.map_or(0, |row| row.taxes.ordinary_taxable),
+        row.map_or(1.0, |row| row.deflator),
+    )
 }
 
 /// The key the destination account is under.
@@ -101,6 +143,54 @@ pub fn aim_at(draft: &mut Draft, destination: &str) {
     draft.set_answers::<Constraints>(answers);
 }
 
+/// The plan's one Roth account, where the answers name no destination and
+/// there is exactly one to name.
+#[must_use]
+pub fn only_roth(draft: &Draft) -> Option<String> {
+    if draft.answers::<Constraints>().contains_key(DESTINATION) {
+        return None;
+    }
+    let offered = ref_offers(&draft.plan, RefSource::RothAccount);
+    let [only] = offered.as_slice() else {
+        return None;
+    };
+    Some(only.value.clone())
+}
+
+/// What is asked before `bracket`'s ladder is taken into `plan`.
+#[must_use]
+pub fn take_question(bracket: &SweptBracket, plan: &Plan) -> String {
+    let replacing = if plan.conversions.iter().any(is_ladder) {
+        ", in place of the ladder taken before"
+    } else {
+        ""
+    };
+    format!(
+        "Take the {} ladder? {}{replacing}.",
+        rate_label(bracket.rate),
+        said(&bracket.steps)
+    )
+}
+
+/// What is said once `steps` are taken into the plan.
+#[must_use]
+pub fn taken(steps: &[LadderStep]) -> String {
+    format!("took {} conversion(s) into the plan", steps.len())
+}
+
+/// A ladder as a sentence says it: `9 conversion(s), 2027–2035`.
+fn said(steps: &[LadderStep]) -> String {
+    match (steps.first(), steps.last()) {
+        (Some(first), Some(last)) => format!(
+            "{} conversion(s), {}–{}",
+            steps.len(),
+            first.year,
+            last.year
+        ),
+        _ => "It converts nothing".to_owned(),
+    }
+}
+
 /// The constraints the draft holds, and what the engine is to be asked
 /// under them.
 ///
@@ -108,7 +198,16 @@ pub fn aim_at(draft: &mut Draft, destination: &str) {
 ///
 /// Where the answers do not read, or name no destination.
 pub fn held(draft: &Draft) -> Result<(OptimizeOptions, Option<f64>), String> {
-    from_table::<Constraints>(draft.answers::<Constraints>()).and_then(Constraints::options)
+    constraints_in(draft.answers::<Constraints>())
+}
+
+/// What the engine is to be asked under `answers`, the form's table.
+///
+/// # Errors
+///
+/// Where the answers do not read, or name no destination.
+pub fn constraints_in(answers: toml::Table) -> Result<(OptimizeOptions, Option<f64>), String> {
+    from_table::<Constraints>(answers).and_then(Constraints::options)
 }
 
 /// What a search found, and what it was searched under.
@@ -215,6 +314,51 @@ mod tests {
             &cancelled,
         );
         assert!(swept.is_none(), "a cancelled sweep answers nothing");
+    }
+
+    #[test]
+    fn only_a_lone_roth_account_is_aimed_at() {
+        let mut draft = Draft::new(early_retiree(), false);
+        let roth = ref_offers(&draft.plan, RefSource::RothAccount);
+        assert_eq!(roth.len(), 1, "the example holds one Roth account");
+        assert_eq!(only_roth(&draft).as_deref(), Some(roth[0].value.as_str()));
+        aim_at(&mut draft, "elsewhere");
+        assert_eq!(only_roth(&draft), None, "a named destination is kept");
+    }
+
+    #[test]
+    fn the_take_question_says_the_ladder_and_what_it_replaces() {
+        let mut plan = early_retiree();
+        let step = |year| LadderStep {
+            year,
+            source: "401k-morgan".to_owned(),
+            amount: 1000,
+        };
+        let options = LadderConstraints::default().options(&[], "roth-ira-morgan");
+        let swept = search(
+            &plan,
+            &TaxTables::embedded(),
+            &options,
+            Some(0.22),
+            &Progress::default(),
+        )
+        .expect("a ladder");
+        let bracket = SweptBracket {
+            steps: vec![step(2027), step(2035)],
+            ..swept.brackets[0].clone()
+        };
+        assert_eq!(
+            take_question(&bracket, &plan),
+            "Take the 22% ladder? 2 conversion(s), 2027–2035."
+        );
+        retiretui_engine::optimize::apply_ladder(&mut plan, &options, &bracket.steps);
+        assert!(take_question(&bracket, &plan).ends_with(", in place of the ladder taken before."));
+        assert_eq!(taken(&bracket.steps), "took 2 conversion(s) into the plan");
+        let none = SweptBracket {
+            steps: Vec::new(),
+            ..bracket
+        };
+        assert!(take_question(&none, &plan).contains("It converts nothing"));
     }
 
     #[test]

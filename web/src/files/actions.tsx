@@ -12,8 +12,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import { INPUT } from "@/lib/utils";
+import { NameDialog } from "@/files/name-dialog";
 import { useFilePicker } from "@/files/picker";
 import { useSession } from "@/session";
 import { nameOf, pathOf, planName } from "@/workspace";
@@ -29,6 +28,8 @@ interface FileActions {
   examples: Example[];
   /** Writes and opens a plan, asking first where it replaces one; then `onPlaced`. */
   add: (name: string, text: string, onPlaced?: () => void) => void;
+  /** Writes a file without opening it, asking first where it replaces one; then `onWritten`. */
+  write: (name: string, text: string, onWritten: () => void) => void;
   upload: () => void;
   download: () => void;
   /** Asks for a name, then writes the draft as a plan of that name. */
@@ -83,6 +84,12 @@ export function FileActionsProvider({ children }: { children: ReactNode }) {
   const actions = {
     examples: plans,
     add,
+    write: (name: string, text: string, onWritten: () => void) => {
+      writing(name, () => {
+        session.write(name, text);
+        onWritten();
+      });
+    },
     upload: picker.open,
     download,
     saveAs: () => {
@@ -120,49 +127,17 @@ export function FileActionsProvider({ children }: { children: ReactNode }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <AlertDialog
-        open={naming !== null}
-        onOpenChange={(isOpen) => {
-          if (!isOpen) setNaming(null);
+      <NameDialog
+        name={naming}
+        setName={setNaming}
+        title="Save as"
+        description="The plan is written to a file of this name in your workspace, and stays open as that file."
+        verb="Save"
+        named={(name) => {
+          setNaming(null);
+          saveUnder(planName(name));
         }}
-      >
-        <AlertDialogContent>
-          <form
-            className="grid gap-4"
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (naming === null || naming.trim() === "") return;
-              setNaming(null);
-              saveUnder(planName(naming));
-            }}
-          >
-            <AlertDialogHeader>
-              <AlertDialogTitle>Save as</AlertDialogTitle>
-              <AlertDialogDescription>
-                The plan is written to a file of this name in your workspace,
-                and stays open as that file.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <label className="grid gap-1.5 text-sm font-medium">
-              File name
-              <input
-                autoFocus
-                className={INPUT}
-                value={naming ?? ""}
-                onChange={(event) => {
-                  setNaming(event.target.value);
-                }}
-              />
-            </label>
-            <AlertDialogFooter>
-              <AlertDialogCancel type="button">Cancel</AlertDialogCancel>
-              <Button type="submit" disabled={naming?.trim() === ""}>
-                Save
-              </Button>
-            </AlertDialogFooter>
-          </form>
-        </AlertDialogContent>
-      </AlertDialog>
+      />
     </FileActionsContext>
   );
 }

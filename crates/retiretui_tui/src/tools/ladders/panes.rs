@@ -13,7 +13,7 @@ use retiretui_engine::optimize::SweptBracket;
 use retiretui_engine::plan::Plan;
 
 use super::super::options::{self, say_instead, spawn_table};
-use super::{Ladders, OPS, Swept};
+use super::{CONVERSION_COLUMNS, CONVERTS_NOTHING, Ladders, OPS, Swept, taxed_in};
 use crate::edit::{self, Draft, table_bundle};
 use crate::hints::Hints;
 use crate::layout::{self, filling, placed};
@@ -42,11 +42,9 @@ const OPTIONS_ROWS: f32 = 10.0;
 /// columns to show, and at the narrowest frame needs a fifth more.
 const FORM_SHARE: f32 = 1.0;
 const OPTIONS_SHARE: f32 = 1.2;
-const HEADER: [&str; 4] = ["Year", "From", "Amount", "Taxable"];
 /// The cells between columns, past the one the table leaves.
 const GAP: u16 = 1;
 const NOT_SEARCHED: &str = "The highlighted option's conversions, year by year.";
-const CONVERTS_NOTHING: &str = "This ladder converts nothing under these constraints.";
 
 /// The table the highlighted option's conversions are rows of.
 #[derive(Component)]
@@ -111,7 +109,7 @@ fn refresh_conversions(
             Some(bracket) if bracket.steps.is_empty() => CONVERTS_NOTHING,
             Some(bracket) => {
                 let rows = conversion_rows(bracket, &draft.plan, basis.nominal);
-                let header = HEADER.map(str::to_owned);
+                let header = CONVERSION_COLUMNS.map(str::to_owned);
                 commands
                     .entity(table)
                     .insert(tabulate::columns((&header, &rows), GAP));
@@ -130,9 +128,7 @@ fn conversion_rows(bracket: &SweptBracket, plan: &Plan, is_nominal: bool) -> Vec
         .steps
         .iter()
         .map(|step| {
-            let row = bracket.optimized.row(step.year);
-            let deflator = row.map_or(1.0, |row| row.deflator);
-            let taxable = row.map_or(0, |row| row.taxes.ordinary_taxable);
+            let (taxable, deflator) = taxed_in(bracket, step.year);
             let shown = |amount| compact_dollars(basis_amount(amount, deflator, is_nominal));
             vec![
                 step.year.to_string(),

@@ -10,7 +10,7 @@ use plurimus::core::UiWidget;
 use super::super::options::OptionsTable;
 use super::super::{HelpLine, show_help};
 use super::panes::ConversionsTable;
-use super::{Swept, held};
+use super::{PICK_DESTINATION, Swept, held};
 use crate::edit::Draft;
 use crate::nav::{self, Page, ShownSurface};
 use crate::theme::{Repainted, Theme};
@@ -24,7 +24,6 @@ pub fn plugin(app: &mut App) {
     );
 }
 
-const PICK_DESTINATION: &str = "Pick the Roth account to convert to under Constraints, and every bracket's ladder is searched.";
 const ON_FORM: &str =
     "⏎ edits a constraint; the ladders are searched again once they are applied. ⇧⇥ back to them.";
 const ON_OPTIONS: &str =
