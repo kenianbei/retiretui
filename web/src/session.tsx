@@ -1,6 +1,7 @@
 import {
   Document,
   type Editor,
+  type LadderYear,
   type PlacedIssue,
 } from "@wasm/retiretui_wasm.js";
 import {
@@ -49,6 +50,8 @@ export interface Session extends Opened {
    * then runs `onPlaced`; neither where the draft's edits are kept instead.
    */
   place: (name: string, text: string, onPlaced?: () => void) => void;
+  /** Writes `text` as the file `name`, replacing any such file, without opening it. */
+  write: (name: string, text: string) => void;
   /** Stores the editor's item, answering where it now sits; throws the refusal. */
   apply: (editor: Editor) => number | undefined;
   /**
@@ -60,6 +63,13 @@ export interface Session extends Opened {
     name: string,
     xml: string,
   ) => string | undefined;
+  /** Holds the editor's Roth Conversions constraints; throws the refusal. */
+  applyConstraints: (editor: Editor) => void;
+  /**
+   * Takes the ladder `years` into `destination` as one step of history,
+   * answering what was taken; throws the refusal.
+   */
+  takeLadder: (destination: string, years: LadderYear[]) => string | undefined;
   /** Removes an item still called `name`; a refusal is reported. */
   remove: (slug: string, index: number, name: string) => void;
   undo: () => void;
@@ -149,6 +159,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [workspace, guarded, openNow],
   );
 
+  const write = useCallback(
+    (name: string, text: string) => {
+      workspace.write(pathOf(name), text);
+      setFiles(workspace.list());
+    },
+    [workspace],
+  );
+
   /** Runs `action`, reporting what it throws and clearing what was reported. */
   const attempt = useCallback(
     <Args extends unknown[]>(action: (...args: Args) => void) =>
@@ -216,6 +234,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         changed();
         return index;
       },
+      applyConstraints: (editor: Editor) => {
+        document?.applyConstraints(editor);
+        changed();
+      },
+      takeLadder: (destination: string, years: LadderYear[]) => {
+        if (!document) return undefined;
+        const said = document.takeLadder(destination, years);
+        changed();
+        return said;
+      },
       importEarnings: (index: number, name: string, xml: string) => {
         if (!document) return undefined;
         const said = document.importEarnings(index, name, xml);
@@ -274,6 +302,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       issues,
       open,
       place,
+      write,
       ...edits,
       isChangedElsewhere,
       reload: () => {
@@ -292,6 +321,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       issues,
       open,
       place,
+      write,
       edits,
       isChangedElsewhere,
       path,

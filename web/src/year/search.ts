@@ -18,6 +18,21 @@ export function yearSearch(search: Record<string, unknown>): YearSearch {
   };
 }
 
+/** A search key a tab's link carries to the route it opens. */
+export type KeptKey = "year" | "basis";
+
+/** Of what the address holds, only the keys `keeps` names. */
+export function keptSearch(
+  search: Record<string, unknown>,
+  keeps: readonly KeptKey[],
+): YearSearch {
+  const { year, basis } = yearSearch(search);
+  return {
+    ...(keeps.includes("year") && year !== undefined && { year }),
+    ...(keeps.includes("basis") && basis && { basis }),
+  };
+}
+
 export function basisOf(search: YearSearch): Basis {
   return search.basis ?? "today";
 }

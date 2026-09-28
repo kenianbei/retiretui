@@ -60,11 +60,6 @@ export function isGroup(tab: Tab): tab is GroupTab {
   return "pages" in tab;
 }
 
-/** A tab showing a year of the plan, which a link to it keeps. */
-export function isYearTab(tab: Tab): boolean {
-  return tab.path === "/overview" || tab.path === "/ledger";
-}
-
 export const TABS: readonly Tab[] = [
   { title: "Overview", icon: ChartNoAxesColumn, path: "/overview" },
   { title: "Ledger", icon: Table2, path: "/ledger" },

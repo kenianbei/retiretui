@@ -29,6 +29,8 @@ interface FileActions {
   examples: Example[];
   /** Writes and opens a plan, asking first where it replaces one; then `onPlaced`. */
   add: (name: string, text: string, onPlaced?: () => void) => void;
+  /** Writes a file without opening it, asking first where it replaces one; then `onWritten`. */
+  write: (name: string, text: string, onWritten: () => void) => void;
   upload: () => void;
   download: () => void;
   /** Asks for a name, then writes the draft as a plan of that name. */
@@ -83,6 +85,12 @@ export function FileActionsProvider({ children }: { children: ReactNode }) {
   const actions = {
     examples: plans,
     add,
+    write: (name: string, text: string, onWritten: () => void) => {
+      writing(name, () => {
+        session.write(name, text);
+        onWritten();
+      });
+    },
     upload: picker.open,
     download,
     saveAs: () => {

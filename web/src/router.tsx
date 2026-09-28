@@ -15,7 +15,8 @@ import { DomainPage } from "@/plan/page";
 import { planSearch } from "@/plan/search";
 import { GroupedPage, NotFound, Placeholder } from "@/pages/placeholder";
 import { Shell } from "@/shell/shell";
-import { yearSearch } from "@/year/search";
+import { toolSearch } from "@/tools/search";
+import { yearSearch, type KeptKey } from "@/year/search";
 
 const root = createRootRoute({ component: Shell, notFoundComponent: NotFound });
 
@@ -31,6 +32,7 @@ const index = createRoute({
 const overview = createRoute({
   getParentRoute: () => root,
   path: "/overview",
+  staticData: { keeps: ["year", "basis"] },
   validateSearch: yearSearch,
   component: Overview,
 });
@@ -38,6 +40,7 @@ const overview = createRoute({
 const ledger = createRoute({
   getParentRoute: () => root,
   path: "/ledger",
+  staticData: { keeps: ["year", "basis"] },
   validateSearch: yearSearch,
   component: LedgerPage,
 });
@@ -56,6 +59,8 @@ const compare = createRoute({
 const tools = createRoute({
   getParentRoute: () => root,
   path: "/tools/$page",
+  staticData: { keeps: ["basis"] },
+  validateSearch: toolSearch,
   beforeLoad: ({ params }) => ({ page: pageOf(TOOLS, params.page) }),
   component: GroupedPage,
 });
@@ -96,5 +101,7 @@ declare module "@tanstack/react-router" {
   interface StaticDataRouteOption {
     /** A page shown whether or not a document is open. */
     isWithoutDocument?: boolean;
+    /** What of the address a tab's link to the route carries over. */
+    keeps?: readonly KeptKey[];
   }
 }

@@ -1,4 +1,10 @@
-import { Link, Outlet, useLocation, useMatches } from "@tanstack/react-router";
+import {
+  Link,
+  Outlet,
+  useLocation,
+  useMatches,
+  useRouter,
+} from "@tanstack/react-router";
 
 import type { ReactNode } from "react";
 
@@ -9,12 +15,11 @@ import { FileMenu } from "@/files/menu";
 import { Start } from "@/files/start";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/session";
-import { yearSearch } from "@/year/search";
+import { keptSearch } from "@/year/search";
 import {
   TABS,
   isGroup,
   isWithin,
-  isYearTab,
   type GroupTab,
   type Page,
   type Tab,
@@ -37,11 +42,12 @@ interface TabLinkProps {
 /** A link to a tab's own page, or to one of its group's. */
 function TabLink({ tab, page, className, children, isCurrent }: TabLinkProps) {
   const slug = isGroup(tab) ? (page ?? tab.pages[0])?.slug : undefined;
+  const keeps = useRouter().routesByPath[tab.path].options.staticData?.keeps;
   return (
     <Link
       to={tab.path}
       params={slug === undefined ? {} : { page: slug }}
-      search={(prev) => (isYearTab(tab) ? yearSearch(prev) : {})}
+      search={(prev) => keptSearch(prev, keeps ?? [])}
       className={className}
       aria-current={isCurrent ? "page" : undefined}
     >
