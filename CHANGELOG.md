@@ -54,9 +54,22 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   plan's one Roth account as the destination where there is only one. The
   highlighted ladder is taken into the plan after asking, as one step of history
   in place of any ladder taken before, or written as a scenario beside the saved
-  plan and offered to open. Compare and the other tools are named but not yet
-  built. Light or dark follows the system, and navigation is a bottom bar on a
-  phone and a sidebar on a wider screen.
+  plan and offered to open. The SSA Benefits tool ranks every claim age for the
+  household's computed Social Security benefits under the plan as it stands,
+  beside each person's record, income and benefit estimated at 62, full
+  retirement age and 70, with what can be done for the highlighted person:
+  import a statement, estimate a record from their salary, compute a typed
+  benefit from their record, clear the record or remove the benefit - the last
+  two asked first - each one step of history, or hold their claim as the plan
+  states it while the others are searched. The highlighted claims are taken into
+  the plan after asking or written as a scenario, as a ladder is; the claims
+  highlighted, the person and who is held are kept in the address. The
+  Overview's Could do better card gives each Roth owner's best ladder and the
+  household's best claims against the plan as it stands, each leading to its
+  tool, a ladder's aimed at that owner's account; what it finds is what the
+  tools then show without searching again. Compare and the market tools are
+  named but not yet built. Light or dark follows the system, and navigation is a
+  bottom bar on a phone and a sidebar on a wider screen.
 
 ### Changed
 
@@ -75,6 +88,8 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   chains itself, as `plan::resolve`.
 - The terminal's new-plan form asks about a partner only once the household
   files jointly.
+- The terminal's SSA Benefits tool names claims by person rather than by income
+  id: "Take these claims? Ann at 70, Bob at 67."
 - The Roth Conversions constraints read a blank as what the search assumes -
   every bracket, the plan's start, no cap - and a blank last year is said to be
   the year before the owner's RMDs begin, as the search has always taken it.
