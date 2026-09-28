@@ -134,6 +134,45 @@ jobs:
       - name: Build
         run: npx vite build
 
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: web-dist
+          path: web/dist
+
+  e2e:
+    needs: web
+    runs-on: ubuntu-latest
+    # The image's version is @playwright/test's, so its browsers are the ones the suite expects.
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
+      options: --ipc=host
+    defaults:
+      run:
+        working-directory: web
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install the app's packages
+        run: npm ci
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: web-dist
+          path: web/dist
+
+      - name: Every page in Chromium, Firefox and WebKit
+        run: npm run e2e
+        env:
+          # Firefox refuses to run as root under any other home.
+          HOME: /root
+
+      - if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-report
+          path: web/playwright-report
+
   msrv:
     runs-on: ubuntu-latest
 
