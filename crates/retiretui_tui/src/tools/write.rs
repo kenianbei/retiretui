@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 
 use bevy_ecs::change_detection::Mut;
 use bevy_ecs::prelude::World;
+use retiretui_client::files::OVERLAY_SAVE_FIRST;
 
 use crate::command::Outcome;
 use crate::compare::Compared;
@@ -14,12 +15,11 @@ use crate::journal;
 use crate::session::{self, Session};
 
 pub const OVERLAY_OVER: &str = "Overwrite {}?";
-pub(super) use retiretui_client::files::OVERLAY_SAVE_FIRST as SAVE_FIRST;
 
 /// Asks where to write, once the tool has found it has something to.
 pub(super) fn open_picker(pick: FilePick, draft: &Draft, browsing: &mut Browsing) -> Outcome {
     if draft.is_dirty() {
-        return Outcome::Refused(SAVE_FIRST.to_owned());
+        return Outcome::Refused(OVERLAY_SAVE_FIRST.to_owned());
     }
     browsing.open(pick);
     Outcome::Done

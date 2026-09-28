@@ -13,7 +13,7 @@ use retiretui_engine::optimize::SweptBracket;
 use retiretui_engine::plan::Plan;
 
 use super::super::options::{self, say_instead, spawn_table};
-use super::{CONVERSION_COLUMNS, Ladders, OPS, Swept};
+use super::{CONVERSION_COLUMNS, CONVERTS_NOTHING, Ladders, OPS, Swept, taxed_in};
 use crate::edit::{self, Draft, table_bundle};
 use crate::hints::Hints;
 use crate::layout::{self, filling, placed};
@@ -45,7 +45,6 @@ const OPTIONS_SHARE: f32 = 1.2;
 /// The cells between columns, past the one the table leaves.
 const GAP: u16 = 1;
 const NOT_SEARCHED: &str = "The highlighted option's conversions, year by year.";
-const CONVERTS_NOTHING: &str = "This ladder converts nothing under these constraints.";
 
 /// The table the highlighted option's conversions are rows of.
 #[derive(Component)]
@@ -129,9 +128,7 @@ fn conversion_rows(bracket: &SweptBracket, plan: &Plan, is_nominal: bool) -> Vec
         .steps
         .iter()
         .map(|step| {
-            let row = bracket.optimized.row(step.year);
-            let deflator = row.map_or(1.0, |row| row.deflator);
-            let taxable = row.map_or(0, |row| row.taxes.ordinary_taxable);
+            let (taxable, deflator) = taxed_in(bracket, step.year);
             let shown = |amount| compact_dollars(basis_amount(amount, deflator, is_nominal));
             vec![
                 step.year.to_string(),

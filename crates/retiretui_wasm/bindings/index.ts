@@ -21,6 +21,7 @@ export type { Figures } from "./Figures";
 export type { HistoricalReply } from "./HistoricalReply";
 export type { Issue } from "./Issue";
 export type { LadderOption } from "./LadderOption";
+export type { LadderWords } from "./LadderWords";
 export type { LadderYear } from "./LadderYear";
 export type { LaddersReply } from "./LaddersReply";
 export type { Ledger } from "./Ledger";

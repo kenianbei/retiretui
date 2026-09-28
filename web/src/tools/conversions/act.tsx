@@ -12,10 +12,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { useFileActions } from "@/files/actions";
-import { INPUT, messageOf } from "@/lib/utils";
+import { NameDialog } from "@/files/name-dialog";
+import { messageOf } from "@/lib/utils";
 import { useSession } from "@/session";
 import { percentOf } from "@/tools/search";
-import { nameOf, pathOf, planName } from "@/workspace";
+import { nameOf, pathOf, planName, stemOf } from "@/workspace";
 
 /** What the last action did: said, and a file to open where it wrote one. */
 interface Done {
@@ -25,7 +26,7 @@ interface Done {
 
 /** The file name a ladder's scenario is offered under. */
 function offeredName(path: string | null, option: LadderOption): string {
-  const stem = nameOf(path ?? "plan").replace(/\.toml$/, "");
+  const stem = stemOf(nameOf(path ?? "plan"));
   return `${stem}-ladder-${String(percentOf(option.rate))}.toml`;
 }
 
@@ -50,6 +51,7 @@ export function LadderActions({
   const [done, setDone] = useState<Done | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const canTake = session.document?.isReadOnly === false;
+  const written = done?.written;
 
   const attempt = (action: () => void) => {
     try {
@@ -118,13 +120,13 @@ export function LadderActions({
         {done && (
           <p className="flex flex-wrap items-center gap-2">
             {done.said}
-            {done.written && (
+            {written && (
               <Button
                 size="sm"
                 variant="link"
                 className="h-auto p-0"
                 onClick={() => {
-                  if (done.written) session.open(done.written);
+                  session.open(written);
                 }}
               >
                 Open it
@@ -145,52 +147,15 @@ export function LadderActions({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <AlertDialog
-        open={naming !== null}
-        onOpenChange={(isOpen) => {
-          if (!isOpen) setNaming(null);
-        }}
-      >
-        <AlertDialogContent>
-          <form
-            className="grid gap-4"
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (naming?.trim()) write(naming);
-            }}
-          >
-            <AlertDialogHeader>
-              <AlertDialogTitle>Write as a scenario</AlertDialogTitle>
-              <AlertDialogDescription>
-                The {option.label} ladder is written as a scenario over this
-                plan, to a file of this name in your workspace.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            {problem && (
-              <p role="alert" className="text-destructive text-sm">
-                {problem}
-              </p>
-            )}
-            <label className="grid gap-1.5 text-sm font-medium">
-              File name
-              <input
-                autoFocus
-                className={INPUT}
-                value={naming ?? ""}
-                onChange={(event) => {
-                  setNaming(event.target.value);
-                }}
-              />
-            </label>
-            <AlertDialogFooter>
-              <AlertDialogCancel type="button">Cancel</AlertDialogCancel>
-              <Button type="submit" disabled={naming?.trim() === ""}>
-                Write
-              </Button>
-            </AlertDialogFooter>
-          </form>
-        </AlertDialogContent>
-      </AlertDialog>
+      <NameDialog
+        name={naming}
+        setName={setNaming}
+        title="Write as a scenario"
+        description={`The ${option.label} ladder is written as a scenario over this plan, to a file of this name in your workspace.`}
+        verb="Write"
+        problem={problem}
+        named={write}
+      />
     </div>
   );
 }

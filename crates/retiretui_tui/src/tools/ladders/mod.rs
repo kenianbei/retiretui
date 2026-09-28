@@ -30,8 +30,9 @@ use crate::overview::Better;
 use crate::present::compact_dollars;
 use crate::session::Session;
 pub use retiretui_client::searches::ladders::{
-    CONVERSION_COLUMNS, Constraints, DESTINATION, FIELDS, OPTION_COLUMNS, Swept, aim_at, held,
-    held_answers, only_roth, rate_label, search, take_question, taken,
+    CONVERSION_COLUMNS, CONVERTS_NOTHING, Constraints, DESTINATION, FIELDS, NO_BRACKET,
+    OPTION_COLUMNS, PICK_DESTINATION, Swept, aim_at, held, held_answers, only_roth, rate_label,
+    search, take_question, taken, taxed_in,
 };
 
 pub type Ladders = Tool<Swept>;
@@ -56,7 +57,6 @@ const _: () = assert!(
     edit::help_fits(OPS.form.fields),
     "a field's help is missing or too long"
 );
-const NO_BRACKET: &str = "no bracket can be filled";
 const PAGE: ToolPage = ToolPage {
     surface: Page::RothConversions,
     panes: panes::spawn_panes,

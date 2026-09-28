@@ -2,7 +2,6 @@ import {
   compactMoney,
   type LadderOption,
   type LaddersReply,
-  type Summary,
 } from "@wasm/retiretui_wasm.js";
 import { useMemo } from "react";
 
@@ -14,41 +13,22 @@ import { ReadRows } from "@/plan/read-out";
 
 /** A row of the options: the plan as it stands, or a bracket's ladder. */
 interface OptionRow {
-  label: string;
-  summary: Summary;
+  cells: string[];
   option: LadderOption | null;
 }
 
-/** The figures an option is chosen by, in the order the reply names them. */
-function figuresOf(summary: Summary): number[] {
-  return [
-    summary.lifetime_unfunded,
-    summary.final_net_worth,
-    summary.lifetime_taxes,
-    summary.lifetime_medicare,
-  ];
-}
-
-function cellsOf(row: OptionRow): string[] {
-  return [
-    row.label,
-    compactMoney(row.summary.lifetime_conversions),
-    ...figuresOf(row.summary).map(compactMoney),
-  ];
-}
-
 function rowsOf(found: LaddersReply, basis: Basis): OptionRow[] {
-  const current: OptionRow = {
-    label: found.current,
-    summary: found.baseline[basis],
-    option: null,
-  };
-  const options = found.brackets.map((option) => ({
-    label: option.label,
-    summary: option.figures[basis],
-    option,
-  }));
-  return [current, ...options];
+  const row = (label: string, amounts: number[]) => [
+    label,
+    ...amounts.map(compactMoney),
+  ];
+  return [
+    { cells: row(found.current, found.baseline[basis]), option: null },
+    ...found.brackets.map((option) => ({
+      cells: row(option.label, option.figures[basis]),
+      option,
+    })),
+  ];
 }
 
 const column = columnsFor<OptionRow>();
@@ -77,7 +57,7 @@ export function Options({
           id: String(at),
           header,
           meta: { isNumeric: at > 0 },
-          cell: ({ row }) => cellsOf(row.original)[at],
+          cell: ({ row }) => row.original.cells[at],
         }),
       ),
     [found.columns],
@@ -89,8 +69,8 @@ export function Options({
         label="Ladder options"
         columns={columns}
         rows={rows}
-        rowKey={(row) => row.label}
-        isSelected={(row) => row.option !== null && row.option === highlighted}
+        rowKey={(row) => row.cells[0] ?? ""}
+        isSelected={(row) => row.option === highlighted}
         onSelect={(row) => {
           if (row.option) highlight(row.option);
         }}
@@ -99,17 +79,16 @@ export function Options({
       <div className="space-y-3 md:hidden">
         <ul className="bg-card divide-y rounded-md border">
           {rows.map((row) => {
-            const isChosen = row.option !== null && row.option === highlighted;
-            const cells = cellsOf(row);
+            const isChosen = row.option === highlighted;
             const content = (
               <>
-                <span className="font-medium">{row.label}</span>
-                <span className="tabular-nums">{cells[NARROW_FIGURE]}</span>
+                <span className="font-medium">{row.cells[0]}</span>
+                <span className="tabular-nums">{row.cells[NARROW_FIGURE]}</span>
               </>
             );
             const place = "flex w-full justify-between gap-3 px-4 py-3";
             return (
-              <li key={row.label}>
+              <li key={row.cells[0]}>
                 {row.option ? (
                   <button
                     type="button"
@@ -134,7 +113,7 @@ export function Options({
           <ReadRows
             rows={found.columns
               .slice(1)
-              .map((header, at) => [header, cellsOf(chosen)[at + 1] ?? ""])}
+              .map((header, at) => [header, chosen.cells[at + 1] ?? ""])}
           />
         )}
       </div>

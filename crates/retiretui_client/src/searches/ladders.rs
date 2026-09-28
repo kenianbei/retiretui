@@ -7,7 +7,8 @@ use retiretui_engine::optimize::{
     sweep_brackets,
 };
 use retiretui_engine::params::TaxTables;
-use retiretui_engine::plan::Plan;
+use retiretui_engine::plan::{Dollars, Plan};
+use retiretui_engine::project::Summary;
 use serde::Deserialize;
 
 use crate::codec::from_table;
@@ -81,6 +82,33 @@ impl Constraints {
 pub const OPTION_COLUMNS: [&str; 2] = ["Bracket", "converted"];
 /// The columns a ladder's conversions are tabled under, year by year.
 pub const CONVERSION_COLUMNS: [&str; 4] = ["Year", "From", "Amount", "Taxable"];
+
+/// What is said while no Roth account is named to convert to.
+pub const PICK_DESTINATION: &str = "Pick the Roth account to convert to under Constraints, and every bracket's ladder is searched.";
+/// What is said where the constraints leave no bracket to fill.
+pub const NO_BRACKET: &str = "no bracket can be filled";
+/// What is said in place of a ladder that converts nothing.
+pub const CONVERTS_NOTHING: &str = "This ladder converts nothing under these constraints.";
+
+/// A summary's amounts under [`OPTION_COLUMNS`] past the bracket, then
+/// its [`FIGURES`](super::FIGURES): what the plan converts over its life,
+/// and what the option is chosen by.
+#[must_use]
+pub const fn option_amounts(summary: &Summary) -> [Dollars; 5] {
+    let [unfunded, net, taxes, medicare] = super::figure_amounts(summary);
+    [summary.lifetime_conversions, unfunded, net, taxes, medicare]
+}
+
+/// The ordinary income taxed in `year` with `bracket`'s ladder, nominal,
+/// and the year's deflator.
+#[must_use]
+pub fn taxed_in(bracket: &SweptBracket, year: i16) -> (Dollars, f64) {
+    let row = bracket.optimized.row(year);
+    (
+        row.map_or(0, |row| row.taxes.ordinary_taxable),
+        row.map_or(1.0, |row| row.deflator),
+    )
+}
 
 /// The key the destination account is under.
 pub const DESTINATION: &str = "to";

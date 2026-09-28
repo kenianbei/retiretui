@@ -1,11 +1,11 @@
-import { Link, useBlocker, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { Pencil } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { messageOf } from "@/lib/utils";
 import { ReadRows } from "@/plan/read-out";
-import { ApplyFirst, FormSheet } from "@/plan/sheet";
+import { FormSheet } from "@/plan/sheet";
 import { useSession } from "@/session";
 import type { ToolSearch } from "@/tools/search";
 
@@ -46,13 +46,6 @@ export function ConstraintsForm() {
   const editor = useMemo(() => document?.constraints() ?? null, [document]);
   const [refusal, setRefusal] = useState<string | null>(null);
 
-  const blocker = useBlocker({
-    shouldBlockFn: ({ next }) =>
-      !(next.search as ToolSearch).edit && editor?.isDirty === true,
-    enableBeforeUnload: () => editor?.isDirty === true,
-    withResolver: true,
-  });
-
   if (!editor) return null;
 
   const close = () => {
@@ -72,26 +65,12 @@ export function ConstraintsForm() {
   };
 
   return (
-    <>
-      <FormSheet
-        editor={editor}
-        refusal={refusal}
-        apply={apply}
-        close={close}
-      />
-      <ApplyFirst
-        title={editor.title}
-        isAsking={blocker.status === "blocked"}
-        keep={() => blocker.reset?.()}
-        discard={() => {
-          editor.discard();
-          blocker.proceed?.();
-        }}
-        apply={() => {
-          blocker.reset?.();
-          apply();
-        }}
-      />
-    </>
+    <FormSheet
+      editor={editor}
+      isStaying={(next) => (next.search as ToolSearch).edit === true}
+      refusal={refusal}
+      apply={apply}
+      close={close}
+    />
   );
 }

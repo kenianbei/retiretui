@@ -8,12 +8,19 @@ export interface YearSearch {
   basis?: "nominal";
 }
 
+/** A whole number the address holds, as text or as a number. */
+export function wholeOf(value: unknown): number | undefined {
+  const number = typeof value === "string" ? Number(value) : value;
+  return typeof number === "number" && Number.isInteger(number)
+    ? number
+    : undefined;
+}
+
 /** The Overview's and the Ledger's search params from whatever the address holds. */
 export function yearSearch(search: Record<string, unknown>): YearSearch {
-  const year =
-    typeof search.year === "string" ? Number(search.year) : search.year;
+  const year = wholeOf(search.year);
   return {
-    ...(typeof year === "number" && Number.isInteger(year) && { year }),
+    ...(year !== undefined && { year }),
     ...(search.basis === "nominal" && { basis: "nominal" }),
   };
 }

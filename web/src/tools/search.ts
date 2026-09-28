@@ -1,4 +1,4 @@
-import type { YearSearch } from "@/year/search";
+import { keptSearch, wholeOf, type YearSearch } from "@/year/search";
 
 /** What a tool's page holds in its address. */
 export interface ToolSearch extends Pick<YearSearch, "basis"> {
@@ -8,18 +8,11 @@ export interface ToolSearch extends Pick<YearSearch, "basis"> {
   edit?: true;
 }
 
-function wholeOf(value: unknown): number | undefined {
-  const number = typeof value === "string" ? Number(value) : value;
-  return typeof number === "number" && Number.isInteger(number)
-    ? number
-    : undefined;
-}
-
 /** A tool's search params from whatever the address holds. */
 export function toolSearch(search: Record<string, unknown>): ToolSearch {
   const bracket = wholeOf(search.bracket);
   return {
-    ...(search.basis === "nominal" && { basis: "nominal" }),
+    ...keptSearch(search, ["basis"]),
     ...(bracket !== undefined && { bracket }),
     ...((search.edit === true || search.edit === "true") && { edit: true }),
   };

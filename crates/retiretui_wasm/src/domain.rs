@@ -8,11 +8,10 @@ use retiretui_client::forms::offers::display_name;
 use retiretui_client::forms::sort::Sort;
 use retiretui_client::forms::{Form, ListOps};
 use serde::Serialize;
-use serde_wasm_bindgen::from_value;
 use wasm_bindgen::prelude::{JsError, JsValue, wasm_bindgen};
 
 use crate::vocabulary::form_at;
-use crate::{JsDocument, reply, to_js};
+use crate::{JsDocument, from_js, reply, to_js};
 
 /// A domain's items as its table shows them.
 #[derive(Serialize, Debug)]
@@ -114,8 +113,7 @@ impl JsDocument {
         slug: &str,
         #[wasm_bindgen(unchecked_param_type = "Sort | null")] sort: JsValue,
     ) -> Result<JsValue, JsError> {
-        let sort: Option<Sort> =
-            from_value(sort).map_err(|error| JsError::new(&error.to_string()))?;
+        let sort: Option<Sort> = from_js(sort)?;
         reply(form_at(slug).and_then(|form| table(self.0.draft(), form, sort)))
     }
 
@@ -142,7 +140,7 @@ pub fn sort_pressed(
     #[wasm_bindgen(unchecked_param_type = "Sort | null")] held: JsValue,
     column: usize,
 ) -> Result<JsValue, JsError> {
-    let held: Option<Sort> = from_value(held).map_err(|error| JsError::new(&error.to_string()))?;
+    let held: Option<Sort> = from_js(held)?;
     to_js(&Sort::pressed(held, column))
 }
 

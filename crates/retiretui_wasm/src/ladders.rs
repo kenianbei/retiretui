@@ -7,8 +7,9 @@ use std::path::Path;
 use retiretui_client::files::{OVERLAY_SAVE_FIRST, relative_path};
 use retiretui_client::forms::{Form, details};
 use retiretui_client::searches::ladders::{
-    CONVERSION_COLUMNS, Constraints, DESTINATION, FIELDS, OPTION_COLUMNS, aim_at, constraints_in,
-    only_roth, rate_label, search, take_question, taken,
+    CONVERSION_COLUMNS, CONVERTS_NOTHING, Constraints, DESTINATION, FIELDS, NO_BRACKET,
+    OPTION_COLUMNS, PICK_DESTINATION, constraints_in, only_roth, option_amounts, rate_label,
+    search, take_question, taken, taxed_in,
 };
 use retiretui_client::searches::{CURRENT_PLAN, FIGURES, run_refusal};
 use retiretui_client::store::normal;
@@ -18,39 +19,51 @@ use retiretui_engine::optimize::{
     BracketSweep, LadderStep, OptimizeOptions, SweptBracket, apply_ladder, ladder_overlay,
 };
 use retiretui_engine::plan::{Dollars, Plan};
-use retiretui_engine::project::{Projection, Summary};
+use retiretui_engine::project::Projection;
 use serde::{Deserialize, Serialize};
-use serde_wasm_bindgen::from_value;
 use wasm_bindgen::prelude::{JsError, JsValue, wasm_bindgen};
 
 use crate::document::Document;
 use crate::editor::Editor;
 use crate::edits::JsEditor;
 use crate::searches::gated;
-use crate::{JsDocument, refused, reply, tables, to_js};
+use crate::{JsDocument, from_js, refused, reply, tables, to_js};
 
 /// A scenario written over a file it resolves through would name itself.
 const OVER_ITS_BASE: &str = "a scenario cannot be written over a file it is made from";
 
 static FORM: Form = Form::tool::<Constraints>("Constraints", FIELDS);
 
-/// Headline figures in either dollar basis.
+/// An option's amounts under the reply's columns past the first, in
+/// either dollar basis.
 #[derive(Serialize, Debug)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct Figures {
     /// In today's dollars.
-    pub today: Summary,
+    pub today: [Dollars; 5],
     /// In the dollars of each year.
-    pub nominal: Summary,
+    pub nominal: [Dollars; 5],
 }
 
 impl Figures {
     fn of(projection: &Projection) -> Self {
         Self {
-            today: projection.summary(true),
-            nominal: projection.summary(false),
+            today: option_amounts(&projection.summary(true)),
+            nominal: option_amounts(&projection.summary(false)),
         }
     }
+}
+
+/// What the tool says of itself, beside what a search replies.
+#[derive(Serialize, Debug)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+pub struct LadderWords {
+    /// While no Roth account is named to convert to.
+    pub pick_destination: &'static str,
+    /// Where the constraints leave no bracket to fill.
+    pub no_bracket: &'static str,
+    /// In place of a ladder that converts nothing.
+    pub converts_nothing: &'static str,
 }
 
 /// One year of a ladder: what it converts, and from where.
@@ -127,9 +140,7 @@ impl LaddersReply {
 
 fn option_of(plan: &Plan, bracket: &SweptBracket) -> LadderOption {
     let steps = bracket.steps.iter().map(|step| {
-        let row = bracket.optimized.row(step.year);
-        let taxable = row.map_or(0, |row| row.taxes.ordinary_taxable);
-        let deflator = row.map_or(1.0, |row| row.deflator);
+        let (taxable, deflator) = taxed_in(bracket, step.year);
         LadderYear {
             year: step.year,
             source: step.source.clone(),
@@ -182,7 +193,7 @@ fn steps_of(years: Vec<LadderYear>) -> Vec<LadderStep> {
 
 impl Document {
     /// The constraints the draft holds, the plan's one Roth account named
-    /// where they name none.
+    /// where they name none: the one place that rule is applied.
     fn aimed(&self) -> toml::Table {
         let mut answers = self.draft().answers::<Constraints>();
         if let Some(only) = only_roth(self.draft()) {
@@ -193,9 +204,7 @@ impl Document {
 
     /// The constraints open in their form.
     pub fn constraints(&mut self) -> Editor {
-        if let Some(only) = only_roth(self.draft()) {
-            aim_at(self.draft_mut(), &only);
-        }
+        self.hold_answers::<Constraints>(self.aimed());
         Editor::open(&FORM, self.draft(), Some(0))
     }
 
@@ -206,7 +215,7 @@ impl Document {
     ///
     /// Why the constraints were not held, in the form's words.
     pub fn apply_constraints(&mut self, editor: &mut Editor) -> Result<(), String> {
-        editor.edit.apply(self.draft_mut(), None).map(drop)
+        self.hold(editor)
     }
 
     /// The constraints as TOML, what a search is handed.
@@ -243,8 +252,10 @@ impl Document {
         years: Vec<LadderYear>,
     ) -> Result<String, String> {
         let steps = steps_of(years);
-        self.step(|plan| apply_ladder(plan, &into(destination), &steps))?;
-        Ok(taken(&steps))
+        self.step(|plan| {
+            apply_ladder(plan, &into(destination), &steps);
+            Ok(taken(&steps))
+        })
     }
 
     /// The ladder `years` into `destination` as a scenario to be written
@@ -336,7 +347,7 @@ impl JsDocument {
         #[wasm_bindgen(unchecked_param_type = "LadderYear[]")] years: JsValue,
     ) -> Result<String, JsError> {
         self.0
-            .take_ladder(destination, years_of(years)?)
+            .take_ladder(destination, from_js(years)?)
             .map_err(refused)
     }
 
@@ -356,13 +367,23 @@ impl JsDocument {
         #[wasm_bindgen(unchecked_param_type = "LadderYear[]")] years: JsValue,
     ) -> Result<String, JsError> {
         self.0
-            .ladder_scenario(out, destination, years_of(years)?)
+            .ladder_scenario(out, destination, from_js(years)?)
             .map_err(refused)
     }
 }
 
-fn years_of(years: JsValue) -> Result<Vec<LadderYear>, JsError> {
-    from_value(years).map_err(|error| JsError::new(&error.to_string()))
+/// What the Roth Conversions tool says of itself.
+///
+/// # Errors
+///
+/// Where the words do not convert.
+#[wasm_bindgen(js_name = ladderWords, unchecked_return_type = "LadderWords")]
+pub fn ladder_words() -> Result<JsValue, JsError> {
+    to_js(&LadderWords {
+        pick_destination: PICK_DESTINATION,
+        no_bracket: NO_BRACKET,
+        converts_nothing: CONVERTS_NOTHING,
+    })
 }
 
 /// Every bracket's ladder in `plan` under `constraints`, the constraints as
@@ -408,7 +429,8 @@ mod tests {
         let best = reply.brackets.first().expect("a bracket");
         assert!(!best.steps.is_empty());
         assert!(
-            best.figures.today.lifetime_conversions <= best.figures.nominal.lifetime_conversions
+            best.figures.today[0] <= best.figures.nominal[0],
+            "converted, deflated"
         );
         assert_eq!(best.label, rate_label(best.rate));
         assert!(best.question.starts_with("Take the "), "{}", best.question);

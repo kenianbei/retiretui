@@ -9,7 +9,7 @@ import { columnsFor } from "@/components/columns";
 import { DataTable } from "@/components/data-table";
 import type { Basis } from "@/overview/words";
 
-const column = columnsFor<LadderYear>();
+const column = columnsFor<string[]>();
 
 function cellsOf(year: LadderYear, basis: Basis): string[] {
   const isToday = basis === "today";
@@ -26,11 +26,18 @@ export function Conversions({
   option,
   headers,
   basis,
+  nothing,
 }: {
   option: LadderOption;
   headers: string[];
   basis: Basis;
+  /** What is said in place of a ladder that converts nothing. */
+  nothing: string;
 }) {
+  const rows = useMemo(
+    () => option.steps.map((year) => cellsOf(year, basis)),
+    [option, basis],
+  );
   const columns = useMemo(
     () =>
       headers.map((header, at) =>
@@ -38,24 +45,20 @@ export function Conversions({
           id: String(at),
           header,
           meta: { isNumeric: at >= 2 },
-          cell: ({ row }) => cellsOf(row.original, basis)[at],
+          cell: ({ row }) => row.original[at],
         }),
       ),
-    [headers, basis],
+    [headers],
   );
   if (option.steps.length === 0) {
-    return (
-      <p className="text-muted-foreground text-sm">
-        This ladder converts nothing under these constraints.
-      </p>
-    );
+    return <p className="text-muted-foreground text-sm">{nothing}</p>;
   }
   return (
     <DataTable
       label={`${option.label} conversions`}
       columns={columns}
-      rows={option.steps}
-      rowKey={(year) => `${year.source}-${String(year.year)}`}
+      rows={rows}
+      rowKey={(cells) => cells.join("|")}
     />
   );
 }

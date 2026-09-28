@@ -39,6 +39,10 @@ fn to_js<T: Serialize>(value: &T) -> Result<JsValue, JsError> {
         .map_err(|error| JsError::new(&error.to_string()))
 }
 
+fn from_js<T: serde::de::DeserializeOwned>(value: JsValue) -> Result<T, JsError> {
+    serde_wasm_bindgen::from_value(value).map_err(|error| JsError::new(&error.to_string()))
+}
+
 fn refused(message: String) -> JsError {
     JsError::new(&message)
 }
@@ -50,7 +54,7 @@ fn reply<T: Serialize>(answer: Result<T, String>) -> Result<JsValue, JsError> {
 #[wasm_bindgen(typescript_custom_section)]
 const TYPES: &str = r#"import type {
   ActionsReply, ChartSeries, ClaimsReply, Domain, DomainTable, Example,
-  FieldView, HistoricalReply, Issue, LadderYear, LaddersReply, Ledger,
+  FieldView, HistoricalReply, Issue, LadderWords, LadderYear, LaddersReply, Ledger,
   MonteCarloReply, PlacedIssue, NewPlanMade, Projection, SaidYear, Sort, Step,
   Summary, YearDetail,
 } from "../bindings/index";
@@ -263,7 +267,7 @@ mod bindings {
     use retiretui_client::forms::sort::Sort;
 
     use crate::domain::DomainTable;
-    use crate::ladders::LaddersReply;
+    use crate::ladders::{LadderWords, LaddersReply};
     use crate::ledger::{ChartSeries, Ledger, YearDetail};
     use crate::searches::Example;
     use crate::setup::NewPlanMade;
@@ -287,6 +291,7 @@ mod bindings {
             Summary::export_all,
             ActionsReply::export_all,
             LaddersReply::export_all,
+            LadderWords::export_all,
             ClaimsReply::export_all,
             MonteCarloReply::export_all,
             HistoricalReply::export_all,

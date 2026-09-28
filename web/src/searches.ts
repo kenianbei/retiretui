@@ -75,19 +75,19 @@ export function useMonteCarlo(plan: string) {
 }
 
 /**
- * Every bracket's ladder in `plan` under `constraints`, searched once they
- * name a destination; the last found stays in view while the next is.
+ * Every bracket's ladder in `plan` under `constraints`, searched only where
+ * `isSearchable`; the last found stays in view while the next is.
  */
 export function useLadders(
   plan: string,
   constraints: string,
-  isAimed: boolean,
+  isSearchable: boolean,
 ) {
   return useQuery({
     queryKey: ["ladders", plan, constraints],
     queryFn: ({ signal }) =>
       runSearch({ kind: "ladders", plan, constraints }, signal),
-    enabled: isAimed,
+    enabled: isSearchable,
     placeholderData: keepPreviousData,
     staleTime: Infinity,
     retry: false,

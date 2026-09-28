@@ -1,5 +1,5 @@
-import { useNavigate, useSearch } from "@tanstack/react-router";
-import type { LadderOption } from "@wasm/retiretui_wasm.js";
+import { Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { ladderWords, type LadderOption } from "@wasm/retiretui_wasm.js";
 import { useMemo } from "react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -13,17 +13,21 @@ import { percentOf, type ToolSearch } from "@/tools/search";
 import { basisOf } from "@/year/search";
 import { BasisSwitch } from "@/year/year";
 
+const WORDS = ladderWords();
+
 /** What the search is handed: the draft and its constraints, as text. */
 function useSearched() {
-  const { reading } = useSession();
+  const { reading, issues } = useSession();
+  const isValid = issues.length === 0;
   return useMemo(() => {
     const document = reading.document;
     return {
       plan: document?.planText() ?? "",
       constraints: document?.constraintsText ?? "",
       isAimed: document?.isAimed ?? false,
+      isValid,
     };
-  }, [reading]);
+  }, [reading, isValid]);
 }
 
 /**
@@ -34,8 +38,8 @@ export function ConversionsPage() {
   const search: ToolSearch = useSearch({ from: "/tools/$page" });
   const navigate = useNavigate({ from: "/tools/$page" });
   const basis = basisOf(search);
-  const { plan, constraints, isAimed } = useSearched();
-  const found = useLadders(plan, constraints, isAimed);
+  const { plan, constraints, isAimed, isValid } = useSearched();
+  const found = useLadders(plan, constraints, isAimed && isValid);
   const reply = found.data;
   const highlighted =
     reply?.brackets.find((each) => percentOf(each.rate) === search.bracket) ??
@@ -71,16 +75,21 @@ export function ConversionsPage() {
           )}
         </div>
         {!isAimed ? (
+          <p className="text-muted-foreground">{WORDS.pick_destination}</p>
+        ) : !isValid ? (
           <p className="text-muted-foreground">
-            Pick the Roth account to convert to under Constraints, and every
-            bracket&apos;s ladder is searched.
+            The ladders are searched once the plan&apos;s issues are fixed; the{" "}
+            <Link to="/overview" className="underline underline-offset-4">
+              Overview
+            </Link>{" "}
+            lists them.
           </p>
         ) : found.error && !found.isFetching ? (
           <Alert variant="destructive">
             <AlertDescription>{found.error.message}</AlertDescription>
           </Alert>
         ) : reply && reply.brackets.length === 0 ? (
-          <p className="text-muted-foreground">No bracket can be filled.</p>
+          <p className="text-muted-foreground">{WORDS.no_bracket}</p>
         ) : (
           reply && (
             <Options
@@ -92,7 +101,7 @@ export function ConversionsPage() {
           )
         )}
       </section>
-      {reply && highlighted && isAimed && !found.error && (
+      {reply && highlighted && isAimed && isValid && !found.error && (
         <section aria-labelledby="conversions" className="space-y-3">
           <h2 id="conversions" className="text-lg font-semibold">
             Conversions ({highlighted.label})
@@ -101,6 +110,7 @@ export function ConversionsPage() {
             option={highlighted}
             headers={reply.conversion_columns}
             basis={basis}
+            nothing={WORDS.converts_nothing}
           />
           <LadderActions
             key={highlighted.label}
