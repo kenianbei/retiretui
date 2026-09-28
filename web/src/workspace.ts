@@ -5,7 +5,6 @@ const LAST_KEY = `${PREFIX}last`;
 /** The last rename, announced to other tabs, which see files written and removed. */
 const RENAMED_KEY = `${PREFIX}renamed`;
 
-/** A file renamed. */
 export interface Renamed {
   from: string;
   to: string;

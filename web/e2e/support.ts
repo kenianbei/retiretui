@@ -57,7 +57,6 @@ export async function seed(
 /** How long a search in a worker may take, on the slowest runner. */
 export const SEARCH = { timeout: 110_000 };
 
-/** Whether the project is a phone's. */
 export function isPhone(testInfo: TestInfo): boolean {
   return testInfo.project.name.endsWith("-phone");
 }
