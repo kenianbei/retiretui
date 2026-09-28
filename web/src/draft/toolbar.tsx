@@ -12,16 +12,20 @@ import {
 import { IssueLink } from "@/draft/issue-link";
 import { useSession } from "@/session";
 
-/** Whether a key pressed at `target` is typing rather than a command. */
-function isTyping(target: EventTarget | null): boolean {
+/**
+ * Whether a key pressed at `target` is not the draft's: typing, or anything
+ * in a form or question standing over the page, which keeps every key.
+ */
+function isHeld(target: EventTarget | null): boolean {
   return (
     target instanceof HTMLElement &&
     (target.isContentEditable ||
-      ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))
+      ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName) ||
+      target.closest('[role="dialog"], [role="alertdialog"]') !== null)
   );
 }
 
-/** Undo, redo and save by key, wherever nothing is being typed into. */
+/** Undo, redo and save by key, wherever nothing else holds the key. */
 function useDraftKeys(actions: {
   undo: () => void;
   redo: () => void;
@@ -29,7 +33,7 @@ function useDraftKeys(actions: {
 }) {
   useEffect(() => {
     const press = (event: KeyboardEvent) => {
-      if (!(event.ctrlKey || event.metaKey) || isTyping(event.target)) return;
+      if (!(event.ctrlKey || event.metaKey) || isHeld(event.target)) return;
       const key = event.key.toLowerCase();
       const action =
         key === "z"
