@@ -3,6 +3,7 @@ import {
   Download,
   FilePen,
   FilePlus2,
+  FolderCog,
   FolderOpen,
   Menu,
   Sparkles,
@@ -73,6 +74,13 @@ export function FileMenu() {
               ))}
             </DropdownMenuSubContent>
           </DropdownMenuSub>
+          <DropdownMenuItem
+            disabled={session.files.length === 0}
+            onSelect={actions.manage}
+          >
+            <FolderCog aria-hidden />
+            Manage plans…
+          </DropdownMenuItem>
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>
               <Sparkles aria-hidden />
@@ -105,7 +113,9 @@ export function FileMenu() {
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled={session.path === null}
-            onSelect={actions.download}
+            onSelect={() => {
+              actions.download();
+            }}
           >
             <Download aria-hidden />
             Download {session.path !== null && nameOf(session.path)}

@@ -7,11 +7,37 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Context;
 use retiretui_engine::params::TaxTables;
-use retiretui_engine::plan::{Issue, Plan};
+use retiretui_engine::plan::{Issue, Plan, Scenario};
 use retiretui_engine::project::validate_plan;
 
-use crate::store::Store;
+use crate::store::{Store, normal};
 use retiretui_engine::plan::resolve;
+
+/// The file the scenario `text`, kept at `path`, is resolved over: its
+/// `base`, beside it, as every read resolves it; none for a plan, or text
+/// that reads as neither.
+#[must_use]
+pub fn base_of(path: &str, text: &str) -> Option<String> {
+    let scenario = Scenario::from_toml_str(text).ok()??;
+    let beside = Path::new(path).parent().unwrap_or(Path::new("/"));
+    let base = normal(&beside.join(scenario.base()));
+    Some(base.to_string_lossy().into_owned())
+}
+
+/// `text`, a scenario, naming `base` in place of the base it names,
+/// written canonically as every scenario is.
+///
+/// # Errors
+///
+/// Where `text` is not a scenario, or does not serialize again.
+pub fn rebased(text: &str, base: &str) -> Result<String, String> {
+    let read = Scenario::from_toml_str(text).map_err(|error| error.to_string())?;
+    let mut scenario = read.ok_or_else(|| NOT_A_SCENARIO.to_owned())?;
+    scenario.set_base(base);
+    scenario.to_toml_string().map_err(|error| error.to_string())
+}
+
+const NOT_A_SCENARIO: &str = "a plan names no base to change";
 
 /// Why a plan file did not pass the load-and-validate gate.
 pub enum Invalid {

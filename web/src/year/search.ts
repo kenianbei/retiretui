@@ -79,3 +79,8 @@ export function heldIn(held: readonly string[]): string | undefined {
 export function basisOf(search: YearSearch): Basis {
   return search.basis ?? "today";
 }
+
+/** `basis` as the address keeps it: today's dollars are the default, and not kept. */
+export function basisIn(basis: Basis): "nominal" | undefined {
+  return basis === "nominal" ? basis : undefined;
+}

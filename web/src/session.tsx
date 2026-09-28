@@ -1,5 +1,6 @@
 import {
   Document,
+  rebased,
   type Editor,
   type PlacedIssue,
 } from "@wasm/retiretui_wasm.js";
@@ -13,9 +14,10 @@ import {
   type ReactNode,
 } from "react";
 
+import { scenariosOver } from "@/files/chain";
 import { messageOf } from "@/lib/utils";
-import { openAt, type Opened } from "@/opened";
-import { Workspace, fileAt, pathOf } from "@/workspace";
+import { baseIn, openAt, type Opened } from "@/opened";
+import { Workspace, fileAt, nameOf, pathOf, renameAt } from "@/workspace";
 
 /** The open document, and how many changes it has seen. */
 export interface Reading {
@@ -47,6 +49,14 @@ export interface Session extends Opened {
   place: (name: string, text: string, onPlaced?: () => void) => void;
   /** Writes `text` as the file `name`, replacing any such file, without opening it. */
   write: (name: string, text: string) => void;
+  /** Deletes `path`, closing the document where it was the document's own file. */
+  removeFile: (path: string) => void;
+  /**
+   * Moves `from` to `to` - which no file is - and every scenario over it
+   * to name it there, the document following with its draft; a refusal is
+   * reported.
+   */
+  rename: (from: string, to: string) => void;
   /** Stores the editor's item, answering where it now sits; throws the refusal. */
   apply: (editor: Editor) => number | undefined;
   /**
@@ -148,6 +158,48 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [workspace, listed],
   );
 
+  /** Takes `to` wherever `from` was among the document's files, keeping its draft. */
+  const followed = useCallback(
+    (from: string, to: string) => {
+      if (!document?.files().includes(from)) return;
+      document.relocate(from, to);
+      if (path === from) setOpened({ path: to, document, error: null });
+      changed();
+    },
+    [document, path, changed],
+  );
+
+  const removeFile = useCallback(
+    (removed: string) => {
+      workspace.remove(removed);
+      listed();
+      if (!document?.files().includes(removed)) return;
+      setOpened(openAt(workspace, removed === path ? null : path));
+    },
+    [workspace, document, path, listed],
+  );
+
+  const rename = useCallback(
+    (from: string, to: string) => {
+      try {
+        const base = (each: string) => baseIn(workspace, each);
+        const over = scenariosOver(from, workspace.list(), base);
+        workspace.rename(from, to);
+        for (const scenario of over) {
+          workspace.write(
+            scenario,
+            rebased(workspace.read(scenario), nameOf(to)),
+          );
+        }
+        listed();
+        followed(from, to);
+      } catch (thrown) {
+        report(messageOf(thrown));
+      }
+    },
+    [workspace, listed, followed],
+  );
+
   /** Runs `action`, reporting what it throws and clearing what was reported. */
   const attempt = useCallback(
     <Args extends unknown[]>(action: (...args: Args) => void) =>
@@ -239,6 +291,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const follow = (event: StorageEvent) => {
+      const renamed = renameAt(event.key, event.newValue);
+      if (renamed) {
+        followed(renamed.from, renamed.to);
+        return;
+      }
       const file = fileAt(event.key);
       if (file === undefined) return;
       listed();
@@ -251,7 +308,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return () => {
       window.removeEventListener("storage", follow);
     };
-  }, [workspace, document, listed]);
+  }, [workspace, document, listed, followed]);
 
   const isDirty = document?.isDirty === true;
   useEffect(() => {
@@ -276,6 +333,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       open,
       place,
       write,
+      removeFile,
+      rename,
       ...edits,
       isChangedElsewhere,
       reload: () => {
@@ -296,6 +355,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       open,
       place,
       write,
+      removeFile,
+      rename,
       edits,
       isChangedElsewhere,
       path,

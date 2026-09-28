@@ -20,7 +20,7 @@ import { useRows, type Row } from "@/compare/use-compared";
 import { Views, type Charted } from "@/compare/views";
 import { Button } from "@/components/ui/button";
 import { messageOf } from "@/lib/utils";
-import { BASIS_LABEL } from "@/overview/words";
+import { BASIS_LABEL } from "@/overview/view-words";
 import { useSession } from "@/session";
 import { nameOf } from "@/workspace";
 import { basisOf } from "@/year/search";

@@ -6,7 +6,7 @@ import { columnsFor } from "@/components/columns";
 import { DataTable } from "@/components/data-table";
 import { YearDetailCards } from "@/ledger/year-detail";
 import { messageOf } from "@/lib/utils";
-import { BASIS_LABEL } from "@/overview/words";
+import { BASIS_LABEL } from "@/overview/view-words";
 import { useSession } from "@/session";
 import { basisOf, type LedgerSearch } from "@/year/search";
 import { useYear } from "@/year/use-year";

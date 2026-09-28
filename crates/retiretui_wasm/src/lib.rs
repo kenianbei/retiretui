@@ -13,6 +13,7 @@ mod ledger;
 mod markets;
 mod searches;
 mod setup;
+mod tax_tables;
 mod view;
 mod vocabulary;
 
@@ -80,7 +81,8 @@ const TYPES: &str = r#"import type {
   Domain, DomainTable,
   Example, FieldView, Issue, LadderWords, LadderYear, LaddersReply,
   Ledger, MarketRuns, MarketWords, Metric, PersonAction, PersonRow, PlacedIssue, NewPlanMade,
-  Projection, RothOwner, SaidYear, Searched, Sort, Step, Summary, YearDetail, YearFigure,
+  Projection, RothOwner, SaidYear, Searched, Sort, Step, Summary, TablesView, ViewWords,
+  YearDetail, YearFigure, YearTables,
 } from "../bindings/index";
 export type * from "../bindings/index";"#;
 
@@ -102,6 +104,13 @@ impl JsDocument {
     ) -> Result<JsDocument, JsError> {
         let mut read = |file: &Path| read_through(read, file);
         Document::open(path, &mut read).map(Self).map_err(refused)
+    }
+
+    /// Takes `to` wherever `from` is among the files the document was
+    /// resolved from, nothing read again or written: the file was renamed,
+    /// and holds what it held.
+    pub fn relocate(&mut self, from: &str, to: &str) {
+        self.0.relocate(from, to);
     }
 
     /// Whether it is a scenario, which cannot be written back as it stands.
@@ -230,6 +239,24 @@ pub fn domains() -> Result<JsValue, JsError> {
     to_js(&vocabulary::domains())
 }
 
+/// The file the scenario `text`, kept at `path`, is resolved over: its
+/// `base`, beside it; `undefined` for a plan, or text that reads as neither.
+#[wasm_bindgen(js_name = baseOf)]
+#[must_use]
+pub fn base_of(path: &str, text: &str) -> Option<String> {
+    retiretui_client::files::base_of(path, text)
+}
+
+/// `text`, a scenario, naming `base` in place of the base it names.
+///
+/// # Errors
+///
+/// Where `text` is not a scenario, or does not serialize again.
+#[wasm_bindgen]
+pub fn rebased(text: &str, base: &str) -> Result<String, JsError> {
+    retiretui_client::files::rebased(text, base).map_err(refused)
+}
+
 /// How many issues there are, in words: `1 issue`, `3 issues`.
 #[wasm_bindgen(js_name = issueCount)]
 #[must_use]
@@ -264,13 +291,14 @@ mod bindings {
     use crate::compare::{CompareView, CompareWords, Searched, YearFigure};
     use crate::domain::DomainTable;
     use crate::ladders::{LadderWords, LaddersReply};
-    use crate::ledger::{ChartSeries, Ledger, YearDetail};
+    use crate::ledger::{ChartSeries, Ledger, ViewWords, YearDetail};
     use crate::markets::{MarketRuns, MarketWords};
     use crate::searches::Example;
     use crate::setup::NewPlanMade;
     use crate::view::FieldView;
     use crate::vocabulary::Domain;
     use retiretui_client::setup::Step;
+    use retiretui_client::tax_tables::{TablesView, YearTables};
 
     const BINDINGS: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/bindings");
 
@@ -302,6 +330,9 @@ mod bindings {
         Ledger::export_all,
         YearDetail::export_all,
         ChartSeries::export_all,
+        ViewWords::export_all,
+        TablesView::export_all,
+        YearTables::export_all,
         Step::export_all,
         NewPlanMade::export_all,
     ];

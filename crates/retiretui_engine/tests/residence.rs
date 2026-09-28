@@ -2,7 +2,7 @@
 
 use retiretui_engine::params::{Inflation, TaxTables};
 use retiretui_engine::plan::Plan;
-use retiretui_engine::project::{Projection, project, validate_plan};
+use retiretui_engine::project::{Projection, project, state_lived_in, validate_plan};
 
 const PLAN: &str = r#"
 schema = 1
@@ -113,4 +113,16 @@ fn an_override_year_without_states_inherits_them_inflated() {
     let inherited = tables.params_for(2030, &inflation);
     assert_eq!(inherited.states["or"], carried.states["or"]);
     assert!(!inherited.states.contains_key("ca"));
+}
+
+#[test]
+fn the_state_lived_in_follows_a_move_and_is_none_abroad() {
+    let moving = plan(&format!(
+        "{OREGON}\n[[residency]]\ncountry = \"us\"\nstate = \"tx\"\nfrom = {{ date = 2028-09-01 }}\n\n\
+         [[residency]]\ncountry = \"pt\"\nfrom = {{ date = 2030-01-01 }}\n"
+    ));
+    assert_eq!(state_lived_in(&moving, 2027), Some("or"));
+    assert_eq!(state_lived_in(&moving, 2028), Some("tx"));
+    assert_eq!(state_lived_in(&moving, 2030), None);
+    assert_eq!(state_lived_in(&plan(""), 2027), None);
 }

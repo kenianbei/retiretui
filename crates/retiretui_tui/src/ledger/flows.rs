@@ -13,7 +13,7 @@ use plurimus::core::ratatui_core::text::Line;
 use plurimus::ui::ScrollArea;
 use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
 use plurimus::widgets::{TableColumns, WidgetSystems};
-use retiretui_client::ledger::account_flows;
+use retiretui_client::ledger::{FLOW_HEADERS, FLOWS, account_flows};
 use retiretui_engine::plan::Plan;
 use retiretui_engine::project::YearRow;
 
@@ -41,10 +41,6 @@ pub fn plugin(app: &mut App) {
     );
 }
 
-const TITLE: &str = "Flows";
-const HEADER: [&str; 6] = ["Account", "Open", "In", "Out", "Growth", "Close"];
-/// The columns written as text, lined up on the left; the rest are figures.
-const TEXT_COLUMNS: [usize; 3] = [0, 2, 3];
 /// In and Out share what the name and the figures leave, so a narrow pane
 /// clips the end of a flow rather than every column.
 const FLOW_COLUMNS: [usize; 2] = [2, 3];
@@ -59,7 +55,7 @@ struct FlowsTable;
 struct FlowWarnings;
 
 pub(super) fn spawn_pane(commands: &mut Commands, parent: Entity) {
-    let pane = Pane::new(TITLE).sharing(1.0).spawn(commands, parent);
+    let pane = Pane::new(FLOWS).sharing(1.0).spawn(commands, parent);
     commands.entity(pane).insert(FlowsPane);
     commands.spawn((
         table_bundle(),
@@ -94,7 +90,10 @@ fn refresh_flows(
     };
     let previous = shown.ledger().projection.row(row.year - 1);
     let rows = flow_rows(&shown.ledger().plan, previous, row, shown.basis.nominal);
-    let header = HEADER.map(str::to_owned);
+    let header = FLOW_HEADERS.map(|(header, _)| header.to_owned());
+    let text: Vec<usize> = (FLOW_HEADERS.iter().enumerate())
+        .filter_map(|(at, &(_, is_figure))| (!is_figure).then_some(at))
+        .collect();
     let TableColumns(mut widths) = tabulate::columns((&header, &rows), DETAIL_GAP);
     for at in FLOW_COLUMNS {
         widths[at] = Constraint::Fill(1);
@@ -102,10 +101,10 @@ fn refresh_flows(
     for (table, mut scroll) in &mut tables {
         commands.entity(table).insert(TableColumns(widths.clone()));
         let scrolled = (table, &mut *scroll);
-        tabulate::refill(&mut commands, scrolled, (&header, &rows), &TEXT_COLUMNS);
+        tabulate::refill(&mut commands, scrolled, (&header, &rows), &text);
     }
     let title = format!(
-        "{} {TITLE} · {}",
+        "{} {FLOWS} · {}",
         row.year,
         present::basis_name(shown.basis.nominal)
     );

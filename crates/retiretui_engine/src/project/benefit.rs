@@ -169,8 +169,10 @@ fn year_of(month: i32) -> i16 {
 }
 
 /// The benefit formula's parameters for `plan`: the start year's table,
-/// its wage growth replaced by the plan's where the plan states one.
-pub(crate) fn benefit_params(plan: &Plan, tables: &TaxTables) -> Option<BenefitParams> {
+/// its wage growth replaced by the plan's where the plan states one; none
+/// where that table carries no formula.
+#[must_use]
+pub fn benefit_params(plan: &Plan, tables: &TaxTables) -> Option<BenefitParams> {
     let mut params = tables
         .params_for(plan.plan.start_year, &plan_inflation(plan))
         .social_security

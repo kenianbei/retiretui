@@ -270,6 +270,49 @@ mod tests {
     }
 
     #[test]
+    fn a_renamed_file_is_relocated_in_place_whatever_the_document_is() {
+        use retiretui_client::files::{base_of, rebased};
+        use std::path::PathBuf;
+
+        let mut document = opened();
+        let own = document.files()[0].to_string_lossy().into_owned();
+        let accounts = form_at("accounts").expect("a domain");
+        let mut editor = Editor::open(accounts, document.draft(), Some(0));
+        editor.set("name", None, "Renamed").expect("a field");
+        document.apply(&mut editor).expect("applied");
+        document.relocate(&own, "/renamed.toml");
+        assert_eq!(document.files(), [PathBuf::from("/renamed.toml")]);
+        assert!(document.draft().is_dirty());
+
+        let scenario = "schema = 1\nbase = \"renamed.toml\"\n".to_owned();
+        let text = saved(&mut document).expect("saved");
+        let mut read = |path: &std::path::Path| {
+            Ok(if path.ends_with("what-if.toml") {
+                scenario.clone()
+            } else {
+                text.clone()
+            })
+        };
+        let mut over = Document::open("/what-if.toml", &mut read).expect("opens");
+        over.relocate("/renamed.toml", "/moved.toml");
+        let chain = [PathBuf::from("/what-if.toml"), PathBuf::from("/moved.toml")];
+        assert_eq!(over.files(), chain);
+        assert!(over.is_read_only());
+
+        let moved = rebased(&scenario, "moved.toml").expect("a scenario");
+        assert_eq!(
+            base_of("/what-if.toml", &moved).as_deref(),
+            Some("/moved.toml")
+        );
+        assert_eq!(
+            base_of("/plans/a.toml", &scenario).as_deref(),
+            Some("/plans/renamed.toml")
+        );
+        assert_eq!(base_of("/renamed.toml", &text), None);
+        assert!(rebased(&text, "moved.toml").is_err());
+    }
+
+    #[test]
     fn an_applied_edit_is_one_step_undone_redone_and_saved() {
         let mut document = opened();
         let accounts = form_at("accounts").expect("a domain");

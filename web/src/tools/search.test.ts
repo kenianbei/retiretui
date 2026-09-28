@@ -24,6 +24,13 @@ describe("toolSearch", () => {
     expect(toolSearch({ claim: 70 })).toEqual({ claim: "70" });
   });
 
+  it("keeps the year, and the status and state whose tax tables show", () => {
+    expect(toolSearch({ year: "2031", status: "single", state: "or" })).toEqual(
+      { year: 2031, status: "single", state: "or" },
+    );
+    expect(toolSearch({ status: "", state: 5 })).toEqual({ state: "5" });
+  });
+
   it("keeps a market run by its place or its start year", () => {
     expect(toolSearch({ run: "p10" })).toEqual({ run: "p10" });
     expect(toolSearch({ run: 1929 })).toEqual({ run: "1929" });

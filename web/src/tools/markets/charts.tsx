@@ -28,7 +28,7 @@ import {
   SERIES,
 } from "@/overview/bands";
 import { Plot } from "@/overview/charts";
-import { BASIS_LABEL } from "@/overview/words";
+import { BASIS_LABEL } from "@/overview/view-words";
 
 const SHORT = "var(--destructive)";
 const DOLLARS = BASIS_LABEL.today;
@@ -80,7 +80,7 @@ function ByYear({ table }: { table: Table }) {
   );
   return (
     <DataTable
-      label="Net worth by year at each percentile, today's dollars"
+      label={`Net worth by year at each percentile, ${DOLLARS}`}
       columns={columns}
       rows={table.rows}
       rowKey={(row) => row[0] ?? ""}

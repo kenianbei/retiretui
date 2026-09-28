@@ -28,7 +28,10 @@ export const MONTE_CARLO = "monte-carlo";
 /** The Historical tool's page. */
 export const HISTORICAL = "historical";
 
-/** The tools that act on the plan as a whole, in the TUI's order. */
+/** The Tax Tables tool's page. */
+export const TAX_TABLES = "tax-tables";
+
+/** The tools that act on the plan as a whole, in the TUI's order, then the page's own. */
 export const TOOLS: readonly Page[] = [
   {
     slug: ROTH_CONVERSIONS,
@@ -49,6 +52,11 @@ export const TOOLS: readonly Page[] = [
     slug: HISTORICAL,
     title: "Historical",
     holds: "The plan from every historical start year.",
+  },
+  {
+    slug: TAX_TABLES,
+    title: "Tax Tables",
+    holds: "The tax tables the plan's projection applies in a year.",
   },
 ];
 

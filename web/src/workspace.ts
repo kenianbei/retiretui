@@ -2,6 +2,29 @@
 const PREFIX = "retiretui-app:";
 const FILE_KEY = `${PREFIX}file:`;
 const LAST_KEY = `${PREFIX}last`;
+/** A rename as it is made, announced to other tabs, which see files written and removed. */
+const RENAMED_KEY = `${PREFIX}renamed`;
+
+export interface Renamed {
+  from: string;
+  to: string;
+}
+
+/** The rename a changed storage `key`, now holding `value`, announces; `null` where it is none. */
+export function renameAt(
+  key: string | null,
+  value: string | null,
+): Renamed | null {
+  if (key !== RENAMED_KEY || value === null) return null;
+  try {
+    const { from, to } = JSON.parse(value) as Partial<Renamed>;
+    return typeof from === "string" && typeof to === "string"
+      ? { from, to }
+      : null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * The file a changed storage `key` holds: `undefined` for a key that holds
@@ -70,6 +93,24 @@ export class Workspace {
       .map((key) => fileAt(key))
       .filter((path) => typeof path === "string")
       .sort();
+  }
+
+  /** Deletes `path`, and forgets it as the document last open. */
+  remove(path: string): void {
+    this.storage.removeItem(FILE_KEY + path);
+    if (this.storage.getItem(LAST_KEY) === path) {
+      this.storage.removeItem(LAST_KEY);
+    }
+  }
+
+  /** Moves `from` to `to`, announcing it to other tabs. */
+  rename(from: string, to: string): void {
+    this.write(to, this.read(from));
+    this.storage.setItem(RENAMED_KEY, JSON.stringify({ from, to }));
+    if (this.storage.getItem(LAST_KEY) === from) this.remember(to);
+    this.remove(from);
+    // Cleared, so that the same rename made again is announced again.
+    this.storage.removeItem(RENAMED_KEY);
   }
 
   /** The document last open, where it is still there. */

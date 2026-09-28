@@ -3,24 +3,42 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
+  lazyRouteComponent,
   redirect,
   retainSearchParams,
 } from "@tanstack/react-router";
 
-import { ComparePage } from "@/compare/page";
 import { compareSearch, withSearch } from "@/compare/search";
 import { DOMAINS, TOOLS, pageOf } from "@/nav";
-import { LedgerPage } from "@/ledger/page";
-import { Overview } from "@/overview/overview";
-import { NewPlanPage } from "@/onboarding/page";
 import { newPlanSearch } from "@/onboarding/steps";
-import { DomainPage } from "@/plan/page";
 import { planSearch } from "@/plan/search";
 import { NotFound } from "@/pages/not-found";
 import { Shell } from "@/shell/shell";
-import { ToolPage } from "@/tools/page";
 import { toolSearch } from "@/tools/search";
 import { ledgerSearch, yearSearch, type KeptKey } from "@/year/search";
+
+/**
+ * The pages, each loaded the first time it is shown, so that what charts
+ * and edits stays out of the first load.
+ */
+const PAGES = {
+  overview: lazyRouteComponent(() => import("@/overview/overview"), "Overview"),
+  ledger: lazyRouteComponent(() => import("@/ledger/page"), "LedgerPage"),
+  compare: lazyRouteComponent(() => import("@/compare/page"), "ComparePage"),
+  tools: lazyRouteComponent(() => import("@/tools/page"), "ToolPage"),
+  plan: lazyRouteComponent(() => import("@/plan/page"), "DomainPage"),
+  newPlan: lazyRouteComponent(() => import("@/onboarding/page"), "NewPlanPage"),
+};
+
+/**
+ * Loads every page not yet shown, so that each is at hand offline; one
+ * whose load is cut short loads when it is shown instead.
+ */
+export function preloadPages() {
+  for (const page of Object.values(PAGES)) {
+    page.preload?.()?.catch(() => undefined);
+  }
+}
 
 const root = createRootRoute({
   component: Shell,
@@ -43,7 +61,7 @@ const overview = createRoute({
   path: "/overview",
   staticData: { keeps: ["year", "basis", "held"] },
   validateSearch: yearSearch,
-  component: Overview,
+  component: PAGES.overview,
 });
 
 const ledger = createRoute({
@@ -51,7 +69,7 @@ const ledger = createRoute({
   path: "/ledger",
   staticData: { keeps: ["year", "basis", "held"] },
   validateSearch: ledgerSearch,
-  component: LedgerPage,
+  component: PAGES.ledger,
 });
 
 const compare = createRoute({
@@ -59,16 +77,16 @@ const compare = createRoute({
   path: "/compare",
   staticData: { keeps: ["year", "basis", "held"] },
   validateSearch: compareSearch,
-  component: ComparePage,
+  component: PAGES.compare,
 });
 
 const tools = createRoute({
   getParentRoute: () => root,
   path: "/tools/$page",
-  staticData: { keeps: ["basis", "held"] },
+  staticData: { keeps: ["year", "basis", "held"] },
   validateSearch: toolSearch,
   beforeLoad: ({ params }) => ({ page: pageOf(TOOLS, params.page) }),
-  component: ToolPage,
+  component: PAGES.tools,
 });
 
 const plan = createRoute({
@@ -76,7 +94,7 @@ const plan = createRoute({
   path: "/plan/$page",
   validateSearch: planSearch,
   beforeLoad: ({ params }) => ({ page: pageOf(DOMAINS, params.page) }),
-  component: DomainPage,
+  component: PAGES.plan,
 });
 
 const newPlan = createRoute({
@@ -84,7 +102,7 @@ const newPlan = createRoute({
   path: "/new/$step",
   staticData: { isWithoutDocument: true },
   validateSearch: newPlanSearch,
-  component: NewPlanPage,
+  component: PAGES.newPlan,
 });
 
 export const router = createRouter({

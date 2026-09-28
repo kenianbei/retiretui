@@ -53,9 +53,9 @@ impl View {
 
     const fn title(self) -> &'static str {
         match self {
-            Self::Balances => "Balances by tax treatment",
-            Self::NetWorth => "Net worth",
-            Self::IncomeTaxes => "Income against taxes",
+            Self::Balances => present::BALANCES_CHART,
+            Self::NetWorth => present::NET_WORTH_CHART,
+            Self::IncomeTaxes => present::INCOME_CHART,
         }
     }
 }

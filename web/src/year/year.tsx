@@ -5,8 +5,8 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { isHeld } from "@/lib/keys";
 import { cn } from "@/lib/utils";
-import { BASIS_LABEL } from "@/overview/words";
-import { basisOf, type YearSearch } from "@/year/search";
+import { BASIS_LABEL } from "@/overview/view-words";
+import { basisIn, basisOf, type YearSearch } from "@/year/search";
 import type { ShownYear } from "@/year/use-year";
 
 /** ← and → step the year wherever nothing else holds the key. */
@@ -97,7 +97,7 @@ export function BasisSwitch() {
           to="."
           search={(prev) => ({
             ...prev,
-            basis: each === "nominal" ? each : undefined,
+            basis: basisIn(each),
           })}
           replace
           aria-current={each === basis ? "true" : undefined}

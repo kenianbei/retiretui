@@ -61,6 +61,13 @@ impl Scenario {
         &self.base
     }
 
+    /// Makes the overlay name `base` as the document it overlays.
+    pub fn set_base(&mut self, base: &str) {
+        base.clone_into(&mut self.base);
+        self.document
+            .insert(BASE_KEY.to_owned(), Value::String(base.to_owned()));
+    }
+
     /// Serializes the overlay document to canonical TOML. The app owns the
     /// format: comments and layout of the source file are not preserved.
     ///

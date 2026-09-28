@@ -113,6 +113,34 @@ function useReleased(lanes: readonly string[]) {
   );
 }
 
+/** `path` once `from` is renamed `to`, or deleted where `to` is `null`. */
+function movedPath(path: string | undefined, from: string, to: string | null) {
+  return path === from ? (to ?? undefined) : path;
+}
+
+/**
+ * Follows a compared file renamed or deleted: under its new name, or gone,
+ * in the compared files, the baseline and the highlight.
+ */
+export function useComparedFollowMove() {
+  const navigate = useNavigate();
+  const { with: compared }: WithSearch = useSearch({ strict: false });
+  return (from: string, to: string | null) => {
+    if (!compared?.includes(from)) return;
+    const moved = (path: string) => movedPath(path, from, to) ?? [];
+    void navigate({
+      to: ".",
+      search: (prev) => ({
+        ...prev,
+        with: withIn(compared.flatMap(moved)),
+        baseline: movedPath(prev.baseline, from, to),
+        plan: movedPath(prev.plan, from, to),
+      }),
+      replace: true,
+    });
+  };
+}
+
 /**
  * Keeps the compared files in step with the document: a compared file
  * opened in its place leaves them, the document it replaces joining them

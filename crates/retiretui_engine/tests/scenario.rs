@@ -240,3 +240,13 @@ fn overlay_round_trips_canonically() {
     let reparsed = Scenario::from_toml_str(&text).unwrap().unwrap();
     assert_eq!(parsed, reparsed);
 }
+
+#[test]
+fn a_rebased_scenario_names_its_new_base_and_keeps_its_deltas() {
+    let mut rebased = scenario("[plan]\ninflation = 0.03\n");
+    rebased.set_base("renamed.toml");
+    let text = rebased.to_toml_string().unwrap();
+    let read = Scenario::from_toml_str(&text).unwrap().expect("a scenario");
+    assert_eq!(read.base(), "renamed.toml");
+    assert!(text.contains("inflation = 0.03"));
+}
