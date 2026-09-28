@@ -193,7 +193,7 @@ fn steps_of(years: Vec<LadderYear>) -> Vec<LadderStep> {
 
 impl Document {
     /// The constraints the draft holds, the plan's one Roth account named
-    /// where they name none: the one place that rule is applied.
+    /// where they name none.
     fn aimed(&self) -> toml::Table {
         let mut answers = self.draft().answers::<Constraints>();
         if let Some(only) = only_roth(self.draft()) {
