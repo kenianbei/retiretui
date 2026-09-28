@@ -16,6 +16,18 @@ pub fn record(plan: &mut Plan, person: &str, xml: &str) -> Result<Statement, Str
     Ok(statement)
 }
 
+/// What recording `statement` on the person called `name` did: the years
+/// recorded, and the statement's note on any it spread.
+#[must_use]
+pub fn recorded(name: &str, statement: &Statement) -> String {
+    let years = statement.earnings.len();
+    let said = format!("recorded {years} year(s) of earnings for {name}");
+    match statement.spread_note() {
+        Some(note) => format!("{said}; {note}"),
+        None => said,
+    }
+}
+
 /// The plan `text` holds with a statement's earnings recorded on `person`,
 /// and the statement's note on any years it spread. A scenario is refused:
 /// a resolved plan cannot be written back into an overlay, so the record
@@ -39,4 +51,28 @@ pub fn adopt_statement(
     let mut plan = Plan::from_toml_str(text).map_err(|error| error.to_string())?;
     let statement = record(&mut plan, person, xml)?;
     Ok((plan, statement.spread_note()))
+}
+
+#[cfg(test)]
+mod tests {
+    use retiretui_engine::plan::PlanDate;
+
+    use super::*;
+
+    #[test]
+    fn what_was_recorded_names_the_years_and_any_spread() {
+        let mut statement = Statement {
+            birth: PlanDate(jiff::civil::date(1975, 6, 14)),
+            earnings: [(2023, 1), (2024, 2)].into(),
+            grouped: Vec::new(),
+        };
+        assert_eq!(
+            recorded("Jordan", &statement),
+            "recorded 2 year(s) of earnings for Jordan"
+        );
+        statement.grouped.push((2023, 2024));
+        assert!(recorded("Jordan", &statement).ends_with(
+            "; earnings stated as one sum for 2023-2024 were spread evenly over those years"
+        ));
+    }
 }

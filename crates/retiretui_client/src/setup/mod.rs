@@ -5,8 +5,10 @@ pub mod examples;
 pub mod generate;
 #[cfg(test)]
 mod generate_tests;
+pub mod steps;
 
 pub use examples::EXAMPLES;
+pub use steps::{STEPS, Step};
 
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::{Dollars, FilingStatus, Plan};
@@ -128,6 +130,14 @@ fn is_answered(answers: &Table) -> bool {
     !answers.contains_key("example")
 }
 
+/// Whether the answers describe a household filing jointly, which is when
+/// there is a partner to ask about.
+fn is_joint(answers: &Table) -> bool {
+    is_answered(answers)
+        && answers.get("filing").and_then(toml::Value::as_str)
+            == Some(FilingStatus::MarriedJoint.as_str())
+}
+
 /// The new-plan form's fields.
 pub const FIELDS: &[FieldSpec] = &[
     FieldSpec::choice("example", "Start from", Vocabulary::Example)
@@ -162,25 +172,25 @@ pub const FIELDS: &[FieldSpec] = &[
         .shown_when(is_answered),
     FieldSpec::text("partner_name", "Partner's name")
         .help("Your partner's first name.")
-        .shown_when(is_answered),
+        .shown_when(is_joint),
     FieldSpec::whole("partner_birth_year", "Partner's birth year")
         .help("The year your partner was born.")
-        .shown_when(is_answered),
+        .shown_when(is_joint),
     FieldSpec::whole("partner_retirement_age", "Partner's retirement age")
         .help("The age your partner stops working, or stopped. Blank means the same age as you.")
-        .shown_when(is_answered),
+        .shown_when(is_joint),
     FieldSpec::whole("partner_working_since", "Partner's working since")
         .help("The year your partner started working. Blank means the year they turned 22.")
-        .shown_when(is_answered),
+        .shown_when(is_joint),
     FieldSpec::money("partner_salary", "Partner's salary")
         .help("What your partner earns per year before tax, or last earned, in today's dollars.")
-        .shown_when(is_answered),
+        .shown_when(is_joint),
     FieldSpec::money("partner_social_security", "Partner's Social Security")
         .help("Your partner's yearly benefit at the age they claim. Blank computes it from their salary.")
-        .shown_when(is_answered),
+        .shown_when(is_joint),
     FieldSpec::whole("partner_claim_age", "Partner's claim age")
         .help("The age your partner starts Social Security. Blank means 67.")
-        .shown_when(is_answered),
+        .shown_when(is_joint),
 ];
 
 impl ToolAnswers for SetupAnswers {
