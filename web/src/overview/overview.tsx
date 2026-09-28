@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { IssueLink } from "@/draft/issue-link";
+import { Charts } from "@/overview/charts";
 import { BASIS_LABEL, dollars, share, type Basis } from "@/overview/words";
 import { useMonteCarlo } from "@/searches";
 import { useSession } from "@/session";
@@ -99,15 +100,11 @@ function Success({ plan }: { plan: string }) {
   );
 }
 
-function Figures({ basis, isValid }: { basis: Basis; isValid: boolean }) {
+function Figures({ basis, plan }: { basis: Basis; plan: string | null }) {
   const { reading } = useSession();
   const summary = useMemo(
     () => reading.document?.summary(basis === "today"),
     [reading, basis],
-  );
-  const plan = useMemo(
-    () => (isValid ? (reading.document?.planText() ?? null) : null),
-    [reading, isValid],
   );
   if (!summary) return null;
   const unit = BASIS_LABEL[basis];
@@ -199,10 +196,38 @@ function ThisYear() {
   );
 }
 
-/** Whether the money lasts and how surely, and what to do this year. */
+/** The plan charted year by year, a click choosing the year shown. */
+function PlanCharts({ basis, plan }: { basis: Basis; plan: string | null }) {
+  const { reading } = useSession();
+  const { year, setYear } = useYear();
+  const series = useMemo(() => {
+    try {
+      return reading.document?.chart(basis === "nominal");
+    } catch {
+      return undefined;
+    }
+  }, [reading, basis]);
+  if (!series) return null;
+  return (
+    <Charts
+      series={series}
+      basis={basis}
+      plan={plan}
+      year={year}
+      onYear={setYear}
+    />
+  );
+}
+
+/** Whether the money lasts and how surely, the plan charted, and what to do in a year. */
 export function Overview() {
-  const { document, issues } = useSession();
+  const { reading, document, issues } = useSession();
   const basis = basisOf(useSearch({ from: "/overview" }));
+  const isValid = issues.length === 0;
+  const plan = useMemo(
+    () => (isValid ? (reading.document?.planText() ?? null) : null),
+    [reading, isValid],
+  );
   if (!document) return null;
 
   return (
@@ -212,7 +237,8 @@ export function Overview() {
         <BasisSwitch />
       </div>
       {issues.length > 0 && <Problems issues={issues} />}
-      <Figures basis={basis} isValid={issues.length === 0} />
+      <Figures basis={basis} plan={plan} />
+      <PlanCharts basis={basis} plan={plan} />
       <ThisYear />
     </div>
   );
