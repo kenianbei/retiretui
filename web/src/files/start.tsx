@@ -1,8 +1,10 @@
-import { FileText, Upload } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { FilePen, FileText, Upload } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useFileActions } from "@/files/actions";
+import { NEW_PLAN_START } from "@/onboarding/steps";
 import { useSession } from "@/session";
 import { nameOf } from "@/workspace";
 
@@ -27,6 +29,19 @@ export function Start() {
           Plans are kept in this browser, and never leave it unless you download
           them.
         </p>
+      </div>
+
+      <div className="space-y-3">
+        <h2 className="font-semibold">Make your own</h2>
+        <p className="text-muted-foreground text-sm">
+          A few questions about your household make a first plan to fill in.
+        </p>
+        <Button asChild>
+          <Link to="/new/$step" params={{ step: NEW_PLAN_START }}>
+            <FilePen aria-hidden />
+            Answer a few questions
+          </Link>
+        </Button>
       </div>
 
       {session.files.length > 0 && (

@@ -8,6 +8,7 @@ mod editor;
 mod edits;
 mod ledger;
 mod searches;
+mod setup;
 mod view;
 mod vocabulary;
 
@@ -49,7 +50,8 @@ fn reply<T: Serialize>(answer: Result<T, String>) -> Result<JsValue, JsError> {
 const TYPES: &str = r#"import type {
   ActionsReply, ChartSeries, ClaimsReply, Domain, DomainTable, Example,
   FieldView, HistoricalReply, Issue, Ledger, MonteCarloReply, PlacedIssue,
-  Projection, SaidYear, Sort, Summary, SweepReply, YearDetail,
+  NewPlanMade, Projection, SaidYear, Sort, Step, Summary, SweepReply,
+  YearDetail,
 } from "../bindings/index";
 export type * from "../bindings/index";"#;
 
@@ -275,8 +277,10 @@ mod bindings {
     use crate::domain::DomainTable;
     use crate::ledger::{ChartSeries, Ledger, YearDetail};
     use crate::searches::Example;
+    use crate::setup::NewPlanMade;
     use crate::view::FieldView;
     use crate::vocabulary::Domain;
+    use retiretui_client::setup::Step;
 
     const BINDINGS: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/bindings");
 
@@ -305,6 +309,8 @@ mod bindings {
             Ledger::export_all,
             YearDetail::export_all,
             ChartSeries::export_all,
+            Step::export_all,
+            NewPlanMade::export_all,
         ];
         for export in exports {
             export(&config).expect("exports");

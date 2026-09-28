@@ -1,5 +1,7 @@
+import { Link } from "@tanstack/react-router";
 import {
   Download,
+  FilePen,
   FilePlus2,
   FolderOpen,
   Menu,
@@ -20,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useFileActions } from "@/files/actions";
+import { NEW_PLAN_START } from "@/onboarding/steps";
 import { useSession } from "@/session";
 import { nameOf } from "@/workspace";
 
@@ -46,6 +49,12 @@ export function FileMenu() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuItem asChild>
+            <Link to="/new/$step" params={{ step: NEW_PLAN_START }}>
+              <FilePen aria-hidden />
+              New plan…
+            </Link>
+          </DropdownMenuItem>
           <DropdownMenuSub>
             <DropdownMenuSubTrigger disabled={session.files.length === 0}>
               <FolderOpen aria-hidden />

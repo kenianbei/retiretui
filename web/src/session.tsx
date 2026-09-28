@@ -44,10 +44,22 @@ export interface Session extends Opened {
   /** What the gate finds wrong with the draft. */
   issues: PlacedIssue[];
   open: (path: string) => void;
-  /** Writes `text` as the file `name`, replacing any such file, and opens it. */
-  place: (name: string, text: string) => void;
+  /**
+   * Writes `text` as the file `name`, replacing any such file, and opens it,
+   * then runs `onPlaced`; neither where the draft's edits are kept instead.
+   */
+  place: (name: string, text: string, onPlaced?: () => void) => void;
   /** Stores the editor's item, answering where it now sits; throws the refusal. */
   apply: (editor: Editor) => number | undefined;
+  /**
+   * Records a statement's earnings on the person at `index`, still called
+   * `name`, answering what was recorded; throws the refusal.
+   */
+  importEarnings: (
+    index: number,
+    name: string,
+    xml: string,
+  ) => string | undefined;
   /** Removes an item still called `name`; a refusal is reported. */
   remove: (slug: string, index: number, name: string) => void;
   undo: () => void;
@@ -125,12 +137,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   );
 
   const place = useCallback(
-    (name: string, text: string) => {
+    (name: string, text: string, onPlaced?: () => void) => {
       guarded(() => {
         const path = pathOf(name);
         workspace.write(path, text);
         setFiles(workspace.list());
         openNow(path);
+        onPlaced?.();
       });
     },
     [workspace, guarded, openNow],
@@ -202,6 +215,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         const index = document.apply(editor);
         changed();
         return index;
+      },
+      importEarnings: (index: number, name: string, xml: string) => {
+        if (!document) return undefined;
+        const said = document.importEarnings(index, name, xml);
+        changed();
+        return said;
       },
       remove: attempt(
         stepped((slug: string, index: number, name: string) => {

@@ -2,10 +2,11 @@
 //! applied, removed, stepped back and forward over, and saved.
 
 use js_sys::Function;
+use retiretui_client::forms::DomainId;
 use wasm_bindgen::prelude::{JsError, JsValue, wasm_bindgen};
 
 use crate::editor::Editor;
-use crate::vocabulary::form_at;
+use crate::vocabulary::{form_at, slug_of};
 use crate::{JsDocument, refused, thrown_message, to_js};
 
 /// One item open in its form.
@@ -88,6 +89,13 @@ impl JsEditor {
     }
 }
 
+/// The address of the page whose people a statement is recorded on.
+#[wasm_bindgen(js_name = statementPage)]
+#[must_use]
+pub fn statement_page() -> String {
+    slug_of(DomainId::People)
+}
+
 fn writer(write: &Function) -> impl FnMut(&str) -> Result<(), String> + '_ {
     |text| {
         let text = JsValue::from_str(text);
@@ -133,6 +141,24 @@ impl JsDocument {
     /// Why nothing was stored, in the form's words.
     pub fn apply(&mut self, editor: &mut JsEditor) -> Result<Option<usize>, JsError> {
         self.0.apply(&mut editor.0).map_err(refused)
+    }
+
+    /// Records the statement `xml` on the person at `index` of the People
+    /// page, where they are still the one called `name`, as one step of
+    /// history, answering what it recorded.
+    ///
+    /// # Errors
+    ///
+    /// Where the draft is read-only, the person there is no longer them,
+    /// the statement does not parse, or its birth date is not theirs.
+    #[wasm_bindgen(js_name = importEarnings)]
+    pub fn import_earnings(
+        &mut self,
+        index: usize,
+        name: &str,
+        xml: &str,
+    ) -> Result<String, JsError> {
+        self.0.import_earnings(index, name, xml).map_err(refused)
     }
 
     /// Removes item `index` of the domain at `slug`, where it is still the

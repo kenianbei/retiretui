@@ -1,14 +1,18 @@
 // Checks the JavaScript edge of a `wasm-pack build --target nodejs` in pkg/.
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import wasm from "./pkg/retiretui_wasm.js";
 
 const {
   Document,
+  NewPlan,
   bandPercentiles,
   compactMoney,
   examples,
   historical,
   percentileLabel,
+  setupSteps,
+  statementPage,
   sortPressed,
   validate,
 } = wasm;
@@ -72,4 +76,31 @@ assert.deepEqual(validate(plan), []);
 assert.ok(historical(plan).start_years.length > 0);
 
 assert.throws(() => Document.open("/plans/gone.toml", read), /no file at/);
+
+const steps = setupSteps();
+assert.deepEqual(
+  steps.map((step) => step.slug),
+  ["household", "you", "partner"],
+);
+const answering = new NewPlan(null, first.year);
+answering.set("filing", undefined, "single");
+answering.set("name", undefined, "Jordan");
+const shown = answering.view().map((field) => field.key);
+assert.ok(shown.includes("name") && !shown.includes("partner_name"));
+const resumed = new NewPlan(answering.answers, first.year);
+assert.equal(resumed.answers, answering.answers);
+const made = resumed.create();
+assert.equal(made.name, "Jordan");
+assert.deepEqual(validate(made.text), []);
+
+const statement = readFileSync(
+  new URL("../retiretui_engine/tests/fixtures/statement.xml", import.meta.url),
+  "utf8",
+);
+assert.throws(() => document.importEarnings(0, "Sam", statement), /was born/);
+files.set("/plans/born.toml", made.text.replace(/birth = \S+/, "birth = 1975-06-14"));
+const born = Document.open("/plans/born.toml", read);
+assert.match(born.importEarnings(0, "Jordan", statement), /recorded 3 year\(s\)/);
+assert.equal(born.canUndo, true);
+assert.equal(statementPage(), "people");
 console.log("smoke: ok");

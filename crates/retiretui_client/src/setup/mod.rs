@@ -5,8 +5,10 @@ pub mod examples;
 pub mod generate;
 #[cfg(test)]
 mod generate_tests;
+pub mod steps;
 
 pub use examples::EXAMPLES;
+pub use steps::{STEPS, Step};
 
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::{Dollars, FilingStatus, Plan};
@@ -128,6 +130,14 @@ fn is_answered(answers: &Table) -> bool {
     !answers.contains_key("example")
 }
 
+/// Whether the answers describe a household filing jointly, which is when
+/// there is a partner to ask about.
+fn is_joint(answers: &Table) -> bool {
+    is_answered(answers)
+        && answers.get("filing").and_then(toml::Value::as_str)
+            == Some(FilingStatus::MarriedJoint.as_str())
+}
+
 /// The new-plan form's fields.
 pub const FIELDS: &[FieldSpec] = &[
     FieldSpec::choice("example", "Start from", Vocabulary::Example)
@@ -147,44 +157,63 @@ pub const FIELDS: &[FieldSpec] = &[
         .shown_when(is_answered),
     FieldSpec::whole("retirement_age", "Retirement age")
         .help("The age you stop working, or stopped. Your salary ends that year.")
+        .blank("65")
         .shown_when(is_answered),
     FieldSpec::whole("working_since", "Working since")
         .help("The year you started working. Blank means the year you turned 22.")
+        .blank("The year you turned 22")
         .shown_when(is_answered),
     FieldSpec::money("salary", "Salary")
         .help("What you earn per year before tax, or last earned, in today's dollars.")
         .shown_when(is_answered),
     FieldSpec::money("social_security", "Social Security")
         .help("Your yearly benefit at the age you claim, from your SSA statement. Blank computes it from your salary.")
+        .blank("Computed from your salary")
         .shown_when(is_answered),
     FieldSpec::whole("claim_age", "Claim age")
         .help("The age you start Social Security, from 62 to 70. Blank means 67.")
+        .blank("67")
         .shown_when(is_answered),
     FieldSpec::text("partner_name", "Partner's name")
         .help("Your partner's first name.")
-        .shown_when(is_answered),
+        .shown_when(is_joint),
     FieldSpec::whole("partner_birth_year", "Partner's birth year")
         .help("The year your partner was born.")
-        .shown_when(is_answered),
+        .shown_when(is_joint),
     FieldSpec::whole("partner_retirement_age", "Partner's retirement age")
         .help("The age your partner stops working, or stopped. Blank means the same age as you.")
-        .shown_when(is_answered),
+        .blank("The same as yours")
+        .shown_when(is_joint),
     FieldSpec::whole("partner_working_since", "Partner's working since")
         .help("The year your partner started working. Blank means the year they turned 22.")
-        .shown_when(is_answered),
+        .blank("The year they turned 22")
+        .shown_when(is_joint),
     FieldSpec::money("partner_salary", "Partner's salary")
         .help("What your partner earns per year before tax, or last earned, in today's dollars.")
-        .shown_when(is_answered),
+        .shown_when(is_joint),
     FieldSpec::money("partner_social_security", "Partner's Social Security")
         .help("Your partner's yearly benefit at the age they claim. Blank computes it from their salary.")
-        .shown_when(is_answered),
+        .blank("Computed from their salary")
+        .shown_when(is_joint),
     FieldSpec::whole("partner_claim_age", "Partner's claim age")
         .help("The age your partner starts Social Security. Blank means 67.")
-        .shown_when(is_answered),
+        .blank("67")
+        .shown_when(is_joint),
 ];
 
 impl ToolAnswers for SetupAnswers {
     const SLOT: &'static str = "new-plan";
+}
+
+/// The answers a form starts from: the filing status and life stage that
+/// blank ones make a plan with, stated so that they read as what they are.
+#[must_use]
+pub fn starting_answers() -> Table {
+    let blank = SetupAnswers::default();
+    let mut answers = Table::new();
+    answers.insert("filing".to_owned(), blank.filing().as_str().into());
+    answers.insert("stage".to_owned(), blank.stage().as_str().into());
+    answers
 }
 
 /// The plan the new-plan form's `answers` make, starting `start_year`: the
@@ -221,7 +250,7 @@ pub(crate) const INFLATION: f64 = 0.025;
 /// The smallest plan that validates: one person and the cash account
 /// surplus lands in, starting `start_year`.
 #[must_use]
-pub(crate) fn blank_plan(start_year: i16) -> String {
+pub fn blank_plan(start_year: i16) -> String {
     format!(
         r#"schema = 1
 

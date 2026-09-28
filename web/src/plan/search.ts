@@ -34,6 +34,20 @@ export function fieldId(view: Pick<FieldView, "key" | "place">): string {
   return `field-${view.key}${view.place === null ? "" : `-${String(view.place)}`}`;
 }
 
+/**
+ * Scrolls to and focuses `key`'s control within `root`, a list's first row
+ * where it is one, answering whether there was one.
+ */
+export function landOnField(root: ParentNode, key: string): boolean {
+  const shown = root.querySelector<HTMLElement>(
+    `[id^="${fieldId({ key, place: null })}"]`,
+  );
+  if (!shown) return false;
+  shown.scrollIntoView({ block: "center" });
+  shown.focus();
+  return true;
+}
+
 /** Where an issue's link lands: its item's form, scrolled to its field. */
 export function placeSearch(place: Place): {
   page: string;

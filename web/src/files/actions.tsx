@@ -1,14 +1,6 @@
 import type { Example } from "@wasm/retiretui_wasm.js";
 import { examples } from "@wasm/retiretui_wasm.js";
-import {
-  createContext,
-  use,
-  useMemo,
-  useRef,
-  useState,
-  type ChangeEvent,
-  type ReactNode,
-} from "react";
+import { createContext, use, useMemo, useState, type ReactNode } from "react";
 
 import {
   AlertDialog,
@@ -22,6 +14,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { INPUT } from "@/lib/utils";
+import { useFilePicker } from "@/files/picker";
 import { useSession } from "@/session";
 import { nameOf, pathOf, planName } from "@/workspace";
 
@@ -34,7 +27,8 @@ interface Replacing {
 /** What can be done with files, wherever a page offers it. */
 interface FileActions {
   examples: Example[];
-  add: (name: string, text: string) => void;
+  /** Writes and opens a plan, asking first where it replaces one; then `onPlaced`. */
+  add: (name: string, text: string, onPlaced?: () => void) => void;
   upload: () => void;
   download: () => void;
   /** Asks for a name, then writes the draft as a plan of that name. */
@@ -51,7 +45,6 @@ export function FileActionsProvider({ children }: { children: ReactNode }) {
   const session = useSession();
   const [replacing, setReplacing] = useState<Replacing | null>(null);
   const [naming, setNaming] = useState<string | null>(null);
-  const picker = useRef<HTMLInputElement>(null);
 
   /** Runs `replace`, asking first where it writes over a file of `name`. */
   const writing = (name: string, replace: () => void) => {
@@ -59,9 +52,9 @@ export function FileActionsProvider({ children }: { children: ReactNode }) {
     else replace();
   };
 
-  const add = (name: string, text: string) => {
+  const add = (name: string, text: string, onPlaced?: () => void) => {
     writing(name, () => {
-      session.place(name, text);
+      session.place(name, text, onPlaced);
     });
   };
 
@@ -71,11 +64,9 @@ export function FileActionsProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const readPicked = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (file) add(file.name, await file.text());
-  };
+  const picker = useFilePicker(".toml", "Plan to upload", async (file) => {
+    add(file.name, await file.text());
+  });
 
   const download = () => {
     if (session.path === null) return;
@@ -92,7 +83,7 @@ export function FileActionsProvider({ children }: { children: ReactNode }) {
   const actions = {
     examples: plans,
     add,
-    upload: () => picker.current?.click(),
+    upload: picker.open,
     download,
     saveAs: () => {
       setNaming(session.path === null ? "" : nameOf(session.path));
@@ -102,13 +93,7 @@ export function FileActionsProvider({ children }: { children: ReactNode }) {
   return (
     <FileActionsContext value={actions}>
       {children}
-      <input
-        ref={picker}
-        type="file"
-        accept=".toml"
-        hidden
-        onChange={(event) => void readPicked(event)}
-      />
+      {picker.element}
       <AlertDialog
         open={replacing !== null}
         onOpenChange={(isOpen) => {

@@ -157,12 +157,7 @@ pub fn record_statement(
         Ok(statement) => {
             editor.commit();
             let name = editor.draft.plan.person_name(&person);
-            let years = statement.earnings.len();
-            let mut said = format!("recorded {years} year(s) of earnings for {name}");
-            if let Some(note) = statement.spread_note() {
-                said = format!("{said}; {note}");
-            }
-            journal::say(said);
+            journal::say(retiretui_client::statement::recorded(name, &statement));
         }
         Err(reason) => journal::warn(format!("not recorded: {reason}")),
     }

@@ -16,7 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { messageOf } from "@/lib/utils";
 import { Field } from "@/plan/fields";
-import { fieldId, type PlanSearch } from "@/plan/search";
+import { fieldId, landOnField, type PlanSearch } from "@/plan/search";
 import { useSession } from "@/session";
 
 interface ItemFormProps {
@@ -104,14 +104,8 @@ export function ItemForm({ slug, edit, field }: ItemFormProps) {
         <Dialog.Content
           aria-describedby={undefined}
           onOpenAutoFocus={(event) => {
-            if (field === undefined) return;
-            const shown = body.current?.querySelector<HTMLElement>(
-              `[id^="${fieldId({ key: field, place: null })}"]`,
-            );
-            if (!shown) return;
-            event.preventDefault();
-            shown.scrollIntoView({ block: "center" });
-            shown.focus();
+            if (field === undefined || !body.current) return;
+            if (landOnField(body.current, field)) event.preventDefault();
           }}
           className="bg-background fixed inset-0 z-50 flex flex-col md:inset-y-0 md:right-0 md:left-auto md:w-[36rem] md:border-l md:shadow-xl"
         >
