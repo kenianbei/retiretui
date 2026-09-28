@@ -132,10 +132,12 @@ depends on UI.
   plan fared and in which zone, what the runs were made under and where each is
   edited, how they end, and the market a run went through as an address keeps it
   and as it is named - and what can be done for a person beside the claim
-  search, each edit said and refused in its own words; and the shapes a search
-  or a year's actions are replied in as data. Where there is a machine beneath
-  it, what that machine supplies: the user's own tax tables, market history and
-  directories.
+  search, each edit said and refused in its own words; what plans compared side
+  by side are said in - each one's figures, or its differences from a
+  baseline's, a metric year by year, and what one changes of another; and the
+  shapes a search or a year's actions are replied in as data. Where there is a
+  machine beneath it, what that machine supplies: the user's own tax tables,
+  market history and directories.
 - `retiretui_tui` - the interactive planner described under `tui` below, as a
   library over the client and above whatever backend draws it, mapping each
   editing domain to its page. It runs each search beside the frames: on a thread
@@ -345,18 +347,20 @@ depends on UI.
   plan's years, the Ledger's years, a year's flows, income and what it paid -
   these last in the plan's own market or one a run went through, replayed once
   and kept until the draft changes - the series the Overview charts, and a
-  year's actions both as data and said as every surface says them - with the
-  client's names for the editing domains and its count of issues, and, over a
-  plan's text alone so that a worker can run them, the gate, the conversion
-  search into a given account and the claim search with the people held out of
-  it, the market runs through random markets or from every historical start, and
-  the example plans - each search in the words the tools table it in: the
-  conversion and claim searches' every option in both dollar bases, with what
-  the best does better than the plan, and the market runs' verdict in its zone,
-  each run singled out with its net worth year by year and the market it went
-  through, their spread, and what they were made under with where each is
-  edited. Values cross as plain objects, typed by TypeScript generated from the
-  Rust types; the build fails where the two have drifted.
+  year's actions both as data and said as every surface says them, and, against
+  another such document, what the Compare page says of it: its figures or their
+  differences from the other's, a metric year by year, and what it changes of
+  the other - with the client's names for the editing domains and its count of
+  issues, and, over a plan's text alone so that a worker can run them, the gate,
+  the conversion search into a given account and the claim search with the
+  people held out of it, the market runs through random markets or from every
+  historical start, and the example plans - each search in the words the tools
+  table it in: the conversion and claim searches' every option in both dollar
+  bases, with what the best does better than the plan, and the market runs'
+  verdict in its zone, each run singled out with its net worth year by year and
+  the market it went through, their spread, and what they were made under with
+  where each is edited. Values cross as plain objects, typed by TypeScript
+  generated from the Rust types; the build fails where the two have drifted.
 - `web/` - outside the cargo workspace, the web app, published at the Pages
   site's root with each release: a React page over `retiretui_wasm` for a phone
   or a desktop. Its plan files are kept in the page's own storage, under keys
@@ -366,51 +370,60 @@ depends on UI.
   plan is named and made, which opens it on the Overview - from an example plan,
   an upload, or the file last open, and downloaded back out. The terminal's five
   tabs are a bar along a phone's bottom edge and a sidebar on a wider screen,
-  their addresses in the page's hash. The Overview and the Ledger share a year
-  and a basis, and with the tools the people whose claims are held, all in that
-  address and kept by the links between them - each route naming what of the
-  address a tab's link carries to it, the tools all but the year: the Overview
-  says what each Roth owner's best ladder and the household's best claims do
-  better than the plan, each leading to its tool, and charts the plan's balances
-  by treatment, its net worth, its income against its taxes, and its net worth
-  through random markets as percentile bands in today's dollars, a click
-  choosing the year its actions are for; the Ledger is every year in a table
-  whose year column stays in view, over the chosen year's flows through each
-  account and its income and tax, the arrow keys stepping the year on both. The
-  Plan tab's pages are the plan's editing domains: a table - rows of a name and
-  one figure on a phone - beside the highlighted item read out, or a domain's
-  one item read out alone, and one item at a time edited in a form over the
-  page, a sheet or a phone's whole screen, whose address names the item and the
-  field an issue's link lands on. A Social Security statement downloaded from
-  ssa.gov is recorded on a person from the People page. The Tools tab's Roth
-  Conversions page reads out the constraints its ladders are searched under,
-  edited in the same sheet as an item, over every fillable bracket's ladder
-  ranked under the plan as it stands, the highlighted one - kept in the
-  address - year by year, taken into the draft after asking or written as a
-  scenario beside the saved plan; it searches again whenever the plan or the
-  constraints change. Its SSA Benefits page is each person's record, income and
-  estimated benefit, with what can be done for the highlighted one, over every
-  claim age for the household ranked the same way and taken or written the same
-  way, a held claim left as the plan states it; what the Overview found is what
-  each tool shows, a search answered once for both. Its Monte Carlo and
-  Historical pages say how the plan fared through random markets or from every
-  historical start, in the colour of its zone, beside what the runs were made
-  under - each a link to the field it is edited at - over the runs singled out,
-  the highlighted one kept in the address, and four views of their spread; the
-  highlighted run opens in the Ledger, which shows the plan replayed through its
-  market, named by it and kept in the address through the year, the basis and
-  edits, until a link returns it to the plan's own. What is applied is a step of
-  the draft's history, undone and redone from the header, which saves it or
-  saves it under another name; edits not yet applied or saved are asked about
-  before they are dropped, and a file another tab changes under unsaved edits is
-  reported rather than reopened. What it says of a plan - a year's actions,
-  where an issue is, the domains' names, a form's fields - is the client's words
-  through the bindings, never its own. Each kind of search runs in a Web Worker
-  kept loaded for it between searches - a ladder search one for each account it
-  fills, so that owners' ladders run side by side; stopping one, or a newer
-  search in its worker, terminates that worker and loads another. Its colours
-  are the terminal theme's roles, light or dark as the system is, each held to a
-  readable contrast by a test. A page not yet built says so.
+  their addresses in the page's hash. The Overview, the Ledger and Compare share
+  a year and a basis, and with the tools the people whose claims are held, all
+  in that address and kept by the links between them - each route naming what of
+  the address a tab's link carries to it, the tools all but the year, and every
+  link carrying the plans compared: the Overview says what each Roth owner's
+  best ladder and the household's best claims do better than the plan, each
+  leading to its tool, and charts the plan's balances by treatment, its net
+  worth, its income against its taxes, and its net worth through random markets
+  as percentile bands in today's dollars, a click choosing the year its actions
+  are for; the Ledger is every year in a table whose year column stays in view,
+  over the chosen year's flows through each account and its income and tax, the
+  arrow keys stepping the year on both. The Plan tab's pages are the plan's
+  editing domains: a table - rows of a name and one figure on a phone - beside
+  the highlighted item read out, or a domain's one item read out alone, and one
+  item at a time edited in a form over the page, a sheet or a phone's whole
+  screen, whose address names the item and the field an issue's link lands on. A
+  Social Security statement downloaded from ssa.gov is recorded on a person from
+  the People page. The Tools tab's Roth Conversions page reads out the
+  constraints its ladders are searched under, edited in the same sheet as an
+  item, over every fillable bracket's ladder ranked under the plan as it stands,
+  the highlighted one - kept in the address - year by year, taken into the draft
+  after asking or written as a scenario beside the saved plan and compared with
+  it at once; it searches again whenever the plan or the constraints change. Its
+  SSA Benefits page is each person's record, income and estimated benefit, with
+  what can be done for the highlighted one, over every claim age for the
+  household ranked the same way and taken or written the same way, a held claim
+  left as the plan states it; what the Overview found is what each tool shows, a
+  search answered once for both. Its Monte Carlo and Historical pages say how
+  the plan fared through random markets or from every historical start, in the
+  colour of its zone, beside what the runs were made under - each a link to the
+  field it is edited at - over the runs singled out, the highlighted one kept in
+  the address, and four views of their spread; the highlighted run opens in the
+  Ledger, which shows the plan replayed through its market, named by it and kept
+  in the address through the year, the basis and edits, until a link returns it
+  to the plan's own. The Compare tab sets the document beside the workspace
+  files chosen from a menu: each plan's figures and its success through random
+  markets, or their differences from the one chosen as the baseline, what the
+  highlighted plan changes of the baseline, and one metric year by year as a
+  chart or a table; a compared plan opened takes the document's place, the
+  document joining the compared, and any other plan opened leaves nothing
+  compared. The compared files are opened again whenever the workspace is
+  written, here or in another tab. What is applied is a step of the draft's
+  history, undone and redone from the header, which saves it or saves it under
+  another name; edits not yet applied or saved are asked about before they are
+  dropped, and a file another tab changes under unsaved edits is reported rather
+  than reopened. What it says of a plan - a year's actions, where an issue is,
+  the domains' names, a form's fields - is the client's words through the
+  bindings, never its own. Each kind of search runs in a Web Worker kept loaded
+  for it between searches - a ladder search one for each account it fills, so
+  that owners' ladders run side by side, and a compared plan's market runs one
+  for each plan, released once it is no longer compared; stopping one, or a
+  newer search in its worker, terminates that worker and loads another. Its
+  colours are the terminal theme's roles, light or dark as the system is, each
+  held to a readable contrast by a test.
 
 Plans express timing through a closed trigger vocabulary - a fixed date, a
 person's age, or a reference to a named event or income source with a whole year

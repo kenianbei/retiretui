@@ -54,32 +54,39 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   plan's one Roth account as the destination where there is only one. The
   highlighted ladder is taken into the plan after asking, as one step of history
   in place of any ladder taken before, or written as a scenario beside the saved
-  plan and offered to open. The SSA Benefits tool ranks every claim age for the
-  household's computed Social Security benefits under the plan as it stands,
-  beside each person's record, income and benefit estimated at 62, full
-  retirement age and 70, with what can be done for the highlighted person:
-  import a statement, estimate a record from their salary, compute a typed
-  benefit from their record, clear the record or remove the benefit - the last
-  two asked first - each one step of history, or hold their claim as the plan
-  states it while the others are searched. The highlighted claims are taken into
-  the plan after asking or written as a scenario, as a ladder is; the claims
-  highlighted, the person and who is held are kept in the address. The
-  Overview's Could do better card gives each Roth owner's best ladder and the
-  household's best claims against the plan as it stands, each leading to its
-  tool, a ladder's aimed at that owner's account; what it finds is what the
-  tools then show without searching again. The Monte Carlo and Historical tools
-  run the plan through a thousand random markets, or from every historical start
-  year worst first, and say how it fared in the colour of its zone - as the
-  Overview's figure is coloured - beside what the runs were made under, each a
-  link to the Market field it is edited at; the runs singled out are charted as
-  the spread of net worth under the highlighted run's line, net worth by year at
-  each percentile (Monte Carlo only), the share still funded, and what the runs
-  end with. The highlighted run opens in the Ledger, replayed through its market
-  and named by it - a random market's number, or the year retired into - kept in
-  the address through the year, the dollars and edits, with a link back to the
-  plan's own. Compare is named but not yet built. Light or dark follows the
-  system, and navigation is a bottom bar on a phone and a sidebar on a wider
-  screen.
+  plan, compared with it at once and offered to open. The SSA Benefits tool
+  ranks every claim age for the household's computed Social Security benefits
+  under the plan as it stands, beside each person's record, income and benefit
+  estimated at 62, full retirement age and 70, with what can be done for the
+  highlighted person: import a statement, estimate a record from their salary,
+  compute a typed benefit from their record, clear the record or remove the
+  benefit - the last two asked first - each one step of history, or hold their
+  claim as the plan states it while the others are searched. The highlighted
+  claims are taken into the plan after asking or written as a scenario, as a
+  ladder is; the claims highlighted, the person and who is held are kept in the
+  address. The Overview's Could do better card gives each Roth owner's best
+  ladder and the household's best claims against the plan as it stands, each
+  leading to its tool, a ladder's aimed at that owner's account; what it finds
+  is what the tools then show without searching again. The Monte Carlo and
+  Historical tools run the plan through a thousand random markets, or from every
+  historical start year worst first, and say how it fared in the colour of its
+  zone - as the Overview's figure is coloured - beside what the runs were made
+  under, each a link to the Market field it is edited at; the runs singled out
+  are charted as the spread of net worth under the highlighted run's line, net
+  worth by year at each percentile (Monte Carlo only), the share still funded,
+  and what the runs end with. The highlighted run opens in the Ledger, replayed
+  through its market and named by it - a random market's number, or the year
+  retired into - kept in the address through the year, the dollars and edits,
+  with a link back to the plan's own. Compare sets the plan beside the workspace
+  plans chosen for it: each plan's figures and its success through random
+  markets - each plan searched in a worker of its own - or its differences from
+  the one chosen as the baseline, what the highlighted plan changes of the
+  baseline, and one of eight metrics year by year as a chart or a table. The
+  plans compared, the baseline, the metric and the view are kept in the address,
+  the plans compared carried by every link; opening a compared plan puts it in
+  the document's place with the document joining the compared, and opening any
+  other plan leaves nothing compared. Light or dark follows the system, and
+  navigation is a bottom bar on a phone and a sidebar on a wider screen.
 
 ### Changed
 
