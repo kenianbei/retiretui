@@ -194,9 +194,10 @@ fn fill_by_year(commands: &mut Commands, (table, scroll): (Entity, &mut ScrollAr
 
 /// The share of runs not yet short, year by year, as a percent.
 fn still_funded(runs: &Runs, theme: &Theme) -> SeriesChart {
-    let points = markets::still_funded(runs)
-        .into_iter()
-        .map(|(year, percent)| (f64::from(year), percent))
+    let points = runs
+        .bands
+        .iter()
+        .map(|band| (f64::from(band.year), band.funded * PERCENT))
         .collect();
     let series = Series {
         label: "still funded".to_owned(),

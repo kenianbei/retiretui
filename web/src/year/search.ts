@@ -18,6 +18,12 @@ export function wholeOf(value: unknown): number | undefined {
     : undefined;
 }
 
+/** Text the address holds, which reads a number-like value back as a number. */
+export function textOf(value: unknown): string | undefined {
+  if (typeof value === "number") return String(value);
+  return typeof value === "string" ? value : undefined;
+}
+
 /** The Overview's and the Ledger's search params from whatever the address holds. */
 export function yearSearch(search: Record<string, unknown>): YearSearch {
   const year = wholeOf(search.year);
@@ -35,15 +41,12 @@ export interface LedgerSearch extends YearSearch {
   market?: string;
 }
 
-const MARKET_KEY = /^(trial-\d+|\d+)$/;
-
 /** The Ledger's search params from whatever the address holds. */
 export function ledgerSearch(search: Record<string, unknown>): LedgerSearch {
-  const market =
-    typeof search.market === "number" ? String(search.market) : search.market;
+  const market = textOf(search.market);
   return {
     ...yearSearch(search),
-    ...(typeof market === "string" && MARKET_KEY.test(market) && { market }),
+    ...(market !== undefined && { market }),
   };
 }
 

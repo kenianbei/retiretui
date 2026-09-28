@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { columnsFor } from "@/components/columns";
 import { DataTable } from "@/components/data-table";
 import { YearDetailCards } from "@/ledger/year-detail";
+import { messageOf } from "@/lib/utils";
 import { BASIS_LABEL } from "@/overview/words";
 import { useSession } from "@/session";
 import { basisOf, type LedgerSearch } from "@/year/search";
@@ -46,10 +47,14 @@ export function LedgerPage() {
     try {
       return { ledger: reading.document?.ledger(isNominal, market) };
     } catch (thrown) {
-      return { refusal: thrown instanceof Error ? thrown.message : "" };
+      return { refusal: messageOf(thrown) };
     }
   }, [reading, isNominal, market]);
   const ledger = replayed.ledger;
+  const said = useMemo(
+    () => (market === undefined ? "" : reading.document?.marketSaid(market)),
+    [reading, market],
+  );
   const detail = useMemo(
     () =>
       ledger && year !== undefined
@@ -115,8 +120,7 @@ export function LedgerPage() {
       </div>
       {market !== undefined && (
         <p className="border-primary bg-card rounded-md border-l-4 px-3 py-2 text-sm first-letter:uppercase">
-          {reading.document.marketSaid(market)}: the plan as a market tool ran
-          it. <BackToPlan />
+          {said}: the plan as a market tool ran it. <BackToPlan />
         </p>
       )}
       {issues.length > 0 && (

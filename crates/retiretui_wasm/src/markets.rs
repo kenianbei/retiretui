@@ -25,7 +25,7 @@ const PLANNED_KEY: &str = "planned";
 #[derive(Serialize, Debug)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct MarketRuns {
-    /// How the plan fared: "Money lasts in 87% of 1,000".
+    /// How the plan fared: "money lasts in 87% of 1,000".
     pub verdict: String,
     /// The zone its share falls in.
     pub zone: Zone,
@@ -42,8 +42,6 @@ pub struct MarketRuns {
     pub bands: Vec<Band>,
     /// Net worth at each percentile year by year, where the tool shows it.
     pub by_year: Option<Table>,
-    /// The share of runs not yet short, year by year, as a percent.
-    pub still_funded: Vec<(i16, f64)>,
     /// How many runs end in each bucket, the short first.
     pub endings: Vec<Ending>,
     /// What the runs are made under, and where each is edited.
@@ -98,14 +96,6 @@ pub struct MarketWords {
     pub nothing_searched: &'static str,
 }
 
-/// `text` capitalized, as a sentence starts.
-fn capitalized(text: &str) -> String {
-    let mut chars = text.chars();
-    chars.next().map_or_else(String::new, |first| {
-        first.to_uppercase().chain(chars).collect()
-    })
-}
-
 fn row(plan: &Plan, key: String, first: String, run: &market::Run) -> RunRow {
     RunRow {
         key,
@@ -142,7 +132,7 @@ fn runs_of<M: Markets>(plan: &Plan, found: &M) -> MarketRuns {
         })
         .collect();
     MarketRuns {
-        verdict: format!("{} {}", capitalized(M::HEADLINE), found.verdict()),
+        verdict: format!("{} {}", M::HEADLINE, found.verdict()),
         zone: zone_of(runs.success_rate()),
         success_rate: runs.success_rate(),
         count: runs.runs.len(),
@@ -150,7 +140,6 @@ fn runs_of<M: Markets>(plan: &Plan, found: &M) -> MarketRuns {
         runs: std::iter::once(planned).chain(listed).collect(),
         bands: runs.bands.clone(),
         by_year,
-        still_funded: markets::still_funded(runs),
         endings: markets::endings(runs),
         assumptions,
     }
@@ -273,7 +262,7 @@ mod tests {
         let trial = found.runs[1].market.as_deref().expect("a trial");
         assert!(trial.starts_with("trial-"), "{trial}");
         assert!(
-            found.verdict.starts_with("Money lasts in "),
+            found.verdict.starts_with("money lasts in "),
             "{}",
             found.verdict
         );
@@ -289,7 +278,7 @@ mod tests {
     fn historical_lists_its_start_years_worst_first_without_the_by_year_table() {
         let found = historical(starter()).expect("runs");
         assert!(found.by_year.is_none());
-        assert!(found.verdict.starts_with("Survived "), "{}", found.verdict);
+        assert!(found.verdict.starts_with("survived "), "{}", found.verdict);
         let first = &found.runs[1];
         assert_eq!(first.market.as_deref(), Some(first.key.as_str()));
         assert_eq!(found.runs.len(), found.count + 1, "every start year listed");

@@ -9,7 +9,7 @@ use serde::Serialize;
 
 use crate::forms::DomainId;
 use crate::present::{self, compact_dollars};
-use crate::table::{grouped, money, percentile_label, rate};
+use crate::table::{count, money, percentile_label, rate};
 
 /// What a market tool's runs table says before its first search answers.
 pub const NOTHING_SEARCHED: &str = "Runs by itself while this page is shown.";
@@ -21,7 +21,6 @@ const NEVER: &str = "never";
 const GOOD_ZONE: f64 = 0.9;
 /// A share this high or above, and under [`GOOD_ZONE`], reads as close.
 const CAUTION_ZONE: f64 = 0.75;
-const PERCENT: f64 = 100.0;
 /// Where the ending buckets break, in today's dollars: under the first,
 /// between each two, and over the last.
 const ENDING_BREAKS: [Dollars; 4] = [1_000_000, 2_000_000, 4_000_000, 8_000_000];
@@ -127,11 +126,6 @@ pub struct Ending {
     pub count: u64,
     /// Whether it holds the runs that fell short.
     pub is_short: bool,
-}
-
-/// A count as a person reads it: `1,000`.
-fn count(count: usize) -> String {
-    grouped(u64::try_from(count).unwrap_or(u64::MAX))
 }
 
 /// The runs table's columns.
@@ -242,15 +236,6 @@ pub fn by_year(runs: &Runs) -> (Vec<String>, Vec<Vec<String>>) {
         })
         .collect();
     (header, rows)
-}
-
-/// The share of runs not yet short, year by year, as a percent.
-#[must_use]
-pub fn still_funded(runs: &Runs) -> Vec<(i16, f64)> {
-    runs.bands
-        .iter()
-        .map(|band| (band.year, band.funded * PERCENT))
-        .collect()
 }
 
 /// How many runs end in each bucket, those that fell short first.

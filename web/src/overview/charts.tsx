@@ -26,7 +26,13 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BASIS_LABEL, dollars, type Basis } from "@/overview/words";
-import { bandData, bandsConfig, PLOT_SIZE, SERIES } from "@/overview/bands";
+import {
+  bandAreas,
+  bandData,
+  bandsConfig,
+  PLOT_SIZE,
+  SERIES,
+} from "@/overview/bands";
 import { useMarkets } from "@/searches";
 
 const FOREGROUND = "var(--foreground)";
@@ -267,22 +273,7 @@ function Bands(props: ChartsProps & { plan: string }) {
       data={data}
       label="Net worth through random markets"
     >
-      <Area
-        isAnimationActive={false}
-        dataKey="outer"
-        type="monotone"
-        fill="var(--color-outer)"
-        fillOpacity={0.15}
-        stroke="none"
-      />
-      <Area
-        isAnimationActive={false}
-        dataKey="inner"
-        type="monotone"
-        fill="var(--color-inner)"
-        fillOpacity={0.35}
-        stroke="none"
-      />
+      {bandAreas()}
       {seriesLine("median")}
     </Plot>
   );

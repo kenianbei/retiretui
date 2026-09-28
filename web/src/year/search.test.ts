@@ -31,8 +31,7 @@ describe("ledgerSearch", () => {
     expect(ledgerSearch({ market: 1929 })).toEqual({ market: "1929" });
   });
 
-  it("drops a market no run goes through", () => {
-    expect(ledgerSearch({ market: "p10" })).toEqual({});
-    expect(ledgerSearch({ market: "trial-" })).toEqual({});
+  it("drops a market that is not text", () => {
+    expect(ledgerSearch({ market: ["1929"] })).toEqual({});
   });
 });

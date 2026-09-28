@@ -101,7 +101,10 @@ fn redraw<R: MarketTool>(
         return;
     };
     let runs = found.runs();
-    let (label, run) = highlighted(&tool).unwrap_or_else(|| (PLANNED.to_owned(), &runs.planned));
+    let (label, run) = highlighted(&tool).map_or_else(
+        || (PLANNED.to_owned(), &runs.planned),
+        |listed| (listed.first, listed.run),
+    );
     let shades = vec![
         band(runs, OUTER_BAND, OUTER, &theme),
         band(runs, INNER_BAND, INNER, &theme),

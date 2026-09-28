@@ -1,7 +1,6 @@
 import type { MarketRuns, RunRow, Table } from "@wasm/retiretui_wasm.js";
 import { useMemo } from "react";
 import {
-  Area,
   Bar,
   BarChart,
   CartesianGrid,
@@ -21,49 +20,36 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { bandData, bandsConfig, PLOT_SIZE, SERIES } from "@/overview/bands";
+import {
+  bandAreas,
+  bandData,
+  bandsConfig,
+  PLOT_SIZE,
+  SERIES,
+} from "@/overview/bands";
 import { Plot } from "@/overview/charts";
 import { BASIS_LABEL } from "@/overview/words";
 
 const SHORT = "var(--destructive)";
 const DOLLARS = BASIS_LABEL.today;
 const PERCENT_TICKS = [0, 25, 50, 75, 100];
+const PERCENT = 100;
+const BANDS = bandsConfig();
 
 /** The spread of net worth across the runs, the highlighted run's line over it. */
 function Bands({ found, run }: { found: MarketRuns; run: RunRow }) {
+  const bands = useMemo(() => bandData(found.bands), [found]);
   const config: ChartConfig = useMemo(
-    () => ({
-      ...bandsConfig(),
-      run: { label: run.cells[0], color: SERIES[1] },
-    }),
+    () => ({ ...BANDS, run: { label: run.cells[0], color: SERIES[1] } }),
     [run],
   );
   const data = useMemo(
-    () =>
-      bandData(found.bands).map((year, at) => ({
-        ...year,
-        run: run.net_worth[at],
-      })),
-    [found, run],
+    () => bands.map((year, at) => ({ ...year, run: run.net_worth[at] })),
+    [bands, run],
   );
   return (
     <Plot config={config} data={data} label="Net worth across the runs">
-      <Area
-        isAnimationActive={false}
-        dataKey="outer"
-        type="monotone"
-        fill="var(--color-outer)"
-        fillOpacity={0.15}
-        stroke="none"
-      />
-      <Area
-        isAnimationActive={false}
-        dataKey="inner"
-        type="monotone"
-        fill="var(--color-inner)"
-        fillOpacity={0.35}
-        stroke="none"
-      />
+      {bandAreas()}
       <Line
         isAnimationActive={false}
         dataKey="run"
@@ -111,7 +97,11 @@ const FUNDED: ChartConfig = {
 /** The share of runs not yet short, year by year. */
 function StillFunded({ found }: { found: MarketRuns }) {
   const data = useMemo(
-    () => found.still_funded.map(([year, funded]) => ({ year, funded })),
+    () =>
+      found.bands.map((band) => ({
+        year: band.year,
+        funded: band.funded * PERCENT,
+      })),
     [found],
   );
   return (

@@ -64,6 +64,12 @@ pub fn money(amount: Dollars) -> String {
     format!("{sign}${}", grouped(amount.unsigned_abs()))
 }
 
+/// A count of things as a person reads it: `1,000`.
+#[must_use]
+pub fn count(count: usize) -> String {
+    grouped(u64::try_from(count).unwrap_or(u64::MAX))
+}
+
 /// A count with separators, as a person reads it: `1,000`.
 #[must_use]
 pub fn grouped(count: u64) -> String {

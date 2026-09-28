@@ -4,6 +4,8 @@ import {
   type Band,
 } from "@wasm/retiretui_wasm.js";
 
+import { Area } from "recharts";
+
 import type { ChartConfig } from "@/components/ui/chart";
 
 /** The colour roles a chart's series take, in turn. */
@@ -34,4 +36,28 @@ export function bandData(bands: Band[]) {
       median,
     };
   });
+}
+
+/** The outer and inner bands, shaded lighter and darker. */
+export function bandAreas() {
+  return [
+    <Area
+      key="outer"
+      isAnimationActive={false}
+      dataKey="outer"
+      type="monotone"
+      fill="var(--color-outer)"
+      fillOpacity={0.15}
+      stroke="none"
+    />,
+    <Area
+      key="inner"
+      isAnimationActive={false}
+      dataKey="inner"
+      type="monotone"
+      fill="var(--color-inner)"
+      fillOpacity={0.35}
+      stroke="none"
+    />,
+  ];
 }

@@ -11,7 +11,7 @@ import type { Zone } from "./Zone";
  */
 export type MarketRuns = { 
 /**
- * How the plan fared: "Money lasts in 87% of 1,000".
+ * How the plan fared: "money lasts in 87% of 1,000".
  */
 verdict: string, 
 /**
@@ -42,10 +42,6 @@ bands: Array<Band>,
  * Net worth at each percentile year by year, where the tool shows it.
  */
 by_year: Table | null, 
-/**
- * The share of runs not yet short, year by year, as a percent.
- */
-still_funded: Array<[number, number]>, 
 /**
  * How many runs end in each bucket, the short first.
  */

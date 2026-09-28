@@ -17,6 +17,7 @@ import { MarketCharts } from "@/tools/markets/charts";
 import { ZONE_CLASS } from "@/tools/markets/zone";
 import { Options, type OptionRow } from "@/tools/options";
 import type { ToolSearch } from "@/tools/search";
+import { keptSearch } from "@/year/search";
 
 const WORDS = marketWords();
 /** The runs table's column a phone's row shows beside its name. */
@@ -71,8 +72,7 @@ function OpenInLedger({ run }: { run: RunRow }) {
       <Link
         to="/ledger"
         search={(kept) => ({
-          basis: kept.basis,
-          held: kept.held,
+          ...keptSearch(kept, ["basis", "held"]),
           ...(run.market !== null && { market: run.market }),
         })}
       >
@@ -124,7 +124,12 @@ export function MarketsPage({
           )}
         </div>
         {reply && (
-          <p className={cn("text-lg font-semibold", ZONE_CLASS[reply.zone])}>
+          <p
+            className={cn(
+              "text-lg font-semibold first-letter:uppercase",
+              ZONE_CLASS[reply.zone],
+            )}
+          >
             {reply.verdict}
           </p>
         )}

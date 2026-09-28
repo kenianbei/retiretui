@@ -292,10 +292,7 @@ impl<R: Found> Tool<R> {
     }
 }
 
-/// A count as a person reads it: `1,000`.
-pub(crate) fn count_text(count: usize) -> String {
-    crate::table::grouped(u64::try_from(count).unwrap_or(u64::MAX))
-}
+pub(crate) use crate::table::count as count_text;
 
 /// How far a counted search has got: "running 340 of 1,000".
 pub(crate) fn running_text(done: usize, total: usize) -> String {

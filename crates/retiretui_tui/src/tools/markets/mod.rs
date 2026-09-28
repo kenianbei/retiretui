@@ -21,8 +21,8 @@ use bevy_ecs::prelude::{Commands, IntoScheduleConfigs, Local, Query, Res, ResMut
 use bevy_ui::{FlexDirection, Node, Val};
 use plurimus::core::UiWidget;
 use plurimus::core::ratatui_core::style::Style;
-use retiretui_client::searches::markets::{self, Markets, Zone, zone_of};
-use retiretui_engine::market::{History, Progress, Run, RunError};
+use retiretui_client::searches::markets::{self, Listed, Markets, Zone, zone_of};
+use retiretui_engine::market::{History, Progress, RunError};
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::Plan;
 use retiretui_engine::project::Projection;
@@ -215,11 +215,10 @@ fn spawn_panes<R: MarketTool>(commands: &mut Commands, row: Entity) {
     chart::spawn_pane::<R>(commands, column);
 }
 
-/// The run highlighted in the options table, and its first cell.
-fn highlighted<R: MarketTool>(tool: &Tool<R>) -> Option<(String, &Run)> {
+/// The run highlighted in the options table.
+fn highlighted<R: MarketTool>(tool: &Tool<R>) -> Option<Listed<'_>> {
     let at = tool.highlighted()?;
-    let listed = tool.found()?.listed().into_iter().nth(at)?;
-    Some((listed.first, listed.run))
+    tool.found()?.listed().into_iter().nth(at)
 }
 
 /// The `open-*-run` commands: the highlighted run, projected whole, in the
@@ -234,7 +233,12 @@ pub(crate) fn open_run<R: MarketTool>(
     if tool.found().is_none() {
         return Outcome::Refused(super::NOTHING_SEARCHED_YET.to_owned());
     }
-    let Some((label, chosen)) = highlighted(&*tool) else {
+    let Some(Listed {
+        first: label,
+        run: chosen,
+        ..
+    }) = highlighted(&*tool)
+    else {
         run.0 = None;
         turn.to(Page::Ledger);
         return Outcome::Done;
