@@ -6,10 +6,6 @@ import type { MetricChoice } from "./MetricChoice";
  */
 export type CompareWords = { 
 /**
- * The header of the column naming each plan.
- */
-plan: string, 
-/**
  * What the baseline changes of itself.
  */
 the_baseline: string, 

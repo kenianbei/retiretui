@@ -1,7 +1,16 @@
+import { GitCompareArrows } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { Options, type OptionRow } from "@/tools/options";
+import { nameOf } from "@/workspace";
 
 /** A plan compared: the document, or a compared file. */
 export interface PlanEntry {
@@ -17,7 +26,7 @@ const ENDS_WITH = 1;
 interface PlansProps {
   headers: string[];
   entries: PlanEntry[];
-  highlighted: PlanEntry;
+  highlighted: PlanEntry | undefined;
   highlight: (entry: PlanEntry) => void;
   caption: string;
 }
@@ -64,6 +73,48 @@ interface ActionsProps {
   onOpen: () => void;
   onBaseline: () => void;
   onRemove: () => void;
+}
+
+/** The files beside the document to compare it with, ticked while they are. */
+export function CompareWith({
+  offered,
+  compared,
+  onCompared,
+}: {
+  offered: readonly string[];
+  compared: readonly string[];
+  onCompared: (paths: string[]) => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" disabled={offered.length === 0}>
+          <GitCompareArrows aria-hidden />
+          Compare with
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start">
+        {offered.map((path) => (
+          <DropdownMenuCheckboxItem
+            key={path}
+            checked={compared.includes(path)}
+            onSelect={(event) => {
+              event.preventDefault();
+            }}
+            onCheckedChange={(isChecked) => {
+              onCompared(
+                isChecked
+                  ? [...compared, path]
+                  : compared.filter((each) => each !== path),
+              );
+            }}
+          >
+            {nameOf(path)}
+          </DropdownMenuCheckboxItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }
 
 /** What can be done with the highlighted plan. */

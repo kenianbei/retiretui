@@ -55,10 +55,7 @@ assert.equal(compactMoney(1234567), "$1.23M");
 assert.equal(percentileLabel(90), "90th percentile");
 assert.deepEqual(document.said(first.year).ages, [["Sam", 30]]);
 
-const accounts = document.table(
-  "accounts",
-  sortPressed(sortPressed(null, 0), 0),
-);
+const accounts = document.table("accounts", sortPressed(sortPressed(null, 0), 0));
 assert.ok(accounts.rows.length > 0);
 assert.equal(accounts.columns.length, accounts.rows[0].cells.length);
 assert.ok(document.readOut("settings", 0).length > 0);
@@ -124,15 +121,9 @@ const statement = readFileSync(
   "utf8",
 );
 assert.throws(() => document.importEarnings(0, "Sam", statement), /was born/);
-files.set(
-  "/plans/born.toml",
-  made.text.replace(/birth = \S+/, "birth = 1975-06-14"),
-);
+files.set("/plans/born.toml", made.text.replace(/birth = \S+/, "birth = 1975-06-14"));
 const born = Document.open("/plans/born.toml", read);
-assert.match(
-  born.importEarnings(0, "Jordan", statement),
-  /recorded 3 year\(s\)/,
-);
+assert.match(born.importEarnings(0, "Jordan", statement), /recorded 3 year\(s\)/);
 assert.equal(born.canUndo, true);
 assert.equal(statementPage(), "people");
 
@@ -153,10 +144,7 @@ assert.deepEqual(
   ["12%"],
 );
 const [ladder] = found.brackets;
-assert.match(
-  converting.takeLadder(found.destination, ladder.steps),
-  /took \d+ conversion/,
-);
+assert.match(converting.takeLadder(found.destination, ladder.steps), /took \d+ conversion/);
 assert.equal(converting.canUndo, true);
 assert.throws(
   () =>
@@ -176,44 +164,26 @@ assert.match(
   ),
   /base = "early.toml"/,
 );
-assert.ok(
-  converting.constraintsRead().some(([label]) => label === "Fill bracket"),
-);
+assert.ok(converting.constraintsRead().some(([label]) => label === "Fill bracket"));
 
 files.set(
   "/plans/early-ladder.toml",
-  converting.ladderScenario(
-    "/plans/early-ladder.toml",
-    found.destination,
-    ladder.steps,
-  ),
+  converting.ladderScenario("/plans/early-ladder.toml", found.destination, ladder.steps),
 );
 const laddered = Document.open("/plans/early-ladder.toml", read);
 const unladdered = Document.open("/plans/early.toml", read);
 const words = compareWords();
 assert.equal(words.metrics[0].key, "net-worth");
 const [from, to] = unladdered.years();
-const view = {
-  nominal: false,
-  metric: "taxes",
-  year: yearAmong(null, from, [from, to], [from, to]),
-};
-assert.equal(compareHeaders("taxes", view.year)[4], `Taxes ${view.year}`);
+const view = { nominal: false, metric: "taxes", year: yearAmong(null, from, [from, to], [from, to]) };
+const headers = compareHeaders("taxes", view.year);
+assert.equal(headers[4], `Taxes ${view.year}`);
 const rate = { kind: "rate", rate: 0.9 };
-assert.equal(laddered.planFigures(view, rate).length, words.metrics.length + 2);
-assert.equal(
-  laddered.planFiguresAgainst(view, rate, unladdered, rate)[2],
-  "same",
-);
-assert.ok(
-  laddered.byYearAgainst(view, unladdered).some(({ amount }) => amount !== 0),
-);
+assert.equal(laddered.planFigures(view, rate).length, headers.length - 1);
+assert.equal(laddered.planFiguresAgainst(view, rate, unladdered, rate)[2], "same");
+assert.ok(laddered.byYearAgainst(view, unladdered).some(({ amount }) => amount !== 0));
 assert.equal(unladdered.byYear(view)[0].year, from);
-assert.ok(
-  laddered
-    .changesFrom(unladdered)
-    .some((line) => line.startsWith("Conversions")),
-);
+assert.ok(laddered.changesFrom(unladdered).some((line) => line.startsWith("Conversions")));
 assert.deepEqual(unladdered.changesFrom(unladdered), []);
 assert.ok(!converting.constraintsText.includes(found.destination));
 assert.equal(converting.rothOwners()[0].destination, found.destination);
@@ -228,8 +198,7 @@ const [best] = options.options;
 assert.equal(best.key, best.claims.map(({ age }) => age).join("-"));
 assert.match(claiming.takeClaims(best.claims, options.added), /^claimed /);
 assert.throws(
-  () =>
-    claiming.claimsScenario("/plans/claimed.toml", best.claims, options.added),
+  () => claiming.claimsScenario("/plans/claimed.toml", best.claims, options.added),
   /save first/,
 );
 claiming.save(() => {});
@@ -237,9 +206,7 @@ assert.match(
   claiming.claimsScenario("/plans/claimed.toml", best.claims, options.added),
   /base = "claiming.toml"/,
 );
-const removal = person.actions.find(
-  ({ action }) => action === "remove-benefit",
-);
+const removal = person.actions.find(({ action }) => action === "remove-benefit");
 assert.match(removal.question, /^Remove /);
 assert.match(claiming.act("remove-benefit", 0, person.name), /^removed /);
 assert.throws(() => claims(claiming.planText(), [person.id]));

@@ -39,8 +39,7 @@ export interface Session extends Opened {
   reading: Reading;
   /** What the gate finds wrong with the draft. */
   issues: PlacedIssue[];
-  /** Opens `path`, then runs `onOpened`; neither where the draft's edits are kept instead. */
-  open: (path: string, onOpened?: () => void) => void;
+  open: (path: string) => void;
   /**
    * Writes `text` as the file `name`, replacing any such file, and opens it,
    * then runs `onPlaced`; neither where the draft's edits are kept instead.
@@ -120,10 +119,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   );
 
   const open = useCallback(
-    (path: string, onOpened?: () => void) => {
+    (path: string) => {
       guarded(() => {
         openNow(path);
-        onOpened?.();
       });
     },
     [guarded, openNow],

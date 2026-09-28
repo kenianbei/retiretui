@@ -84,20 +84,20 @@ export function SearchActions({
 
   const write = (typed: string) => {
     const name = planName(typed);
+    const path = pathOf(name);
     attempt(() => {
       const document = session.document;
-      const text = document ? chosen.scenario(document, pathOf(name)) : "";
+      const text = document ? chosen.scenario(document, path) : "";
       setNaming(null);
-      const written = pathOf(name);
       actions.write(name, text, () => {
-        setDone({ said: `Wrote ${name}, compared.`, written });
+        setDone({ said: `Wrote ${name}, compared.`, written: path });
         void navigate({
           to: ".",
           search: (prev) => ({
             ...prev,
             with: withIn([
-              ...(prev.with ?? []).filter((path) => path !== written),
-              written,
+              ...(prev.with ?? []).filter((each) => each !== path),
+              path,
             ]),
           }),
           replace: true,

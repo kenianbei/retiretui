@@ -12,7 +12,7 @@ use crate::metric::Metric;
 use crate::present::{
     self, ENDS_WITH, LIFETIME_TAXES, MONEY_LASTS, PEAKS_AT, SAME, compact_money, signed_money,
 };
-use crate::table::{basis_amount, count};
+use crate::table::{basis_amount, running_text};
 
 /// The header of the column naming each plan.
 pub const PLAN: &str = "Plan";
@@ -72,12 +72,6 @@ impl Success {
             format!("{points:+.1} pts")
         }
     }
-}
-
-/// How far a search is, `done` of `total` steps.
-#[must_use]
-pub fn running_text(done: usize, total: usize) -> String {
-    format!("running {} of {}", count(done), count(total))
 }
 
 /// What a plan's row is read from.
@@ -172,15 +166,15 @@ pub const COLUMNS: [Column; 10] = [
     },
 ];
 
-/// Each column's header, the charted `metric`'s naming it and `year`.
+/// The table's headers: the plan's name, then each column's, the charted
+/// `metric`'s naming it and `year`.
 #[must_use]
 pub fn headers(metric: Metric, year: i16) -> Vec<String> {
-    (COLUMNS.iter())
-        .map(|column| match column.figure {
-            Figure::InYear => format!("{} {year}", metric.title()),
-            _ => column.header.to_owned(),
-        })
-        .collect()
+    let columns = COLUMNS.iter().map(|column| match column.figure {
+        Figure::InYear => format!("{} {year}", metric.title()),
+        _ => column.header.to_owned(),
+    });
+    std::iter::once(PLAN.to_owned()).chain(columns).collect()
 }
 
 /// `own`'s figures, or under difference each against `base`'s.
@@ -269,8 +263,8 @@ mod tests {
     #[test]
     fn the_in_year_column_names_the_metric_and_year() {
         let headers = headers(Metric::Taxes, 2031);
-        assert_eq!(headers.len(), COLUMNS.len());
-        assert_eq!(headers[0], ENDS_WITH);
-        assert_eq!(headers[3], "Taxes 2031");
+        assert_eq!(headers.len(), COLUMNS.len() + 1);
+        assert_eq!(headers[..2], [PLAN, ENDS_WITH]);
+        assert_eq!(headers[4], "Taxes 2031");
     }
 }

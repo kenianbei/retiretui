@@ -1,4 +1,5 @@
 import { keepPreviousData, useQueries, useQuery } from "@tanstack/react-query";
+import type { Searched } from "@wasm/retiretui_wasm.js";
 
 import type { Answer, Replies, Search } from "@/worker";
 
@@ -101,15 +102,31 @@ export function useMarkets(
   });
 }
 
+/** Where a plan's search through random markets has got to. */
+function searchedOf(found: {
+  data?: { success_rate: number };
+  error: Error | null;
+  isFetching: boolean;
+}): Searched {
+  if (found.data) return { kind: "rate", rate: found.data.success_rate };
+  if (found.error && !found.isFetching) return { kind: "failed" };
+  return { kind: "waiting" };
+}
+
+function searchedOfEach(found: Parameters<typeof searchedOf>[0][]): Searched[] {
+  return found.map(searchedOf);
+}
+
 /**
- * Each of `plans` through random markets, each in its own `lane` so that
- * they run side by side, searched only where `isSearchable`; a plan's text
- * keys its search as `useMarkets` does, so the same plan is searched once.
+ * Where each of `plans` has got to through random markets, each searched in
+ * its own `lane` so that they run side by side, and only where
+ * `isSearchable`; a plan's text keys its search as `useMarkets` does, so
+ * the same plan is searched once.
  */
 export function useSuccesses(
   plans: readonly { plan: string; lane: string }[],
   isSearchable: boolean,
-) {
+): Searched[] {
   return useQueries({
     queries: plans.map(({ plan, lane }) => ({
       queryKey: ["monteCarlo", plan],
@@ -119,6 +136,7 @@ export function useSuccesses(
       staleTime: Infinity,
       retry: false,
     })),
+    combine: searchedOfEach,
   });
 }
 

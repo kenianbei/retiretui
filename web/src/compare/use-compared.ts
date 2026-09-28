@@ -1,9 +1,9 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import type { Document } from "@wasm/retiretui_wasm.js";
+import type { Document, Searched } from "@wasm/retiretui_wasm.js";
 import { useEffect, useMemo, useRef } from "react";
 
 import { swapped, withIn, type WithSearch } from "@/compare/search";
-import { releaseLane } from "@/searches";
+import { releaseLane, useSuccesses } from "@/searches";
 import { openAt } from "@/opened";
 import { useSession } from "@/session";
 
@@ -12,6 +12,19 @@ export interface ComparedFile {
   path: string;
   document: Document | null;
   error: string | null;
+  /** Its text to search through random markets; none while it has issues. */
+  text: string;
+}
+
+/** A plan compared, and where its search through random markets has got to. */
+export type Row = ComparedFile & { searched: Searched };
+
+/** The lane the Overview searches the document in, shared with it. */
+const DOCUMENT_LANE = "monteCarlo";
+
+/** The worker lane a compared file's search runs in. */
+function laneOf(path: string): string {
+  return `monteCarlo:${path}`;
 }
 
 /**
@@ -19,7 +32,7 @@ export interface ComparedFile {
  * file is written - here, or in another tab - since a scenario reads its
  * base from a file of its own.
  */
-export function useCompared(paths: readonly string[]): ComparedFile[] {
+function useCompared(paths: readonly string[]): ComparedFile[] {
   // ponytail: every compared file re-opens on any write; follow each one's files() if that gets slow.
   const { workspace, stored } = useSession();
   const joined = paths.join("\n");
@@ -29,7 +42,11 @@ export function useCompared(paths: readonly string[]): ComparedFile[] {
         ? []
         : joined.split("\n").map((path) => {
             const { document, error } = openAt(workspace, path);
-            return { path, document, error };
+            const text =
+              document && document.issues().length === 0
+                ? document.planText()
+                : "";
+            return { path, document, error, text };
           }),
     // `stored` is what the files' writes are counted by.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -37,16 +54,50 @@ export function useCompared(paths: readonly string[]): ComparedFile[] {
   );
 }
 
-/** The worker lane a compared file's search runs in. */
-export function laneOf(path: string): string {
-  return `monteCarlo:${path}`;
+/**
+ * The document, then each of `compared` opened, each with where its search
+ * through random markets has got to - the document's shared with the
+ * Overview, each compared file's in a lane of its own.
+ */
+export function useRows(compared: readonly string[]): [Row, ...Row[]] {
+  const { reading, issues, path, error } = useSession();
+  const opened = useCompared(compared);
+  useReleased(useMemo(() => compared.map(laneOf), [compared]));
+  const text = useMemo(
+    () => (issues.length === 0 ? (reading.document?.planText() ?? "") : ""),
+    [reading, issues],
+  );
+  const searched = useSuccesses(
+    [
+      { plan: text, lane: DOCUMENT_LANE },
+      ...opened.map((plan) => ({ plan: plan.text, lane: laneOf(plan.path) })),
+    ],
+    true,
+  );
+  return useMemo(() => {
+    const waiting: Searched = { kind: "waiting" };
+    const document = reading.document;
+    return [
+      {
+        path: path ?? "",
+        document,
+        error,
+        text,
+        searched: searched[0] ?? waiting,
+      },
+      ...opened.map((plan, at) => ({
+        ...plan,
+        searched: searched[at + 1] ?? waiting,
+      })),
+    ];
+  }, [reading, path, error, text, opened, searched]);
 }
 
 /**
  * Releases each lane once it is no longer among `lanes`, and every one
  * still there when the page that searches them leaves.
  */
-export function useReleased(lanes: readonly string[]) {
+function useReleased(lanes: readonly string[]) {
   const held = useRef<readonly string[]>([]);
   useEffect(() => {
     for (const lane of held.current) {
@@ -84,15 +135,14 @@ export function useComparedFollowDocument() {
       return;
     }
     if (!compared?.length) return;
-    const opened = path;
-    const isSwap = opened !== null && compared.includes(opened);
+    const isSwap = path !== null && compared.includes(path);
     void navigate({
       to: ".",
       search: (prev) => ({
         ...prev,
-        with: isSwap ? withIn(swapped(compared, opened, left.path)) : undefined,
+        with: isSwap ? withIn(swapped(compared, path, left.path)) : undefined,
         baseline:
-          isSwap && prev.baseline !== opened
+          isSwap && prev.baseline !== path
             ? (prev.baseline ?? left.path ?? undefined)
             : undefined,
         plan: undefined,

@@ -7,6 +7,7 @@ import { DataTable } from "@/components/data-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ChartConfig } from "@/components/ui/chart";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn, INPUT } from "@/lib/utils";
 import { SERIES } from "@/overview/bands";
 import { Plot } from "@/overview/charts";
 
@@ -38,6 +39,23 @@ type YearRow = { year: number } & Record<string, number | string>;
 
 const seriesKey = (at: number) => `plan${String(at)}`;
 
+/** A row per year any plan reaches, each plan's `valueOf` its figure under its key. */
+function rowsByYear(
+  plans: readonly Charted[],
+  valueOf: (plan: Charted, shown: YearFigure) => number | string,
+): YearRow[] {
+  const years = new Map<number, YearRow>();
+  plans.forEach((plan, at) => {
+    if (typeof plan.figures === "string") return;
+    for (const shown of plan.figures) {
+      const row = years.get(shown.year) ?? { year: shown.year };
+      row[seriesKey(at)] = valueOf(plan, shown);
+      years.set(shown.year, row);
+    }
+  });
+  return [...years.values()].sort((one, other) => one.year - other.year);
+}
+
 /** One line per plan through the years any of them reach. */
 function PlansChart({ plans, year, onYear, caption }: ViewsProps) {
   const config = useMemo<ChartConfig>(
@@ -50,18 +68,11 @@ function PlansChart({ plans, year, onYear, caption }: ViewsProps) {
       ),
     [plans],
   );
-  const data = useMemo(() => {
-    const years = new Map<number, YearRow>();
-    plans.forEach((plan, at) => {
-      if (typeof plan.figures === "string") return;
-      for (const shown of plan.figures) {
-        const row = years.get(shown.year) ?? { year: shown.year };
-        row[seriesKey(at)] = plan.isAlongZero ? 0 : shown.amount;
-        years.set(shown.year, row);
-      }
-    });
-    return [...years.values()].sort((one, other) => one.year - other.year);
-  }, [plans]);
+  const data = useMemo(
+    () =>
+      rowsByYear(plans, (plan, shown) => (plan.isAlongZero ? 0 : shown.amount)),
+    [plans],
+  );
   return (
     <Plot
       config={config}
@@ -88,15 +99,6 @@ function PlansChart({ plans, year, onYear, caption }: ViewsProps) {
 function PlansTable({ plans, words, year, onYear, caption }: ViewsProps) {
   const { columns, rows } = useMemo(() => {
     const column = columnsFor<YearRow>();
-    const years = new Map<number, YearRow>();
-    plans.forEach((plan, at) => {
-      if (typeof plan.figures === "string") return;
-      for (const shown of plan.figures) {
-        const row = years.get(shown.year) ?? { year: shown.year };
-        row[seriesKey(at)] = shown.figure;
-        years.set(shown.year, row);
-      }
-    });
     return {
       columns: [
         column.display({
@@ -114,7 +116,7 @@ function PlansTable({ plans, words, year, onYear, caption }: ViewsProps) {
           }),
         ),
       ],
-      rows: [...years.values()].sort((one, other) => one.year - other.year),
+      rows: rowsByYear(plans, (_, shown) => shown.figure),
     };
   }, [plans, words]);
   return (
@@ -165,7 +167,7 @@ export function Views(props: ViewsProps) {
                 );
                 if (picked) onMetric(picked.key);
               }}
-              className="bg-background h-8 rounded-md border px-2"
+              className={cn(INPUT, "h-8 w-auto")}
             >
               {words.metrics.map((each) => (
                 <option key={each.key} value={each.key}>

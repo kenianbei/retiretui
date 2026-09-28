@@ -295,7 +295,7 @@ impl<R: Found> Tool<R> {
 pub(crate) use crate::table::count as count_text;
 
 /// How far a counted search has got: "running 340 of 1,000".
-pub(crate) use retiretui_client::compare::running_text;
+pub(crate) use crate::table::running_text;
 
 /// The pane a tool's results fill.
 #[derive(Component)]

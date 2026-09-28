@@ -275,7 +275,7 @@ mod bindings {
     const BINDINGS: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/bindings");
 
     /// Every type the page is typed by, with the types they name.
-    const EXPORTS: [fn(&Config) -> Result<(), ExportError>; 28] = [
+    const EXPORTS: &[fn(&Config) -> Result<(), ExportError>] = &[
         Issue::export_all,
         PlacedIssue::export_all,
         SaidYear::export_all,

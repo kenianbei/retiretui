@@ -3,7 +3,7 @@
 //! what one plan changes of another.
 
 use retiretui_client::compare::{
-    self, Figured, PLAN, Success, THE_BASELINE, THE_SAME, UNREACHED, amounts, figure, less,
+    self, Figured, Success, THE_BASELINE, THE_SAME, UNREACHED, amounts, figure, less,
 };
 use retiretui_client::metric::Metric;
 use retiretui_client::session::{Projected, Today, YearCursor, span};
@@ -78,8 +78,6 @@ pub struct MetricChoice {
 #[derive(Serialize, Debug)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct CompareWords {
-    /// The header of the column naming each plan.
-    pub plan: &'static str,
     /// What the baseline changes of itself.
     pub the_baseline: &'static str,
     /// What a plan no different from the baseline changes of it.
@@ -254,10 +252,7 @@ pub fn compare_headers(
     #[wasm_bindgen(unchecked_param_type = "Metric")] metric: JsValue,
     year: i16,
 ) -> Result<Vec<String>, JsError> {
-    let metric: Metric = from_js(metric)?;
-    Ok(std::iter::once(PLAN.to_owned())
-        .chain(compare::headers(metric, year))
-        .collect())
+    Ok(compare::headers(from_js(metric)?, year))
 }
 
 /// What the Compare page says that no plan does.
@@ -274,7 +269,6 @@ pub fn compare_words() -> Result<JsValue, JsError> {
         })
         .collect();
     to_js(&CompareWords {
-        plan: PLAN,
         the_baseline: THE_BASELINE,
         the_same: THE_SAME,
         unreached: UNREACHED,

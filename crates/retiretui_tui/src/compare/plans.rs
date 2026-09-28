@@ -11,7 +11,7 @@ use plurimus::core::ratatui_core::layout::Constraint;
 use plurimus::core::ratatui_core::style::{Color, Style};
 use plurimus::ui::{ComputedWidgetArea, ScrollArea, UiStyle};
 use plurimus::widgets::{ActiveDescendant, TableColumns};
-use retiretui_client::compare::{self, Figured, PLAN};
+use retiretui_client::compare::{self, Figured};
 
 use super::Plans;
 use crate::edit::table_bundle;
@@ -178,9 +178,7 @@ fn title(plans: &Plans) -> String {
 fn laid(plans: &Plans, given: u16) -> (Vec<String>, Vec<Vec<String>>) {
     let (deflated, year) = (!plans.shown.basis.nominal, plans.year());
     let metric = plans.charted.metric;
-    let header: Vec<String> = std::iter::once(PLAN.to_owned())
-        .chain(compare::headers(metric, year))
-        .collect();
+    let header = compare::headers(metric, year);
     let in_year = plans.figures_in(&plans.amounts(metric), year);
     let figured: Vec<Figured> = (plans.each().zip(plans.each_plan()).zip(in_year))
         .map(|(((_, projection), plan), in_year)| Figured {
