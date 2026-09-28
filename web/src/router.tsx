@@ -17,7 +17,7 @@ import { NotFound, Placeholder } from "@/pages/placeholder";
 import { Shell } from "@/shell/shell";
 import { ToolPage } from "@/tools/page";
 import { toolSearch } from "@/tools/search";
-import { yearSearch, type KeptKey } from "@/year/search";
+import { ledgerSearch, yearSearch, type KeptKey } from "@/year/search";
 
 const root = createRootRoute({ component: Shell, notFoundComponent: NotFound });
 
@@ -42,7 +42,7 @@ const ledger = createRoute({
   getParentRoute: () => root,
   path: "/ledger",
   staticData: { keeps: ["year", "basis", "held"] },
-  validateSearch: yearSearch,
+  validateSearch: ledgerSearch,
   component: LedgerPage,
 });
 

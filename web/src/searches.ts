@@ -66,11 +66,24 @@ function runSearch<K extends Kind>(
   });
 }
 
-/** `plan` through random markets, kept while the page runs: its text is the whole input. */
-export function useMonteCarlo(plan: string) {
+/** A market tool's search: through random markets, or from every historical start. */
+export type MarketKind = "monteCarlo" | "historical";
+
+/**
+ * `plan` through `kind`'s markets, searched only where `isSearchable` and
+ * kept while the page runs: its text is the whole input. The last found
+ * stays in view while the next is.
+ */
+export function useMarkets(
+  kind: MarketKind,
+  plan: string,
+  isSearchable: boolean,
+) {
   return useQuery({
-    queryKey: ["monteCarlo", plan],
-    queryFn: ({ signal }) => runSearch({ kind: "monteCarlo", plan }, signal),
+    queryKey: [kind, plan],
+    queryFn: ({ signal }) => runSearch({ kind, plan }, signal),
+    enabled: isSearchable,
+    placeholderData: keepPreviousData,
     staleTime: Infinity,
     retry: false,
   });

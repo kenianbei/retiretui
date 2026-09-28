@@ -8,11 +8,14 @@ export interface ToolSearch extends Pick<YearSearch, "basis" | "held"> {
   claim?: string;
   /** The highlighted person, by place in the household; the first where none. */
   person?: number;
+  /** The highlighted market run: `planned`, `p90`, `worst`, a start year; the plan's own where none. */
+  run?: string;
   /** Whether the constraints are open in their form. */
   edit?: true;
 }
 
 const CLAIM_KEY = /^\d+(-\d+)*$/;
+const RUN_KEY = /^(planned|worst|p\d+|\d+)$/;
 
 /** A tool's search params from whatever the address holds. */
 export function toolSearch(search: Record<string, unknown>): ToolSearch {
@@ -20,11 +23,13 @@ export function toolSearch(search: Record<string, unknown>): ToolSearch {
   const person = wholeOf(search.person);
   const claim =
     typeof search.claim === "number" ? String(search.claim) : search.claim;
+  const run = typeof search.run === "number" ? String(search.run) : search.run;
   return {
     ...keptSearch(search, ["basis", "held"]),
     ...(bracket !== undefined && { bracket }),
     ...(typeof claim === "string" && CLAIM_KEY.test(claim) && { claim }),
     ...(person !== undefined && person >= 0 && { person }),
+    ...(typeof run === "string" && RUN_KEY.test(run) && { run }),
     ...((search.edit === true || search.edit === "true") && { edit: true }),
   };
 }

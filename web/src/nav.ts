@@ -22,6 +22,12 @@ export const ROTH_CONVERSIONS = "roth-conversions";
 /** The SSA Benefits tool's page. */
 export const SSA_BENEFITS = "ssa-benefits";
 
+/** The Monte Carlo tool's page. */
+export const MONTE_CARLO = "monte-carlo";
+
+/** The Historical tool's page. */
+export const HISTORICAL = "historical";
+
 /** The tools that act on the plan as a whole, in the TUI's order. */
 export const TOOLS: readonly Page[] = [
   {
@@ -35,12 +41,12 @@ export const TOOLS: readonly Page[] = [
     holds: "Social Security claim ages ranked for the household.",
   },
   {
-    slug: "monte-carlo",
+    slug: MONTE_CARLO,
     title: "Monte Carlo",
     holds: "The plan through random markets.",
   },
   {
-    slug: "historical",
+    slug: HISTORICAL,
     title: "Historical",
     holds: "The plan from every historical start year.",
   },

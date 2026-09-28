@@ -29,6 +29,24 @@ export function yearSearch(search: Record<string, unknown>): YearSearch {
   };
 }
 
+/** What the Ledger holds in its address besides the year and the basis. */
+export interface LedgerSearch extends YearSearch {
+  /** The market the plan is shown in: `trial-423`, `1929`; its own where none. */
+  market?: string;
+}
+
+const MARKET_KEY = /^(trial-\d+|\d+)$/;
+
+/** The Ledger's search params from whatever the address holds. */
+export function ledgerSearch(search: Record<string, unknown>): LedgerSearch {
+  const market =
+    typeof search.market === "number" ? String(search.market) : search.market;
+  return {
+    ...yearSearch(search),
+    ...(typeof market === "string" && MARKET_KEY.test(market) && { market }),
+  };
+}
+
 /** A search key a tab's link carries to the route it opens. */
 export type KeptKey = "year" | "basis" | "held";
 

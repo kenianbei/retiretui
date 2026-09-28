@@ -9,8 +9,9 @@ import { IssueLink } from "@/draft/issue-link";
 import { Better } from "@/overview/better";
 import { Charts } from "@/overview/charts";
 import { BASIS_LABEL, dollars, share, type Basis } from "@/overview/words";
-import { useMonteCarlo } from "@/searches";
+import { useMarkets } from "@/searches";
 import { useSession } from "@/session";
+import { ZONE_CLASS } from "@/tools/markets/zone";
 import { basisOf, heldOf } from "@/year/search";
 import { useYear, type ShownYear } from "@/year/use-year";
 import { BasisSwitch, YearStepper } from "@/year/year";
@@ -78,12 +79,16 @@ function Reading({
 }
 
 function Success({ plan }: { plan: string }) {
-  const markets = useMonteCarlo(plan);
-  if (markets.data) {
+  const markets = useMarkets("monteCarlo", plan, true);
+  if (markets.data && !markets.isPlaceholderData) {
     const runs = markets.data.count.toLocaleString("en-US");
     return (
       <Reading
-        big={share(markets.data.success_rate)}
+        big={
+          <span className={ZONE_CLASS[markets.data.zone]}>
+            {share(markets.data.success_rate)}
+          </span>
+        }
         small={`of ${runs} markets`}
       />
     );
