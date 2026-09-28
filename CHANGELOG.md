@@ -10,39 +10,45 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - A web app for phones and desktop browsers, published to GitHub Pages at the
   site's root with each release. It keeps its plans in the browser's own
-  storage, apart from the canvas page's, and never sends them anywhere. It
-  offers the example plans or an upload to start from, reopens the plan last
-  open, and downloads the open plan. Its Overview shows whether the money
-  lasts - its headline figures in today's or nominal dollars, and the share of a
-  thousand random markets it survives, run off the page's thread - and charts
-  the plan: its balances by tax treatment under its net worth, its net worth,
-  its income against its taxes, and its net worth through the random markets as
-  percentile bands, each salary's end marked. Beneath them is what to do in the
-  year shown, said as the terminal says it: today's by default, stepped by
-  button or the arrow keys, or chosen with a click on a chart. The Ledger shows
-  the plan year by year, the year column staying in view as a phone scrolls
-  sideways, over the chosen year's flows through each account - where each came
-  from or went, with the year's warnings - and its income and what it paid. The
-  year and the dollars are in the page's address, kept between the Overview and
-  the Ledger and across a reload. The Plan pages edit the plan: each domain's
-  items are a table sortable by its columns, or rows with a Sort by on a phone,
-  beside the highlighted item read out in the form's words, and a domain there
-  is one of is that read-out alone. Edit, Add and Delete work one item at a
-  time; the form is a sheet, full screen on a phone, whose fields are entered by
-  their kind - picks from the schema's sets and the plan's own ids, a searched
-  list for a country or U.S. state, a slider beside a rate, a trigger as its
-  kind and sentence - and applying stores the whole item or says why not. Every
-  applied item or deletion is a step Undo and Redo walk, by button or
-  Ctrl/Cmd+Z, and Save or Ctrl/Cmd+S writes the plan back through the same
-  validation as every other surface; Save as… writes it under another name, the
-  one way to keep a scenario's edits. Unsaved edits are asked about before a
-  form closes, another plan opens, or the page is left, and a file changed in
-  another tab under them is reported rather than overwritten. A plan with issues
-  counts them in the header and lists each by the page, item and field it is
-  about, each a link to that field in its form, while the figures keep the last
-  ones it had without issues. The other pages are named but not yet built. Light
-  or dark follows the system, and navigation is a bottom bar on a phone and a
-  sidebar on a wider screen.
+  storage, apart from the canvas page's, and never sends them anywhere. A first
+  plan is made from a few questions asked a step at a time - the household, then
+  each person - which read every answer back to be changed before the plan is
+  named, made and opened on the Overview; a blank age, start of work or Social
+  Security benefit reads as what the plan will assume, and the answers survive a
+  reload until the plan is made. The example plans and an upload are offered
+  beside them. It reopens the plan last open, and downloads the open plan. Its
+  Overview shows whether the money lasts - its headline figures in today's or
+  nominal dollars, and the share of a thousand random markets it survives, run
+  off the page's thread - and charts the plan: its balances by tax treatment
+  under its net worth, its net worth, its income against its taxes, and its net
+  worth through the random markets as percentile bands, each salary's end
+  marked. Beneath them is what to do in the year shown, said as the terminal
+  says it: today's by default, stepped by button or the arrow keys, or chosen
+  with a click on a chart. The Ledger shows the plan year by year, the year
+  column staying in view as a phone scrolls sideways, over the chosen year's
+  flows through each account - where each came from or went, with the year's
+  warnings - and its income and what it paid. The year and the dollars are in
+  the page's address, kept between the Overview and the Ledger and across a
+  reload. The Plan pages edit the plan: each domain's items are a table sortable
+  by its columns, or rows with a Sort by on a phone, beside the highlighted item
+  read out in the form's words, and a domain there is one of is that read-out
+  alone. Edit, Add and Delete work one item at a time; the form is a sheet, full
+  screen on a phone, whose fields are entered by their kind - picks from the
+  schema's sets and the plan's own ids, a searched list for a country or U.S.
+  state, a slider beside a rate, a trigger as its kind and sentence - and
+  applying stores the whole item or says why not. Every applied item or deletion
+  is a step Undo and Redo walk, by button or Ctrl/Cmd+Z, and Save or Ctrl/Cmd+S
+  writes the plan back through the same validation as every other surface; Save
+  as… writes it under another name, the one way to keep a scenario's edits.
+  Unsaved edits are asked about before a form closes, another plan opens, or the
+  page is left, and a file changed in another tab under them is reported rather
+  than overwritten. A plan with issues counts them in the header and lists each
+  by the page, item and field it is about, each a link to that field in its
+  form, while the figures keep the last ones it had without issues. A Social
+  Security statement downloaded from ssa.gov is imported onto a person from the
+  People page as one step of history. The other pages are named but not yet
+  built. Light or dark follows the system, and navigation is a bottom bar on a
+  phone and a sidebar on a wider screen.
 
 ### Changed
 
@@ -59,6 +65,8 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   it, and its `actions`, `files`, `ladder`, `metric`, `resolve`, `store` and
   `table` modules are gone from its API. The engine resolves scenario base
   chains itself, as `plan::resolve`.
+- The terminal's new-plan form asks about a partner only once the household
+  files jointly.
 - The command line and the MCP server are library crates of their own,
   `retiretui_cli` and `retiretui_mcp`, and the terminal launcher is
   `retiretui_tui`'s `terminal` feature, off by default; `retiretui` composes the
