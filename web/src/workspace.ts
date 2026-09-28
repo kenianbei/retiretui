@@ -2,7 +2,7 @@
 const PREFIX = "retiretui-app:";
 const FILE_KEY = `${PREFIX}file:`;
 const LAST_KEY = `${PREFIX}last`;
-/** The last rename, announced to other tabs, which see files written and removed. */
+/** A rename as it is made, announced to other tabs, which see files written and removed. */
 const RENAMED_KEY = `${PREFIX}renamed`;
 
 export interface Renamed {
@@ -109,6 +109,8 @@ export class Workspace {
     this.storage.setItem(RENAMED_KEY, JSON.stringify({ from, to }));
     if (this.storage.getItem(LAST_KEY) === from) this.remember(to);
     this.remove(from);
+    // Cleared, so that the same rename made again is announced again.
+    this.storage.removeItem(RENAMED_KEY);
   }
 
   /** The document last open, where it is still there. */
