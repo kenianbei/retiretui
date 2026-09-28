@@ -2,11 +2,10 @@
 //! it: the gate, the searches, the markets, and the example plans.
 
 use retiretui_client::issues::issue_listing;
-use retiretui_client::replies::{ClaimsReply, HistoricalReply, MonteCarloReply};
+use retiretui_client::replies::{HistoricalReply, MonteCarloReply};
 use retiretui_client::searches::run_refusal;
 use retiretui_client::setup::EXAMPLES;
 use retiretui_engine::market::{self, History, Progress};
-use retiretui_engine::optimize::optimize_claims;
 use retiretui_engine::plan::{Issue, Plan};
 use retiretui_engine::project::validate_plan;
 use serde::Serialize;
@@ -41,17 +40,6 @@ pub fn examples() -> Vec<Example> {
 /// Where `text` is not a plan.
 pub fn validate(text: &str) -> Result<Vec<Issue>, String> {
     Ok(validate_plan(&parse(text)?, tables()))
-}
-
-/// Every claim age for the household's computed benefits, best first.
-///
-/// # Errors
-///
-/// Where the plan does not pass the gate, or the search refuses it.
-pub fn claims(text: &str, deflated: bool) -> Result<ClaimsReply, String> {
-    let search = optimize_claims(&gated(text)?, tables(), &[], &[], &Progress::default())
-        .map_err(run_refusal)?;
-    Ok(ClaimsReply::new(&search, deflated))
 }
 
 /// The plan through the random markets its settings draw.
@@ -111,7 +99,6 @@ mod tests {
     #[test]
     fn the_searches_answer_over_an_example() {
         let text = starter();
-        assert!(!claims(text, true).expect("searches").candidates.is_empty());
         let historical = historical(text).expect("runs");
         assert!(!historical.start_years.is_empty());
         assert!((0.0..=1.0).contains(&historical.success_rate));

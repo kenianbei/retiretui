@@ -6,12 +6,16 @@ import wasm from "./pkg/retiretui_wasm.js";
 const {
   Document,
   NewPlan,
+  aimedAt,
   bandPercentiles,
+  claimWords,
+  claims,
   compactMoney,
   examples,
   historical,
   ladders,
   percentileLabel,
+  removeQuestion,
   setupSteps,
   statementPage,
   sortPressed,
@@ -139,4 +143,31 @@ assert.match(
   /base = "early.toml"/,
 );
 assert.ok(converting.constraintsRead().some(([label]) => label === "Fill bracket"));
+assert.equal(
+  aimedAt(converting.constraintsText, converting.destination),
+  converting.constraintsText,
+);
+assert.equal(converting.rothOwners()[0].destination, found.destination);
+
+files.set("/plans/claiming.toml", starter.text);
+const claiming = Document.open("/plans/claiming.toml", read);
+const [person] = claiming.people([]);
+assert.equal(person.cells.length, claimWords().people_columns.length);
+assert.ok(person.actions.some(({ action }) => action === "import"));
+const options = claims(claiming.planText(), []);
+const [best] = options.options;
+assert.equal(best.key, best.ages.join("-"));
+assert.match(claiming.takeClaims(best.claims), /^claimed /);
+assert.throws(
+  () => claiming.claimsScenario("/plans/claimed.toml", best.claims),
+  /save first/,
+);
+claiming.save(() => {});
+assert.match(
+  claiming.claimsScenario("/plans/claimed.toml", best.claims),
+  /base = "claiming.toml"/,
+);
+assert.match(removeQuestion(person.name), /^Remove /);
+assert.match(claiming.removeBenefit(0, person.name), /^removed /);
+assert.throws(() => claims(claiming.planText(), [person.id]));
 console.log("smoke: ok");

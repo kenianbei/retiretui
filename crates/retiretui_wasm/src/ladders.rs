@@ -8,15 +8,16 @@ use retiretui_client::files::{OVERLAY_SAVE_FIRST, relative_path};
 use retiretui_client::forms::{Form, details};
 use retiretui_client::searches::ladders::{
     CONVERSION_COLUMNS, CONVERTS_NOTHING, Constraints, DESTINATION, FIELDS, NO_BRACKET,
-    OPTION_COLUMNS, PICK_DESTINATION, constraints_in, only_roth, option_amounts, rate_label,
+    OPTION_COLUMNS, PICK_DESTINATION, Swept, constraints_in, only_roth, option_amounts, rate_label,
     search, take_question, taken, taxed_in,
 };
+use retiretui_client::searches::overview::ladder_said;
 use retiretui_client::searches::{CURRENT_PLAN, FIGURES, run_refusal};
 use retiretui_client::store::normal;
 use retiretui_client::table::{account_name, basis_amount};
 use retiretui_engine::market::Progress;
 use retiretui_engine::optimize::{
-    BracketSweep, LadderStep, OptimizeOptions, SweptBracket, apply_ladder, ladder_overlay,
+    LadderStep, OptimizeOptions, SweptBracket, apply_ladder, ladder_overlay,
 };
 use retiretui_engine::plan::{Dollars, Plan};
 use retiretui_engine::project::Projection;
@@ -119,10 +120,36 @@ pub struct LaddersReply {
     pub baseline: Figures,
     /// One option per bracket searched, best first.
     pub brackets: Vec<LadderOption>,
+    /// What the best ladder does better than the plan, in either basis.
+    pub better: Better,
+}
+
+/// What a search's best option does better than the plan as it stands, as
+/// the Overview says it, in either dollar basis.
+#[derive(Serialize, Debug)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+pub struct Better {
+    /// In today's dollars.
+    pub today: String,
+    /// In the dollars of each year.
+    pub nominal: String,
+}
+
+impl Better {
+    /// What `say` makes of the search in each basis, `nominal` whether it is
+    /// said in the dollars of each year.
+    pub(crate) fn of(say: impl Fn(bool) -> String) -> Self {
+        Self {
+            today: say(false),
+            nominal: say(true),
+        }
+    }
 }
 
 impl LaddersReply {
-    fn new(plan: &Plan, sweep: &BracketSweep, options: &OptimizeOptions) -> Self {
+    fn new(plan: &Plan, swept: &Swept) -> Self {
+        let Swept { sweep, options } = swept;
+        let baseline = &sweep.baseline;
         Self {
             columns: OPTION_COLUMNS.into_iter().chain(FIGURES).collect(),
             conversion_columns: CONVERSION_COLUMNS.to_vec(),
@@ -134,6 +161,7 @@ impl LaddersReply {
                 .iter()
                 .map(|bracket| option_of(plan, bracket))
                 .collect(),
+            better: Better::of(|nominal| ladder_said(Some(swept), baseline, nominal)),
         }
     }
 }
@@ -173,7 +201,7 @@ pub fn ladders(text: &str, answers: &str) -> Result<LaddersReply, String> {
     let (options, rate) = constraints_in(answers)?;
     let sweep =
         search(&plan, tables(), &options, rate, &Progress::default()).map_err(run_refusal)?;
-    Ok(LaddersReply::new(&plan, &sweep, &options))
+    Ok(LaddersReply::new(&plan, &Swept { sweep, options }))
 }
 
 /// The options a ladder into `destination` is taken or written under: the
@@ -194,7 +222,7 @@ fn steps_of(years: Vec<LadderYear>) -> Vec<LadderStep> {
 impl Document {
     /// The constraints the draft holds, the plan's one Roth account named
     /// where they name none.
-    fn aimed(&self) -> toml::Table {
+    pub(crate) fn aimed(&self) -> toml::Table {
         let mut answers = self.draft().answers::<Constraints>();
         if let Some(only) = only_roth(self.draft()) {
             answers.insert(DESTINATION.to_owned(), only.into());
@@ -272,6 +300,20 @@ impl Document {
         destination: &str,
         years: Vec<LadderYear>,
     ) -> Result<String, String> {
+        let base = self.scenario_base(out)?;
+        let steps = steps_of(years);
+        ladder_overlay(&base, &self.draft().plan, &into(destination), &steps)
+            .map_err(|error| error.to_string())
+    }
+
+    /// The `base` a scenario written at `out` names: the document's file,
+    /// relative to `out`.
+    ///
+    /// # Errors
+    ///
+    /// Where the draft has unsaved edits, which the file on disk does not
+    /// hold, or `out` is a file the document was resolved from.
+    pub(crate) fn scenario_base(&self, out: &str) -> Result<String, String> {
         if self.draft().is_dirty() {
             return Err(OVERLAY_SAVE_FIRST.to_owned());
         }
@@ -280,10 +322,7 @@ impl Document {
             return Err(OVER_ITS_BASE.to_owned());
         }
         let within = out.parent().unwrap_or(Path::new("/"));
-        let base = relative_path(within, &self.files()[0]);
-        let steps = steps_of(years);
-        ladder_overlay(&base, &self.draft().plan, &into(destination), &steps)
-            .map_err(|error| error.to_string())
+        Ok(relative_path(within, &self.files()[0]))
     }
 }
 

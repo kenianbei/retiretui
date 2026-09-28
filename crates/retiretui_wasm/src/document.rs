@@ -197,12 +197,29 @@ impl Document {
         name: &str,
         xml: &str,
     ) -> Result<String, String> {
+        self.person_step(index, name, |plan, person| {
+            let statement = statement::record(plan, person, xml)?;
+            Ok(recorded(plan.person_name(person), &statement))
+        })
+    }
+
+    /// Makes `change` to the person at `index`, where they are still the
+    /// one called `name`, as one step of history, answering what it
+    /// answers.
+    ///
+    /// # Errors
+    ///
+    /// Where the draft is read-only, the person there is no longer them, or
+    /// `change` fails.
+    pub(crate) fn person_step(
+        &mut self,
+        index: usize,
+        name: &str,
+        change: impl FnOnce(&mut Plan, &str) -> Result<String, String>,
+    ) -> Result<String, String> {
         self.still_at(form_at(&slug_of(DomainId::People))?, index, name)?;
         let person = self.draft.plan.household.people[index].id.clone();
-        self.step(|plan| {
-            let statement = statement::record(plan, &person, xml)?;
-            Ok(recorded(plan.person_name(&person), &statement))
-        })
+        self.step(|plan| change(plan, &person))
     }
 
     /// Changes the plan by `change` as one step of history, answering what
