@@ -7,7 +7,7 @@ import { DataTable } from "@/components/data-table";
 import { YearDetailCards } from "@/ledger/year-detail";
 import { BASIS_LABEL } from "@/overview/words";
 import { useSession } from "@/session";
-import { basisOf } from "@/year/search";
+import { basisOf, type LedgerSearch } from "@/year/search";
 import { useYear } from "@/year/use-year";
 import { BasisSwitch, YearStepper } from "@/year/year";
 
@@ -20,23 +20,42 @@ function isWide(): boolean {
 
 const column = columnsFor<LedgerRow>();
 
+/** The Ledger in the plan's own market, the year and basis kept. */
+function BackToPlan() {
+  return (
+    <Link
+      to="/ledger"
+      search={(kept) => ({ ...kept, market: undefined })}
+      className="underline underline-offset-4"
+    >
+      Back to the plan
+    </Link>
+  );
+}
+
 /** The plan year by year, and the year shown's flows, income and tax. */
 export function LedgerPage() {
   const { reading, issues } = useSession();
-  const basis = basisOf(useSearch({ from: "/ledger" }));
+  const search: LedgerSearch = useSearch({ from: "/ledger" });
+  const { market } = search;
+  const basis = basisOf(search);
   const isNominal = basis === "nominal";
   const shown = useYear();
   const { year, setYear } = shown;
-  const ledger = useMemo(
-    () => reading.document?.ledger(isNominal),
-    [reading, isNominal],
-  );
+  const replayed = useMemo(() => {
+    try {
+      return { ledger: reading.document?.ledger(isNominal, market) };
+    } catch (thrown) {
+      return { refusal: thrown instanceof Error ? thrown.message : "" };
+    }
+  }, [reading, isNominal, market]);
+  const ledger = replayed.ledger;
   const detail = useMemo(
     () =>
       ledger && year !== undefined
-        ? reading.document?.yearDetail(year, isNominal)
+        ? reading.document?.yearDetail(year, isNominal, market)
         : undefined,
-    [reading, ledger, year, isNominal],
+    [reading, ledger, year, isNominal, market],
   );
   const columns = useMemo(
     () =>
@@ -60,6 +79,16 @@ export function LedgerPage() {
   }, [year]);
 
   if (!reading.document) return null;
+  if (market !== undefined && "refusal" in replayed) {
+    return (
+      <div className="max-w-3xl space-y-3">
+        <h1 className="text-2xl font-semibold tracking-tight">Ledger</h1>
+        <p className="text-muted-foreground">
+          {replayed.refusal}. <BackToPlan />
+        </p>
+      </div>
+    );
+  }
   if (!ledger) {
     return (
       <div className="max-w-3xl space-y-3">
@@ -84,6 +113,12 @@ export function LedgerPage() {
           <BasisSwitch />
         </div>
       </div>
+      {market !== undefined && (
+        <p className="border-primary bg-card rounded-md border-l-4 px-3 py-2 text-sm first-letter:uppercase">
+          {reading.document.marketSaid(market)}: the plan as a market tool ran
+          it. <BackToPlan />
+        </p>
+      )}
       {issues.length > 0 && (
         <p className="border-destructive text-muted-foreground border-l-4 px-3 text-sm">
           These are the last figures the plan had without issues.
