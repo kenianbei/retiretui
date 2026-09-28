@@ -105,3 +105,8 @@
     @apply bg-background text-foreground antialiased;
   }
 }
+
+/* A heading focused on arriving at its page is announced, not outlined. */
+main h1[tabindex="-1"]:focus {
+  outline: none;
+}

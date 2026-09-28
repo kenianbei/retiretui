@@ -6,7 +6,14 @@ import {
   useRouter,
 } from "@tanstack/react-router";
 
-import type { ReactNode } from "react";
+import { Search } from "lucide-react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 import { useComparedFollowDocument } from "@/compare/use-compared";
 import { DraftNotices, UnsavedQuestion } from "@/draft/notices";
@@ -14,8 +21,13 @@ import { DraftToolbar } from "@/draft/toolbar";
 import { FileActionsProvider } from "@/files/actions";
 import { FileMenu } from "@/files/menu";
 import { Start } from "@/files/start";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/session";
+import { tabTarget } from "@/shell/go";
+import { KeysSheet } from "@/shell/keys";
+import { useShellKeys } from "@/shell/use-keys";
+import { Palette } from "@/shell/palette";
 import { keptSearch } from "@/year/search";
 import {
   TABS,
@@ -42,12 +54,10 @@ interface TabLinkProps {
 
 /** A link to a tab's own page, or to one of its group's. */
 function TabLink({ tab, page, className, children, isCurrent }: TabLinkProps) {
-  const slug = isGroup(tab) ? (page ?? tab.pages[0])?.slug : undefined;
   const keeps = useRouter().routesByPath[tab.path].options.staticData?.keeps;
   return (
     <Link
-      to={tab.path}
-      params={slug === undefined ? {} : { page: slug }}
+      {...tabTarget(tab, page)}
       search={(prev) => keptSearch(prev, keeps ?? [])}
       className={className}
       aria-current={isCurrent ? "page" : undefined}
@@ -176,15 +186,60 @@ function GroupPages() {
   );
 }
 
+/**
+ * Moves focus to the page's heading once a navigation to another page has
+ * shown it, so that a screen reader says where it now is - unless the page
+ * has put it somewhere of its own, such as the field a link names.
+ */
+function useFocusOnNavigation() {
+  const router = useRouter();
+  useEffect(
+    () =>
+      router.subscribe("onResolved", (event) => {
+        if (!event.pathChanged || !event.fromLocation) return;
+        requestAnimationFrame(() => {
+          const main = window.document.querySelector("main");
+          const heading = main?.querySelector("h1");
+          const focused = window.document.activeElement;
+          if (!heading || (focused !== main && main?.contains(focused))) return;
+          heading.tabIndex = -1;
+          heading.focus();
+        });
+      }),
+    [router],
+  );
+}
+
 export function Shell() {
   const { document } = useSession();
   useComparedFollowDocument();
+  useFocusOnNavigation();
+  const main = useRef<HTMLElement>(null);
+  const [isFinding, setFinding] = useState(false);
+  const [isListingKeys, setListingKeys] = useState(false);
+  const find = useCallback(() => {
+    setFinding(true);
+  }, []);
+  const listKeys = useCallback(() => {
+    setListingKeys(true);
+  }, []);
+  useShellKeys(find, listKeys);
   const isWithoutDocument = useMatches({
     select: (matches) =>
       matches.some((match) => match.staticData.isWithoutDocument === true),
   });
   return (
     <FileActionsProvider>
+      <a
+        href="#main"
+        onClick={(event) => {
+          event.preventDefault();
+          main.current?.focus();
+        }}
+        className="bg-primary text-primary-foreground sr-only z-50 rounded-md px-3 py-2 focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
+      >
+        Skip to the page
+      </a>
       <div className="min-h-dvh md:grid md:grid-cols-[15rem_1fr]">
         <Sidebar />
         <div className="flex min-h-dvh min-w-0 flex-col pb-20 md:pb-0">
@@ -193,9 +248,27 @@ export function Shell() {
               RetireTui
             </span>
             <FileMenu />
+            <Button
+              variant="outline"
+              size="sm"
+              aria-label="Find a page, a plan or an action"
+              title="Find a page, a plan or an action (Ctrl K)"
+              onClick={find}
+              className="hidden sm:inline-flex"
+            >
+              <Search aria-hidden />
+              <kbd className="text-muted-foreground hidden font-sans text-xs lg:inline">
+                Ctrl K
+              </kbd>
+            </Button>
             <DraftToolbar />
           </header>
-          <main className="flex-1 px-4 py-6 md:px-8">
+          <main
+            id="main"
+            ref={main}
+            tabIndex={-1}
+            className="flex-1 px-4 py-6 outline-none md:px-8"
+          >
             <DraftNotices />
             {isWithoutDocument ? (
               <Outlet />
@@ -212,6 +285,8 @@ export function Shell() {
         <BottomBar />
       </div>
       <UnsavedQuestion />
+      <Palette isOpen={isFinding} setOpen={setFinding} showKeys={listKeys} />
+      <KeysSheet isOpen={isListingKeys} setOpen={setListingKeys} />
     </FileActionsProvider>
   );
 }
