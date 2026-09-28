@@ -200,8 +200,8 @@ fn the_overview_renders_its_verdict_chart_and_to_do() {
         "{frame}"
     );
     assert!(
-        frame.contains("2026 · to do · in that year's dollars"),
-        "the To do is always nominal: {frame}"
+        frame.contains("2026 · to do · today's dollars"),
+        "the To do follows the basis: {frame}"
     );
 }
 

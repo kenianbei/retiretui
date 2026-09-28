@@ -1,5 +1,6 @@
 ---
 source: crates/retiretui_tui/src/frames.rs
+assertion_line: 45
 expression: composed_frame(app)
 ---
 ╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                              
@@ -13,7 +14,7 @@ expression: composed_frame(app)
 │  2037 db-pension starts                                     ║││                                                              │
 │  2037 401k-deferral ends                                    ▼││                                                              │
 ╰──────────────────────────────────────────────────────────────╯╰──────────────────────────────────────────────────────────────╯
-╭ Balances by tax treatment · to╭ Open ────────────────────────────────────────────────────────╮that year's dollars ───────────╮
+╭ Balances by tax treatment · to╭ Open ────────────────────────────────────────────────────────╮ay's dollars ──────────────────╮
 │2.20M│┊            ⢀⣀⣀⣀⣀       │>                                                             │0 to fid-401k ($24,000 yours,  │
 │     │┊         ⢀⡠⠊⠁▓┊▓▓⠉⠑⠒⠒⠒⠒⠒│  ../                                                         │)                              │
 │     │┊       ⡔⠊⠁▓▓▓▓┊▓▓▓▓▓▓▓▓▒│▌ broken.toml                                         invalid │ to hsa                        │

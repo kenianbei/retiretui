@@ -1,6 +1,6 @@
 ---
 source: crates/retiretui_tui/src/frames.rs
-assertion_line: 44
+assertion_line: 45
 expression: composed_frame(app)
 ---
 ╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                                                                                                      
@@ -18,7 +18,7 @@ expression: composed_frame(app)
 │  2040 Medicare · jordan                                                                         ║││                                                                                                  │
 │  2042 Social Security · jordan, $40k a year                                                     ▼││                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭ Income against taxes · today's dollars ──────────────────────────────────────────────────────────────────────────────╮╭ 2026 · to do · in that year's dollars ───────────────────────────────────────╮
+╭ Income against taxes · today's dollars ──────────────────────────────────────────────────────────────────────────────╮╭ 2026 · to do · today's dollars ──────────────────────────────────────────────╮
 │262k│┊                         ┊                                                                              ┌──────┐││▏ Contribute $32,000 to fid-401k ($24,000 yours, $8,000 employer)             │
 │    │┊             ⡆           ┊                                                                              │income│││  Contribute $8,000 to hsa                                                    │
 │    │┊            ⢰⢱           ┊                                                                              │taxes │││  Save the unspent $9,020 in cash                                             │

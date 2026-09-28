@@ -2,17 +2,19 @@
 //! them.
 
 use retiretui_engine::params::TaxTables;
-use retiretui_engine::plan::Plan;
+use retiretui_engine::plan::{Dollars, Plan};
 use retiretui_engine::project::{Action, ContributionNote, Projection, YearRow, irmaa_purchase};
 use retiretui_engine::tax;
 
-use crate::table::{account_name, income_name, money, rate};
+use crate::table::{account_name, basis_amount, income_name, money, rate};
 
-/// An action as a sentence, its amount nominal and accounts by their
-/// display names.
+/// An action as a sentence, accounts by their display names and its
+/// amount nominal, or in today's dollars through its year's `deflator`
+/// where one is given.
 #[must_use]
-pub fn sentence(plan: &Plan, action: &Action) -> String {
+pub fn sentence(plan: &Plan, action: &Action, deflator: Option<f64>) -> String {
     let named = |id: &str| account_name(plan, id).to_owned();
+    let money = |amount| money(deflator.map_or(amount, |by| basis_amount(amount, by, false)));
     match action {
         Action::Transfer { from, to, amount } => {
             format!(
@@ -33,18 +35,12 @@ pub fn sentence(plan: &Plan, action: &Action) -> String {
             employer,
             notes,
         } => {
-            let total = money(employee + employer);
-            let account = named(account);
-            let mut said = Vec::new();
-            if *employer > 0 {
-                let (yours, theirs) = (money(*employee), money(*employer));
-                said.push(format!("{yours} yours, {theirs} employer"));
-            }
-            said.extend(notes.iter().map(|note| note_phrase(plan, note)));
+            let said = contribution_notes(plan, (*employee, *employer), notes, &money);
+            let (total, account) = (money(employee + employer), named(account));
             if said.is_empty() {
                 format!("Contribute {total} to {account}")
             } else {
-                format!("Contribute {total} to {account} ({})", said.join("; "))
+                format!("Contribute {total} to {account} ({said})")
             }
         }
         Action::Conversion { from, to, amount } => {
@@ -62,6 +58,26 @@ pub fn sentence(plan: &Plan, action: &Action) -> String {
             format!("Save the unspent {} in {}", money(*amount), named(account))
         }
     }
+}
+
+/// What a contribution's sentence adds in brackets: the employee's and
+/// employer's shares where both paid, and how it came to be what it is.
+fn contribution_notes(
+    plan: &Plan,
+    (yours, theirs): (Dollars, Dollars),
+    notes: &[ContributionNote],
+    money: &impl Fn(Dollars) -> String,
+) -> String {
+    let mut said = Vec::new();
+    if theirs > 0 {
+        said.push(format!(
+            "{} yours, {} employer",
+            money(yours),
+            money(theirs)
+        ));
+    }
+    said.extend(notes.iter().map(|note| note_phrase(plan, note)));
+    said.join("; ")
 }
 
 /// How a contribution came to be what it is, as the sentence says it.

@@ -251,6 +251,17 @@ pub fn money_lasts(summary: &Summary) -> String {
     )
 }
 
+/// The year the money first runs short and what it leaves uncovered in
+/// all; `None` where it never does.
+#[must_use]
+pub fn runs_short(summary: &Summary) -> Option<String> {
+    let year = summary.first_unfunded_year?;
+    Some(format!(
+        "Runs short from {year}: {} of spending the money cannot cover",
+        compact_money(summary.lifetime_unfunded)
+    ))
+}
+
 /// How long the money lasts, against how long the baseline's does.
 #[must_use]
 pub fn money_lasts_against(own: &Summary, base: &Summary) -> String {
@@ -469,5 +480,30 @@ mod tests {
         for (stated, phrase) in cases {
             assert_eq!(trigger(&value(stated), &plan), phrase, "{stated}");
         }
+    }
+
+    #[test]
+    fn a_plan_runs_short_from_its_first_unfunded_year() {
+        let summary = Summary {
+            final_net_worth: 0,
+            peak_net_worth: 0,
+            peak_year: 2026,
+            lifetime_taxes: 0,
+            lifetime_conversions: 0,
+            lifetime_unfunded: 772_000,
+            lifetime_medicare: 0,
+            first_unfunded_year: Some(2042),
+            final_deferred: 0,
+        };
+        let said = runs_short(&summary);
+        assert_eq!(
+            said.as_deref(),
+            Some("Runs short from 2042: $772k of spending the money cannot cover")
+        );
+        let lasting = Summary {
+            first_unfunded_year: None,
+            ..summary
+        };
+        assert_eq!(runs_short(&lasting), None);
     }
 }

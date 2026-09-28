@@ -1,23 +1,24 @@
-//! The Milestones pane: the plan's key years in order, each beside the
-//! item it comes from.
+//! Milestones: the plan's key years in order, each beside the item it
+//! comes from.
 
 use retiretui_engine::plan::{Allocation, IncomeKind, Item, Plan, TreatmentClass};
 use retiretui_engine::project::{Projection, Timeline};
 use retiretui_engine::tax::{MEDICARE_AGE, rmd_start_age};
 
-use super::rows::Entry;
-use crate::nav::Page;
-use crate::present::{account_name, compact_money, event_name, income_name, mix, residence};
+use super::Row;
+use crate::forms::DomainId;
+use crate::present::{compact_money, mix, residence};
 use crate::session::{Projected, span};
-use crate::table::basis_amount;
+use crate::table::{account_name, basis_amount, event_name, income_name};
 
 /// The plan's milestones within its projected years, earliest first and
 /// in the order their kinds are listed where two share a year.
-pub(super) fn entries(projected: &Projected, nominal: bool) -> Vec<Entry> {
+#[must_use]
+pub fn milestones(projected: &Projected, nominal: bool) -> Vec<Row> {
     let plan = &projected.plan;
     let years = &projected.projection.years;
     let timeline = Timeline::new(plan);
-    let mut found: Vec<Entry> = [
+    let mut found: Vec<Row> = [
         events(plan, &timeline),
         claims(plan, &timeline, &projected.projection, nominal),
         incomes_starting(plan, &timeline),
@@ -31,28 +32,24 @@ pub(super) fn entries(projected: &Projected, nominal: bool) -> Vec<Entry> {
     .flatten()
     .collect();
     let (first, last) = span(years);
-    found.retain(|entry| {
-        entry
-            .year
-            .is_some_and(|year| (first..=last).contains(&year))
-    });
-    found.sort_by_key(|entry| entry.year);
+    found.retain(|row| row.year.is_some_and(|year| (first..=last).contains(&year)));
+    found.sort_by_key(|row| row.year);
     found
 }
 
-fn events(plan: &Plan, timeline: &Timeline) -> Vec<Entry> {
+fn events(plan: &Plan, timeline: &Timeline) -> Vec<Row> {
     let each = plan.events.iter().enumerate();
     each.filter_map(|(at, event)| {
         let year = (*timeline.events.get(&event.id)?)?;
         let name = event_name(plan, &event.id).to_owned();
-        Some(Entry::dated(year, name, (Page::Events, Some(at))))
+        Some(Row::dated(year, name, (DomainId::Events, Some(at))))
     })
     .collect()
 }
 
 /// Each Social Security claim, with what its first full year pays: the
 /// claim year is paid from the month the age is reached.
-fn claims(plan: &Plan, timeline: &Timeline, projection: &Projection, nominal: bool) -> Vec<Entry> {
+fn claims(plan: &Plan, timeline: &Timeline, projection: &Projection, nominal: bool) -> Vec<Row> {
     let each = plan.income.iter().enumerate();
     each.filter(|(_, income)| income.kind == IncomeKind::SocialSecurity)
         .filter_map(|(at, income)| {
@@ -66,14 +63,14 @@ fn claims(plan: &Plan, timeline: &Timeline, projection: &Projection, nominal: bo
             if let Some(paid) = paid {
                 text = format!("{text}, {} a year", compact_money(paid));
             }
-            Some(Entry::dated(year, text, (Page::Income, Some(at))))
+            Some(Row::dated(year, text, (DomainId::Income, Some(at))))
         })
         .collect()
 }
 
 /// Incomes other than wages and Social Security, as they start or, once
 /// only, arrive.
-fn incomes_starting(plan: &Plan, timeline: &Timeline) -> Vec<Entry> {
+fn incomes_starting(plan: &Plan, timeline: &Timeline) -> Vec<Row> {
     let each = plan.income.iter().enumerate();
     each.filter(|(_, income)| {
         !matches!(income.kind, IncomeKind::Salary | IncomeKind::SocialSecurity)
@@ -86,23 +83,23 @@ fn incomes_starting(plan: &Plan, timeline: &Timeline) -> Vec<Entry> {
             (None, Some(year)) => (year, format!("{name} arrives")),
             (None, None) => return None,
         };
-        Some(Entry::dated(year, text, (Page::Income, Some(at))))
+        Some(Row::dated(year, text, (DomainId::Income, Some(at))))
     })
     .collect()
 }
 
-fn medicare(plan: &Plan) -> Vec<Entry> {
+fn medicare(plan: &Plan) -> Vec<Row> {
     let each = plan.household.people.iter().enumerate();
     each.map(|(at, person)| {
         let year = person.birth.year() + i16::from(MEDICARE_AGE);
         let text = format!("Medicare · {}", person.display_name());
-        Entry::dated(year, text, (Page::People, Some(at)))
+        Row::dated(year, text, (DomainId::People, Some(at)))
     })
     .collect()
 }
 
 /// Required distributions start for each person owning a deferred account.
-fn rmds(plan: &Plan) -> Vec<Entry> {
+fn rmds(plan: &Plan) -> Vec<Row> {
     let each = plan.household.people.iter().enumerate();
     each.filter(|(_, person)| {
         (plan.accounts.iter()).any(|account| {
@@ -113,32 +110,32 @@ fn rmds(plan: &Plan) -> Vec<Entry> {
         let birth = person.birth.year();
         let year = birth + i16::from(rmd_start_age(birth));
         let text = format!("RMDs start · {}", person.display_name());
-        Entry::dated(year, text, (Page::People, Some(at)))
+        Row::dated(year, text, (DomainId::People, Some(at)))
     })
     .collect()
 }
 
-fn contributions_ending(plan: &Plan, timeline: &Timeline) -> Vec<Entry> {
+fn contributions_ending(plan: &Plan, timeline: &Timeline) -> Vec<Row> {
     let each = plan.contributions.iter().enumerate();
     each.filter_map(|(at, contribution)| {
         let year = timeline.contributions.get(&contribution.id)?.end?;
         let text = format!("{} ends", contribution.display_name());
-        Some(Entry::dated(year, text, (Page::Contributions, Some(at))))
+        Some(Row::dated(year, text, (DomainId::Contributions, Some(at))))
     })
     .collect()
 }
 
-fn moves(plan: &Plan, timeline: &Timeline) -> Vec<Entry> {
+fn moves(plan: &Plan, timeline: &Timeline) -> Vec<Row> {
     let each = plan.residency.iter().zip(&timeline.residency).enumerate();
     each.filter_map(|(at, (residency, year))| {
         let text = format!("moves to {}", residence(residency));
-        Some(Entry::dated((*year)?, text, (Page::Residency, Some(at))))
+        Some(Row::dated((*year)?, text, (DomainId::Residency, Some(at))))
     })
     .collect()
 }
 
 /// Each step of a glide path after the mix it starts on.
-fn glide_steps(plan: &Plan, timeline: &Timeline) -> Vec<Entry> {
+fn glide_steps(plan: &Plan, timeline: &Timeline) -> Vec<Row> {
     let mut found = Vec::new();
     for (at, account) in plan.accounts.iter().enumerate() {
         let Some(years) = timeline.glide_steps.get(&account.id) else {
@@ -156,7 +153,7 @@ fn glide_steps(plan: &Plan, timeline: &Timeline) -> Vec<Entry> {
                 "{name} glide step: {}",
                 mix(step.stocks, step.bonds, step.cash)
             );
-            found.push(Entry::dated(year, text, (Page::Accounts, Some(at))));
+            found.push(Row::dated(year, text, (DomainId::Accounts, Some(at))));
         }
     }
     found
@@ -165,7 +162,7 @@ fn glide_steps(plan: &Plan, timeline: &Timeline) -> Vec<Entry> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::support::{projected_from, test_projected};
+    use crate::overview::tests::{projected_from, test_projected};
 
     const MILESTONES_PLAN: &str = r#"
 schema = 1
@@ -249,8 +246,8 @@ amount = 60000
 "#;
 
     fn lines(projected: &Projected, nominal: bool) -> Vec<String> {
-        let entries = entries(projected, nominal);
-        entries.iter().map(Entry::line).collect()
+        let rows = milestones(projected, nominal);
+        rows.iter().map(Row::line).collect()
     }
 
     fn first_full_year(projected: &Projected, nominal: bool) -> String {
@@ -282,18 +279,18 @@ amount = 60000
     #[test]
     fn each_milestone_opens_the_item_it_comes_from() {
         let projected = projected_from(MILESTONES_PLAN);
-        let targets: Vec<_> = (entries(&projected, false).iter())
-            .map(|entry| entry.opens.unwrap())
+        let targets: Vec<_> = (milestones(&projected, false).iter())
+            .map(|row| row.place.unwrap())
             .collect();
         let expected = [
-            (Page::Accounts, Some(1)),
-            (Page::Events, Some(0)),
-            (Page::Income, Some(1)),
-            (Page::Contributions, Some(0)),
-            (Page::Residency, Some(1)),
-            (Page::People, Some(0)),
-            (Page::Income, Some(2)),
-            (Page::People, Some(0)),
+            (DomainId::Accounts, Some(1)),
+            (DomainId::Events, Some(0)),
+            (DomainId::Income, Some(1)),
+            (DomainId::Contributions, Some(0)),
+            (DomainId::Residency, Some(1)),
+            (DomainId::People, Some(0)),
+            (DomainId::Income, Some(2)),
+            (DomainId::People, Some(0)),
         ];
         assert_eq!(targets, expected);
     }

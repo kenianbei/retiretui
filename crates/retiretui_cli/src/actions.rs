@@ -54,7 +54,7 @@ fn render(plan: &Plan, row: &YearRow, warnings: &[String]) -> String {
         out.push_str("Nothing scheduled.\n");
     } else {
         for action in &row.actions {
-            let _ = writeln!(out, "{}", sentence(plan, action));
+            let _ = writeln!(out, "{}", sentence(plan, action, None));
         }
     }
     if !warnings.is_empty() {

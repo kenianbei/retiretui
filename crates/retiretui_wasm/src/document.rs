@@ -469,7 +469,7 @@ impl Document {
         Ok(SaidYear {
             year,
             ages: ages.collect(),
-            actions: actions.map(|action| sentence(plan, action)).collect(),
+            actions: actions.map(|action| sentence(plan, action, None)).collect(),
             warnings: collect_warnings(plan, tables(), row, None),
         })
     }

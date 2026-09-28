@@ -256,7 +256,7 @@ fn an_issue_row_opens_its_item_on_enter() {
     hold(&mut app, "Needs attention");
     let frame = redrawn(&mut app);
     assert!(
-        frame.contains("1 issue · Accounts › k › Balance:"),
+        frame.contains("Accounts › k › Balance: must not be negative"),
         "{frame}"
     );
     press_key(&mut app, KeyCode::Enter);
