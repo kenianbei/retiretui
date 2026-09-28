@@ -14,14 +14,8 @@ import {
 } from "react";
 
 import { messageOf } from "@/lib/utils";
+import { openAt, type Opened } from "@/opened";
 import { Workspace, fileAt, pathOf } from "@/workspace";
-
-/** The document a path names, or why it would not open. */
-interface Opened {
-  path: string | null;
-  document: Document | null;
-  error: string | null;
-}
 
 /** The open document, and how many changes it has seen. */
 export interface Reading {
@@ -36,6 +30,8 @@ export type Unsaved = "cancel" | "discard" | "save";
 export interface Session extends Opened {
   workspace: Workspace;
   files: string[];
+  /** How many times the workspace's files have been written, here or in another tab. */
+  stored: number;
   /**
    * The document as of its latest change: a value that is new whenever the
    * document, which changes in place, does - what reads of it are keyed on.
@@ -81,19 +77,15 @@ export interface Session extends Opened {
 
 const SessionContext = createContext<Session | null>(null);
 
-function openAt(workspace: Workspace, path: string | null): Opened {
-  if (path === null) return { path, document: null, error: null };
-  try {
-    const document = Document.open(path, (file) => workspace.read(file));
-    return { path, document, error: null };
-  } catch (thrown) {
-    return { path, document: null, error: messageOf(thrown) };
-  }
-}
-
 export function SessionProvider({ children }: { children: ReactNode }) {
   const workspace = useMemo(() => new Workspace(localStorage), []);
   const [files, setFiles] = useState(() => workspace.list());
+  const [stored, setStored] = useState(0);
+  /** Lists the files again after any write, which may have added one. */
+  const listed = useCallback(() => {
+    setFiles(workspace.list());
+    setStored((now) => now + 1);
+  }, [workspace]);
   const [opened, setOpened] = useState(() =>
     openAt(workspace, workspace.lastOpen()),
   );
@@ -140,20 +132,20 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       guarded(() => {
         const path = pathOf(name);
         workspace.write(path, text);
-        setFiles(workspace.list());
+        listed();
         openNow(path);
         onPlaced?.();
       });
     },
-    [workspace, guarded, openNow],
+    [workspace, guarded, openNow, listed],
   );
 
   const write = useCallback(
     (name: string, text: string) => {
       workspace.write(pathOf(name), text);
-      setFiles(workspace.list());
+      listed();
     },
-    [workspace],
+    [workspace, listed],
   );
 
   /** Runs `action`, reporting what it throws and clearing what was reported. */
@@ -175,8 +167,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     document.save((text) => {
       workspace.write(path, text);
     });
+    listed();
     changed();
-  }, [document, path, workspace, changed]);
+  }, [document, path, workspace, changed, listed]);
 
   const saveAs = useCallback(
     (name: string) => {
@@ -186,12 +179,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         workspace.write(target, text);
       });
       workspace.remember(target);
-      setFiles(workspace.list());
+      listed();
       setOpened({ path: target, document, error: null });
       setChangedElsewhere(false);
       changed();
     },
-    [document, workspace, changed],
+    [document, workspace, changed, listed],
   );
 
   const answer = useCallback(
@@ -248,7 +241,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const follow = (event: StorageEvent) => {
       const file = fileAt(event.key);
       if (file === undefined) return;
-      setFiles(workspace.list());
+      listed();
       const isOurs = file === null || document?.files().includes(file) === true;
       if (!isOurs) return;
       if (document?.isDirty) setChangedElsewhere(true);
@@ -258,7 +251,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return () => {
       window.removeEventListener("storage", follow);
     };
-  }, [workspace, document]);
+  }, [workspace, document, listed]);
 
   const isDirty = document?.isDirty === true;
   useEffect(() => {
@@ -277,6 +270,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       ...opened,
       workspace,
       files,
+      stored,
       reading,
       issues,
       open,
@@ -296,6 +290,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       opened,
       workspace,
       files,
+      stored,
       reading,
       issues,
       open,

@@ -5,11 +5,10 @@ use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Component, Entity, Local, Query, With};
 use plurimus::core::ratatui_core::text::Line;
 use plurimus::ui::{ComputedWidgetArea, ScrollArea};
-use retiretui_engine::plan::diff;
+use retiretui_client::compare::{THE_BASELINE, THE_SAME, changes};
 
 use super::Plans;
 use super::plans::Cursor;
-use crate::edit::change_words;
 use crate::hints::Hints;
 use crate::layout;
 use crate::pane::{Framed, Pane};
@@ -18,8 +17,6 @@ const TITLE: &str = "Changes";
 /// The narrowest the pane gets, borders included; otherwise it takes a
 /// third of the row, the Plans table the rest.
 const LEAST_COLS: f32 = 40.0;
-pub(super) const THE_BASELINE: &str = "The baseline.";
-pub(super) const THE_SAME: &str = "Same as the baseline.";
 
 #[derive(Component)]
 pub(crate) struct ChangesList;
@@ -84,12 +81,9 @@ fn lines(plans: &Plans, (place, baseline): (usize, usize)) -> Vec<Line<'static>>
     let (Some(base), Some(other)) = (plan_at(baseline), plan_at(place)) else {
         return Vec::new();
     };
-    match diff(base, other) {
-        Ok(changes) if changes.is_empty() => said(THE_SAME),
-        Ok(changes) => changes
-            .iter()
-            .map(|change| Line::from(change_words(change, (base, other))))
-            .collect(),
-        Err(error) => vec![Line::styled(error.to_string(), plans.theme.exceeded())],
+    match changes(base, other) {
+        Ok(lines) if lines.is_empty() => said(THE_SAME),
+        Ok(lines) => lines.into_iter().map(Line::from).collect(),
+        Err(error) => vec![Line::styled(error, plans.theme.exceeded())],
     }
 }

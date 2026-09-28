@@ -8,6 +8,7 @@ import {
 
 import type { ReactNode } from "react";
 
+import { useComparedFollowDocument } from "@/compare/use-compared";
 import { DraftNotices, UnsavedQuestion } from "@/draft/notices";
 import { DraftToolbar } from "@/draft/toolbar";
 import { FileActionsProvider } from "@/files/actions";
@@ -177,6 +178,7 @@ function GroupPages() {
 
 export function Shell() {
   const { document } = useSession();
+  useComparedFollowDocument();
   const isWithoutDocument = useMatches({
     select: (matches) =>
       matches.some((match) => match.staticData.isWithoutDocument === true),

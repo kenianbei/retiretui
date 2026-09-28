@@ -55,7 +55,9 @@ fn a_narrower_pane_shows_fewer_columns() {
     let shown = |size| {
         let app = comparing_variant(size);
         let frame = composed_frame(&app);
-        let headers = plans::COLUMNS.iter().map(|column| column.header);
+        let headers = retiretui_client::compare::COLUMNS
+            .iter()
+            .map(|column| column.header);
         headers
             .filter(|header| !header.is_empty() && frame.contains(header))
             .count()

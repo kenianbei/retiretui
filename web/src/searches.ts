@@ -1,4 +1,5 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQueries, useQuery } from "@tanstack/react-query";
+import type { Searched } from "@wasm/retiretui_wasm.js";
 
 import type { Answer, Replies, Search } from "@/worker";
 
@@ -9,6 +10,9 @@ const warm = new Map<string, Worker>();
 
 /** Each lane's search under way, stopped by what this holds. */
 const running = new Map<string, () => void>();
+
+/** Lanes no longer wanted, which a stopped search leaves without a worker. */
+const released = new Set<string>();
 
 function workerFor(lane: string): Worker {
   const kept = warm.get(lane);
@@ -32,6 +36,7 @@ function runSearch<K extends Kind>(
   lane: string = search.kind,
 ): Promise<Replies[K]> {
   running.get(lane)?.();
+  released.delete(lane);
   return new Promise((resolve, reject) => {
     const worker = workerFor(lane);
     const settle = () => {
@@ -44,7 +49,7 @@ function runSearch<K extends Kind>(
       settle();
       worker.terminate();
       warm.delete(lane);
-      workerFor(lane);
+      if (!released.has(lane)) workerFor(lane);
       reject(new Error("the search was stopped"));
     };
     const heard = (event: MessageEvent<Answer<K>>) => {
@@ -64,6 +69,14 @@ function runSearch<K extends Kind>(
     running.set(lane, stop);
     worker.postMessage(search);
   });
+}
+
+/** Terminates `lane`'s worker and any search in it, loading no other. */
+export function releaseLane(lane: string) {
+  released.add(lane);
+  running.get(lane)?.();
+  warm.get(lane)?.terminate();
+  warm.delete(lane);
 }
 
 /** A market tool's search: through random markets, or from every historical start. */
@@ -86,6 +99,44 @@ export function useMarkets(
     placeholderData: keepPreviousData,
     staleTime: Infinity,
     retry: false,
+  });
+}
+
+/** Where a plan's search through random markets has got to. */
+function searchedOf(found: {
+  data?: { success_rate: number };
+  error: Error | null;
+  isFetching: boolean;
+}): Searched {
+  if (found.data) return { kind: "rate", rate: found.data.success_rate };
+  if (found.error && !found.isFetching) return { kind: "failed" };
+  return { kind: "waiting" };
+}
+
+function searchedOfEach(found: Parameters<typeof searchedOf>[0][]): Searched[] {
+  return found.map(searchedOf);
+}
+
+/**
+ * Where each of `plans` has got to through random markets, each searched in
+ * its own `lane` so that they run side by side, and only where
+ * `isSearchable`; a plan's text keys its search as `useMarkets` does, so
+ * the same plan is searched once.
+ */
+export function useSuccesses(
+  plans: readonly { plan: string; lane: string }[],
+  isSearchable: boolean,
+): Searched[] {
+  return useQueries({
+    queries: plans.map(({ plan, lane }) => ({
+      queryKey: ["monteCarlo", plan],
+      queryFn: ({ signal }: { signal: AbortSignal }) =>
+        runSearch({ kind: "monteCarlo", plan }, signal, lane),
+      enabled: isSearchable && plan !== "",
+      staleTime: Infinity,
+      retry: false,
+    })),
+    combine: searchedOfEach,
   });
 }
 

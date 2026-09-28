@@ -4,8 +4,11 @@ import {
   createRoute,
   createRouter,
   redirect,
+  retainSearchParams,
 } from "@tanstack/react-router";
 
+import { ComparePage } from "@/compare/page";
+import { compareSearch, withSearch } from "@/compare/search";
 import { DOMAINS, TOOLS, pageOf } from "@/nav";
 import { LedgerPage } from "@/ledger/page";
 import { Overview } from "@/overview/overview";
@@ -13,13 +16,18 @@ import { NewPlanPage } from "@/onboarding/page";
 import { newPlanSearch } from "@/onboarding/steps";
 import { DomainPage } from "@/plan/page";
 import { planSearch } from "@/plan/search";
-import { NotFound, Placeholder } from "@/pages/placeholder";
+import { NotFound } from "@/pages/not-found";
 import { Shell } from "@/shell/shell";
 import { ToolPage } from "@/tools/page";
 import { toolSearch } from "@/tools/search";
 import { ledgerSearch, yearSearch, type KeptKey } from "@/year/search";
 
-const root = createRootRoute({ component: Shell, notFoundComponent: NotFound });
+const root = createRootRoute({
+  component: Shell,
+  notFoundComponent: NotFound,
+  validateSearch: withSearch,
+  search: { middlewares: [retainSearchParams(["with"])] },
+});
 
 const index = createRoute({
   getParentRoute: () => root,
@@ -49,12 +57,9 @@ const ledger = createRoute({
 const compare = createRoute({
   getParentRoute: () => root,
   path: "/compare",
-  component: () => (
-    <Placeholder
-      title="Compare"
-      holds="The plan beside other plans in the workspace."
-    />
-  ),
+  staticData: { keeps: ["year", "basis", "held"] },
+  validateSearch: compareSearch,
+  component: ComparePage,
 });
 
 const tools = createRoute({

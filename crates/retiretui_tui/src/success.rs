@@ -13,25 +13,19 @@ use retiretui_engine::market::{History, RunError, monte_carlo};
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::Plan;
 
+pub(crate) use retiretui_client::compare::Success;
+
 use crate::compare::Compared;
 use crate::nav::{Page, ShownSurface};
-use crate::present::{self, SAME};
 use crate::session::{Projected, Session};
 use crate::theme::Repainted;
 use crate::tools::markets::MarketHistory;
-use crate::tools::{Keyed, Searches, running_text};
+use crate::tools::{Keyed, Searches};
 
 pub fn plugin(app: &mut App) {
     app.init_resource::<Successes>();
     app.add_systems(Update, work_through.before(Repainted));
 }
-
-const WAITING: &str = "waiting";
-const FAILED: &str = "—";
-const PERCENT: f64 = 100.0;
-/// A difference under this many points rounds to none at the one place
-/// it is shown to, and reads as the same.
-const SAME_POINTS: f64 = 0.05;
 
 /// What the page knows of each plan's success.
 #[derive(Resource, Default)]
@@ -63,39 +57,6 @@ impl Running {
             run,
             total,
             shown: 0,
-        }
-    }
-}
-
-/// A plan's success as the table has it.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub(crate) enum Success {
-    Waiting,
-    Running { done: usize, total: usize },
-    Rate(f64),
-    Failed,
-}
-
-impl Success {
-    pub(crate) fn text(self) -> String {
-        match self {
-            Self::Waiting => WAITING.to_owned(),
-            Self::Running { done, total } => running_text(done, total),
-            Self::Rate(rate) => present::rate(rate),
-            Self::Failed => FAILED.to_owned(),
-        }
-    }
-
-    /// Points more or fewer than `base`'s, where both have answered.
-    pub(crate) fn against(self, base: Self) -> String {
-        let (Self::Rate(own), Self::Rate(base)) = (self, base) else {
-            return self.text();
-        };
-        let points = (own - base) * PERCENT;
-        if points.abs() < SAME_POINTS {
-            SAME.to_owned()
-        } else {
-            format!("{points:+.1} pts")
         }
     }
 }

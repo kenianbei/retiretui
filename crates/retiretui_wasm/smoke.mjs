@@ -10,6 +10,8 @@ const {
   claimWords,
   claims,
   compactMoney,
+  compareHeaders,
+  compareWords,
   examples,
   historical,
   ladders,
@@ -20,6 +22,7 @@ const {
   statementPage,
   sortPressed,
   validate,
+  yearAmong,
 } = wasm;
 
 const [starter] = examples();
@@ -162,6 +165,26 @@ assert.match(
   /base = "early.toml"/,
 );
 assert.ok(converting.constraintsRead().some(([label]) => label === "Fill bracket"));
+
+files.set(
+  "/plans/early-ladder.toml",
+  converting.ladderScenario("/plans/early-ladder.toml", found.destination, ladder.steps),
+);
+const laddered = Document.open("/plans/early-ladder.toml", read);
+const unladdered = Document.open("/plans/early.toml", read);
+const words = compareWords();
+assert.equal(words.metrics[0].key, "net-worth");
+const [from, to] = unladdered.years();
+const view = { nominal: false, metric: "taxes", year: yearAmong(null, from, [from, to], [from, to]) };
+const headers = compareHeaders("taxes", view.year);
+assert.equal(headers[4], `Taxes ${view.year}`);
+const rate = { kind: "rate", rate: 0.9 };
+assert.equal(laddered.planFigures(view, rate).length, headers.length - 1);
+assert.equal(laddered.planFiguresAgainst(view, rate, unladdered, rate)[2], "same");
+assert.ok(laddered.byYearAgainst(view, unladdered).some(({ amount }) => amount !== 0));
+assert.equal(unladdered.byYear(view)[0].year, from);
+assert.ok(laddered.changesFrom(unladdered).some((line) => line.startsWith("Conversions")));
+assert.deepEqual(unladdered.changesFrom(unladdered), []);
 assert.ok(!converting.constraintsText.includes(found.destination));
 assert.equal(converting.rothOwners()[0].destination, found.destination);
 

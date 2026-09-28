@@ -24,8 +24,9 @@ use plurimus::widgets::WidgetSystems;
 use retiretui_engine::plan::{Dollars, Plan};
 use retiretui_engine::project::Projection;
 
+use retiretui_client::compare::{amounts, figure, less};
+
 use crate::metric::Metric;
-use crate::table::basis_amount;
 
 use super::chart::{Mark, Series, SeriesChart};
 use super::command::Outcome;
@@ -33,7 +34,6 @@ use super::hints::Hints;
 use super::journal;
 use super::layout::{self, Body};
 use super::nav::{self, Page};
-use super::present::{compact_money, signed_money};
 use super::session::{self, Session, Shown};
 use super::success::{self, Successes};
 use super::theme::{Repainted, Theme};
@@ -75,8 +75,6 @@ pub fn plugin(app: &mut App) {
 /// Walking the metrics is the page's, from whichever pane holds the keys.
 const METRIC_HINTS: Hints = Hints(&[("←→", "metric")]);
 const HELP: &str = "Compare this plan with others in its folder: c adds one.";
-/// A plan's figure in a year its projection does not reach.
-const UNREACHED: &str = "-";
 
 /// The files compared with the document, projected as they were read,
 /// and what the page measures them against.
@@ -236,30 +234,18 @@ impl Plans<'_> {
     fn amounts(&self, metric: Metric) -> Vec<BTreeMap<i16, Dollars>> {
         let nominal = self.shown.basis.nominal;
         let own: Vec<BTreeMap<i16, Dollars>> = (self.each())
-            .map(|(_, projection)| {
-                let rows = projection.years.iter();
-                rows.map(|row| {
-                    let amount = basis_amount(metric.value(row), row.deflator, nominal);
-                    (row.year, amount)
-                })
-                .collect()
-            })
+            .map(|(_, projection)| amounts(&projection.years, metric, nominal))
             .collect();
         let Some((at, ..)) = self.against() else {
             return own;
         };
         let base = &own[at];
-        let less_base = |amounts: &BTreeMap<i16, Dollars>| {
-            let each = amounts.iter();
-            each.filter_map(|(year, amount)| Some((*year, amount - base.get(year)?)))
-                .collect()
-        };
         (own.iter().enumerate())
             .map(|(place, amounts)| {
                 if place == at {
                     amounts.clone()
                 } else {
-                    less_base(amounts)
+                    less(amounts, base)
                 }
             })
             .collect()
@@ -300,14 +286,8 @@ impl Plans<'_> {
         let baseline = self.against().map(|(at, ..)| at);
         (amounts.iter().enumerate())
             .map(|(place, amounts)| {
-                let amount = amounts.get(&year).copied();
                 let is_difference = baseline.is_some_and(|at| at != place);
-                let figure = if is_difference {
-                    amount.map(signed_money)
-                } else {
-                    amount.map(compact_money)
-                };
-                figure.unwrap_or_else(|| UNREACHED.to_owned())
+                figure(amounts.get(&year).copied(), is_difference)
             })
             .collect()
     }

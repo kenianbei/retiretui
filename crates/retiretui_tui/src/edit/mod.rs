@@ -40,7 +40,6 @@ pub use commands::{Importing, add, delete, import_earnings, record_statement};
 pub use domain::{Ops, page_of};
 pub use draft::{Draft, DraftEditor, redo, save, undo, write_draft};
 pub use editing::{EditSession, Slot, open_item};
-pub use retiretui_client::forms::changes::change_words;
 pub use retiretui_client::issues::issue_words;
 pub use sort::sort;
 #[cfg(test)]
