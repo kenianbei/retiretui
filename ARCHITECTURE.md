@@ -313,27 +313,44 @@ depends on UI.
   last open.
 - `retiretui_wasm` - the engine and client for a JavaScript page, unpublished: a
   document opened through whatever reads the page's files - its base chain
-  resolved as every surface resolves it, its issues in the forms' words, and,
-  where it has none, its projection, summary, the year a view starts on, a
-  year's actions both as data and said as every surface says them, and its
-  canonical text - the client's names for the editing domains and its count of
-  issues, and, over a plan's text alone so that a worker can run them, the gate,
-  the conversion and claim searches, the market runs and the example plans, each
-  answered in the shapes the command line's JSON and the MCP server reply in.
-  Values cross as plain objects, typed by TypeScript generated from the Rust
-  types; the build fails where the two have drifted.
+  resolved as every surface resolves it, a scenario read-only - and edited as
+  its draft: a domain's items tabled, in an order a column's header gives
+  through the client's sort, and read out in the form's words; one item open in
+  its form, each field on show said as it is entered, with what it offers and
+  what is wrong with it, and a trigger's or a list's parts held while they do
+  not yet make a value; the item applied or removed as a step of the draft's
+  history, undone and redone, and the draft saved as canonical text through
+  whatever writes the page's files, under the same gate as every write. Its
+  issues are in the forms' words, each with the page, item and field it is
+  about, and from its last draft without any come its projection, summary, the
+  year a view starts on, and a year's actions both as data and said as every
+  surface says them - with the client's names for the editing domains and its
+  count of issues, and, over a plan's text alone so that a worker can run them,
+  the gate, the conversion and claim searches, the market runs and the example
+  plans, each answered in the shapes the command line's JSON and the MCP server
+  reply in. Values cross as plain objects, typed by TypeScript generated from
+  the Rust types; the build fails where the two have drifted.
 - `web/` - outside the cargo workspace, the web app, published at the Pages
   site's root with each release: a React page over `retiretui_wasm` for a phone
   or a desktop. Its plan files are kept in the page's own storage, under keys
   apart from the canvas page's, and followed across the browser's tabs; a
   document is opened from an example plan, an upload, or the file last open, and
   downloaded back out. The terminal's five tabs are a bar along a phone's bottom
-  edge and a sidebar on a wider screen, their addresses in the page's hash. What
-  it says of a plan - a year's actions, where an issue is, the domains' names -
-  is the client's words through the bindings, never its own. A search runs in a
-  Web Worker of its own, which a newer search terminates. Its colours are the
-  terminal theme's roles, light or dark as the system is, each held to a
-  readable contrast by a test. A page not yet built says so.
+  edge and a sidebar on a wider screen, their addresses in the page's hash. The
+  Plan tab's pages are the plan's editing domains: a table - rows of a name and
+  one figure on a phone - beside the highlighted item read out, or a domain's
+  one item read out alone, and one item at a time edited in a form over the
+  page, a sheet or a phone's whole screen, whose address names the item and the
+  field an issue's link lands on. What is applied is a step of the draft's
+  history, undone and redone from the header, which saves it or saves it under
+  another name; edits not yet applied or saved are asked about before they are
+  dropped, and a file another tab changes under unsaved edits is reported rather
+  than reopened. What it says of a plan - a year's actions, where an issue is,
+  the domains' names, a form's fields - is the client's words through the
+  bindings, never its own. A search runs in a Web Worker of its own, which a
+  newer search terminates. Its colours are the terminal theme's roles, light or
+  dark as the system is, each held to a readable contrast by a test. A page not
+  yet built says so.
 
 Plans express timing through a closed trigger vocabulary - a fixed date, a
 person's age, or a reference to a named event or income source with a whole year
