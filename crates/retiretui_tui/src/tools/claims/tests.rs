@@ -5,7 +5,7 @@ use plurimus::term::KeyCode;
 use retiretui_engine::market::Progress;
 use retiretui_engine::optimize::optimize_claims;
 use retiretui_engine::params::TaxTables;
-use retiretui_engine::plan::Scenario;
+use retiretui_engine::plan::{Item, Scenario};
 
 use super::people_tests::without_record;
 use super::*;
@@ -51,6 +51,18 @@ fn workspace_app(plan: &str) -> (PathBuf, Headless) {
     show(&mut app, Page::SsaBenefits);
     settle_claims(&mut app);
     (dir, app)
+}
+
+/// The ages of the best candidate found.
+fn best_ages(app: &App) -> Vec<u8> {
+    let found = app.world().resource::<Claims>().found().unwrap();
+    found.best().claims.iter().map(|claim| claim.age).collect()
+}
+
+/// The name of the person at `at` in the household.
+fn name(app: &App, at: usize) -> String {
+    let plan = &app.world().resource::<Draft>().plan;
+    plan.household.people[at].display_name().to_owned()
 }
 
 /// Hands the keyboard to the strategies, from the people it opens on.
@@ -297,20 +309,12 @@ fn w_writes_the_highlighted_claims_and_compares_them() {
 #[test]
 fn t_and_enter_ask_then_take_the_chosen_claims_as_one_step() {
     let (_, mut app) = workspace_app(&couple());
-    let best: Vec<u8> = app
-        .world()
-        .resource::<Claims>()
-        .found()
-        .unwrap()
-        .best()
-        .claims
-        .iter()
-        .map(|claim| claim.age)
-        .collect();
+    let best = best_ages(&app);
+    let names = [name(&app, 0), name(&app, 1)];
     assert_eq!(run_adopt(&mut app), Outcome::Done);
     app.update();
     assert!(
-        composed_frame(&app).contains(&format!("Take these claims? ss at {}", best[0])),
+        composed_frame(&app).contains(&format!("Take these claims? {} at {}", names[0], best[0])),
         "the question names the claims: {}",
         composed_frame(&app)
     );
@@ -331,9 +335,13 @@ fn t_and_enter_ask_then_take_the_chosen_claims_as_one_step() {
     assert_eq!(claim_age(&app, "ss"), Some(ages[0]));
     assert_eq!(claim_age(&app, "ss-you"), Some(ages[1]));
     assert!(app.world().resource::<Draft>().is_dirty());
+    let claimed = format!(
+        "claimed {} at {}, {} at {}",
+        names[0], ages[0], names[1], ages[1]
+    );
     assert_eq!(
         said(&app).last().map(String::as_str),
-        Some(format!("claimed ss at {}, ss-you at {}", ages[0], ages[1]).as_str())
+        Some(claimed.as_str())
     );
     press_ctrl(&mut app, KeyCode::Char('z'));
     assert_eq!(

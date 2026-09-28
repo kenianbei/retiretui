@@ -2,10 +2,12 @@
 //! command of the table, run by its key or from the actions ⏎ offers.
 
 use bevy_ecs::prelude::{In, Res, ResMut};
-use retiretui_engine::optimize::career_at_salary;
-use retiretui_engine::plan::Item;
+use retiretui_client::searches::claims::{
+    self, NOBODY, clear_question, hold_said, remove_question,
+};
+use retiretui_engine::plan::{Item, Plan};
 
-use super::people::{HeldClaims, NOBODY, PersonCursor, benefit};
+use super::people::{HeldClaims, PersonCursor};
 use crate::command::Outcome;
 use crate::confirm::Confirm;
 use crate::documents::{Browsing, Pickers};
@@ -41,52 +43,43 @@ pub fn fill_career(cursor: Res<PersonCursor>, mut editor: DraftEditor) -> Outcom
     if let Some(issue) = editor.draft.issues().first() {
         return Outcome::Refused(format!("not filled: {issue}"));
     }
-    let Some(at) = cursor.index(&editor.draft.plan) else {
-        return Outcome::Refused(NOBODY.to_owned());
-    };
-    let person = &editor.draft.plan.household.people[at];
-    let id = person.id.clone();
-    let name = person.display_name().to_owned();
-    if !person.earnings.is_empty() {
-        return Outcome::Refused(format!(
-            "{name} has an earnings record; a statement replaces it"
-        ));
-    }
-    let career = match career_at_salary(&editor.draft.plan, &editor.session.tables, &id) {
-        Ok(career) => career,
-        Err(reason) => return Outcome::Refused(reason),
-    };
-    let years = career.len();
-    editor.draft.plan.household.people[at].earnings = career;
-    editor.commit();
-    journal::say(format!(
-        "estimated {years} year(s) of earnings for {name} from a career at their salary"
-    ));
-    Outcome::Done
+    let tables = editor.session.tables.clone();
+    edit_person(&cursor, &mut editor, |plan, id| {
+        claims::fill_career(plan, &tables, id)
+    })
 }
 
 /// The `compute-benefit` command: drops the typed figure of the cursor's
 /// person's `social-security` income, so it is computed from their record,
 /// as one step of history.
 pub fn compute_benefit(cursor: Res<PersonCursor>, mut editor: DraftEditor) -> Outcome {
+    edit_person(&cursor, &mut editor, claims::compute_benefit)
+}
+
+/// Makes `edit` to the cursor's person as one step of history, saying what
+/// it did; an edit refused changes nothing.
+fn edit_person(
+    cursor: &PersonCursor,
+    editor: &mut DraftEditor,
+    edit: impl FnOnce(&mut Plan, &str) -> Result<String, String>,
+) -> Outcome {
     if let Some(refusal) = editor.draft.refuse_if_read_only() {
         return Outcome::Refused(refusal);
     }
-    let Some((id, name)) = cursor
+    let Some(id) = cursor
         .person(&editor.draft.plan)
-        .map(|person| (person.id.clone(), person.display_name().to_owned()))
+        .map(|person| person.id.clone())
     else {
         return Outcome::Refused(NOBODY.to_owned());
     };
-    let typed = (editor.draft.plan.income.iter())
-        .position(|income| income.is_benefit_of(&id) && income.amount.is_some());
-    let Some(at) = typed else {
-        return Outcome::Refused(format!("{name} has no typed benefit to compute"));
-    };
-    editor.draft.plan.income[at].amount = None;
-    editor.commit();
-    journal::say(format!("{name}'s benefit is computed from their record"));
-    Outcome::Done
+    match edit(&mut editor.draft.plan, &id) {
+        Ok(said) => {
+            editor.commit();
+            journal::say(said);
+            Outcome::Done
+        }
+        Err(refusal) => Outcome::Refused(refusal),
+    }
 }
 
 /// The `clear-record` command: asks before emptying the cursor's person's
@@ -102,28 +95,23 @@ pub fn clear_record(
     let Some(person) = cursor.person(&draft.plan) else {
         return Outcome::Refused(NOBODY.to_owned());
     };
-    let id = person.id.clone();
-    let name = person.display_name().to_owned();
     if person.earnings.is_empty() {
-        return Outcome::Refused(format!("{name} has no earnings record"));
+        return Outcome::Refused(format!("{} has no earnings record", person.display_name()));
     }
-    let question = format!("Clear {name}'s earnings record?");
-    confirm.ask(question, "Clear", move |commands| {
-        commands.run_system_cached_with(clear_now, id);
-    });
+    let id = person.id.clone();
+    confirm.ask(
+        clear_question(person.display_name()),
+        "Clear",
+        move |commands| {
+            commands.run_system_cached_with(clear_now, id);
+        },
+    );
     Outcome::Done
 }
 
 /// Empties `id`'s record, as one step of history.
-fn clear_now(In(id): In<String>, mut editor: DraftEditor) {
-    let name = editor.draft.plan.person_name(&id).to_owned();
-    let people = &editor.draft.plan.household.people;
-    let Some(at) = people.iter().position(|person| person.id == id) else {
-        return;
-    };
-    editor.draft.plan.household.people[at].earnings.clear();
-    editor.commit();
-    journal::say(format!("cleared {name}'s earnings record"));
+fn clear_now(In(id): In<String>, editor: DraftEditor) {
+    edit_now(&id, editor, claims::clear_record);
 }
 
 /// The `remove-benefit` command: asks before taking the cursor's person's
@@ -139,28 +127,33 @@ pub fn remove_benefit(
     let Some(person) = cursor.person(&draft.plan) else {
         return Outcome::Refused(NOBODY.to_owned());
     };
-    let id = person.id.clone();
-    let name = person.display_name().to_owned();
-    if benefit(&draft.plan, &id).is_none() {
+    let name = person.display_name();
+    if claims::benefit(&draft.plan, &person.id).is_none() {
         return Outcome::Refused(format!("{name} has no Social Security income"));
     }
-    let question = format!("Remove {name}'s Social Security income?");
-    confirm.ask(question, "Remove", move |commands| {
+    let id = person.id.clone();
+    confirm.ask(remove_question(name), "Remove", move |commands| {
         commands.run_system_cached_with(remove_now, id);
     });
     Outcome::Done
 }
 
 /// Takes `id`'s `social-security` income out, as one step of history.
-fn remove_now(In(id): In<String>, mut editor: DraftEditor) {
-    let name = editor.draft.plan.person_name(&id).to_owned();
-    let incomes = &editor.draft.plan.income;
-    let Some(at) = incomes.iter().position(|income| income.is_benefit_of(&id)) else {
-        return;
-    };
-    editor.draft.plan.income.remove(at);
-    editor.commit();
-    journal::say(format!("removed {name}'s Social Security income"));
+fn remove_now(In(id): In<String>, editor: DraftEditor) {
+    edit_now(&id, editor, claims::remove_benefit);
+}
+
+/// Makes `edit` to `id` once asked, as one step of history; what the
+/// question was about may have gone meanwhile.
+fn edit_now(
+    id: &str,
+    mut editor: DraftEditor,
+    edit: fn(&mut Plan, &str) -> Result<String, String>,
+) {
+    if let Ok(said) = edit(&mut editor.draft.plan, id) {
+        editor.commit();
+        journal::say(said);
+    }
 }
 
 /// The `hold-claim` command: keeps the cursor's person's claim as the plan
@@ -173,13 +166,10 @@ pub fn hold_claim(
     let Some(person) = cursor.person(&draft.plan) else {
         return Outcome::Refused(NOBODY.to_owned());
     };
-    let id = person.id.clone();
-    let name = person.display_name().to_owned();
-    if held.0.remove(&id) {
-        journal::say(format!("{name}'s claim is searched again"));
-    } else {
-        journal::say(format!("{name}'s claim is held as the plan states it"));
-        held.0.insert(id);
+    let is_held = !held.0.remove(&person.id);
+    if is_held {
+        held.0.insert(person.id.clone());
     }
+    journal::say(hold_said(person.display_name(), is_held));
     Outcome::Done
 }

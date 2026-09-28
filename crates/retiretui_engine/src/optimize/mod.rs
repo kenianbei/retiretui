@@ -7,7 +7,8 @@ mod conversions;
 mod estimate;
 
 pub use claims::{
-    Claim, ClaimCandidate, ClaimSearch, apply_claims, claims_overlay, optimize_claims,
+    Claim, ClaimCandidate, ClaimSearch, apply_claims, claims_overlay, computed_income,
+    optimize_claims,
 };
 pub use conversions::{
     BracketSweep, LADDER_ID_PREFIX, LadderStep, OptimizeOptions, OptimizedLadder, SweptBracket,

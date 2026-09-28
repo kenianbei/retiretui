@@ -10,13 +10,13 @@ use bevy_ecs::prelude::{
 use bevy_ecs::system::SystemParam;
 use bevy_input_focus::InputFocus;
 use plurimus::core::UiWidget;
+use retiretui_client::searches::claims::{NOBODY, PersonAction, is_claimed, typed_monthly};
 use retiretui_engine::optimize::ClaimSearch;
-use retiretui_engine::plan::{Dollars, Item, Person, Plan};
-use retiretui_engine::tax::MONTHS_PER_YEAR;
+use retiretui_engine::plan::{Item, Person};
 
 use super::super::options::OptionsTable;
 use super::super::{HelpLine, show_help};
-use super::people::{HeldClaims, NOBODY, PeopleTable, PersonCursor, benefit};
+use super::people::{HeldClaims, PeopleTable, PersonCursor};
 use crate::command::{self, Outcome};
 use crate::edit::Draft;
 use crate::nav::{self, Page, ShownSurface};
@@ -36,63 +36,20 @@ pub fn plugin(app: &mut App) {
 /// The command ⏎ on a person runs.
 pub const PERSON_ACTIONS: &str = "person-actions";
 
-/// One thing ⏎ on a person offers: what it says, the command it runs, and
-/// whether the person has a use for it, given whether their claim is held.
-struct Action {
-    label: &'static str,
-    command: &'static str,
-    is_offered: fn(&Person, &Plan, bool) -> bool,
-}
-
-/// How many of [`ACTIONS`], from the first, have a key of their own.
+/// How many of [`PersonAction::ALL`], from the first, have a key of
+/// their own.
 const KEYED_ACTIONS: usize = 3;
 
-const ACTIONS: &[Action] = &[
-    Action {
-        label: "Import statement…",
-        command: "import-statement",
-        is_offered: |_, _, _| true,
-    },
-    Action {
-        label: "Estimate from salary",
-        command: "fill-career",
-        is_offered: |person, plan, _| typed_monthly(person, plan).is_none(),
-    },
-    Action {
-        label: "Compute from record",
-        command: "compute-benefit",
-        is_offered: |person, plan, _| typed_monthly(person, plan).is_some(),
-    },
-    Action {
-        label: "Hold claim",
-        command: "hold-claim",
-        is_offered: |person, plan, is_held| !is_held && is_claimed(person, plan),
-    },
-    Action {
-        label: "Let claim vary",
-        command: "hold-claim",
-        is_offered: |_, _, is_held| is_held,
-    },
-    Action {
-        label: "Clear record…",
-        command: "clear-record",
-        is_offered: |person, _, _| !person.earnings.is_empty(),
-    },
-    Action {
-        label: "Remove Social Security…",
-        command: "remove-benefit",
-        is_offered: |person, plan, _| benefit(plan, &person.id).is_some(),
-    },
-];
-
-/// Whether the person's benefit is computed and so has a claim to hold.
-fn is_claimed(person: &Person, plan: &Plan) -> bool {
-    benefit(plan, &person.id).is_some_and(|income| income.amount.is_none())
-}
-
-/// The monthly figure typed for the person's benefit, where one is.
-fn typed_monthly(person: &Person, plan: &Plan) -> Option<Dollars> {
-    Some(benefit(plan, &person.id)?.amount? / Dollars::from(MONTHS_PER_YEAR))
+/// The command `action` runs.
+const fn command_of(action: PersonAction) -> &'static str {
+    match action {
+        PersonAction::Import => "import-statement",
+        PersonAction::FillCareer => "fill-career",
+        PersonAction::ComputeBenefit => "compute-benefit",
+        PersonAction::Hold | PersonAction::LetVary => "hold-claim",
+        PersonAction::ClearRecord => "clear-record",
+        PersonAction::RemoveBenefit => "remove-benefit",
+    }
 }
 
 /// The picker ⏎ on a person opens.
@@ -115,20 +72,20 @@ fn list_actions(
         return Vec::new();
     };
     let is_held = held.0.contains(&person.id);
-    let offered = ACTIONS
-        .iter()
+    let offered = PersonAction::ALL
+        .into_iter()
         .enumerate()
-        .filter(|(_, action)| (action.is_offered)(person, &draft.plan, is_held))
+        .filter(|(_, action)| action.is_offered(&draft.plan, person, is_held))
         .map(|(at, action)| {
-            let key = command::named(action.command).map_or("", command::CommandId::key_label);
-            Offered::new(at, action.label).badged(key)
+            let key = command::named(command_of(action)).map_or("", command::CommandId::key_label);
+            Offered::new(at, action.label()).badged(key)
         });
     ranked(&query, offered)
 }
 
 fn run_action(In(at): In<usize>, mut commands: Commands) {
-    if let Some(action) = ACTIONS.get(at) {
-        command::defer_named(&mut commands, action.command);
+    if let Some(&action) = PersonAction::ALL.get(at) {
+        command::defer_named(&mut commands, command_of(action));
     }
 }
 
@@ -204,7 +161,7 @@ pub(super) fn help_line(draft: &Draft, person: Option<&Person>, place: Place) ->
         return String::new();
     };
     let is_unrecorded =
-        |person: &&Person| person.earnings.is_empty() && typed_monthly(person, plan).is_none();
+        |person: &&Person| person.earnings.is_empty() && typed_monthly(plan, person).is_none();
     if let Some(missing) = plan.household.people.iter().find(is_unrecorded) {
         let id = missing.display_name();
         return format!(
@@ -215,14 +172,14 @@ pub(super) fn help_line(draft: &Draft, person: Option<&Person>, place: Place) ->
     if place == Place::Strategies {
         return format!("⏎ takes the highlighted option into the plan, after asking. {keys}");
     }
-    if let Some(monthly) = typed_monthly(person, plan) {
+    if let Some(monthly) = typed_monthly(plan, person) {
         return format!(
             "{}'s benefit is typed at {} a month: ⏎ to compute it from their record instead.",
             person.display_name(),
             compact_money(monthly)
         );
     }
-    if !is_claimed(person, plan) {
+    if !is_claimed(plan, person) {
         return format!(
             "⇥ to the claim options and ⏎ on one to set when each benefit starts. {keys}"
         );
@@ -233,9 +190,9 @@ pub(super) fn help_line(draft: &Draft, person: Option<&Person>, place: Place) ->
 /// The keys that act on a person, as the command table binds them: `e, c
 /// and k`.
 fn keys_phrase() -> String {
-    let keys: Vec<&str> = ACTIONS[..KEYED_ACTIONS]
+    let keys: Vec<&str> = PersonAction::ALL[..KEYED_ACTIONS]
         .iter()
-        .filter_map(|action| command::named(action.command))
+        .filter_map(|&action| command::named(command_of(action)))
         .map(command::CommandId::key_label)
         .filter(|key| !key.is_empty())
         .collect();

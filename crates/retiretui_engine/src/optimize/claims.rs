@@ -2,7 +2,7 @@
 //! computes is tried at each whole claim age, jointly across the household,
 //! and the candidates are ranked by what the household ends with.
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::params::TaxTables;
 use crate::plan::{
@@ -16,7 +16,7 @@ use crate::tax::{EARLIEST_CLAIM_AGE, LATEST_CREDIT_AGE};
 const ADDED_ID_PREFIX: &str = "ss-";
 
 /// One income claimed at one age.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct Claim {
@@ -267,7 +267,8 @@ fn added_incomes(plan: &Plan, held: &[String], issues: &mut Vec<Issue>) -> Vec<I
 /// A `social-security` income of `owner`'s as `ss-<owner>`, its benefit
 /// computed, with no claim yet: it validates only once a claim sets its
 /// `start`.
-pub(super) fn computed_income(owner: &str) -> Income {
+#[must_use]
+pub fn computed_income(owner: &str) -> Income {
     Income {
         id: format!("{ADDED_ID_PREFIX}{owner}"),
         name: None,
