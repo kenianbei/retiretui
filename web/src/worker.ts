@@ -4,7 +4,7 @@ import init, {
   monteCarlo,
   type ClaimsOptions,
   type LaddersReply,
-  type MonteCarloReply,
+  type MarketRuns,
 } from "@wasm/retiretui_wasm.js";
 
 /** What a search is asked, by the kind of search it is. */
@@ -15,7 +15,7 @@ export type Search =
 
 /** What each kind of search replies. */
 export interface Replies {
-  monteCarlo: MonteCarloReply;
+  monteCarlo: MarketRuns;
   ladders: LaddersReply;
   claims: ClaimsOptions;
 }

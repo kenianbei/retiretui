@@ -2,7 +2,7 @@
 //! plan, the files it came from, its issues, and, where it has none, its
 //! projection.
 
-use std::cell::OnceCell;
+use std::cell::{OnceCell, RefCell};
 use std::path::{Path, PathBuf};
 
 use retiretui_client::actions::{collect_warnings, sentence};
@@ -15,6 +15,7 @@ use retiretui_client::searches::ladders::aim_at;
 use retiretui_client::session::{Projected, Today, YearCursor, span};
 use retiretui_client::statement::{self, recorded};
 use retiretui_client::store::normal;
+use retiretui_engine::market::RunName;
 use retiretui_engine::optimize::benefit_estimates;
 use retiretui_engine::plan::{Dollars, Item, Plan};
 use retiretui_engine::project::{Projection, Summary, YearRow};
@@ -22,6 +23,7 @@ use serde::Serialize;
 
 use crate::domain::{list_of, name_at};
 use crate::editor::Editor;
+use crate::markets::{market_named, replayed};
 use crate::tables;
 use crate::vocabulary::{form_at, slug_of};
 
@@ -40,6 +42,9 @@ pub(crate) struct Document {
     /// Each person's benefit estimated at 62, full retirement age and 70
     /// from the projected plan, by id, once asked for.
     estimates: OnceCell<Vec<(String, Estimate)>>,
+    /// The last market a view was shown in, replayed from the projected
+    /// plan.
+    replayed: RefCell<Option<(RunName, Projected)>>,
 }
 
 /// A person's monthly benefit at 62, full retirement age and 70.
@@ -118,6 +123,7 @@ impl Document {
             files,
             projected,
             estimates: OnceCell::new(),
+            replayed: RefCell::default(),
         })
     }
 
@@ -277,6 +283,7 @@ impl Document {
         if self.draft.revalidate(tables()) {
             self.projected = Some(Projected::new(self.draft.plan.clone(), tables()));
             self.estimates = OnceCell::new();
+            self.replayed = RefCell::default();
         }
     }
 
@@ -384,6 +391,27 @@ impl Document {
         self.projected
             .as_ref()
             .ok_or_else(|| issue_listing(self.draft.issues()))
+    }
+
+    /// What `read` makes of the projected plan in `market`, the one it
+    /// states where that is `None`; a market is replayed once, then kept
+    /// until another is asked for or the draft changes.
+    pub(crate) fn in_market<T>(
+        &self,
+        market: Option<&str>,
+        read: impl FnOnce(&Projected) -> Result<T, String>,
+    ) -> Result<T, String> {
+        let own = self.projected()?;
+        let Some(market) = market else {
+            return read(own);
+        };
+        let name = market_named(market)?;
+        let mut kept = self.replayed.borrow_mut();
+        if kept.as_ref().is_none_or(|(held, _)| *held != name) {
+            *kept = Some((name, replayed(own, name)?));
+        }
+        let (_, projected) = kept.as_ref().expect("replayed above");
+        read(projected)
     }
 
     /// The headline figures, in today's dollars where `deflated`.

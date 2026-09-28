@@ -165,30 +165,40 @@ pub fn chart(projected: &Projected, is_nominal: bool) -> ChartSeries {
 #[wasm_bindgen(js_class = Document)]
 impl JsDocument {
     /// Every projected year as the Ledger's table shows it, nominal or in
-    /// today's dollars; `null` while no valid draft has been projected.
+    /// today's dollars, in the plan's own market or the one `market`
+    /// names; `null` while no valid draft has been projected.
     ///
     /// # Errors
     ///
-    /// Where the table does not convert.
+    /// Where `market` names no market the plan can be replayed in, or the
+    /// table does not convert.
     #[wasm_bindgen(unchecked_return_type = "Ledger | null")]
-    pub fn ledger(&self, nominal: bool) -> Result<JsValue, JsError> {
-        let projected = self.0.projected().ok();
-        to_js(&projected.map(|projected| ledger(projected, nominal)))
+    pub fn ledger(&self, nominal: bool, market: Option<String>) -> Result<JsValue, JsError> {
+        if self.0.projected().is_err() {
+            return Ok(JsValue::NULL);
+        }
+        reply(self.0.in_market(market.as_deref(), |projected| {
+            Ok(ledger(projected, nominal))
+        }))
     }
 
     /// `year`'s flows, income, payments and warnings, nominal or in
-    /// today's dollars.
+    /// today's dollars, in the plan's own market or the one `market` names.
     ///
     /// # Errors
     ///
-    /// Where no valid draft has been projected, or `year` is outside it.
+    /// Where no valid draft has been projected, `market` names no market it
+    /// can be replayed in, or `year` is outside it.
     #[wasm_bindgen(js_name = yearDetail, unchecked_return_type = "YearDetail")]
-    pub fn year_detail(&self, year: i16, nominal: bool) -> Result<JsValue, JsError> {
-        reply(
-            self.0
-                .projected()
-                .and_then(|projected| year_detail(projected, year, nominal)),
-        )
+    pub fn year_detail(
+        &self,
+        year: i16,
+        nominal: bool,
+        market: Option<String>,
+    ) -> Result<JsValue, JsError> {
+        reply(self.0.in_market(market.as_deref(), |projected| {
+            year_detail(projected, year, nominal)
+        }))
     }
 
     /// The projection as the Overview charts it, nominal or in today's

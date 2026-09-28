@@ -80,7 +80,7 @@ function Reading({
 function Success({ plan }: { plan: string }) {
   const markets = useMonteCarlo(plan);
   if (markets.data) {
-    const runs = markets.data.runs.toLocaleString("en-US");
+    const runs = markets.data.count.toLocaleString("en-US");
     return (
       <Reading
         big={share(markets.data.success_rate)}
