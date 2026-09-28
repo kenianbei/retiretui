@@ -4,6 +4,7 @@
 use retiretui_client::draft::Draft;
 use retiretui_client::forms::cells::Cell;
 use retiretui_client::forms::details;
+use retiretui_client::forms::offers::display_name;
 use retiretui_client::forms::sort::Sort;
 use retiretui_client::forms::{Form, ListOps};
 use serde::Serialize;
@@ -38,6 +39,8 @@ pub struct TableColumn {
 pub struct TableRow {
     /// Where the item sits in the plan, whatever order the table shows.
     pub index: usize,
+    /// What the item is called: what removing it names it by.
+    pub name: String,
     /// Its cells, in column order.
     pub cells: Vec<Cell>,
 }
@@ -63,9 +66,16 @@ pub fn table(draft: &Draft, form: &Form, sort: Option<Sort>) -> Result<DomainTab
         Some(sort) => sort.order(items),
         None => items,
     };
-    let rows = items
-        .into_iter()
-        .map(|(index, cells)| TableRow { index, cells });
+    let name_of = |index: usize| {
+        let item = (form.item)(draft, index);
+        let name = item.and_then(|item| display_name(&item, list.identity, form.fields));
+        name.unwrap_or_else(|| list.singular.to_owned())
+    };
+    let rows = items.into_iter().map(|(index, cells)| TableRow {
+        index,
+        name: name_of(index),
+        cells,
+    });
     Ok(DomainTable {
         columns: columns.collect(),
         rows: rows.collect(),
@@ -134,6 +144,8 @@ mod tests {
         assert_eq!(plain.columns.len(), plain.rows[0].cells.len());
         let indices: Vec<usize> = plain.rows.iter().map(|row| row.index).collect();
         assert_eq!(indices, (0..draft.plan.accounts.len()).collect::<Vec<_>>());
+        let named = draft.plan.accounts[0].name.as_deref();
+        assert_eq!(Some(plain.rows[0].name.as_str()), named);
         let down = table(&draft, accounts, Some(Sort::new(0, true))).expect("a table");
         let mut reordered: Vec<usize> = down.rows.iter().map(|row| row.index).collect();
         reordered.sort_unstable();

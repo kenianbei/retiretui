@@ -10,6 +10,10 @@ export type TableRow = {
  */
 index: number, 
 /**
+ * What the item is called: what removing it names it by.
+ */
+name: string, 
+/**
  * Its cells, in column order.
  */
 cells: Array<Cell>, };
