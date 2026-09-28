@@ -3,6 +3,7 @@ import { ChevronLeft, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { ItemForm } from "@/plan/form";
 import { ReadOut } from "@/plan/read-out";
 import type { TableSort } from "@/plan/sort";
 import { ItemTable } from "@/plan/table";
@@ -70,8 +71,17 @@ function ListDomain({ slug, purpose }: { slug: string; purpose: string }) {
 /** The page of one of the plan's editing domains. */
 export function DomainPage() {
   const { page } = useRouteContext({ from: "/plan/$page" });
+  const { edit, field } = useSearch({ from: "/plan/$page" });
   return (
     <section className="max-w-6xl space-y-4">
+      {edit !== undefined && (
+        <ItemForm
+          key={`${page.slug}:${String(edit)}`}
+          slug={page.slug}
+          edit={edit}
+          field={field}
+        />
+      )}
       <h1 className="text-2xl font-semibold tracking-tight">{page.title}</h1>
       {page.holds === null ? (
         <div className="max-w-2xl">

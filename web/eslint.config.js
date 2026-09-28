@@ -22,6 +22,7 @@ export default tseslint.config(
             "useFileActions",
             "messageOf",
             "planName",
+            "fieldId",
           ],
         },
       ],

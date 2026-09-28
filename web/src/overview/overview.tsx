@@ -140,10 +140,13 @@ function Figures({
   document,
   basis,
   revision,
+  isValid,
 }: {
   document: Document;
   basis: Basis;
   revision: number;
+  /** Whether the draft passes the gate, and so can be run through markets. */
+  isValid: boolean;
 }) {
   const summary = useMemo(
     () => document.summary(basis === "today"),
@@ -161,7 +164,11 @@ function Figures({
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
       <Figure label="Lasts through random markets">
-        <Success plan={plan} />
+        {isValid ? (
+          <Success plan={plan} />
+        ) : (
+          <Reading big="—" small="once the plan's issues are fixed" />
+        )}
       </Figure>
       <Figure label="Net worth at the end">
         <Reading big={dollars(summary.final_net_worth)} small={unit} />
@@ -263,7 +270,12 @@ export function Overview() {
         <BasisSwitch basis={basis} />
       </div>
       {issues.length > 0 && <Problems issues={issues} />}
-      <Figures document={document} basis={basis} revision={revision} />
+      <Figures
+        document={document}
+        basis={basis}
+        revision={revision}
+        isValid={issues.length === 0}
+      />
       <ThisYear document={document} revision={revision} />
     </div>
   );
