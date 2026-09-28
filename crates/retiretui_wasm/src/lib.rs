@@ -3,7 +3,11 @@
 //! a plan's text. Values cross as plain objects, typed by `bindings/`.
 
 mod document;
+mod domain;
+mod editor;
+mod edits;
 mod searches;
+mod view;
 mod vocabulary;
 
 use std::path::Path;
@@ -42,8 +46,9 @@ fn reply<T: Serialize>(answer: Result<T, String>) -> Result<JsValue, JsError> {
 
 #[wasm_bindgen(typescript_custom_section)]
 const TYPES: &str = r#"import type {
-  ActionsReply, ClaimsReply, Domain, Example, HistoricalReply, Issue,
-  MonteCarloReply, PlacedIssue, Projection, SaidYear, Summary, SweepReply,
+  ActionsReply, ClaimsReply, Domain, DomainTable, Example, FieldView,
+  HistoricalReply, Issue, MonteCarloReply, PlacedIssue, Projection, SaidYear,
+  Sort, Summary, SweepReply,
 } from "../bindings/index";
 export type * from "../bindings/index";"#;
 
@@ -93,8 +98,9 @@ impl JsDocument {
         to_js(&self.0.issues())
     }
 
-    /// The projection, `null` while the plan has issues. Each call converts
-    /// it anew, so a caller keeps what it is given.
+    /// The projection of the draft, or while it has issues of the last
+    /// draft that had none; `null` where there never was one. Each call
+    /// converts it anew, so a caller keeps what it is given.
     ///
     /// # Errors
     ///
@@ -157,14 +163,19 @@ impl JsDocument {
 
 fn read_through(read: &Function, file: &Path) -> Result<String, String> {
     let path = JsValue::from_str(&file.to_string_lossy());
-    let text = read.call1(&JsValue::NULL, &path).map_err(|thrown| {
-        let error = thrown
-            .dyn_ref::<js_sys::Error>()
-            .map(js_sys::Error::message);
-        error.map_or_else(|| format!("{thrown:?}"), String::from)
-    })?;
+    let text = read
+        .call1(&JsValue::NULL, &path)
+        .map_err(|thrown| thrown_message(&thrown))?;
     text.as_string()
         .ok_or_else(|| "the read returned no text".to_owned())
+}
+
+/// What a JavaScript function threw, as its message says it.
+fn thrown_message(thrown: &JsValue) -> String {
+    let error = thrown
+        .dyn_ref::<js_sys::Error>()
+        .map(js_sys::Error::message);
+    error.map_or_else(|| format!("{thrown:?}"), String::from)
 }
 
 /// Every example plan.
@@ -258,7 +269,11 @@ mod bindings {
     use ts_rs::{Config, TS};
 
     use crate::document::{PlacedIssue, SaidYear};
+    use retiretui_client::forms::sort::Sort;
+
+    use crate::domain::DomainTable;
     use crate::searches::Example;
+    use crate::view::FieldView;
     use crate::vocabulary::Domain;
 
     const BINDINGS: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/bindings");
@@ -282,6 +297,9 @@ mod bindings {
             HistoricalReply::export_all,
             Example::export_all,
             Domain::export_all,
+            DomainTable::export_all,
+            Sort::export_all,
+            FieldView::export_all,
         ];
         for export in exports {
             export(&config).expect("exports");

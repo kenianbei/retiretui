@@ -22,6 +22,7 @@ retiretui_engine.workspace = true
 serde.workspace = true
 serde-wasm-bindgen = "0.6.5"
 ts-rs = { version = "12.0.1", optional = true }
+toml.workspace = true
 wasm-bindgen = "0.2.129"
 
 # rustc's default wasm32 features, which wasm-opt must be told it may keep.

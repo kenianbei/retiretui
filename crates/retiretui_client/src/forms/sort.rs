@@ -4,13 +4,16 @@
 
 use std::cmp::Ordering;
 
+use serde::{Deserialize, Serialize};
+
 use super::cells::Cell;
 
 const ASCENDING: &str = "▲";
 const DESCENDING: &str = "▼";
 
 /// The column a table is ordered by, and which way.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct Sort {
     column: usize,
     is_descending: bool,

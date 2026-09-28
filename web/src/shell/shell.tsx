@@ -2,6 +2,8 @@ import { Link, Outlet, useLocation } from "@tanstack/react-router";
 
 import type { ReactNode } from "react";
 
+import { DraftNotices, UnsavedQuestion } from "@/draft/notices";
+import { DraftToolbar } from "@/draft/toolbar";
 import { FileActionsProvider } from "@/files/actions";
 import { FileMenu } from "@/files/menu";
 import { Start } from "@/files/start";
@@ -176,8 +178,10 @@ export function Shell() {
               RetireTui
             </span>
             <FileMenu />
+            <DraftToolbar />
           </header>
           <main className="flex-1 px-4 py-6 md:px-8">
+            <DraftNotices />
             {document ? (
               <>
                 <GroupPages />
@@ -190,6 +194,7 @@ export function Shell() {
         </div>
         <BottomBar />
       </div>
+      <UnsavedQuestion />
     </FileActionsProvider>
   );
 }

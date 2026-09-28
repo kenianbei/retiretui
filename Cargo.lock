@@ -3297,6 +3297,7 @@ dependencies = [
  "retiretui_engine",
  "serde",
  "serde-wasm-bindgen",
+ "toml",
  "ts-rs",
  "wasm-bindgen",
 ]

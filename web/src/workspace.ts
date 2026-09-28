@@ -17,6 +17,14 @@ export function pathOf(name: string): string {
   return `/${name.split(/[\\/]/).pop() ?? name}`;
 }
 
+const PLAN_EXTENSION = ".toml";
+
+/** A typed name as a plan file's: `.toml` added where it is missing. */
+export function planName(typed: string): string {
+  const name = typed.trim();
+  return name.endsWith(PLAN_EXTENSION) ? name : `${name}${PLAN_EXTENSION}`;
+}
+
 /** What a path is shown as. */
 export function nameOf(path: string): string {
   return path.replace(/^\//, "");

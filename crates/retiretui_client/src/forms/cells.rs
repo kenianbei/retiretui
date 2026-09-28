@@ -3,6 +3,7 @@
 //! opened and applied untouched is the item it was.
 
 use retiretui_engine::plan::Plan;
+use serde::Serialize;
 use toml::{Table, Value};
 
 use super::offers::{Offer, display_name, ref_offers};
@@ -80,7 +81,8 @@ pub fn field_of<'a>(fields: &'a [FieldSpec], key: &str) -> Option<&'a FieldSpec>
 
 /// A table cell: what it says, and the number it says where it is one,
 /// which is what its column is ordered by.
-#[derive(Clone, PartialEq, Debug, Default)]
+#[derive(Clone, PartialEq, Debug, Default, Serialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct Cell {
     /// What the cell says.
     pub text: String,

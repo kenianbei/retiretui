@@ -1,14 +1,11 @@
 import { Link, useSearch } from "@tanstack/react-router";
-import {
-  issueCount,
-  type Document,
-  type PlacedIssue,
-} from "@wasm/retiretui_wasm.js";
+import { issueCount, type PlacedIssue } from "@wasm/retiretui_wasm.js";
 import { useMemo, type ReactNode } from "react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { IssueLink } from "@/draft/issue-link";
 import { BASIS_LABEL, dollars, share, type Basis } from "@/overview/words";
 import { useMonteCarlo } from "@/searches";
 import { useSession } from "@/session";
@@ -49,11 +46,13 @@ function Problems({ issues }: { issues: PlacedIssue[] }) {
       </h2>
       <ul className="list-disc space-y-1 pl-5">
         {issues.map((issue) => (
-          <li key={issue.words}>{issue.words}</li>
+          <li key={issue.words}>
+            <IssueLink issue={issue} className="underline underline-offset-4" />
+          </li>
         ))}
       </ul>
       <p className="text-muted-foreground text-sm">
-        The figures appear once the plan file is fixed and uploaded again.
+        The figures below are the last ones the plan had without issues.
       </p>
     </section>
   );
@@ -122,19 +121,27 @@ function Success({ plan }: { plan: string }) {
   );
 }
 
-function Figures({ document, basis }: { document: Document; basis: Basis }) {
+function Figures({ basis, isValid }: { basis: Basis; isValid: boolean }) {
+  const { reading } = useSession();
   const summary = useMemo(
-    () => document.summary(basis === "today"),
-    [document, basis],
+    () => reading.document?.summary(basis === "today"),
+    [reading, basis],
   );
-  const plan = useMemo(() => document.planText(), [document]);
+  const plan = useMemo(
+    () => (isValid ? (reading.document?.planText() ?? null) : null),
+    [reading, isValid],
+  );
   if (!summary) return null;
   const unit = BASIS_LABEL[basis];
   const firstShort = summary.first_unfunded_year;
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
       <Figure label="Lasts through random markets">
-        <Success plan={plan} />
+        {plan !== null ? (
+          <Success plan={plan} />
+        ) : (
+          <Reading big="—" small="once the plan's issues are fixed" />
+        )}
       </Figure>
       <Figure label="Net worth at the end">
         <Reading big={dollars(summary.final_net_worth)} small={unit} />
@@ -166,11 +173,12 @@ function Figures({ document, basis }: { document: Document; basis: Basis }) {
   );
 }
 
-function ThisYear({ document }: { document: Document }) {
+function ThisYear() {
+  const { reading } = useSession();
   const said = useMemo(() => {
-    const year = document.thisYear(new Date().getFullYear());
-    return year === undefined ? null : document.said(year);
-  }, [document]);
+    const year = reading.document?.thisYear(new Date().getFullYear());
+    return year === undefined ? null : reading.document?.said(year);
+  }, [reading]);
   if (!said) return null;
   const ages = said.ages.map(([name, age]) => `${name} turns ${String(age)}`);
 
@@ -210,25 +218,19 @@ function ThisYear({ document }: { document: Document }) {
 
 /** Whether the money lasts and how surely, and what to do this year. */
 export function Overview() {
-  const { document } = useSession();
+  const { document, issues } = useSession();
   const { basis } = useSearch({ from: "/overview" });
-  const issues = useMemo(() => document?.issues() ?? [], [document]);
   if (!document) return null;
 
   return (
     <div className="max-w-5xl space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>
-        {issues.length === 0 && <BasisSwitch basis={basis} />}
+        <BasisSwitch basis={basis} />
       </div>
-      {issues.length > 0 ? (
-        <Problems issues={issues} />
-      ) : (
-        <>
-          <Figures document={document} basis={basis} />
-          <ThisYear document={document} />
-        </>
-      )}
+      {issues.length > 0 && <Problems issues={issues} />}
+      <Figures basis={basis} isValid={issues.length === 0} />
+      <ThisYear />
     </div>
   );
 }

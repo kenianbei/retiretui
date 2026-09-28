@@ -5,6 +5,7 @@ use retiretui_engine::plan::{
     AccountKind, COUNTRIES, Draw, FilingStatus, IncomeKind, Item, Payer, Plan, TreatmentClass,
     TriggerBasis, US_STATES,
 };
+use serde::Serialize;
 use toml::Table;
 
 use super::accounts;
@@ -67,7 +68,8 @@ const AMOUNT_FORMS: &[(&str, &str)] = &[
 
 /// One thing a select offers: the value the file keeps, and the words
 /// shown for it.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct Offer {
     /// What the file keeps.
     pub value: String,

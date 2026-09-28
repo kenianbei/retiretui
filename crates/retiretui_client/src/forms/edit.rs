@@ -84,6 +84,13 @@ impl ItemEdit {
         self.incomplete.contains_key(key)
     }
 
+    /// Why the field `key`'s parts do not yet make a value, where they do
+    /// not.
+    #[must_use]
+    pub fn complaint_at(&self, key: &str) -> Option<&'static str> {
+        self.incomplete.get(key).copied()
+    }
+
     /// Writes `value` into the field `key`; `complaint` is why the parts it
     /// was made from do not yet make one, where they do not.
     pub fn set(

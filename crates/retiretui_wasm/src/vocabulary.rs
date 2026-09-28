@@ -1,7 +1,7 @@
 //! The client's own words for what a page is named and says, so that no
 //! page restates them.
 
-use retiretui_client::forms::DOMAINS;
+use retiretui_client::forms::{DOMAINS, DomainId, Form};
 use serde::Serialize;
 
 /// One of the plan's editing domains, as its page is named.
@@ -16,13 +16,32 @@ pub struct Domain {
     pub purpose: Option<&'static str>,
 }
 
+/// A domain's page address: its title, lower-cased.
+#[must_use]
+pub fn slug_of(domain: DomainId) -> String {
+    domain.title().to_lowercase()
+}
+
+/// The form whose page is at `slug`.
+///
+/// # Errors
+///
+/// Where no domain's page is at `slug`.
+pub fn form_at(slug: &str) -> Result<&'static Form, String> {
+    let is_at = |form: &&Form| form.domain.is_some_and(|domain| slug_of(domain) == slug);
+    DOMAINS
+        .iter()
+        .find(is_at)
+        .ok_or_else(|| format!("no domain is at {slug}"))
+}
+
 /// Every editing domain, in the order the plan lists them.
 #[must_use]
 pub fn domains() -> Vec<Domain> {
     DOMAINS
         .iter()
         .map(|form| Domain {
-            slug: form.title.to_lowercase(),
+            slug: form.domain.map(slug_of).unwrap_or_default(),
             title: form.title,
             purpose: form.list.map(|list| list.purpose),
         })

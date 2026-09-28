@@ -7,7 +7,8 @@ use std::path::{Path, PathBuf};
 use retiretui_client::actions::{collect_warnings, sentence};
 use retiretui_client::draft::Draft;
 use retiretui_client::files::resolve_with_files;
-use retiretui_client::issues::{issue_listing, issue_words};
+use retiretui_client::forms::Form;
+use retiretui_client::issues::{issue_field, issue_listing, issue_place, issue_words};
 use retiretui_client::replies::{ActionsReply, year_row};
 use retiretui_client::session::{Today, YearCursor, span};
 use retiretui_client::store::normal;
@@ -15,13 +16,21 @@ use retiretui_engine::plan::Item;
 use retiretui_engine::project::{Projection, Summary, YearRow, project};
 use serde::Serialize;
 
+use crate::domain::{list_of, name_at};
+use crate::editor::Editor;
 use crate::tables;
+use crate::vocabulary::slug_of;
+
+/// A scenario holds only its changes to a base; the plan resolved from it
+/// written in its place would lose which were its own.
+const OVER_SCENARIO: &str = "a scenario cannot be saved over; save it under a name of its own";
 
 /// A resolved plan and what the gate made of it.
 #[derive(Debug)]
 pub(crate) struct Document {
     draft: Draft,
     files: Vec<PathBuf>,
+    /// The last projection of a valid draft, held while it has issues.
     projection: Option<Projection>,
 }
 
@@ -36,6 +45,29 @@ pub struct PlacedIssue {
     /// The domain, the item by its display name and the field's label,
     /// then the message; the engine's own words where no domain holds it.
     pub words: String,
+    /// Where a form edits what it is about; `null` where none does.
+    pub place: Option<Place>,
+}
+
+/// Where in the plan's pages an issue is.
+#[derive(Serialize, PartialEq, Debug)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+pub struct Place {
+    /// The domain's page address.
+    pub domain: String,
+    /// The item, where the domain holds many.
+    pub index: Option<usize>,
+    /// The key of the field, where a form has one for it.
+    pub field: Option<&'static str>,
+}
+
+fn place_of(path: &str) -> Option<Place> {
+    let (domain, index) = issue_place(path)?;
+    Some(Place {
+        domain: slug_of(domain),
+        index,
+        field: issue_field(path),
+    })
 }
 
 /// A year as every surface says it: what to do, what to watch, and how old
@@ -67,7 +99,7 @@ impl Document {
         let mut files = Vec::new();
         let canonical = |path: &Path| Ok(normal(path));
         let plan = resolve_with_files(normal(Path::new(path)), read, &canonical, &mut files)?;
-        let draft = Draft::validated(plan, tables());
+        let draft = Draft::validated(plan, tables(), files.len() > 1);
         let is_valid = draft.issues().is_empty();
         let projection = is_valid.then(|| project(&draft.plan, tables()));
         Ok(Self {
@@ -79,8 +111,14 @@ impl Document {
 
     /// Whether it is a scenario, which cannot be written back as it stands.
     #[must_use]
-    pub fn is_read_only(&self) -> bool {
-        self.files.len() > 1
+    pub const fn is_read_only(&self) -> bool {
+        self.draft.is_read_only()
+    }
+
+    /// The draft every edit lands in.
+    #[must_use]
+    pub const fn draft(&self) -> &Draft {
+        &self.draft
     }
 
     /// Every file the resolution read, the document's own first.
@@ -98,8 +136,125 @@ impl Document {
                 path: issue.path.clone(),
                 message: issue.message.clone(),
                 words: issue_words(issue, &self.draft),
+                place: place_of(&issue.path),
             })
             .collect()
+    }
+
+    /// Stores the item `editor` holds into the draft as one step of its
+    /// history, answering where it now sits, or `None` where it held no
+    /// edits to store.
+    ///
+    /// # Errors
+    ///
+    /// Why nothing was stored, in the form's words.
+    pub fn apply(&mut self, editor: &mut Editor) -> Result<Option<usize>, String> {
+        let stored = editor.edit.apply(&mut self.draft, None)?;
+        if stored.is_some() {
+            self.commit();
+        }
+        Ok(stored)
+    }
+
+    /// Removes item `index` of `form`'s domain as one step of history,
+    /// where it is still the item called `name`.
+    ///
+    /// # Errors
+    ///
+    /// Where the draft is read-only, the domain is a single item, or the
+    /// item at `index` is no longer the one named.
+    pub fn remove(&mut self, form: &Form, index: usize, name: &str) -> Result<(), String> {
+        if let Some(reason) = self.draft.refuse_if_read_only() {
+            return Err(reason);
+        }
+        let list = list_of(form)?;
+        if name_at(&self.draft, form, list, index).as_deref() != Some(name) {
+            return Err(format!("{name} is no longer where it was in the plan"));
+        }
+        (list.remove)(&mut self.draft.plan, index);
+        self.commit();
+        Ok(())
+    }
+
+    fn commit(&mut self) {
+        self.draft.record();
+        self.revalidate();
+    }
+
+    /// A valid draft is projected at once; an invalid one keeps the last
+    /// good projection.
+    fn revalidate(&mut self) {
+        if self.draft.revalidate(tables()) {
+            self.projection = Some(project(&self.draft.plan, tables()));
+        }
+    }
+
+    /// Steps back over the last edit, answering whether there was one.
+    pub fn undo(&mut self) -> bool {
+        let is_undone = self.draft.undo();
+        if is_undone {
+            self.revalidate();
+        }
+        is_undone
+    }
+
+    /// Steps forward over the last undone edit, answering whether there
+    /// was one.
+    pub fn redo(&mut self) -> bool {
+        let is_redone = self.draft.redo();
+        if is_redone {
+            self.revalidate();
+        }
+        is_redone
+    }
+
+    /// Writes the draft back where it came from through `write`.
+    ///
+    /// # Errors
+    ///
+    /// Where the draft is read-only, has issues, or `write` fails.
+    pub fn save(
+        &mut self,
+        write: &mut dyn FnMut(&str) -> Result<(), String>,
+    ) -> Result<(), String> {
+        if let Some(reason) = self.draft.refuse_if_read_only() {
+            return Err(reason);
+        }
+        self.write_through(write)?;
+        self.draft.saved();
+        Ok(())
+    }
+
+    /// Writes the draft as a plan of its own at `path` through `write`,
+    /// which it then is.
+    ///
+    /// # Errors
+    ///
+    /// Where the draft has issues, `path` is the scenario it was resolved
+    /// from, which the plan would replace, or `write` fails.
+    pub fn save_as(
+        &mut self,
+        path: &str,
+        write: &mut dyn FnMut(&str) -> Result<(), String>,
+    ) -> Result<(), String> {
+        let path = normal(Path::new(path));
+        if self.is_read_only() && self.files.first() == Some(&path) {
+            return Err(OVER_SCENARIO.to_owned());
+        }
+        self.write_through(write)?;
+        self.draft.saved_as();
+        self.files = vec![path];
+        Ok(())
+    }
+
+    fn write_through(
+        &self,
+        write: &mut dyn FnMut(&str) -> Result<(), String>,
+    ) -> Result<(), String> {
+        if let Some(reason) = self.draft.refuse_if_invalid() {
+            return Err(reason);
+        }
+        write(&self.plan_text()?)
     }
 
     /// The projection, where the plan passed the gate.
@@ -256,6 +411,9 @@ mod tests {
         let issue = issues.first().expect("an issue");
         assert!(issue.words.starts_with("Settings"), "{}", issue.words);
         assert!(issue.words.ends_with(&issue.message));
+        let place = issue.place.as_ref().expect("a place");
+        assert_eq!((place.domain.as_str(), place.index), ("settings", None));
+        assert_eq!(place.field, Some("inflation"));
         assert!(document.projection().is_none());
         assert_eq!(document.this_year(2030), None);
         assert!(document.summary(false).is_none());

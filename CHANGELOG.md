@@ -15,10 +15,25 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   open, and downloads the open plan. Its Overview shows whether the money
   lasts - its headline figures in today's or nominal dollars, and the share of a
   thousand random markets it survives, run off the page's thread - and what to
-  do this year, said as the terminal says it. A plan with issues lists each by
-  the page, item and field it is about. The other pages are named but not yet
-  built. Light or dark follows the system, and navigation is a bottom bar on a
-  phone and a sidebar on a wider screen.
+  do this year, said as the terminal says it. The Plan pages edit the plan: each
+  domain's items are a table sortable by its columns, or rows with a Sort by on
+  a phone, beside the highlighted item read out in the form's words, and a
+  domain there is one of is that read-out alone. Edit, Add and Delete work one
+  item at a time; the form is a sheet, full screen on a phone, whose fields are
+  entered by their kind - picks from the schema's sets and the plan's own ids, a
+  searched list for a country or U.S. state, a slider beside a rate, a trigger
+  as its kind and sentence - and applying stores the whole item or says why not.
+  Every applied item or deletion is a step Undo and Redo walk, by button or
+  Ctrl/Cmd+Z, and Save or Ctrl/Cmd+S writes the plan back through the same
+  validation as every other surface; Save as… writes it under another name, the
+  one way to keep a scenario's edits. Unsaved edits are asked about before a
+  form closes, another plan opens, or the page is left, and a file changed in
+  another tab under them is reported rather than overwritten. A plan with issues
+  counts them in the header and lists each by the page, item and field it is
+  about, each a link to that field in its form, while the figures keep the last
+  ones it had without issues. The other pages are named but not yet built. Light
+  or dark follows the system, and navigation is a bottom bar on a phone and a
+  sidebar on a wider screen.
 
 ### Changed
 

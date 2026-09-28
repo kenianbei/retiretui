@@ -9,6 +9,8 @@ import {
 import { DOMAINS, TOOLS, pageOf } from "@/nav";
 import { Overview } from "@/overview/overview";
 import type { Basis } from "@/overview/words";
+import { DomainPage } from "@/plan/page";
+import { planSearch } from "@/plan/search";
 import { GroupedPage, NotFound, Placeholder } from "@/pages/placeholder";
 import { Shell } from "@/shell/shell";
 
@@ -64,8 +66,9 @@ const tools = createRoute({
 const plan = createRoute({
   getParentRoute: () => root,
   path: "/plan/$page",
+  validateSearch: planSearch,
   beforeLoad: ({ params }) => ({ page: pageOf(DOMAINS, params.page) }),
-  component: GroupedPage,
+  component: DomainPage,
 });
 
 export const router = createRouter({
