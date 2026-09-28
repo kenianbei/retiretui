@@ -3,7 +3,8 @@
 
 use retiretui_engine::market::{Progress, RunError};
 use retiretui_engine::optimize::{
-    BracketSweep, OptimizeOptions, SweptBracket, optimize_conversions, sweep_brackets,
+    BracketSweep, LadderStep, OptimizeOptions, SweptBracket, is_ladder, optimize_conversions,
+    sweep_brackets,
 };
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::Plan;
@@ -11,7 +12,7 @@ use serde::Deserialize;
 
 use crate::codec::from_table;
 use crate::draft::Draft;
-use crate::forms::offers::RefSource;
+use crate::forms::offers::{RefSource, ref_offers};
 use crate::forms::{FieldSpec, ToolAnswers};
 use crate::ladder::LadderConstraints;
 
@@ -99,6 +100,54 @@ pub fn aim_at(draft: &mut Draft, destination: &str) {
     let mut answers = draft.answers::<Constraints>();
     answers.insert(DESTINATION.to_owned(), destination.into());
     draft.set_answers::<Constraints>(answers);
+}
+
+/// The plan's one Roth account, where the answers name no destination and
+/// there is exactly one to name.
+#[must_use]
+pub fn only_roth(draft: &Draft) -> Option<String> {
+    if draft.answers::<Constraints>().contains_key(DESTINATION) {
+        return None;
+    }
+    let offered = ref_offers(&draft.plan, RefSource::RothAccount);
+    let [only] = offered.as_slice() else {
+        return None;
+    };
+    Some(only.value.clone())
+}
+
+/// What is asked before `bracket`'s ladder is taken into `plan`.
+#[must_use]
+pub fn take_question(bracket: &SweptBracket, plan: &Plan) -> String {
+    let replacing = if plan.conversions.iter().any(is_ladder) {
+        ", in place of the ladder taken before"
+    } else {
+        ""
+    };
+    format!(
+        "Take the {} ladder? {}{replacing}.",
+        rate_label(bracket.rate),
+        said(&bracket.steps)
+    )
+}
+
+/// What is said once `steps` are taken into the plan.
+#[must_use]
+pub fn taken(steps: &[LadderStep]) -> String {
+    format!("took {} conversion(s) into the plan", steps.len())
+}
+
+/// A ladder as a sentence says it: `9 conversion(s), 2027–2035`.
+fn said(steps: &[LadderStep]) -> String {
+    match (steps.first(), steps.last()) {
+        (Some(first), Some(last)) => format!(
+            "{} conversion(s), {}–{}",
+            steps.len(),
+            first.year,
+            last.year
+        ),
+        _ => "It converts nothing".to_owned(),
+    }
 }
 
 /// The constraints the draft holds, and what the engine is to be asked
@@ -215,6 +264,51 @@ mod tests {
             &cancelled,
         );
         assert!(swept.is_none(), "a cancelled sweep answers nothing");
+    }
+
+    #[test]
+    fn only_a_lone_roth_account_is_aimed_at() {
+        let mut draft = Draft::new(early_retiree(), false);
+        let roth = ref_offers(&draft.plan, RefSource::RothAccount);
+        assert_eq!(roth.len(), 1, "the example holds one Roth account");
+        assert_eq!(only_roth(&draft).as_deref(), Some(roth[0].value.as_str()));
+        aim_at(&mut draft, "elsewhere");
+        assert_eq!(only_roth(&draft), None, "a named destination is kept");
+    }
+
+    #[test]
+    fn the_take_question_says_the_ladder_and_what_it_replaces() {
+        let mut plan = early_retiree();
+        let step = |year| LadderStep {
+            year,
+            source: "401k-morgan".to_owned(),
+            amount: 1000,
+        };
+        let options = LadderConstraints::default().options(&[], "roth-ira-morgan");
+        let swept = search(
+            &plan,
+            &TaxTables::embedded(),
+            &options,
+            Some(0.22),
+            &Progress::default(),
+        )
+        .expect("a ladder");
+        let bracket = SweptBracket {
+            steps: vec![step(2027), step(2035)],
+            ..swept.brackets[0].clone()
+        };
+        assert_eq!(
+            take_question(&bracket, &plan),
+            "Take the 22% ladder? 2 conversion(s), 2027–2035."
+        );
+        retiretui_engine::optimize::apply_ladder(&mut plan, &options, &bracket.steps);
+        assert!(take_question(&bracket, &plan).ends_with(", in place of the ladder taken before."));
+        assert_eq!(taken(&bracket.steps), "took 2 conversion(s) into the plan");
+        let none = SweptBracket {
+            steps: Vec::new(),
+            ..bracket
+        };
+        assert!(take_question(&none, &plan).contains("It converts nothing"));
     }
 
     #[test]
