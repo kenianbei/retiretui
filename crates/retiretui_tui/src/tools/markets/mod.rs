@@ -21,7 +21,8 @@ use bevy_ecs::prelude::{Commands, IntoScheduleConfigs, Local, Query, Res, ResMut
 use bevy_ui::{FlexDirection, Node, Val};
 use plurimus::core::UiWidget;
 use plurimus::core::ratatui_core::style::Style;
-use retiretui_engine::market::{History, Progress, Run, RunError, Runs};
+use retiretui_client::searches::markets::{self, Markets, Zone, zone_of};
+use retiretui_engine::market::{History, Progress, Run, RunError};
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::Plan;
 use retiretui_engine::project::Projection;
@@ -36,7 +37,6 @@ use crate::hints::Hints;
 use crate::nav::{self, FocusStop, Page, ShownSurface, Turn};
 use crate::overview::Better;
 use crate::pane::{Framed, Pane};
-use crate::present::{self, compact_dollars};
 use crate::session::Session;
 use crate::theme::Theme;
 
@@ -56,24 +56,15 @@ pub fn plugin(app: &mut App) {
     app.add_plugins((monte_carlo::plugin, historical::plugin));
 }
 
-/// A share this high or above reads as comfortable, the zones' upper edge.
-const GOOD_ZONE: f64 = 0.9;
-/// A share this high or above, and under [`GOOD_ZONE`], reads as close.
-const CAUTION_ZONE: f64 = 0.75;
 /// Borders, the header, the plan's own row and the six runs Monte Carlo
 /// singles out.
 const RUNS_ROWS: f32 = 10.0;
 /// The Assumptions pane's width, borders included.
 const ASSUMPTIONS_COLS: f32 = 34.0;
-const NEVER: &str = "never";
-/// What a market tool's runs table says before its first search answers.
-const NOTHING_SEARCHED: &str = "Runs by itself while this page is shown.";
 
 /// What a market tool searches, and how it names what it found.
-pub(crate) trait MarketTool: Found + Sized {
+pub(crate) trait MarketTool: Found + Markets + Sized {
     const PAGE: Page;
-    /// The runs table's first column.
-    const RUN_HEADING: &'static str;
     const HELP: &'static str;
     const TOOL_PAGE: &'static super::ToolPage = &super::ToolPage {
         surface: Self::PAGE,
@@ -85,12 +76,6 @@ pub(crate) trait MarketTool: Found + Sized {
     const EDIT: &'static str;
     /// The command `v` runs.
     const VIEW: &'static str;
-    /// What the Assumptions pane's first row is called.
-    const VERDICT: &'static str;
-    /// What the runs table's title says before the verdict.
-    const HEADLINE: &'static str;
-    /// Whether `v` offers net worth year by year at each percentile.
-    const HAS_BY_YEAR: bool;
 
     fn search(
         plan: &Plan,
@@ -102,20 +87,8 @@ pub(crate) trait MarketTool: Found + Sized {
     /// How many runs a search of `plan` makes.
     fn total(plan: &Plan) -> usize;
 
-    fn runs(&self) -> &Runs;
-
-    /// The options table's runs, in its order, each with its first cell.
-    fn listed(&self) -> Vec<(String, &Run)>;
-
     /// How the Ledger names a run shown in it, from its first cell.
     fn ledger_label(first: &str) -> String;
-
-    /// How the plan fared, as the Assumptions pane's first row says it.
-    fn verdict(&self) -> String;
-
-    /// What the tool runs under, as rows of the Assumptions pane after
-    /// the verdict.
-    fn settings(plan: &Plan) -> Vec<assumptions::Assumption>;
 
     /// What the Overview already found over `plan`, taken in place of a
     /// search.
@@ -199,47 +172,25 @@ fn say_help<R: MarketTool>(
 
 /// How a share of runs reads against the zones.
 fn zone_style(share: f64, theme: &Theme) -> Style {
-    if share >= GOOD_ZONE {
-        Style::new().fg(theme.good)
-    } else if share >= CAUTION_ZONE {
-        Style::new().fg(theme.caution)
-    } else {
-        theme.exceeded()
+    match zone_of(share) {
+        Zone::Good => Style::new().fg(theme.good),
+        Zone::Caution => Style::new().fg(theme.caution),
+        Zone::Short => theme.exceeded(),
     }
-}
-
-/// A run's row: its first cell, what it ends with, and the year it first
-/// falls short, with the eldest's age then.
-fn run_cells(plan: &Plan, first: String, run: &Run) -> Vec<String> {
-    let short = run.first_short.map_or_else(
-        || NEVER.to_owned(),
-        |year| match plan.household.people.first() {
-            Some(person) => format!("{year} ({})", person.age_in_year(year)),
-            None => year.to_string(),
-        },
-    );
-    vec![first, compact_dollars(run.ending), short]
 }
 
 /// The runs table's rows: the plan's own, then each run listed.
 fn laid<R: MarketTool>(found: &R, plan: &Plan) -> super::options::Laid {
     let runs = found.runs();
     super::options::Laid {
-        header: [R::RUN_HEADING, "Ends with", "Short in"]
-            .map(str::to_owned)
-            .to_vec(),
-        current: run_cells(plan, "As planned".to_owned(), &runs.planned),
+        header: markets::run_columns::<R>().map(str::to_owned).to_vec(),
+        current: markets::run_cells(plan, markets::PLANNED.to_owned(), &runs.planned),
         options: found
             .listed()
             .into_iter()
-            .map(|(first, run)| run_cells(plan, first, run))
+            .map(|listed| markets::run_cells(plan, listed.first, listed.run))
             .collect(),
     }
-}
-
-/// The share that succeeded, as a percent.
-fn share_text(runs: &Runs) -> String {
-    present::rate(runs.success_rate())
 }
 
 /// The page: the Assumptions pane beside a column of the runs over the
@@ -267,7 +218,8 @@ fn spawn_panes<R: MarketTool>(commands: &mut Commands, row: Entity) {
 /// The run highlighted in the options table, and its first cell.
 fn highlighted<R: MarketTool>(tool: &Tool<R>) -> Option<(String, &Run)> {
     let at = tool.highlighted()?;
-    tool.found()?.listed().into_iter().nth(at)
+    let listed = tool.found()?.listed().into_iter().nth(at)?;
+    Some((listed.first, listed.run))
 }
 
 /// The `open-*-run` commands: the highlighted run, projected whole, in the

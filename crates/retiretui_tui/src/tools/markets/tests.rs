@@ -9,7 +9,6 @@ use plurimus::term::KeyCode;
 use retiretui_engine::market::{MonteCarlo, RunError, Runs};
 use retiretui_engine::plan::Market;
 
-use super::MarketTool;
 use super::views::{View, ViewPart};
 use crate::nav::Page;
 use crate::pane::Framed;
@@ -20,6 +19,7 @@ use crate::support::{
 };
 use crate::theme::Theme;
 use crate::tools::{ResultPane, Tool, settle_all};
+use retiretui_client::searches::markets::Markets;
 
 /// Hands the keyboard to the runs, from the assumptions the page opens on.
 fn to_runs(app: &mut Headless) {
@@ -166,7 +166,7 @@ fn historical_lists_every_start_year_worst_first() {
     let listed = runs.listed();
     assert_eq!(listed.len(), 155);
     let worst = &runs.runs[runs.worst_first()[0]];
-    assert_eq!(listed[0].1, worst);
+    assert_eq!(listed[0].run, worst);
     assert!(redrawn(&mut app).contains("survived"));
 }
 
