@@ -4,9 +4,10 @@ import type {
   Offer,
   OperandView,
 } from "@wasm/retiretui_wasm.js";
-import { useId, useState, type ReactNode } from "react";
+import { useId, useState, type ChangeEvent, type ReactNode } from "react";
 
-import { cn } from "@/lib/utils";
+import { INPUT, cn } from "@/lib/utils";
+import { fieldId } from "@/plan/search";
 
 /** What a field's control changes, and whom it tells. */
 export interface FieldProps {
@@ -27,12 +28,30 @@ const RATE_STEP = 0.0025;
 const SHARE_STEP = 0.05;
 const PERCENT = 100;
 
-const INPUT =
-  "border-input bg-background h-9 w-full min-w-0 rounded-md border px-3 text-base md:text-sm aria-invalid:border-destructive";
-
-/** The DOM id a field's control has, so a link can land on it. */
-export function fieldId(view: Pick<FieldView, "key" | "place">): string {
-  return `field-${view.key}${view.place === null ? "" : `-${String(view.place)}`}`;
+/**
+ * An input's props that show `shown`, or `typed` once it has the keyboard,
+ * and keep what is typed into it until it loses the keyboard, handing each
+ * change to `enter`.
+ */
+function useTyping(
+  shown: string,
+  typed: string,
+  enter: (text: string) => void,
+) {
+  const [typing, setTyping] = useState<string | null>(null);
+  return {
+    value: typing ?? shown,
+    onFocus: () => {
+      setTyping(typed);
+    },
+    onChange: (event: ChangeEvent<HTMLInputElement>) => {
+      setTyping(event.target.value);
+      enter(event.target.value);
+    },
+    onBlur: () => {
+      setTyping(null);
+    },
+  };
 }
 
 /** A label, its help, what is wrong, then the control, tied together. */
@@ -77,7 +96,10 @@ function TextField({
   focus,
   described,
 }: FieldProps & { described: string | undefined }) {
-  const [typing, setTyping] = useState<string | null>(null);
+  const typing = useTyping(view.text, view.typed, (text) => {
+    editor.set(view.key, view.place ?? undefined, text);
+    changed();
+  });
   const mode =
     view.control === "whole"
       ? "numeric"
@@ -92,18 +114,13 @@ function TextField({
       placeholder={view.blank}
       aria-describedby={described}
       aria-invalid={Boolean(view.complaint ?? view.issue) || undefined}
-      value={typing ?? view.text}
+      {...typing}
       onFocus={() => {
-        setTyping(view.typed);
+        typing.onFocus();
         focus(view.key);
       }}
-      onChange={(event) => {
-        setTyping(event.target.value);
-        editor.set(view.key, view.place ?? undefined, event.target.value);
-        changed();
-      }}
       onBlur={() => {
-        setTyping(null);
+        typing.onBlur();
         focus(null);
       }}
     />
@@ -160,7 +177,11 @@ function PickField({
   const listId = useId();
   const labelOf = (held: string) =>
     offers.find((offer) => offer.value === held)?.label ?? held;
-  const [typing, setTyping] = useState<string | null>(null);
+  const shown = labelOf(value);
+  const typing = useTyping(shown, shown, (typed) => {
+    const offer = offers.find((each) => each.label === typed);
+    if (offer) pick(offer.value);
+  });
   if (offers.length > LONG_LIST) {
     return (
       <>
@@ -170,16 +191,7 @@ function PickField({
           list={listId}
           aria-describedby={described}
           aria-invalid={isInvalid || undefined}
-          value={typing ?? labelOf(value)}
-          onChange={(event) => {
-            const typed = event.target.value;
-            setTyping(typed);
-            const offer = offers.find((each) => each.label === typed);
-            if (offer) pick(offer.value);
-          }}
-          onBlur={() => {
-            setTyping(null);
-          }}
+          {...typing}
         />
         <datalist id={listId}>
           {offers.map((offer) => (
@@ -220,24 +232,14 @@ function OperandText({
   operand: OperandView;
   set: (text: string) => void;
 }) {
-  const [typing, setTyping] = useState<string | null>(null);
+  const typing = useTyping(operand.text, operand.text, set);
   return (
     <input
       aria-label={operand.help}
       title={operand.help}
       className={cn(INPUT, operand.after === DATE_HINT ? "w-32" : "w-20")}
       placeholder={operand.after === DATE_HINT ? DATE_HINT : ""}
-      value={typing ?? operand.text}
-      onFocus={() => {
-        setTyping(operand.text);
-      }}
-      onChange={(event) => {
-        setTyping(event.target.value);
-        set(event.target.value);
-      }}
-      onBlur={() => {
-        setTyping(null);
-      }}
+      {...typing}
     />
   );
 }

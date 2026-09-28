@@ -13,7 +13,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { messageOf, useSession } from "@/session";
+import { useSession } from "@/session";
 
 /** An item's every field it has a use for, in the form's words. */
 export function ReadOut({
@@ -26,18 +26,14 @@ export function ReadOut({
   /** The item's name, where it is one of many and may be deleted. */
   name?: string;
 }) {
-  const { document, revision } = useSession();
-  const rows = useMemo(
-    () => {
-      try {
-        return document?.readOut(slug, index) ?? null;
-      } catch {
-        return null;
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- the document changes in place
-    [document, revision, slug, index],
-  );
+  const { reading } = useSession();
+  const rows = useMemo(() => {
+    try {
+      return reading.document?.readOut(slug, index) ?? null;
+    } catch {
+      return null;
+    }
+  }, [reading, slug, index]);
   if (!rows) return null;
   return (
     <section aria-label={name ?? "Details"} className="space-y-4">
@@ -106,12 +102,7 @@ function DeleteItem({
             <AlertDialogCancel>Keep it</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                try {
-                  session.remove(slug, index, name);
-                  session.report(null);
-                } catch (thrown) {
-                  session.report(messageOf(thrown));
-                }
+                session.remove(slug, index, name);
               }}
             >
               Delete

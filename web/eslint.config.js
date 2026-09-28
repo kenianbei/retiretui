@@ -17,13 +17,7 @@ export default tseslint.config(
       "react-refresh/only-export-components": [
         "error",
         {
-          allowExportNames: [
-            "useSession",
-            "useFileActions",
-            "messageOf",
-            "planName",
-            "fieldId",
-          ],
+          allowExportNames: ["useSession", "useFileActions"],
         },
       ],
     },

@@ -1,15 +1,19 @@
 import { Link } from "@tanstack/react-router";
-import type { DomainTable, TableRow } from "@wasm/retiretui_wasm.js";
+import {
+  sortPressed,
+  type DomainTable,
+  type Sort,
+  type TableRow,
+} from "@wasm/retiretui_wasm.js";
 import { ArrowDown, ArrowUp } from "lucide-react";
 
-import { cn } from "@/lib/utils";
-import { pressed, type TableSort } from "@/plan/sort";
+import { INPUT, cn } from "@/lib/utils";
 
 interface ItemTableProps {
   slug: string;
   table: DomainTable;
-  sort: TableSort | null;
-  onSort: (sort: TableSort | null) => void;
+  sort: Sort | null;
+  onSort: (sort: Sort | null) => void;
   /** The highlighted item's plan index. */
   highlighted: number | undefined;
 }
@@ -47,14 +51,14 @@ function WideTable({ slug, table, sort, onSort, highlighted }: ItemTableProps) {
           <tr>
             {table.columns.map((column, at) => {
               const isSorted = sort?.column === at;
-              const Arrow = sort?.isDescending ? ArrowDown : ArrowUp;
+              const Arrow = sort?.is_descending ? ArrowDown : ArrowUp;
               return (
                 <th
                   key={column.header}
                   scope="col"
                   aria-sort={
                     isSorted
-                      ? sort.isDescending
+                      ? sort.is_descending
                         ? "descending"
                         : "ascending"
                       : undefined
@@ -68,7 +72,7 @@ function WideTable({ slug, table, sort, onSort, highlighted }: ItemTableProps) {
                     type="button"
                     className="hover:text-foreground text-muted-foreground inline-flex items-center gap-1"
                     onClick={() => {
-                      onSort(pressed(sort, at));
+                      onSort(sortPressed(sort, at));
                     }}
                   >
                     {column.header}
@@ -126,20 +130,20 @@ function NarrowRows({ slug, table, sort, onSort }: ItemTableProps) {
   const sortValue =
     sort === null
       ? ""
-      : `${String(sort.column)}:${sort.isDescending ? "down" : "up"}`;
+      : `${String(sort.column)}:${sort.is_descending ? "down" : "up"}`;
   return (
     <div className="space-y-3 md:hidden">
       <label className="flex items-center gap-2 text-sm">
         <span className="text-muted-foreground">Sort by</span>
         <select
-          className="border-input bg-background h-9 flex-1 rounded-md border px-2"
+          className={cn(INPUT, "flex-1")}
           value={sortValue}
           onChange={(event) => {
             const [column, way] = event.target.value.split(":");
             onSort(
               column === undefined || column === ""
                 ? null
-                : { column: Number(column), isDescending: way === "down" },
+                : { column: Number(column), is_descending: way === "down" },
             );
           }}
         >

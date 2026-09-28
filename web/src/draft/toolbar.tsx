@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import { issueCount } from "@wasm/retiretui_wasm.js";
 import { Redo2, Save, TriangleAlert, Undo2 } from "lucide-react";
 import { useEffect, useMemo } from "react";
@@ -10,8 +9,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { placeSearch } from "@/plan/search";
-import { messageOf, useSession } from "@/session";
+import { IssueLink } from "@/draft/issue-link";
+import { useSession } from "@/session";
 
 /** Whether a key pressed at `target` is typing rather than a command. */
 function isTyping(target: EventTarget | null): boolean {
@@ -52,12 +51,7 @@ function useDraftKeys(actions: {
 }
 
 function Issues() {
-  const { document, revision } = useSession();
-  const issues = useMemo(
-    () => document?.issues() ?? [],
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- the document changes in place
-    [document, revision],
-  );
+  const { issues } = useSession();
   if (issues.length === 0) return null;
   return (
     <DropdownMenu>
@@ -68,23 +62,15 @@ function Issues() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="max-w-96">
-        {issues.map((issue) => {
-          if (!issue.place) {
-            return (
-              <DropdownMenuItem key={issue.words} disabled>
-                {issue.words}
-              </DropdownMenuItem>
-            );
-          }
-          const { page, search } = placeSearch(issue.place);
-          return (
-            <DropdownMenuItem key={issue.words} asChild>
-              <Link to="/plan/$page" params={{ page }} search={search}>
-                {issue.words}
-              </Link>
-            </DropdownMenuItem>
-          );
-        })}
+        {issues.map((issue) => (
+          <DropdownMenuItem
+            key={issue.words}
+            disabled={!issue.place}
+            asChild={Boolean(issue.place)}
+          >
+            <IssueLink issue={issue} />
+          </DropdownMenuItem>
+        ))}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -92,23 +78,8 @@ function Issues() {
 
 /** Undo, redo, save, and what the gate finds wrong with the draft. */
 export function DraftToolbar() {
-  const session = useSession();
-  const { document, report } = session;
-  const actions = useMemo(() => {
-    const reported = (action: () => void) => () => {
-      try {
-        action();
-        report(null);
-      } catch (thrown) {
-        report(messageOf(thrown));
-      }
-    };
-    return {
-      undo: reported(session.undo),
-      redo: reported(session.redo),
-      save: reported(session.save),
-    };
-  }, [session.undo, session.redo, session.save, report]);
+  const { document, undo, redo, save } = useSession();
+  const actions = useMemo(() => ({ undo, redo, save }), [undo, redo, save]);
   useDraftKeys(actions);
   if (!document) return null;
   const isReadOnly = document.isReadOnly;
@@ -122,7 +93,7 @@ export function DraftToolbar() {
         aria-label="Undo"
         title="Undo"
         disabled={!document.canUndo}
-        onClick={actions.undo}
+        onClick={undo}
       >
         <Undo2 aria-hidden />
       </Button>
@@ -132,7 +103,7 @@ export function DraftToolbar() {
         aria-label="Redo"
         title="Redo"
         disabled={!document.canRedo}
-        onClick={actions.redo}
+        onClick={redo}
       >
         <Redo2 aria-hidden />
       </Button>
@@ -147,7 +118,7 @@ export function DraftToolbar() {
           variant={document.isDirty ? "default" : "outline"}
           size="sm"
           disabled={isReadOnly || !document.isDirty}
-          onClick={actions.save}
+          onClick={save}
         >
           <Save aria-hidden />
           Save

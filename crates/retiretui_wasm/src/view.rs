@@ -147,20 +147,18 @@ fn offered(mut offers: Vec<Offer>, held: &str, spec: &FieldSpec) -> Vec<Offer> {
     if !held.is_empty() && !offers.iter().any(|offer| offer.value == held) {
         offers.push(Offer::spelt(held.to_owned()));
     }
-    if !spec.is_required() {
-        let blank = Offer {
-            value: String::new(),
-            label: spec.blank_word().to_owned(),
-        };
-        offers.insert(0, blank);
+    if spec.is_required() {
+        offers
+    } else {
+        blank_first(offers, spec.blank_word())
     }
-    offers
 }
 
-fn blank_first(mut offers: Vec<Offer>) -> Vec<Offer> {
+/// `offers` after a blank, which reads as `word`.
+fn blank_first(mut offers: Vec<Offer>, word: &str) -> Vec<Offer> {
     let blank = Offer {
         value: String::new(),
-        label: BLANK.to_owned(),
+        label: word.to_owned(),
     };
     offers.insert(0, blank);
     offers
@@ -296,14 +294,14 @@ impl Editor {
                 after: words[1],
                 help: help_of(operand),
                 text,
-                offers: source.map(|source| blank_first(ref_offers(&draft.plan, source))),
+                offers: source.map(|source| blank_first(ref_offers(&draft.plan, source), BLANK)),
             }
         });
         TriggerView {
             basis: kind
                 .map(|kind| kind.as_str().to_owned())
                 .unwrap_or_default(),
-            bases: blank_first(Vocabulary::TriggerBasis.offers()),
+            bases: blank_first(Vocabulary::TriggerBasis.offers(), BLANK),
             operands: operands.collect(),
         }
     }

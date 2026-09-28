@@ -1,24 +1,22 @@
 import { Link, useRouteContext, useSearch } from "@tanstack/react-router";
 import { ChevronLeft, Plus } from "lucide-react";
+import type { Sort } from "@wasm/retiretui_wasm.js";
 import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { ItemForm } from "@/plan/form";
 import { ReadOut } from "@/plan/read-out";
-import type { TableSort } from "@/plan/sort";
 import { ItemTable } from "@/plan/table";
 import { useSession } from "@/session";
 
 /** A list domain: its table, and the highlighted item read out beside it. */
 function ListDomain({ slug, purpose }: { slug: string; purpose: string }) {
-  const { document, revision } = useSession();
   const { item } = useSearch({ from: "/plan/$page" });
-  const [sort, setSort] = useState<TableSort | null>(null);
+  const [sort, setSort] = useState<Sort | null>(null);
+  const { reading } = useSession();
   const table = useMemo(
-    () =>
-      document?.table(slug, sort?.column, sort?.isDescending ?? false) ?? null,
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- the document changes in place
-    [document, revision, slug, sort],
+    () => reading.document?.table(slug, sort) ?? null,
+    [reading, slug, sort],
   );
   if (!table) return null;
   const highlighted =

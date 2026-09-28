@@ -105,10 +105,14 @@ impl JsDocument {
     ///
     /// # Errors
     ///
-    /// Where no domain is at `slug`.
+    /// Where no domain is at `slug`, or it holds no item at `index`.
     pub fn edit(&self, slug: &str, index: usize) -> Result<JsEditor, JsError> {
         let form = form_at(slug).map_err(refused)?;
-        Ok(JsEditor(Editor::open(form, self.0.draft(), Some(index))))
+        let draft = self.0.draft();
+        if (form.item)(draft, index).is_none() {
+            return Err(refused(format!("{} holds no item {index}", form.title)));
+        }
+        Ok(JsEditor(Editor::open(form, draft, Some(index))))
     }
 
     /// A new item of the domain at `slug` open in its form.
@@ -172,14 +176,6 @@ impl JsDocument {
     #[must_use]
     pub fn is_dirty(&self) -> bool {
         self.0.draft().is_dirty()
-    }
-
-    /// How many changes the document has seen: what a page keys what it
-    /// read of it on.
-    #[wasm_bindgen(getter)]
-    #[must_use]
-    pub fn revision(&self) -> u32 {
-        self.0.revision()
     }
 
     /// Writes the draft as canonical text through `write`, back where it
@@ -257,12 +253,10 @@ mod tests {
         let renamed = |document: &Document| document.draft().plan.accounts[0].name.clone();
         assert_eq!(renamed(&document).as_deref(), Some("Renamed"));
         assert!(document.draft().is_dirty() && document.draft().can_undo());
-        let revision = document.revision();
         assert!(document.undo());
         assert_ne!(renamed(&document).as_deref(), Some("Renamed"));
         assert!(document.redo());
         assert_eq!(renamed(&document).as_deref(), Some("Renamed"));
-        assert!(document.revision() > revision);
         let written = saved(&mut document).expect("saved");
         assert!(written.contains("Renamed"));
         assert!(!document.draft().is_dirty());

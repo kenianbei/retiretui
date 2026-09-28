@@ -1,15 +1,11 @@
 import { Link, useSearch } from "@tanstack/react-router";
-import {
-  issueCount,
-  type Document,
-  type PlacedIssue,
-} from "@wasm/retiretui_wasm.js";
+import { issueCount, type PlacedIssue } from "@wasm/retiretui_wasm.js";
 import { useMemo, type ReactNode } from "react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { placeSearch } from "@/plan/search";
+import { IssueLink } from "@/draft/issue-link";
 import { BASIS_LABEL, dollars, share, type Basis } from "@/overview/words";
 import { useMonteCarlo } from "@/searches";
 import { useSession } from "@/session";
@@ -51,18 +47,7 @@ function Problems({ issues }: { issues: PlacedIssue[] }) {
       <ul className="list-disc space-y-1 pl-5">
         {issues.map((issue) => (
           <li key={issue.words}>
-            {issue.place ? (
-              <Link
-                to="/plan/$page"
-                params={{ page: placeSearch(issue.place).page }}
-                search={placeSearch(issue.place).search}
-                className="underline underline-offset-4"
-              >
-                {issue.words}
-              </Link>
-            ) : (
-              issue.words
-            )}
+            <IssueLink issue={issue} className="underline underline-offset-4" />
           </li>
         ))}
       </ul>
@@ -136,27 +121,15 @@ function Success({ plan }: { plan: string }) {
   );
 }
 
-function Figures({
-  document,
-  basis,
-  revision,
-  isValid,
-}: {
-  document: Document;
-  basis: Basis;
-  revision: number;
-  /** Whether the draft passes the gate, and so can be run through markets. */
-  isValid: boolean;
-}) {
+function Figures({ basis, isValid }: { basis: Basis; isValid: boolean }) {
+  const { reading } = useSession();
   const summary = useMemo(
-    () => document.summary(basis === "today"),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- the document changes in place
-    [document, basis, revision],
+    () => reading.document?.summary(basis === "today"),
+    [reading, basis],
   );
   const plan = useMemo(
-    () => document.planText(),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- the document changes in place
-    [document, revision],
+    () => (isValid ? (reading.document?.planText() ?? null) : null),
+    [reading, isValid],
   );
   if (!summary) return null;
   const unit = BASIS_LABEL[basis];
@@ -164,7 +137,7 @@ function Figures({
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
       <Figure label="Lasts through random markets">
-        {isValid ? (
+        {plan !== null ? (
           <Success plan={plan} />
         ) : (
           <Reading big="—" small="once the plan's issues are fixed" />
@@ -200,21 +173,12 @@ function Figures({
   );
 }
 
-function ThisYear({
-  document,
-  revision,
-}: {
-  document: Document;
-  revision: number;
-}) {
-  const said = useMemo(
-    () => {
-      const year = document.thisYear(new Date().getFullYear());
-      return year === undefined ? null : document.said(year);
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- the document changes in place
-    [document, revision],
-  );
+function ThisYear() {
+  const { reading } = useSession();
+  const said = useMemo(() => {
+    const year = reading.document?.thisYear(new Date().getFullYear());
+    return year === undefined ? null : reading.document?.said(year);
+  }, [reading]);
   if (!said) return null;
   const ages = said.ages.map(([name, age]) => `${name} turns ${String(age)}`);
 
@@ -254,13 +218,8 @@ function ThisYear({
 
 /** Whether the money lasts and how surely, and what to do this year. */
 export function Overview() {
-  const { document, revision } = useSession();
+  const { document, issues } = useSession();
   const { basis } = useSearch({ from: "/overview" });
-  const issues = useMemo(
-    () => document?.issues() ?? [],
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- the document changes in place
-    [document, revision],
-  );
   if (!document) return null;
 
   return (
@@ -270,13 +229,8 @@ export function Overview() {
         <BasisSwitch basis={basis} />
       </div>
       {issues.length > 0 && <Problems issues={issues} />}
-      <Figures
-        document={document}
-        basis={basis}
-        revision={revision}
-        isValid={issues.length === 0}
-      />
-      <ThisYear document={document} revision={revision} />
+      <Figures basis={basis} isValid={issues.length === 0} />
+      <ThisYear />
     </div>
   );
 }

@@ -48,7 +48,7 @@ fn reply<T: Serialize>(answer: Result<T, String>) -> Result<JsValue, JsError> {
 const TYPES: &str = r#"import type {
   ActionsReply, ClaimsReply, Domain, DomainTable, Example, FieldView,
   HistoricalReply, Issue, MonteCarloReply, PlacedIssue, Projection, SaidYear,
-  Summary, SweepReply,
+  Sort, Summary, SweepReply,
 } from "../bindings/index";
 export type * from "../bindings/index";"#;
 
@@ -269,6 +269,8 @@ mod bindings {
     use ts_rs::{Config, TS};
 
     use crate::document::{PlacedIssue, SaidYear};
+    use retiretui_client::forms::sort::Sort;
+
     use crate::domain::DomainTable;
     use crate::searches::Example;
     use crate::view::FieldView;
@@ -296,6 +298,7 @@ mod bindings {
             Example::export_all,
             Domain::export_all,
             DomainTable::export_all,
+            Sort::export_all,
             FieldView::export_all,
         ];
         for export in exports {

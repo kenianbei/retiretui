@@ -14,9 +14,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Field, fieldId } from "@/plan/fields";
-import type { PlanSearch } from "@/plan/search";
-import { messageOf, useSession } from "@/session";
+import { messageOf } from "@/lib/utils";
+import { Field } from "@/plan/fields";
+import { fieldId, type PlanSearch } from "@/plan/search";
+import { useSession } from "@/session";
 
 interface ItemFormProps {
   slug: string;
@@ -32,7 +33,6 @@ function useEditor(slug: string, edit: number | "new"): Editor | null {
     if (!document) return null;
     if (edit === "new") return document.create(slug);
     try {
-      document.readOut(slug, edit);
       return document.edit(slug, edit);
     } catch {
       return null;
@@ -45,7 +45,7 @@ export function ItemForm({ slug, edit, field }: ItemFormProps) {
   const session = useSession();
   const navigate = useNavigate({ from: "/plan/$page" });
   const editor = useEditor(slug, edit);
-  const [, setChanges] = useState(0);
+  const [changes, setChanges] = useState(0);
   const [focused, setFocused] = useState<string | null>(null);
   const [refusal, setRefusal] = useState<string | null>(null);
   const refused = useRef<HTMLDivElement>(null);
@@ -66,8 +66,15 @@ export function ItemForm({ slug, edit, field }: ItemFormProps) {
     if (refusal) refused.current?.focus();
   }, [refusal]);
 
-  if (!editor || !session.document) return null;
-  const views = editor.view(session.document, focused ?? undefined);
+  const { document } = session;
+  const views = useMemo(
+    () =>
+      editor && document ? editor.view(document, focused ?? undefined) : [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the editor changes in place; the count says when
+    [editor, document, focused, changes],
+  );
+
+  if (!editor) return null;
 
   const close = () => {
     void navigate({ search: { item: edit === "new" ? undefined : edit } });

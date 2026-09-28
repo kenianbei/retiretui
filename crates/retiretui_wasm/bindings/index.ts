@@ -22,6 +22,7 @@ export type { PlacedIssue } from "./PlacedIssue";
 export type { Projection } from "./Projection";
 export type { RunEntry } from "./RunEntry";
 export type { SaidYear } from "./SaidYear";
+export type { Sort } from "./Sort";
 export type { Summary } from "./Summary";
 export type { SweepEntry } from "./SweepEntry";
 export type { SweepReply } from "./SweepReply";

@@ -21,21 +21,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { messageOf, useSession } from "@/session";
-import { nameOf, pathOf } from "@/workspace";
+import { INPUT } from "@/lib/utils";
+import { useSession } from "@/session";
+import { nameOf, pathOf, planName } from "@/workspace";
 
 /** A file about to be written over another of the same name. */
 interface Replacing {
   name: string;
   replace: () => void;
-}
-
-const PLAN_EXTENSION = ".toml";
-
-/** A typed name as a plan file's: `.toml` added where it is missing. */
-export function planName(typed: string): string {
-  const name = typed.trim();
-  return name.endsWith(PLAN_EXTENSION) ? name : `${name}${PLAN_EXTENSION}`;
 }
 
 /** What can be done with files, wherever a page offers it. */
@@ -76,12 +69,7 @@ export function FileActionsProvider({ children }: { children: ReactNode }) {
 
   const saveUnder = (name: string) => {
     writing(name, () => {
-      try {
-        session.saveAs(name);
-        session.report(null);
-      } catch (thrown) {
-        session.report(messageOf(thrown));
-      }
+      session.saveAs(name);
     });
   };
 
@@ -176,7 +164,7 @@ export function FileActionsProvider({ children }: { children: ReactNode }) {
               File name
               <input
                 autoFocus
-                className="border-input bg-background h-9 rounded-md border px-3 text-base md:text-sm"
+                className={INPUT}
                 value={naming ?? ""}
                 onChange={(event) => {
                   setNaming(event.target.value);

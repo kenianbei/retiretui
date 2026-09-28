@@ -4,30 +4,27 @@
 
 use std::cmp::Ordering;
 
+use serde::{Deserialize, Serialize};
+
 use super::cells::Cell;
 
 const ASCENDING: &str = "▲";
 const DESCENDING: &str = "▼";
 
 /// The column a table is ordered by, and which way.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct Sort {
     column: usize,
     is_descending: bool,
 }
 
 impl Sort {
-    /// The order by `column`, down where `is_descending`.
-    #[must_use]
-    pub const fn new(column: usize, is_descending: bool) -> Self {
+    const fn ascending(column: usize) -> Self {
         Self {
             column,
-            is_descending,
+            is_descending: false,
         }
-    }
-
-    const fn ascending(column: usize) -> Self {
-        Self::new(column, false)
     }
 
     /// What a press on `column`'s header makes of the order held: up, then

@@ -1,4 +1,4 @@
-import type { Place } from "@wasm/retiretui_wasm.js";
+import type { FieldView, Place } from "@wasm/retiretui_wasm.js";
 
 /** What a domain's page holds open, in its address. */
 export interface PlanSearch {
@@ -19,13 +19,19 @@ function indexOf(value: unknown): number | undefined {
 
 /** A domain page's search params from whatever the address holds. */
 export function planSearch(search: Record<string, unknown>): PlanSearch {
+  const item = indexOf(search.item);
   const edit = search.edit === "new" ? "new" : indexOf(search.edit);
   const field = typeof search.field === "string" ? search.field : undefined;
   return {
-    ...(indexOf(search.item) !== undefined && { item: indexOf(search.item) }),
+    ...(item !== undefined && { item }),
     ...(edit !== undefined && { edit }),
     ...(field !== undefined && { field }),
   };
+}
+
+/** The DOM id a field's control has, so a link can land on it. */
+export function fieldId(view: Pick<FieldView, "key" | "place">): string {
+  return `field-${view.key}${view.place === null ? "" : `-${String(view.place)}`}`;
 }
 
 /** Where an issue's link lands: its item's form, scrolled to its field. */

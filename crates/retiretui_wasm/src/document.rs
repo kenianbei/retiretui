@@ -8,7 +8,6 @@ use retiretui_client::actions::{collect_warnings, sentence};
 use retiretui_client::draft::Draft;
 use retiretui_client::files::resolve_with_files;
 use retiretui_client::forms::Form;
-use retiretui_client::forms::offers::display_name;
 use retiretui_client::issues::{issue_field, issue_listing, issue_place, issue_words};
 use retiretui_client::replies::{ActionsReply, year_row};
 use retiretui_client::session::{Today, YearCursor, span};
@@ -17,6 +16,7 @@ use retiretui_engine::plan::Item;
 use retiretui_engine::project::{Projection, Summary, YearRow, project};
 use serde::Serialize;
 
+use crate::domain::{list_of, name_at};
 use crate::editor::Editor;
 use crate::tables;
 use crate::vocabulary::slug_of;
@@ -28,8 +28,6 @@ pub(crate) struct Document {
     files: Vec<PathBuf>,
     /// The last projection of a valid draft, held while it has issues.
     projection: Option<Projection>,
-    /// Counts every change, so a page knows to read the document again.
-    revision: u32,
 }
 
 /// An issue beside where it is in the plan, in the forms' words.
@@ -104,7 +102,6 @@ impl Document {
             draft,
             files,
             projection,
-            revision: 0,
         })
     }
 
@@ -140,12 +137,6 @@ impl Document {
             .collect()
     }
 
-    /// How many changes the document has seen.
-    #[must_use]
-    pub const fn revision(&self) -> u32 {
-        self.revision
-    }
-
     /// Stores the item `editor` holds into the draft as one step of its
     /// history, answering where it now sits, or `None` where it held no
     /// edits to store.
@@ -172,12 +163,8 @@ impl Document {
         if let Some(reason) = self.draft.refuse_if_read_only() {
             return Err(reason);
         }
-        let list = form
-            .list
-            .ok_or_else(|| format!("{} is one item, not a table", form.title))?;
-        let item = (form.item)(&self.draft, index);
-        let held = item.and_then(|item| display_name(&item, list.identity, form.fields));
-        if held.as_deref() != Some(name) {
+        let list = list_of(form)?;
+        if name_at(&self.draft, form, list, index).as_deref() != Some(name) {
             return Err(format!("{name} is no longer where it was in the plan"));
         }
         (list.remove)(&mut self.draft.plan, index);
@@ -196,7 +183,6 @@ impl Document {
         if self.draft.revalidate(tables()) {
             self.projection = Some(project(&self.draft.plan, tables()));
         }
-        self.revision += 1;
     }
 
     /// Steps back over the last edit, answering whether there was one.
@@ -232,7 +218,6 @@ impl Document {
         }
         self.write_through(write)?;
         self.draft.saved();
-        self.revision += 1;
         Ok(())
     }
 
@@ -250,7 +235,6 @@ impl Document {
         self.write_through(write)?;
         self.draft.saved_as();
         self.files = vec![normal(Path::new(path))];
-        self.revision += 1;
         Ok(())
     }
 

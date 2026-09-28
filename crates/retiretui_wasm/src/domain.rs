@@ -8,10 +8,11 @@ use retiretui_client::forms::offers::display_name;
 use retiretui_client::forms::sort::Sort;
 use retiretui_client::forms::{Form, ListOps};
 use serde::Serialize;
+use serde_wasm_bindgen::from_value;
 use wasm_bindgen::prelude::{JsError, JsValue, wasm_bindgen};
 
 use crate::vocabulary::form_at;
-use crate::{JsDocument, reply};
+use crate::{JsDocument, reply, to_js};
 
 /// A domain's items as its table shows them.
 #[derive(Serialize, Debug)]
@@ -45,9 +46,16 @@ pub struct TableRow {
     pub cells: Vec<Cell>,
 }
 
-fn list_of(form: &Form) -> Result<ListOps, String> {
+/// The table of the domain `form`, where it holds many items.
+pub(crate) fn list_of(form: &Form) -> Result<ListOps, String> {
     form.list
         .ok_or_else(|| format!("{} is one item, not a table", form.title))
+}
+
+/// What item `index` of `form`'s `list` is called, where there is one.
+pub(crate) fn name_at(draft: &Draft, form: &Form, list: ListOps, index: usize) -> Option<String> {
+    let item = (form.item)(draft, index)?;
+    display_name(&item, list.identity, form.fields)
 }
 
 /// The table of the domain `form`, ordered by `sort` where one is given.
@@ -66,11 +74,8 @@ pub fn table(draft: &Draft, form: &Form, sort: Option<Sort>) -> Result<DomainTab
         Some(sort) => sort.order(items),
         None => items,
     };
-    let name_of = |index: usize| {
-        let item = (form.item)(draft, index);
-        let name = item.and_then(|item| display_name(&item, list.identity, form.fields));
-        name.unwrap_or_else(|| list.singular.to_owned())
-    };
+    let name_of =
+        |index| name_at(draft, form, list, index).unwrap_or_else(|| list.singular.to_owned());
     let rows = items.into_iter().map(|(index, cells)| TableRow {
         index,
         name: name_of(index),
@@ -96,20 +101,21 @@ pub fn read_out(draft: &Draft, form: &Form, index: usize) -> Result<Vec<[String;
 
 #[wasm_bindgen(js_class = Document)]
 impl JsDocument {
-    /// The table of the domain at `slug`, ordered by column `sort` - down
-    /// where `isDescending` - or in the plan's own order where none.
+    /// The table of the domain at `slug`, ordered by `sort`, or in the
+    /// plan's own order where none.
     ///
     /// # Errors
     ///
-    /// Where no domain is at `slug`, or it is a single item.
+    /// Where no domain is at `slug`, it is a single item, or `sort` is not
+    /// one.
     #[wasm_bindgen(unchecked_return_type = "DomainTable")]
     pub fn table(
         &self,
         slug: &str,
-        sort: Option<usize>,
-        #[wasm_bindgen(js_name = isDescending)] is_descending: bool,
+        #[wasm_bindgen(unchecked_param_type = "Sort | null")] sort: JsValue,
     ) -> Result<JsValue, JsError> {
-        let sort = sort.map(|column| Sort::new(column, is_descending));
+        let sort: Option<Sort> =
+            from_value(sort).map_err(|error| JsError::new(&error.to_string()))?;
         reply(form_at(slug).and_then(|form| table(self.0.draft(), form, sort)))
     }
 
@@ -123,6 +129,21 @@ impl JsDocument {
     pub fn read_out(&self, slug: &str, index: usize) -> Result<JsValue, JsError> {
         reply(form_at(slug).and_then(|form| read_out(self.0.draft(), form, index)))
     }
+}
+
+/// What a press on `column`'s header makes of the order `held`: up, then
+/// down, then the plan's own.
+///
+/// # Errors
+///
+/// Where `held` is not an order.
+#[wasm_bindgen(js_name = sortPressed, unchecked_return_type = "Sort | null")]
+pub fn sort_pressed(
+    #[wasm_bindgen(unchecked_param_type = "Sort | null")] held: JsValue,
+    column: usize,
+) -> Result<JsValue, JsError> {
+    let held: Option<Sort> = from_value(held).map_err(|error| JsError::new(&error.to_string()))?;
+    to_js(&Sort::pressed(held, column))
 }
 
 #[cfg(test)]
@@ -146,7 +167,8 @@ mod tests {
         assert_eq!(indices, (0..draft.plan.accounts.len()).collect::<Vec<_>>());
         let named = draft.plan.accounts[0].name.as_deref();
         assert_eq!(Some(plain.rows[0].name.as_str()), named);
-        let down = table(&draft, accounts, Some(Sort::new(0, true))).expect("a table");
+        let down =
+            table(&draft, accounts, Sort::pressed(Sort::pressed(None, 0), 0)).expect("a table");
         let mut reordered: Vec<usize> = down.rows.iter().map(|row| row.index).collect();
         reordered.sort_unstable();
         assert_eq!(reordered, indices);

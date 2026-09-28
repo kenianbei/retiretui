@@ -1,4 +1,8 @@
-import { Document, type Editor } from "@wasm/retiretui_wasm.js";
+import {
+  Document,
+  type Editor,
+  type PlacedIssue,
+} from "@wasm/retiretui_wasm.js";
 import {
   createContext,
   use,
@@ -9,6 +13,7 @@ import {
   type ReactNode,
 } from "react";
 
+import { messageOf } from "@/lib/utils";
 import { Workspace, fileAt, pathOf } from "@/workspace";
 
 /** The document a path names, or why it would not open. */
@@ -18,6 +23,12 @@ interface Opened {
   error: string | null;
 }
 
+/** The open document, and how many changes it has seen. */
+export interface Reading {
+  document: Document | null;
+  revision: number;
+}
+
 /** What becomes of a draft's unsaved edits before something replaces it. */
 export type Unsaved = "cancel" | "discard" | "save";
 
@@ -25,20 +36,25 @@ export type Unsaved = "cancel" | "discard" | "save";
 export interface Session extends Opened {
   workspace: Workspace;
   files: string[];
-  /** Counts the document's changes; what is read of it is keyed on this. */
-  revision: number;
+  /**
+   * The document as of its latest change: a value that is new whenever the
+   * document, which changes in place, does - what reads of it are keyed on.
+   */
+  reading: Reading;
+  /** What the gate finds wrong with the draft. */
+  issues: PlacedIssue[];
   open: (path: string) => void;
   /** Writes `text` as the file `name`, replacing any such file, and opens it. */
   place: (name: string, text: string) => void;
   /** Stores the editor's item, answering where it now sits; throws the refusal. */
   apply: (editor: Editor) => number | undefined;
-  /** Removes an item still called `name`; throws the refusal. */
+  /** Removes an item still called `name`; a refusal is reported. */
   remove: (slug: string, index: number, name: string) => void;
   undo: () => void;
   redo: () => void;
-  /** Writes the draft back to its file; throws the refusal. */
+  /** Writes the draft back to its file; a refusal is reported. */
   save: () => void;
-  /** Writes the draft as the file `name`, which it then is; throws the refusal. */
+  /** Writes the draft as the file `name`, which it then is; a refusal is reported. */
   saveAs: (name: string) => void;
   /** Whether the document's files changed in another tab under unsaved edits. */
   isChangedElsewhere: boolean;
@@ -50,11 +66,6 @@ export interface Session extends Opened {
   /** What the last refused action said, until it is dismissed. */
   problem: string | null;
   report: (problem: string | null) => void;
-}
-
-/** What a thrown refusal says. */
-export function messageOf(thrown: unknown): string {
-  return thrown instanceof Error ? thrown.message : String(thrown);
 }
 
 const SessionContext = createContext<Session | null>(null);
@@ -125,7 +136,21 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [workspace, guarded, openNow],
   );
 
-  const save = useCallback(() => {
+  /** Runs `action`, reporting what it throws and clearing what was reported. */
+  const attempt = useCallback(
+    <Args extends unknown[]>(action: (...args: Args) => void) =>
+      (...args: Args) => {
+        try {
+          action(...args);
+          report(null);
+        } catch (thrown) {
+          report(messageOf(thrown));
+        }
+      },
+    [],
+  );
+
+  const saveNow = useCallback(() => {
     if (!document || path === null) return;
     document.save((text) => {
       workspace.write(path, text);
@@ -155,20 +180,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setWaiting(null);
       if (choice === "cancel" || !replace) return;
       try {
-        if (choice === "save") save();
+        if (choice === "save") saveNow();
         replace();
       } catch (thrown) {
         report(messageOf(thrown));
       }
     },
-    [waiting, save],
+    [waiting, saveNow],
   );
 
   const edits = useMemo(() => {
-    const stepped = (step: () => unknown) => () => {
-      step();
-      changed();
-    };
+    const stepped =
+      <Args extends unknown[]>(step: (...args: Args) => unknown) =>
+      (...args: Args) => {
+        step(...args);
+        changed();
+      };
     return {
       apply: (editor: Editor) => {
         if (!document) return undefined;
@@ -176,14 +203,20 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         changed();
         return index;
       },
-      remove: (slug: string, index: number, name: string) => {
-        document?.remove(slug, index, name);
-        changed();
-      },
-      undo: stepped(() => document?.undo()),
-      redo: stepped(() => document?.redo()),
+      remove: attempt(
+        stepped((slug: string, index: number, name: string) => {
+          document?.remove(slug, index, name);
+        }),
+      ),
+      undo: attempt(stepped(() => document?.undo())),
+      redo: attempt(stepped(() => document?.redo())),
+      save: attempt(saveNow),
+      saveAs: attempt(saveAs),
     };
-  }, [document, changed]);
+  }, [document, changed, attempt, saveNow, saveAs]);
+
+  const reading = useMemo(() => ({ document, revision }), [document, revision]);
+  const issues = useMemo(() => reading.document?.issues() ?? [], [reading]);
 
   useEffect(() => {
     const follow = (event: StorageEvent) => {
@@ -211,19 +244,18 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return () => {
       window.removeEventListener("beforeunload", ask);
     };
-  }, [isDirty, revision]);
+  }, [isDirty]);
 
   const session = useMemo(
     () => ({
       ...opened,
       workspace,
       files,
-      revision,
+      reading,
+      issues,
       open,
       place,
       ...edits,
-      save,
-      saveAs,
       isChangedElsewhere,
       reload: () => {
         if (path !== null) openNow(path);
@@ -237,12 +269,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       opened,
       workspace,
       files,
-      revision,
+      reading,
+      issues,
       open,
       place,
       edits,
-      save,
-      saveAs,
       isChangedElsewhere,
       path,
       openNow,
