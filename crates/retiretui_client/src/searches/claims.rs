@@ -6,7 +6,7 @@ use retiretui_engine::optimize::{Claim, ClaimSearch, career_at_salary};
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::{Dollars, Income, Item, Person, Plan};
 use retiretui_engine::tax::MONTHS_PER_YEAR;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::present::compact_money;
 
@@ -14,7 +14,7 @@ use crate::present::compact_money;
 pub const NOTHING_SEARCHED: &str = "Every age each computed Social Security benefit can be claimed at is ranked here, jointly for the household, as soon as the plan is valid.";
 
 /// What a claim the plan does not pay says.
-pub const NO_CLAIM: &str = "none";
+const NO_CLAIM: &str = "none";
 
 /// What a held claim's income says.
 pub const HELD: &str = "held";
@@ -62,7 +62,7 @@ pub fn claimants(plan: &Plan, search: &ClaimSearch) -> Vec<String> {
     .unwrap_or_default()
 }
 
-/// An age a claim is at, or [`NO_CLAIM`].
+/// An age a claim is at, or what an unpaid claim says.
 #[must_use]
 pub fn age_cell(age: Option<u8>) -> String {
     age.map_or_else(|| NO_CLAIM.to_owned(), |age| age.to_string())
@@ -114,7 +114,7 @@ pub fn person_row(
 }
 
 /// What can be done for a person on the SSA Benefits page.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub enum PersonAction {
@@ -173,6 +173,47 @@ impl PersonAction {
             Self::RemoveBenefit => benefit(plan, &person.id).is_some(),
         }
     }
+
+    /// What is asked of `name` before it is done, where it drops something.
+    #[must_use]
+    pub fn question(self, name: &str) -> Option<String> {
+        match self {
+            Self::ClearRecord => Some(format!("Clear {name}'s earnings record?")),
+            Self::RemoveBenefit => Some(format!("Remove {name}'s Social Security income?")),
+            _ => None,
+        }
+    }
+
+    /// The answer that does it, where it is asked about.
+    #[must_use]
+    pub const fn answer(self) -> Option<&'static str> {
+        match self {
+            Self::ClearRecord => Some("Clear"),
+            Self::RemoveBenefit => Some("Remove"),
+            _ => None,
+        }
+    }
+
+    /// Makes the edit to the person `id` in `plan`, answering what it did;
+    /// `None` for an action that is not an edit of the plan.
+    ///
+    /// # Errors
+    ///
+    /// Why the edit was refused: the person has no use for it.
+    pub fn apply(
+        self,
+        plan: &mut Plan,
+        tables: &TaxTables,
+        id: &str,
+    ) -> Option<Result<String, String>> {
+        match self {
+            Self::FillCareer => Some(fill_career(plan, tables, id)),
+            Self::ComputeBenefit => Some(compute_benefit(plan, id)),
+            Self::ClearRecord => Some(clear_record(plan, id)),
+            Self::RemoveBenefit => Some(remove_benefit(plan, id)),
+            Self::Import | Self::Hold | Self::LetVary => None,
+        }
+    }
 }
 
 /// What holding or letting go of `name`'s claim says, `is_held` the claim
@@ -186,25 +227,9 @@ pub fn hold_said(name: &str, is_held: bool) -> String {
     }
 }
 
-/// What is asked before `name`'s record is cleared.
-#[must_use]
-pub fn clear_question(name: &str) -> String {
-    format!("Clear {name}'s earnings record?")
-}
-
-/// What is asked before `name`'s Social Security income is removed.
-#[must_use]
-pub fn remove_question(name: &str) -> String {
-    format!("Remove {name}'s Social Security income?")
-}
-
 /// Records a career at the salary `plan` pays the person `id`, where they
 /// have no record, answering what it did.
-///
-/// # Errors
-///
-/// Where they have a record, or no salary to make a career of.
-pub fn fill_career(plan: &mut Plan, tables: &TaxTables, id: &str) -> Result<String, String> {
+fn fill_career(plan: &mut Plan, tables: &TaxTables, id: &str) -> Result<String, String> {
     let at = place_of(plan, id)?;
     let name = plan.person_name(id).to_owned();
     if !plan.household.people[at].earnings.is_empty() {
@@ -222,11 +247,7 @@ pub fn fill_career(plan: &mut Plan, tables: &TaxTables, id: &str) -> Result<Stri
 
 /// Drops the typed figure of the person `id`'s benefit, so it is computed
 /// from their record, answering what it did.
-///
-/// # Errors
-///
-/// Where their benefit has no typed figure.
-pub fn compute_benefit(plan: &mut Plan, id: &str) -> Result<String, String> {
+fn compute_benefit(plan: &mut Plan, id: &str) -> Result<String, String> {
     let name = plan.person_name(id).to_owned();
     let typed =
         (plan.income.iter()).position(|income| income.is_benefit_of(id) && income.amount.is_some());
@@ -238,11 +259,7 @@ pub fn compute_benefit(plan: &mut Plan, id: &str) -> Result<String, String> {
 }
 
 /// Empties the person `id`'s earnings record, answering what it did.
-///
-/// # Errors
-///
-/// Where they have no record.
-pub fn clear_record(plan: &mut Plan, id: &str) -> Result<String, String> {
+fn clear_record(plan: &mut Plan, id: &str) -> Result<String, String> {
     let at = place_of(plan, id)?;
     let name = plan.person_name(id).to_owned();
     let earnings = &mut plan.household.people[at].earnings;
@@ -255,11 +272,7 @@ pub fn clear_record(plan: &mut Plan, id: &str) -> Result<String, String> {
 
 /// Takes the person `id`'s `social-security` income out of `plan`,
 /// answering what it did.
-///
-/// # Errors
-///
-/// Where they have none.
-pub fn remove_benefit(plan: &mut Plan, id: &str) -> Result<String, String> {
+fn remove_benefit(plan: &mut Plan, id: &str) -> Result<String, String> {
     let name = plan.person_name(id).to_owned();
     let Some(at) = plan
         .income

@@ -12,4 +12,12 @@ action: PersonAction,
 /**
  * What it is called.
  */
-label: string, };
+label: string, 
+/**
+ * What is asked before it is done, where it drops something.
+ */
+question: string | null, 
+/**
+ * The answer that does it, where it is asked about.
+ */
+answer: string | null, };

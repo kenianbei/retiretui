@@ -35,29 +35,33 @@ function rowsOf(found: ClaimsOptions, basis: Basis): OptionRow<ClaimOption>[] {
       narrow: found.current,
       option: null,
     },
-    ...found.options.map((option) => ({
-      key: option.key,
-      cells: [
-        "",
-        ...option.ages.map(String),
-        ...figures(option.figures[basis]),
-      ],
-      narrow: option.ages.join(" · "),
-      option,
-    })),
+    ...found.options.map((option) => {
+      const ages = option.claims.map((claim) => String(claim.age));
+      return {
+        key: option.key,
+        cells: ["", ...ages, ...figures(option.figures[basis])],
+        narrow: ages.join(" · "),
+        option,
+      };
+    }),
   ];
 }
 
 /** The highlighted claims, as they are taken or written. */
-function chosenClaims(path: string | null, option: ClaimOption): Chosen {
+function chosenClaims(
+  path: string | null,
+  option: ClaimOption,
+  added: unknown[],
+): Chosen {
   return {
     noun: "these claims",
     question: option.question,
     described:
       "These claims are written as a scenario over this plan, to a file of this name in your workspace.",
     offered: offeredName(path, `claims-${option.key}`),
-    take: (document) => document.takeClaims(option.claims),
-    scenario: (document, out) => document.claimsScenario(out, option.claims),
+    take: (document) => document.takeClaims(option.claims, added),
+    scenario: (document, out) =>
+      document.claimsScenario(out, option.claims, added),
   };
 }
 
@@ -85,6 +89,8 @@ export function ClaimsPage() {
     reply?.options[0];
   const isCurrent = !found.isFetching && !found.isPlaceholderData;
   const at = Math.min(search.person ?? 0, Math.max(people.length - 1, 0));
+  const rows = useMemo(() => reply && rowsOf(reply, basis), [reply, basis]);
+  const columns = useMemo(() => reply && ["", ...reply.columns], [reply]);
 
   const hold = (id: string, isHeld: boolean) => {
     const others = held.filter((each) => each !== id);
@@ -152,8 +158,8 @@ export function ClaimsPage() {
           <>
             <Options
               label="Claim options"
-              columns={["", ...reply.columns]}
-              rows={rowsOf(reply, basis)}
+              columns={columns ?? []}
+              rows={rows ?? []}
               narrowFigure={reply.current_ages.length + 2}
               highlighted={highlighted}
               highlight={(option) => {
@@ -166,7 +172,7 @@ export function ClaimsPage() {
             {highlighted && (
               <SearchActions
                 key={highlighted.key}
-                chosen={chosenClaims(path, highlighted)}
+                chosen={chosenClaims(path, highlighted, reply.added)}
                 isCurrent={isCurrent}
               />
             )}

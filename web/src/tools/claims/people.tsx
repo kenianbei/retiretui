@@ -1,9 +1,7 @@
-import {
-  clearQuestion,
-  removeQuestion,
-  type Document,
-  type PersonAction,
-  type PersonRow,
+import type {
+  OfferedAction,
+  PersonAction,
+  PersonRow,
 } from "@wasm/retiretui_wasm.js";
 import { useState } from "react";
 
@@ -23,37 +21,6 @@ import { Options, type OptionRow } from "@/tools/options";
 
 /** Which of the columns a phone's row shows beside the name: the FRA estimate. */
 const AT_FRA = 4;
-
-/** An edit a button makes at once, as one step of history. */
-const EDITS: Partial<
-  Record<PersonAction, (document: Document, at: number, name: string) => string>
-> = {
-  "fill-career": (document, at, name) => document.fillCareer(at, name),
-  "compute-benefit": (document, at, name) => document.computeBenefit(at, name),
-};
-
-/** An edit asked about first: the question, its answer, and the edit. */
-const ASKED: Partial<
-  Record<
-    PersonAction,
-    {
-      question: (name: string) => string;
-      answer: string;
-      edit: (document: Document, at: number, name: string) => string;
-    }
-  >
-> = {
-  "clear-record": {
-    question: clearQuestion,
-    answer: "Clear",
-    edit: (document, at, name) => document.clearRecord(at, name),
-  },
-  "remove-benefit": {
-    question: removeQuestion,
-    answer: "Remove",
-    edit: (document, at, name) => document.removeBenefit(at, name),
-  },
-};
 
 /** What the last action did, or why it did nothing. */
 interface Outcome {
@@ -81,7 +48,7 @@ export function People({
   hold: (id: string, isHeld: boolean) => void;
 }) {
   const session = useSession();
-  const [asking, setAsking] = useState<PersonAction | null>(null);
+  const [asking, setAsking] = useState<OfferedAction | null>(null);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const person = people[at];
   const rows: OptionRow<PersonRow>[] = people.map((each) => ({
@@ -91,13 +58,11 @@ export function People({
     option: each,
   }));
 
-  const run = (
-    edit: (document: Document, at: number, name: string) => string,
-  ) => {
+  const run = (action: PersonAction) => {
     if (!person) return;
     try {
       const said = session.change((document) =>
-        edit(document, at, person.name),
+        document.act(action, at, person.name),
       );
       if (said !== undefined) setOutcome({ said, isRefused: false });
     } catch (thrown) {
@@ -105,16 +70,15 @@ export function People({
     }
   };
 
-  const act = (action: PersonAction) => {
+  const act = (offered: OfferedAction) => {
     if (!person) return;
-    const edit = EDITS[action];
-    if (edit) run(edit);
-    else if (action === "hold" || action === "let-vary")
+    const { action } = offered;
+    if (action === "hold" || action === "let-vary")
       hold(person.id, action === "hold");
-    else setAsking(action);
+    else if (offered.question) setAsking(offered);
+    else run(action);
   };
 
-  const asked = asking && ASKED[asking];
   return (
     <div className="space-y-3">
       <Options
@@ -131,19 +95,23 @@ export function People({
       {person && (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium">{person.name}:</span>
-          {person.actions.map(({ action, label }) =>
-            action === "import" ? (
-              <ImportStatement key={action} index={at} name={person.name} />
+          {person.actions.map((offered) =>
+            offered.action === "import" ? (
+              <ImportStatement
+                key={offered.action}
+                index={at}
+                name={person.name}
+              />
             ) : (
               <Button
-                key={action}
+                key={offered.action}
                 size="sm"
                 variant="outline"
                 onClick={() => {
-                  act(action);
+                  act(offered);
                 }}
               >
-                {label}
+                {offered.label}
               </Button>
             ),
           )}
@@ -163,16 +131,14 @@ export function People({
         )}
       </div>
       <AlertDialog
-        open={asked !== undefined && asked !== null}
+        open={asking !== null}
         onOpenChange={(isOpen) => {
           if (!isOpen) setAsking(null);
         }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {asked && person ? asked.question(person.name) : ""}
-            </AlertDialogTitle>
+            <AlertDialogTitle>{asking?.question}</AlertDialogTitle>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -180,10 +146,10 @@ export function People({
               variant="destructive"
               onClick={() => {
                 setAsking(null);
-                if (asked) run(asked.edit);
+                if (asking) run(asking.action);
               }}
             >
-              {asked?.answer}
+              {asking?.answer}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

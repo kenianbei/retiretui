@@ -10,7 +10,7 @@ import init, {
 /** What a search is asked, by the kind of search it is. */
 export type Search =
   | { kind: "monteCarlo"; plan: string }
-  | { kind: "ladders"; plan: string; constraints: string; lane: string }
+  | { kind: "ladders"; plan: string; constraints: string; destination: string }
   | { kind: "claims"; plan: string; held: string[] };
 
 /** What each kind of search replies. */
@@ -34,7 +34,7 @@ function answer(search: Search): Replies[Search["kind"]] {
     case "monteCarlo":
       return monteCarlo(search.plan);
     case "ladders":
-      return ladders(search.plan, search.constraints);
+      return ladders(search.plan, search.constraints, search.destination);
     case "claims":
       return claims(search.plan, search.held);
   }

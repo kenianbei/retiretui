@@ -1,8 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import {
-  aimedAt,
   claimWords,
-  type Better as Said,
+  type Bases,
   type RothOwner,
 } from "@wasm/retiretui_wasm.js";
 import { useMemo, type ReactNode } from "react";
@@ -14,16 +13,6 @@ import { useSession } from "@/session";
 
 const WORDS = claimWords();
 const SEARCHING = "Searching…";
-
-/** What a search's row says: its answer, why there is none, or that it runs. */
-function saidOf(
-  found: { data?: { better: Said }; error: Error | null },
-  basis: Basis,
-  refused: string,
-): string {
-  if (found.data) return found.data.better[basis];
-  return found.error ? refused : SEARCHING;
-}
 
 function Row({ children }: { children: ReactNode }) {
   return <li className="px-4 py-3">{children}</li>;
@@ -42,10 +31,15 @@ function LadderRow({
   const session = useSession();
   const { reading } = session;
   const constraints = useMemo(
-    () => aimedAt(reading.document?.constraintsText ?? "", owner.destination),
-    [reading, owner.destination],
+    () => reading.document?.constraintsText ?? "",
+    [reading],
   );
   const found = useLadders(plan, constraints, owner.destination, true);
+  const said = found.data
+    ? found.data.better[basis]
+    : found.error
+      ? WORDS.refused
+      : SEARCHING;
   return (
     <Row>
       <Link
@@ -59,7 +53,7 @@ function LadderRow({
         }}
         className="underline-offset-4 hover:underline"
       >
-        {owner.name}: {saidOf(found, basis, WORDS.refused)}
+        {owner.name}: {said}
       </Link>
     </Row>
   );
@@ -70,7 +64,7 @@ function ClaimsRow({
   found,
   basis,
 }: {
-  found: ReturnType<typeof useClaims>;
+  found: { data?: { better: Bases<string> }; error: Error | null };
   basis: Basis;
 }) {
   if (found.error) return null;
@@ -82,7 +76,7 @@ function ClaimsRow({
         search={(kept) => ({ basis: kept.basis, held: kept.held })}
         className="underline-offset-4 hover:underline"
       >
-        {saidOf(found, basis, "")}
+        {found.data?.better[basis] ?? SEARCHING}
       </Link>
     </Row>
   );

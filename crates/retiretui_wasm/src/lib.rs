@@ -44,6 +44,26 @@ fn from_js<T: serde::de::DeserializeOwned>(value: JsValue) -> Result<T, JsError>
     serde_wasm_bindgen::from_value(value).map_err(|error| JsError::new(&error.to_string()))
 }
 
+/// A value in either dollar basis.
+#[derive(Serialize, Debug)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+pub struct Bases<T> {
+    /// In today's dollars.
+    pub today: T,
+    /// In the dollars of each year.
+    pub nominal: T,
+}
+
+impl<T> Bases<T> {
+    /// What `of` makes in each basis, given whether it is nominal.
+    fn of(of: impl Fn(bool) -> T) -> Self {
+        Self {
+            today: of(false),
+            nominal: of(true),
+        }
+    }
+}
+
 fn refused(message: String) -> JsError {
     JsError::new(&message)
 }
@@ -56,7 +76,7 @@ fn reply<T: Serialize>(answer: Result<T, String>) -> Result<JsValue, JsError> {
 const TYPES: &str = r#"import type {
   ActionsReply, ChartSeries, Claim, ClaimWords, ClaimsOptions, Domain, DomainTable,
   Example, FieldView, HistoricalReply, Issue, LadderWords, LadderYear, LaddersReply,
-  Ledger, MonteCarloReply, PersonRow, PlacedIssue, NewPlanMade, Projection, RothOwner,
+  Ledger, MonteCarloReply, PersonAction, PersonRow, PlacedIssue, NewPlanMade, Projection, RothOwner,
   SaidYear, Sort, Step, Summary, YearDetail,
 } from "../bindings/index";
 export type * from "../bindings/index";"#;

@@ -2,6 +2,7 @@
 //! plan, the files it came from, its issues, and, where it has none, its
 //! projection.
 
+use std::cell::OnceCell;
 use std::path::{Path, PathBuf};
 
 use retiretui_client::actions::{collect_warnings, sentence};
@@ -10,10 +11,12 @@ use retiretui_client::files::resolve_with_files;
 use retiretui_client::forms::{DomainId, Form, ListOps, ToolAnswers};
 use retiretui_client::issues::{issue_field, issue_listing, issue_place, issue_words};
 use retiretui_client::replies::{ActionsReply, year_row};
+use retiretui_client::searches::ladders::aim_at;
 use retiretui_client::session::{Projected, Today, YearCursor, span};
 use retiretui_client::statement::{self, recorded};
 use retiretui_client::store::normal;
-use retiretui_engine::plan::{Item, Plan};
+use retiretui_engine::optimize::benefit_estimates;
+use retiretui_engine::plan::{Dollars, Item, Plan};
 use retiretui_engine::project::{Projection, Summary, YearRow};
 use serde::Serialize;
 
@@ -34,7 +37,13 @@ pub(crate) struct Document {
     /// The last valid draft's plan and projection, held while it has
     /// issues.
     projected: Option<Projected>,
+    /// Each person's benefit estimated at 62, full retirement age and 70
+    /// from the projected plan, by id, once asked for.
+    estimates: OnceCell<Vec<(String, Estimate)>>,
 }
+
+/// A person's monthly benefit at 62, full retirement age and 70.
+pub(crate) type Estimate = [Option<Dollars>; 3];
 
 /// An issue beside where it is in the plan, in the forms' words.
 #[derive(Serialize, PartialEq, Debug)]
@@ -108,6 +117,7 @@ impl Document {
             draft,
             files,
             projected,
+            estimates: OnceCell::new(),
         })
     }
 
@@ -266,7 +276,33 @@ impl Document {
     fn revalidate(&mut self) {
         if self.draft.revalidate(tables()) {
             self.projected = Some(Projected::new(self.draft.plan.clone(), tables()));
+            self.estimates = OnceCell::new();
         }
+    }
+
+    /// The person `id`'s estimates from the last plan without issues, made
+    /// once for every person the first time any is asked for.
+    pub(crate) fn estimate(&self, id: &str) -> Estimate {
+        let Some(projected) = &self.projected else {
+            return [None; 3];
+        };
+        let estimates = self.estimates.get_or_init(|| {
+            let people = projected.plan.household.people.iter();
+            people
+                .map(|person| {
+                    let estimate = benefit_estimates(&projected.plan, tables(), &person.id);
+                    (person.id.clone(), estimate)
+                })
+                .collect()
+        });
+        let found = estimates.iter().find(|(each, _)| each == id);
+        found.map_or([None; 3], |(_, estimate)| *estimate)
+    }
+
+    /// Aims the conversion constraints at `destination`, beside the plan
+    /// and outside its history.
+    pub(crate) fn aim_at(&mut self, destination: &str) {
+        aim_at(&mut self.draft, destination);
     }
 
     /// Steps back over the last edit, answering whether there was one.

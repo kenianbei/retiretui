@@ -27,22 +27,22 @@ const FINAL_NET = 3;
 
 /** The plan as it stands, then every bracket's ladder. */
 function rowsOf(found: LaddersReply, basis: Basis): OptionRow<LadderOption>[] {
-  const row = (label: string, amounts: number[]) => [
-    label,
-    ...amounts.map(compactMoney),
+  const row = (
+    label: string,
+    amounts: number[],
+    option: LadderOption | null,
+  ) => ({
+    key: label,
+    cells: [label, ...amounts.map(compactMoney)],
+    narrow: label,
+    option,
+  });
+  return [
+    row(found.current, found.baseline[basis], null),
+    ...found.brackets.map((option) =>
+      row(option.label, option.figures[basis], option),
+    ),
   ];
-  const cells = [
-    { cells: row(found.current, found.baseline[basis]), option: null },
-    ...found.brackets.map((option) => ({
-      cells: row(option.label, option.figures[basis]),
-      option,
-    })),
-  ];
-  return cells.map((each) => ({
-    ...each,
-    key: each.cells[0] ?? "",
-    narrow: each.cells[0] ?? "",
-  }));
 }
 
 /** The highlighted ladder into `destination`, as it is taken or written. */
@@ -99,6 +99,7 @@ export function ConversionsPage() {
     reply?.brackets.find((each) => percentOf(each.rate) === search.bracket) ??
     reply?.brackets[0];
   const isCurrent = !found.isFetching && !found.isPlaceholderData;
+  const rows = useMemo(() => reply && rowsOf(reply, basis), [reply, basis]);
 
   const highlight = (option: LadderOption) => {
     void navigate({
@@ -149,7 +150,7 @@ export function ConversionsPage() {
             <Options
               label="Ladder options"
               columns={reply.columns}
-              rows={rowsOf(reply, basis)}
+              rows={rows ?? []}
               narrowFigure={FINAL_NET}
               highlighted={highlighted}
               highlight={highlight}

@@ -5,18 +5,16 @@
 //! document.
 
 use retiretui_client::searches::claims::{
-    self, NO_CLAIM, NOBODY, NOTHING_SEARCHED, PEOPLE_COLUMNS, PersonAction, age_cell, claimants,
-    person_row, take_question, taken,
+    NOBODY, NOTHING_SEARCHED, PEOPLE_COLUMNS, PersonAction, age_cell, claimants, person_row,
+    take_question, taken,
 };
-use retiretui_client::searches::ladders::{Constraints, DESTINATION};
 use retiretui_client::searches::overview::{
     COULD_DO_BETTER, NOTHING_TO_SEARCH, REFUSED, claims_said, roth_owners,
 };
 use retiretui_client::searches::{CURRENT_PLAN, FIGURES, figure_amounts, run_refusal};
 use retiretui_engine::market::Progress;
 use retiretui_engine::optimize::{
-    Claim, ClaimCandidate, ClaimSearch, apply_claims, benefit_estimates, claims_overlay,
-    computed_income, optimize_claims,
+    Claim, ClaimCandidate, ClaimSearch, apply_claims, claims_overlay, optimize_claims,
 };
 use retiretui_engine::plan::{Dollars, Income, Item, Plan};
 use retiretui_engine::project::Projection;
@@ -24,27 +22,14 @@ use serde::Serialize;
 use wasm_bindgen::prelude::{JsError, JsValue, wasm_bindgen};
 
 use crate::document::Document;
-use crate::ladders::Better;
 use crate::searches::gated;
-use crate::{JsDocument, from_js, refused, reply, tables, to_js};
+use crate::{Bases, JsDocument, from_js, refused, reply, tables, to_js};
 
-/// An option's figures in either dollar basis.
-#[derive(Serialize, Debug)]
-#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
-pub struct ClaimFigures {
-    /// In today's dollars.
-    pub today: [Dollars; 4],
-    /// In the dollars of each year.
-    pub nominal: [Dollars; 4],
-}
+/// An option's figures under the reply's columns past the claimants.
+type ClaimFigures = Bases<[Dollars; 4]>;
 
-impl ClaimFigures {
-    fn of(projection: &Projection) -> Self {
-        Self {
-            today: figure_amounts(&projection.summary(true)),
-            nominal: figure_amounts(&projection.summary(false)),
-        }
-    }
+fn figures_of(projection: &Projection) -> ClaimFigures {
+    Bases::of(|nominal| figure_amounts(&projection.summary(!nominal)))
 }
 
 /// One set of claims the search tried.
@@ -53,9 +38,7 @@ impl ClaimFigures {
 pub struct ClaimOption {
     /// Its ages joined, as the address holds it: `70-67`.
     pub key: String,
-    /// The age each person claims at, in the reply's column order.
-    pub ages: Vec<u8>,
-    /// What is taken or written.
+    /// One claim per claimant, in the reply's column order.
     pub claims: Vec<Claim>,
     /// The plan's figures under them.
     pub figures: ClaimFigures,
@@ -79,37 +62,41 @@ pub struct ClaimsOptions {
     pub baseline: ClaimFigures,
     /// Every set of claims, best first.
     pub options: Vec<ClaimOption>,
+    /// The incomes the search made up for people with a record and none,
+    /// handed back with the claims taken or written.
+    #[cfg_attr(feature = "ts", ts(type = "unknown[]"))]
+    pub added: Vec<Income>,
     /// What the best claims do better than the plan, in either basis.
-    pub better: Better,
+    pub better: Bases<String>,
 }
 
 fn option_of(plan: &Plan, candidate: &ClaimCandidate) -> ClaimOption {
-    let ages: Vec<u8> = candidate.claims.iter().map(|claim| claim.age).collect();
-    let key: Vec<String> = ages.iter().map(u8::to_string).collect();
+    let ages = candidate.claims.iter().map(|claim| claim.age.to_string());
     ClaimOption {
-        key: key.join("-"),
-        ages,
+        key: ages.collect::<Vec<_>>().join("-"),
         claims: candidate.claims.clone(),
-        figures: ClaimFigures::of(&candidate.projection),
+        figures: figures_of(&candidate.projection),
         question: take_question(plan, &candidate.claims),
     }
 }
 
 impl ClaimsOptions {
-    fn new(plan: &Plan, search: &ClaimSearch) -> Self {
+    fn new(plan: &Plan, search: ClaimSearch) -> Self {
         let baseline = &search.baseline;
+        let better = Bases::of(|nominal| claims_said(plan, &search, baseline, nominal));
         Self {
-            columns: claimants(plan, search)
+            columns: claimants(plan, &search)
                 .into_iter()
                 .chain(FIGURES.map(str::to_owned))
                 .collect(),
             current: CURRENT_PLAN,
             current_ages: search.current.iter().copied().map(age_cell).collect(),
-            baseline: ClaimFigures::of(baseline),
+            baseline: figures_of(baseline),
             options: (search.candidates.iter())
                 .map(|candidate| option_of(plan, candidate))
                 .collect(),
-            better: Better::of(|nominal| claims_said(plan, search, baseline, nominal)),
+            better,
+            added: search.added,
         }
     }
 }
@@ -124,16 +111,7 @@ pub fn claims(text: &str, held: &[String]) -> Result<ClaimsOptions, String> {
     let plan = gated(text)?;
     let search =
         optimize_claims(&plan, tables(), &[], held, &Progress::default()).map_err(run_refusal)?;
-    Ok(ClaimsOptions::new(&plan, &search))
-}
-
-/// The incomes `claims` need that `plan` does not hold: each made up as
-/// the search made it.
-fn made_up(plan: &Plan, claims: &[Claim]) -> Vec<Income> {
-    let missing = claims
-        .iter()
-        .filter(|claim| plan.income_source(&claim.income).is_none());
-    missing.map(|claim| computed_income(&claim.owner)).collect()
+    Ok(ClaimsOptions::new(&plan, search))
 }
 
 /// A person as the People table shows them.
@@ -158,6 +136,10 @@ pub struct OfferedAction {
     pub action: PersonAction,
     /// What it is called.
     pub label: &'static str,
+    /// What is asked before it is done, where it drops something.
+    pub question: Option<String>,
+    /// The answer that does it, where it is asked about.
+    pub answer: Option<&'static str>,
 }
 
 /// A Roth owner, and the account the Overview searches a ladder into.
@@ -177,8 +159,6 @@ pub struct RothOwner {
 pub struct ClaimWords {
     /// The People table's columns.
     pub people_columns: [&'static str; 6],
-    /// What a claim the plan does not pay says.
-    pub no_claim: &'static str,
     /// Before anything is searched.
     pub nothing_searched: &'static str,
     /// Where the household has no one.
@@ -197,25 +177,24 @@ impl Document {
     #[must_use]
     pub fn people(&self, held: &[String]) -> Vec<PersonRow> {
         let plan = &self.draft().plan;
-        let last_good = self.projected().ok().map(|projected| &projected.plan);
         let people = plan.household.people.iter();
         people
             .map(|person| {
                 let is_held = held.contains(&person.id);
-                let estimates = last_good.map_or([None; 3], |good| {
-                    benefit_estimates(good, tables(), &person.id)
-                });
+                let name = person.display_name();
                 let actions = PersonAction::ALL
                     .into_iter()
                     .filter(|action| action.is_offered(plan, person, is_held))
                     .map(|action| OfferedAction {
                         action,
                         label: action.label(),
+                        question: action.question(name),
+                        answer: action.answer(),
                     });
                 PersonRow {
                     id: person.id.clone(),
-                    name: person.display_name().to_owned(),
-                    cells: person_row(plan, person, is_held, estimates),
+                    name: name.to_owned(),
+                    cells: person_row(plan, person, is_held, self.estimate(&person.id)),
                     actions: actions.collect(),
                 }
             })
@@ -223,77 +202,59 @@ impl Document {
     }
 
     /// Takes `claims` into the draft as one step of history, adding the
-    /// incomes they need, answering what was taken.
+    /// incomes of `added` they need, answering what was taken.
     ///
     /// # Errors
     ///
     /// Where the draft is read-only.
-    pub fn take_claims(&mut self, claims: &[Claim]) -> Result<String, String> {
+    pub fn take_claims(&mut self, claims: &[Claim], added: &[Income]) -> Result<String, String> {
         self.step(|plan| {
-            let added = made_up(plan, claims);
-            apply_claims(plan, &added, claims);
+            apply_claims(plan, added, claims);
             Ok(taken(plan, claims))
         })
     }
 
     /// `claims` as a scenario to be written at `out`, its `base` the
-    /// document's file.
+    /// document's file, adding the incomes of `added` they need.
     ///
     /// # Errors
     ///
     /// Where the draft has unsaved edits, `out` is a file the document was
     /// resolved from, or the scenario does not serialize.
-    pub fn claims_scenario(&self, out: &str, claims: &[Claim]) -> Result<String, String> {
+    pub fn claims_scenario(
+        &self,
+        out: &str,
+        claims: &[Claim],
+        added: &[Income],
+    ) -> Result<String, String> {
         let base = self.scenario_base(out)?;
-        let added = made_up(&self.draft().plan, claims);
-        claims_overlay(&base, &added, claims).map_err(|error| error.to_string())
+        claims_overlay(&base, added, claims).map_err(|error| error.to_string())
     }
 
-    /// Records a career at their salary on the person at `index`, still
-    /// the one called `name`, as one step of history.
+    /// Does `action` to the person at `index`, still the one called
+    /// `name`, as one step of history, answering what it did.
     ///
     /// # Errors
     ///
-    /// Where the draft has issues or is read-only, the person is no longer
-    /// them, or they have a record.
-    pub fn fill_career(&mut self, index: usize, name: &str) -> Result<String, String> {
-        if let Some(issue) = self.draft().issues().first() {
+    /// Where the draft is read-only, `action` is not an edit of the plan or
+    /// estimates a record from a plan with issues, the person is no longer
+    /// them, or they have no use for it.
+    pub fn act(
+        &mut self,
+        action: PersonAction,
+        index: usize,
+        name: &str,
+    ) -> Result<String, String> {
+        if action == PersonAction::FillCareer
+            && let Some(issue) = self.draft().issues().first()
+        {
             return Err(format!("not filled: {issue}"));
         }
         self.person_step(index, name, |plan, id| {
-            claims::fill_career(plan, tables(), id)
+            let edit = action.apply(plan, tables(), id);
+            edit.unwrap_or_else(|| Err(format!("{} is not an edit", action.label())))
         })
     }
-
-    /// The `DESTINATION` the conversion constraints aim at, where they
-    /// name one.
-    #[must_use]
-    pub fn destination(&self) -> Option<String> {
-        let answers = self.aimed();
-        let destination = answers.get(DESTINATION)?.as_str()?;
-        Some(destination.to_owned())
-    }
-
-    /// Aims the conversion constraints at `destination`, beside the plan
-    /// and outside its history.
-    pub fn aim_at(&mut self, destination: &str) {
-        let mut answers = self.draft().answers::<Constraints>();
-        answers.insert(DESTINATION.to_owned(), destination.into());
-        self.hold_answers::<Constraints>(answers);
-    }
-}
-
-/// `constraints`, the conversion constraints as TOML, aimed at
-/// `destination` instead.
-///
-/// # Errors
-///
-/// Where they do not read or serialize.
-pub fn aimed_at(constraints: &str, destination: &str) -> Result<String, String> {
-    let mut answers: toml::Table =
-        toml::from_str(constraints).map_err(|error| error.to_string())?;
-    answers.insert(DESTINATION.to_owned(), destination.into());
-    toml::to_string(&answers).map_err(|error| error.to_string())
 }
 
 #[wasm_bindgen(js_class = Document)]
@@ -309,92 +270,58 @@ impl JsDocument {
         to_js(&self.0.people(&held))
     }
 
-    /// Takes `claims` into the draft as one step of history, answering what
-    /// was taken.
+    /// Takes `claims` into the draft as one step of history, with the
+    /// incomes the search `added`, answering what was taken.
     ///
     /// # Errors
     ///
-    /// Where the draft is read-only, or `claims` are not claims.
+    /// Where the draft is read-only, or `claims` or `added` are not what a
+    /// claim search replied.
     #[wasm_bindgen(js_name = takeClaims)]
     pub fn take_claims(
         &mut self,
         #[wasm_bindgen(unchecked_param_type = "Claim[]")] claims: JsValue,
+        #[wasm_bindgen(unchecked_param_type = "unknown[]")] added: JsValue,
     ) -> Result<String, JsError> {
-        let claims: Vec<Claim> = from_js(claims)?;
-        self.0.take_claims(&claims).map_err(refused)
+        let (claims, added): (Vec<Claim>, Vec<Income>) = (from_js(claims)?, from_js(added)?);
+        self.0.take_claims(&claims, &added).map_err(refused)
     }
 
     /// `claims` as a scenario to be written at `out`, its `base` the
-    /// document's file.
+    /// document's file, with the incomes the search `added`.
     ///
     /// # Errors
     ///
     /// Where the draft has unsaved edits, `out` is a file the document was
-    /// made from, `claims` are not claims, or the scenario does not
-    /// serialize.
+    /// made from, `claims` or `added` are not what a claim search replied,
+    /// or the scenario does not serialize.
     #[wasm_bindgen(js_name = claimsScenario)]
     pub fn claims_scenario(
         &self,
         out: &str,
         #[wasm_bindgen(unchecked_param_type = "Claim[]")] claims: JsValue,
+        #[wasm_bindgen(unchecked_param_type = "unknown[]")] added: JsValue,
     ) -> Result<String, JsError> {
-        let claims: Vec<Claim> = from_js(claims)?;
-        self.0.claims_scenario(out, &claims).map_err(refused)
-    }
-
-    /// Records a career at their salary on the person at `index`, still
-    /// `name`, as one step of history, answering what it did.
-    ///
-    /// # Errors
-    ///
-    /// Where the draft has issues or is read-only, the person is no longer
-    /// them, or they have a record.
-    #[wasm_bindgen(js_name = fillCareer)]
-    pub fn fill_career(&mut self, index: usize, name: &str) -> Result<String, JsError> {
-        self.0.fill_career(index, name).map_err(refused)
-    }
-
-    /// Drops the typed figure of the person at `index`'s benefit, still
-    /// `name`, as one step of history, answering what it did.
-    ///
-    /// # Errors
-    ///
-    /// Where the draft is read-only, the person is no longer them, or
-    /// nothing is typed.
-    #[wasm_bindgen(js_name = computeBenefit)]
-    pub fn compute_benefit(&mut self, index: usize, name: &str) -> Result<String, JsError> {
-        (self.0)
-            .person_step(index, name, claims::compute_benefit)
+        let (claims, added): (Vec<Claim>, Vec<Income>) = (from_js(claims)?, from_js(added)?);
+        self.0
+            .claims_scenario(out, &claims, &added)
             .map_err(refused)
     }
 
-    /// Empties the record of the person at `index`, still `name`, as one
-    /// step of history, answering what it did.
+    /// Does `action` to the person at `index`, still `name`, as one step of
+    /// history, answering what it did.
     ///
     /// # Errors
     ///
-    /// Where the draft is read-only, the person is no longer them, or they
-    /// have no record.
-    #[wasm_bindgen(js_name = clearRecord)]
-    pub fn clear_record(&mut self, index: usize, name: &str) -> Result<String, JsError> {
-        (self.0)
-            .person_step(index, name, claims::clear_record)
-            .map_err(refused)
-    }
-
-    /// Takes the Social Security income of the person at `index`, still
-    /// `name`, out of the plan as one step of history, answering what it
-    /// did.
-    ///
-    /// # Errors
-    ///
-    /// Where the draft is read-only, the person is no longer them, or they
-    /// have none.
-    #[wasm_bindgen(js_name = removeBenefit)]
-    pub fn remove_benefit(&mut self, index: usize, name: &str) -> Result<String, JsError> {
-        (self.0)
-            .person_step(index, name, claims::remove_benefit)
-            .map_err(refused)
+    /// Where the draft is read-only, `action` is not an edit of the plan,
+    /// the person is no longer them, or they have no use for it.
+    pub fn act(
+        &mut self,
+        #[wasm_bindgen(unchecked_param_type = "PersonAction")] action: JsValue,
+        index: usize,
+        name: &str,
+    ) -> Result<String, JsError> {
+        self.0.act(from_js(action)?, index, name).map_err(refused)
     }
 
     /// The account the conversion constraints aim at; `undefined` where
@@ -428,20 +355,6 @@ impl JsDocument {
     }
 }
 
-/// What is asked before `name`'s record is cleared.
-#[wasm_bindgen(js_name = clearQuestion)]
-#[must_use]
-pub fn clear_question(name: &str) -> String {
-    claims::clear_question(name)
-}
-
-/// What is asked before `name`'s Social Security income is removed.
-#[wasm_bindgen(js_name = removeQuestion)]
-#[must_use]
-pub fn remove_question(name: &str) -> String {
-    claims::remove_question(name)
-}
-
 /// What the SSA Benefits tool and the Could do better card say of
 /// themselves.
 ///
@@ -452,7 +365,6 @@ pub fn remove_question(name: &str) -> String {
 pub fn claim_words() -> Result<JsValue, JsError> {
     to_js(&ClaimWords {
         people_columns: PEOPLE_COLUMNS,
-        no_claim: NO_CLAIM,
         nothing_searched: NOTHING_SEARCHED,
         nobody: NOBODY,
         could_do_better: COULD_DO_BETTER,
@@ -472,23 +384,14 @@ pub fn js_claims(plan: &str, held: Vec<String>) -> Result<JsValue, JsError> {
     reply(claims(plan, &held))
 }
 
-/// `constraints`, the conversion constraints as TOML, aimed at
-/// `destination` instead.
-///
-/// # Errors
-///
-/// Where they do not read or serialize.
-#[wasm_bindgen(js_name = aimedAt)]
-pub fn js_aimed_at(constraints: &str, destination: &str) -> Result<String, JsError> {
-    aimed_at(constraints, destination).map_err(refused)
-}
-
 #[cfg(test)]
 mod tests {
     use retiretui_client::files::OVERLAY_SAVE_FIRST;
     use retiretui_client::setup::EXAMPLES;
 
     use super::*;
+
+    const STARTER: &str = "starter.toml";
 
     fn example(file: &str) -> &'static str {
         let found = EXAMPLES.iter().find(|(name, ..)| *name == file);
@@ -500,14 +403,12 @@ mod tests {
         Document::open("/plan.toml", &mut read).expect("opens")
     }
 
-    const STARTER: &str = "starter.toml";
-
     #[test]
     fn every_option_is_keyed_by_its_ages_and_asked_about_by_name() {
         let reply = claims(example(STARTER), &[]).expect("searches");
         let best = reply.options.first().expect("an option");
-        assert_eq!(reply.columns.len(), best.ages.len() + FIGURES.len());
-        assert_eq!(best.key, best.ages[0].to_string());
+        assert_eq!(reply.columns.len(), best.claims.len() + FIGURES.len());
+        assert_eq!(best.key, best.claims[0].age.to_string());
         assert!(
             best.question.starts_with("Take these claims? "),
             "{}",
@@ -527,17 +428,22 @@ mod tests {
         let mut document = opened(STARTER);
         let reply = claims(example(STARTER), &[]).expect("searches");
         let chosen = &reply.options[0].claims;
-        let said = document.take_claims(chosen).expect("taken");
+        let added = &reply.added;
+        let said = document.take_claims(chosen, added).expect("taken");
         assert!(said.starts_with("claimed "), "{said}");
         assert!(document.draft().can_undo());
         assert_eq!(
-            document.claims_scenario("/claims.toml", chosen),
+            document.claims_scenario("/claims.toml", chosen, added),
             Err(OVERLAY_SAVE_FIRST.to_owned())
         );
         document.save(&mut |_| Ok(())).expect("saved");
-        assert!(document.claims_scenario("/plan.toml", chosen).is_err());
+        assert!(
+            document
+                .claims_scenario("/plan.toml", chosen, added)
+                .is_err()
+        );
         let scenario = document
-            .claims_scenario("/claims.toml", chosen)
+            .claims_scenario("/claims.toml", chosen, added)
             .expect("written");
         assert!(scenario.contains("base = \"plan.toml\""), "{scenario}");
         assert!(document.undo());
@@ -549,37 +455,31 @@ mod tests {
         let rows = document.people(&[]);
         let person = &rows[0];
         assert_eq!(person.cells.len(), PEOPLE_COLUMNS.len());
-        assert!(
-            person
-                .actions
-                .iter()
-                .any(|offered| offered.action == PersonAction::Import)
-        );
-        assert!(
-            document
-                .person_step(0, "Someone else", claims::clear_record)
-                .is_err()
-        );
+        let offers = |row: &PersonRow, wanted: PersonAction| {
+            row.actions.iter().any(|offered| offered.action == wanted)
+        };
+        assert!(offers(person, PersonAction::Import));
         let held = document.people(std::slice::from_ref(&person.id));
-        let is_held = held[0]
-            .actions
-            .iter()
-            .any(|a| a.action == PersonAction::LetVary);
-        assert!(is_held, "a held claim is let vary");
-        let name = person.name.clone();
-        let removed = document.person_step(0, &name, claims::remove_benefit);
+        assert!(
+            offers(&held[0], PersonAction::LetVary),
+            "a held claim is let vary"
+        );
+        let removal = PersonAction::RemoveBenefit;
+        assert!(document.act(removal, 0, "Someone else").is_err());
+        assert!(document.act(PersonAction::Hold, 0, &person.name).is_err());
+        let removed = document.act(removal, 0, &person.name);
         assert!(removed.is_ok(), "{removed:?}");
         assert!(document.draft().can_undo());
     }
 
     #[test]
-    fn constraints_aimed_where_they_already_aim_are_the_same_text() {
+    fn aiming_the_constraints_leaves_their_text_and_history_alone() {
         let mut document = opened("early-retiree.toml");
         let text = document.constraints_text().expect("serializes");
         let destination = document.destination().expect("the lone Roth account");
-        assert_eq!(aimed_at(&text, &destination), Ok(text.clone()));
         document.aim_at(&destination);
         assert_eq!(document.constraints_text(), Ok(text));
+        assert_eq!(document.destination(), Some(destination));
         assert!(!document.draft().can_undo(), "no step of history");
     }
 }

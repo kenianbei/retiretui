@@ -6,7 +6,6 @@ import wasm from "./pkg/retiretui_wasm.js";
 const {
   Document,
   NewPlan,
-  aimedAt,
   bandPercentiles,
   claimWords,
   claims,
@@ -15,7 +14,6 @@ const {
   historical,
   ladders,
   percentileLabel,
-  removeQuestion,
   setupSteps,
   statementPage,
   sortPressed,
@@ -116,7 +114,11 @@ const constraints = converting.constraints();
 constraints.set("bracket", undefined, "12");
 converting.applyConstraints(constraints);
 assert.equal(converting.canUndo, false);
-const found = ladders(converting.planText(), converting.constraintsText);
+const found = ladders(
+  converting.planText(),
+  converting.constraintsText,
+  converting.destination,
+);
 assert.deepEqual(
   found.brackets.map((bracket) => bracket.label),
   ["12%"],
@@ -143,10 +145,7 @@ assert.match(
   /base = "early.toml"/,
 );
 assert.ok(converting.constraintsRead().some(([label]) => label === "Fill bracket"));
-assert.equal(
-  aimedAt(converting.constraintsText, converting.destination),
-  converting.constraintsText,
-);
+assert.ok(!converting.constraintsText.includes(found.destination));
 assert.equal(converting.rothOwners()[0].destination, found.destination);
 
 files.set("/plans/claiming.toml", starter.text);
@@ -156,18 +155,19 @@ assert.equal(person.cells.length, claimWords().people_columns.length);
 assert.ok(person.actions.some(({ action }) => action === "import"));
 const options = claims(claiming.planText(), []);
 const [best] = options.options;
-assert.equal(best.key, best.ages.join("-"));
-assert.match(claiming.takeClaims(best.claims), /^claimed /);
+assert.equal(best.key, best.claims.map(({ age }) => age).join("-"));
+assert.match(claiming.takeClaims(best.claims, options.added), /^claimed /);
 assert.throws(
-  () => claiming.claimsScenario("/plans/claimed.toml", best.claims),
+  () => claiming.claimsScenario("/plans/claimed.toml", best.claims, options.added),
   /save first/,
 );
 claiming.save(() => {});
 assert.match(
-  claiming.claimsScenario("/plans/claimed.toml", best.claims),
+  claiming.claimsScenario("/plans/claimed.toml", best.claims, options.added),
   /base = "claiming.toml"/,
 );
-assert.match(removeQuestion(person.name), /^Remove /);
-assert.match(claiming.removeBenefit(0, person.name), /^removed /);
+const removal = person.actions.find(({ action }) => action === "remove-benefit");
+assert.match(removal.question, /^Remove /);
+assert.match(claiming.act("remove-benefit", 0, person.name), /^removed /);
 assert.throws(() => claims(claiming.planText(), [person.id]));
 console.log("smoke: ok");

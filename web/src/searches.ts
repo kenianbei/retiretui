@@ -4,15 +4,6 @@ import type { Answer, Replies, Search } from "@/worker";
 
 type Kind = Search["kind"];
 
-/**
- * Which worker a search runs in: its kind, and for a ladder the account it
- * fills, so that two owners' ladders run side by side rather than one
- * stopping the other.
- */
-function laneOf(search: Search): string {
-  return search.kind === "ladders" ? `ladders:${search.lane}` : search.kind;
-}
-
 /** Each lane's worker, its module loaded before the search it will run. */
 const warm = new Map<string, Worker>();
 
@@ -30,15 +21,16 @@ function workerFor(lane: string): Worker {
 }
 
 /**
- * Runs `search` in its lane's worker. A search cannot be interrupted but by
+ * Runs `search` in the worker of its `lane`, its kind unless searches of
+ * the kind run side by side. A search cannot be interrupted but by
  * terminating its worker, so `signal`, or a newer search in the same lane,
  * does that and leaves a fresh worker warm in its place.
  */
 function runSearch<K extends Kind>(
   search: Search & { kind: K },
   signal: AbortSignal,
+  lane: string = search.kind,
 ): Promise<Replies[K]> {
-  const lane = laneOf(search);
   running.get(lane)?.();
   return new Promise((resolve, reject) => {
     const worker = workerFor(lane);
@@ -86,8 +78,9 @@ export function useMonteCarlo(plan: string) {
 
 /**
  * Every bracket's ladder into `destination` in `plan` under `constraints`,
- * which aim there, searched only where `isSearchable`; the last found stays
- * in view while the next is.
+ * searched only where `isSearchable`, each destination in a lane of its own
+ * so that two owners' ladders run side by side; the last found stays in
+ * view while the next is.
  */
 export function useLadders(
   plan: string,
@@ -96,11 +89,12 @@ export function useLadders(
   isSearchable: boolean,
 ) {
   return useQuery({
-    queryKey: ["ladders", plan, constraints],
+    queryKey: ["ladders", plan, constraints, destination],
     queryFn: ({ signal }) =>
       runSearch(
-        { kind: "ladders", plan, constraints, lane: destination },
+        { kind: "ladders", plan, constraints, destination },
         signal,
+        `ladders:${destination}`,
       ),
     enabled: isSearchable,
     placeholderData: keepPreviousData,

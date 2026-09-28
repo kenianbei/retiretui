@@ -267,8 +267,7 @@ fn added_incomes(plan: &Plan, held: &[String], issues: &mut Vec<Issue>) -> Vec<I
 /// A `social-security` income of `owner`'s as `ss-<owner>`, its benefit
 /// computed, with no claim yet: it validates only once a claim sets its
 /// `start`.
-#[must_use]
-pub fn computed_income(owner: &str) -> Income {
+pub(super) fn computed_income(owner: &str) -> Income {
     Income {
         id: format!("{ADDED_ID_PREFIX}{owner}"),
         name: None,

@@ -10,10 +10,6 @@ export type ClaimWords = {
  */
 people_columns: [string, string, string, string, string, string], 
 /**
- * What a claim the plan does not pay says.
- */
-no_claim: string, 
-/**
  * Before anything is searched.
  */
 nothing_searched: string, 
