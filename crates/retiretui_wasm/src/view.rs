@@ -30,7 +30,7 @@ pub enum Control {
     Flag,
     /// Picked from its offers.
     Choice,
-    /// A typed rate, or one set on a slider up to 15%.
+    /// A typed rate, or one set on a slider.
     Rate,
     /// A typed share, or one set on a slider up to the whole.
     Share,
