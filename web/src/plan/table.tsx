@@ -6,7 +6,10 @@ import {
   type TableRow,
 } from "@wasm/retiretui_wasm.js";
 import { ArrowDown, ArrowUp } from "lucide-react";
+import { useMemo } from "react";
 
+import { columnsFor } from "@/components/columns";
+import { DataTable } from "@/components/data-table";
 import { INPUT, cn } from "@/lib/utils";
 
 interface ItemTableProps {
@@ -42,82 +45,84 @@ function RowLink({
   );
 }
 
+/** A header that orders the table by its column: up, then down, then the plan's own. */
+function SortHeader({
+  header,
+  at,
+  sort,
+  onSort,
+}: {
+  header: string;
+  at: number;
+  sort: Sort | null;
+  onSort: (sort: Sort | null) => void;
+}) {
+  const isSorted = sort?.column === at;
+  const Arrow = sort?.is_descending ? ArrowDown : ArrowUp;
+  return (
+    <button
+      type="button"
+      className="hover:text-foreground text-muted-foreground inline-flex items-center gap-1"
+      onClick={() => {
+        onSort(sortPressed(sort, at));
+      }}
+    >
+      {header}
+      {isSorted && <Arrow aria-hidden className="size-3" />}
+    </button>
+  );
+}
+
+const column = columnsFor<TableRow>();
+
 /** Every column, sortable by its header, the highlighted row marked. */
 function WideTable({ slug, table, sort, onSort, highlighted }: ItemTableProps) {
+  const columns = useMemo(
+    () =>
+      table.columns.map((each, at) =>
+        column.display({
+          id: String(at),
+          meta: {
+            isNumeric: each.is_numeric,
+            ...(sort?.column === at && {
+              sorted: sort.is_descending ? "descending" : "ascending",
+            }),
+          },
+          header: () => (
+            <SortHeader
+              header={each.header}
+              at={at}
+              sort={sort}
+              onSort={onSort}
+            />
+          ),
+          cell: ({ row }) => {
+            const text = row.original.cells[at]?.text ?? "";
+            return at === 0 ? (
+              <RowLink
+                slug={slug}
+                row={row.original}
+                className="font-medium underline-offset-4 hover:underline"
+              >
+                {text || row.original.name}
+              </RowLink>
+            ) : (
+              text
+            );
+          },
+        }),
+      ),
+    [table.columns, slug, sort, onSort],
+  );
   return (
-    <div className="bg-card hidden overflow-x-auto rounded-md border md:block">
-      <table className="w-full text-sm">
-        <thead className="border-b">
-          <tr>
-            {table.columns.map((column, at) => {
-              const isSorted = sort?.column === at;
-              const Arrow = sort?.is_descending ? ArrowDown : ArrowUp;
-              return (
-                <th
-                  key={column.header}
-                  scope="col"
-                  aria-sort={
-                    isSorted
-                      ? sort.is_descending
-                        ? "descending"
-                        : "ascending"
-                      : undefined
-                  }
-                  className={cn(
-                    "px-3 py-2 font-medium",
-                    column.is_numeric ? "text-right" : "text-left",
-                  )}
-                >
-                  <button
-                    type="button"
-                    className="hover:text-foreground text-muted-foreground inline-flex items-center gap-1"
-                    onClick={() => {
-                      onSort(sortPressed(sort, at));
-                    }}
-                  >
-                    {column.header}
-                    {isSorted && <Arrow aria-hidden className="size-3" />}
-                  </button>
-                </th>
-              );
-            })}
-          </tr>
-        </thead>
-        <tbody className="divide-y">
-          {table.rows.map((row) => (
-            <tr
-              key={row.index}
-              className={cn(
-                "hover:bg-accent/50",
-                row.index === highlighted && "bg-accent",
-              )}
-            >
-              {row.cells.map((cell, at) => (
-                <td
-                  key={at}
-                  className={cn(
-                    "px-3 py-2",
-                    table.columns[at]?.is_numeric && "text-right tabular-nums",
-                  )}
-                >
-                  {at === 0 ? (
-                    <RowLink
-                      slug={slug}
-                      row={row}
-                      className="font-medium underline-offset-4 hover:underline"
-                    >
-                      {cell.text || row.name}
-                    </RowLink>
-                  ) : (
-                    cell.text
-                  )}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <DataTable
+      label={slug}
+      columns={columns}
+      rows={table.rows}
+      rowKey={(row) => String(row.index)}
+      isSelected={(row) => row.index === highlighted}
+      className="hidden md:block"
+    />
   );
 }
 

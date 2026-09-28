@@ -1,4 +1,4 @@
-import { Link, useSearch } from "@tanstack/react-router";
+import { useSearch } from "@tanstack/react-router";
 import { issueCount, type PlacedIssue } from "@wasm/retiretui_wasm.js";
 import { useMemo, type ReactNode } from "react";
 
@@ -9,31 +9,9 @@ import { IssueLink } from "@/draft/issue-link";
 import { BASIS_LABEL, dollars, share, type Basis } from "@/overview/words";
 import { useMonteCarlo } from "@/searches";
 import { useSession } from "@/session";
-
-function BasisSwitch({ basis }: { basis: Basis }) {
-  return (
-    <div
-      role="group"
-      aria-label="Show dollars as"
-      className="inline-flex rounded-md border p-0.5 text-sm"
-    >
-      {(["today", "nominal"] as const).map((each) => (
-        <Link
-          key={each}
-          to="/overview"
-          search={{ basis: each }}
-          aria-current={each === basis ? "true" : undefined}
-          className={cn(
-            "rounded px-3 py-1",
-            each === basis && "bg-primary text-primary-foreground",
-          )}
-        >
-          {BASIS_LABEL[each]}
-        </Link>
-      ))}
-    </div>
-  );
-}
+import { basisOf } from "@/year/search";
+import { useYear } from "@/year/use-year";
+import { BasisSwitch, YearStepper } from "@/year/year";
 
 function Problems({ issues }: { issues: PlacedIssue[] }) {
   return (
@@ -175,19 +153,24 @@ function Figures({ basis, isValid }: { basis: Basis; isValid: boolean }) {
 
 function ThisYear() {
   const { reading } = useSession();
-  const said = useMemo(() => {
-    const year = reading.document?.yearAt(null, new Date().getFullYear());
-    return year === undefined ? null : reading.document?.said(year);
-  }, [reading]);
+  const shown = useYear();
+  const { year } = shown;
+  const said = useMemo(
+    () => (year === undefined ? null : reading.document?.said(year)),
+    [reading, year],
+  );
   if (!said) return null;
   const ages = said.ages.map(([name, age]) => `${name} turns ${String(age)}`);
 
   return (
     <section aria-labelledby="this-year" className="space-y-3">
       <div className="space-y-1">
-        <h2 id="this-year" className="text-lg font-semibold">
-          What to do in {said.year}
-        </h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 id="this-year" className="text-lg font-semibold">
+            What to do in {said.year}
+          </h2>
+          <YearStepper shown={shown} />
+        </div>
         <p className="text-muted-foreground text-sm">
           {[...ages, "amounts in nominal $"].join(" · ")}
         </p>
@@ -219,14 +202,14 @@ function ThisYear() {
 /** Whether the money lasts and how surely, and what to do this year. */
 export function Overview() {
   const { document, issues } = useSession();
-  const { basis } = useSearch({ from: "/overview" });
+  const basis = basisOf(useSearch({ from: "/overview" }));
   if (!document) return null;
 
   return (
     <div className="max-w-5xl space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>
-        <BasisSwitch basis={basis} />
+        <BasisSwitch />
       </div>
       {issues.length > 0 && <Problems issues={issues} />}
       <Figures basis={basis} isValid={issues.length === 0} />

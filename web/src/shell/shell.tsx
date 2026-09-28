@@ -9,10 +9,12 @@ import { FileMenu } from "@/files/menu";
 import { Start } from "@/files/start";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/session";
+import { yearSearch } from "@/year/search";
 import {
   TABS,
   isGroup,
   isWithin,
+  isYearTab,
   type GroupTab,
   type Page,
   type Tab,
@@ -39,6 +41,7 @@ function TabLink({ tab, page, className, children, isCurrent }: TabLinkProps) {
     <Link
       to={tab.path}
       params={slug === undefined ? {} : { page: slug }}
+      search={(prev) => (isYearTab(tab) ? yearSearch(prev) : {})}
       className={className}
       aria-current={isCurrent ? "page" : undefined}
     >

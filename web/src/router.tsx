@@ -8,11 +8,11 @@ import {
 
 import { DOMAINS, TOOLS, pageOf } from "@/nav";
 import { Overview } from "@/overview/overview";
-import type { Basis } from "@/overview/words";
 import { DomainPage } from "@/plan/page";
 import { planSearch } from "@/plan/search";
 import { GroupedPage, NotFound, Placeholder } from "@/pages/placeholder";
 import { Shell } from "@/shell/shell";
+import { yearSearch } from "@/year/search";
 
 const root = createRootRoute({ component: Shell, notFoundComponent: NotFound });
 
@@ -21,22 +21,21 @@ const index = createRoute({
   path: "/",
   beforeLoad: () => {
     // eslint-disable-next-line @typescript-eslint/only-throw-error -- the router's own redirect
-    throw redirect({ to: "/overview", search: { basis: "today" } });
+    throw redirect({ to: "/overview" });
   },
 });
 
 const overview = createRoute({
   getParentRoute: () => root,
   path: "/overview",
-  validateSearch: (search: Record<string, unknown>): { basis: Basis } => ({
-    basis: search.basis === "nominal" ? "nominal" : "today",
-  }),
+  validateSearch: yearSearch,
   component: Overview,
 });
 
 const ledger = createRoute({
   getParentRoute: () => root,
   path: "/ledger",
+  validateSearch: yearSearch,
   component: () => (
     <Placeholder
       title="Ledger"
