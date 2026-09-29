@@ -5,7 +5,8 @@
 use std::path::Path;
 
 use retiretui_client::files::{OVERLAY_SAVE_FIRST, relative_path};
-use retiretui_client::forms::{Form, details};
+use retiretui_client::forms::Form;
+use retiretui_client::forms::details::{self, ReadRow};
 use retiretui_client::searches::ladders::{
     CONVERSION_COLUMNS, CONVERTS_NOTHING, Constraints, DESTINATION, FIELDS, NO_BRACKET,
     OPTION_COLUMNS, PICK_DESTINATION, Swept, constraints_in, held_answers, only_roth, option_cells,
@@ -228,7 +229,7 @@ impl Document {
 
     /// The constraints read out, each field's label beside what it holds.
     #[must_use]
-    pub fn constraints_read(&self) -> Vec<[String; 2]> {
+    pub fn constraints_read(&self) -> Vec<ReadRow> {
         details::rows(&FORM, &self.aimed(), &self.draft().plan)
     }
 
@@ -325,7 +326,7 @@ impl JsDocument {
     /// # Errors
     ///
     /// Where the rows do not convert.
-    #[wasm_bindgen(js_name = constraintsRead, unchecked_return_type = "[string, string][]")]
+    #[wasm_bindgen(js_name = constraintsRead, unchecked_return_type = "ReadRow[]")]
     pub fn constraints_read(&self) -> Result<JsValue, JsError> {
         to_js(&self.0.constraints_read())
     }
@@ -439,10 +440,7 @@ mod tests {
         assert_eq!(best.label, rate_label(best.rate));
         assert!(best.question.starts_with("Take the "), "{}", best.question);
         let read = document.constraints_read();
-        assert!(
-            read.iter().any(|[_, value]| value.contains("Roth")),
-            "{read:?}"
-        );
+        assert!(read.iter().any(|row| row.text.contains("Roth")), "{read:?}");
     }
 
     #[test]

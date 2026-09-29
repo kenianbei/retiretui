@@ -46,6 +46,7 @@ export type { PersonRow } from "./PersonRow";
 export type { Place } from "./Place";
 export type { PlacedIssue } from "./PlacedIssue";
 export type { Projection } from "./Projection";
+export type { ReadRow } from "./ReadRow";
 export type { RothOwner } from "./RothOwner";
 export type { RunRow } from "./RunRow";
 export type { SaidYear } from "./SaidYear";

@@ -96,4 +96,20 @@ mod tests {
         assert!(blank("working_since").ends_with(&FIRST_WORKING_AGE.to_string()));
         assert!(blank("partner_working_since").ends_with(&FIRST_WORKING_AGE.to_string()));
     }
+
+    #[test]
+    fn a_default_is_said_as_one_and_a_required_answer_has_no_placeholder() {
+        let field = |key: &str| FIELDS.iter().find(|spec| spec.key == key).expect("a field");
+        let age = DEFAULT_RETIREMENT_AGE.to_string();
+        let retirement = field("retirement_age");
+        assert_eq!(retirement.placeholder(), Some(format!("Blank is {age}")));
+        assert_eq!(retirement.unstated(), format!("{age}, the default"));
+        let working = field("working_since");
+        assert_eq!(
+            working.placeholder().as_deref(),
+            Some(working.unstated().as_str())
+        );
+        assert_eq!(field("salary").placeholder(), None);
+        assert_eq!(field("name").placeholder(), None);
+    }
 }

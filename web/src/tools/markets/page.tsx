@@ -124,12 +124,7 @@ export function MarketsPage({
           )}
         </div>
         {reply && (
-          <p
-            className={cn(
-              "text-lg font-semibold",
-              ZONE_CLASS[reply.zone],
-            )}
-          >
+          <p className={cn("text-lg font-semibold", ZONE_CLASS[reply.zone])}>
             {reply.verdict}
           </p>
         )}

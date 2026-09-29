@@ -97,7 +97,8 @@ function WideTable({ slug, table, sort, onSort, highlighted }: ItemTableProps) {
             />
           ),
           cell: ({ row }) => {
-            const text = row.original.cells[at]?.text ?? "";
+            const cell = row.original.cells[at];
+            const text = cell?.text ?? "";
             return at === 0 ? (
               <RowLink
                 slug={slug}
@@ -106,6 +107,8 @@ function WideTable({ slug, table, sort, onSort, highlighted }: ItemTableProps) {
               >
                 {text || row.original.name}
               </RowLink>
+            ) : cell?.is_unstated ? (
+              <span className="text-muted-foreground">{text}</span>
             ) : (
               text
             );

@@ -157,7 +157,7 @@ pub const FIELDS: &[FieldSpec] = &[
         .shown_when(is_answered),
     FieldSpec::whole("retirement_age", "Retirement age")
         .help("The age you stop working, or stopped. Your salary ends that year.")
-        .blank("65")
+        .defaults_to("65")
         .shown_when(is_answered),
     FieldSpec::whole("working_since", "Working since")
         .help("The year you started working. Blank means the year you turned 22.")
@@ -172,7 +172,7 @@ pub const FIELDS: &[FieldSpec] = &[
         .shown_when(is_answered),
     FieldSpec::whole("claim_age", "Claim age")
         .help("The age you start Social Security, from 62 to 70. Blank means 67.")
-        .blank("67")
+        .defaults_to("67")
         .shown_when(is_answered),
     FieldSpec::text("partner_name", "Partner's name")
         .help("Your partner's first name.")
@@ -197,7 +197,7 @@ pub const FIELDS: &[FieldSpec] = &[
         .shown_when(is_joint),
     FieldSpec::whole("partner_claim_age", "Partner's claim age")
         .help("The age your partner starts Social Security. Blank means 67.")
-        .blank("67")
+        .defaults_to("67")
         .shown_when(is_joint),
 ];
 

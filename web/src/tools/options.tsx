@@ -105,10 +105,11 @@ export function Options<T>({
               {isChosen && (
                 <ReadRows
                   rows={columns
-                    .map(
-                      (header, at) =>
-                        [header, row.cells[at] ?? "", at >= words] as const,
-                    )
+                    .map((header, at) => ({
+                      label: header,
+                      text: row.cells[at] ?? "",
+                      isFigure: at >= words,
+                    }))
                     .slice(1)}
                   isFlush
                 />

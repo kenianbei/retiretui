@@ -143,7 +143,7 @@ impl Domain for Accounts {
     const FIELDS: &'static [FieldSpec] = &[
         FieldSpec::text("id", "ID")
             .help("A short unique handle other items refer to this account by."),
-        FieldSpec::text("name", "Name").help("What the account is called. Blank shows the ID."),
+        FieldSpec::text("name", "Name").blank("The ID").help("What the account is called. Blank shows the ID."),
         FieldSpec::choice("kind", "Type", Vocabulary::AccountKind)
             .help("The kind of account, which decides how it is taxed."),
         FieldSpec::flag("roth", "Roth")
@@ -159,6 +159,7 @@ impl Domain for Accounts {
             .derived(seed_invested, write_invested)
             .help("A fixed return every year, one mix of stocks, bonds and cash, or a mix that steps as you age. A mix's return follows the market."),
         FieldSpec::rate("expected_return", "Expected return")
+            .blank("Earns nothing")
             .shown_when(earns_fixed)
             .help("Growth per year, the same every year and in every market. Blank earns nothing."),
         share("allocation.stocks", "Stocks", holds_mix),
@@ -191,7 +192,7 @@ impl Domain for Accounts {
         FieldSpec::trigger("locked_until", "Locked until")
             .blank("Never")
             .help("Until then, nothing can be withdrawn or transferred out."),
-        FieldSpec::whole("drain_priority", "Drain priority").help(
+        FieldSpec::whole("drain_priority", "Drain priority").blank("Usual order").help(
             "Spend this account first; lower numbers go sooner. Blank follows the usual order.",
         ),
     ];

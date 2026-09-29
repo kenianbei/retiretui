@@ -22,6 +22,12 @@ test("a domain's items are tabled in any column's order", async ({
     page.getByRole("heading", { name: "Accounts", level: 1 }),
   ).toBeVisible();
   await expectAccessible(page);
+  if (!isPhone(testInfo))
+    await expect(
+      page
+        .getByRole("region", { name: "Checking" })
+        .getByText("Earns nothing", { exact: true }),
+    ).toHaveClass(/text-muted-foreground/);
   if (isPhone(testInfo)) {
     await page
       .getByLabel("Sort by")

@@ -67,13 +67,22 @@ export function ReadOut({
   );
 }
 
-/** Each label beside what it holds. */
+/** A label beside what it holds. */
+export interface ReadRowView {
+  label: string;
+  text: string;
+  /** Whether it is a figure, aligned as one. */
+  isFigure?: boolean;
+  /** Whether it is what a blank field stands for rather than stated. */
+  is_unstated?: boolean;
+}
+
+/** Each label beside what it holds, what a blank stands for muted. */
 export function ReadRows({
   rows,
   isFlush = false,
 }: {
-  /** Each label, what it holds, and whether that is a figure. */
-  rows: readonly (readonly [string, string, boolean?])[];
+  rows: readonly ReadRowView[];
   /** Set in a container of its own: no frame but a rule above. */
   isFlush?: boolean;
 }) {
@@ -84,13 +93,19 @@ export function ReadRows({
         isFlush && "rounded-none border-x-0 border-b-0 bg-transparent",
       )}
     >
-      {rows.map(([label, text, isFigure]) => (
+      {rows.map(({ label, text, isFigure, is_unstated }) => (
         <div
           key={label}
           className="grid grid-cols-[minmax(8rem,40%)_1fr] gap-3 px-4 py-2"
         >
           <dt className="text-muted-foreground">{label}</dt>
-          <dd className={cn("break-words", isFigure && aligned(true))}>
+          <dd
+            className={cn(
+              "break-words",
+              isFigure && aligned(true),
+              is_unstated && "text-muted-foreground",
+            )}
+          >
             {text}
           </dd>
         </div>

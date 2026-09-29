@@ -5,14 +5,25 @@ import { useMemo, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useFileActions } from "@/files/actions";
-import { INPUT, messageOf } from "@/lib/utils";
+import { INPUT, cn, messageOf } from "@/lib/utils";
 import type { Answering } from "@/onboarding/page";
 import { planName } from "@/workspace";
 
-/** What a field holds, as its control shows it. */
-function answerOf(view: FieldView): string {
+/** What a field holds, as its control shows it, and whether that is what
+ * a blank answer stands for. */
+function answerOf(view: FieldView): { said: string; isUnstated: boolean } {
+  const isUnstated = view.text === "";
   const offer = view.offers.find((each) => each.value === view.text);
-  return offer?.label ?? (view.text || view.blank);
+  if (offer) return { said: offer.label, isUnstated };
+  return { said: isUnstated ? view.unstated : view.text, isUnstated };
+}
+
+function Answer({ said, isUnstated }: { said: string; isUnstated: boolean }) {
+  return (
+    <dd className={cn("break-words", isUnstated && "text-muted-foreground")}>
+      {said}
+    </dd>
+  );
 }
 
 /** Every answer read back, each to be changed, then the plan named and made. */
@@ -45,7 +56,7 @@ export function CheckAnswers({ answering }: { answering: Answering }) {
                   className="grid grid-cols-[minmax(8rem,40%)_1fr_auto] items-baseline gap-3 px-4 py-2"
                 >
                   <dt className="text-muted-foreground">{view.label}</dt>
-                  <dd className="break-words">{answerOf(view)}</dd>
+                  <Answer {...answerOf(view)} />
                   <dd>
                     <Link
                       to="/new/$step"

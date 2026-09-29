@@ -116,9 +116,9 @@ pub struct FieldSpec {
     pub label: &'static str,
     /// What the field means, its unit, and what leaving it blank does.
     pub help: &'static str,
-    /// What the field reads as while it holds nothing, where that says
-    /// something: a default, or what absence means.
-    pub blank: Option<&'static str>,
+    /// What the field stands for while it holds nothing, where it may:
+    /// what absence means, or the value it is made as.
+    pub blank: Option<Blank>,
     /// Whether the item being edited has a use for the field, where that
     /// hangs on another of its fields; `None` always has.
     pub shown: Option<fn(&Table) -> bool>,
@@ -127,6 +127,16 @@ pub struct FieldSpec {
     pub derived: Option<Derived>,
     /// How the field's value is entered.
     pub kind: FieldKind,
+}
+
+/// What an empty field stands for, said as a placeholder while it is
+/// entered and read back once it is not.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Blank {
+    /// Words for what absence means: `Earns nothing`, `Plan start`.
+    Means(&'static str),
+    /// The value an empty field is made as: `6%`, `65`.
+    Default(&'static str),
 }
 
 /// How a field no file holds is read on open and turned back on write.
@@ -292,11 +302,20 @@ impl FieldSpec {
         Self { help, ..self }
     }
 
-    /// The field with `blank` as what it reads as while empty.
+    /// The field with `means` as what it reads as while empty.
     #[must_use]
-    pub const fn blank(self, blank: &'static str) -> Self {
+    pub const fn blank(self, means: &'static str) -> Self {
         Self {
-            blank: Some(blank),
+            blank: Some(Blank::Means(means)),
+            ..self
+        }
+    }
+
+    /// The field made as `value` while empty.
+    #[must_use]
+    pub const fn defaults_to(self, value: &'static str) -> Self {
+        Self {
+            blank: Some(Blank::Default(value)),
             ..self
         }
     }
@@ -332,12 +351,33 @@ impl FieldSpec {
         self.blank.is_none()
     }
 
-    /// What the field reads as while empty.
+    /// What an empty pick of the field is offered as.
     #[must_use]
     pub const fn blank_word(&self) -> &'static str {
         match self.blank {
-            Some(word) => word,
+            Some(Blank::Means(word) | Blank::Default(word)) => word,
             None => BLANK,
+        }
+    }
+
+    /// What the field shows while it is entered empty: `Blank is 65`, or
+    /// what absence means; none where it may not be left empty.
+    #[must_use]
+    pub fn placeholder(&self) -> Option<String> {
+        match self.blank? {
+            Blank::Means(words) => Some(words.to_owned()),
+            Blank::Default(value) => Some(format!("Blank is {value}")),
+        }
+    }
+
+    /// What the field reads as once left empty: `65, the default`, or what
+    /// absence means.
+    #[must_use]
+    pub fn unstated(&self) -> String {
+        match self.blank {
+            Some(Blank::Means(words)) => words.to_owned(),
+            Some(Blank::Default(value)) => format!("{value}, the default"),
+            None => String::new(),
         }
     }
 }

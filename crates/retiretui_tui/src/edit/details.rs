@@ -8,8 +8,9 @@ use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Component, Entity, On, Query, Res, With};
 use bevy_input::keyboard::KeyboardInput;
 use bevy_input_focus::FocusedInput;
+use plurimus::core::ratatui_core::style::{Modifier, Style};
 use plurimus::term::bevy_compat::HeldModifiers;
-use plurimus::ui::{ScrollArea, first_bound};
+use plurimus::ui::{ScrollArea, UiStyle, first_bound};
 use plurimus::widgets::ActiveDescendant;
 
 use super::domain::Ops;
@@ -26,10 +27,13 @@ use retiretui_client::forms::details;
 /// The width of the pane beside a table, borders included: the longest
 /// label, a gap, and a value's worth of cells; beside the sidebar and a
 /// table it fits the narrowest terminal.
-pub const DETAILS_COLS: u16 = 34;
+pub const DETAILS_COLS: u16 = 36;
 const GAP: u16 = 1;
 const HEADER: [&str; 2] = ["", ""];
 const TEXT_COLUMNS: [usize; 2] = [0, 1];
+/// A field read out as what its blank stands for, dimmed beside the
+/// values the plan states.
+const UNSTATED: Style = Style::new().add_modifier(Modifier::DIM);
 const BESIDE_HINTS: Hints = Hints(&[("↑↓", "scroll"), ("⏎", "edit")]);
 
 /// The table an item's details are rows of: of the domain `ops`, and of
@@ -94,20 +98,27 @@ pub fn refresh(
         }
         let item = shown_row(cursor.as_deref(), &cursors)
             .and_then(|Row(index)| (shown_of.ops.item)(&draft, index));
-        let rows: Vec<Vec<String>> = item.map_or_else(Vec::new, |item| {
-            let rows = details::rows(&shown_of.ops, &item, &draft.plan);
-            rows.into_iter().map(Vec::from).collect()
+        let read = item.map_or_else(Vec::new, |item| {
+            details::rows(&shown_of.ops, &item, &draft.plan)
         });
+        let rows: Vec<Vec<String>> = read
+            .iter()
+            .map(|row| vec![row.label.clone(), row.text.clone()])
+            .collect();
         commands
             .entity(table)
             .insert(tabulate::labelled(&rows, GAP));
         let header = HEADER.map(str::to_owned);
-        tabulate::refill(
+        let spawned = tabulate::refill(
             &mut commands,
             (table, &mut scroll),
             (&header, &rows),
             &TEXT_COLUMNS,
         );
+        let unstated = spawned.iter().zip(&read).filter(|(_, row)| row.is_unstated);
+        for (&row, _) in unstated {
+            commands.entity(row).insert(UiStyle(UNSTATED));
+        }
     }
 }
 

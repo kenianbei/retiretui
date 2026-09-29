@@ -3,7 +3,7 @@
 
 use retiretui_client::draft::Draft;
 use retiretui_client::forms::cells::Cell;
-use retiretui_client::forms::details;
+use retiretui_client::forms::details::{self, ReadRow};
 use retiretui_client::forms::offers::display_name;
 use retiretui_client::forms::sort::Sort;
 use retiretui_client::forms::{Form, ListOps};
@@ -92,7 +92,7 @@ pub fn table(draft: &Draft, form: &Form, sort: Option<Sort>) -> Result<DomainTab
 /// # Errors
 ///
 /// Where the domain holds no item at `index`.
-pub fn read_out(draft: &Draft, form: &Form, index: usize) -> Result<Vec<[String; 2]>, String> {
+pub fn read_out(draft: &Draft, form: &Form, index: usize) -> Result<Vec<ReadRow>, String> {
     let item =
         (form.item)(draft, index).ok_or_else(|| format!("{} holds no item {index}", form.title))?;
     Ok(details::rows(form, &item, &draft.plan))
@@ -117,13 +117,14 @@ impl JsDocument {
         reply(form_at(slug).and_then(|form| table(self.0.draft(), form, sort)))
     }
 
-    /// Item `index` of the domain at `slug`, each row its label and what
-    /// it holds; a single item is at 0.
+    /// Item `index` of the domain at `slug`, each row its label, what it
+    /// holds and whether that is what a blank stands for; a single item is
+    /// at 0.
     ///
     /// # Errors
     ///
     /// Where no domain is at `slug`, or it holds no item at `index`.
-    #[wasm_bindgen(js_name = readOut, unchecked_return_type = "[string, string][]")]
+    #[wasm_bindgen(js_name = readOut, unchecked_return_type = "ReadRow[]")]
     pub fn read_out(&self, slug: &str, index: usize) -> Result<JsValue, JsError> {
         reply(form_at(slug).and_then(|form| read_out(self.0.draft(), form, index)))
     }

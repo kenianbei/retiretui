@@ -8,26 +8,26 @@ expression: composed_frame(app)
 ┴──────────┴┴────────┴┴─────────┴┴───────┴╯      ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭ Plan ─────────────╮╭ Market ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │  Accounts       7 ││                                                                                                                                                                                 │
-│  Income         4 ││▌ Leave at least                                                                                                                                                                 │
-│  Expenses       2 ││  Stocks                                                                                                                                                                         │
-│  Cliffs         0 ││    spread                                                                                                                                                                       │
-│  Transfers      1 ││  Bonds                                                                                                                                                                          │
-│  Conversions    1 ││    spread                                                                                                                                                                       │
-│  Contributions  3 ││  Cash                                                                                                                                                                           │
-│  Events         1 ││    spread                                                                                                                                                                       │
-│  People         2 ││  Inflation spread                                                                                                                                                               │
-│  Residency      1 ││    persistence                                                                                                                                                                  │
-│  Household        ││  Stocks, bonds                                                                                                                                                                  │
-│  Settings         ││  Stocks, cash                                                                                                                                                                   │
-│▏ Market           ││  Stocks, inflation                                                                                                                                                              │
-│                   ││  Bonds, cash                                                                                                                                                                    │
-│                   ││  Bonds, inflation                                                                                                                                                               │
-│                   ││  Cash, inflation                                                                                                                                                                │
+│  Income         4 ││▌ Leave at least     Nothing                                                                                                                                                     │
+│  Expenses       2 ││  Stocks             6%, the default                                                                                                                                             │
+│  Cliffs         0 ││    spread           16%, the default                                                                                                                                            │
+│  Transfers      1 ││  Bonds              4%, the default                                                                                                                                             │
+│  Conversions    1 ││    spread           6%, the default                                                                                                                                             │
+│  Contributions  3 ││  Cash               2.5%, the default                                                                                                                                           │
+│  Events         1 ││    spread           1%, the default                                                                                                                                             │
+│  People         2 ││  Inflation spread   1.5%, the default                                                                                                                                           │
+│  Residency      1 ││    persistence      60%, the default                                                                                                                                            │
+│  Household        ││  Stocks, bonds      0.1, the default                                                                                                                                            │
+│  Settings         ││  Stocks, cash       0, the default                                                                                                                                              │
+│▏ Market           ││  Stocks, inflation  -0.1, the default                                                                                                                                           │
+│                   ││  Bonds, cash        0, the default                                                                                                                                              │
+│                   ││  Bonds, inflation   -0.2, the default                                                                                                                                           │
+│                   ││  Cash, inflation    0.5, the default                                                                                                                                            │
 │                   ││  Monte Carlo draws  Your return assumptions                                                                                                                                     │
-│                   ││    trials                                                                                                                                                                       │
-│                   ││    seed                                                                                                                                                                         │
-│                   ││  Historical from                                                                                                                                                                │
-│                   ││    to                                                                                                                                                                           │
+│                   ││    trials           1,000, the default                                                                                                                                          │
+│                   ││    seed             42, the default                                                                                                                                             │
+│                   ││  Historical from    1871, the default                                                                                                                                           │
+│                   ││    to               2025, the default                                                                                                                                           │
 │                   ││    wrap             ✓                                                                                                                                                           │
 │                   ││                                                                                                                                                                                 │
 │                   ││                                                                                                                                                                                 │

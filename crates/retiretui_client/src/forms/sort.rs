@@ -97,6 +97,7 @@ pub type Item = (usize, Vec<Cell>);
 const UNSTATED: &Cell = &Cell {
     text: String::new(),
     number: None,
+    is_unstated: true,
 };
 
 fn cell(item: &Item, column: usize) -> &Cell {
@@ -150,6 +151,7 @@ mod tests {
             vec![Cell {
                 text: (*text).to_owned(),
                 number,
+                is_unstated: false,
             }]
         });
         rows.enumerate().collect()

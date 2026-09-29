@@ -36,9 +36,14 @@ text: string,
  */
 typed: string, 
 /**
- * What a blank field reads as.
+ * What it shows while entered empty: `Blank is 65`; none where it
+ * may not be left empty.
  */
-blank: string, 
+placeholder: string | null, 
+/**
+ * What it reads as once left empty: `65, the default`.
+ */
+unstated: string, 
 /**
  * A rate's or a share's number, for its slider.
  */
