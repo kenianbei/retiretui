@@ -1,10 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { FilePen, FileText, Upload } from "lucide-react";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useFileActions } from "@/files/actions";
 import { KeepPlans } from "@/files/manage";
+import { Unopened } from "@/files/unopened";
 import { NEW_PLAN_START } from "@/onboarding/steps";
 import { useSession } from "@/session";
 import { nameOf } from "@/workspace";
@@ -16,11 +16,8 @@ export function Start() {
 
   return (
     <section className="max-w-prose space-y-8">
-      {session.error !== null && session.path !== null && (
-        <Alert variant="destructive">
-          <AlertTitle>{nameOf(session.path)} could not be opened</AlertTitle>
-          <AlertDescription>{session.error}</AlertDescription>
-        </Alert>
+      {session.failure !== null && session.path !== null && (
+        <Unopened path={session.path} failure={session.failure} />
       )}
       <div className="space-y-2">
         <h1 className="text-2xl font-semibold tracking-tight">

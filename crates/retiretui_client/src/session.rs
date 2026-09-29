@@ -191,7 +191,7 @@ pub fn load_session(session: &Session, today: Today) -> Result<(Projected, Stamp
     match &session.plan_path {
         Some(path) => {
             let (loaded, files) = load_projected(session.store.as_ref(), path, &session.tables);
-            let projected = loaded.map_err(|invalid| invalid.headline().to_owned())?;
+            let projected = loaded.map_err(|invalid| invalid.headline())?;
             Ok((projected, files))
         }
         None => Ok((Projected::blank(&session.tables, today), Vec::new())),

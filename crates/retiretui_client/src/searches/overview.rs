@@ -12,7 +12,7 @@ use retiretui_engine::project::Projection;
 
 use super::claims::said;
 use super::ladders::{Swept, rate_label};
-use crate::present::signed_money;
+use crate::present::{compact_money, signed_money};
 
 /// The card's title.
 pub const COULD_DO_BETTER: &str = "Could do better";
@@ -112,17 +112,21 @@ pub fn beats(option: &Projection, current: &Projection) -> bool {
     rank_key(option) < rank_key(current)
 }
 
-/// What `option` ends with against `current`, and leaves unfunded where
-/// that differs.
+/// What `option`, which [`beats`] `current`, ends with against it, and how
+/// much more spending it covers in the basis shown, where it does: `beats`
+/// ranks in today's dollars, so in future dollars it may not.
 #[must_use]
 pub fn gain(option: &Projection, current: &Projection, nominal: bool) -> String {
     let (own, base) = (option.summary(!nominal), current.summary(!nominal));
     let ends = signed_money(own.final_net_worth - base.final_net_worth);
-    let unfunded = own.lifetime_unfunded - base.lifetime_unfunded;
-    if unfunded == 0 {
+    let covered = base.lifetime_unfunded - own.lifetime_unfunded;
+    if covered <= 0 {
         format!("ends {ends}")
     } else {
-        format!("ends {ends}, unfunded {}", signed_money(unfunded))
+        format!(
+            "ends {ends}, covers {} more spending",
+            compact_money(covered)
+        )
     }
 }
 
@@ -191,5 +195,25 @@ mod tests {
         let projection = retiretui_engine::project::project(&plan, &TaxTables::embedded());
         assert!(!beats(&projection, &projection));
         assert_eq!(gain(&projection, &projection, false), "ends $0");
+    }
+
+    #[test]
+    fn an_option_leaving_less_uncovered_says_how_much_more_it_covers() {
+        let (_, _, starter) = EXAMPLES[0];
+        let spending = |amount: &str| {
+            let text = starter.replacen("amount = 24000", amount, 1);
+            let plan = Plan::from_toml_str(&text).expect("the plan parses");
+            retiretui_engine::project::project(&plan, &TaxTables::embedded())
+        };
+        let (current, option) = (spending("amount = 240000"), spending("amount = 200000"));
+        assert!(beats(&option, &current));
+        let said = gain(&option, &current, false);
+        let (own, base) = (option.summary(true), current.summary(true));
+        let covered = compact_money(base.lifetime_unfunded - own.lifetime_unfunded);
+        assert!(
+            said.ends_with(&format!(", covers {covered} more spending")),
+            "{said}"
+        );
+        assert!(!said.contains('-'), "{said}");
     }
 }

@@ -1,7 +1,7 @@
-//! What needs attention: the draft's issues, the years the plan runs
-//! short or pays Medicare's surcharges, the contributions it could not make
-//! as stated, and a benefit estimated without the record it is computed
-//! from.
+//! What needs attention: the draft's issues, the years the plan pays
+//! Medicare's surcharges, the contributions it could not make as stated, a
+//! benefit estimated without the record it is computed from, and amounts
+//! too large to be likely.
 
 use std::collections::BTreeSet;
 
@@ -41,31 +41,16 @@ pub fn attention(projected: &Projected, nominal: bool) -> Vec<Row> {
     let years = &projected.projection.years;
     let dollars = |row: &YearRow, amount: Dollars| basis_amount(amount, row.deflator, nominal);
     let mut found: Vec<Row> = [
-        unfunded(years, &dollars),
         surcharged(years, &dollars),
         held(plan, years),
         unrecorded(plan),
+        implausible(plan),
     ]
     .into_iter()
     .flatten()
     .collect();
     found.sort_by_key(|row| row.year);
     found
-}
-
-/// The first year spending outruns the money, and by how much.
-fn unfunded(years: &[YearRow], dollars: &impl Fn(&YearRow, Dollars) -> Dollars) -> Vec<Row> {
-    let short = years.iter().find(|row| row.unfunded > 0);
-    short
-        .map(|row| {
-            let short = compact_money(dollars(row, row.unfunded));
-            Row {
-                year: Some(row.year),
-                ..Row::plain(format!("on: unfunded, {short} a year"))
-            }
-        })
-        .into_iter()
-        .collect()
 }
 
 /// The first year Medicare's surcharges or a cliff cost anything, and in
@@ -135,6 +120,71 @@ fn unrecorded(plan: &Plan) -> Vec<Row> {
         .collect()
 }
 
+/// A yearly amount from which a stated one is more likely a slip than a
+/// plan: an income, an expense, a contribution, a transfer or a conversion.
+const IMPLAUSIBLE_FLOW: Dollars = 10_000_000;
+/// A balance from which a stated one is more likely a slip than a plan.
+const IMPLAUSIBLE_BALANCE: Dollars = 1_000_000_000;
+
+/// Each amount the plan states at or past what is likely, at its item; the
+/// projection runs on them all the same.
+fn implausible(plan: &Plan) -> Vec<Row> {
+    use DomainId::{Accounts, Contributions, Conversions, Expenses, Income, Transfers};
+    let (flow, balance) = (IMPLAUSIBLE_FLOW, IMPLAUSIBLE_BALANCE);
+    [
+        stated(Accounts, &plan.accounts, ("a balance", balance), |it| {
+            Some(it.balance)
+        }),
+        stated(Accounts, &plan.accounts, ("a basis", balance), |it| {
+            it.basis
+        }),
+        stated(Income, &plan.income, ("an income", flow), |it| it.amount),
+        stated(Expenses, &plan.expenses, ("an expense", flow), |it| {
+            Some(it.amount)
+        }),
+        stated(
+            Contributions,
+            &plan.contributions,
+            ("a contribution", flow),
+            |it| it.amount,
+        ),
+        stated(Transfers, &plan.transfers, ("a transfer", flow), |it| {
+            it.amount
+        }),
+        stated(
+            Conversions,
+            &plan.conversions,
+            ("a conversion", flow),
+            |it| Some(it.amount),
+        ),
+    ]
+    .concat()
+}
+
+/// A row for each of `items` whose `amount` is at or past `line`, said as
+/// `what` it is.
+fn stated<T: Item>(
+    domain: DomainId,
+    items: &[T],
+    (what, line): (&str, Dollars),
+    amount: fn(&T) -> Option<Dollars>,
+) -> Vec<Row> {
+    let each = items.iter().enumerate();
+    each.filter_map(|(at, item)| {
+        let amount = amount(item).filter(|&amount| amount >= line)?;
+        let text = format!(
+            "{}: {what} of {} - check the amount",
+            item.display_name(),
+            compact_money(amount)
+        );
+        Some(Row {
+            place: Some((domain, Some(at))),
+            ..Row::plain(text)
+        })
+    })
+    .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -185,10 +235,6 @@ start = {{ age = 67, owner = \"me\" }}
         let first = &projected.projection.years[0];
         let expected = [
             (
-                format!("on: unfunded, {} a year", compact_money(first.unfunded)),
-                None,
-            ),
-            (
                 format!("Medicare surcharges, {}", compact_money(first.medicare)),
                 Some((DomainId::Household, None)),
             ),
@@ -210,8 +256,33 @@ start = {{ age = 67, owner = \"me\" }}
             );
             assert_eq!(said[at + 1].1, place, "{said:?}");
         }
-        assert!(said[2].0.ends_with("years in all"), "{said:?}");
-        assert_eq!(said.len(), 4, "{said:?}");
+        assert!(said[1].0.ends_with("years in all"), "{said:?}");
+        assert_eq!(said.len(), 3, "short every year, and said elsewhere");
+    }
+
+    #[test]
+    fn an_amount_past_the_likely_is_a_row_at_its_item_and_refuses_nothing() {
+        let plan = TEST_PLAN
+            .replace("balance = 200000", "balance = 2000000000")
+            .replace("amount = 60000", "amount = 10000000");
+        let projected = projected_from(&plan);
+        assert_eq!(projected.plan.validate(), []);
+        let account = projected.plan.accounts[1].display_name();
+        let expense = projected.plan.expenses[0].display_name();
+        let said = said(&projected);
+        let expected = [
+            (
+                format!("{account}: a balance of $2.00B - check the amount"),
+                Some((DomainId::Accounts, Some(1))),
+            ),
+            (
+                format!("{expense}: an expense of $10.00M - check the amount"),
+                Some((DomainId::Expenses, Some(0))),
+            ),
+        ];
+        for row in expected {
+            assert!(said.contains(&row), "{row:?} in {said:?}");
+        }
     }
 
     #[test]

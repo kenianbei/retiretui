@@ -15,6 +15,7 @@ mod overview;
 mod searches;
 mod setup;
 mod tax_tables;
+mod unopened;
 mod view;
 mod vocabulary;
 
@@ -31,6 +32,7 @@ use wasm_bindgen::JsCast;
 use wasm_bindgen::prelude::{JsError, JsValue, wasm_bindgen};
 
 use document::Document;
+use unopened::OpenFailure;
 
 /// The embedded tax tables; the page has no directories of its own.
 fn tables() -> &'static TaxTables {
@@ -97,7 +99,7 @@ const TYPES: &str = r#"import type {
   Domain, DomainTable,
   Example, FieldView, Issue, LadderWords, LadderYear, LaddersReply,
   Ledger, MarketRuns, MarketWords, Metric, OverviewView, PersonAction, PersonRow, PlacedIssue,
-  NewPlanMade,
+  NewPlanMade, OpenFailure,
   Projection, RothOwner, SaidYear, Searched, Sort, Step, Summary, TablesView, ViewWords,
   YearDetail, YearFigure, YearTables,
 } from "../bindings/index";
@@ -114,13 +116,16 @@ impl JsDocument {
     ///
     /// # Errors
     ///
-    /// Where a file cannot be read, or a document does not parse or resolve.
+    /// An `OpenFailure` where a file cannot be read, or a document does
+    /// not parse or resolve.
     pub fn open(
         path: &str,
         #[wasm_bindgen(unchecked_param_type = "(path: string) => string")] read: &Function,
-    ) -> Result<JsDocument, JsError> {
+    ) -> Result<JsDocument, JsValue> {
         let mut read = |file: &Path| read_through(read, file);
-        Document::open(path, &mut read).map(Self).map_err(refused)
+        Document::open(path, &mut read)
+            .map(Self)
+            .map_err(|error| to_js(&OpenFailure::from(&error)).unwrap_or_else(JsValue::from))
     }
 
     /// Takes `to` wherever `from` is among the files the document was
@@ -304,6 +309,7 @@ mod bindings {
 
     use crate::claims::{ClaimWords, ClaimsOptions, PersonRow, RothOwner};
     use crate::document::{PlacedIssue, SaidYear};
+    use crate::unopened::{OpenFailure, Written};
     use retiretui_client::forms::sort::Sort;
 
     use crate::compare::{CompareView, CompareWords, Searched, YearFigure};
@@ -355,6 +361,8 @@ mod bindings {
         YearTables::export_all,
         Step::export_all,
         NewPlanMade::export_all,
+        OpenFailure::export_all,
+        Written::export_all,
     ];
 
     #[test]

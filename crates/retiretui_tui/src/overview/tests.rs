@@ -235,7 +235,10 @@ fn e_with_no_item_behind_the_row_is_refused() {
     );
     hold(&mut app, "Needs attention");
     let frame = redrawn(&mut app);
-    assert!(frame.contains("2026 on: unfunded, "), "{frame}");
+    assert!(
+        frame.contains("No plan issues"),
+        "the tile says it: {frame}"
+    );
     press_key(&mut app, KeyCode::Char('e'));
     assert_eq!(active_page(&app), Page::Overview);
     let refusals = said(&app);
@@ -243,8 +246,6 @@ fn e_with_no_item_behind_the_row_is_refused() {
         .iter()
         .filter(|line| line.contains(super::rows::NOTHING_TO_EDIT));
     assert_eq!(refusals.count(), 2, "{:?}", said(&app));
-    press_key(&mut app, KeyCode::Enter);
-    assert_eq!(active_page(&app), Page::Ledger, "⏎ still opens its year");
 }
 
 #[test]

@@ -3,7 +3,7 @@
 
 use retiretui_client::forms::DomainId;
 use retiretui_client::overview::{Row, attention, milestones};
-use retiretui_client::present::{compact_money, money_lasts, runs_short};
+use retiretui_client::present::{compact_money, lasts_through, runs_short};
 use retiretui_client::session::Projected;
 use serde::Serialize;
 use wasm_bindgen::prelude::{JsError, JsValue, wasm_bindgen};
@@ -41,7 +41,8 @@ pub struct Shortfall {
 #[derive(Serialize, Debug)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct OverviewView {
-    /// How long the money lasts: "Never short", "Short $772k from 2042".
+    /// How long the money lasts, where the shortfall says by how much:
+    /// "Never short", "Through 2041", "Short from the start".
     pub money_lasts: String,
     /// Where it runs short; `null` where it never does.
     pub shortfall: Option<Shortfall>,
@@ -75,8 +76,9 @@ fn rows(rows: Vec<Row>) -> Vec<OverviewRow> {
 /// `projected` as the Overview says it, nominal or in today's dollars.
 fn overview_view(projected: &Projected, nominal: bool) -> OverviewView {
     let summary = projected.projection.summary(!nominal);
+    let first_year = projected.plan.plan.start_year;
     OverviewView {
-        money_lasts: money_lasts(&summary),
+        money_lasts: lasts_through(&summary, first_year),
         shortfall: summary
             .first_unfunded_year
             .zip(runs_short(&summary))
@@ -150,10 +152,9 @@ mod tests {
             said.starts_with(&format!("Runs short from {year}: $")),
             "{said}"
         );
-        let unfunded = view
-            .attention
-            .iter()
-            .find(|row| row.text.contains("unfunded"));
-        assert_eq!(unfunded.and_then(|row| row.year), Some(year));
+        assert_eq!(year, projected(&spending).plan.plan.start_year);
+        assert_eq!(view.money_lasts, "Short from the start");
+        let said_again = (view.attention.iter()).any(|row| row.text.contains("unfunded"));
+        assert!(!said_again, "the note says it once");
     }
 }

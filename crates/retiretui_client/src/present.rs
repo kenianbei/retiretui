@@ -119,10 +119,14 @@ const COMPACT_FROM: u64 = 10_000;
 /// From this many dollars a compact amount is in millions, since the
 /// nearest thousand would be `1000k`.
 const MILLIONS_FROM: u64 = 999_500;
+/// From this many dollars a compact amount is in billions, since the
+/// nearest ten thousand would be `1000.00M`.
+const BILLIONS_FROM: u64 = 999_500_000;
 
 /// A sum of money in as few cells as say how much: `$2,086`, `$450k`,
-/// `$2.58M`, `-$42k` - in full under ten thousand, then to the nearest
-/// thousand, then to the nearest ten thousand in millions.
+/// `$2.58M`, `$1.20B`, `-$42k` - in full under ten thousand, then to the
+/// nearest thousand, then to the nearest ten thousand in millions, then to
+/// the nearest ten million in billions.
 #[must_use]
 pub fn compact_money(amount: Dollars) -> String {
     let magnitude = amount.unsigned_abs();
@@ -133,8 +137,12 @@ pub fn compact_money(amount: Dollars) -> String {
     if magnitude < MILLIONS_FROM {
         return format!("{sign}${}k", (magnitude + 500) / 1_000);
     }
-    let hundredths = (magnitude + 5_000) / 10_000;
-    format!("{sign}${}.{:02}M", hundredths / 100, hundredths % 100)
+    let (hundredths, unit) = if magnitude < BILLIONS_FROM {
+        ((magnitude + 5_000) / 10_000, 'M')
+    } else {
+        ((magnitude + 5_000_000) / 10_000_000, 'B')
+    };
+    format!("{sign}${}.{:02}{unit}", hundredths / 100, hundredths % 100)
 }
 
 /// Whether money is written in full, where a column has the room, or
@@ -271,11 +279,14 @@ fn shift(offset: i16) -> String {
     }
 }
 
+/// What money that never runs short lasts.
+const NEVER_SHORT: &str = "Never short";
+
 /// How long the money lasts: never short, or by how much from when.
 #[must_use]
 pub fn money_lasts(summary: &Summary) -> String {
     summary.first_unfunded_year.map_or_else(
-        || "Never short".to_owned(),
+        || NEVER_SHORT.to_owned(),
         |year| {
             format!(
                 "Short {} from {year}",
@@ -283,6 +294,18 @@ pub fn money_lasts(summary: &Summary) -> String {
             )
         },
     )
+}
+
+/// How long the money lasts, where something else says by how much: never
+/// short, through the last year it covers, or short from `first_year`, the
+/// plan's first.
+#[must_use]
+pub fn lasts_through(summary: &Summary, first_year: i16) -> String {
+    match summary.first_unfunded_year {
+        None => NEVER_SHORT.to_owned(),
+        Some(year) if year <= first_year => "Short from the start".to_owned(),
+        Some(year) => format!("Through {}", year - 1),
+    }
 }
 
 /// The year the money first runs short and what it leaves uncovered in
@@ -402,7 +425,7 @@ mod tests {
     }
 
     #[test]
-    fn compact_money_is_full_then_thousands_then_millions() {
+    fn compact_money_is_full_then_thousands_then_millions_then_billions() {
         let cases = [
             (0, "$0"),
             (950, "$950"),
@@ -416,6 +439,11 @@ mod tests {
             (1_234_567, "$1.23M"),
             (2_580_000, "$2.58M"),
             (4_437_120, "$4.44M"),
+            (999_494_999, "$999.49M"),
+            (999_500_000, "$1.00B"),
+            (2_000_000_000, "$2.00B"),
+            (1_234_999_999, "$1.23B"),
+            (1_235_000_000, "$1.24B"),
             (-2_086, "-$2,086"),
             (-42_000, "-$42k"),
             (-4_437_120, "-$4.44M"),
@@ -560,5 +588,8 @@ mod tests {
             ..summary
         };
         assert_eq!(runs_short(&lasting), None);
+        assert_eq!(lasts_through(&summary, 2026), "Through 2041");
+        assert_eq!(lasts_through(&summary, 2042), "Short from the start");
+        assert_eq!(lasts_through(&lasting, 2026), "Never short");
     }
 }

@@ -90,8 +90,18 @@ fn load_validated_plan(path: &Path, tables: &TaxTables) -> anyhow::Result<Plan> 
         Err(invalid) => invalid,
     };
     match &invalid {
-        Invalid::Load(message) => message.lines().skip(1).for_each(|line| eprintln!("{line}")),
-        Invalid::Issues { issues, .. } => issues.iter().for_each(|issue| eprintln!("{issue}")),
+        Invalid::Load(error) => {
+            let said = error.to_string();
+            let mut lines = said.lines();
+            let headline = lines.next().unwrap_or_default().to_owned();
+            lines.for_each(|line| eprintln!("{line}"));
+            Err(anyhow::Error::msg(headline))
+        }
+        Invalid::Issues { issues, .. } => {
+            for issue in issues {
+                eprintln!("{issue}");
+            }
+            Err(anyhow::Error::msg(invalid.headline()))
+        }
     }
-    Err(anyhow::Error::msg(invalid.headline().to_owned()))
 }
