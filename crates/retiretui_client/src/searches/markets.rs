@@ -45,6 +45,8 @@ pub trait Markets {
     const RUN_HEADING: &'static str;
     /// What one run is, and many: `market`, `markets`.
     const RUN_NOUN: (&'static str, &'static str);
+    /// What the tool is for, in a line.
+    const ABOUT: &'static str;
     /// Whether net worth year by year at each percentile is shown:
     /// percentiles over overlapping histories claim a precision they do not
     /// have.
@@ -340,6 +342,7 @@ pub fn market_said(name: RunName) -> String {
 impl Markets for MonteCarlo {
     const RUN_HEADING: &'static str = "Markets";
     const RUN_NOUN: (&'static str, &'static str) = ("market", "markets");
+    const ABOUT: &'static str = "The plan through many random markets; the share in which its money lasts says how surely it does.";
     const HAS_BY_YEAR: bool = true;
 
     fn runs(&self) -> &Runs {
@@ -396,6 +399,7 @@ impl Markets for MonteCarlo {
 impl Markets for Runs {
     const RUN_HEADING: &'static str = "Start years";
     const RUN_NOUN: (&'static str, &'static str) = ("start year", "start years");
+    const ABOUT: &'static str = "The plan from each year of the U.S. record as its first, through the markets that followed.";
     const HAS_BY_YEAR: bool = false;
 
     fn runs(&self) -> &Runs {

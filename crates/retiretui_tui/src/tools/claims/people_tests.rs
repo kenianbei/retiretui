@@ -246,7 +246,6 @@ fn a_named_person_is_shown_by_name_and_kept_by_id() {
         header.contains("Pat Lee"),
         "the options name the person: {header}"
     );
-    assert!(frame.contains("act on Pat Lee."), "{frame}");
     assert_eq!(run(&mut app, remove_benefit), Outcome::Done);
     assert!(redrawn(&mut app).contains("Remove Pat Lee's Social Security income?"));
 }

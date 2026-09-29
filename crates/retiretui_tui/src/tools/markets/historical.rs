@@ -29,7 +29,6 @@ impl Found for Runs {
 
 impl MarketTool for Runs {
     const PAGE: Page = Page::Historical;
-    const HELP: &'static str = "Each year of the record as the plan's first, its markets and inflation as they came. Today's dollars.";
 
     const OPEN: &'static str = "open-historical-run";
     const EDIT: &'static str = "historical-assumption";

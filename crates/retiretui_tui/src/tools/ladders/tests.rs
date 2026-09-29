@@ -146,7 +146,7 @@ fn the_one_roth_account_is_the_destination_and_the_help_follows_the_keyboard() {
         tool(&app),
         redrawn(&mut app)
     );
-    assert!(redrawn(&mut app).contains("⏎ edits a constraint"));
+    assert!(redrawn(&mut app).contains(retiretui_client::searches::ladders::ABOUT));
     to_options(&mut app);
     let frame = redrawn(&mut app);
     assert!(frame.contains("⏎ takes the highlighted ladder"), "{frame}");

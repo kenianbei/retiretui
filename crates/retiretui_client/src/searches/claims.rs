@@ -13,6 +13,9 @@ use crate::present::{compact_money, counted};
 /// What the options say before anything is searched.
 pub const NOTHING_SEARCHED: &str = "Every age each computed Social Security benefit can be claimed at is ranked here, jointly for the household, as soon as the plan is valid.";
 
+/// What the tool is for, in a line.
+pub const ABOUT: &str = "Each benefit at 62, at full retirement age (FRA, 66 to 67) and at 70: less before FRA, more after.";
+
 /// What a claim the plan does not pay says.
 const NO_CLAIM: &str = "No claim";
 

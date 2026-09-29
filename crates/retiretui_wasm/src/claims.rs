@@ -149,6 +149,8 @@ pub struct RothOwner {
 #[derive(Serialize, Debug)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct ClaimWords {
+    /// What the tool is for, in a line.
+    pub about: &'static str,
     /// The People table's columns.
     pub people_columns: [&'static str; 6],
     /// Its abbreviated columns, each with its words in full.
@@ -360,6 +362,7 @@ impl JsDocument {
 #[wasm_bindgen(js_name = claimWords, unchecked_return_type = "ClaimWords")]
 pub fn claim_words() -> Result<JsValue, JsError> {
     to_js(&ClaimWords {
+        about: retiretui_client::searches::claims::ABOUT,
         people_columns: PEOPLE_COLUMNS,
         spelled_out: SPELLED_OUT,
         nothing_searched: NOTHING_SEARCHED,

@@ -10,7 +10,7 @@ use bevy_ecs::prelude::{
 use bevy_ecs::system::SystemParam;
 use bevy_input_focus::InputFocus;
 use plurimus::core::UiWidget;
-use retiretui_client::searches::claims::{NOBODY, PersonAction, is_claimed, typed_monthly};
+use retiretui_client::searches::claims::{ABOUT, NOBODY, PersonAction, is_claimed, typed_monthly};
 use retiretui_engine::optimize::ClaimSearch;
 use retiretui_engine::plan::{Item, Person};
 
@@ -154,7 +154,7 @@ fn say_help(
 }
 
 /// What to do next, for whom: a record missing comes first, then what ⏎
-/// does where the keyboard is.
+/// does where the keyboard is, and where nothing waits, what the tool is.
 pub(super) fn help_line(draft: &Draft, person: Option<&Person>, place: Place) -> String {
     let plan = &draft.plan;
     let Some(person) = person else {
@@ -184,7 +184,7 @@ pub(super) fn help_line(draft: &Draft, person: Option<&Person>, place: Place) ->
             "⇥ to the claim options and ⏎ on one to set when each benefit starts. {keys}"
         );
     }
-    format!("⏎ on a person for what can be done for them. {keys}")
+    ABOUT.to_owned()
 }
 
 /// The keys that act on a person, as the command table binds them: `e, c

@@ -98,6 +98,10 @@ pub struct AssumptionRow {
 pub struct MarketWords {
     /// What the runs say before their first search answers.
     pub nothing_searched: &'static str,
+    /// What the Monte Carlo tool is for, in a line.
+    pub monte_carlo_about: &'static str,
+    /// What the Historical tool is for, in a line.
+    pub historical_about: &'static str,
 }
 
 fn row(plan: &Plan, key: String, first: String, run: &market::Run) -> RunRow {
@@ -242,6 +246,8 @@ pub fn js_historical(plan: &str) -> Result<JsValue, JsError> {
 pub fn market_words() -> Result<JsValue, JsError> {
     to_js(&MarketWords {
         nothing_searched: NOTHING_SEARCHED,
+        monte_carlo_about: <market::MonteCarlo as Markets>::ABOUT,
+        historical_about: <market::Runs as Markets>::ABOUT,
     })
 }
 

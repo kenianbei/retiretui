@@ -7,4 +7,12 @@ export type MarketWords = {
 /**
  * What the runs say before their first search answers.
  */
-nothing_searched: string, };
+nothing_searched: string, 
+/**
+ * What the Monte Carlo tool is for, in a line.
+ */
+monte_carlo_about: string, 
+/**
+ * What the Historical tool is for, in a line.
+ */
+historical_about: string, };

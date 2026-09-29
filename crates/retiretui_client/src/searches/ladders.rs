@@ -53,10 +53,10 @@ pub const FIELDS: &[FieldSpec] = &[
         .help("The most to convert over the whole ladder. Blank sets no cap."),
     FieldSpec::money("headroom", "Headroom")
         .blank("None")
-        .help("Dollars to stay below the top of the bracket, as a margin for error."),
+        .help("Dollars left below the top of the bracket each year, so an estimate that runs high does not spill into the next bracket."),
     FieldSpec::whole("irmaa_tier", "IRMAA tier")
         .blank("Not held to one")
-        .help("Stay under this Medicare surcharge tier; 0 avoids them all. Blank ignores it."),
+        .help("IRMAA is what Medicare adds to the Part B and D premiums once income passes a tier. Stay under this one; 0 stays under them all. Blank ignores it."),
     FieldSpec::money("max_magi", "MAGI cap")
         .blank("No cap")
         .help("Keep every year's MAGI (modified adjusted gross income) under this."),
@@ -78,6 +78,9 @@ impl Constraints {
         Ok((options, bracket))
     }
 }
+
+/// What the tool is for, in a line.
+pub const ABOUT: &str = "A ladder converts pre-tax savings to Roth yearly up to a bracket's top: tax now at that rate, not later.";
 
 /// What names an option's columns before its [`FIGURES`](super::FIGURES).
 pub const OPTION_COLUMNS: [&str; 3] = ["Bracket", super::AGAINST_PLAN, "Converted"];

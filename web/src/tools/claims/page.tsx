@@ -103,6 +103,9 @@ export function ClaimsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">SSA Benefits</h1>
         <BasisSwitch />
+        <p className="text-muted-foreground w-full max-w-prose">
+          {WORDS.about}
+        </p>
       </div>
       <section aria-labelledby="people" className="space-y-3">
         <h2 id="people" className="text-lg font-semibold">

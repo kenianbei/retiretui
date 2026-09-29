@@ -112,8 +112,5 @@ fn the_help_line_names_the_next_thing_to_do_and_for_whom() {
     press_key(&mut app, KeyCode::Enter);
     app.update();
     let line = said_on(&app, Place::People);
-    assert!(
-        line.starts_with("⏎ on a person for what can be done"),
-        "{line}"
-    );
+    assert_eq!(line, retiretui_client::searches::claims::ABOUT);
 }

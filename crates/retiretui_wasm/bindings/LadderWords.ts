@@ -5,6 +5,10 @@
  */
 export type LadderWords = { 
 /**
+ * What the tool is for, in a line.
+ */
+about: string, 
+/**
  * While no Roth account is named to convert to.
  */
 pick_destination: string, 

@@ -1,5 +1,10 @@
 import { notFound } from "@tanstack/react-router";
-import { domains } from "@wasm/retiretui_wasm.js";
+import {
+  claimWords,
+  domains,
+  ladderWords,
+  marketWords,
+} from "@wasm/retiretui_wasm.js";
 import {
   ChartNoAxesColumn,
   Columns2,
@@ -36,22 +41,22 @@ export const TOOLS: readonly Page[] = [
   {
     slug: ROTH_CONVERSIONS,
     title: "Roth Conversions",
-    holds: "Conversion ladders searched bracket by bracket.",
+    holds: ladderWords().about,
   },
   {
     slug: SSA_BENEFITS,
     title: "SSA Benefits",
-    holds: "Social Security claim ages ranked for the household.",
+    holds: claimWords().about,
   },
   {
     slug: MONTE_CARLO,
     title: "Monte Carlo",
-    holds: "The plan through random markets.",
+    holds: marketWords().monte_carlo_about,
   },
   {
     slug: HISTORICAL,
     title: "Historical",
-    holds: "The plan from every historical start year.",
+    holds: marketWords().historical_about,
   },
   {
     slug: TAX_TABLES,

@@ -123,6 +123,11 @@ export function MarketsPage({
             <span className="text-muted-foreground text-sm">Searching…</span>
           )}
         </div>
+        <p className="text-muted-foreground max-w-prose">
+          {kind === "monteCarlo"
+            ? WORDS.monte_carlo_about
+            : WORDS.historical_about}
+        </p>
         {reply && (
           <p className={cn("text-lg font-semibold", ZONE_CLASS[reply.zone])}>
             {reply.verdict}

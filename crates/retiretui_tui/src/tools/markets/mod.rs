@@ -66,7 +66,6 @@ const ASSUMPTIONS_COLS: f32 = 50.0;
 /// What a market tool searches, and how it names what it found.
 pub(crate) trait MarketTool: Found + Markets + Sized {
     const PAGE: Page;
-    const HELP: &'static str;
     const TOOL_PAGE: &'static super::ToolPage = &super::ToolPage {
         surface: Self::PAGE,
         panes: spawn_panes::<Self>,
@@ -167,7 +166,7 @@ fn say_help<R: MarketTool>(
     mut lines: Query<(&mut UiWidget, &HelpLine)>,
 ) {
     if shown.is_changed() || theme.is_changed() {
-        show_help(&mut lines, R::PAGE, R::HELP, &theme);
+        show_help(&mut lines, R::PAGE, R::ABOUT, &theme);
     }
 }
 

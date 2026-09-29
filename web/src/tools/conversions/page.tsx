@@ -114,6 +114,9 @@ export function ConversionsPage() {
           Roth Conversions
         </h1>
         <BasisSwitch />
+        <p className="text-muted-foreground w-full max-w-prose">
+          {WORDS.about}
+        </p>
       </div>
       <Constraints />
       <section aria-labelledby="options" className="space-y-3">

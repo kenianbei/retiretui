@@ -26,6 +26,9 @@ test("the plan through random markets and history, a run opened in the Ledger", 
   await expect(
     page.getByRole("heading", { name: "Monte Carlo" }),
   ).toBeVisible();
+  await expect(
+    page.getByText(/^The plan through many random markets; /),
+  ).toBeVisible();
   const verdict = page.getByText(/^Money lasts in [\d.]+% of [\d,]+ markets$/);
   await expect(verdict).toHaveClass(ZONED, SEARCH);
   for (const [label, value] of [

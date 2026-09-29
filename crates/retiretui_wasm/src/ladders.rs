@@ -40,6 +40,8 @@ static FORM: Form = Form::tool::<Constraints>("Constraints", FIELDS);
 #[derive(Serialize, Debug)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct LadderWords {
+    /// What the tool is for, in a line.
+    pub about: &'static str,
     /// While no Roth account is named to convert to.
     pub pick_destination: &'static str,
     /// Where the constraints leave no bracket to fill.
@@ -377,6 +379,7 @@ impl JsDocument {
 #[wasm_bindgen(js_name = ladderWords, unchecked_return_type = "LadderWords")]
 pub fn ladder_words() -> Result<JsValue, JsError> {
     to_js(&LadderWords {
+        about: retiretui_client::searches::ladders::ABOUT,
         pick_destination: PICK_DESTINATION,
         no_bracket: NO_BRACKET,
         converts_nothing: CONVERTS_NOTHING,

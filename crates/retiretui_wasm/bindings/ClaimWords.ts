@@ -6,6 +6,10 @@
  */
 export type ClaimWords = { 
 /**
+ * What the tool is for, in a line.
+ */
+about: string, 
+/**
  * The People table's columns.
  */
 people_columns: [string, string, string, string, string, string], 

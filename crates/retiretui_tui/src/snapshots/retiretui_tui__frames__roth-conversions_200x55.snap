@@ -56,5 +56,5 @@ expression: composed_frame(app)
 │                   ││                                                                                ││                                                                                               │
 │                   ││                                                                                ││                                                                                               │
 │                   │╰────────────────────────────────────────────────────────────────────────────────╯╰───────────────────────────────────────────────────────────────────────────────────────────────╯
-╰───────────────────╯⏎ edits a constraint; the ladders are searched again once they are applied. ⇧⇥ back to them.                                                                                       
+╰───────────────────╯A ladder converts pre-tax savings to Roth yearly up to a bracket's top: tax now at that rate, not later.                                                                           
  ⏎ edit  ⇥ pane  w write  t take  ctrl-s save  r reload  q quit  ctrl-↓ tab  n dollars                                                                                               : commands  ? help

@@ -57,6 +57,9 @@ test("each Roth owner's ladder and the household's claims are searched and taken
   await expect(
     page.getByRole("heading", { name: "SSA Benefits" }),
   ).toBeVisible();
+  await expect(
+    page.getByText(/at full retirement age \(FRA, 66 to 67\)/),
+  ).toBeVisible();
   const people = page.getByRole("region", { name: "People" });
   await expect(people.getByText("Priya:")).toBeVisible();
   const shown = (text: string | RegExp) =>

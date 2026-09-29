@@ -31,6 +31,9 @@ test("ladders are searched, highlighted, taken and written as a scenario", async
   const constraints = page.getByRole("region", { name: "Constraints" });
   await expect(constraints.getByText("Convert to")).toBeVisible();
   await expect(
+    page.getByText(/^A ladder converts pre-tax savings to Roth yearly/),
+  ).toBeVisible();
+  await expect(
     page.getByRole("heading", { name: /^Conversions \(/ }),
   ).toBeVisible(SEARCH);
   await expectAccessible(page);
