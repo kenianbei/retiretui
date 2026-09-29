@@ -22,7 +22,7 @@ use crate::layout::{self, filling, placed};
 use crate::nav::{FocusStop, ShownSurface};
 use crate::pane::Pane;
 use crate::tabulate;
-use retiretui_client::forms::details;
+use retiretui_client::forms::details::{self, ReadRow};
 
 /// The width of the pane beside a table, borders included: the longest
 /// label, a gap, and a value's worth of cells; beside the sidebar and a
@@ -34,6 +34,10 @@ const TEXT_COLUMNS: [usize; 2] = [0, 1];
 /// A field read out as what its blank stands for, dimmed beside the
 /// values the plan states.
 const UNSTATED: Style = Style::new().add_modifier(Modifier::DIM);
+/// What sets a field in under the heading that gathers it.
+const GATHERED: &str = "  ";
+/// A heading over the fields it gathers.
+const HEADING: Style = Style::new().add_modifier(Modifier::BOLD);
 const BESIDE_HINTS: Hints = Hints(&[("↑↓", "scroll"), ("⏎", "edit")]);
 
 /// The table an item's details are rows of: of the domain `ops`, and of
@@ -101,10 +105,7 @@ pub fn refresh(
         let read = item.map_or_else(Vec::new, |item| {
             details::rows(&shown_of.ops, &item, &draft.plan)
         });
-        let rows: Vec<Vec<String>> = read
-            .iter()
-            .map(|row| vec![row.label.clone(), row.text.clone()])
-            .collect();
+        let (rows, styles) = drawn(&read);
         commands
             .entity(table)
             .insert(tabulate::labelled(&rows, GAP));
@@ -115,11 +116,34 @@ pub fn refresh(
             (&header, &rows),
             &TEXT_COLUMNS,
         );
-        let unstated = spawned.iter().zip(&read).filter(|(_, row)| row.is_unstated);
-        for (&row, _) in unstated {
-            commands.entity(row).insert(UiStyle(UNSTATED));
+        for (&row, style) in spawned.iter().zip(styles) {
+            if let Some(style) = style {
+                commands.entity(row).insert(UiStyle(style));
+            }
         }
     }
+}
+
+/// The rows `read` is drawn as, each heading above the fields it gathers,
+/// and the style each row stands out in, where it does.
+fn drawn(read: &[ReadRow]) -> (Vec<Vec<String>>, Vec<Option<Style>>) {
+    let mut rows = Vec::with_capacity(read.len());
+    let mut styles = Vec::with_capacity(read.len());
+    let mut before = None;
+    for row in read {
+        if let Some(group) = row.group.filter(|&group| before != Some(group)) {
+            rows.push(vec![group.to_owned(), String::new()]);
+            styles.push(Some(HEADING));
+        }
+        before = row.group;
+        let label = match row.group {
+            Some(_) => format!("{GATHERED}{}", row.label),
+            None => row.label.clone(),
+        };
+        rows.push(vec![label, row.text.clone()]);
+        styles.push(row.is_unstated.then_some(UNSTATED));
+    }
+    (rows, styles)
 }
 
 /// Enter on the details opens the item they show.

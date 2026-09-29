@@ -127,6 +127,17 @@ pub struct FieldSpec {
     pub derived: Option<Derived>,
     /// How the field's value is entered.
     pub kind: FieldKind,
+    /// The heading the field is gathered under with its neighbours, where
+    /// it is.
+    pub group: Option<&'static str>,
+}
+
+/// The heading drawn above `spec` where it starts a group: where the field
+/// on show `before` it is in no group or another.
+#[must_use]
+pub fn heading(before: Option<&FieldSpec>, spec: &FieldSpec) -> Option<&'static str> {
+    spec.group
+        .filter(|group| before.and_then(|before| before.group) != Some(group))
 }
 
 /// What an empty field stands for, said as a placeholder while it is
@@ -204,6 +215,7 @@ impl FieldSpec {
             shown: None,
             derived: None,
             kind,
+            group: None,
         }
     }
 
@@ -308,6 +320,25 @@ impl FieldSpec {
         Self {
             blank: Some(Blank::Means(means)),
             ..self
+        }
+    }
+
+    /// The field gathered under `group` with its neighbours.
+    #[must_use]
+    pub const fn in_group(self, group: &'static str) -> Self {
+        Self {
+            group: Some(group),
+            ..self
+        }
+    }
+
+    /// What the field is called away from its form, where its group's
+    /// heading is not above it: `Stocks: Spread`.
+    #[must_use]
+    pub fn named(&self) -> String {
+        match self.group {
+            Some(group) => format!("{group}: {}", self.label),
+            None => self.label.to_owned(),
         }
     }
 

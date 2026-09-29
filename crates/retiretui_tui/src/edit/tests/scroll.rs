@@ -54,7 +54,7 @@ fn a_form_stands_as_tall_as_its_rows_on_show() {
 /// What the Market form holds first and last, which the body cannot
 /// hold together at the least terminal the shell takes.
 const FIRST: &str = "Leave at least";
-const LAST: &str = "  wrap";
+const LAST: &str = "Wrap";
 
 #[test]
 fn a_form_taller_than_the_body_scrolls_to_the_field_holding_the_keyboard() {

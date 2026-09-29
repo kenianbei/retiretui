@@ -16,4 +16,8 @@ text: string,
  * Whether that is what an empty field stands for rather than a value
  * the plan states.
  */
-is_unstated: boolean, };
+is_unstated: boolean, 
+/**
+ * The heading the field is gathered under, where it is.
+ */
+group: string | null, };

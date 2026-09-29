@@ -45,6 +45,10 @@ placeholder: string | null,
  */
 unstated: string, 
 /**
+ * The heading it is gathered under with its neighbours, where it is.
+ */
+group: string | null, 
+/**
  * A rate's or a share's number, for its slider.
  */
 number: number | null, 

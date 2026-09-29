@@ -130,7 +130,7 @@ pub(crate) fn place_words(located: &Located, item: Option<&Table>) -> Vec<String
     let page = Some(located.form.title.to_owned());
     let fields = located.form.fields.iter();
     let row = fields.clone().find(|spec| located.is_against(spec, item));
-    let field = row.or(located.field).map(|spec| spec.label.to_owned());
+    let field = row.or(located.field).map(FieldSpec::named);
     [page, name, field].into_iter().flatten().collect()
 }
 

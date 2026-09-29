@@ -5,7 +5,7 @@
 use bevy_app::{App, Update};
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::{ChildOf, Children};
-use bevy_ecs::prelude::{Changed, IntoScheduleConfigs, Query, Ref, Res, With};
+use bevy_ecs::prelude::{Changed, Entity, IntoScheduleConfigs, Query, Ref, Res, With};
 use bevy_input_focus::InputFocus;
 use bevy_ui::{ComputedNode, Display, Node, ScrollPosition};
 use plurimus::bui::ComputedNodeRect;
@@ -57,12 +57,13 @@ fn fit_forms(
 }
 
 /// Scrolls a form's fields by the least that shows the row holding the
-/// keyboard. The rects are the last layout's.
+/// keyboard. Every row is a cell tall, so a row's place is the rows on show
+/// above it: a rect cannot say where a row scrolled above the screen is.
 fn reveal_focused(
     focus: Res<InputFocus>,
     parents: Query<&ChildOf>,
-    rects: Query<&ComputedNodeRect>,
-    mut columns: Query<(&ComputedNodeRect, &mut ScrollPosition), With<FormFields>>,
+    nodes: Query<&Node>,
+    mut columns: Query<(&ComputedNodeRect, &Children, &mut ScrollPosition), With<FormFields>>,
 ) {
     if !focus.is_changed() {
         return;
@@ -77,14 +78,24 @@ fn reveal_focused(
     }) else {
         return;
     };
-    let (Ok(row), Ok((view, mut scroll))) = (rects.get(row), columns.get_mut(column)) else {
+    let Ok((view, rows, mut scroll)) = columns.get_mut(column) else {
         return;
     };
-    let (row, view) = (row.rect, view.content);
-    if row.y < view.y {
-        scroll.0.y -= f32::from(view.y - row.y);
-    } else if row.bottom() > view.bottom() {
-        scroll.0.y += f32::from(row.bottom() - view.bottom());
+    let is_shown = |each: &&Entity| {
+        nodes
+            .get(**each)
+            .is_ok_and(|node| node.display != Display::None)
+    };
+    let above = rows
+        .iter()
+        .take_while(|&&each| each != row)
+        .filter(is_shown)
+        .count();
+    let (top, height) = (above as f32, f32::from(view.content.height));
+    if top < scroll.0.y {
+        scroll.0.y = top;
+    } else if top + 1.0 > scroll.0.y + height {
+        scroll.0.y = top + 1.0 - height;
     }
 }
 

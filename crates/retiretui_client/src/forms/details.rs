@@ -37,6 +37,8 @@ pub struct ReadRow {
     /// Whether that is what an empty field stands for rather than a value
     /// the plan states.
     pub is_unstated: bool,
+    /// The heading the field is gathered under, where it is.
+    pub group: Option<&'static str>,
 }
 
 /// The item's rows: each field it has a use for - shown by its own rule,
@@ -58,6 +60,7 @@ pub fn rows(form: &Form, item: &Table, plan: &Plan) -> Vec<ReadRow> {
                 label: spec.label.to_owned(),
                 text: cell.text,
                 is_unstated: cell.is_unstated,
+                group: spec.group,
             }
         })
         .collect();
@@ -66,6 +69,7 @@ pub fn rows(form: &Form, item: &Table, plan: &Plan) -> Vec<ReadRow> {
             label,
             text,
             is_unstated: false,
+            group: None,
         }));
     }
     rows

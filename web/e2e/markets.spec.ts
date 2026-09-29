@@ -65,7 +65,18 @@ test("the plan through random markets and history, a run opened in the Ledger", 
   await page.locator('a[href*="field=monte_carlo.trials"]').click();
   await page.waitForURL(/#\/plan\/market\?.*field=monte_carlo\.trials/);
   await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(
+    page
+      .getByRole("dialog")
+      .getByRole("group", { name: "Monte Carlo" })
+      .getByLabel("Trials"),
+  ).toBeFocused();
   await page.keyboard.press("Escape");
+  await expect(
+    page
+      .getByRole("region", { name: "Stocks" })
+      .getByText("Mean return", { exact: true }),
+  ).toBeVisible();
 
   await page.goto("#/tools/monte-carlo?run=p10");
   await expect(verdict).toBeVisible(SEARCH);

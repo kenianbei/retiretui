@@ -35,10 +35,33 @@ fn write_wraps(item: &mut Table, wraps: &Value) {
     set_path(item, WRAP_KEY, differs.map(Value::Boolean));
 }
 
+/// The headings the Market's fields are gathered under.
+const SUCCESS: &str = "Success";
+const STOCKS: &str = "Stocks";
+const BONDS: &str = "Bonds";
+const CASH: &str = "Cash";
+const INFLATION: &str = "Inflation";
+const CORRELATIONS: &str = "Correlations";
+const MONTE_CARLO: &str = "Monte Carlo";
+const HISTORICAL: &str = "Historical";
+
 const fn pair(key: &'static str, label: &'static str, default: &'static str) -> FieldSpec {
     FieldSpec::text(key, label)
+        .in_group(CORRELATIONS)
         .defaults_to(default)
         .help(PAIR_HELP)
+}
+
+const fn mean(key: &'static str, class: &'static str, default: &'static str) -> FieldSpec {
+    FieldSpec::rate(key, "Mean return")
+        .in_group(class)
+        .defaults_to(default)
+}
+
+const fn spread(key: &'static str, class: &'static str, default: &'static str) -> FieldSpec {
+    FieldSpec::rate(key, "Spread")
+        .in_group(class)
+        .defaults_to(default)
 }
 
 impl Single for MarketSettings {
@@ -46,41 +69,45 @@ impl Single for MarketSettings {
     const ID: DomainId = DomainId::Market;
     const PATHS: &'static [&'static str] = &["market"];
     const FIELDS: &'static [FieldSpec] = &[
-        FieldSpec::money("leave_at_least", "Leave at least").blank("Nothing").help(
+        FieldSpec::money("leave_at_least", "Leave at least").in_group(SUCCESS).blank("Nothing").help(
             "Besides never falling short, what a run must end with, in today's dollars, to count as a success. Optional.",
         ),
-        FieldSpec::rate("stocks.mean", "Stocks").defaults_to("6%").help("Stocks' compound yearly return, the median year's. Blank is 6%."),
-        FieldSpec::rate("stocks.volatility", "  spread").defaults_to("16%").help("How far a year's return strays, as a standard deviation. Blank is 16%."),
-        FieldSpec::rate("bonds.mean", "Bonds").defaults_to("4%").help("Bonds' compound yearly return, the median year's. Blank is 4%."),
-        FieldSpec::rate("bonds.volatility", "  spread").defaults_to("6%").help("How far a year's return strays, as a standard deviation. Blank is 6%."),
-        FieldSpec::rate("cash.mean", "Cash").defaults_to("2.5%").help("Cash's compound yearly return, the median year's. Blank is 2.5%."),
-        FieldSpec::rate("cash.volatility", "  spread").defaults_to("1%").help("How far a year's return strays, as a standard deviation. Blank is 1%."),
-        FieldSpec::rate("inflation.volatility", "Inflation spread").defaults_to("1.5%").help(
+        mean("stocks.mean", STOCKS, "6%").help("Stocks' compound yearly return, the median year's. Blank is 6%."),
+        spread("stocks.volatility", STOCKS, "16%")
+            .help("How far a year\'s return strays, as a standard deviation. Blank is 16%."),
+        mean("bonds.mean", BONDS, "4%").help("Bonds' compound yearly return, the median year's. Blank is 4%."),
+        spread("bonds.volatility", BONDS, "6%")
+            .help("How far a year\'s return strays, as a standard deviation. Blank is 6%."),
+        mean("cash.mean", CASH, "2.5%").help("Cash's compound yearly return, the median year's. Blank is 2.5%."),
+        spread("cash.volatility", CASH, "1%")
+            .help("How far a year\'s return strays, as a standard deviation. Blank is 1%."),
+        FieldSpec::rate("inflation.volatility", "Spread").in_group(INFLATION).defaults_to("1.5%").help(
             "How far a year's inflation strays from the plan's rate, as a yearly shock. Blank is 1.5%.",
         ),
-        FieldSpec::share("inflation.persistence", "  persistence").defaults_to("60%").help(
+        FieldSpec::share("inflation.persistence", "Persistence").in_group(INFLATION).defaults_to("60%").help(
             "How much of a year's stray carries into the next, so high inflation comes in runs. Blank is 60%.",
         ),
-        pair("correlation.stocks_bonds", "Stocks, bonds", "0.1"),
-        pair("correlation.stocks_cash", "Stocks, cash", "0"),
-        pair("correlation.stocks_inflation", "Stocks, inflation", "-0.1"),
-        pair("correlation.bonds_cash", "Bonds, cash", "0"),
-        pair("correlation.bonds_inflation", "Bonds, inflation", "-0.2"),
-        pair("correlation.cash_inflation", "Cash, inflation", "0.5"),
-        FieldSpec::choice("monte_carlo.draw", "Monte Carlo draws", Vocabulary::Draw)
+        pair("correlation.stocks_bonds", "Stocks and bonds", "0.1"),
+        pair("correlation.stocks_cash", "Stocks and cash", "0"),
+        pair("correlation.stocks_inflation", "Stocks and inflation", "-0.1"),
+        pair("correlation.bonds_cash", "Bonds and cash", "0"),
+        pair("correlation.bonds_inflation", "Bonds and inflation", "-0.2"),
+        pair("correlation.cash_inflation", "Cash and inflation", "0.5"),
+        FieldSpec::choice("monte_carlo.draw", "Draws from", Vocabulary::Draw)
+            .in_group(MONTE_CARLO)
             .blank(crate::present::draw(Draw::Assumptions))
             .help("Random years from the assumptions above, or historical years drawn at random."),
-        FieldSpec::whole("monte_carlo.trials", "  trials").defaults_to("1,000")
+        FieldSpec::whole("monte_carlo.trials", "Trials").in_group(MONTE_CARLO).defaults_to("1,000")
             .help("How many markets are run. Blank is 1,000."),
-        FieldSpec::whole("monte_carlo.seed", "  seed").defaults_to("42")
+        FieldSpec::whole("monte_carlo.seed", "Seed").in_group(MONTE_CARLO).defaults_to("42")
             .help("The same seed draws the same markets, so an edit is measured against them. Blank is 42."),
-        FieldSpec::whole("monte_carlo.block_years", "  years together").defaults_to("1")
+        FieldSpec::whole("monte_carlo.block_years", "Years together").in_group(MONTE_CARLO).defaults_to("1")
             .shown_when(draws_history)
             .help("How many consecutive historical years each draw takes. Blank is 1."),
-        FieldSpec::whole("historical.from", "Historical from").defaults_to("1871")
+        FieldSpec::whole("historical.from", "From").in_group(HISTORICAL).defaults_to("1871")
             .help("The first year tried as the plan's first. Blank is the record's first, 1871."),
-        FieldSpec::whole("historical.to", "  to").defaults_to("2025").help("The last year tried. Blank is the record's last, 2025."),
-        FieldSpec::flag(WRAPS, "  wrap").derived(seed_wraps, write_wraps).help(
+        FieldSpec::whole("historical.to", "To").in_group(HISTORICAL).defaults_to("2025").help("The last year tried. Blank is the record's last, 2025."),
+        FieldSpec::flag(WRAPS, "Wrap").in_group(HISTORICAL).derived(seed_wraps, write_wraps).help(
             "Whether a history reaching past the record's last year goes on from its first.",
         ),
     ];
@@ -99,7 +126,7 @@ mod tests {
     use retiretui_engine::plan::AssetClass;
 
     use super::*;
-    use crate::forms::Blank;
+    use crate::forms::{Blank, heading};
     use crate::present;
 
     fn help_of(key: &str) -> &'static str {
@@ -173,6 +200,30 @@ mod tests {
             let said = default.to_string();
             assert_eq!(default_of(&key), Some(said.as_str()), "{key}");
         }
+    }
+
+    #[test]
+    fn the_fields_are_gathered_under_headings_and_named_with_them_elsewhere() {
+        let fields = MarketSettings::FIELDS;
+        let headings: Vec<&str> = (0..fields.len())
+            .filter_map(|at| heading(at.checked_sub(1).map(|before| &fields[before]), &fields[at]))
+            .collect();
+        let expected = [
+            "Success",
+            "Stocks",
+            "Bonds",
+            "Cash",
+            "Inflation",
+            "Correlations",
+            "Monte Carlo",
+            "Historical",
+        ];
+        assert_eq!(headings, expected);
+        let spread = fields.iter().find(|spec| spec.key == "bonds.volatility");
+        assert_eq!(
+            spread.map(FieldSpec::named).as_deref(),
+            Some("Bonds: Spread")
+        );
     }
 
     #[test]

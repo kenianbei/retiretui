@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { aligned } from "@/components/columns";
-import { cn } from "@/lib/utils";
+import { cn, gathered } from "@/lib/utils";
 import { ImportStatement } from "@/plan/import-statement";
 import { useSession } from "@/session";
 
@@ -75,9 +75,14 @@ export interface ReadRowView {
   isFigure?: boolean;
   /** Whether it is what a blank field stands for rather than stated. */
   is_unstated?: boolean;
+  /** The heading it is gathered under with its neighbours. */
+  group?: string | null;
 }
 
-/** Each label beside what it holds, what a blank stands for muted. */
+/**
+ * Each label beside what it holds, what a blank stands for muted, and
+ * neighbours gathered under a heading of their own.
+ */
 export function ReadRows({
   rows,
   isFlush = false,
@@ -85,6 +90,32 @@ export function ReadRows({
   rows: readonly ReadRowView[];
   /** Set in a container of its own: no frame but a rule above. */
   isFlush?: boolean;
+}) {
+  const runs = gathered(rows);
+  if (runs.every((run) => run.group === null))
+    return <RowList rows={rows} isFlush={isFlush} />;
+  return (
+    <div className="space-y-4">
+      {runs.map((run) => (
+        <section
+          key={run.group ?? run.items[0]?.label}
+          aria-label={run.group ?? undefined}
+          className="space-y-1.5"
+        >
+          {run.group && <h3 className="text-sm font-semibold">{run.group}</h3>}
+          <RowList rows={run.items} isFlush={isFlush} />
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function RowList({
+  rows,
+  isFlush,
+}: {
+  rows: readonly ReadRowView[];
+  isFlush: boolean;
 }) {
   return (
     <dl

@@ -71,6 +71,8 @@ pub struct FieldView {
     pub placeholder: Option<String>,
     /// What it reads as once left empty: `65, the default`.
     pub unstated: String,
+    /// The heading it is gathered under with its neighbours, where it is.
+    pub group: Option<&'static str>,
     /// A rate's or a share's number, for its slider.
     pub number: Option<f64>,
     /// Whether a flag or a tick is set.
@@ -231,6 +233,7 @@ impl Editor {
             typed,
             placeholder: spec.placeholder(),
             unstated: spec.unstated(),
+            group: spec.group,
             number: value.and_then(Value::as_float),
             is_ticked: match spec.kind {
                 FieldKind::Presence(_) => value.is_some_and(Value::is_table),
