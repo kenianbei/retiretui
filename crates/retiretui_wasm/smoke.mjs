@@ -101,7 +101,10 @@ assert.ok(document.yearDetail(first.year, false, starts.runs[1].market));
 assert.match(document.marketSaid(worst), /^random market \d+$/);
 assert.throws(() => document.ledger(false, "p10"), /no market is called p10/);
 
-assert.throws(() => Document.open("/plans/gone.toml", read), /no file at/);
+assert.throws(() => Document.open("/plans/gone.toml", read), {
+  headline: "gone.toml could not be read",
+  written: null,
+});
 
 const steps = setupSteps();
 assert.deepEqual(
