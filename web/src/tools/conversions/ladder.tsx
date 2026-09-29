@@ -1,5 +1,5 @@
 import {
-  compactMoney,
+  money,
   type LadderOption,
   type LadderYear,
 } from "@wasm/retiretui_wasm.js";
@@ -16,8 +16,8 @@ function cellsOf(year: LadderYear, basis: Basis): string[] {
   return [
     String(year.year),
     year.from,
-    compactMoney(isToday ? year.amount_today : year.amount),
-    compactMoney(isToday ? year.taxable_today : year.taxable),
+    money(isToday ? year.amount_today : year.amount),
+    money(isToday ? year.taxable_today : year.taxable),
   ];
 }
 

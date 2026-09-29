@@ -70,10 +70,13 @@ export function ReadOut({
 export function ReadRows({
   rows,
   isFlush = false,
+  figuresFrom,
 }: {
   rows: readonly [string, string][];
   /** Set in a container of its own: no frame but a rule above. */
   isFlush?: boolean;
+  /** The first row holding a figure, lined up by place from there on. */
+  figuresFrom?: number;
 }) {
   return (
     <dl
@@ -82,13 +85,22 @@ export function ReadRows({
         isFlush && "rounded-none border-x-0 border-b-0 bg-transparent",
       )}
     >
-      {rows.map(([label, text]) => (
+      {rows.map(([label, text], at) => (
         <div
           key={label}
           className="grid grid-cols-[minmax(8rem,40%)_1fr] gap-3 px-4 py-2"
         >
           <dt className="text-muted-foreground">{label}</dt>
-          <dd className="break-words">{text}</dd>
+          <dd
+            className={cn(
+              "break-words",
+              figuresFrom !== undefined &&
+                at >= figuresFrom &&
+                "text-right tabular-nums",
+            )}
+          >
+            {text}
+          </dd>
         </div>
       ))}
     </dl>

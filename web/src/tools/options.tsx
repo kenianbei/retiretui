@@ -23,6 +23,8 @@ interface OptionsProps<T> {
   rows: OptionRow<T>[];
   /** Which column a phone's row shows beside its name. */
   narrowFigure: number;
+  /** How many of the leading columns hold words rather than figures. */
+  words?: number;
   highlighted: T | undefined;
   highlight: (option: T) => void;
 }
@@ -37,6 +39,7 @@ export function Options<T>({
   columns,
   rows,
   narrowFigure,
+  words = 1,
   highlighted,
   highlight,
 }: OptionsProps<T>) {
@@ -46,11 +49,11 @@ export function Options<T>({
       column.display({
         id: String(at),
         header,
-        meta: { isNumeric: at > 0 },
+        meta: { isNumeric: at >= words },
         cell: ({ row }) => row.original.cells[at],
       }),
     );
-  }, [columns]);
+  }, [columns, words]);
   return (
     <>
       <DataTable
@@ -97,6 +100,7 @@ export function Options<T>({
                   rows={columns
                     .slice(1)
                     .map((header, at) => [header, row.cells[at + 1] ?? ""])}
+                  figuresFrom={words - 1}
                   isFlush
                 />
               )}

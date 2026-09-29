@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import {
   compactMoney,
+  money,
+  signedMoney,
   type ChartMark,
   type ChartSeries,
 } from "@wasm/retiretui_wasm.js";
@@ -26,7 +28,7 @@ import {
 } from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { dollars, type Basis } from "@/overview/words";
+import type { Basis } from "@/overview/words";
 import { BASIS_LABEL, VIEW_WORDS, metricTitle } from "@/overview/view-words";
 import {
   bandAreas,
@@ -50,7 +52,10 @@ interface ChartsProps {
   onYear: (year: number) => void;
 }
 
-function tooltip(config: ChartConfig) {
+/** Each series' figure under the pointer, signed where the plot is of
+ * differences. */
+function tooltip(config: ChartConfig, isDifference: boolean) {
+  const said = isDifference ? signedMoney : money;
   return (
     <ChartTooltip
       content={
@@ -62,8 +67,8 @@ function tooltip(config: ChartConfig) {
               </span>
               <span className="tabular-nums">
                 {Array.isArray(value)
-                  ? value.map((each) => dollars(Number(each))).join(" – ")
-                  : dollars(Number(value))}
+                  ? value.map((each) => said(Number(each))).join(" – ")
+                  : said(Number(value))}
               </span>
             </div>
           )}
@@ -79,6 +84,8 @@ interface PlotProps {
   label: string;
   /** The years marked, each salary's end. */
   marks?: readonly ChartMark[];
+  /** Whether its figures are differences from a baseline. */
+  isDifference?: boolean;
   year?: number;
   onYear?: (year: number) => void;
   children: ReactNode;
@@ -112,6 +119,7 @@ export function Plot({
   data,
   label,
   marks = [],
+  isDifference = false,
   year,
   onYear,
   children,
@@ -146,7 +154,7 @@ export function Plot({
             axisLine={false}
             tickFormatter={(amount: number) => compactMoney(amount)}
           />
-          {tooltip(config)}
+          {tooltip(config, isDifference)}
           <ChartLegend content={<ChartLegendContent />} />
           {children}
           {marks.map((mark) => (

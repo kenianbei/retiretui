@@ -78,6 +78,7 @@ function PlansChart({ plans, year, onYear, caption }: ViewsProps) {
       config={config}
       data={data}
       label={caption}
+      isDifference={plans.some((plan) => plan.isAlongZero)}
       year={year}
       onYear={onYear}
     >

@@ -4,6 +4,7 @@ import {
   expect,
   expectAccessible,
   isPhone,
+  rowNamed,
   searchesDone,
   seed,
   test,
@@ -80,8 +81,12 @@ test("each Roth owner's ladder and the household's claims are searched and taken
   await expectAccessible(page);
   if (!phone) {
     await expect(claims.getByRole("table").locator("thead")).toContainText(
-      /Priya[\s\S]*Marcus/,
+      /Priya[\s\S]*Marcus[\s\S]*vs\. the plan/,
     );
+    const options = claims.getByRole("table").locator("tbody tr");
+    const [current, best] = [options.nth(0), options.nth(1)];
+    await expect(current).not.toContainText(/[+-]\$/);
+    await expect(best).toContainText(/[+-]\$\d{1,3}(,\d{3})+/);
   }
 
   await page.goto("#/tools/ssa-benefits?person=0");
@@ -178,4 +183,24 @@ test("each Roth owner's ladder and the household's claims are searched and taken
   await expect(
     claims.getByRole("button", { name: "Take these claims" }),
   ).toHaveCount(0);
+});
+
+test("a monthly benefit and what a claim does against the plan are said in full", async ({
+  page,
+}, testInfo) => {
+  await seed(
+    page,
+    { "/robin.toml": example("with-earnings.toml") },
+    "/robin.toml",
+    "#/tools/ssa-benefits",
+  );
+  await expect(rowNamed(page, testInfo, "Robin")).toContainText(
+    /\$\d{1,2},\d{3}/,
+  );
+  const claims = page.getByRole("region", { name: "Claim options" });
+  await expect(
+    claims.getByRole("button", { name: "Take these claims" }),
+  ).toBeVisible(SEARCH);
+  await expect(claims).toContainText(/[+-]\$\d{1,3}(,\d{3})+/);
+  await expect(claims).not.toContainText(/\$\d+(\.\d+)?[kM]\b/);
 });
