@@ -14,19 +14,14 @@ test("the Overview charts the plan, and a click chooses the year", async ({
 }) => {
   await seed(page, FILES, "/starter.toml", "#/overview?basis=nominal");
   const tabs = page.getByRole("tab");
-  await expect(tabs).toHaveText([
-    "Balances",
-    "Net worth",
-    "Income & tax",
-    "Market runs",
-  ]);
-  for (const name of ["Balances", "Net worth", "Income & tax"]) {
+  await expect(tabs).toHaveText(["Balances", "Net worth", "Income", "Markets"]);
+  for (const name of ["Balances", "Net worth", "Income"]) {
     await page.getByRole("tab", { name }).click();
     const panel = page.getByRole("tabpanel");
     await expect(panel.locator(".recharts-surface")).toBeVisible();
     await expect(panel).toContainText("future dollars");
   }
-  await page.getByRole("tab", { name: "Market runs" }).click();
+  await page.getByRole("tab", { name: "Markets" }).click();
   const markets = page.getByRole("tabpanel");
   await expect(markets.locator(".recharts-area").first()).toBeVisible(SEARCH);
   await expect(markets).toContainText("today's dollars");
@@ -48,7 +43,7 @@ test("the Overview charts the plan, and a click chooses the year", async ({
   await page.getByRole("tab", { name: "Net worth" }).focus();
   await page.keyboard.press("ArrowRight");
   await expect(
-    page.getByRole("tab", { name: "Income & tax", selected: true }),
+    page.getByRole("tab", { name: "Income", selected: true }),
   ).toBeVisible();
   expect(page.url()).toContain(`year=${year}`);
 });

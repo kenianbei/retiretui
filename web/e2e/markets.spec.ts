@@ -41,11 +41,11 @@ test("the plan through random markets and history, a run opened in the Ledger", 
   await expect(
     page.getByRole("columnheader", { name: "Funded" }),
   ).toBeVisible();
-  await page.getByRole("tab", { name: "Still funded" }).click();
+  await page.getByRole("tab", { name: "Funded" }).click();
   await expect(
     page.getByLabel("Share of runs still funded").locator("svg").first(),
   ).toBeVisible();
-  await page.getByRole("tab", { name: "Ends with" }).click();
+  await page.getByRole("tab", { name: "Endings" }).click();
   await expect(
     page.getByLabel("What the runs end with").getByText("short").first(),
   ).toBeVisible();

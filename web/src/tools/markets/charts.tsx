@@ -194,6 +194,7 @@ export function MarketCharts({
   const views = [
     {
       value: "bands",
+      tab: "Net worth",
       title: "Net worth",
       unit: DOLLARS,
       chart: <Bands found={found} run={run} />,
@@ -202,6 +203,7 @@ export function MarketCharts({
       ? [
           {
             value: "by-year",
+            tab: "By year",
             title: "By year",
             unit: DOLLARS,
             chart: <ByYear table={found.by_year} />,
@@ -210,12 +212,14 @@ export function MarketCharts({
       : []),
     {
       value: "funded",
+      tab: "Funded",
       title: "Still funded",
       unit: "share of runs",
       chart: <StillFunded found={found} />,
     },
     {
       value: "endings",
+      tab: "Endings",
       title: "Ends with",
       unit: DOLLARS,
       chart: <Endings found={found} />,
@@ -226,10 +230,15 @@ export function MarketCharts({
       <Tabs defaultValue="bands" className="gap-3">
         <CardHeader className="px-4">
           <CardTitle className="sr-only">Charts</CardTitle>
-          <TabsList className="grid w-full grid-cols-2 group-data-[orientation=horizontal]/tabs:h-auto sm:flex sm:w-fit">
+          <TabsList className="w-full sm:w-fit">
             {views.map((view) => (
-              <TabsTrigger key={view.value} value={view.value} className="h-8">
-                {view.title}
+              <TabsTrigger
+                key={view.value}
+                value={view.value}
+                title={view.title}
+                className="max-md:touch-target h-8"
+              >
+                {view.tab}
               </TabsTrigger>
             ))}
           </TabsList>

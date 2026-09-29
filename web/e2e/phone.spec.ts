@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 import {
   example,
@@ -6,6 +6,7 @@ import {
   expectAccessible,
   isPhone,
   openPlan,
+  SEARCH,
   searchesDone,
   seed,
   test,
@@ -128,4 +129,47 @@ test("the palette opens by touch, and a group's chips reach their page", async (
   await expect(page.getByRole("dialog")).toBeVisible();
   await expectFits(page, "the palette");
   await expectAccessible(page);
+});
+
+/** Every one of `items` is centred on one line. */
+async function expectOneRow(items: Locator, what: string) {
+  const middles = await items.evaluateAll((each) =>
+    each.map((item) => {
+      const box = item.getBoundingClientRect();
+      return Math.round(box.top + box.height / 2);
+    }),
+  );
+  expect(middles.length, `${what} are there`).toBeGreaterThan(1);
+  expect(new Set(middles).size, `${what} wrap`).toBe(1);
+}
+
+test("the chart views share a row, and a long name keeps its row's actions beside it", async ({
+  page,
+}, testInfo) => {
+  test.skip(!isPhone(testInfo), ONLY_PHONE);
+  const long = "/a-plan-named-at-length-for-the-early-retirement-scenario.toml";
+  await seed(
+    page,
+    {
+      "/couple.toml": example("mid-career-couple.toml"),
+      [long]: example("starter.toml"),
+    },
+    "/couple.toml",
+  );
+  await expect(page.getByRole("tab", { name: "Markets" })).toBeVisible();
+  await expectOneRow(page.getByRole("tab"), "the Overview's chart tabs");
+  await page.goto("#/tools/monte-carlo");
+  await expect(page.getByRole("tab", { name: "Endings" })).toBeVisible(SEARCH);
+  await expectOneRow(page.getByRole("tab"), "the market views");
+
+  await page.getByRole("button", { name: /^File, / }).click();
+  await page.getByRole("menuitem", { name: /Manage plans/ }).click();
+  const named = page.getByText(long.slice(1), { exact: true });
+  await expectOneRow(
+    page
+      .getByRole("dialog")
+      .getByRole("button", { name: new RegExp(` ${long.slice(1)}$`) })
+      .or(named),
+    "a long name's actions",
+  );
 });

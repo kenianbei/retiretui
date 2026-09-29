@@ -315,11 +315,17 @@ function Bands(props: ChartsProps & { plan: string }) {
   );
 }
 
+/** Each chart, its tab short enough that the four share a phone's row. */
 const TABS = [
-  { value: "balances", title: "Balances", Chart: Balances },
-  { value: "net-worth", title: "Net worth", Chart: NetWorth },
-  { value: "income", title: "Income & tax", Chart: IncomeAndTax },
-  { value: "markets", title: "Market runs", Chart: MarketRuns },
+  { value: "balances", tab: "Balances", title: "Balances", Chart: Balances },
+  { value: "net-worth", tab: "Net worth", title: "Net worth", Chart: NetWorth },
+  {
+    value: "income",
+    tab: "Income",
+    title: "Income & tax",
+    Chart: IncomeAndTax,
+  },
+  { value: "markets", tab: "Markets", title: "Market runs", Chart: MarketRuns },
 ] as const;
 
 /** What the plan holds and earns year by year, and how random markets spread it. */
@@ -331,10 +337,15 @@ export function Charts(props: ChartsProps) {
       <Tabs defaultValue="balances" className="gap-3">
         <CardHeader className="flex flex-wrap items-center justify-between gap-2 px-4">
           <CardTitle className="sr-only">Charts</CardTitle>
-          <TabsList className="grid w-full grid-cols-2 group-data-[orientation=horizontal]/tabs:h-auto sm:flex sm:w-fit">
-            {TABS.map((tab) => (
-              <TabsTrigger key={tab.value} value={tab.value} className="h-8">
-                {tab.title}
+          <TabsList className="w-full sm:w-fit">
+            {TABS.map(({ value, tab, title }) => (
+              <TabsTrigger
+                key={value}
+                value={value}
+                title={title}
+                className="max-md:touch-target h-8"
+              >
+                {tab}
               </TabsTrigger>
             ))}
           </TabsList>
