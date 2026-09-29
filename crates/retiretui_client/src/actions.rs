@@ -6,7 +6,27 @@ use retiretui_engine::plan::{Dollars, Plan};
 use retiretui_engine::project::{Action, ContributionNote, Projection, YearRow, irmaa_purchase};
 use retiretui_engine::tax;
 
+use crate::session::Projected;
 use crate::table::{account_name, basis_amount, income_name, money, rate};
+
+/// What a surface says of a year with nothing to do and nothing to watch.
+pub const NOTHING_SCHEDULED: &str = "Nothing to do this year.";
+
+/// `row`'s actions and warnings in words, nominal or in today's dollars.
+#[must_use]
+pub fn year_in_words(
+    projected: &Projected,
+    tables: &TaxTables,
+    row: &YearRow,
+    nominal: bool,
+) -> (Vec<String>, Vec<String>) {
+    let deflator = (!nominal).then_some(row.deflator);
+    let deflating = (!nominal).then_some(&projected.projection);
+    let actions = row.actions.iter();
+    let actions = actions.map(|action| sentence(&projected.plan, action, deflator));
+    let warnings = collect_warnings(&projected.plan, tables, row, deflating);
+    (actions.collect(), warnings)
+}
 
 /// An action as a sentence, accounts by their display names and its
 /// amount nominal, or in today's dollars through its year's `deflator`

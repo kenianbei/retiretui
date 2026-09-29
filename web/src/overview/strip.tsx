@@ -99,7 +99,7 @@ export function Strip({
     <div className="@container">
       <dl className="bg-border grid gap-px overflow-hidden rounded-xl border @md:grid-cols-2 @2xl:grid-cols-4">
         <Reading label={MONEY_LASTS}>
-          <span className={cn(view.short_year !== null && "text-destructive")}>
+          <span className={cn(view.shortfall && "text-destructive")}>
             {view.money_lasts}
           </span>
         </Reading>

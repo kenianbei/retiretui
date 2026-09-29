@@ -8,7 +8,7 @@ use plurimus::ui::{ComputedWidgetArea, ScrollArea};
 use retiretui_engine::params::TaxTables;
 
 use super::rows::{self, Entry, Tone};
-use crate::actions::{collect_warnings, sentence};
+use crate::actions::{NOTHING_SCHEDULED, year_in_words};
 use crate::layout;
 use crate::pane::Framed;
 use crate::present;
@@ -16,7 +16,6 @@ use crate::session::{Projected, Session, Shown};
 use crate::theme::Theme;
 
 pub(crate) const WARNING_MARK: &str = "! ";
-const NOTHING_SCHEDULED: &str = "Nothing to do this year.";
 const TITLE: &str = "to do";
 
 #[derive(Component)]
@@ -33,16 +32,12 @@ fn entries(projected: &Projected, tables: &TaxTables, (year, nominal): (i16, boo
     let Some(row) = projected.projection.row(year) else {
         return Vec::new();
     };
-    let deflator = (!nominal).then_some(row.deflator);
-    let deflating = (!nominal).then_some(&projected.projection);
-    let actions = (row.actions.iter())
-        .map(|action| Entry::plain(sentence(&projected.plan, action, deflator)));
-    let warnings = collect_warnings(&projected.plan, tables, row, deflating)
-        .into_iter()
-        .map(|warning| Entry {
-            tone: Tone::Warning,
-            ..Entry::plain(format!("{WARNING_MARK}{warning}"))
-        });
+    let (actions, warnings) = year_in_words(projected, tables, row, nominal);
+    let actions = actions.into_iter().map(Entry::plain);
+    let warnings = warnings.into_iter().map(|warning| Entry {
+        tone: Tone::Warning,
+        ..Entry::plain(format!("{WARNING_MARK}{warning}"))
+    });
     let mut entries: Vec<Entry> = actions.chain(warnings).collect();
     if entries.is_empty() {
         entries.push(Entry::plain(NOTHING_SCHEDULED.to_owned()));

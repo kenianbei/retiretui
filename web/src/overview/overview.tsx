@@ -48,9 +48,7 @@ export function Overview() {
           <BasisSwitch />
         </div>
         {!isValid && <Problems issues={issues} hasFigures={view !== null} />}
-        {view?.short_year != null && view.runs_short !== null && (
-          <Shortfall year={view.short_year} said={view.runs_short} />
-        )}
+        {view?.shortfall && <Shortfall shortfall={view.shortfall} />}
         {view && <Strip view={view} basis={basis} plan={plan} />}
       </div>
       <ThisYear shown={shown} basis={basis} />
@@ -74,7 +72,6 @@ export function Overview() {
               id="milestones"
               title={VIEW_WORDS.milestones}
               rows={view.milestones}
-              empty=""
             />
           )}
         </div>

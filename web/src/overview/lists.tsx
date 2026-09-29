@@ -3,6 +3,8 @@ import type { OverviewRow } from "@wasm/retiretui_wasm.js";
 import { ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { pageOf, TOOLS } from "@/nav";
+import { YearInLedger } from "@/year/ledger-link";
 import { keptSearch } from "@/year/search";
 
 /** A list of rows that each lead somewhere, over hairlines. */
@@ -45,15 +47,14 @@ function RowContent({
 /** A row that opens a tool's page. */
 export function ToolRow({
   page,
-  title,
   onClick,
   children,
 }: {
   page: string;
-  title: string;
   onClick?: () => void;
   children: ReactNode;
 }) {
+  const { title } = pageOf(TOOLS, page);
   return (
     <li>
       <Link
@@ -85,13 +86,9 @@ function PlanRow({ row }: { row: OverviewRow }) {
   if (row.year !== null) {
     const year = row.year;
     return (
-      <Link
-        to="/ledger"
-        search={(kept) => ({ ...keptSearch(kept, ["basis", "held"]), year })}
-        className={ROW}
-      >
+      <YearInLedger year={year} className={ROW}>
         <RowContent year={year} text={row.text} destination="in the Ledger" />
-      </Link>
+      </YearInLedger>
     );
   }
   if (row.place === null) {
@@ -124,7 +121,7 @@ export function RowList({
   id: string;
   title: string;
   rows: readonly OverviewRow[];
-  empty: string;
+  empty?: string;
 }) {
   return (
     <section aria-labelledby={id} className="space-y-3">

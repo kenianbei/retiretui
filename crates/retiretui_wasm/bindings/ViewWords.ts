@@ -49,4 +49,8 @@ nothing_wanting: string,
 /**
  * The Overview's list of the plan's milestones.
  */
-milestones: string, };
+milestones: string, 
+/**
+ * What a year with nothing to do says.
+ */
+nothing_scheduled: string, };

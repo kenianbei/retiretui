@@ -19,7 +19,10 @@ pub(super) fn entries(
     draft: &Draft,
     (nominal, historical): (bool, Option<&Runs>),
 ) -> Vec<Entry> {
-    let issues = issue_rows(draft).into_iter().map(Entry::from);
+    let issues = issue_rows(draft).into_iter().map(|row| Entry {
+        tone: Tone::Warning,
+        ..Entry::from(row)
+    });
     let wanting = attention(projected, nominal).into_iter().map(Entry::from);
     let mut found: Vec<Entry> = issues.chain(failing(historical)).chain(wanting).collect();
     found.sort_by_key(|entry| entry.year);

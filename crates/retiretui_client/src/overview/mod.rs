@@ -21,8 +21,7 @@ pub const MILESTONES: &str = "Milestones";
 /// A domain, and the item of its table where it has one.
 pub type Place = (DomainId, Option<usize>);
 
-/// A row: what it says, the year it is about, the item behind it, and the
-/// field where it is an issue.
+/// A row: what it says, the year it is about, and the item behind it.
 #[derive(Clone, PartialEq, Debug)]
 pub struct Row {
     /// What the row says, without its year.
@@ -31,10 +30,6 @@ pub struct Row {
     pub year: Option<i16>,
     /// The item behind it.
     pub place: Option<Place>,
-    /// The key of the field an issue is about, where a form has one.
-    pub field: Option<&'static str>,
-    /// Whether it is one of the draft's issues.
-    pub is_issue: bool,
 }
 
 impl Row {
@@ -43,8 +38,6 @@ impl Row {
             text,
             year: None,
             place: None,
-            field: None,
-            is_issue: false,
         }
     }
 

@@ -60,18 +60,14 @@ pub(super) struct Entry {
 }
 
 impl From<Row> for Entry {
-    /// A client row, an issue in a warning's tone, opening its item's page.
+    /// A client row, opening its item's page.
     fn from(row: Row) -> Self {
         Self {
             text: row.text,
             year: row.year,
             opens: row.place.map(|(domain, index)| (page_of(domain), index)),
             leads: None,
-            tone: if row.is_issue {
-                Tone::Warning
-            } else {
-                Tone::Plain
-            },
+            tone: Tone::Plain,
         }
     }
 }

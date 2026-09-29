@@ -49,6 +49,7 @@ export type { RothOwner } from "./RothOwner";
 export type { RunRow } from "./RunRow";
 export type { SaidYear } from "./SaidYear";
 export type { Searched } from "./Searched";
+export type { Shortfall } from "./Shortfall";
 export type { Sort } from "./Sort";
 export type { Step } from "./Step";
 export type { Summary } from "./Summary";

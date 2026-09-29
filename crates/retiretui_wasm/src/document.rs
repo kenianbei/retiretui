@@ -5,7 +5,7 @@
 use std::cell::{OnceCell, RefCell};
 use std::path::{Path, PathBuf};
 
-use retiretui_client::actions::{collect_warnings, sentence};
+use retiretui_client::actions::{collect_warnings, year_in_words};
 use retiretui_client::draft::Draft;
 use retiretui_client::files::resolve_with_files;
 use retiretui_client::forms::{DomainId, Form, ListOps, ToolAnswers};
@@ -461,21 +461,17 @@ impl Document {
         let row = self.row(year)?;
         let projected = self.projected()?;
         let plan = &projected.plan;
-        let deflator = (!nominal).then_some(row.deflator);
-        let deflating = (!nominal).then_some(&projected.projection);
+        let (actions, warnings) = year_in_words(projected, tables(), row, nominal);
         let people = plan.household.people.iter();
         let ages = people.filter_map(|person| {
             let age = *row.ages.get(&person.id)?;
             Some((person.display_name().to_owned(), age))
         });
-        let actions = row.actions.iter();
         Ok(SaidYear {
             year,
             ages: ages.collect(),
-            actions: actions
-                .map(|action| sentence(plan, action, deflator))
-                .collect(),
-            warnings: collect_warnings(plan, tables(), row, deflating),
+            actions,
+            warnings,
         })
     }
 

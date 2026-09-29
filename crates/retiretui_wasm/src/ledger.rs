@@ -1,7 +1,7 @@
 //! The projection as the Ledger and the Overview's charts show it: the
 //! year table, a year's flows, income and tax, and the series charted.
 
-use retiretui_client::actions::collect_warnings;
+use retiretui_client::actions::{NOTHING_SCHEDULED, collect_warnings};
 use retiretui_client::ledger::{
     AccountFlows, DetailLine, FLOW_HEADERS, FLOWS, INCOME_AND_TAX, account_flows, income_and_tax,
     ledger_headers, salary_marks,
@@ -273,6 +273,8 @@ pub struct ViewWords {
     pub nothing_wanting: &'static str,
     /// The Overview's list of the plan's milestones.
     pub milestones: &'static str,
+    /// What a year with nothing to do says.
+    pub nothing_scheduled: &'static str,
 }
 
 /// What the Overview, the Ledger and Compare call what they show.
@@ -294,6 +296,7 @@ pub fn view_words() -> Result<JsValue, JsError> {
         attention: ATTENTION,
         nothing_wanting: NOTHING,
         milestones: MILESTONES,
+        nothing_scheduled: NOTHING_SCHEDULED,
     })
 }
 

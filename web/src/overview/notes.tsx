@@ -1,11 +1,14 @@
 import { Link } from "@tanstack/react-router";
-import { issueCount, type PlacedIssue } from "@wasm/retiretui_wasm.js";
+import {
+  issueCount,
+  type PlacedIssue,
+  type Shortfall as ShortfallView,
+} from "@wasm/retiretui_wasm.js";
 
 import { MarginNote } from "@/components/margin-note";
 import { IssueLink } from "@/draft/issue-link";
-import { keptSearch } from "@/year/search";
-
-const EXPENSES = "expenses";
+import { DOMAINS, pageOf } from "@/nav";
+import { YearInLedger } from "@/year/ledger-link";
 
 /**
  * The draft's issues, each linked to its field, and what the figures below
@@ -40,21 +43,18 @@ export function Problems({
 }
 
 /** The year the money first runs short, leading to it in the Ledger and to what the plan spends. */
-export function Shortfall({ year, said }: { year: number; said: string }) {
+export function Shortfall({ shortfall }: { shortfall: ShortfallView }) {
+  const { year, said, expenses } = shortfall;
   const link = "text-sm underline underline-offset-4";
   return (
     <MarginNote zone="shortfall">
       <p className="font-semibold">{said}</p>
       <p className="flex flex-wrap gap-x-4 gap-y-1">
-        <Link
-          to="/ledger"
-          search={(kept) => ({ ...keptSearch(kept, ["basis", "held"]), year })}
-          className={link}
-        >
+        <YearInLedger year={year} className={link}>
           {year} in the Ledger
-        </Link>
-        <Link to="/plan/$page" params={{ page: EXPENSES }} className={link}>
-          Expenses
+        </YearInLedger>
+        <Link to="/plan/$page" params={{ page: expenses }} className={link}>
+          {pageOf(DOMAINS, expenses).title}
         </Link>
       </p>
     </MarginNote>

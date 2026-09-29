@@ -5,7 +5,7 @@ import {
 } from "@wasm/retiretui_wasm.js";
 import { useMemo } from "react";
 
-import { ROTH_CONVERSIONS, SSA_BENEFITS, TOOLS } from "@/nav";
+import { ROTH_CONVERSIONS, SSA_BENEFITS } from "@/nav";
 import { Rows, ToolRow } from "@/overview/lists";
 import type { Basis } from "@/overview/words";
 import { useClaims, useLadders } from "@/searches";
@@ -13,9 +13,6 @@ import { useSession } from "@/session";
 
 const WORDS = claimWords();
 const SEARCHING = "Searching…";
-
-const title = (page: string) =>
-  TOOLS.find((tool) => tool.slug === page)?.title ?? page;
 
 /** A Roth owner's best ladder, leading to the tool aimed at their account. */
 function LadderRow({
@@ -42,7 +39,6 @@ function LadderRow({
   return (
     <ToolRow
       page={ROTH_CONVERSIONS}
-      title={title(ROTH_CONVERSIONS)}
       onClick={() => {
         session.change((document) => {
           document.aimAt(owner.destination);
@@ -64,7 +60,7 @@ function ClaimsRow({
 }) {
   if (found.error) return null;
   return (
-    <ToolRow page={SSA_BENEFITS} title={title(SSA_BENEFITS)}>
+    <ToolRow page={SSA_BENEFITS}>
       {found.data?.better[basis] ?? SEARCHING}
     </ToolRow>
   );

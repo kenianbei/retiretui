@@ -1,6 +1,7 @@
 //! The Overview in the client's words: the strip's readings, the sentence
 //! for a plan that runs short, what needs attention and the milestones.
 
+use retiretui_client::forms::DomainId;
 use retiretui_client::overview::{Row, attention, milestones};
 use retiretui_client::present::{compact_money, money_lasts, runs_short};
 use retiretui_client::session::Projected;
@@ -23,16 +24,27 @@ pub struct OverviewRow {
     pub place: Option<Place>,
 }
 
+/// The year the money first runs short, said, and the page of what the
+/// plan spends.
+#[derive(Serialize, Debug)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+pub struct Shortfall {
+    /// The first year it runs short.
+    pub year: i16,
+    /// That year and what the money cannot cover, as a sentence.
+    pub said: String,
+    /// The Expenses page's address.
+    pub expenses: String,
+}
+
 /// What the Overview says of a projection, in one dollar basis.
 #[derive(Serialize, Debug)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct OverviewView {
     /// How long the money lasts: "Never short", "Short $772k from 2042".
     pub money_lasts: String,
-    /// The first year it runs short; `null` where it never does.
-    pub short_year: Option<i16>,
-    /// That year and what the money cannot cover, as a sentence.
-    pub runs_short: Option<String>,
+    /// Where it runs short; `null` where it never does.
+    pub shortfall: Option<Shortfall>,
     /// Net worth at the end.
     pub ends_with: String,
     /// Every year's taxes together.
@@ -47,7 +59,7 @@ fn row_of(row: Row) -> OverviewRow {
     let place = row.place.map(|(domain, index)| Place {
         domain: slug_of(domain),
         index,
-        field: row.field,
+        field: None,
     });
     OverviewRow {
         text: row.text,
@@ -65,8 +77,14 @@ fn overview_view(projected: &Projected, nominal: bool) -> OverviewView {
     let summary = projected.projection.summary(!nominal);
     OverviewView {
         money_lasts: money_lasts(&summary),
-        short_year: summary.first_unfunded_year,
-        runs_short: runs_short(&summary),
+        shortfall: summary
+            .first_unfunded_year
+            .zip(runs_short(&summary))
+            .map(|(year, said)| Shortfall {
+                year,
+                said,
+                expenses: slug_of(DomainId::Expenses),
+            }),
         ends_with: compact_money(summary.final_net_worth),
         lifetime_taxes: compact_money(summary.lifetime_taxes),
         attention: rows(attention(projected, nominal)),
@@ -105,7 +123,7 @@ mod tests {
     fn a_lasting_plan_says_so_and_names_its_milestones_places() {
         let view = overview_view(&projected(EXAMPLES[0].2), false);
         assert_eq!(view.money_lasts, "Never short");
-        assert_eq!((view.short_year, view.runs_short), (None, None));
+        assert!(view.shortfall.is_none());
         let medicare = view
             .milestones
             .iter()
@@ -122,8 +140,12 @@ mod tests {
         let spending = starter.replacen("amount = 24000", "amount = 240000", 1);
         assert_ne!(spending, starter, "the starter lives on 24,000");
         let view = overview_view(&projected(&spending), true);
-        let year = view.short_year.expect("short");
-        let said = view.runs_short.expect("said");
+        let Shortfall {
+            year,
+            said,
+            expenses,
+        } = view.shortfall.expect("short");
+        assert_eq!(expenses, "expenses");
         assert!(
             said.starts_with(&format!("Runs short from {year}: $")),
             "{said}"

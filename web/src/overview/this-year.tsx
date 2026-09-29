@@ -1,12 +1,11 @@
-import { Link } from "@tanstack/react-router";
 import { useMemo } from "react";
 
 import { MarginNote } from "@/components/margin-note";
 import type { Basis } from "@/overview/words";
-import { BASIS_LABEL } from "@/overview/view-words";
+import { BASIS_LABEL, VIEW_WORDS } from "@/overview/view-words";
 import { Rows } from "@/overview/lists";
 import { useSession } from "@/session";
-import { keptSearch } from "@/year/search";
+import { YearInLedger } from "@/year/ledger-link";
 import type { ShownYear } from "@/year/use-year";
 import { YearStepper } from "@/year/year";
 
@@ -35,21 +34,17 @@ export function ThisYear({ shown, basis }: { shown: ShownYear; basis: Basis }) {
         </div>
         <p className="text-muted-foreground flex flex-wrap gap-x-3 text-sm">
           <span>{[...ages, BASIS_LABEL[basis]].join(" · ")}</span>
-          <Link
-            to="/ledger"
-            search={(kept) => ({
-              ...keptSearch(kept, ["basis", "held"]),
-              year: said.year,
-            })}
+          <YearInLedger
+            year={said.year}
             className="text-primary underline-offset-4 hover:underline"
           >
             {said.year} in the Ledger
-          </Link>
+          </YearInLedger>
         </p>
       </div>
       {said.actions.length === 0 ? (
         <p className="text-muted-foreground text-sm">
-          Nothing to do this year.
+          {VIEW_WORDS.nothing_scheduled}
         </p>
       ) : (
         <Rows>

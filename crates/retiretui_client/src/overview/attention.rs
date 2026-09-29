@@ -12,7 +12,7 @@ use super::Row;
 use crate::actions::{Held, held_contributions};
 use crate::draft::Draft;
 use crate::forms::DomainId;
-use crate::issues::{issue_field, issue_place, issue_words};
+use crate::issues::{issue_place, issue_words};
 use crate::present::compact_money;
 use crate::session::Projected;
 use crate::table::{account_name, basis_amount, money};
@@ -21,15 +21,13 @@ use crate::table::{account_name, basis_amount, money};
 pub const NOTHING: &str = "No plan issues";
 
 /// Each of the draft's issues in the forms' words, in validation order,
-/// at the field it is about.
+/// at the item it is about.
 #[must_use]
 pub fn issue_rows(draft: &Draft) -> Vec<Row> {
     let issues = draft.issues().iter();
     issues
         .map(|issue| Row {
             place: issue_place(&issue.path),
-            field: issue_field(&issue.path),
-            is_issue: true,
             ..Row::plain(issue_words(issue, draft))
         })
         .collect()
@@ -217,16 +215,14 @@ start = {{ age = 67, owner = \"me\" }}
     }
 
     #[test]
-    fn each_issue_is_a_row_at_its_field() {
+    fn each_issue_is_a_row_at_its_item() {
         let plan = TEST_PLAN.replace("balance = 200000", "balance = -1");
         let plan = Plan::from_toml_str(&plan).unwrap();
         let draft = Draft::validated(plan, &TaxTables::embedded(), false);
         let rows = issue_rows(&draft);
         assert_eq!(rows.len(), draft.issues().len());
         let row = &rows[0];
-        assert!(row.is_issue);
         assert_eq!(row.place, Some((DomainId::Accounts, Some(1))));
-        assert_eq!(row.field, Some("balance"));
         assert_eq!(row.text, issue_words(&draft.issues()[0], &draft));
     }
 }
