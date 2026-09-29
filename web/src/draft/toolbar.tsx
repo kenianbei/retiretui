@@ -48,9 +48,15 @@ function Issues() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="text-destructive">
+        <Button
+          variant="outline"
+          size="sm"
+          aria-label={issueCount(issues.length)}
+          className="text-destructive max-md:touch-target"
+        >
           <TriangleAlert aria-hidden />
-          {issueCount(issues.length)}
+          <span className="max-md:hidden">{issueCount(issues.length)}</span>
+          <span className="md:hidden">{issues.length}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="max-w-96">
@@ -77,13 +83,14 @@ export function DraftToolbar() {
   const isReadOnly = document.isReadOnly;
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex shrink-0 items-center gap-1">
       <Issues />
       <Button
         variant="ghost"
         size="icon"
         aria-label="Undo"
         title="Undo"
+        className="max-md:touch-target"
         disabled={!document.canUndo}
         onClick={undo}
       >
@@ -94,6 +101,7 @@ export function DraftToolbar() {
         size="icon"
         aria-label="Redo"
         title="Redo"
+        className="max-md:touch-target"
         disabled={!document.canRedo}
         onClick={redo}
       >
@@ -109,10 +117,11 @@ export function DraftToolbar() {
         <Button
           variant={document.isDirty ? "default" : "outline"}
           size="sm"
+          className="max-md:touch-target"
           disabled={isReadOnly || !document.isDirty}
           onClick={save}
         >
-          <Save aria-hidden />
+          <Save aria-hidden className="max-md:hidden" />
           Save
           {document.isDirty && (
             <span className="sr-only">, the plan has unsaved edits</span>

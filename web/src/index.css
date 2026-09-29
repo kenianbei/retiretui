@@ -110,3 +110,16 @@
 main h1[tabindex="-1"]:focus {
   outline: none;
 }
+
+/* A control's hit area on a phone reaches 44px tall, whatever it draws. */
+@utility touch-target {
+  position: relative;
+  &::before {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    top: 50%;
+    height: max(100%, 2.75rem);
+    translate: 0 -50%;
+  }
+}

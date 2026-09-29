@@ -59,6 +59,7 @@ export function YearStepper({ shown }: { shown: ShownYear }) {
       <Button
         variant="ghost"
         size="icon"
+        className="max-md:touch-target"
         aria-label="The year before"
         disabled={!earlier}
         onClick={earlier}
@@ -71,6 +72,7 @@ export function YearStepper({ shown }: { shown: ShownYear }) {
       <Button
         variant="ghost"
         size="icon"
+        className="max-md:touch-target"
         aria-label="The year after"
         disabled={!later}
         onClick={later}
@@ -102,7 +104,7 @@ export function BasisSwitch() {
           replace
           aria-current={each === basis ? "true" : undefined}
           className={cn(
-            "rounded px-3 py-1",
+            "max-md:touch-target rounded px-3 py-1",
             each === basis && "bg-primary text-primary-foreground",
           )}
         >

@@ -7,7 +7,13 @@ import {
 } from "@tanstack/react-router";
 
 import { Search } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from "react";
 
 import { useComparedFollowDocument } from "@/compare/use-compared";
 import { DraftNotices, UnsavedQuestion } from "@/draft/notices";
@@ -96,7 +102,7 @@ function BottomBar() {
   return (
     <nav
       aria-label="Main"
-      className="bg-card fixed inset-x-0 bottom-0 z-10 border-t pb-[env(safe-area-inset-bottom)] md:hidden"
+      className="bg-card fixed inset-x-0 bottom-0 z-10 border-t pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] md:hidden"
     >
       <ul className="grid grid-cols-5">
         {TABS.map((tab) => (
@@ -127,7 +133,7 @@ const PAGE_LINK = {
   },
   chips: {
     list: "flex gap-2",
-    link: "block rounded-full border px-3 py-1 text-sm whitespace-nowrap",
+    link: "touch-target block rounded-full border px-3 py-1 text-sm whitespace-nowrap",
     current: "bg-primary text-primary-foreground border-primary",
   },
 };
@@ -163,15 +169,68 @@ function PageLinks({
   );
 }
 
+/** How far a row's fade reaches in from an edge with more beyond it. */
+const FADE = "2rem";
+
+/**
+ * Whether a sideways row has more beyond its start and its end, measured
+ * again whenever `shown` changes, after the current item is scrolled into view.
+ */
+function useScrollEdges(row: RefObject<HTMLElement | null>, shown: string) {
+  const [edges, setEdges] = useState({ isBefore: false, isAfter: false });
+  useEffect(() => {
+    const element = row.current;
+    if (!element) return;
+    element
+      .querySelector('[aria-current="page"]')
+      ?.scrollIntoView({ inline: "nearest", block: "nearest" });
+    const measure = () => {
+      const { scrollLeft, clientWidth, scrollWidth } = element;
+      setEdges({
+        isBefore: scrollLeft > 0,
+        isAfter: scrollLeft + clientWidth < scrollWidth - 1,
+      });
+    };
+    measure();
+    element.addEventListener("scroll", measure, { passive: true });
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => {
+      element.removeEventListener("scroll", measure);
+      observer.disconnect();
+    };
+  }, [row, shown]);
+  return edges;
+}
+
+/** A mask fading whichever edge of a row has more beyond it. */
+function fadeOf({
+  isBefore,
+  isAfter,
+}: {
+  isBefore: boolean;
+  isAfter: boolean;
+}) {
+  if (!isBefore && !isAfter) return undefined;
+  const start = isBefore ? "transparent" : "black";
+  const end = isAfter ? "transparent" : "black";
+  return `linear-gradient(to right, ${start}, black ${FADE}, black calc(100% - ${FADE}), ${end})`;
+}
+
 /** The current group's pages above the page, where there is no sidebar. */
 function GroupPages() {
   const isActive = useIsActive();
+  const { pathname } = useLocation();
+  const row = useRef<HTMLElement>(null);
+  const edges = useScrollEdges(row, pathname);
   const tab = TABS.filter(isGroup).find(isActive);
   if (!tab) return null;
   return (
     <nav
+      ref={row}
       aria-label={tab.title}
-      className="-mx-4 mb-4 overflow-x-auto px-4 md:hidden"
+      style={{ maskImage: fadeOf(edges) }}
+      className="-mx-4 -mt-[7px] mb-[9px] overflow-x-auto px-4 py-[7px] md:hidden"
     >
       <PageLinks tab={tab} variant="chips" />
     </nav>
@@ -234,13 +293,10 @@ export function Shell() {
       >
         Skip to the page
       </a>
-      <div className="min-h-dvh md:grid md:grid-cols-[15rem_1fr]">
+      <div className="min-h-dvh pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)] md:grid md:grid-cols-[15rem_1fr]">
         <Sidebar />
-        <div className="flex min-h-dvh min-w-0 flex-col pb-20 md:pb-0">
-          <header className="bg-card flex h-14 items-center gap-3 border-b px-4 md:px-8">
-            <span className="font-semibold tracking-tight md:hidden">
-              RetireTui
-            </span>
+        <div className="flex min-h-dvh min-w-0 flex-col pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0">
+          <header className="bg-card flex h-14 items-center gap-2 border-b px-4 md:gap-3 md:px-8">
             <FileMenu />
             <Button
               variant="outline"
@@ -250,7 +306,7 @@ export function Shell() {
               onClick={() => {
                 setFinding(true);
               }}
-              className="hidden sm:inline-flex"
+              className="max-md:touch-target"
             >
               <Search aria-hidden />
               <kbd className="text-muted-foreground hidden font-sans text-xs lg:inline">
