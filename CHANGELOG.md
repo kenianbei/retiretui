@@ -59,16 +59,17 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   downloaded from ssa.gov is imported onto a person from the People page as one
   step of history. The Roth Conversions tool searches every fillable bracket's
   conversion ladder under constraints read out on the page and edited in a
-  sheet, ranks them under the plan as it stands, and shows the highlighted one's
-  conversions year by year, in either dollar basis; it searches again whenever
-  the plan or the constraints change, and takes the plan's one Roth account as
-  the destination where there is only one. The highlighted ladder is taken into
-  the plan after asking, as one step of history in place of any ladder taken
-  before, or written as a scenario beside the saved plan, compared with it at
-  once and offered to open. The SSA Benefits tool ranks every claim age for the
-  household's computed Social Security benefits under the plan as it stands,
-  beside each person's record, income and benefit estimated at 62, full
-  retirement age and 70, with what can be done for the highlighted person:
+  sheet, ranks them under the plan as it stands, each saying what it ends with
+  against the plan, and shows the highlighted one's conversions year by year, in
+  either dollar basis; it searches again whenever the plan or the constraints
+  change, and takes the plan's one Roth account as the destination where there
+  is only one. The highlighted ladder is taken into the plan after asking, as
+  one step of history in place of any ladder taken before, or written as a
+  scenario beside the saved plan, compared with it at once and offered to open.
+  The SSA Benefits tool ranks every claim age for the household's computed
+  Social Security benefits under the plan as it stands, each against the plan as
+  a ladder is, beside each person's record, income and benefit estimated at 62,
+  full retirement age and 70, with what can be done for the highlighted person:
   import a statement, estimate a record from their salary, compute a typed
   benefit from their record, clear the record or remove the benefit - the last
   two asked first - each one step of history, or hold their claim as the plan
@@ -118,7 +119,11 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   navigation is a bottom bar on a phone - a grouped tab's pages a row of chips
   above the page, faded at an edge with more beyond it - and a sidebar on a
   wider screen; on a phone every button, tab and chip is touched across 44px
-  whatever size it is drawn.
+  whatever size it is drawn. Money is written in full wherever a table has room
+  for it - a ladder's years, a monthly benefit, the tools' options and runs, and
+  the years compared - and compact only where it has not, as in the Overview's
+  figures and Compare's plans; a phone's row of options shows what each ends
+  with against the plan.
 - The engine exposes `Scenario::set_base`, which makes an overlay name another
   base, and `project::benefit_params` and `project::state_lived_in`, the benefit
   formula's parameters and the state taxing a year as a plan's projection takes
@@ -150,6 +155,13 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The Roth Conversions constraints read a blank as what the search assumes -
   every bracket, the plan's start, no cap - and a blank last year is said to be
   the year before the owner's RMDs begin, as the search has always taken it.
+- Compact money reads one way on every interface: always with its `$`, its
+  thousands separated under $10,000 (`$2,086`), and rounded rather than cut
+  short (`$19,999` is `$20k`); what the market runs end with is bucketed in
+  whole millions (`$1M–$2M`). The terminal's Roth Conversions and SSA Benefits
+  options gain a vs. the plan column - what each ends with against the plan,
+  blank on the plan's own row - and an options table too narrow for every column
+  drops the figures at its end rather than cutting every header short.
 - The command line and the MCP server are library crates of their own,
   `retiretui_cli` and `retiretui_mcp`, and the terminal launcher is
   `retiretui_tui`'s `terminal` feature, off by default; `retiretui` composes the
