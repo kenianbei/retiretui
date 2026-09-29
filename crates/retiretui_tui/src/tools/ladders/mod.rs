@@ -16,9 +16,9 @@ use retiretui_engine::optimize::{
     LadderStep, OptimizeOptions, SweptBracket, apply_ladder, ladder_overlay,
 };
 use retiretui_engine::plan::Plan;
-use retiretui_engine::project::Projection;
+use retiretui_engine::project::{Projection, Summary};
 
-use super::options::{CURRENT_PLAN, FIGURES, Laid, figures};
+use super::options::{CURRENT_PLAN, FIGURES, Laid};
 use super::{Found, NOTHING_SEARCHED_YET, Tool, ToolPage, write};
 use crate::command::Outcome;
 use crate::confirm::{Answer, Confirm};
@@ -27,12 +27,12 @@ use crate::edit::{self, Draft, DraftEditor, FormButton, Ops};
 use crate::journal;
 use crate::nav::{self, Page, ShownSurface};
 use crate::overview::Better;
-use crate::present::compact_money;
+use crate::present::MoneyForm;
 use crate::session::Session;
 pub use retiretui_client::searches::ladders::{
     CONVERSION_COLUMNS, CONVERTS_NOTHING, Constraints, DESTINATION, FIELDS, NO_BRACKET,
-    OPTION_COLUMNS, PICK_DESTINATION, Swept, aim_at, held, held_answers, only_roth, rate_label,
-    search, take_question, taken, taxed_in,
+    OPTION_COLUMNS, PICK_DESTINATION, Swept, aim_at, held, held_answers, only_roth, option_cells,
+    rate_label, search, take_question, taken, taxed_in,
 };
 
 pub type Ladders = Tool<Swept>;
@@ -64,8 +64,9 @@ const PAGE: ToolPage = ToolPage {
 impl Found for Swept {
     const NOTHING_SEARCHED: &'static str = "Ranked here once Convert to names a Roth account.";
 
-    /// The plan's own row, then a row per bracket: its rate, what the plan
-    /// converts over its life with that bracket's ladder, and the figures.
+    /// The plan's own row, then a row per bracket: its rate, what it ends
+    /// with against the plan, what the plan converts over its life with
+    /// that bracket's ladder, and the figures.
     fn laid(&self, _plan: &Plan, nominal: bool) -> Laid {
         let deflated = !nominal;
         let header = OPTION_COLUMNS
@@ -73,22 +74,21 @@ impl Found for Swept {
             .chain(FIGURES)
             .map(str::to_owned)
             .collect();
-        let row = |label: String, projection: &Projection| {
+        let plan = self.sweep.baseline.summary(deflated);
+        let row = |label: String, projection: &Projection, against: Option<&Summary>| {
             let summary = projection.summary(deflated);
-            let converted = compact_money(summary.lifetime_conversions);
-            [label, converted]
-                .into_iter()
-                .chain(figures(&summary))
+            std::iter::once(label)
+                .chain(option_cells(&summary, against, MoneyForm::Compact))
                 .collect()
         };
         let options = self
             .sweep
             .brackets
             .iter()
-            .map(|bracket| row(rate_label(bracket.rate), &bracket.optimized));
+            .map(|bracket| row(rate_label(bracket.rate), &bracket.optimized, Some(&plan)));
         Laid {
             header,
-            current: row(CURRENT_PLAN.to_owned(), &self.sweep.baseline),
+            current: row(CURRENT_PLAN.to_owned(), &self.sweep.baseline, None),
             options: options.collect(),
         }
     }

@@ -17,7 +17,7 @@ label: string,
 /**
  * The plan's figures with the ladder.
  */
-figures: Bases<[number, number, number, number, number]>, 
+figures: Bases<Array<string>>, 
 /**
  * Its conversions, year by year.
  */

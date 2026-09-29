@@ -7,14 +7,14 @@ expression: composed_frame(app)
 │1 Overview││2 Ledger││3 Compare││4 Tools││5 Plan│                                                                                                                                          full.toml ● 
 ┴──────────┴┴────────┴┴─────────┴╯       ╰┴──────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭ Tools ────────────╮╭ Constraints ───────────────────────────────────────────────────────────────────╮╭ Ladder Options ───────────────────────────────────────────────────────────────────────────────╮
-│▏ Roth Conversions ││                                                                                ││  Bracket converted unfunded final net taxes medicare                                          │
-│  SSA Benefits     ││▌ Convert from  Every deferred account                                          ││  Current     $330k       $0    $2.09M $697k       $0                                          │
-│  Monte Carlo      ││  Convert to    roth-ira                                                        ││▏ 22%         $988k       $0    $2.15M $515k       $0                                          │
-│  Historical       ││  Fill bracket  Every bracket                                                   ││  24%         $962k       $0    $2.13M $513k       $0                                          │
-│                   ││  First year    The plan's start                                                ││  32%         $958k       $0    $2.09M $521k       $0                                          │
-│                   ││  Last year     The year before RMDs                                            ││  10%         $388k       $0    $2.06M $709k       $0                                          │
-│                   ││  Annual cap    No cap                                                          ││  35%         $956k       $0    $2.06M $528k       $0                                          │
-│                   ││  Total cap     No cap                                                          ││  12%         $983k       $0    $2.04M $581k       $0                                          │
+│▏ Roth Conversions ││                                                                                ││  Bracket vs. the plan converted unfunded final net taxes medicare                             │
+│  SSA Benefits     ││▌ Convert from  Every deferred account                                          ││  Current                  $330k       $0    $2.09M $697k       $0                             │
+│  Monte Carlo      ││  Convert to    roth-ira                                                        ││▏ 22%            +$56k     $988k       $0    $2.15M $515k       $0                             │
+│  Historical       ││  Fill bracket  Every bracket                                                   ││  24%            +$39k     $962k       $0    $2.13M $513k       $0                             │
+│                   ││  First year    The plan's start                                                ││  32%          -$2,382     $958k       $0    $2.09M $521k       $0                             │
+│                   ││  Last year     The year before RMDs                                            ││  10%            -$32k     $388k       $0    $2.06M $709k       $0                             │
+│                   ││  Annual cap    No cap                                                          ││  35%            -$34k     $956k       $0    $2.06M $528k       $0                             │
+│                   ││  Total cap     No cap                                                          ││  12%            -$51k     $983k       $0    $2.04M $581k       $0                             │
 │                   ││  Headroom      None                                                            │╰───────────────────────────────────────────────────────────────────────────────────────────────╯
 │                   ││  IRMAA tier    Not held to one                                                 │╭ Conversions ──────────────────────────────────────────────────────────────────────────────────╮
 │                   ││  MAGI cap      No cap                                                          ││  Year           From  Amount Taxable                                                          │

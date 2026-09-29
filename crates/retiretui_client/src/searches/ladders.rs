@@ -16,6 +16,7 @@ use crate::draft::Draft;
 use crate::forms::offers::{RefSource, ref_offers};
 use crate::forms::{FieldSpec, ToolAnswers};
 use crate::ladder::LadderConstraints;
+use crate::present::MoneyForm;
 
 /// The constraints as the form holds them: the CLI's flags, blank where
 /// its are optional; `bracket` is a percent, blank sweeping every one.
@@ -79,7 +80,7 @@ impl Constraints {
 }
 
 /// What names an option's columns before its [`FIGURES`](super::FIGURES).
-pub const OPTION_COLUMNS: [&str; 2] = ["Bracket", "converted"];
+pub const OPTION_COLUMNS: [&str; 3] = ["Bracket", super::AGAINST_PLAN, "converted"];
 /// The columns a ladder's conversions are tabled under, year by year.
 pub const CONVERSION_COLUMNS: [&str; 4] = ["Year", "From", "Amount", "Taxable"];
 
@@ -90,13 +91,14 @@ pub const NO_BRACKET: &str = "no bracket can be filled";
 /// What is said in place of a ladder that converts nothing.
 pub const CONVERTS_NOTHING: &str = "This ladder converts nothing under these constraints.";
 
-/// A summary's amounts under [`OPTION_COLUMNS`] past the bracket, then
-/// its [`FIGURES`](super::FIGURES): what the plan converts over its life,
-/// and what the option is chosen by.
+/// A ladder's cells under [`OPTION_COLUMNS`] past the bracket, then its
+/// [`FIGURES`](super::FIGURES), in `form`: what `own` ends with against
+/// `plan`, what it converts over its life, and what it is chosen by.
 #[must_use]
-pub const fn option_amounts(summary: &Summary) -> [Dollars; 5] {
-    let [unfunded, net, taxes, medicare] = super::figure_amounts(summary);
-    [summary.lifetime_conversions, unfunded, net, taxes, medicare]
+pub fn option_cells(own: &Summary, plan: Option<&Summary>, form: MoneyForm) -> Vec<String> {
+    let mut cells = super::option_cells(own, plan, form);
+    cells.insert(1, form.money(own.lifetime_conversions));
+    cells
 }
 
 /// The ordinary income taxed in `year` with `bracket`'s ladder, nominal,

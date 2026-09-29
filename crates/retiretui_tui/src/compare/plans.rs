@@ -7,10 +7,9 @@ use bevy_ecs::hierarchy::{ChildOf, Children};
 use bevy_ecs::prelude::{Commands, Component, Entity, Query, With};
 use bevy_ecs::system::SystemParam;
 use bevy_ui::{FlexDirection, Node, Val};
-use plurimus::core::ratatui_core::layout::Constraint;
 use plurimus::core::ratatui_core::style::{Color, Style};
 use plurimus::ui::{ComputedWidgetArea, ScrollArea, UiStyle};
-use plurimus::widgets::{ActiveDescendant, TableColumns};
+use plurimus::widgets::ActiveDescendant;
 use retiretui_client::compare::{self, Figured};
 
 use super::Plans;
@@ -197,29 +196,10 @@ fn laid(plans: &Plans, given: u16) -> (Vec<String>, Vec<Vec<String>>) {
                 .collect()
         })
         .collect();
-    let count = fitting(&tabulate::gapped_columns((&header, &rows), GAP), given);
+    let measured = tabulate::gapped_columns((&header, &rows), GAP);
+    let count = tabulate::fitting(&measured, given, CURSOR_COLS + SWATCH_COLS);
     for row in &mut rows {
         row.truncate(count);
     }
     (header[..count].to_vec(), rows)
-}
-
-/// How many leading columns fit in `given` cells beside the cursor and
-/// the swatch; the plan's name always does.
-pub(super) fn fitting(measured: &TableColumns, given: u16) -> usize {
-    let mut used = CURSOR_COLS + SWATCH_COLS;
-    let mut count = 0;
-    for constraint in &measured.0 {
-        let Constraint::Length(width) = *constraint else {
-            break;
-        };
-        let spacing = u16::from(count > 0);
-        let needed = used.saturating_add(width).saturating_add(spacing);
-        if count > 0 && needed > given {
-            break;
-        }
-        used = needed;
-        count += 1;
-    }
-    count
 }

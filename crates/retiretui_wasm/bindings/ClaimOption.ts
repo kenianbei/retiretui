@@ -17,7 +17,7 @@ claims: Array<Claim>,
 /**
  * The plan's figures under them.
  */
-figures: Bases<[number, number, number, number]>, 
+figures: Bases<Array<string>>, 
 /**
  * What is asked before they are taken into the plan searched.
  */

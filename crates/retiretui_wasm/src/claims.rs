@@ -4,6 +4,7 @@
 //! scenario; and what the Overview's Could do better card asks of the
 //! document.
 
+use retiretui_client::present::MoneyForm;
 use retiretui_client::searches::claims::{
     NOBODY, NOTHING_SEARCHED, PEOPLE_COLUMNS, PersonAction, age_cell, claimants, person_row,
     take_question, taken,
@@ -11,12 +12,12 @@ use retiretui_client::searches::claims::{
 use retiretui_client::searches::overview::{
     COULD_DO_BETTER, NOTHING_TO_SEARCH, REFUSED, claims_said, roth_owners,
 };
-use retiretui_client::searches::{CURRENT_PLAN, FIGURES, figure_amounts, run_refusal};
+use retiretui_client::searches::{AGAINST_PLAN, CURRENT_PLAN, FIGURES, option_cells, run_refusal};
 use retiretui_engine::market::Progress;
 use retiretui_engine::optimize::{
     Claim, ClaimCandidate, ClaimSearch, apply_claims, claims_overlay, optimize_claims,
 };
-use retiretui_engine::plan::{Dollars, Income, Item, Plan};
+use retiretui_engine::plan::{Income, Item, Plan};
 use retiretui_engine::project::Projection;
 use serde::Serialize;
 use wasm_bindgen::prelude::{JsError, JsValue, wasm_bindgen};
@@ -25,11 +26,19 @@ use crate::document::Document;
 use crate::searches::gated;
 use crate::{Bases, JsDocument, from_js, refused, reply, tables, to_js};
 
-/// An option's figures under the reply's columns past the claimants.
-type ClaimFigures = Bases<[Dollars; 4]>;
+/// An option's cells under the reply's columns past the claimants.
+type ClaimFigures = Bases<Vec<String>>;
 
-fn figures_of(projection: &Projection) -> ClaimFigures {
-    Bases::of(|nominal| figure_amounts(&projection.summary(!nominal)))
+/// `projection`'s cells, against `plan`'s where it is an option.
+fn figures_of(projection: &Projection, plan: Option<&Projection>) -> ClaimFigures {
+    Bases::of(|nominal| {
+        let plan = plan.map(|plan| plan.summary(!nominal));
+        option_cells(
+            &projection.summary(!nominal),
+            plan.as_ref(),
+            MoneyForm::Full,
+        )
+    })
 }
 
 /// One set of claims the search tried.
@@ -51,7 +60,8 @@ pub struct ClaimOption {
 #[derive(Serialize, Debug)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct ClaimsOptions {
-    /// Each person claimed for, by name, then each figure.
+    /// Each person claimed for, by name, then what an option ends with
+    /// against the plan, then each figure.
     pub columns: Vec<String>,
     /// What the plan's own row is called.
     pub current: &'static str,
@@ -70,12 +80,12 @@ pub struct ClaimsOptions {
     pub better: Bases<String>,
 }
 
-fn option_of(plan: &Plan, candidate: &ClaimCandidate) -> ClaimOption {
+fn option_of(plan: &Plan, candidate: &ClaimCandidate, baseline: &Projection) -> ClaimOption {
     let ages = candidate.claims.iter().map(|claim| claim.age.to_string());
     ClaimOption {
         key: ages.collect::<Vec<_>>().join("-"),
         claims: candidate.claims.clone(),
-        figures: figures_of(&candidate.projection),
+        figures: figures_of(&candidate.projection, Some(baseline)),
         question: take_question(plan, &candidate.claims),
     }
 }
@@ -87,13 +97,17 @@ impl ClaimsOptions {
         Self {
             columns: claimants(plan, &search)
                 .into_iter()
-                .chain(FIGURES.map(str::to_owned))
+                .chain(
+                    std::iter::once(AGAINST_PLAN)
+                        .chain(FIGURES)
+                        .map(str::to_owned),
+                )
                 .collect(),
             current: CURRENT_PLAN,
             current_ages: search.current.iter().copied().map(age_cell).collect(),
-            baseline: figures_of(baseline),
+            baseline: figures_of(baseline, None),
             options: (search.candidates.iter())
-                .map(|candidate| option_of(plan, candidate))
+                .map(|candidate| option_of(plan, candidate, baseline))
                 .collect(),
             better,
             added: search.added,
@@ -407,7 +421,9 @@ mod tests {
     fn every_option_is_keyed_by_its_ages_and_asked_about_by_name() {
         let reply = claims(example(STARTER), &[]).expect("searches");
         let best = reply.options.first().expect("an option");
-        assert_eq!(reply.columns.len(), best.claims.len() + FIGURES.len());
+        assert_eq!(reply.columns.len(), best.claims.len() + 1 + FIGURES.len());
+        assert_eq!(reply.columns[best.claims.len()], AGAINST_PLAN);
+        assert_eq!(best.figures.today.len(), 1 + FIGURES.len());
         assert_eq!(best.key, best.claims[0].age.to_string());
         assert!(
             best.question.starts_with("Take these claims? "),

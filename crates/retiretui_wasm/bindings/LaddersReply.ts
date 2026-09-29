@@ -7,8 +7,9 @@ import type { LadderOption } from "./LadderOption";
  */
 export type LaddersReply = { 
 /**
- * What an option's columns are called: the bracket, what the plan
- * converts over its life, then each of its figures.
+ * What an option's columns are called: the bracket, what it ends with
+ * against the plan, what the plan converts over its life, then each of
+ * its figures.
  */
 columns: Array<string>, 
 /**
@@ -26,7 +27,7 @@ destination: string,
 /**
  * The plan's figures as it stands.
  */
-baseline: Bases<[number, number, number, number, number]>, 
+baseline: Bases<Array<string>>, 
 /**
  * One option per bracket searched, best first.
  */

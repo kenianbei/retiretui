@@ -8,7 +8,8 @@ import type { ClaimOption } from "./ClaimOption";
  */
 export type ClaimsOptions = { 
 /**
- * Each person claimed for, by name, then each figure.
+ * Each person claimed for, by name, then what an option ends with
+ * against the plan, then each figure.
  */
 columns: Array<string>, 
 /**
@@ -23,7 +24,7 @@ current_ages: Array<string>,
 /**
  * The plan's figures as it stands.
  */
-baseline: Bases<[number, number, number, number]>, 
+baseline: Bases<Array<string>>, 
 /**
  * Every set of claims, best first.
  */

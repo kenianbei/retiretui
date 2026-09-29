@@ -24,7 +24,7 @@ use retiretui_engine::optimize::{
 };
 use retiretui_engine::plan::{Income, Plan};
 
-use super::options::{CURRENT_PLAN, FIGURES, Laid, figures};
+use super::options::{AGAINST_PLAN, CURRENT_PLAN, FIGURES, Laid};
 use super::{Found, NOTHING_SEARCHED_YET, Tool, ToolPage, write};
 use crate::command::Outcome;
 use crate::confirm::{Answer, Confirm};
@@ -33,11 +33,12 @@ use crate::edit::{Draft, DraftEditor};
 use crate::journal;
 use crate::nav::{self, Page, ShownSurface};
 use crate::overview::Better;
+use crate::present::MoneyForm;
 use crate::session::Session;
 pub(crate) use people::HeldClaims;
 #[cfg(test)]
 pub(crate) use people::is_estimating;
-use retiretui_client::searches::claims;
+use retiretui_client::searches::{claims, option_cells};
 
 pub type Claims = Tool<ClaimSearch>;
 
@@ -70,18 +71,24 @@ const PAGE: ToolPage = ToolPage {
 impl Found for ClaimSearch {
     const NOTHING_SEARCHED: &'static str = claims::NOTHING_SEARCHED;
 
-    /// The header names each person, then the figures; the plan's own row
-    /// gives each claim age the plan states, and each option the ages tried.
+    /// The header names each person, then what an option ends with against
+    /// the plan, then the figures; the plan's own row gives each claim age
+    /// the plan states, and each option the ages tried.
     fn laid(&self, plan: &Plan, is_nominal: bool) -> Laid {
         let deflated = !is_nominal;
         let header = std::iter::once(String::new())
             .chain(claims::claimants(plan, self))
-            .chain(FIGURES.map(str::to_owned))
+            .chain(
+                std::iter::once(AGAINST_PLAN)
+                    .chain(FIGURES)
+                    .map(str::to_owned),
+            )
             .collect();
+        let baseline = self.baseline.summary(deflated);
         let ages = self.current.iter().copied().map(claims::age_cell);
         let current = std::iter::once(CURRENT_PLAN.to_owned())
             .chain(ages)
-            .chain(figures(&self.baseline.summary(deflated)))
+            .chain(option_cells(&baseline, None, MoneyForm::Compact))
             .collect();
         let options = self
             .candidates
@@ -90,7 +97,11 @@ impl Found for ClaimSearch {
                 let ages = candidate.claims.iter().map(|claim| claim.age.to_string());
                 std::iter::once(String::new())
                     .chain(ages)
-                    .chain(figures(&candidate.projection.summary(deflated)))
+                    .chain(option_cells(
+                        &candidate.projection.summary(deflated),
+                        Some(&baseline),
+                        MoneyForm::Compact,
+                    ))
                     .collect()
             })
             .collect();

@@ -210,8 +210,16 @@ fn assert_page_best(app: &mut Headless, best: &SweptBracket) {
         .unwrap_or_else(|| panic!("no option: {frame}"))
         .1;
     let converted = best.optimized.summary(!nominal(app)).lifetime_conversions;
-    let expected = [rate_label(best.rate), compact_money(converted)];
-    assert_eq!(first[..2], expected, "{frame}");
+    let shown = [&first[0], &first[2]];
+    assert_eq!(
+        shown,
+        [&rate_label(best.rate), &compact_money(converted)],
+        "{frame}"
+    );
+    assert!(
+        first[1].starts_with(['+', '-', '$']),
+        "against the plan: {frame}"
+    );
 }
 
 /// The full fixture's one Roth account.

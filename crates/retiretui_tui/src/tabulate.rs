@@ -40,6 +40,26 @@ pub(super) fn columns((header, rows): (&[String], &[Vec<String>]), gap: u16) -> 
     TableColumns(spaced.collect())
 }
 
+/// How many leading columns of `measured` fit in `given` cells beside
+/// the `beside` cells before them; the first always does.
+pub(super) fn fitting(measured: &TableColumns, given: u16, beside: u16) -> usize {
+    let mut used = beside;
+    let mut count = 0;
+    for constraint in &measured.0 {
+        let Constraint::Length(width) = *constraint else {
+            break;
+        };
+        let spacing = u16::from(count > 0);
+        let needed = used.saturating_add(width).saturating_add(spacing);
+        if count > 0 && needed > given {
+            break;
+        }
+        used = needed;
+        count += 1;
+    }
+    count
+}
+
 /// A label column as wide as its widest label and `gap` more, and the
 /// values in whatever is left.
 pub(super) fn labelled(rows: &[Vec<String>], gap: u16) -> TableColumns {

@@ -6,10 +6,11 @@ use std::path::Path;
 
 use retiretui_client::files::{OVERLAY_SAVE_FIRST, relative_path};
 use retiretui_client::forms::{Form, details};
+use retiretui_client::present::MoneyForm;
 use retiretui_client::searches::ladders::{
     CONVERSION_COLUMNS, CONVERTS_NOTHING, Constraints, DESTINATION, FIELDS, NO_BRACKET,
-    OPTION_COLUMNS, PICK_DESTINATION, Swept, constraints_in, held_answers, only_roth,
-    option_amounts, rate_label, search, take_question, taken, taxed_in,
+    OPTION_COLUMNS, PICK_DESTINATION, Swept, constraints_in, held_answers, only_roth, option_cells,
+    rate_label, search, take_question, taken, taxed_in,
 };
 use retiretui_client::searches::overview::ladder_said;
 use retiretui_client::searches::{CURRENT_PLAN, FIGURES, run_refusal};
@@ -35,11 +36,19 @@ const OVER_ITS_BASE: &str = "a scenario cannot be written over a file it is made
 
 static FORM: Form = Form::tool::<Constraints>("Constraints", FIELDS);
 
-/// An option's amounts under the reply's columns past the first.
-type Figures = Bases<[Dollars; 5]>;
+/// An option's cells under the reply's columns past the first.
+type Figures = Bases<Vec<String>>;
 
-fn figures_of(projection: &Projection) -> Figures {
-    Bases::of(|nominal| option_amounts(&projection.summary(!nominal)))
+/// `projection`'s cells, against `plan`'s where it is an option.
+fn figures_of(projection: &Projection, plan: Option<&Projection>) -> Figures {
+    Bases::of(|nominal| {
+        let plan = plan.map(|plan| plan.summary(!nominal));
+        option_cells(
+            &projection.summary(!nominal),
+            plan.as_ref(),
+            MoneyForm::Full,
+        )
+    })
 }
 
 /// What the tool says of itself, beside what a search replies.
@@ -94,8 +103,9 @@ pub struct LadderOption {
 #[derive(Serialize, Debug)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct LaddersReply {
-    /// What an option's columns are called: the bracket, what the plan
-    /// converts over its life, then each of its figures.
+    /// What an option's columns are called: the bracket, what it ends with
+    /// against the plan, what the plan converts over its life, then each of
+    /// its figures.
     pub columns: Vec<&'static str>,
     /// What a ladder's conversions are tabled under.
     pub conversion_columns: Vec<&'static str>,
@@ -120,18 +130,18 @@ impl LaddersReply {
             conversion_columns: CONVERSION_COLUMNS.to_vec(),
             current: CURRENT_PLAN,
             destination: options.destination.clone(),
-            baseline: figures_of(&sweep.baseline),
+            baseline: figures_of(&sweep.baseline, None),
             brackets: sweep
                 .brackets
                 .iter()
-                .map(|bracket| option_of(plan, bracket))
+                .map(|bracket| option_of(plan, bracket, &sweep.baseline))
                 .collect(),
             better: Bases::of(|nominal| ladder_said(Some(swept), baseline, nominal)),
         }
     }
 }
 
-fn option_of(plan: &Plan, bracket: &SweptBracket) -> LadderOption {
+fn option_of(plan: &Plan, bracket: &SweptBracket, baseline: &Projection) -> LadderOption {
     let steps = bracket.steps.iter().map(|step| {
         let (taxable, deflator) = taxed_in(bracket, step.year);
         LadderYear {
@@ -147,7 +157,7 @@ fn option_of(plan: &Plan, bracket: &SweptBracket) -> LadderOption {
     LadderOption {
         rate: bracket.rate,
         label: rate_label(bracket.rate),
-        figures: figures_of(&bracket.optimized),
+        figures: figures_of(&bracket.optimized, Some(baseline)),
         steps: steps.collect(),
         question: take_question(bracket, plan),
     }
@@ -399,6 +409,7 @@ pub fn js_ladders(plan: &str, constraints: &str, destination: &str) -> Result<Js
 
 #[cfg(test)]
 mod tests {
+    use retiretui_client::present::parse_money;
     use retiretui_client::setup::EXAMPLES;
     use retiretui_engine::optimize::is_ladder;
 
@@ -430,10 +441,13 @@ mod tests {
         assert_eq!(reply.destination, ROTH);
         let best = reply.brackets.first().expect("a bracket");
         assert!(!best.steps.is_empty());
+        let converted = |cells: &[String]| parse_money(&cells[1]).expect("money");
         assert!(
-            best.figures.today[0] <= best.figures.nominal[0],
+            converted(&best.figures.today) <= converted(&best.figures.nominal),
             "converted, deflated"
         );
+        assert!(best.figures.today[0].starts_with(['+', '-', '$']));
+        assert_eq!(reply.baseline.today[0], "", "the plan's own row is blank");
         assert_eq!(best.label, rate_label(best.rate));
         assert!(best.question.starts_with("Take the "), "{}", best.question);
         let read = document.constraints_read();
