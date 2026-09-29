@@ -35,8 +35,8 @@ fn share(share: f64) -> String {
     rate((share * TENTHS_OF_A_PERCENT).round() / TENTHS_OF_A_PERCENT)
 }
 
-/// How a plan fared, `share` of its `runs`, each one of `noun`: `87% of
-/// 1,000 markets`.
+/// How a plan fared, `share_of_runs` of its `runs`, named by the noun's
+/// two forms: `87% of 1,000 markets`.
 #[must_use]
 pub fn verdict_of(share_of_runs: f64, runs: usize, (one, many): (&str, &str)) -> String {
     let counted = present::counted(runs, one, many);

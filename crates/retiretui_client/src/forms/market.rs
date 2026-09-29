@@ -35,7 +35,7 @@ fn write_wraps(item: &mut Table, wraps: &Value) {
     set_path(item, WRAP_KEY, differs.map(Value::Boolean));
 }
 
-/// The headings the Market's fields are gathered under.
+// The headings the Market's fields are gathered under.
 const SUCCESS: &str = "Success";
 const STOCKS: &str = "Stocks";
 const BONDS: &str = "Bonds";
