@@ -13,6 +13,7 @@ mod views;
 #[cfg(test)]
 mod tests;
 
+use crate::present::MoneyForm;
 use bevy_app::{App, Update};
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::entity::Entity;
@@ -184,11 +185,16 @@ fn laid<R: MarketTool>(found: &R, plan: &Plan) -> super::options::Laid {
     let runs = found.runs();
     super::options::Laid {
         header: markets::run_columns::<R>().map(str::to_owned).to_vec(),
-        current: markets::run_cells(plan, markets::PLANNED.to_owned(), &runs.planned),
+        current: markets::run_cells(
+            plan,
+            markets::PLANNED.to_owned(),
+            &runs.planned,
+            MoneyForm::Compact,
+        ),
         options: found
             .listed()
             .into_iter()
-            .map(|listed| markets::run_cells(plan, listed.first, listed.run))
+            .map(|listed| markets::run_cells(plan, listed.first, listed.run, MoneyForm::Compact))
             .collect(),
     }
 }

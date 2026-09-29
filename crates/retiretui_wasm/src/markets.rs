@@ -3,6 +3,7 @@
 //! its line of net worth, their spread, and what they were made under; and
 //! a run replayed whole for the Ledger.
 
+use retiretui_client::present::MoneyForm;
 use retiretui_client::searches::markets::{
     self, Ending, Listed, Markets, NOTHING_SEARCHED, PLANNED, Zone, market_key, market_of,
     market_said, zone_of,
@@ -103,7 +104,7 @@ fn row(plan: &Plan, key: String, first: String, run: &market::Run) -> RunRow {
         key,
         market: market_key(run.name),
         net_worth: run.net_worth.clone(),
-        cells: markets::run_cells(plan, first, run),
+        cells: markets::run_cells(plan, first, run, MoneyForm::Full),
     }
 }
 
@@ -121,7 +122,7 @@ fn runs_of<M: Markets>(plan: &Plan, found: &M) -> MarketRuns {
         .into_iter()
         .map(|Listed { key, first, run }| row(plan, key, first, run));
     let by_year = M::HAS_BY_YEAR.then(|| {
-        let (columns, rows) = markets::by_year(runs);
+        let (columns, rows) = markets::by_year(runs, MoneyForm::Full);
         Table { columns, rows }
     });
     let assumptions = markets::assumptions::<M>(plan)

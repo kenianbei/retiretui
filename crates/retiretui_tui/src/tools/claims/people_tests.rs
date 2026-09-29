@@ -163,7 +163,7 @@ fn k_computes_a_typed_benefit_as_one_step() {
     let frame = composed_frame(&app);
     assert!(frame.contains(" typed "), "{frame}");
     assert!(
-        frame.contains("typed at $2000 a month"),
+        frame.contains("typed at $2,000 a month"),
         "the help line says the figure: {frame}"
     );
     assert_eq!(run(&mut app, compute_benefit), Outcome::Done);

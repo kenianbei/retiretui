@@ -15,7 +15,7 @@ use crate::forms::DomainId;
 use crate::issues::{issue_place, issue_words};
 use crate::present::compact_money;
 use crate::session::Projected;
-use crate::table::{account_name, basis_amount, money};
+use crate::table::{account_name, basis_amount};
 
 /// What a surface says where nothing needs attention.
 pub const NOTHING: &str = "No plan issues";
@@ -77,7 +77,7 @@ fn surcharged(years: &[YearRow], dollars: &impl Fn(&YearRow, Dollars) -> Dollars
     };
     let mut text = format!(
         "Medicare surcharges, {}",
-        money(dollars(first, first.medicare))
+        compact_money(dollars(first, first.medicare))
     );
     let more = paying.count();
     if more > 0 {
@@ -189,7 +189,7 @@ start = {{ age = 67, owner = \"me\" }}
                 None,
             ),
             (
-                format!("Medicare surcharges, {}", money(first.medicare)),
+                format!("Medicare surcharges, {}", compact_money(first.medicare)),
                 Some((DomainId::Household, None)),
             ),
             (

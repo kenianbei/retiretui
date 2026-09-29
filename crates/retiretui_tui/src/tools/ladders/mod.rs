@@ -27,7 +27,7 @@ use crate::edit::{self, Draft, DraftEditor, FormButton, Ops};
 use crate::journal;
 use crate::nav::{self, Page, ShownSurface};
 use crate::overview::Better;
-use crate::present::compact_dollars;
+use crate::present::compact_money;
 use crate::session::Session;
 pub use retiretui_client::searches::ladders::{
     CONVERSION_COLUMNS, CONVERTS_NOTHING, Constraints, DESTINATION, FIELDS, NO_BRACKET,
@@ -75,7 +75,7 @@ impl Found for Swept {
             .collect();
         let row = |label: String, projection: &Projection| {
             let summary = projection.summary(deflated);
-            let converted = compact_dollars(summary.lifetime_conversions);
+            let converted = compact_money(summary.lifetime_conversions);
             [label, converted]
                 .into_iter()
                 .chain(figures(&summary))

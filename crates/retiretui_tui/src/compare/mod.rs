@@ -24,6 +24,7 @@ use plurimus::widgets::WidgetSystems;
 use retiretui_engine::plan::{Dollars, Plan};
 use retiretui_engine::project::Projection;
 
+use crate::present::MoneyForm;
 use retiretui_client::compare::{amounts, figure, less};
 
 use crate::metric::Metric;
@@ -287,7 +288,11 @@ impl Plans<'_> {
         (amounts.iter().enumerate())
             .map(|(place, amounts)| {
                 let is_difference = baseline.is_some_and(|at| at != place);
-                figure(amounts.get(&year).copied(), is_difference)
+                figure(
+                    amounts.get(&year).copied(),
+                    is_difference,
+                    MoneyForm::Compact,
+                )
             })
             .collect()
     }

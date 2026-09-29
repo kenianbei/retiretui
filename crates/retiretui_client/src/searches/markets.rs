@@ -8,7 +8,7 @@ use retiretui_engine::plan::{Account, AssetClass, Dollars, Draw, Item, Plan};
 use serde::Serialize;
 
 use crate::forms::DomainId;
-use crate::present::{self, compact_dollars};
+use crate::present::{self, MoneyForm};
 use crate::table::{count, money, percentile_label, rate};
 
 /// What a market tool's runs table says before its first search answers.
@@ -23,7 +23,8 @@ const GOOD_ZONE: f64 = 0.9;
 const CAUTION_ZONE: f64 = 0.75;
 /// Where the ending buckets break, in today's dollars: under the first,
 /// between each two, and over the last.
-const ENDING_BREAKS: [Dollars; 4] = [1_000_000, 2_000_000, 4_000_000, 8_000_000];
+const MILLION: Dollars = 1_000_000;
+const ENDING_BREAKS: [Dollars; 4] = [MILLION, 2 * MILLION, 4 * MILLION, 8 * MILLION];
 const SHORT: &str = "short";
 const WORST: &str = "Worst";
 const TRIAL: &str = "trial-";
@@ -134,10 +135,10 @@ pub fn run_columns<M: Markets>() -> [&'static str; 3] {
     [M::RUN_HEADING, "Ends with", "Short in"]
 }
 
-/// A run's row: its first cell, what it ends with, and the year it first
-/// falls short, with the eldest's age then.
+/// A run's row: its first cell, what it ends with in `form`, and the year
+/// it first falls short, with the eldest's age then.
 #[must_use]
-pub fn run_cells(plan: &Plan, first: String, run: &Run) -> Vec<String> {
+pub fn run_cells(plan: &Plan, first: String, run: &Run, form: MoneyForm) -> Vec<String> {
     let short = run.first_short.map_or_else(
         || NEVER.to_owned(),
         |year| match plan.household.people.first() {
@@ -145,7 +146,7 @@ pub fn run_cells(plan: &Plan, first: String, run: &Run) -> Vec<String> {
             None => year.to_string(),
         },
     );
-    vec![first, compact_dollars(run.ending), short]
+    vec![first, form.money(run.ending), short]
 }
 
 /// What success means under the plan's `[market]`.
@@ -215,9 +216,9 @@ pub fn assumptions<M: Markets>(plan: &Plan) -> Vec<Assumption> {
 }
 
 /// Net worth at each percentile, and the share still funded, year by
-/// year: the header, then a row a year.
+/// year, the net worth in `form`: the header, then a row a year.
 #[must_use]
-pub fn by_year(runs: &Runs) -> (Vec<String>, Vec<Vec<String>>) {
+pub fn by_year(runs: &Runs, form: MoneyForm) -> (Vec<String>, Vec<Vec<String>>) {
     let mut header = vec!["Year".to_owned()];
     header.extend(
         BAND_PERCENTILES
@@ -230,7 +231,7 @@ pub fn by_year(runs: &Runs) -> (Vec<String>, Vec<Vec<String>>) {
         .iter()
         .map(|band| {
             let mut cells = vec![band.year.to_string()];
-            cells.extend(band.net_worth.iter().map(|&worth| compact_dollars(worth)));
+            cells.extend(band.net_worth.iter().map(|&worth| form.money(worth)));
             cells.push(rate(band.funded));
             cells
         })
@@ -264,19 +265,20 @@ pub fn endings(runs: &Runs) -> Vec<Ending> {
         .collect()
 }
 
-/// The words for bucket `at`: short, then each span between the breaks.
+/// The words for bucket `at`: short, then each span between the breaks,
+/// which are whole millions.
 fn bucket_label(at: usize) -> String {
+    let millions = |amount: Dollars| format!("${}M", amount / MILLION);
     match at {
         0 => SHORT.to_owned(),
-        1 => format!("<{}", compact_dollars(ENDING_BREAKS[0])),
-        _ if at > ENDING_BREAKS.len() => format!(
-            "{}+",
-            compact_dollars(ENDING_BREAKS[ENDING_BREAKS.len() - 1])
-        ),
+        1 => format!("<{}", millions(ENDING_BREAKS[0])),
+        _ if at > ENDING_BREAKS.len() => {
+            format!("{}+", millions(ENDING_BREAKS[ENDING_BREAKS.len() - 1]))
+        }
         _ => format!(
             "{}–{}",
-            compact_dollars(ENDING_BREAKS[at - 2]),
-            compact_dollars(ENDING_BREAKS[at - 1])
+            millions(ENDING_BREAKS[at - 2]),
+            millions(ENDING_BREAKS[at - 1])
         ),
     }
 }
@@ -447,14 +449,7 @@ mod tests {
         let labels: Vec<String> = (0..ENDING_BREAKS.len() + 2).map(bucket_label).collect();
         assert_eq!(
             labels,
-            [
-                "short",
-                "<1.00M",
-                "1.00M–2.00M",
-                "2.00M–4.00M",
-                "4.00M–8.00M",
-                "8.00M+"
-            ]
+            ["short", "<$1M", "$1M–$2M", "$2M–$4M", "$4M–$8M", "$8M+"]
         );
     }
 }

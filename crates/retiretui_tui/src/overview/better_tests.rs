@@ -12,7 +12,7 @@ use super::better::Better;
 use super::tests::hold;
 use crate::edit::Draft;
 use crate::nav::{self, Page};
-use crate::present::{compact_dollars, signed_money};
+use crate::present::{compact_money, signed_money};
 use crate::session::{Projected, Session};
 use crate::success::{Success, Successes};
 use crate::support::{
@@ -210,7 +210,7 @@ fn assert_page_best(app: &mut Headless, best: &SweptBracket) {
         .unwrap_or_else(|| panic!("no option: {frame}"))
         .1;
     let converted = best.optimized.summary(!nominal(app)).lifetime_conversions;
-    let expected = [rate_label(best.rate), compact_dollars(converted)];
+    let expected = [rate_label(best.rate), compact_money(converted)];
     assert_eq!(first[..2], expected, "{frame}");
 }
 

@@ -22,7 +22,7 @@ use super::{EnterRuns, Found, ResultPane, Tool, handle_enter};
 use crate::edit::{Draft, table_bundle};
 use crate::hints::Hints;
 use crate::layout::{self, filling, placed};
-use crate::present::compact_dollars;
+use crate::present::compact_money;
 use crate::session::Basis;
 use crate::tabulate::{self, Said};
 use crate::theme::{Repainted, Theme};
@@ -58,7 +58,7 @@ pub use retiretui_client::searches::{CURRENT_PLAN, FIGURES};
 
 /// A summary's [`FIGURES`].
 pub fn figures(summary: &Summary) -> [String; 4] {
-    retiretui_client::searches::figure_amounts(summary).map(compact_dollars)
+    retiretui_client::searches::figure_amounts(summary).map(compact_money)
 }
 
 /// What the rows say: the column names, the plan's own row, and an option

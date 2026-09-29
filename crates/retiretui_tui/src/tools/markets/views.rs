@@ -6,6 +6,7 @@
 
 use std::marker::PhantomData;
 
+use crate::present::MoneyForm;
 use bevy_app::{App, Update};
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::ChildOf;
@@ -186,7 +187,7 @@ fn refresh_views<R: MarketTool>(
 
 /// Net worth at each percentile, and the share still funded, year by year.
 fn fill_by_year(commands: &mut Commands, (table, scroll): (Entity, &mut ScrollArea), runs: &Runs) {
-    let (header, rows) = markets::by_year(runs);
+    let (header, rows) = markets::by_year(runs, MoneyForm::Compact);
     let columns = tabulate::gapped_columns((&header, &rows), GAP);
     commands.entity(table).insert(columns);
     tabulate::refill(commands, (table, scroll), (&header, &rows), &[0]);

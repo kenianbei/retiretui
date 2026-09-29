@@ -193,7 +193,7 @@ mod tests {
             points,
         };
         let chart = SeriesChart::of(vec![series], Style::new());
-        assert_eq!(chart.y_labels, ["-105k", "105k"], "5% beyond each end");
+        assert_eq!(chart.y_labels, ["-$105k", "$105k"], "5% beyond each end");
         let buf = drawn(&chart);
         let column = chart.column_of(AREA, 2038).unwrap();
         let is_braille = |c: char| ('\u{2801}'..='\u{28ff}').contains(&c);

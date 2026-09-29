@@ -340,7 +340,7 @@ fn ledger_cells(row: &YearRow, style: RowStyle) -> Vec<Line<'static>> {
     let money = |amount: Dollars| {
         let amount = basis_amount(amount, row.deflator, style.is_nominal);
         let text = if style.is_compact {
-            present::compact_dollars(amount)
+            present::compact_money(amount)
         } else {
             present::money(amount)
         };
