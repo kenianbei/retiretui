@@ -315,10 +315,10 @@ function Bands(props: ChartsProps & { plan: string }) {
   );
 }
 
-/** Each chart, its tab short enough that the four share a phone's row. */
+/** Each chart, its tab named short where its whole name would not share a phone's row. */
 const TABS = [
-  { value: "balances", tab: "Balances", title: "Balances", Chart: Balances },
-  { value: "net-worth", tab: "Net worth", title: "Net worth", Chart: NetWorth },
+  { value: "balances", title: "Balances", Chart: Balances },
+  { value: "net-worth", title: "Net worth", Chart: NetWorth },
   {
     value: "income",
     tab: "Income",
@@ -326,7 +326,7 @@ const TABS = [
     Chart: IncomeAndTax,
   },
   { value: "markets", tab: "Markets", title: "Market runs", Chart: MarketRuns },
-] as const;
+];
 
 /** What the plan holds and earns year by year, and how random markets spread it. */
 export function Charts(props: ChartsProps) {
@@ -343,9 +343,9 @@ export function Charts(props: ChartsProps) {
                 key={value}
                 value={value}
                 title={title}
-                className="max-md:touch-target h-8"
+                className="h-8"
               >
-                {tab}
+                {tab ?? title}
               </TabsTrigger>
             ))}
           </TabsList>

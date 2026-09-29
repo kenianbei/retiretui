@@ -92,7 +92,8 @@ export function YearDetailCards({
             rows={detail.flows.flatMap(linesOf)}
             rowKey={(line) => line.key}
             isFirstPinned
-            className="-mx-4 rounded-none border-x-0 bg-transparent [&_td:first-child]:pl-4 [&_td:last-child]:pr-4 [&_th:first-child]:pl-4 [&_th:last-child]:pr-4"
+            isFlush
+            className="-mx-4"
           />
           {detail.warnings.length > 0 && (
             <ul className="border-warning space-y-1 border-l-4 px-3 py-1 text-sm">

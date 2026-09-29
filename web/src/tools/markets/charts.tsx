@@ -194,7 +194,6 @@ export function MarketCharts({
   const views = [
     {
       value: "bands",
-      tab: "Net worth",
       title: "Net worth",
       unit: DOLLARS,
       chart: <Bands found={found} run={run} />,
@@ -203,7 +202,6 @@ export function MarketCharts({
       ? [
           {
             value: "by-year",
-            tab: "By year",
             title: "By year",
             unit: DOLLARS,
             chart: <ByYear table={found.by_year} />,
@@ -236,9 +234,9 @@ export function MarketCharts({
                 key={view.value}
                 value={view.value}
                 title={view.title}
-                className="max-md:touch-target h-8"
+                className="h-8"
               >
-                {view.tab}
+                {view.tab ?? view.title}
               </TabsTrigger>
             ))}
           </TabsList>

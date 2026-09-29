@@ -133,7 +133,7 @@ const PAGE_LINK = {
   },
   chips: {
     list: "flex gap-2",
-    link: "touch-target block rounded-full border px-3 py-1 text-sm whitespace-nowrap",
+    link: "touch-target relative block rounded-full border px-3 py-1 text-sm whitespace-nowrap",
     current: "bg-primary text-primary-foreground border-primary",
   },
 };
@@ -173,23 +173,19 @@ function PageLinks({
 const FADE = "2rem";
 
 /**
- * Whether a sideways row has more beyond its start and its end, measured
- * again whenever `shown` changes, after the current item is scrolled into view.
+ * Whether a sideways row has more beyond its start and its end, the current
+ * item scrolled into view whenever `shown` changes.
  */
 function useScrollEdges(row: RefObject<HTMLElement | null>, shown: string) {
-  const [edges, setEdges] = useState({ isBefore: false, isAfter: false });
+  const [isBefore, setBefore] = useState(false);
+  const [isAfter, setAfter] = useState(false);
   useEffect(() => {
     const element = row.current;
     if (!element) return;
-    element
-      .querySelector('[aria-current="page"]')
-      ?.scrollIntoView({ inline: "nearest", block: "nearest" });
     const measure = () => {
       const { scrollLeft, clientWidth, scrollWidth } = element;
-      setEdges({
-        isBefore: scrollLeft > 0,
-        isAfter: scrollLeft + clientWidth < scrollWidth - 1,
-      });
+      setBefore(scrollLeft > 0);
+      setAfter(scrollLeft + clientWidth < scrollWidth - 1);
     };
     measure();
     element.addEventListener("scroll", measure, { passive: true });
@@ -199,8 +195,13 @@ function useScrollEdges(row: RefObject<HTMLElement | null>, shown: string) {
       element.removeEventListener("scroll", measure);
       observer.disconnect();
     };
+  }, [row]);
+  useEffect(() => {
+    row.current
+      ?.querySelector('[aria-current="page"]')
+      ?.scrollIntoView({ inline: "nearest", block: "nearest" });
   }, [row, shown]);
-  return edges;
+  return { isBefore, isAfter };
 }
 
 /** A mask fading whichever edge of a row has more beyond it. */
@@ -230,7 +231,7 @@ function GroupPages() {
       ref={row}
       aria-label={tab.title}
       style={{ maskImage: fadeOf(edges) }}
-      className="-mx-4 -mt-[7px] mb-[9px] overflow-x-auto px-4 py-[7px] md:hidden"
+      className="-mx-4 -mt-2 mb-2 overflow-x-auto px-4 py-2 md:hidden"
     >
       <PageLinks tab={tab} variant="chips" />
     </nav>
@@ -306,7 +307,6 @@ export function Shell() {
               onClick={() => {
                 setFinding(true);
               }}
-              className="max-md:touch-target"
             >
               <Search aria-hidden />
               <kbd className="text-muted-foreground hidden font-sans text-xs lg:inline">

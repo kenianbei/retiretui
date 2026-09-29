@@ -52,7 +52,7 @@ function Issues() {
           variant="outline"
           size="sm"
           aria-label={issueCount(issues.length)}
-          className="text-destructive max-md:touch-target"
+          className="text-destructive"
         >
           <TriangleAlert aria-hidden />
           <span className="max-md:hidden">{issueCount(issues.length)}</span>
@@ -90,7 +90,6 @@ export function DraftToolbar() {
         size="icon"
         aria-label="Undo"
         title="Undo"
-        className="max-md:touch-target"
         disabled={!document.canUndo}
         onClick={undo}
       >
@@ -101,7 +100,6 @@ export function DraftToolbar() {
         size="icon"
         aria-label="Redo"
         title="Redo"
-        className="max-md:touch-target"
         disabled={!document.canRedo}
         onClick={redo}
       >
@@ -117,7 +115,6 @@ export function DraftToolbar() {
         <Button
           variant={document.isDirty ? "default" : "outline"}
           size="sm"
-          className="max-md:touch-target"
           disabled={isReadOnly || !document.isDirty}
           onClick={save}
         >

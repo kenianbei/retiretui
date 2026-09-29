@@ -97,7 +97,7 @@ export function Options<T>({
                   rows={columns
                     .slice(1)
                     .map((header, at) => [header, row.cells[at + 1] ?? ""])}
-                  className="rounded-none border-x-0 border-b-0 bg-transparent"
+                  isFlush
                 />
               )}
             </li>

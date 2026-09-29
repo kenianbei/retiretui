@@ -21,14 +21,10 @@ test("the Ledger tables every year over the chosen year's flows", async ({
   await expect(rows.nth(20)).toBeVisible();
   const flows = page.getByRole("table", { name: /Flows/ });
   await expect(flows).toBeVisible();
-  const isFlowsFirst = await flows.evaluate(
-    (element, years) =>
-      Boolean(
-        element.compareDocumentPosition(years) &
-          Node.DOCUMENT_POSITION_FOLLOWING,
-      ),
-    await table.elementHandle(),
-  );
+  const isFlowsFirst = await page.evaluate(() => {
+    const [first] = document.querySelectorAll("table");
+    return first?.getAttribute("aria-label")?.includes("Flows") ?? false;
+  });
   expect(isFlowsFirst, "a phone reads the year's flows first").toBe(
     isPhone(testInfo),
   );

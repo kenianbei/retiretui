@@ -15,20 +15,23 @@ import { BasisSwitch, YearStepper } from "@/year/year";
 /** Where the table scrolls within its own half of the screen, the detail under it. */
 const WIDE = "(min-width: 1024px)";
 
+let wideQuery: MediaQueryList | undefined;
+
+function wide(): MediaQueryList {
+  wideQuery ??= window.matchMedia(WIDE);
+  return wideQuery;
+}
+
 function followWide(changed: () => void) {
-  const query = window.matchMedia(WIDE);
-  query.addEventListener("change", changed);
+  wide().addEventListener("change", changed);
   return () => {
-    query.removeEventListener("change", changed);
+    wide().removeEventListener("change", changed);
   };
 }
 
 /** Whether the table leads, the year's detail under it; narrower, the detail leads. */
 function useIsWide(): boolean {
-  return useSyncExternalStore(
-    followWide,
-    () => window.matchMedia(WIDE).matches,
-  );
+  return useSyncExternalStore(followWide, () => wide().matches);
 }
 
 const column = columnsFor<LedgerRow>();

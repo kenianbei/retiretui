@@ -4,7 +4,7 @@ import {
   example,
   expect,
   expectAccessible,
-  isPhone,
+  managePlans,
   openPlan,
   SEARCH,
   searchesDone,
@@ -35,10 +35,9 @@ async function pagesOf(
   );
 }
 
-const ONLY_PHONE = "the widths it holds to are a phone's";
+test.skip(({ isMobile }) => !isMobile, "the widths it holds to are a phone's");
 
-test("every page fits a phone's width", async ({ page }, testInfo) => {
-  test.skip(!isPhone(testInfo), ONLY_PHONE);
+test("every page fits a phone's width", async ({ page }) => {
   test.setTimeout(300_000);
   await seed(
     page,
@@ -75,8 +74,7 @@ async function expectNameWhole(page: Page, name: string) {
 
 test("the header names the file with an issue or a scenario open", async ({
   page,
-}, testInfo) => {
-  test.skip(!isPhone(testInfo), ONLY_PHONE);
+}) => {
   await seed(
     page,
     {
@@ -105,8 +103,7 @@ test("the header names the file with an issue or a scenario open", async ({
 
 test("the palette opens by touch, and a group's chips reach their page", async ({
   page,
-}, testInfo) => {
-  test.skip(!isPhone(testInfo), ONLY_PHONE);
+}) => {
   await seed(
     page,
     { "/couple.toml": example("mid-career-couple.toml") },
@@ -116,11 +113,14 @@ test("the palette opens by touch, and a group's chips reach their page", async (
   const chips = page.getByRole("navigation", { name: "Plan" });
   const current = chips.getByRole("link", { name: "Market" });
   await expect(current).toBeInViewport({ ratio: 0.95 });
-  const edge = await current.boundingBox();
-  const hit = await page.evaluate(
-    ({ x, y }) => document.elementFromPoint(x, y)?.textContent ?? "",
-    { x: (edge?.x ?? 0) + (edge?.width ?? 0) / 2, y: (edge?.y ?? 0) - 6 },
-  );
+  const hit = await current.evaluate((chip) => {
+    const drawn = chip.getBoundingClientRect();
+    const above = document.elementFromPoint(
+      drawn.left + drawn.width / 2,
+      drawn.top - 6,
+    );
+    return above?.textContent ?? "";
+  });
   expect(hit, "a chip is touched above its drawn edge").toBe("Market");
 
   await page
@@ -145,14 +145,13 @@ async function expectOneRow(items: Locator, what: string) {
 
 test("the chart views share a row, and a long name keeps its row's actions beside it", async ({
   page,
-}, testInfo) => {
-  test.skip(!isPhone(testInfo), ONLY_PHONE);
-  const long = "/a-plan-named-at-length-for-the-early-retirement-scenario.toml";
+}) => {
+  const long = "a-plan-named-at-length-for-the-early-retirement-scenario.toml";
   await seed(
     page,
     {
       "/couple.toml": example("mid-career-couple.toml"),
-      [long]: example("starter.toml"),
+      [`/${long}`]: example("starter.toml"),
     },
     "/couple.toml",
   );
@@ -162,14 +161,11 @@ test("the chart views share a row, and a long name keeps its row's actions besid
   await expect(page.getByRole("tab", { name: "Endings" })).toBeVisible(SEARCH);
   await expectOneRow(page.getByRole("tab"), "the market views");
 
-  await page.getByRole("button", { name: /^File, / }).click();
-  await page.getByRole("menuitem", { name: /Manage plans/ }).click();
-  const named = page.getByText(long.slice(1), { exact: true });
+  const row = (await managePlans(page))
+    .getByRole("listitem")
+    .filter({ hasText: long });
   await expectOneRow(
-    page
-      .getByRole("dialog")
-      .getByRole("button", { name: new RegExp(` ${long.slice(1)}$`) })
-      .or(named),
+    row.getByRole("button").or(row.getByText(long, { exact: true })),
     "a long name's actions",
   );
 });

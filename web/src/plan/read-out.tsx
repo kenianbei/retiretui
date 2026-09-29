@@ -69,13 +69,19 @@ export function ReadOut({
 /** Each label beside what it holds. */
 export function ReadRows({
   rows,
-  className,
+  isFlush = false,
 }: {
   rows: readonly [string, string][];
-  className?: string;
+  /** Set in a container of its own: no frame but a rule above. */
+  isFlush?: boolean;
 }) {
   return (
-    <dl className={cn("bg-card divide-y rounded-md border text-sm", className)}>
+    <dl
+      className={cn(
+        "bg-card divide-y rounded-md border text-sm",
+        isFlush && "rounded-none border-x-0 border-b-0 bg-transparent",
+      )}
+    >
       {rows.map(([label, text]) => (
         <div
           key={label}

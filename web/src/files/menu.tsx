@@ -48,7 +48,7 @@ export function FileMenu() {
             variant="ghost"
             size="sm"
             title={name ?? undefined}
-            className="max-md:touch-target min-w-0 shrink justify-start px-2 text-base font-medium"
+            className="min-w-0 shrink justify-start px-2 text-base font-medium"
           >
             {name === null ? (
               <>

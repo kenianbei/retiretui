@@ -99,8 +99,8 @@ export function ManagePlans({ isOpen, setOpen, download }: ManagePlansProps) {
             {session.files.map((path) => {
               const base = baseAt(path);
               const fileName = nameOf(path);
-              const isOpen = path === session.path;
-              const isBadged = isOpen || base !== undefined;
+              const isCurrent = path === session.path;
+              const isBadged = isCurrent || base !== undefined;
               const acts = [
                 {
                   verb: "Rename",
@@ -148,7 +148,7 @@ export function ManagePlans({ isOpen, setOpen, download }: ManagePlansProps) {
                   </div>
                   {isBadged && (
                     <div className="flex min-w-0 flex-wrap gap-1">
-                      {isOpen && <Badge>Open</Badge>}
+                      {isCurrent && <Badge>Open</Badge>}
                       {base !== undefined && (
                         <Badge variant="secondary" className="max-w-full">
                           <span className="truncate">
