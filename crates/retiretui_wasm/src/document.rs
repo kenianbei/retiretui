@@ -15,9 +15,9 @@ use retiretui_client::searches::ladders::aim_at;
 use retiretui_client::session::{Projected, Today, YearCursor, span};
 use retiretui_client::statement::{self, recorded};
 use retiretui_client::store::normal;
-use retiretui_client::unopened;
 use retiretui_engine::market::RunName;
 use retiretui_engine::optimize::benefit_estimates;
+use retiretui_engine::plan::resolve::ResolveError;
 use retiretui_engine::plan::{Dollars, Item, Plan};
 use retiretui_engine::project::{Projection, Summary, YearRow};
 use serde::Serialize;
@@ -112,11 +112,10 @@ impl Document {
     pub fn open(
         path: &str,
         read: &mut dyn FnMut(&Path) -> Result<String, String>,
-    ) -> Result<Self, String> {
+    ) -> Result<Self, ResolveError> {
         let mut files = Vec::new();
         let canonical = |path: &Path| Ok(normal(path));
-        let plan = resolve_with_files(normal(Path::new(path)), read, &canonical, &mut files)
-            .map_err(|error| unopened::said(&error))?;
+        let plan = resolve_with_files(normal(Path::new(path)), read, &canonical, &mut files)?;
         let draft = Draft::validated(plan, tables(), files.len() > 1);
         let is_valid = draft.issues().is_empty();
         let projected = is_valid.then(|| Projected::new(draft.plan.clone(), tables()));

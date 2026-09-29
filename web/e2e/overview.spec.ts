@@ -90,7 +90,10 @@ test("the strip reads the plan, and a plan that runs short says where", async ({
   const note = page.getByText(/^Runs short from \d{4}: /);
   await expect(note).toBeVisible();
   const year = /from (\d{4})/.exec((await note.textContent()) ?? "")?.[1];
-  await expect(page.getByText(/^Short \$.* from \d{4}$/)).toBeVisible();
+  await expect(
+    page.getByText("Short from the start", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText(/unfunded/)).toHaveCount(0);
   await expect(page.getByRole("term")).toHaveCount(4);
   await expect(page.getByText("through random markets")).toBeVisible(SEARCH);
   await expectAccessible(page);

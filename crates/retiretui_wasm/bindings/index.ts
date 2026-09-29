@@ -37,6 +37,7 @@ export type { MetricChoice } from "./MetricChoice";
 export type { NewPlanMade } from "./NewPlanMade";
 export type { Offer } from "./Offer";
 export type { OfferedAction } from "./OfferedAction";
+export type { OpenFailure } from "./OpenFailure";
 export type { OperandView } from "./OperandView";
 export type { OverviewRow } from "./OverviewRow";
 export type { OverviewView } from "./OverviewView";
