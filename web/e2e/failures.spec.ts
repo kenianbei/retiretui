@@ -1,6 +1,6 @@
 import { example, expect, expectAccessible, seed, test } from "./support";
 
-/** A plan a line into which a key has lost its value, with one long line. */
+/** A plan whose last key has lost its value, one line longer than a phone is wide. */
 const BROKEN = `schema = 1
 # ${"a comment long enough to run past a phone's width ".repeat(3)}
 
