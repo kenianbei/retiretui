@@ -15,6 +15,10 @@ export type MarketRuns = {
  */
 verdict: string, 
 /**
+ * The share of runs it survives and of how many: "87% of 1,000".
+ */
+success: string, 
+/**
  * The zone its share falls in.
  */
 zone: Zone, 

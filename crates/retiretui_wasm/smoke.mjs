@@ -56,7 +56,7 @@ assert.equal(chart.years[0].classes.length, chart.classes.length);
 assert.deepEqual(bandPercentiles(), [10, 25, 50, 75, 90]);
 assert.equal(compactMoney(1234567), "$1.23M");
 assert.equal(percentileLabel(90), "90th percentile");
-assert.deepEqual(document.said(first.year).ages, [["Sam", 30]]);
+assert.deepEqual(document.said(first.year, true).ages, [["Sam", 30]]);
 
 const accounts = document.table("accounts", sortPressed(sortPressed(null, 0), 0));
 assert.ok(accounts.rows.length > 0);

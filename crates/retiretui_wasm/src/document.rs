@@ -5,7 +5,7 @@
 use std::cell::{OnceCell, RefCell};
 use std::path::{Path, PathBuf};
 
-use retiretui_client::actions::{collect_warnings, sentence};
+use retiretui_client::actions::{collect_warnings, year_in_words};
 use retiretui_client::draft::Draft;
 use retiretui_client::files::resolve_with_files;
 use retiretui_client::forms::{DomainId, Form, ListOps, ToolAnswers};
@@ -95,7 +95,7 @@ pub struct SaidYear {
     pub year: i16,
     /// Each person, by display name, and the age they reach in it.
     pub ages: Vec<(String, u8)>,
-    /// Each action as a sentence, its amount nominal.
+    /// Each action as a sentence, in the dollars asked for.
     pub actions: Vec<String>,
     /// What to watch for in the year.
     pub warnings: Vec<String>,
@@ -452,25 +452,26 @@ impl Document {
         Ok(ActionsReply::new(row, warnings))
     }
 
-    /// `year` in words.
+    /// `year` in words, its amounts nominal or in today's dollars.
     ///
     /// # Errors
     ///
     /// Where the plan has issues, or `year` is outside its projection.
-    pub fn said(&self, year: i16) -> Result<SaidYear, String> {
+    pub fn said(&self, year: i16, nominal: bool) -> Result<SaidYear, String> {
         let row = self.row(year)?;
-        let plan = &self.projected()?.plan;
+        let projected = self.projected()?;
+        let plan = &projected.plan;
+        let (actions, warnings) = year_in_words(projected, tables(), row, nominal);
         let people = plan.household.people.iter();
         let ages = people.filter_map(|person| {
             let age = *row.ages.get(&person.id)?;
             Some((person.display_name().to_owned(), age))
         });
-        let actions = row.actions.iter();
         Ok(SaidYear {
             year,
             ages: ages.collect(),
-            actions: actions.map(|action| sentence(plan, action)).collect(),
-            warnings: collect_warnings(plan, tables(), row, None),
+            actions,
+            warnings,
         })
     }
 

@@ -1,5 +1,6 @@
 ---
 source: crates/retiretui_tui/src/frames.rs
+assertion_line: 45
 expression: composed_frame(app)
 ---
 ╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                              
@@ -8,12 +9,12 @@ expression: composed_frame(app)
  Money lasts                     Success                         Ends with                       Lifetime taxes                 
  Never short                     100% of 20                      $2.09M                          $697k                          
 ╭ Milestones ──────────────────────────────────────────────────╮╭ Needs attention ─────────────────────────────────────────────╮
-│▏ 2032 inheritance arrives                                   ▲││▏ 3 issues · Settings › Inflation: must be between -0.1 and   │
-│  2037 retire                                                █││    0.5                                                       │
-│  2037 db-pension starts                                     ║││  Fails from a 1968 start · 23 of 155 fail                    │
-│  2037 401k-deferral ends                                    ▼││                                                              │
+│▏ 2032 inheritance arrives                                   ▲││▏ Settings › Inflation: must be between -0.1 and 0.5          │
+│  2037 retire                                                █││  Accounts › brokerage › Balance: must not be negative        │
+│  2037 db-pension starts                                     ║││  Accounts › brokerage › Basis: must not exceed the balance   │
+│  2037 401k-deferral ends                                    ▼││  Fails from a 1968 start · 23 of 155 fail                    │
 ╰──────────────────────────────────────────────────────────────╯╰──────────────────────────────────────────────────────────────╯
-╭ Balances by tax treatment · today's dollars ─────────────────────────────╮╭ 2026 · to do · in that year's dollars ───────────╮
+╭ Balances by tax treatment · today's dollars ─────────────────────────────╮╭ 2026 · to do · today's dollars ──────────────────╮
 │2.20M│┊            ⢀⣀⣀⣀⣀                                        ⢀⣀⣀⣀⣀⣀⡠⠤⠤⠤││▏ Contribute $32,000 to fid-401k ($24,000 yours,  │
 │     │┊         ⢀⡠⠊⠁▓┊▓▓⠉⠑⠒⠒⠒⠒⠒⠒⠒⠢⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠒⠒⠒⠒⠒⠒⠒⠉⠉⠉⠉⠉⠁▓▓▓▓▓▓▓▒▒││    $8,000 employer)                              │
 │     │┊       ⡔⠊⠁▓▓▓▓┊▓▓▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒││  Contribute $8,000 to hsa                        │

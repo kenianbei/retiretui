@@ -32,4 +32,25 @@ net_worth_chart: string,
 /**
  * The income chart.
  */
-income_chart: string, };
+income_chart: string, 
+/**
+ * The Overview's strip: how long the money lasts, how surely, what it
+ * ends with and what it pays in tax.
+ */
+strip: [string, string, string, string], 
+/**
+ * The Overview's list of what needs attention.
+ */
+attention: string, 
+/**
+ * What it says where nothing does.
+ */
+nothing_wanting: string, 
+/**
+ * The Overview's list of the plan's milestones.
+ */
+milestones: string, 
+/**
+ * What a year with nothing to do says.
+ */
+nothing_scheduled: string, };

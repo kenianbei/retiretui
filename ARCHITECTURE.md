@@ -133,14 +133,19 @@ depends on UI.
   plan fared and in which zone, what the runs were made under and where each is
   edited, how they end, and the market a run went through as an address keeps it
   and as it is named - and what can be done for a person beside the claim
-  search, each edit said and refused in its own words; what plans compared side
-  by side are said in - each one's figures, or its differences from a
-  baseline's, a metric year by year, and what one changes of another; a year's
-  tax tables as a plan's projection applies them - for its filing status and the
-  state it lives in that year, or any other - in the words its other tables are
-  said in; and the shapes a search or a year's actions are replied in as data.
-  Where there is a machine beneath it, what that machine supplies: the user's
-  own tax tables, market history and directories.
+  search, each edit said and refused in its own words; what the Overview lists
+  beside its verdict - the draft's issues, the years the plan runs short or pays
+  Medicare's surcharges, the contributions it could not make as stated, a
+  benefit estimated without its record, and the plan's milestones - each row led
+  by its year or the item behind it, and a year's actions and warnings in either
+  dollar basis; what plans compared side by side are said in - each one's
+  figures, or its differences from a baseline's, a metric year by year, and what
+  one changes of another; a year's tax tables as a plan's projection applies
+  them - for its filing status and the state it lives in that year, or any
+  other - in the words its other tables are said in; and the shapes a search or
+  a year's actions are replied in as data. Where there is a machine beneath it,
+  what that machine supplies: the user's own tax tables, market history and
+  directories.
 - `retiretui_tui` - the interactive planner described under `tui` below, as a
   library over the client and above whatever backend draws it, mapping each
   editing domain to its page. It runs each search beside the frames: on a thread
@@ -350,24 +355,27 @@ depends on UI.
   its projection, summary, the year a view shows held within the plan's years,
   the Ledger's years, a year's flows, income and what it paid - these last in
   the plan's own market or one a run went through, replayed once and kept until
-  the draft changes - the series the Overview charts, and a year's actions both
-  as data and said as every surface says them, and, against another such
-  document, what the Compare page says of it: its figures or their differences
-  from the other's, a metric year by year, and what it changes of the other -
-  and the tax tables its plan asks for in a year, under issues too, with the
-  client's names for the editing domains, what the Overview, the Ledger and
-  Compare title what they show, and its count of issues, and, over a file's
-  text, the file a scenario is resolved over and the scenario renamed to name
-  another, and, over a plan's text alone so that a worker can run them, the
-  gate, the conversion search into a given account and the claim search with the
-  people held out of it, the market runs through random markets or from every
-  historical start, and the example plans - each search in the words the tools
-  table it in: the conversion and claim searches' every option in both dollar
-  bases, with what the best does better than the plan, and the market runs'
-  verdict in its zone, each run singled out with its net worth year by year and
-  the market it went through, their spread, and what they were made under with
-  where each is edited. Values cross as plain objects, typed by TypeScript
-  generated from the Rust types; the build fails where the two have drifted.
+  the draft changes - the series the Overview charts, what the Overview says of
+  it - how long the money lasts and where it runs short, what it ends with and
+  pays in tax, what needs attention and its milestones - and a year's actions
+  both as data and said as every surface says them, in either dollar basis, and,
+  against another such document, what the Compare page says of it: its figures
+  or their differences from the other's, a metric year by year, and what it
+  changes of the other - and the tax tables its plan asks for in a year, under
+  issues too, with the client's names for the editing domains, what the
+  Overview, the Ledger and Compare title what they show, and its count of
+  issues, and, over a file's text, the file a scenario is resolved over and the
+  scenario renamed to name another, and, over a plan's text alone so that a
+  worker can run them, the gate, the conversion search into a given account and
+  the claim search with the people held out of it, the market runs through
+  random markets or from every historical start, and the example plans - each
+  search in the words the tools table it in: the conversion and claim searches'
+  every option in both dollar bases, with what the best does better than the
+  plan, and the market runs' verdict in its zone, each run singled out with its
+  net worth year by year and the market it went through, their spread, and what
+  they were made under with where each is edited. Values cross as plain objects,
+  typed by TypeScript generated from the Rust types; the build fails where the
+  two have drifted.
 - `web/` - outside the cargo workspace, the web app, published at the Pages
   site's root with each release: a React page over `retiretui_wasm` for a phone
   or a desktop. Its plan files are kept in the page's own storage, under keys
@@ -385,11 +393,15 @@ depends on UI.
   hash. The Overview, the Ledger, Compare and the tools share a year, a basis
   and the people whose claims are held, all in that address and kept by the
   links between them - each route naming what of the address a tab's link
-  carries to it, and every link carrying the plans compared: the Overview says
-  what each Roth owner's best ladder and the household's best claims do better
-  than the plan, each leading to its tool, and charts the plan's balances by
-  treatment, its net worth, its income against its taxes, and its net worth
-  through random markets as percentile bands in today's dollars, a click
+  carries to it, and every link carrying the plans compared: the Overview leads
+  with how long the money lasts and how surely, noting the year a plan first
+  runs short, then says the year's actions in the dollars shown, lists what
+  needs attention beside the plan's milestones, each leading to its year in the
+  Ledger or its item, says what each Roth owner's best ladder and the
+  household's best claims do better than the plan, each leading to its tool, and
+  charts the plan's balances by treatment, its net worth, its income against its
+  taxes, and its net worth through random markets as percentile bands in today's
+  dollars, each chart one image with the Ledger as its table and a click
   choosing the year its actions are for; the Ledger is every year in a table
   whose year column stays in view, over the chosen year's flows through each
   account and its income and tax, the arrow keys stepping the year on both. The

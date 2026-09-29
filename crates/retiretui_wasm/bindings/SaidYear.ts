@@ -14,7 +14,7 @@ year: number,
  */
 ages: Array<[string, number]>, 
 /**
- * Each action as a sentence, its amount nominal.
+ * Each action as a sentence, in the dollars asked for.
  */
 actions: Array<string>, 
 /**

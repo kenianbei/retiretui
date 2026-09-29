@@ -27,6 +27,8 @@ const PLANNED_KEY: &str = "planned";
 pub struct MarketRuns {
     /// How the plan fared: "money lasts in 87% of 1,000".
     pub verdict: String,
+    /// The share of runs it survives and of how many: "87% of 1,000".
+    pub success: String,
     /// The zone its share falls in.
     pub zone: Zone,
     /// The share of runs that succeeded.
@@ -133,6 +135,7 @@ fn runs_of<M: Markets>(plan: &Plan, found: &M) -> MarketRuns {
         .collect();
     MarketRuns {
         verdict: format!("{} {}", M::HEADLINE, found.verdict()),
+        success: found.verdict(),
         zone: zone_of(runs.success_rate()),
         success_rate: runs.success_rate(),
         count: runs.runs.len(),

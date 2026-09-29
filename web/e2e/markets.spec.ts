@@ -18,7 +18,7 @@ test("the plan through random markets and history, a run opened in the Ledger", 
   await seed(page, { "/mix.toml": example("market-mix.toml") }, "/mix.toml");
   const row = (name: string) => rowNamed(page, testInfo, name);
 
-  const figure = page.getByText(/^\d+(\.\d+)?%$/).first();
+  const figure = page.getByText(/^\d+(\.\d+)?% of [\d,]+$/).first();
   await expect(figure).toHaveClass(ZONED, SEARCH);
 
   await page.goto("#/tools/monte-carlo");

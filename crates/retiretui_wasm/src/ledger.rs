@@ -1,14 +1,15 @@
 //! The projection as the Ledger and the Overview's charts show it: the
 //! year table, a year's flows, income and tax, and the series charted.
 
-use retiretui_client::actions::collect_warnings;
+use retiretui_client::actions::{NOTHING_SCHEDULED, collect_warnings};
 use retiretui_client::ledger::{
     AccountFlows, DetailLine, FLOW_HEADERS, FLOWS, INCOME_AND_TAX, account_flows, income_and_tax,
     ledger_headers, salary_marks,
 };
+use retiretui_client::overview::{ATTENTION, MILESTONES, NOTHING};
 use retiretui_client::present::{
-    BALANCES_CHART, INCOME_CHART, NET_WORTH_CHART, basis_name, compact_money, money,
-    treatment_class,
+    BALANCES_CHART, ENDS_WITH, INCOME_CHART, LIFETIME_TAXES, MONEY_LASTS, NET_WORTH_CHART, SUCCESS,
+    basis_name, compact_money, money, treatment_class,
 };
 use retiretui_client::replies::year_row;
 use retiretui_client::session::Projected;
@@ -263,6 +264,17 @@ pub struct ViewWords {
     pub net_worth_chart: &'static str,
     /// The income chart.
     pub income_chart: &'static str,
+    /// The Overview's strip: how long the money lasts, how surely, what it
+    /// ends with and what it pays in tax.
+    pub strip: [&'static str; 4],
+    /// The Overview's list of what needs attention.
+    pub attention: &'static str,
+    /// What it says where nothing does.
+    pub nothing_wanting: &'static str,
+    /// The Overview's list of the plan's milestones.
+    pub milestones: &'static str,
+    /// What a year with nothing to do says.
+    pub nothing_scheduled: &'static str,
 }
 
 /// What the Overview, the Ledger and Compare call what they show.
@@ -280,6 +292,11 @@ pub fn view_words() -> Result<JsValue, JsError> {
         balances_chart: BALANCES_CHART,
         net_worth_chart: NET_WORTH_CHART,
         income_chart: INCOME_CHART,
+        strip: [MONEY_LASTS, SUCCESS, ENDS_WITH, LIFETIME_TAXES],
+        attention: ATTENTION,
+        nothing_wanting: NOTHING,
+        milestones: MILESTONES,
+        nothing_scheduled: NOTHING_SCHEDULED,
     })
 }
 

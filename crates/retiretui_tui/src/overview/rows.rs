@@ -11,16 +11,17 @@ use plurimus::core::ratatui_core::style::Style;
 use plurimus::ui::{ComputedWidgetArea, ScrollArea};
 use plurimus::widgets::{ActiveDescendant, ValueChange};
 
+use super::attention;
 use super::better::{self, Better};
-use super::{attention, milestones};
 use crate::command::Outcome;
-use crate::edit::{Draft, Turn};
+use crate::edit::{Draft, Turn, page_of};
 use crate::hints::Hints;
 use crate::layout;
 use crate::nav::Page;
 use crate::session::{LedgerRun, RowYear, Shown, YearCursor};
 use crate::theme::Theme;
 use crate::tools::ladders;
+use retiretui_client::overview::{ATTENTION, MILESTONES, Row, milestones};
 use retiretui_client::searches::overview::COULD_DO_BETTER;
 
 const HINTS: Hints = Hints(&[("↑↓", "scroll"), ("⏎", "open")]);
@@ -58,6 +59,19 @@ pub(super) struct Entry {
     pub tone: Tone,
 }
 
+impl From<Row> for Entry {
+    /// A client row, opening its item's page.
+    fn from(row: Row) -> Self {
+        Self {
+            text: row.text,
+            year: row.year,
+            opens: row.place.map(|(domain, index)| (page_of(domain), index)),
+            leads: None,
+            tone: Tone::Plain,
+        }
+    }
+}
+
 impl Entry {
     pub fn plain(text: String) -> Self {
         Self {
@@ -72,14 +86,6 @@ impl Entry {
     pub fn leading(text: String, lead: Lead) -> Self {
         Self {
             leads: Some(lead),
-            ..Self::plain(text)
-        }
-    }
-
-    pub fn dated(year: i16, text: String, opens: Target) -> Self {
-        Self {
-            year: Some(year),
-            opens: Some(opens),
             ..Self::plain(text)
         }
     }
@@ -103,8 +109,8 @@ pub(super) enum List {
 impl List {
     const fn title(self) -> &'static str {
         match self {
-            Self::Milestones => "Milestones",
-            Self::Attention => "Needs attention",
+            Self::Milestones => MILESTONES,
+            Self::Attention => ATTENTION,
             Self::Better => COULD_DO_BETTER,
         }
     }
@@ -154,7 +160,9 @@ pub(super) fn refresh(
         let nominal = shown.basis.nominal;
         let projected = &shown.projected;
         let entries = match leads.list {
-            List::Milestones => milestones::entries(projected, nominal),
+            List::Milestones => (milestones(projected, nominal).into_iter())
+                .map(Entry::from)
+                .collect(),
             List::Attention => {
                 let historical = better.found().and_then(|found| found.historical.as_ref());
                 attention::entries(projected, &draft, (nominal, historical))

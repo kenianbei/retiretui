@@ -6,7 +6,6 @@
 mod attention;
 mod better;
 mod charts;
-mod milestones;
 mod rows;
 mod todo;
 mod verdict;
