@@ -11,7 +11,7 @@ use plurimus::core::UiWidget;
 use plurimus::core::ratatui_core::style::{Modifier, Style};
 use plurimus::core::ratatui_core::text::Line;
 use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
-use retiretui_client::searches::markets::Markets;
+use retiretui_client::searches::markets::{self, Markets};
 use retiretui_engine::market::MonteCarlo;
 
 use crate::hints::Hints;
@@ -100,14 +100,9 @@ impl Tile {
 /// The share of markets survived, and of how many.
 fn success_text(success: Success, projected: &Projected) -> String {
     match success {
-        Success::Rate(_) => {
+        Success::Rate(rate) => {
             let trials = usize::try_from(projected.plan.market().trials()).unwrap_or_default();
-            let (one, many) = <MonteCarlo as Markets>::RUN_NOUN;
-            format!(
-                "{} of {}",
-                success.text(),
-                present::counted(trials, one, many)
-            )
+            markets::verdict_of(rate, trials, <MonteCarlo as Markets>::RUN_NOUN)
         }
         _ => success.text(),
     }

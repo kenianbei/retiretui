@@ -132,12 +132,11 @@ pub struct FieldSpec {
     pub group: Option<&'static str>,
 }
 
-/// The heading drawn above `spec` where it starts a group: where the field
-/// on show `before` it is in no group or another.
+/// The heading drawn above a field in `group` where it starts it: where
+/// the field before it was in no group or `before`, another.
 #[must_use]
-pub fn heading(before: Option<&FieldSpec>, spec: &FieldSpec) -> Option<&'static str> {
-    spec.group
-        .filter(|group| before.and_then(|before| before.group) != Some(group))
+pub fn heading(before: Option<&str>, group: Option<&'static str>) -> Option<&'static str> {
+    group.filter(|&group| before != Some(group))
 }
 
 /// What an empty field stands for, said as a placeholder while it is

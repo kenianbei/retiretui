@@ -35,9 +35,13 @@ fn share(share: f64) -> String {
     rate((share * TENTHS_OF_A_PERCENT).round() / TENTHS_OF_A_PERCENT)
 }
 
-/// What a verdict follows where it stands alone: `Money lasts in 87% of
+/// How a plan fared, `share` of its `runs`, each one of `noun`: `87% of
 /// 1,000 markets`.
-pub const MONEY_LASTS_IN: &str = "Money lasts in";
+#[must_use]
+pub fn verdict_of(share_of_runs: f64, runs: usize, (one, many): (&str, &str)) -> String {
+    let counted = present::counted(runs, one, many);
+    format!("{} of {counted}", share(share_of_runs))
+}
 
 /// What a market tool searches, and how it names what it found.
 pub trait Markets {
@@ -61,18 +65,14 @@ pub trait Markets {
     /// How the plan fared, under a heading that says of what: `87% of
     /// 1,000 markets`.
     fn verdict(&self) -> String {
-        let (runs, (one, many)) = (self.runs(), Self::RUN_NOUN);
-        let share = share(runs.success_rate());
-        format!(
-            "{share} of {}",
-            present::counted(runs.runs.len(), one, many)
-        )
+        let runs = self.runs();
+        verdict_of(runs.success_rate(), runs.runs.len(), Self::RUN_NOUN)
     }
 
     /// How the plan fared, as a sentence of its own: `Money lasts in 87%
     /// of 1,000 markets`.
     fn headline(&self) -> String {
-        format!("{MONEY_LASTS_IN} {}", self.verdict())
+        format!("{} in {}", present::MONEY_LASTS, self.verdict())
     }
 
     /// What the runs are made under, besides what both tools share.

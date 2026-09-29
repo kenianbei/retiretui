@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { statementPage } from "@wasm/retiretui_wasm.js";
+import { statementPage, type ReadRow } from "@wasm/retiretui_wasm.js";
 import { Pencil, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -67,17 +67,10 @@ export function ReadOut({
   );
 }
 
-/** A label beside what it holds. */
-export interface ReadRowView {
-  label: string;
-  text: string;
-  /** Whether it is a figure, aligned as one. */
-  isFigure?: boolean;
-  /** Whether it is what a blank field stands for rather than stated. */
-  is_unstated?: boolean;
-  /** The heading it is gathered under with its neighbours. */
-  group?: string | null;
-}
+/** A label beside what it holds, as the client reads it out, and whether
+ * it is a figure, aligned as one. */
+export type ReadRowView = Pick<ReadRow, "label" | "text"> &
+  Partial<Pick<ReadRow, "is_unstated" | "group">> & { isFigure?: boolean };
 
 /**
  * Each label beside what it holds, what a blank stands for muted, and

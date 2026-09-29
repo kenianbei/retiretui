@@ -27,7 +27,7 @@ pub fn has_details(form: &Form, list: ListOps) -> bool {
 }
 
 /// A row of an item read out: a field's label and what it holds.
-#[derive(Clone, PartialEq, Eq, Debug, Serialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct ReadRow {
     /// What the form calls the field.
@@ -68,8 +68,7 @@ pub fn rows(form: &Form, item: &Table, plan: &Plan) -> Vec<ReadRow> {
         rows.extend(record(item).into_iter().map(|[label, text]| ReadRow {
             label,
             text,
-            is_unstated: false,
-            group: None,
+            ..ReadRow::default()
         }));
     }
     rows

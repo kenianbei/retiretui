@@ -154,7 +154,7 @@ pub struct ClaimWords {
     /// The People table's columns.
     pub people_columns: [&'static str; 6],
     /// Its abbreviated columns, each with its words in full.
-    pub spelled_out: [(&'static str, &'static str); 1],
+    pub spelled_out: &'static [(&'static str, &'static str)],
     /// Before anything is searched.
     pub nothing_searched: &'static str,
     /// Where the household has no one.

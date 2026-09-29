@@ -17,6 +17,8 @@ export interface OptionRow<T> {
   option: T | null;
 }
 
+const NO_SPELLING: readonly (readonly [string, string])[] = [];
+
 interface OptionsProps<T> {
   label: string;
   columns: readonly string[];
@@ -42,7 +44,7 @@ export function Options<T>({
   rows,
   narrowFigure,
   words = 1,
-  spelledOut = [],
+  spelledOut = NO_SPELLING,
   highlighted,
   highlight,
 }: OptionsProps<T>) {

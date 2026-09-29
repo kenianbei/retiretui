@@ -23,6 +23,7 @@ use crate::nav::{FocusStop, ShownSurface};
 use crate::pane::Pane;
 use crate::tabulate;
 use retiretui_client::forms::details::{self, ReadRow};
+use retiretui_client::forms::heading;
 
 /// The width of the pane beside a table, borders included: the longest
 /// label, a gap, and a value's worth of cells; beside the sidebar and a
@@ -105,7 +106,7 @@ pub fn refresh(
         let read = item.map_or_else(Vec::new, |item| {
             details::rows(&shown_of.ops, &item, &draft.plan)
         });
-        let (rows, styles) = drawn(&read);
+        let (rows, styles) = drawn(read);
         commands
             .entity(table)
             .insert(tabulate::labelled(&rows, GAP));
@@ -126,21 +127,21 @@ pub fn refresh(
 
 /// The rows `read` is drawn as, each heading above the fields it gathers,
 /// and the style each row stands out in, where it does.
-fn drawn(read: &[ReadRow]) -> (Vec<Vec<String>>, Vec<Option<Style>>) {
+fn drawn(read: Vec<ReadRow>) -> (Vec<Vec<String>>, Vec<Option<Style>>) {
     let mut rows = Vec::with_capacity(read.len());
     let mut styles = Vec::with_capacity(read.len());
     let mut before = None;
     for row in read {
-        if let Some(group) = row.group.filter(|&group| before != Some(group)) {
+        if let Some(group) = heading(before, row.group) {
             rows.push(vec![group.to_owned(), String::new()]);
             styles.push(Some(HEADING));
         }
         before = row.group;
         let label = match row.group {
             Some(_) => format!("{GATHERED}{}", row.label),
-            None => row.label.clone(),
+            None => row.label,
         };
-        rows.push(vec![label, row.text.clone()]);
+        rows.push(vec![label, row.text]);
         styles.push(row.is_unstated.then_some(UNSTATED));
     }
     (rows, styles)

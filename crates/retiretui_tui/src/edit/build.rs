@@ -183,12 +183,11 @@ pub fn spawn_form(commands: &mut Commands, form: Entity, ops: Ops, is_alone: boo
         .id();
     commands.entity(bar).insert(ChildOf(form));
     let mut before = None;
-    for spec in ops.fields {
-        if let Some(heading) = heading(before, spec) {
+    for &spec in ops.fields {
+        if let Some(heading) = heading(before, spec.group) {
             spawn_heading(commands, column, heading);
         }
-        before = Some(spec);
-        let spec = *spec;
+        before = spec.group;
         let gutter = gutter_cols(ops.fields, &spec);
         let row = spawn_row(commands, column, spec, gutter, label_cols - gutter);
         if let Some(dependent) = Dependent::of(ops.fields, &spec) {

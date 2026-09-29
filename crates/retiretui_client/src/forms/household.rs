@@ -19,9 +19,7 @@ impl Domain for People {
     const FIELDS: &'static [FieldSpec] = &[
         FieldSpec::text("id", "ID")
             .help("A short name for this person, which accounts and income refer to."),
-        FieldSpec::text("name", "Name")
-            .blank("The ID")
-            .help("The person's name as it is shown. Blank shows the ID."),
+        FieldSpec::name("The person's name as it is shown. Blank shows the ID."),
         FieldSpec::text("birth", "Birth date")
             .help("As year-month-day, such as 1975-06-14. Ages are counted from it."),
     ];

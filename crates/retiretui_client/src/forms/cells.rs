@@ -93,17 +93,6 @@ pub struct Cell {
     pub is_unstated: bool,
 }
 
-impl Cell {
-    /// A cell of words, not a value an empty field stands in for.
-    fn said(text: String) -> Self {
-        Self {
-            text,
-            number: None,
-            is_unstated: false,
-        }
-    }
-}
-
 /// What a column's cells are read against, found once per table rather
 /// than once per cell.
 pub struct Shown<'a> {
@@ -159,10 +148,16 @@ impl<'a> Shown<'a> {
     pub fn cell(&self, item: &Table, plan: &Plan) -> Cell {
         if let Some(identity) = self.identity {
             let text = display_name(item, identity, self.fields).unwrap_or_default();
-            return Cell::said(text);
+            return Cell {
+                text,
+                ..Cell::default()
+            };
         }
         if let Some(phrase) = self.phrase {
-            return Cell::said(phrase(item, plan));
+            return Cell {
+                text: phrase(item, plan),
+                ..Cell::default()
+            };
         }
         let value = get_path(item, self.key);
         Cell {
@@ -172,8 +167,6 @@ impl<'a> Shown<'a> {
         }
     }
 
-    /// What of `value` the column shows: a list's place and an order's are
-    /// read out of the whole the item holds.
     fn held<'v>(&self, value: Option<&'v Value>) -> Option<&'v Value> {
         match self.spec.map(|spec| spec.kind) {
             Some(FieldKind::Listed(back)) => nth_back(value, back),

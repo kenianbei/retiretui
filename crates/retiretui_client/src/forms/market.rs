@@ -52,15 +52,13 @@ const fn pair(key: &'static str, label: &'static str, default: &'static str) -> 
         .help(PAIR_HELP)
 }
 
-const fn mean(key: &'static str, class: &'static str, default: &'static str) -> FieldSpec {
-    FieldSpec::rate(key, "Mean return")
-        .in_group(class)
-        .defaults_to(default)
-}
-
-const fn spread(key: &'static str, class: &'static str, default: &'static str) -> FieldSpec {
-    FieldSpec::rate(key, "Spread")
-        .in_group(class)
+const fn rate_in(
+    key: &'static str,
+    (group, label): (&'static str, &'static str),
+    default: &'static str,
+) -> FieldSpec {
+    FieldSpec::rate(key, label)
+        .in_group(group)
         .defaults_to(default)
 }
 
@@ -72,16 +70,16 @@ impl Single for MarketSettings {
         FieldSpec::money("leave_at_least", "Leave at least").in_group(SUCCESS).blank("Nothing").help(
             "Besides never falling short, what a run must end with, in today's dollars, to count as a success. Optional.",
         ),
-        mean("stocks.mean", STOCKS, "6%").help("Stocks' compound yearly return, the median year's. Blank is 6%."),
-        spread("stocks.volatility", STOCKS, "16%")
-            .help("How far a year\'s return strays, as a standard deviation. Blank is 16%."),
-        mean("bonds.mean", BONDS, "4%").help("Bonds' compound yearly return, the median year's. Blank is 4%."),
-        spread("bonds.volatility", BONDS, "6%")
-            .help("How far a year\'s return strays, as a standard deviation. Blank is 6%."),
-        mean("cash.mean", CASH, "2.5%").help("Cash's compound yearly return, the median year's. Blank is 2.5%."),
-        spread("cash.volatility", CASH, "1%")
-            .help("How far a year\'s return strays, as a standard deviation. Blank is 1%."),
-        FieldSpec::rate("inflation.volatility", "Spread").in_group(INFLATION).defaults_to("1.5%").help(
+        rate_in("stocks.mean", (STOCKS, "Mean return"), "6%").help("Stocks' compound yearly return, the median year's. Blank is 6%."),
+        rate_in("stocks.volatility", (STOCKS, "Spread"), "16%")
+            .help("How far a year's return strays, as a standard deviation. Blank is 16%."),
+        rate_in("bonds.mean", (BONDS, "Mean return"), "4%").help("Bonds' compound yearly return, the median year's. Blank is 4%."),
+        rate_in("bonds.volatility", (BONDS, "Spread"), "6%")
+            .help("How far a year's return strays, as a standard deviation. Blank is 6%."),
+        rate_in("cash.mean", (CASH, "Mean return"), "2.5%").help("Cash's compound yearly return, the median year's. Blank is 2.5%."),
+        rate_in("cash.volatility", (CASH, "Spread"), "1%")
+            .help("How far a year's return strays, as a standard deviation. Blank is 1%."),
+        rate_in("inflation.volatility", (INFLATION, "Spread"), "1.5%").help(
             "How far a year's inflation strays from the plan's rate, as a yearly shock. Blank is 1.5%.",
         ),
         FieldSpec::share("inflation.persistence", "Persistence").in_group(INFLATION).defaults_to("60%").help(
@@ -205,8 +203,10 @@ mod tests {
     #[test]
     fn the_fields_are_gathered_under_headings_and_named_with_them_elsewhere() {
         let fields = MarketSettings::FIELDS;
-        let headings: Vec<&str> = (0..fields.len())
-            .filter_map(|at| heading(at.checked_sub(1).map(|before| &fields[before]), &fields[at]))
+        let mut before = None;
+        let headings: Vec<&str> = fields
+            .iter()
+            .filter_map(|spec| heading(std::mem::replace(&mut before, spec.group), spec.group))
             .collect();
         let expected = [
             "Success",

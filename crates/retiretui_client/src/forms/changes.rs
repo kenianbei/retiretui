@@ -71,12 +71,5 @@ fn value_words(
     if !shown.is_empty() {
         return shown.join(", ");
     }
-    value.map_or_else(
-        || {
-            Some(spec.unstated())
-                .filter(|words| !words.is_empty())
-                .unwrap_or_else(|| BLANK.to_owned())
-        },
-        to_text,
-    )
+    value.map_or_else(|| BLANK.to_owned(), to_text)
 }

@@ -17,6 +17,7 @@ import type { ToolSearch } from "@/tools/search";
 import { basisOf, heldIn, heldOf } from "@/year/search";
 import { BasisSwitch } from "@/year/year";
 import { offeredName } from "@/workspace";
+import { ToolAbout } from "@/tools/about";
 
 const WORDS = claimWords();
 
@@ -103,9 +104,7 @@ export function ClaimsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">SSA Benefits</h1>
         <BasisSwitch />
-        <p className="text-muted-foreground w-full max-w-prose">
-          {WORDS.about}
-        </p>
+        <ToolAbout about={WORDS.about} />
       </div>
       <section aria-labelledby="people" className="space-y-3">
         <h2 id="people" className="text-lg font-semibold">

@@ -18,6 +18,7 @@ import { ZONE_CLASS } from "@/tools/markets/zone";
 import { Options, type OptionRow } from "@/tools/options";
 import type { ToolSearch } from "@/tools/search";
 import { keptSearch } from "@/year/search";
+import { ToolAbout } from "@/tools/about";
 
 const WORDS = marketWords();
 /** The runs table's column a phone's row shows beside its name. */
@@ -123,11 +124,13 @@ export function MarketsPage({
             <span className="text-muted-foreground text-sm">Searching…</span>
           )}
         </div>
-        <p className="text-muted-foreground max-w-prose">
-          {kind === "monteCarlo"
-            ? WORDS.monte_carlo_about
-            : WORDS.historical_about}
-        </p>
+        <ToolAbout
+          about={
+            kind === "monteCarlo"
+              ? WORDS.monte_carlo_about
+              : WORDS.historical_about
+          }
+        />
         {reply && (
           <p className={cn("text-lg font-semibold", ZONE_CLASS[reply.zone])}>
             {reply.verdict}

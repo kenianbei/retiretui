@@ -17,7 +17,7 @@ impl Domain for Incomes {
         FieldSpec::text("id", "ID")
             .blank("None")
             .help("A short handle, needed only when something else refers to this income."),
-        FieldSpec::text("name", "Name").blank("The ID").help("What the income is called. Blank shows the ID."),
+        FieldSpec::name("What the income is called. Blank shows the ID."),
         FieldSpec::choice("kind", "Type", Vocabulary::IncomeKind)
             .help("The kind of income, which decides how it is taxed."),
         FieldSpec::refers("owner", "Owner", RefSource::Person).help("Who receives it."),

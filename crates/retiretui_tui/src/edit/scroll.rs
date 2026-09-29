@@ -43,17 +43,19 @@ fn fit_forms(
         if !is_moved && !column.is_added() {
             continue;
         }
-        let is_shown = |row| {
-            rows.get(row)
-                .is_ok_and(|node| node.display != Display::None)
-        };
-        let shown = held.iter().filter(|&&row| is_shown(row)).count();
+        let shown = held.iter().filter(|&&row| is_shown(&rows, row)).count();
         let Ok(mut centred) = boxes.get_mut(form.parent()) else {
             continue;
         };
         let shown = u16::try_from(shown).unwrap_or(u16::MAX);
         overlay::hold(&mut centred, shown.saturating_add(BELOW_FIELDS));
     }
+}
+
+/// Whether `row` of a form's fields is on show.
+fn is_shown(rows: &Query<&Node>, row: Entity) -> bool {
+    rows.get(row)
+        .is_ok_and(|node| node.display != Display::None)
 }
 
 /// Scrolls a form's fields by the least that shows the row holding the
@@ -81,15 +83,10 @@ fn reveal_focused(
     let Ok((view, rows, mut scroll)) = columns.get_mut(column) else {
         return;
     };
-    let is_shown = |each: &&Entity| {
-        nodes
-            .get(**each)
-            .is_ok_and(|node| node.display != Display::None)
-    };
     let above = rows
         .iter()
         .take_while(|&&each| each != row)
-        .filter(is_shown)
+        .filter(|&&each| is_shown(&nodes, each))
         .count();
     let (top, height) = (above as f32, f32::from(view.content.height));
     if top < scroll.0.y {

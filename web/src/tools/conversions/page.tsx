@@ -18,6 +18,7 @@ import type { Basis } from "@/overview/words";
 import { basisOf } from "@/year/search";
 import { BasisSwitch } from "@/year/year";
 import { offeredName } from "@/workspace";
+import { ToolAbout } from "@/tools/about";
 
 const WORDS = ladderWords();
 
@@ -114,9 +115,7 @@ export function ConversionsPage() {
           Roth Conversions
         </h1>
         <BasisSwitch />
-        <p className="text-muted-foreground w-full max-w-prose">
-          {WORDS.about}
-        </p>
+        <ToolAbout about={WORDS.about} />
       </div>
       <Constraints />
       <section aria-labelledby="options" className="space-y-3">

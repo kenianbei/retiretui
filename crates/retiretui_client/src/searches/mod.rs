@@ -57,13 +57,9 @@ pub fn page_refusal(error: RunError) -> String {
     };
     let sentences = issues.iter().map(|issue| {
         let mut letters = issue.message.chars();
-        let first = letters.next().map(char::to_uppercase);
-        first
-            .into_iter()
-            .flatten()
-            .chain(letters)
-            .collect::<String>()
-            + "."
+        letters.next().map_or_else(String::new, |first| {
+            format!("{}{}.", first.to_uppercase(), letters.as_str())
+        })
     });
     sentences.collect::<Vec<_>>().join("\n")
 }

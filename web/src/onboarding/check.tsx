@@ -9,21 +9,10 @@ import { INPUT, cn, messageOf } from "@/lib/utils";
 import type { Answering } from "@/onboarding/page";
 import { planName } from "@/workspace";
 
-/** What a field holds, as its control shows it, and whether that is what
- * a blank answer stands for. */
-function answerOf(view: FieldView): { said: string; isUnstated: boolean } {
-  const isUnstated = view.text === "";
+/** What a field holds, as its control shows it, or what its blank stands for. */
+function answerOf(view: FieldView): string {
   const offer = view.offers.find((each) => each.value === view.text);
-  if (offer) return { said: offer.label, isUnstated };
-  return { said: isUnstated ? view.unstated : view.text, isUnstated };
-}
-
-function Answer({ said, isUnstated }: { said: string; isUnstated: boolean }) {
-  return (
-    <dd className={cn("break-words", isUnstated && "text-muted-foreground")}>
-      {said}
-    </dd>
-  );
+  return offer?.label ?? (view.text || view.unstated);
 }
 
 /** Every answer read back, each to be changed, then the plan named and made. */
@@ -56,7 +45,14 @@ export function CheckAnswers({ answering }: { answering: Answering }) {
                   className="grid grid-cols-[minmax(8rem,40%)_1fr_auto] items-baseline gap-3 px-4 py-2"
                 >
                   <dt className="text-muted-foreground">{view.label}</dt>
-                  <Answer {...answerOf(view)} />
+                  <dd
+                    className={cn(
+                      "break-words",
+                      view.text === "" && "text-muted-foreground",
+                    )}
+                  >
+                    {answerOf(view)}
+                  </dd>
                   <dd>
                     <Link
                       to="/new/$step"

@@ -17,9 +17,7 @@ impl Domain for Transfers {
         FieldSpec::text("id", "ID")
             .blank("None")
             .help("A short handle scenarios address this transfer by. Optional."),
-        FieldSpec::text("name", "Name")
-            .blank("The ID")
-            .help("What the transfer is called. Blank shows the ID."),
+        FieldSpec::name("What the transfer is called. Blank shows the ID."),
         FieldSpec::refers("from", "From", RefSource::Account).help("The account the money leaves."),
         FieldSpec::refers("to", "To", RefSource::Account).help("The account the money lands in."),
         FieldSpec::trigger("on", "When").help("The year the transfer happens, once."),
@@ -62,9 +60,7 @@ impl Domain for Conversions {
         FieldSpec::text("id", "ID")
             .blank("None")
             .help("A short handle scenarios address this conversion by. Optional."),
-        FieldSpec::text("name", "Name")
-            .blank("The ID")
-            .help("What the conversion is called. Blank shows the ID."),
+        FieldSpec::name("What the conversion is called. Blank shows the ID."),
         FieldSpec::refers("from", "From", RefSource::Account)
             .help("The tax-deferred account converted out of."),
         FieldSpec::refers("to", "To", RefSource::Account).help("The Roth account converted into."),
@@ -112,9 +108,7 @@ impl Domain for Events {
     const FIELDS: &'static [FieldSpec] = &[
         FieldSpec::text("id", "ID")
             .help("The name other items use for this moment, such as retire."),
-        FieldSpec::text("name", "Name")
-            .blank("The ID")
-            .help("What the event is called. Blank shows the ID."),
+        FieldSpec::name("What the event is called. Blank shows the ID."),
         FieldSpec::trigger("trigger", "When").help("When the event happens."),
     ];
     const COLUMNS: &'static [Column] = &[Column::new("id").headed("Event"), Column::new("trigger")];

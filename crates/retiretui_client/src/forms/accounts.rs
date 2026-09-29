@@ -143,7 +143,7 @@ impl Domain for Accounts {
     const FIELDS: &'static [FieldSpec] = &[
         FieldSpec::text("id", "ID")
             .help("A short unique handle other items refer to this account by."),
-        FieldSpec::text("name", "Name").blank("The ID").help("What the account is called. Blank shows the ID."),
+        FieldSpec::name("What the account is called. Blank shows the ID."),
         FieldSpec::choice("kind", "Type", Vocabulary::AccountKind)
             .help("The kind of account, which decides how it is taxed."),
         FieldSpec::flag("roth", "Roth")

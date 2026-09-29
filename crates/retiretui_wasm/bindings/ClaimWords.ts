@@ -16,7 +16,7 @@ people_columns: [string, string, string, string, string, string],
 /**
  * Its abbreviated columns, each with its words in full.
  */
-spelled_out: [[string, string]], 
+spelled_out: Array<[string, string]>, 
 /**
  * Before anything is searched.
  */

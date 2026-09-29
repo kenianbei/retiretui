@@ -26,7 +26,7 @@ pub const HELD: &str = "Held";
 pub const PEOPLE_COLUMNS: [&str; 6] = ["Person", "Earnings", "Benefit", "62", "FRA", "70"];
 
 /// The People table's abbreviated columns, each with its words in full.
-pub const SPELLED_OUT: [(&str, &str); 1] = [("FRA", "full retirement age")];
+pub const SPELLED_OUT: &[(&str, &str)] = &[("FRA", "full retirement age")];
 
 /// What an action on nobody is refused with.
 pub const NOBODY: &str = "no one in the household";
@@ -254,7 +254,7 @@ fn fill_career(plan: &mut Plan, tables: &TaxTables, id: &str) -> Result<String, 
         ));
     }
     let career = career_at_salary(plan, tables, id)?;
-    let years = crate::present::counted(career.len(), "year", "years");
+    let years = counted(career.len(), "year", "years");
     plan.household.people[at].earnings = career;
     Ok(format!(
         "estimated {years} of earnings for {name} from a career at their salary"
