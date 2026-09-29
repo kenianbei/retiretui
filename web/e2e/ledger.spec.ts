@@ -1,8 +1,15 @@
-import { example, expect, expectAccessible, seed, test } from "./support";
+import {
+  example,
+  expect,
+  expectAccessible,
+  isPhone,
+  seed,
+  test,
+} from "./support";
 
 test("the Ledger tables every year over the chosen year's flows", async ({
   page,
-}) => {
+}, testInfo) => {
   await seed(
     page,
     { "/starter.toml": example("starter.toml") },
@@ -12,7 +19,19 @@ test("the Ledger tables every year over the chosen year's flows", async ({
   const table = page.getByRole("table", { name: /year by year/ });
   const rows = table.locator("tbody tr");
   await expect(rows.nth(20)).toBeVisible();
-  await expect(page.getByRole("table", { name: /Flows/ })).toBeVisible();
+  const flows = page.getByRole("table", { name: /Flows/ });
+  await expect(flows).toBeVisible();
+  const isFlowsFirst = await flows.evaluate(
+    (element, years) =>
+      Boolean(
+        element.compareDocumentPosition(years) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ),
+    await table.elementHandle(),
+  );
+  expect(isFlowsFirst, "a phone reads the year's flows first").toBe(
+    isPhone(testInfo),
+  );
   const target = rows.nth(5);
   const year = (
     (await target.locator("td").first().textContent()) ?? ""

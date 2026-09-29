@@ -29,8 +29,8 @@ interface OptionsProps<T> {
 
 /**
  * A search's options under the plan's own row, the highlighted one marked:
- * a table, or on a phone rows of a name and one figure over the
- * highlighted one read out.
+ * a table, or on a phone rows of a name and one figure, the highlighted
+ * one read out under its row.
  */
 export function Options<T>({
   label,
@@ -51,7 +51,6 @@ export function Options<T>({
       }),
     );
   }, [columns]);
-  const chosen = rows.find((row) => row.option === highlighted);
   return (
     <>
       <DataTable
@@ -65,47 +64,46 @@ export function Options<T>({
         }}
         className="hidden max-h-[28rem] md:block"
       />
-      <div className="space-y-3 md:hidden">
-        <ul className="bg-card max-h-[28rem] divide-y overflow-auto rounded-md border">
-          {rows.map((row) => {
-            const isChosen = row.option === highlighted;
-            const content = (
-              <>
-                <span className="font-medium">{row.narrow}</span>
-                <span className="tabular-nums">{row.cells[narrowFigure]}</span>
-              </>
-            );
-            const place = "flex w-full justify-between gap-3 px-4 py-3";
-            return (
-              <li key={row.key}>
-                {row.option ? (
-                  <button
-                    type="button"
-                    aria-pressed={isChosen}
-                    className={cn(place, isChosen && "bg-accent")}
-                    onClick={() => {
-                      if (row.option) highlight(row.option);
-                    }}
-                  >
-                    {content}
-                  </button>
-                ) : (
-                  <div className={cn(place, "text-muted-foreground")}>
-                    {content}
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-        {chosen && (
-          <ReadRows
-            rows={columns
-              .slice(1)
-              .map((header, at) => [header, chosen.cells[at + 1] ?? ""])}
-          />
-        )}
-      </div>
+      <ul className="bg-card max-h-[28rem] divide-y overflow-auto rounded-md border text-sm md:hidden">
+        {rows.map((row) => {
+          const isChosen = row.option === highlighted;
+          const content = (
+            <>
+              <span className="font-medium">{row.narrow}</span>
+              <span className="tabular-nums">{row.cells[narrowFigure]}</span>
+            </>
+          );
+          const place = "flex w-full justify-between gap-3 px-4 py-3";
+          return (
+            <li key={row.key}>
+              {row.option ? (
+                <button
+                  type="button"
+                  aria-pressed={isChosen}
+                  className={cn(place, isChosen && "bg-accent")}
+                  onClick={() => {
+                    if (row.option) highlight(row.option);
+                  }}
+                >
+                  {content}
+                </button>
+              ) : (
+                <div className={cn(place, "text-muted-foreground")}>
+                  {content}
+                </div>
+              )}
+              {isChosen && (
+                <ReadRows
+                  rows={columns
+                    .slice(1)
+                    .map((header, at) => [header, row.cells[at + 1] ?? ""])}
+                  className="rounded-none border-x-0 border-b-0 bg-transparent"
+                />
+              )}
+            </li>
+          );
+        })}
+      </ul>
     </>
   );
 }

@@ -1,6 +1,6 @@
 import { Link, useSearch } from "@tanstack/react-router";
 import type { LedgerRow } from "@wasm/retiretui_wasm.js";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 
 import { columnsFor } from "@/components/columns";
 import { DataTable } from "@/components/data-table";
@@ -15,8 +15,20 @@ import { BasisSwitch, YearStepper } from "@/year/year";
 /** Where the table scrolls within its own half of the screen, the detail under it. */
 const WIDE = "(min-width: 1024px)";
 
-function isWide(): boolean {
-  return window.matchMedia(WIDE).matches;
+function followWide(changed: () => void) {
+  const query = window.matchMedia(WIDE);
+  query.addEventListener("change", changed);
+  return () => {
+    query.removeEventListener("change", changed);
+  };
+}
+
+/** Whether the table leads, the year's detail under it; narrower, the detail leads. */
+function useIsWide(): boolean {
+  return useSyncExternalStore(
+    followWide,
+    () => window.matchMedia(WIDE).matches,
+  );
 }
 
 const column = columnsFor<LedgerRow>();
@@ -76,12 +88,13 @@ export function LedgerPage() {
   );
   const table = useRef<HTMLDivElement>(null);
   const details = useRef<HTMLDivElement>(null);
+  const isWide = useIsWide();
   useEffect(() => {
-    if (!isWide()) return;
+    if (!isWide) return;
     table.current
       ?.querySelector('[aria-selected="true"]')
       ?.scrollIntoView({ block: "nearest" });
-  }, [year]);
+  }, [year, isWide]);
 
   if (!reading.document) return null;
   if (market !== undefined && "refusal" in replayed) {
@@ -109,6 +122,37 @@ export function LedgerPage() {
     );
   }
   const unit = BASIS_LABEL[basis];
+  const years = (
+    <div key="years" ref={table}>
+      <DataTable
+        label={`The plan year by year, ${unit}`}
+        columns={columns}
+        rows={ledger.rows}
+        rowKey={(row) => String(row.year)}
+        isSelected={(row) => row.year === year}
+        isExceeded={(row) => row.is_exceeded}
+        onSelect={(row) => {
+          setYear(row.year);
+          if (!isWide) {
+            details.current?.scrollIntoView({ block: "start" });
+          }
+        }}
+        isFirstPinned
+        className="lg:max-h-[50vh]"
+      />
+    </div>
+  );
+  const yearDetail = (
+    <div
+      key="detail"
+      ref={details}
+      className="grid min-w-0 scroll-mt-4 grid-cols-1 items-start gap-4 2xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]"
+    >
+      {detail && year !== undefined && (
+        <YearDetailCards year={year} unit={unit} detail={detail} />
+      )}
+    </div>
+  );
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -128,32 +172,7 @@ export function LedgerPage() {
           These are the last figures the plan had without issues.
         </p>
       )}
-      <div ref={table}>
-        <DataTable
-          label={`The plan year by year, ${unit}`}
-          columns={columns}
-          rows={ledger.rows}
-          rowKey={(row) => String(row.year)}
-          isSelected={(row) => row.year === year}
-          isExceeded={(row) => row.is_exceeded}
-          onSelect={(row) => {
-            setYear(row.year);
-            if (!isWide()) {
-              details.current?.scrollIntoView({ block: "start" });
-            }
-          }}
-          isFirstPinned
-          className="lg:max-h-[50vh]"
-        />
-      </div>
-      <div
-        ref={details}
-        className="grid scroll-mt-4 items-start gap-4 2xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]"
-      >
-        {detail && year !== undefined && (
-          <YearDetailCards year={year} unit={unit} detail={detail} />
-        )}
-      </div>
+      {isWide ? [years, yearDetail] : [yearDetail, years]}
     </div>
   );
 }

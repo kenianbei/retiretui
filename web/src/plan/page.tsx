@@ -33,7 +33,7 @@ function ListDomain({ slug, purpose }: { slug: string; purpose: string }) {
       {table.rows.length === 0 ? (
         <p className="text-muted-foreground max-w-prose">{purpose}</p>
       ) : (
-        <div className="grid gap-6 md:grid-cols-[minmax(0,3fr)_minmax(18rem,2fr)]">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(18rem,2fr)]">
           <div className={item !== undefined ? "max-md:hidden" : undefined}>
             <ItemTable
               slug={slug}

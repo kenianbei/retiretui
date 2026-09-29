@@ -55,8 +55,18 @@ export function DataTable<Row extends RowData>({
         onSelect(row);
       },
     };
+  // Without a focusable row, the keyboard reaches what scrolls through the frame itself.
+  const reachable = onSelect
+    ? undefined
+    : { tabIndex: 0, role: "region", "aria-label": label };
   return (
-    <div className={cn("bg-card overflow-auto rounded-md border", className)}>
+    <div
+      {...reachable}
+      className={cn(
+        "bg-card focus-visible:ring-ring/50 overflow-auto rounded-md border outline-none focus-visible:ring-[3px]",
+        className,
+      )}
+    >
       <table aria-label={label} className="w-full text-sm">
         <thead className="border-b">
           {table.getHeaderGroups().map((group) => (

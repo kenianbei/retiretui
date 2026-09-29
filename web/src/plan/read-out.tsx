@@ -14,6 +14,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { ImportStatement } from "@/plan/import-statement";
 import { useSession } from "@/session";
 
@@ -66,9 +67,15 @@ export function ReadOut({
 }
 
 /** Each label beside what it holds. */
-export function ReadRows({ rows }: { rows: readonly [string, string][] }) {
+export function ReadRows({
+  rows,
+  className,
+}: {
+  rows: readonly [string, string][];
+  className?: string;
+}) {
   return (
-    <dl className="bg-card divide-y rounded-md border text-sm">
+    <dl className={cn("bg-card divide-y rounded-md border text-sm", className)}>
       {rows.map(([label, text]) => (
         <div
           key={label}
