@@ -147,9 +147,9 @@ pub(super) fn gapped_columns(rows: (&[String], &[Vec<String>]), gap: u16) -> Tab
     measured
 }
 
-/// As [`fill`], beside a swatch as well as the cursor, each row's first cell drawn in its style from `keys` and
+/// As [`fill`], each row's first cell drawn in its style from `keys` and
 /// led by a swatch in its colour, so the table names the lines a chart
-/// draws in them.
+/// draws in them; the columns fit beside the swatch as well as the cursor.
 pub(super) fn fill_keyed(
     commands: &mut Commands,
     table: Entity,
