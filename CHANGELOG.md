@@ -198,8 +198,8 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     plan without a claim reads `No claim`.
   - The options tables are headed `Converted`, `Unfunded`, `Ends with`, `Taxes`
     and `Medicare`, Compare's words, and Historical's runs `Start years`.
-  - Monte Carlo and Historical say how the plan fared the same way:
-    `Money lasts in 87% of 1,000 markets`,
+  - Monte Carlo and Historical say how the plan fared the same way, the command
+    line too: `Money lasts in 87% of 1,000 markets`,
     `Money lasts in 85.2% of 155 start years`; the Overview's Success figure
     reads `87% of 1,000 markets`. What the runs were made under reads
     `Counts as a success` (`Never running short`,
