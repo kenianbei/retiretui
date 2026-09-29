@@ -48,6 +48,26 @@ pub fn run_refusal(error: RunError) -> String {
     }
 }
 
+/// Why a search answered nothing, as a page says it: each issue a
+/// sentence of its own, without the path the CLI names it by.
+#[must_use]
+pub fn page_refusal(error: RunError) -> String {
+    let RunError::Refused(issues) = error else {
+        return run_refusal(error);
+    };
+    let sentences = issues.iter().map(|issue| {
+        let mut letters = issue.message.chars();
+        let first = letters.next().map(char::to_uppercase);
+        first
+            .into_iter()
+            .flatten()
+            .chain(letters)
+            .collect::<String>()
+            + "."
+    });
+    sentences.collect::<Vec<_>>().join("\n")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

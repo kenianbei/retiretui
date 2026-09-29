@@ -122,7 +122,7 @@ fn check_bracket(plan: &Plan, tables: &TaxTables, rate: f64, issues: &mut Vec<Is
         None => push_issue(
             issues,
             "options.bracket_rate",
-            format!("no bracket with rate {rate}"),
+            format!("the tax tables have no {}% bracket", rate * 100.0),
         ),
         Some(index) if index + 1 == brackets.len() => push_issue(
             issues,

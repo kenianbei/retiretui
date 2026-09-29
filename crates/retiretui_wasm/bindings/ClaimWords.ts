@@ -10,6 +10,10 @@ export type ClaimWords = {
  */
 people_columns: [string, string, string, string, string, string], 
 /**
+ * Its abbreviated columns, each with its words in full.
+ */
+spelled_out: [[string, string]], 
+/**
  * Before anything is searched.
  */
 nothing_searched: string, 

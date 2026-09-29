@@ -113,6 +113,7 @@ export function ClaimsPage() {
         ) : (
           <People
             columns={WORDS.people_columns}
+            spelledOut={WORDS.spelled_out}
             people={people}
             at={at}
             highlight={(person) => {

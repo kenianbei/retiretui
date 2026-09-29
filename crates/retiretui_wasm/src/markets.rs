@@ -8,7 +8,7 @@ use retiretui_client::searches::markets::{
     self, Ending, Listed, Markets, NOTHING_SEARCHED, PLANNED, Zone, market_key, market_of,
     market_said, zone_of,
 };
-use retiretui_client::searches::run_refusal;
+use retiretui_client::searches::page_refusal;
 use retiretui_client::session::Projected;
 use retiretui_engine::market::{self, Band, History, Progress, RunName};
 use retiretui_engine::plan::{Dollars, Plan};
@@ -157,7 +157,7 @@ fn runs_of<M: Markets>(plan: &Plan, found: &M) -> MarketRuns {
 pub fn monte_carlo(text: &str) -> Result<MarketRuns, String> {
     let plan = gated(text)?;
     let found = market::monte_carlo(&plan, tables(), History::embedded(), &Progress::default())
-        .map_err(run_refusal)?;
+        .map_err(page_refusal)?;
     Ok(runs_of(&plan, &found))
 }
 
@@ -169,7 +169,7 @@ pub fn monte_carlo(text: &str) -> Result<MarketRuns, String> {
 pub fn historical(text: &str) -> Result<MarketRuns, String> {
     let plan = gated(text)?;
     let runs = market::historical(&plan, tables(), History::embedded(), &Progress::default())
-        .map_err(run_refusal)?;
+        .map_err(page_refusal)?;
     Ok(runs_of(&plan, &runs))
 }
 

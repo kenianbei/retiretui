@@ -12,7 +12,7 @@ use retiretui_client::searches::ladders::{
     rate_label, search, take_question, taken, taxed_in,
 };
 use retiretui_client::searches::overview::ladder_said;
-use retiretui_client::searches::{AGAINST_PLAN, CURRENT_PLAN, FIGURES, run_refusal};
+use retiretui_client::searches::{AGAINST_PLAN, CURRENT_PLAN, FIGURES, page_refusal};
 use retiretui_client::store::normal;
 use retiretui_client::table::{account_name, basis_amount};
 use retiretui_engine::market::Progress;
@@ -163,7 +163,7 @@ pub fn ladders(text: &str, answers: &str, destination: &str) -> Result<LaddersRe
     answers.insert(DESTINATION.to_owned(), destination.into());
     let (options, rate) = constraints_in(answers)?;
     let sweep =
-        search(&plan, tables(), &options, rate, &Progress::default()).map_err(run_refusal)?;
+        search(&plan, tables(), &options, rate, &Progress::default()).map_err(page_refusal)?;
     Ok(LaddersReply::new(&plan, &Swept { sweep, options }))
 }
 

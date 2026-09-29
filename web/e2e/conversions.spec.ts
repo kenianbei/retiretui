@@ -75,11 +75,11 @@ test("ladders are searched, highlighted, taken and written as a scenario", async
   await page.getByRole("button", { name: "Take this ladder" }).click();
   const asked = page.getByRole("alertdialog");
   await expect(
-    asked.getByText(/^Take the 12% ladder\? \d+ conversion\(s\)/),
+    asked.getByText(/^Take the 12% ladder\? \d+ conversions?/),
   ).toBeVisible();
   await asked.getByRole("button", { name: "Take", exact: true }).click();
   await expect(
-    page.getByText(/took \d+ conversion\(s\) into the plan/),
+    page.getByText(/took \d+ conversions? into the plan/),
   ).toBeVisible();
   await expect(undo).toBeEnabled();
 

@@ -172,7 +172,7 @@ fn a_search_needs_a_destination_and_a_valid_draft() {
     settle(&mut app);
     assert_eq!(
         app.world().resource::<Ladders>().refused.as_deref(),
-        Some("must be a Roth account"),
+        Some("Must be a Roth account."),
         "a destination is searched, and the engine answers"
     );
     commit_edit(&mut app, |plan| plan.plan.start_year = 1000);
@@ -280,8 +280,8 @@ fn one_bracket_gives_one_row_and_an_engine_refusal_is_shown() {
     settle(&mut app);
     let ladders = app.world().resource::<Ladders>();
     assert!(ladders.found().is_none());
-    assert_eq!(ladders.said(), "no bracket with rate 0.99");
-    assert!(redrawn(&mut app).contains("no bracket with rate 0.99"));
+    assert_eq!(ladders.said(), "The tax tables have no 99% bracket.");
+    assert!(redrawn(&mut app).contains("The tax tables have no 99% bracket."));
 }
 
 #[test]

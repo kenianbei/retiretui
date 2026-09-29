@@ -30,6 +30,7 @@ use plurimus::core::UiWidget;
 use plurimus::term::bevy_compat::HeldModifiers;
 use plurimus::ui::{KeyBinding, first_bound};
 use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
+use retiretui_client::searches::page_refusal;
 use retiretui_engine::market::{Progress, RunError};
 use retiretui_engine::plan::Plan;
 
@@ -249,10 +250,8 @@ impl<R: Found> Tool<R> {
         }
         match found {
             Ok(found) => self.found = Some((found, Some(took))),
-            Err(RunError::Refused(issues)) => {
-                self.refused = issues.first().map(|issue| issue.message.clone());
-            }
             Err(RunError::Cancelled) => self.refused = None,
+            Err(refusal) => self.refused = Some(page_refusal(refusal)),
         }
     }
 

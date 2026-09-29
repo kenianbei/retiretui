@@ -94,7 +94,7 @@ test("a statement's earnings are recorded on the person it names", async ({
   await expect(
     page
       .getByRole("status")
-      .filter({ hasText: /recorded 3 year\(s\) of earnings for Sam/ }),
+      .filter({ hasText: /recorded 3 years of earnings for Sam/ }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Undo" }).first().click();
   await expect(

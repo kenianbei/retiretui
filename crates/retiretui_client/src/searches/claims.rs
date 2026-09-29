@@ -8,19 +8,22 @@ use retiretui_engine::plan::{Dollars, Income, Item, Person, Plan};
 use retiretui_engine::tax::MONTHS_PER_YEAR;
 use serde::{Deserialize, Serialize};
 
-use crate::present::compact_money;
+use crate::present::{compact_money, counted};
 
 /// What the options say before anything is searched.
 pub const NOTHING_SEARCHED: &str = "Every age each computed Social Security benefit can be claimed at is ranked here, jointly for the household, as soon as the plan is valid.";
 
 /// What a claim the plan does not pay says.
-const NO_CLAIM: &str = "none";
+const NO_CLAIM: &str = "No claim";
 
-/// What a held claim's income says.
-pub const HELD: &str = "held";
+/// What a held claim's benefit says.
+pub const HELD: &str = "Held";
 
 /// The People table's columns.
-pub const PEOPLE_COLUMNS: [&str; 6] = ["Person", "Record", "Income", "62", "FRA", "70"];
+pub const PEOPLE_COLUMNS: [&str; 6] = ["Person", "Earnings", "Benefit", "62", "FRA", "70"];
+
+/// The People table's abbreviated columns, each with its words in full.
+pub const SPELLED_OUT: [(&str, &str); 1] = [("FRA", "full retirement age")];
 
 /// What an action on nobody is refused with.
 pub const NOBODY: &str = "no one in the household";
@@ -98,7 +101,7 @@ pub fn typed_monthly(plan: &Plan, person: &Person) -> Option<Dollars> {
     Some(benefit(plan, &person.id)?.amount? / Dollars::from(MONTHS_PER_YEAR))
 }
 
-/// A person's row of the People table: their name, record, income, and
+/// A person's row of the People table: their name, record, benefit, and
 /// the monthly benefit estimated at 62, full retirement age and 70.
 #[must_use]
 pub fn person_row(
@@ -108,14 +111,14 @@ pub fn person_row(
     estimates: [Option<Dollars>; 3],
 ) -> Vec<String> {
     let record = match person.earnings.len() {
-        0 => "none".to_owned(),
-        years => format!("{years}y"),
+        0 => "No record".to_owned(),
+        years => counted(years, "year", "years"),
     };
     let income = match benefit(plan, &person.id).map(|income| income.amount) {
         _ if is_held => HELD,
-        None => "none",
-        Some(None) => "computed",
-        Some(Some(_)) => "typed",
+        None => "No benefit",
+        Some(None) => "Computed",
+        Some(Some(_)) => "Stated",
     };
     let names = [person.display_name().to_owned(), record, income.to_owned()];
     let estimates =

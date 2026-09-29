@@ -25,6 +25,8 @@ interface OptionsProps<T> {
   narrowFigure: number;
   /** How many of the leading columns hold words rather than figures. */
   words?: number;
+  /** Abbreviated columns, each with its words in full. */
+  spelledOut?: readonly (readonly [string, string])[];
   highlighted: T | undefined;
   highlight: (option: T) => void;
 }
@@ -40,20 +42,25 @@ export function Options<T>({
   rows,
   narrowFigure,
   words = 1,
+  spelledOut = [],
   highlighted,
   highlight,
 }: OptionsProps<T>) {
   const tableColumns = useMemo(() => {
     const column = columnsFor<OptionRow<T>>();
+    const spelled = new Map(spelledOut);
     return columns.map((header, at) =>
       column.display({
         id: String(at),
-        header,
+        header: () => {
+          const full = spelled.get(header);
+          return full ? <abbr title={full}>{header}</abbr> : header;
+        },
         meta: { isNumeric: at >= words },
         cell: ({ row }) => row.original.cells[at],
       }),
     );
-  }, [columns, words]);
+  }, [columns, words, spelledOut]);
   return (
     <>
       <DataTable

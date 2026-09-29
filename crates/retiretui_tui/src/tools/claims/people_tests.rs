@@ -99,11 +99,11 @@ fn the_pane_lists_each_person_s_record_income_and_estimates() {
     let frame = composed_frame(&app);
     let row = frame
         .lines()
-        .find(|line| line.contains(" 6y "))
+        .find(|line| line.contains(" 6 years "))
         .unwrap_or_else(|| panic!("no row for me: {frame}"));
     let cells = person_cells(row);
-    assert_eq!(cells[..4], ["▌", "me", "6y", "computed"], "{row}");
-    assert_eq!(cells[4..7], estimates, "{row}");
+    assert_eq!(cells[..5], ["▌", "me", "6", "years", "Computed"], "{row}");
+    assert_eq!(cells[5..8], estimates, "{row}");
 }
 
 #[test]
@@ -117,11 +117,11 @@ fn a_record_cleared_on_another_page_shows_when_the_page_is_turned_back_to() {
     let frame = composed_frame(&app);
     let row = frame
         .lines()
-        .find(|line| line.contains(" none "))
+        .find(|line| line.contains(" No record "))
         .unwrap_or_else(|| panic!("the row still shows the record: {frame}"));
     assert_eq!(
-        person_cells(row)[..4],
-        ["▌", "me", "none", "computed"],
+        person_cells(row)[..5],
+        ["▌", "me", "No", "record", "Computed"],
         "{row}"
     );
 }
@@ -206,7 +206,8 @@ fn c_fills_a_career_only_where_there_is_no_record() {
 #[test]
 fn t_adds_the_benefit_the_search_made_up_with_its_claim() {
     let mut app = app_on(&unclaimed());
-    assert!(composed_frame(&app).contains("none"));
+    let frame = composed_frame(&app);
+    assert!(frame.contains(" No benefit "), "{frame}");
     assert_eq!(run(&mut app, adopt), Outcome::Done);
     press_key(&mut app, KeyCode::Enter);
     app.update();
@@ -234,7 +235,7 @@ fn a_named_person_is_shown_by_name_and_kept_by_id() {
     let frame = composed_frame(&app);
     let row = frame
         .lines()
-        .find(|line| line.contains(" 6y "))
+        .find(|line| line.contains(" 6 years "))
         .unwrap_or_else(|| panic!("no row for Pat: {frame}"));
     assert_eq!(person_cells(row)[..3], ["▌", "Pat", "Lee"], "{row}");
     let header = frame

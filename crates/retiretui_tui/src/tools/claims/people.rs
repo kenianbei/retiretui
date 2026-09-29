@@ -47,9 +47,9 @@ pub fn plugin(app: &mut App) {
 }
 
 const TITLE: &str = "People";
-/// The cells between columns, past the one the table leaves: the pane is
-/// wide enough to space them out.
-const GAP: u16 = 1;
+/// The cells between columns, past the one the table leaves: none, so a
+/// narrow pane still holds every estimate.
+const GAP: u16 = 0;
 
 /// The person the page's commands act on, by place in the household.
 #[derive(Resource, Default, PartialEq, Eq, Debug)]
