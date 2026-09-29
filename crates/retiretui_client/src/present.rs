@@ -44,7 +44,7 @@ pub const fn account_kind(kind: AccountKind) -> &'static str {
 #[must_use]
 pub const fn draw(draw: Draw) -> &'static str {
     match draw {
-        Draw::Assumptions => "The assumptions",
+        Draw::Assumptions => "Your return assumptions",
         Draw::History => "Historical years",
     }
 }
@@ -175,11 +175,11 @@ impl MoneyForm {
 }
 
 /// How many of something there are, in the noun's form for that many:
-/// `1 person`, `2 people`.
+/// `1 person`, `2 people`, `1,000 markets`.
 #[must_use]
 pub fn counted(count: usize, one: &str, many: &str) -> String {
     let noun = if count == 1 { one } else { many };
-    format!("{count} {noun}")
+    format!("{} {noun}", crate::table::count(count))
 }
 
 /// How many issues there are: `1 issue`, `3 issues`.

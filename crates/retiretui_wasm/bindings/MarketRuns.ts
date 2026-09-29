@@ -11,11 +11,12 @@ import type { Zone } from "./Zone";
  */
 export type MarketRuns = { 
 /**
- * How the plan fared: "money lasts in 87% of 1,000".
+ * How the plan fared: "Money lasts in 87% of 1,000 markets".
  */
 verdict: string, 
 /**
- * The share of runs it survives and of how many: "87% of 1,000".
+ * The share of runs it survives and of how many: "87% of 1,000
+ * markets".
  */
 success: string, 
 /**

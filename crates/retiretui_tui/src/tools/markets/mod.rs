@@ -61,7 +61,7 @@ pub fn plugin(app: &mut App) {
 /// singles out.
 const RUNS_ROWS: f32 = 10.0;
 /// The Assumptions pane's width, borders included.
-const ASSUMPTIONS_COLS: f32 = 34.0;
+const ASSUMPTIONS_COLS: f32 = 50.0;
 
 /// What a market tool searches, and how it names what it found.
 pub(crate) trait MarketTool: Found + Markets + Sized {
@@ -150,7 +150,7 @@ fn title_runs<R: MarketTool>(
     }
     let title = tool.found().map_or_else(
         || R::RUN_HEADING.to_owned(),
-        |found| format!("{} · {} {}", R::RUN_HEADING, R::HEADLINE, found.verdict()),
+        |found| format!("{} · {}", R::RUN_HEADING, found.headline()),
     );
     let zone = tool
         .found()

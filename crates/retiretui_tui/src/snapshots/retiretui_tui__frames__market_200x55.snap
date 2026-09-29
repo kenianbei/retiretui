@@ -1,6 +1,6 @@
 ---
 source: crates/retiretui_tui/src/frames.rs
-assertion_line: 44
+assertion_line: 45
 expression: composed_frame(app)
 ---
 ╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                                                                                                      
@@ -23,7 +23,7 @@ expression: composed_frame(app)
 │                   ││  Bonds, cash                                                                                                                                                                    │
 │                   ││  Bonds, inflation                                                                                                                                                               │
 │                   ││  Cash, inflation                                                                                                                                                                │
-│                   ││  Monte Carlo draws  The assumptions                                                                                                                                             │
+│                   ││  Monte Carlo draws  Your return assumptions                                                                                                                                     │
 │                   ││    trials                                                                                                                                                                       │
 │                   ││    seed                                                                                                                                                                         │
 │                   ││  Historical from                                                                                                                                                                │

@@ -29,14 +29,22 @@ const SHORT: &str = "short";
 const WORST: &str = "Worst";
 const TRIAL: &str = "trial-";
 
+/// A share of runs to a tenth of a percent: `85.2%`.
+fn share(share: f64) -> String {
+    const TENTHS_OF_A_PERCENT: f64 = 1000.0;
+    rate((share * TENTHS_OF_A_PERCENT).round() / TENTHS_OF_A_PERCENT)
+}
+
+/// What a verdict follows where it stands alone: `Money lasts in 87% of
+/// 1,000 markets`.
+pub const MONEY_LASTS_IN: &str = "Money lasts in";
+
 /// What a market tool searches, and how it names what it found.
 pub trait Markets {
     /// The runs table's first column.
     const RUN_HEADING: &'static str;
-    /// What the verdict follows in a title: "money lasts in".
-    const HEADLINE: &'static str;
-    /// What the verdict is called as a row of its own.
-    const VERDICT: &'static str;
+    /// What one run is, and many: `market`, `markets`.
+    const RUN_NOUN: (&'static str, &'static str);
     /// Whether net worth year by year at each percentile is shown:
     /// percentiles over overlapping histories claim a precision they do not
     /// have.
@@ -48,8 +56,22 @@ pub trait Markets {
     /// The runs singled out, in the table's order.
     fn listed(&self) -> Vec<Listed<'_>>;
 
-    /// How the plan fared: "87% of 1,000".
-    fn verdict(&self) -> String;
+    /// How the plan fared, under a heading that says of what: `87% of
+    /// 1,000 markets`.
+    fn verdict(&self) -> String {
+        let (runs, (one, many)) = (self.runs(), Self::RUN_NOUN);
+        let share = share(runs.success_rate());
+        format!(
+            "{share} of {}",
+            present::counted(runs.runs.len(), one, many)
+        )
+    }
+
+    /// How the plan fared, as a sentence of its own: `Money lasts in 87%
+    /// of 1,000 markets`.
+    fn headline(&self) -> String {
+        format!("{MONEY_LASTS_IN} {}", self.verdict())
+    }
 
     /// What the runs are made under, besides what both tools share.
     fn settings(plan: &Plan) -> Vec<Assumption>;
@@ -152,10 +174,10 @@ pub fn run_cells(plan: &Plan, first: String, run: &Run, form: MoneyForm) -> Vec<
 /// What success means under the plan's `[market]`.
 fn success(plan: &Plan) -> Assumption {
     let value = plan.market().leave_at_least().map_or_else(
-        || "Never short".to_owned(),
-        |floor| format!("Leaves {}", money(floor)),
+        || "Never running short".to_owned(),
+        |floor| format!("Ending with at least {}", money(floor)),
     );
-    Assumption::market("Success", value, "leave_at_least")
+    Assumption::market("Counts as a success", value, "leave_at_least")
 }
 
 /// Each asset class's return and inflation's, as the plan assumes them.
@@ -189,7 +211,8 @@ fn assumed(plan: &Plan) -> Vec<Assumption> {
     rows
 }
 
-/// The accounts no mix is held in, which every market leaves alone.
+/// The accounts no mix is held in, which earn their fixed return in every
+/// market.
 fn unmixed(plan: &Plan) -> Option<Assumption> {
     let names: Vec<&str> = plan
         .accounts
@@ -198,7 +221,7 @@ fn unmixed(plan: &Plan) -> Option<Assumption> {
         .map(Account::display_name)
         .collect();
     (!names.is_empty()).then(|| Assumption {
-        label: "No mix",
+        label: "Fixed return",
         value: names.join(", "),
         domain: DomainId::Accounts,
         field: None,
@@ -316,8 +339,7 @@ pub fn market_said(name: RunName) -> String {
 
 impl Markets for MonteCarlo {
     const RUN_HEADING: &'static str = "Markets";
-    const HEADLINE: &'static str = "money lasts in";
-    const VERDICT: &'static str = "Money lasts";
+    const RUN_NOUN: (&'static str, &'static str) = ("market", "markets");
     const HAS_BY_YEAR: bool = true;
 
     fn runs(&self) -> &Runs {
@@ -347,14 +369,6 @@ impl Markets for MonteCarlo {
         listed
     }
 
-    fn verdict(&self) -> String {
-        format!(
-            "{} of {}",
-            rate(self.runs.success_rate()),
-            count(self.runs.runs.len())
-        )
-    }
-
     fn settings(plan: &Plan) -> Vec<Assumption> {
         let market = plan.market();
         let drawn = match market.draw() {
@@ -371,7 +385,7 @@ impl Markets for MonteCarlo {
             market.seed()
         );
         let mut rows = vec![
-            Assumption::market("Draw from", drawn, "monte_carlo.draw"),
+            Assumption::market("Markets drawn from", drawn, "monte_carlo.draw"),
             Assumption::market("Trials", trials, "monte_carlo.trials"),
         ];
         rows.extend(assumed(plan));
@@ -381,8 +395,7 @@ impl Markets for MonteCarlo {
 
 impl Markets for Runs {
     const RUN_HEADING: &'static str = "Start years";
-    const HEADLINE: &'static str = "survived";
-    const VERDICT: &'static str = "Survived";
+    const RUN_NOUN: (&'static str, &'static str) = ("start year", "start years");
     const HAS_BY_YEAR: bool = false;
 
     fn runs(&self) -> &Runs {
@@ -407,10 +420,6 @@ impl Markets for Runs {
             .collect()
     }
 
-    fn verdict(&self) -> String {
-        format!("{} of {}", count(self.successes), count(self.runs.len()))
-    }
-
     fn settings(plan: &Plan) -> Vec<Assumption> {
         let market = plan.market();
         let wrapped = if market.wrap() { ", wrapped" } else { "" };
@@ -422,6 +431,13 @@ impl Markets for Runs {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_share_of_runs_is_said_to_a_tenth_of_a_percent() {
+        assert_eq!(share(132.0 / 155.0), "85.2%");
+        assert_eq!(share(0.997), "99.7%");
+        assert_eq!(share(1.0), "100%");
+    }
 
     #[test]
     fn a_share_reads_by_its_zone_at_the_edges() {

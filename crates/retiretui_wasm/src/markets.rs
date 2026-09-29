@@ -26,9 +26,10 @@ const PLANNED_KEY: &str = "planned";
 #[derive(Serialize, Debug)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct MarketRuns {
-    /// How the plan fared: "money lasts in 87% of 1,000".
+    /// How the plan fared: "Money lasts in 87% of 1,000 markets".
     pub verdict: String,
-    /// The share of runs it survives and of how many: "87% of 1,000".
+    /// The share of runs it survives and of how many: "87% of 1,000
+    /// markets".
     pub success: String,
     /// The zone its share falls in.
     pub zone: Zone,
@@ -135,7 +136,7 @@ fn runs_of<M: Markets>(plan: &Plan, found: &M) -> MarketRuns {
         })
         .collect();
     MarketRuns {
-        verdict: format!("{} {}", M::HEADLINE, found.verdict()),
+        verdict: found.headline(),
         success: found.verdict(),
         zone: zone_of(runs.success_rate()),
         success_rate: runs.success_rate(),
@@ -266,7 +267,7 @@ mod tests {
         let trial = found.runs[1].market.as_deref().expect("a trial");
         assert!(trial.starts_with("trial-"), "{trial}");
         assert!(
-            found.verdict.starts_with("money lasts in "),
+            found.verdict.starts_with("Money lasts in ") && found.verdict.ends_with(" markets"),
             "{}",
             found.verdict
         );
@@ -282,7 +283,12 @@ mod tests {
     fn historical_lists_its_start_years_worst_first_without_the_by_year_table() {
         let found = historical(starter()).expect("runs");
         assert!(found.by_year.is_none());
-        assert!(found.verdict.starts_with("survived "), "{}", found.verdict);
+        assert!(
+            found.verdict.starts_with("Money lasts in ")
+                && found.verdict.ends_with(" of 155 start years"),
+            "{}",
+            found.verdict
+        );
         let first = &found.runs[1];
         assert_eq!(first.market.as_deref(), Some(first.key.as_str()));
         assert_eq!(found.runs.len(), found.count + 1, "every start year listed");

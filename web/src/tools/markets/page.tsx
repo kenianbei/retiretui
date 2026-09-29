@@ -126,7 +126,7 @@ export function MarketsPage({
         {reply && (
           <p
             className={cn(
-              "text-lg font-semibold first-letter:uppercase",
+              "text-lg font-semibold",
               ZONE_CLASS[reply.zone],
             )}
           >

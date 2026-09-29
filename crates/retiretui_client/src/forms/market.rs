@@ -66,7 +66,7 @@ impl Single for MarketSettings {
         pair("correlation.bonds_inflation", "Bonds, inflation"),
         pair("correlation.cash_inflation", "Cash, inflation"),
         FieldSpec::choice("monte_carlo.draw", "Monte Carlo draws", Vocabulary::Draw)
-            .blank("The assumptions")
+            .blank(crate::present::draw(Draw::Assumptions))
             .help("Random years from the assumptions above, or historical years drawn at random."),
         FieldSpec::whole("monte_carlo.trials", "  trials")
             .help("How many markets are run. Blank is 1,000."),
