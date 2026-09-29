@@ -239,7 +239,7 @@ fn a_named_person_is_shown_by_name_and_kept_by_id() {
     assert_eq!(person_cells(row)[..3], ["▌", "Pat", "Lee"], "{row}");
     let header = frame
         .lines()
-        .find(|line| line.contains(" unfunded "))
+        .find(|line| line.contains(" Unfunded "))
         .unwrap();
     assert!(
         header.contains("Pat Lee"),

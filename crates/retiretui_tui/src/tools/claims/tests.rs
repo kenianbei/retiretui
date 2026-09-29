@@ -98,7 +98,7 @@ fn table_rows(frame: &str) -> Vec<(bool, Vec<String>)> {
     const CHROME: [char; 8] = ['│', '▌', '▏', '▲', '▼', '█', '░', '║'];
     frame
         .lines()
-        .skip_while(|line| !line.contains(" unfunded "))
+        .skip_while(|line| !line.contains(" Unfunded "))
         .skip(1)
         .map(|line| {
             let pane = line.rsplit_once("││").map_or(line, |(_, pane)| pane);
@@ -215,7 +215,7 @@ fn a_couple_s_options_scroll_to_keep_the_cursor_in_view() {
     let frame = composed_frame(&app);
     let header = frame
         .lines()
-        .find(|line| line.contains(" unfunded "))
+        .find(|line| line.contains(" Unfunded "))
         .unwrap_or_else(|| panic!("no header: {frame}"));
     assert!(
         header.contains(" me ") && header.contains(" you "),

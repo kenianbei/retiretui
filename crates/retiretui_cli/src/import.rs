@@ -34,8 +34,8 @@ pub fn run(args: &ImportEarningsArgs) -> anyhow::Result<()> {
     let issues = validate_plan(&plan, &tables);
     if !issues.is_empty() {
         anyhow::bail!(
-            "not written, {} issue(s):\n{}",
-            issues.len(),
+            "not written, {}:\n{}",
+            retiretui_client::present::issue_count(issues.len()),
             retiretui_client::issues::issue_listing(&issues)
         );
     }
@@ -50,9 +50,9 @@ pub fn run(args: &ImportEarningsArgs) -> anyhow::Result<()> {
         None => "none".to_owned(),
     };
     println!(
-        "{}: {} year(s) of earnings ({span}) recorded for {}",
+        "{}: {} of earnings ({span}) recorded for {}",
         args.plan.display(),
-        recorded.len(),
+        retiretui_client::present::counted(recorded.len(), "year", "years"),
         args.person
     );
     if let Some(note) = note {

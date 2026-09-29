@@ -16,7 +16,7 @@ use crate::draft::Draft;
 use crate::forms::offers::{RefSource, ref_offers};
 use crate::forms::{FieldSpec, ToolAnswers};
 use crate::ladder::LadderConstraints;
-use crate::present::MoneyForm;
+use crate::present::{self, MoneyForm};
 
 /// The constraints as the form holds them: the CLI's flags, blank where
 /// its are optional; `bracket` is a percent, blank sweeping every one.
@@ -80,7 +80,7 @@ impl Constraints {
 }
 
 /// What names an option's columns before its [`FIGURES`](super::FIGURES).
-pub const OPTION_COLUMNS: [&str; 3] = ["Bracket", super::AGAINST_PLAN, "converted"];
+pub const OPTION_COLUMNS: [&str; 3] = ["Bracket", super::AGAINST_PLAN, "Converted"];
 /// The columns a ladder's conversions are tabled under, year by year.
 pub const CONVERSION_COLUMNS: [&str; 4] = ["Year", "From", "Amount", "Taxable"];
 
@@ -177,18 +177,20 @@ pub fn take_question(bracket: &SweptBracket, plan: &Plan) -> String {
 /// What is said once `steps` are taken into the plan.
 #[must_use]
 pub fn taken(steps: &[LadderStep]) -> String {
-    format!("took {} conversion(s) into the plan", steps.len())
+    format!("took {} into the plan", conversions(steps))
 }
 
-/// A ladder as a sentence says it: `9 conversion(s), 2027–2035`.
+/// How many conversions `steps` makes: `1 conversion`, `9 conversions`.
+fn conversions(steps: &[LadderStep]) -> String {
+    present::counted(steps.len(), "conversion", "conversions")
+}
+
+/// A ladder as a sentence says it: `9 conversions, 2027–2035`.
 fn said(steps: &[LadderStep]) -> String {
     match (steps.first(), steps.last()) {
-        (Some(first), Some(last)) => format!(
-            "{} conversion(s), {}–{}",
-            steps.len(),
-            first.year,
-            last.year
-        ),
+        (Some(first), Some(last)) => {
+            format!("{}, {}–{}", conversions(steps), first.year, last.year)
+        }
         _ => "It converts nothing".to_owned(),
     }
 }
@@ -351,11 +353,11 @@ mod tests {
         };
         assert_eq!(
             take_question(&bracket, &plan),
-            "Take the 22% ladder? 2 conversion(s), 2027–2035."
+            "Take the 22% ladder? 2 conversions, 2027–2035."
         );
         retiretui_engine::optimize::apply_ladder(&mut plan, &options, &bracket.steps);
         assert!(take_question(&bracket, &plan).ends_with(", in place of the ladder taken before."));
-        assert_eq!(taken(&bracket.steps), "took 2 conversion(s) into the plan");
+        assert_eq!(taken(&bracket.steps), "took 2 conversions into the plan");
         let none = SweptBracket {
             steps: Vec::new(),
             ..bracket

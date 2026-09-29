@@ -471,7 +471,7 @@ mod tests {
         let years = || reply.brackets[0].steps.clone();
         let count = reply.brackets[0].steps.len();
         let said = document.take_ladder(ROTH, years()).expect("taken");
-        assert_eq!(said, format!("took {count} conversion(s) into the plan"));
+        assert_eq!(said, format!("took {count} conversions into the plan"));
         let held = document
             .draft()
             .plan

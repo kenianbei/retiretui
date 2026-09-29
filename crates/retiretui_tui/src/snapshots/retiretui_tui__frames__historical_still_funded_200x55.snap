@@ -6,8 +6,8 @@ expression: composed_frame(app)
 ╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                                                                                                      
 │1 Overview││2 Ledger││3 Compare││4 Tools││5 Plan│                                                                                                                                          full.toml ● 
 ┴──────────┴┴────────┴┴─────────┴╯       ╰┴──────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-╭ Tools ────────────╮╭ Assumptions ───────────────────╮╭ Start Years · survived 132 of 155 ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│  Roth Conversions ││                                ││  Start Years Ends with  Short in                                                                                                             ▲│
+╭ Tools ────────────╮╭ Assumptions ───────────────────╮╭ Start years · survived 132 of 155 ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│  Roth Conversions ││                                ││  Start years Ends with  Short in                                                                                                             ▲│
 │  SSA Benefits     ││▌ Survived  132 of 155          ││  As planned     $2.09M     never                                                                                                             █│
 │  Monte Carlo      ││  Success   Never short         ││▏ 1968               $0 2055 (80)                                                                                                             ║│
 │▏ Historical       ││  Years     1871–2025, wrapped  ││  1969               $0 2055 (80)                                                                                                             ║│

@@ -380,7 +380,7 @@ impl Markets for MonteCarlo {
 }
 
 impl Markets for Runs {
-    const RUN_HEADING: &'static str = "Start Years";
+    const RUN_HEADING: &'static str = "Start years";
     const HEADLINE: &'static str = "survived";
     const VERDICT: &'static str = "Survived";
     const HAS_BY_YEAR: bool = false;

@@ -248,10 +248,10 @@ fn fill_career(plan: &mut Plan, tables: &TaxTables, id: &str) -> Result<String, 
         ));
     }
     let career = career_at_salary(plan, tables, id)?;
-    let years = career.len();
+    let years = crate::present::counted(career.len(), "year", "years");
     plan.household.people[at].earnings = career;
     Ok(format!(
-        "estimated {years} year(s) of earnings for {name} from a career at their salary"
+        "estimated {years} of earnings for {name} from a career at their salary"
     ))
 }
 

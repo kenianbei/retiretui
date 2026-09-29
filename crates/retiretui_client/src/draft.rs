@@ -117,8 +117,8 @@ impl Draft {
     pub fn refuse_if_invalid(&self) -> Option<String> {
         let issue = crate::issues::issue_words(self.issues.first()?, self);
         Some(format!(
-            "not saved, {} issue(s): {issue}",
-            self.issues.len()
+            "not saved, {}: {issue}",
+            crate::present::issue_count(self.issues.len())
         ))
     }
 

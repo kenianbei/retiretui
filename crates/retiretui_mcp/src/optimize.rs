@@ -177,8 +177,8 @@ impl PlanServer {
         let reply = self.store_document(target, &scenario_toml)?;
         if !reply.issues.is_empty() {
             return Err(format!(
-                "the overlay failed validation with {} issue(s)",
-                reply.issues.len()
+                "the overlay failed validation with {}",
+                retiretui_client::present::issue_count(reply.issues.len())
             ));
         }
         Ok((scenario_toml, true))

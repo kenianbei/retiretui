@@ -64,7 +64,7 @@ pub(crate) fn table_rows(frame: &str) -> Vec<(bool, Vec<String>)> {
     const CHROME: [char; 8] = ['│', '▌', '▏', '▲', '▼', '█', '░', '║'];
     frame
         .lines()
-        .skip_while(|line| !line.contains(" unfunded "))
+        .skip_while(|line| !line.contains(" Unfunded "))
         .skip(1)
         .take_while(|line| !line.contains('╰'))
         .map_while(|line| line.rsplit_once("││").map(|(_, pane)| pane))
@@ -424,7 +424,7 @@ fn t_and_enter_ask_then_take_the_ladder_in_place_of_the_last_one() {
     assert!(draft.plan.conversions[own..].iter().all(is_ladder));
     assert_eq!(
         said(&app).last().map(String::as_str),
-        Some(format!("took {best} conversion(s) into the plan").as_str())
+        Some(format!("took {best} conversions into the plan").as_str())
     );
     settle(&mut app);
     assert_eq!(
