@@ -7,7 +7,8 @@ import type { Shortfall } from "./Shortfall";
  */
 export type OverviewView = { 
 /**
- * How long the money lasts: "Never short", "Short $772k from 2042".
+ * How long the money lasts, where the shortfall says by how much:
+ * "Never short", "Through 2041", "Short from the start".
  */
 money_lasts: string, 
 /**
