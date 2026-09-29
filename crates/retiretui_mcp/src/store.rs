@@ -72,6 +72,7 @@ impl PlanStore {
         };
         let mut locate = |referrer: &Path, base: &str| self.resolve_base(referrer, base);
         retiretui_engine::plan::resolve::resolve_plan(start, text, &mut read, &mut locate)
+            .map_err(|error| error.to_string())
     }
 
     /// Resolves a scenario's `base` reference relative to the referring

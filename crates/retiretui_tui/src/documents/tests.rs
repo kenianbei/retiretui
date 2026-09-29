@@ -147,10 +147,10 @@ fn a_scenario_opens_read_only_and_a_failed_load_changes_nothing() {
     let missing = base.with_extension("missing.toml");
     open(&mut app, &missing);
     assert_eq!(document(&app), scenario);
-    assert!(
-        said(&app).last().unwrap().starts_with("not opened"),
-        "{:?}",
-        said(&app)
+    let name = missing.file_name().unwrap().to_string_lossy();
+    assert_eq!(
+        said(&app).last().unwrap(),
+        &format!("not opened: {name} could not be read")
     );
 }
 
@@ -193,7 +193,10 @@ fn a_directory_launch_offers_the_workspace_and_choosing_opens_a_file() {
     press_key(&mut app, KeyCode::Enter);
     assert!(!is_browsing(&app));
     assert!(
-        said(&app).last().unwrap().starts_with("not opened"),
+        said(&app)
+            .last()
+            .unwrap()
+            .starts_with("not opened: broken.toml, line "),
         "{:?}",
         said(&app)
     );

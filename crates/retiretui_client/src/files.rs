@@ -5,13 +5,13 @@ use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 
-use anyhow::Context;
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::{Issue, Plan, Scenario};
 use retiretui_engine::project::validate_plan;
 
 use crate::store::{Store, normal};
-use retiretui_engine::plan::resolve;
+use crate::unopened;
+use retiretui_engine::plan::resolve::{self, ResolveCause, ResolveError};
 
 /// The file the scenario `text`, kept at `path`, is resolved over: its
 /// `base`, beside it, as every read resolves it; none for a plan, or text
@@ -42,7 +42,7 @@ const NOT_A_SCENARIO: &str = "a plan names no base to change";
 /// Why a plan file did not pass the load-and-validate gate.
 pub enum Invalid {
     /// It could not be read or resolved.
-    Load(String),
+    Load(ResolveError),
     /// It was read, and failed validation.
     Issues {
         /// The line the refusal is said in.
@@ -55,19 +55,19 @@ pub enum Invalid {
 impl Invalid {
     /// The line the refusal is said in; the rest is detail.
     #[must_use]
-    pub fn headline(&self) -> &str {
+    pub fn headline(&self) -> String {
         match self {
-            Self::Load(message) => message.lines().next().unwrap_or_default(),
-            Self::Issues { headline, .. } => headline,
+            Self::Load(error) => unopened::said(error),
+            Self::Issues { headline, .. } => headline.clone(),
         }
     }
 
     /// What went wrong, where the file is named already: the first issue,
     /// or the headline of a file that could not be read.
     #[must_use]
-    pub fn reason(&self) -> &str {
+    pub fn reason(&self) -> String {
         match self {
-            Self::Issues { issues, .. } if !issues.is_empty() => &issues[0].message,
+            Self::Issues { issues, .. } if !issues.is_empty() => issues[0].message.clone(),
             _ => self.headline(),
         }
     }
@@ -82,7 +82,7 @@ pub fn validated_plan_with_files(
 ) -> (Result<Plan, Invalid>, Vec<PathBuf>) {
     let mut files = Vec::new();
     let validated = load_plan_with_files(store, path, &mut files)
-        .map_err(|error| Invalid::Load(error.to_string()))
+        .map_err(Invalid::Load)
         .and_then(|plan| {
             let issues = validate_plan(&plan, tables);
             if issues.is_empty() {
@@ -150,13 +150,14 @@ pub fn load_plan_with_files(
     store: &dyn Store,
     path: &Path,
     files: &mut Vec<PathBuf>,
-) -> anyhow::Result<Plan> {
-    let start = store
-        .canonical(path)
-        .with_context(|| format!("failed to open {}", path.display()))?;
+) -> Result<Plan, ResolveError> {
+    let start = store.canonical(path).map_err(|_| ResolveError {
+        file: path.to_owned(),
+        cause: ResolveCause::Unread(format!("failed to open {}", path.display())),
+    })?;
     let mut read = |file: &Path| store.read(file).map_err(|error| error.to_string());
     let canonical = |path: &Path| store.canonical(path);
-    resolve_with_files(start, &mut read, &canonical, files).map_err(anyhow::Error::msg)
+    resolve_with_files(start, &mut read, &canonical, files)
 }
 
 /// Resolves the document at `start`, reading each file through `read` and
@@ -172,7 +173,7 @@ pub fn resolve_with_files(
     read: &mut dyn FnMut(&Path) -> Result<String, String>,
     canonical: &dyn Fn(&Path) -> io::Result<PathBuf>,
     files: &mut Vec<PathBuf>,
-) -> Result<Plan, String> {
+) -> Result<Plan, ResolveError> {
     let mut reading = |file: &Path| {
         files.push(file.to_owned());
         read(file).map_err(|error| format!("failed to read {}: {error}", file.display()))
@@ -181,7 +182,10 @@ pub fn resolve_with_files(
         let joined = referrer.parent().unwrap_or(Path::new(".")).join(base);
         canonical(&joined).map_err(|error| format!("failed to open {}: {error}", joined.display()))
     };
-    let text = reading(&start)?;
+    let text = reading(&start).map_err(|reason| ResolveError {
+        file: start.clone(),
+        cause: ResolveCause::Unread(reason),
+    })?;
     resolve::resolve_plan(start, text, &mut reading, &mut locate)
 }
 

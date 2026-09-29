@@ -25,7 +25,7 @@ pub(super) struct ComparedDoc {
 impl ComparedDoc {
     pub(super) fn read(session: &Session, path: PathBuf) -> Result<Self, String> {
         let (loaded, files) = load_projected(session.store.as_ref(), &path, &session.tables);
-        let projected = loaded.map_err(|invalid| invalid.headline().to_owned())?;
+        let projected = loaded.map_err(|invalid| invalid.headline())?;
         Ok(Self {
             path,
             projected,
@@ -47,7 +47,7 @@ impl ComparedDoc {
             Err(invalid) => {
                 let (name, reason) = (session::file_name(&self.path), invalid.reason());
                 journal::warn(format!("{name} not re-read: {reason}"));
-                self.failure = Some(reason.to_owned());
+                self.failure = Some(reason);
             }
         }
     }

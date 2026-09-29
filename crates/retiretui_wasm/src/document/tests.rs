@@ -74,7 +74,7 @@ fn a_scenario_resolves_beside_its_file_and_is_read_only() {
 #[test]
 fn a_missing_file_is_refused_by_name() {
     let error = Document::open("/gone.toml", &mut reader(&[])).expect_err("refused");
-    assert_eq!(error, "failed to read /gone.toml: no such file");
+    assert_eq!(error, "gone.toml could not be read");
 }
 
 #[test]
