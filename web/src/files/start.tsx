@@ -16,12 +16,8 @@ export function Start() {
 
   return (
     <section className="max-w-prose space-y-8">
-      {session.error !== null && session.path !== null && (
-        <Unopened
-          path={session.path}
-          error={session.error}
-          failure={session.failure}
-        />
+      {session.failure !== null && session.path !== null && (
+        <Unopened path={session.path} failure={session.failure} />
       )}
       <div className="space-y-2">
         <h1 className="text-2xl font-semibold tracking-tight">

@@ -4,7 +4,7 @@ use retiretui_client::setup::EXAMPLES;
 use retiretui_engine::plan::Plan;
 
 use super::*;
-use crate::unopened::OpenFailure;
+use crate::unopened::{OpenFailure, Written};
 
 fn reader(files: &[(&str, &str)]) -> impl FnMut(&Path) -> Result<String, String> + use<> {
     let files: BTreeMap<PathBuf, String> = files
@@ -77,7 +77,7 @@ fn a_missing_file_is_refused_by_name() {
     let error = Document::open("/gone.toml", &mut reader(&[])).expect_err("refused");
     let failure = OpenFailure::from(&error);
     assert_eq!(failure.headline, "gone.toml could not be read");
-    assert_eq!((failure.line, failure.text), (None, None));
+    assert_eq!(failure.written, None);
 }
 
 #[test]
@@ -89,11 +89,12 @@ fn a_file_that_does_not_parse_is_refused_at_its_line_with_its_text() {
     assert_eq!(
         failure,
         OpenFailure {
-            file: "/plan.toml".to_owned(),
             headline: "plan.toml, line 4, column 7: key with no value, expected `=`".to_owned(),
-            line: Some(4),
-            column: Some(7),
-            text: Some(broken.to_owned()),
+            written: Some(Written {
+                file: "/plan.toml".to_owned(),
+                text: broken.to_owned(),
+                line: Some(4),
+            }),
         }
     );
 }

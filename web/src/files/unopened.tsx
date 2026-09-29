@@ -11,23 +11,22 @@ import { nameOf } from "@/workspace";
 interface UnopenedProps {
   /** The file asked for. */
   path: string;
-  /** Why it did not open, in a line. */
-  error: string;
-  failure: OpenFailure | null;
+  failure: OpenFailure;
 }
 
 /**
  * A plan that would not open: why, the file that failed to download or
  * replace, and its text where the failure is in it.
  */
-export function Unopened({ path, error, failure }: UnopenedProps) {
+export function Unopened({ path, failure }: UnopenedProps) {
   const actions = useFileActions();
-  const failing = failure?.text != null ? failure.file : path;
+  const { written } = failure;
+  const failing = written?.file ?? path;
   return (
     <MarginNote zone="shortfall">
       <div role="alert">
         <p className="font-semibold">{nameOf(path)} could not be opened</p>
-        <p className="text-sm break-words">{error}</p>
+        <p className="text-sm break-words">{failure.headline}</p>
       </div>
       <div className="flex flex-wrap gap-2">
         <Button
@@ -45,11 +44,11 @@ export function Unopened({ path, error, failure }: UnopenedProps) {
           Upload a fixed copy
         </Button>
       </div>
-      {failure?.text != null && (
+      {written && (
         <Written
           name={nameOf(failing)}
-          text={failure.text}
-          line={failure.line}
+          text={written.text}
+          line={written.line}
         />
       )}
     </MarginNote>
@@ -73,7 +72,7 @@ function Written({ name, text, line }: WrittenProps) {
     const [within, at] = [box.current, marked.current];
     if (!within || !at) return;
     within.scrollTop = at.offsetTop - within.clientHeight / 2;
-  }, [line]);
+  }, [line, text]);
 
   return (
     <div

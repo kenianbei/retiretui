@@ -62,6 +62,7 @@ export type { TaxSection } from "./TaxSection";
 export type { Taxes } from "./Taxes";
 export type { TriggerView } from "./TriggerView";
 export type { ViewWords } from "./ViewWords";
+export type { Written } from "./Written";
 export type { YearDetail } from "./YearDetail";
 export type { YearFigure } from "./YearFigure";
 export type { YearRow } from "./YearRow";

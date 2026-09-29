@@ -163,8 +163,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     (from: string, to: string) => {
       if (!document?.files().includes(from)) return;
       document.relocate(from, to);
-      if (path === from)
-        setOpened({ path: to, document, error: null, failure: null });
+      if (path === from) setOpened({ path: to, document, failure: null });
       changed();
     },
     [document, path, changed],
@@ -233,7 +232,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       });
       workspace.remember(target);
       listed();
-      setOpened({ path: target, document, error: null, failure: null });
+      setOpened({ path: target, document, failure: null });
       setChangedElsewhere(false);
       changed();
     },

@@ -118,3 +118,14 @@ fn a_chain_that_loops_is_said_as_one() {
         "/plans/plan.toml: scenario base chain forms a cycle"
     );
 }
+
+#[test]
+fn a_base_that_is_no_file_name_is_said_without_the_text() {
+    let error = refused(&[("plan.toml", "base = 3\nschema = 1\n")]);
+    assert_eq!(said(&error), "plan.toml: `base` must be a non-empty string");
+    assert_eq!(text(&error), None);
+    assert_eq!(
+        error.to_string(),
+        "/plans/plan.toml: `base` must be a non-empty string"
+    );
+}

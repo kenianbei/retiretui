@@ -113,13 +113,14 @@ pub fn beats(option: &Projection, current: &Projection) -> bool {
 }
 
 /// What `option`, which [`beats`] `current`, ends with against it, and how
-/// much more spending it covers where it does.
+/// much more spending it covers in the basis shown, where it does: `beats`
+/// ranks in today's dollars, so in future dollars it may not.
 #[must_use]
 pub fn gain(option: &Projection, current: &Projection, nominal: bool) -> String {
     let (own, base) = (option.summary(!nominal), current.summary(!nominal));
     let ends = signed_money(own.final_net_worth - base.final_net_worth);
     let covered = base.lifetime_unfunded - own.lifetime_unfunded;
-    if covered == 0 {
+    if covered <= 0 {
         format!("ends {ends}")
     } else {
         format!(

@@ -309,7 +309,7 @@ mod bindings {
 
     use crate::claims::{ClaimWords, ClaimsOptions, PersonRow, RothOwner};
     use crate::document::{PlacedIssue, SaidYear};
-    use crate::unopened::OpenFailure;
+    use crate::unopened::{OpenFailure, Written};
     use retiretui_client::forms::sort::Sort;
 
     use crate::compare::{CompareView, CompareWords, Searched, YearFigure};
@@ -362,6 +362,7 @@ mod bindings {
         Step::export_all,
         NewPlanMade::export_all,
         OpenFailure::export_all,
+        Written::export_all,
     ];
 
     #[test]

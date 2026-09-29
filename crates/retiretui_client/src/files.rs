@@ -11,7 +11,7 @@ use retiretui_engine::project::validate_plan;
 
 use crate::store::{Store, normal};
 use crate::unopened;
-use retiretui_engine::plan::resolve::{self, ResolveCause, ResolveError};
+use retiretui_engine::plan::resolve::{self, ResolveError};
 
 /// The file the scenario `text`, kept at `path`, is resolved over: its
 /// `base`, beside it, as every read resolves it; none for a plan, or text
@@ -62,8 +62,9 @@ impl Invalid {
         }
     }
 
-    /// What went wrong, where the file is named already: the first issue,
-    /// or the headline of a file that could not be read.
+    /// What went wrong, for a caller that names the file it read: the
+    /// first issue, or the headline of a file that did not resolve, which
+    /// names the file in its chain that failed.
     #[must_use]
     pub fn reason(&self) -> String {
         match self {
@@ -151,9 +152,11 @@ pub fn load_plan_with_files(
     path: &Path,
     files: &mut Vec<PathBuf>,
 ) -> Result<Plan, ResolveError> {
-    let start = store.canonical(path).map_err(|_| ResolveError {
-        file: path.to_owned(),
-        cause: ResolveCause::Unread(format!("failed to open {}", path.display())),
+    let start = store.canonical(path).map_err(|_| {
+        ResolveError::unread(
+            path.to_owned(),
+            format!("failed to open {}", path.display()),
+        )
     })?;
     let mut read = |file: &Path| store.read(file).map_err(|error| error.to_string());
     let canonical = |path: &Path| store.canonical(path);
@@ -182,10 +185,7 @@ pub fn resolve_with_files(
         let joined = referrer.parent().unwrap_or(Path::new(".")).join(base);
         canonical(&joined).map_err(|error| format!("failed to open {}: {error}", joined.display()))
     };
-    let text = reading(&start).map_err(|reason| ResolveError {
-        file: start.clone(),
-        cause: ResolveCause::Unread(reason),
-    })?;
+    let text = reading(&start).map_err(|reason| ResolveError::unread(start.clone(), reason))?;
     resolve::resolve_plan(start, text, &mut reading, &mut locate)
 }
 

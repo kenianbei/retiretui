@@ -41,7 +41,8 @@ function useCompared(paths: readonly string[]): ComparedFile[] {
       joined === ""
         ? []
         : joined.split("\n").map((path) => {
-            const { document, error } = openAt(workspace, path);
+            const { document, failure } = openAt(workspace, path);
+            const error = failure?.headline ?? null;
             const text =
               document && document.issues().length === 0
                 ? document.planText()
@@ -60,7 +61,7 @@ function useCompared(paths: readonly string[]): ComparedFile[] {
  * Overview, each compared file's in a lane of its own.
  */
 export function useRows(compared: readonly string[]): [Row, ...Row[]] {
-  const { reading, issues, path, error } = useSession();
+  const { reading, issues, path, failure } = useSession();
   const opened = useCompared(compared);
   useReleased(useMemo(() => compared.map(laneOf), [compared]));
   const text = useMemo(
@@ -81,7 +82,7 @@ export function useRows(compared: readonly string[]): [Row, ...Row[]] {
       {
         path: path ?? "",
         document,
-        error,
+        error: failure?.headline ?? null,
         text,
         searched: searched[0] ?? waiting,
       },
@@ -90,7 +91,7 @@ export function useRows(compared: readonly string[]): [Row, ...Row[]] {
         searched: searched[at + 1] ?? waiting,
       })),
     ];
-  }, [reading, path, error, text, opened, searched]);
+  }, [reading, path, failure, text, opened, searched]);
 }
 
 /**

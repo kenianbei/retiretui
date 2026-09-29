@@ -7,9 +7,7 @@ import type { Workspace } from "@/workspace";
 export interface Opened {
   path: string | null;
   document: Document | null;
-  /** Why it would not open, in a line. */
-  error: string | null;
-  /** The file that failed, and where in it, where the document says. */
+  /** Why it would not open, where it did not. */
   failure: OpenFailure | null;
 }
 
@@ -20,15 +18,15 @@ function isOpenFailure(thrown: unknown): thrown is OpenFailure {
 
 /** `path` opened from `workspace`, its scenario bases read from it too. */
 export function openAt(workspace: Workspace, path: string | null): Opened {
-  if (path === null)
-    return { path, document: null, error: null, failure: null };
+  if (path === null) return { path, document: null, failure: null };
   try {
     const document = Document.open(path, (file) => workspace.read(file));
-    return { path, document, error: null, failure: null };
+    return { path, document, failure: null };
   } catch (thrown) {
-    const failure = isOpenFailure(thrown) ? thrown : null;
-    const error = failure?.headline ?? messageOf(thrown);
-    return { path, document: null, error, failure };
+    const failure = isOpenFailure(thrown)
+      ? thrown
+      : { headline: messageOf(thrown), written: null };
+    return { path, document: null, failure };
   }
 }
 
