@@ -20,6 +20,7 @@ import {
   DialogHeader,
 } from "@/components/ui/dialog";
 import { builtOn, type BaseAt } from "@/files/chain";
+import { cn } from "@/lib/utils";
 import { NameDialog } from "@/files/name-dialog";
 import { baseIn } from "@/opened";
 import { useSession } from "@/session";
@@ -98,6 +99,8 @@ export function ManagePlans({ isOpen, setOpen, download }: ManagePlansProps) {
             {session.files.map((path) => {
               const base = baseAt(path);
               const fileName = nameOf(path);
+              const isCurrent = path === session.path;
+              const isBadged = isCurrent || base !== undefined;
               const acts = [
                 {
                   verb: "Rename",
@@ -125,18 +128,12 @@ export function ManagePlans({ isOpen, setOpen, download }: ManagePlansProps) {
               return (
                 <li
                   key={path}
-                  className="flex flex-wrap items-center gap-2 px-4 py-2"
+                  className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1 px-4 py-2"
                 >
-                  <span className="mr-auto min-w-0 truncate font-medium">
+                  <span title={fileName} className="truncate font-medium">
                     {fileName}
                   </span>
-                  {path === session.path && <Badge>Open</Badge>}
-                  {base !== undefined && (
-                    <Badge variant="secondary">
-                      Scenario of {nameOf(base)}
-                    </Badge>
-                  )}
-                  <div className="flex gap-1">
+                  <div className={cn("flex gap-1", isBadged && "row-span-2")}>
                     {acts.map(({ verb, Icon, act }) => (
                       <Button
                         key={verb}
@@ -149,6 +146,18 @@ export function ManagePlans({ isOpen, setOpen, download }: ManagePlansProps) {
                       </Button>
                     ))}
                   </div>
+                  {isBadged && (
+                    <div className="flex min-w-0 flex-wrap gap-1">
+                      {isCurrent && <Badge>Open</Badge>}
+                      {base !== undefined && (
+                        <Badge variant="secondary" className="max-w-full">
+                          <span className="truncate">
+                            Scenario of {nameOf(base)}
+                          </span>
+                        </Badge>
+                      )}
+                    </div>
+                  )}
                 </li>
               );
             })}

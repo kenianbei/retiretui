@@ -85,6 +85,16 @@ export async function openPlan(page: Page, name: string) {
   await page.getByRole("menuitem", { name }).click();
 }
 
+/** Opens Manage plans from the File menu, once the menu has gone. */
+export async function managePlans(page: Page): Promise<Locator> {
+  await page.getByRole("button", { name: "File" }).click();
+  await page.getByRole("menuitem", { name: "Manage plans…" }).click();
+  await expect(page.locator("[data-slot=dropdown-menu-content]")).toHaveCount(
+    0,
+  );
+  return page.getByRole("dialog", { name: "Manage plans" });
+}
+
 /** Ticks the workspace's `name` in among the plans compared. */
 export async function compareWith(page: Page, name: string) {
   await page.getByRole("button", { name: "Compare with" }).click();

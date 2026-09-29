@@ -210,12 +210,14 @@ export function MarketCharts({
       : []),
     {
       value: "funded",
+      tab: "Funded",
       title: "Still funded",
       unit: "share of runs",
       chart: <StillFunded found={found} />,
     },
     {
       value: "endings",
+      tab: "Endings",
       title: "Ends with",
       unit: DOLLARS,
       chart: <Endings found={found} />,
@@ -226,10 +228,15 @@ export function MarketCharts({
       <Tabs defaultValue="bands" className="gap-3">
         <CardHeader className="px-4">
           <CardTitle className="sr-only">Charts</CardTitle>
-          <TabsList className="grid w-full grid-cols-2 group-data-[orientation=horizontal]/tabs:h-auto sm:flex sm:w-fit">
+          <TabsList className="w-full sm:w-fit">
             {views.map((view) => (
-              <TabsTrigger key={view.value} value={view.value} className="h-8">
-                {view.title}
+              <TabsTrigger
+                key={view.value}
+                value={view.value}
+                title={view.title}
+                className="h-8"
+              >
+                {view.tab ?? view.title}
               </TabsTrigger>
             ))}
           </TabsList>

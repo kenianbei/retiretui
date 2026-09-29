@@ -102,7 +102,7 @@ export function BasisSwitch() {
           replace
           aria-current={each === basis ? "true" : undefined}
           className={cn(
-            "rounded px-3 py-1",
+            "max-md:touch-target relative rounded px-3 py-1",
             each === basis && "bg-primary text-primary-foreground",
           )}
         >

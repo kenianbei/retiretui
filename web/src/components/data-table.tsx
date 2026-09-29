@@ -16,6 +16,8 @@ interface DataTableProps<Row extends RowData> {
   isExceeded?: (row: Row) => boolean;
   /** The first column stays in view while the rest scroll sideways. */
   isFirstPinned?: boolean;
+  /** Set in a container of its own: no frame but a rule above, the edge cells at the container's inset. */
+  isFlush?: boolean;
   className?: string;
 }
 
@@ -32,6 +34,7 @@ export function DataTable<Row extends RowData>({
   onSelect,
   isExceeded,
   isFirstPinned = false,
+  isFlush = false,
   className,
 }: DataTableProps<Row>) {
   const table = useTable<typeof FEATURES, Row>({
@@ -55,8 +58,20 @@ export function DataTable<Row extends RowData>({
         onSelect(row);
       },
     };
+  // Without a focusable row, the keyboard reaches what scrolls through the frame itself.
+  const reachable = onSelect
+    ? undefined
+    : { tabIndex: 0, role: "region", "aria-label": label };
   return (
-    <div className={cn("bg-card overflow-auto rounded-md border", className)}>
+    <div
+      {...reachable}
+      className={cn(
+        "bg-card focus-visible:ring-ring/50 overflow-auto rounded-md border outline-none focus-visible:ring-[3px]",
+        isFlush &&
+          "rounded-none border-x-0 border-b-0 bg-transparent [&_tr>:first-child]:pl-4 [&_tr>:last-child]:pr-4",
+        className,
+      )}
+    >
       <table aria-label={label} className="w-full text-sm">
         <thead className="border-b">
           {table.getHeaderGroups().map((group) => (

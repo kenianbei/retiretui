@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import {
+  ChevronDown,
   Download,
   FilePen,
   FilePlus2,
@@ -16,6 +17,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubContent,
@@ -27,29 +29,50 @@ import { NEW_PLAN_START } from "@/onboarding/steps";
 import { useSession } from "@/session";
 import { nameOf } from "@/workspace";
 
+/** What a scenario open in the header is marked as. */
+const READ_ONLY = "Scenario · read-only";
+
 /** The open document's name, and what can be done with files. */
 export function FileMenu() {
   const session = useSession();
   const actions = useFileActions();
+  const name =
+    session.document && session.path !== null ? nameOf(session.path) : null;
+  const isReadOnly = session.document?.isReadOnly === true;
 
   return (
-    <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
-      <div className="flex min-w-0 items-center gap-2">
-        {session.document && session.path !== null && (
-          <span className="truncate font-medium">{nameOf(session.path)}</span>
-        )}
-        {session.document?.isReadOnly && (
-          <Badge variant="secondary">Scenario · read-only</Badge>
-        )}
-      </div>
+    <div className="flex min-w-0 flex-1 items-center gap-2">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm">
-            <Menu aria-hidden />
-            File
+          <Button
+            variant="ghost"
+            size="sm"
+            title={name ?? undefined}
+            className="min-w-0 shrink justify-start px-2 text-base font-medium"
+          >
+            {name === null ? (
+              <>
+                <Menu aria-hidden />
+                File
+              </>
+            ) : (
+              <>
+                <span className="sr-only">File, </span>
+                <span className="truncate">{name}</span>
+              </>
+            )}
+            <ChevronDown aria-hidden className="text-muted-foreground" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+        <DropdownMenuContent align="start">
+          {isReadOnly && (
+            <>
+              <DropdownMenuLabel className="text-muted-foreground font-normal md:hidden">
+                {READ_ONLY}
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator className="md:hidden" />
+            </>
+          )}
           <DropdownMenuItem asChild>
             <Link to="/new/$step" params={{ step: NEW_PLAN_START }}>
               <FilePen aria-hidden />
@@ -122,6 +145,11 @@ export function FileMenu() {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      {isReadOnly && (
+        <Badge variant="secondary" className="shrink-0 max-md:hidden">
+          {READ_ONLY}
+        </Badge>
+      )}
     </div>
   );
 }

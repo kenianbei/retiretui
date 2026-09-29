@@ -92,6 +92,8 @@ export function YearDetailCards({
             rows={detail.flows.flatMap(linesOf)}
             rowKey={(line) => line.key}
             isFirstPinned
+            isFlush
+            className="-mx-4"
           />
           {detail.warnings.length > 0 && (
             <ul className="border-warning space-y-1 border-l-4 px-3 py-1 text-sm">

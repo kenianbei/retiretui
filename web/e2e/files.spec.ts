@@ -3,6 +3,7 @@ import {
   example,
   expect,
   expectAccessible,
+  managePlans,
   seed,
   test,
 } from "./support";
@@ -24,14 +25,7 @@ test("plans are renamed, their scenarios following, and deleted", async ({
   );
   await compareWith(page, "couple.toml");
 
-  const manage = async () => {
-    await page.getByRole("button", { name: "File" }).click();
-    await page.getByRole("menuitem", { name: "Manage plans…" }).click();
-    await expect(page.locator("[data-slot=dropdown-menu-content]")).toHaveCount(
-      0,
-    );
-    return page.getByRole("dialog", { name: "Manage plans" });
-  };
+  const manage = () => managePlans(page);
   const close = async (dialog: ReturnType<typeof page.getByRole>) => {
     await page.keyboard.press("Escape");
     await expect(dialog).toHaveCount(0);
