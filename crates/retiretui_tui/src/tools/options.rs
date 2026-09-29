@@ -6,7 +6,7 @@
 use std::marker::PhantomData;
 
 use bevy_app::{App, Update};
-use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
+use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut, Ref};
 use bevy_ecs::hierarchy::{ChildOf, Children};
 use bevy_ecs::prelude::{
     Changed, Commands, Component, Entity, Has, IntoScheduleConfigs, Query, Res, ResMut, SystemSet,
@@ -16,13 +16,11 @@ use plurimus::core::ratatui_core::layout::Constraint;
 use plurimus::core::ratatui_core::text::Line;
 use plurimus::ui::{ComputedWidgetArea, ScrollArea, UiStyle};
 use plurimus::widgets::{ActiveDescendant, TableColumns, WidgetSystems, table_row};
-use retiretui_engine::project::Summary;
 
 use super::{EnterRuns, Found, ResultPane, Tool, handle_enter};
 use crate::edit::{Draft, table_bundle};
 use crate::hints::Hints;
 use crate::layout::{self, filling, placed};
-use crate::present::compact_dollars;
 use crate::session::Basis;
 use crate::tabulate::{self, Said};
 use crate::theme::{Repainted, Theme};
@@ -55,11 +53,6 @@ pub(super) fn plugin_said(app: &mut App) {
 }
 
 pub use retiretui_client::searches::{CURRENT_PLAN, FIGURES};
-
-/// A summary's [`FIGURES`].
-pub fn figures(summary: &Summary) -> [String; 4] {
-    retiretui_client::searches::figure_amounts(summary).map(compact_dollars)
-}
 
 /// What the rows say: the column names, the plan's own row, and an option
 /// per result, best first.
@@ -107,20 +100,24 @@ pub fn spawn_table<R: Found>(
 }
 
 /// Respawns the table's rows from what the search found, or a line
-/// saying why there are none.
+/// saying why there are none, whenever the search, the basis, the plan or
+/// the table's width moves.
 fn refresh_options<R: Found>(
     state: (Res<Tool<R>>, Res<Basis>, Res<Theme>, Res<Draft>),
-    mut tables: Query<(Entity, &mut ScrollArea), With<OptionsTable<R>>>,
+    mut tables: Query<(Entity, Ref<ComputedWidgetArea>, &mut ScrollArea), With<OptionsTable<R>>>,
     mut commands: Commands,
 ) {
     let (tool, basis, theme, draft) = state;
     let is_moved =
         tool.is_changed() || basis.is_changed() || theme.is_changed() || draft.is_changed();
     // A search under way leaves the last options in view; its title says so.
-    if !is_moved || (tool.found().is_none() && tool.is_running()) {
+    if tool.found().is_none() && tool.is_running() {
         return;
     }
-    for (table, mut scroll) in &mut tables {
+    for (table, area, mut scroll) in &mut tables {
+        if !is_moved && !area.is_changed() {
+            continue;
+        }
         commands.entity(table).despawn_related::<Children>();
         let Some(found) = tool.found() else {
             say_instead(&mut commands, table, tool.said());
@@ -132,7 +129,8 @@ fn refresh_options<R: Found>(
         let rows = laid.options.len().saturating_add(2);
         scroll.content_size.height = u16::try_from(rows).unwrap_or(u16::MAX);
         let chosen = tool.highlighted().unwrap_or(0);
-        fill(&mut commands, table, laid, chosen, &theme);
+        let given = scroll.content_width(area.0.width);
+        fill(&mut commands, table, (laid, given), chosen, &theme);
     }
 }
 
@@ -179,15 +177,22 @@ fn wrap_said(
 }
 
 /// The table's rows: the column names, the plan's own row, dimmed, and an
-/// option per result, the cursor on option `chosen`.
-fn fill(commands: &mut Commands, table: Entity, laid: Laid, chosen: usize, theme: &Theme) {
+/// option per result, cut to the columns that fit in `given` cells, the
+/// cursor on option `chosen`.
+fn fill(
+    commands: &mut Commands,
+    table: Entity,
+    (laid, given): (Laid, u16),
+    chosen: usize,
+    theme: &Theme,
+) {
     let Laid {
         header,
         current,
         mut options,
     } = laid;
     options.insert(0, current);
-    let spawned = tabulate::fill(commands, table, (&header, &options), 0);
+    let spawned = tabulate::fill(commands, table, (&header, &options), (0, given));
     let Some((&current, options)) = spawned.split_first() else {
         return;
     };

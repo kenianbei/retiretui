@@ -71,10 +71,11 @@ fn columns_are_kept_while_they_fit_beside_the_cursor_and_the_swatch() {
     use plurimus::core::ratatui_core::layout::Constraint::Length;
     let measured = plurimus::widgets::TableColumns(vec![Length(10), Length(10), Length(10)]);
     let beside = layout::CURSOR_COLS + crate::tabulate::SWATCH_COLS;
-    assert_eq!(plans::fitting(&measured, beside + 21), 2);
-    assert_eq!(plans::fitting(&measured, beside + 20), 1);
-    assert_eq!(plans::fitting(&measured, 0), 1, "the name always shows");
-    assert_eq!(plans::fitting(&measured, beside + 32), 3);
+    let fitting = |given| crate::tabulate::fitting(&measured, given, beside);
+    assert_eq!(fitting(beside + 21), 2);
+    assert_eq!(fitting(beside + 20), 1);
+    assert_eq!(fitting(0), 1, "the name always shows");
+    assert_eq!(fitting(beside + 32), 3);
 }
 
 #[test]

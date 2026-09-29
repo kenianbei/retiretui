@@ -27,7 +27,7 @@ pub use shades::Shade;
 
 use super::layout::placed;
 use super::pane::Framed;
-use super::present::compact_dollars;
+use super::present::compact_money;
 use super::session::YearCursor;
 
 /// The rows ratatui keeps under the graph: the axis, and its labels.
@@ -121,13 +121,13 @@ impl SeriesChart {
             (false, false) => 1.0,
         };
         let bottom_label = if bottom < 0.0 {
-            compact_dollars(bottom as Dollars)
+            compact_money(bottom as Dollars)
         } else {
             "0".to_owned()
         };
         Self {
             x_labels: vec![format!("{}", first as i64), format!("{}", last as i64)],
-            y_labels: vec![bottom_label, compact_dollars(top as Dollars)],
+            y_labels: vec![bottom_label, compact_money(top as Dollars)],
             x_bounds,
             y_bounds: [bottom, top],
             series,
@@ -148,7 +148,7 @@ impl SeriesChart {
             .fold(0.0_f64, |high, &(_, _, point)| high.max(point));
         if high * HEADROOM > self.y_bounds[1] {
             self.y_bounds[1] = high * HEADROOM;
-            self.y_labels[1] = compact_dollars(self.y_bounds[1] as Dollars);
+            self.y_labels[1] = compact_money(self.y_bounds[1] as Dollars);
         }
         self.shades = shades;
         self
@@ -213,7 +213,7 @@ impl SeriesChart {
                     .find(|&&(at, _)| (at - f64::from(year)).abs() < 0.5)
                     .map_or_else(
                         || "-".to_owned(),
-                        |&(_, amount)| compact_dollars(amount as Dollars),
+                        |&(_, amount)| compact_money(amount as Dollars),
                     )
             })
             .collect();
@@ -331,7 +331,7 @@ mod tests {
         assert_eq!(chart.year_at(area, Position::new(39, 3)), None, "beside");
         assert_eq!(
             chart.read_at(area, Position::new(5, 3)).as_deref(),
-            Some("2026 · 1")
+            Some("2026 · $1")
         );
         let narrow = Rect::new(1, 2, 3, 10);
         assert_eq!(

@@ -1,7 +1,7 @@
 import { flexRender, useTable, type RowData } from "@tanstack/react-table";
 import type { KeyboardEvent } from "react";
 
-import { FEATURES, type TableColumns } from "@/components/columns";
+import { aligned, FEATURES, type TableColumns } from "@/components/columns";
 import { cn } from "@/lib/utils";
 
 interface DataTableProps<Row extends RowData> {
@@ -44,8 +44,6 @@ export function DataTable<Row extends RowData>({
     getRowId: rowKey,
   });
   const isPinned = (at: number) => isFirstPinned && at === 0;
-  const aligned = (isNumeric: boolean | undefined) =>
-    isNumeric ? "text-right tabular-nums" : "text-left";
   const selecting = (row: Row) =>
     onSelect && {
       tabIndex: 0,

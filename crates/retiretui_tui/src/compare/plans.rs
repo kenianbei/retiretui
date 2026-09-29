@@ -7,20 +7,19 @@ use bevy_ecs::hierarchy::{ChildOf, Children};
 use bevy_ecs::prelude::{Commands, Component, Entity, Query, With};
 use bevy_ecs::system::SystemParam;
 use bevy_ui::{FlexDirection, Node, Val};
-use plurimus::core::ratatui_core::layout::Constraint;
 use plurimus::core::ratatui_core::style::{Color, Style};
 use plurimus::ui::{ComputedWidgetArea, ScrollArea, UiStyle};
-use plurimus::widgets::{ActiveDescendant, TableColumns};
+use plurimus::widgets::ActiveDescendant;
 use retiretui_client::compare::{self, Figured};
 
 use super::Plans;
 use crate::edit::table_bundle;
 use crate::hints::Hints;
-use crate::layout::{self, CURSOR_COLS, filling, fixed, placed};
+use crate::layout::{self, filling, fixed, placed};
 use crate::nav::FocusStop;
 use crate::pane::{Framed, Pane};
 use crate::present;
-use crate::tabulate::{self, SWATCH_COLS};
+use crate::tabulate;
 
 const TITLE: &str = "Plans";
 /// Cells between columns past the one the table leaves.
@@ -118,11 +117,13 @@ pub(super) fn refresh_plans(
         if !is_moved && !area.is_changed() {
             continue;
         }
-        let (header, rows) = laid(&plans, scroll.content_width(area.0.width));
+        let (header, rows) = laid(&plans);
+        let given = scroll.content_width(area.0.width);
         scroll.content_size.height = u16::try_from(rows.len() + 1).unwrap_or(u16::MAX);
         commands.entity(table).despawn_related::<Children>();
         let keys = keys(&plans);
-        let spawned = tabulate::fill_keyed(&mut commands, table, (&header, &rows), GAP, &keys);
+        let spawned =
+            tabulate::fill_keyed(&mut commands, table, (&header, &rows), (GAP, given), &keys);
         for (place, &row) in spawned.iter().enumerate() {
             commands.entity(row).insert(PlanRow(place));
         }
@@ -173,9 +174,8 @@ fn title(plans: &Plans) -> String {
     }
 }
 
-/// The header and a row per plan, cut to the columns that fit in `given`
-/// cells.
-fn laid(plans: &Plans, given: u16) -> (Vec<String>, Vec<Vec<String>>) {
+/// The header and a row per plan.
+fn laid(plans: &Plans) -> (Vec<String>, Vec<Vec<String>>) {
     let (deflated, year) = (!plans.shown.basis.nominal, plans.year());
     let metric = plans.charted.metric;
     let header = compare::headers(metric, year);
@@ -188,7 +188,7 @@ fn laid(plans: &Plans, given: u16) -> (Vec<String>, Vec<Vec<String>>) {
         })
         .collect();
     let against = plans.against().map(|(at, ..)| at);
-    let mut rows: Vec<Vec<String>> = (plans.each().enumerate())
+    let rows: Vec<Vec<String>> = (plans.each().enumerate())
         .map(|(place, (name, _))| {
             let own = &figured[place];
             let base = against.filter(|&at| at != place).map(|at| &figured[at]);
@@ -197,29 +197,5 @@ fn laid(plans: &Plans, given: u16) -> (Vec<String>, Vec<Vec<String>>) {
                 .collect()
         })
         .collect();
-    let count = fitting(&tabulate::gapped_columns((&header, &rows), GAP), given);
-    for row in &mut rows {
-        row.truncate(count);
-    }
-    (header[..count].to_vec(), rows)
-}
-
-/// How many leading columns fit in `given` cells beside the cursor and
-/// the swatch; the plan's name always does.
-pub(super) fn fitting(measured: &TableColumns, given: u16) -> usize {
-    let mut used = CURSOR_COLS + SWATCH_COLS;
-    let mut count = 0;
-    for constraint in &measured.0 {
-        let Constraint::Length(width) = *constraint else {
-            break;
-        };
-        let spacing = u16::from(count > 0);
-        let needed = used.saturating_add(width).saturating_add(spacing);
-        if count > 0 && needed > given {
-            break;
-        }
-        used = needed;
-        count += 1;
-    }
-    count
+    (header, rows)
 }

@@ -22,7 +22,9 @@ use std::path::Path;
 use std::sync::OnceLock;
 
 use js_sys::Function;
+use retiretui_client::present::MoneyForm;
 use retiretui_engine::params::TaxTables;
+use retiretui_engine::project::{Projection, Summary};
 use serde::Serialize;
 use serde_wasm_bindgen::Serializer;
 use wasm_bindgen::JsCast;
@@ -66,6 +68,19 @@ impl<T> Bases<T> {
             nominal: of(true),
         }
     }
+}
+
+/// A search option's cells in each basis, in full: `cells` of
+/// `projection`, against the plan's `summaries` where it is an option.
+fn option_figures(
+    cells: fn(&Summary, Option<&Summary>, MoneyForm) -> Vec<String>,
+    projection: &Projection,
+    summaries: Option<&Bases<Summary>>,
+) -> Bases<Vec<String>> {
+    Bases::of(|nominal| {
+        let plan = summaries.map(|plan| if nominal { &plan.nominal } else { &plan.today });
+        cells(&projection.summary(!nominal), plan, MoneyForm::Full)
+    })
 }
 
 fn refused(message: String) -> JsError {

@@ -10,7 +10,8 @@ use retiretui_engine::project::{Summary, YearRow};
 use crate::forms::changes::change_words;
 use crate::metric::Metric;
 use crate::present::{
-    self, ENDS_WITH, LIFETIME_TAXES, MONEY_LASTS, PEAKS_AT, SAME, compact_money, signed_money,
+    self, ENDS_WITH, LIFETIME_TAXES, MONEY_LASTS, MoneyForm, PEAKS_AT, SAME, compact_money,
+    signed_money,
 };
 use crate::table::{basis_amount, running_text};
 
@@ -207,14 +208,14 @@ pub fn less(
         .collect()
 }
 
-/// A year's amount, signed where it is a difference from the baseline,
-/// [`UNREACHED`] where the plan does not reach the year.
+/// A year's amount in `form`, signed where it is a difference from the
+/// baseline, [`UNREACHED`] where the plan does not reach the year.
 #[must_use]
-pub fn figure(amount: Option<Dollars>, is_difference: bool) -> String {
+pub fn figure(amount: Option<Dollars>, is_difference: bool, form: MoneyForm) -> String {
     let figure = if is_difference {
-        amount.map(signed_money)
+        amount.map(|amount| form.signed(amount))
     } else {
-        amount.map(compact_money)
+        amount.map(|amount| form.money(amount))
     };
     figure.unwrap_or_else(|| UNREACHED.to_owned())
 }
@@ -255,9 +256,10 @@ mod tests {
         let own = BTreeMap::from([(2030, 100), (2031, 200), (2032, 300)]);
         let base = BTreeMap::from([(2030, 50), (2031, 250)]);
         assert_eq!(less(&own, &base), BTreeMap::from([(2030, 50), (2031, -50)]));
-        assert_eq!(figure(None, true), UNREACHED);
-        assert!(figure(Some(-50), true).starts_with('-'));
-        assert!(figure(Some(50), true).starts_with('+'));
+        assert_eq!(figure(None, true, MoneyForm::Full), UNREACHED);
+        assert!(figure(Some(-50), true, MoneyForm::Full).starts_with('-'));
+        assert_eq!(figure(Some(12_345), true, MoneyForm::Full), "+$12,345");
+        assert_eq!(figure(Some(12_345), false, MoneyForm::Compact), "$12k");
     }
 
     #[test]

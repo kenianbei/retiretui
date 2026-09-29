@@ -23,7 +23,7 @@ use crate::table::{Column, ages_text, basis_amount, present_classes, year_figure
 use super::layout::{self, Body, filling, placed};
 use super::nav::{self, ActivePage, FocusStop, Page};
 use super::pane::{self, Framed, Pane};
-use super::present;
+use super::present::{self, MoneyForm};
 use super::session::{LedgerRun, Projected, RowYear, Shown, track_cursor};
 use super::theme::Theme;
 
@@ -189,7 +189,11 @@ fn rebuild_rows(mut inputs: RowInputs, entities: LedgerEntities, mut commands: C
     let style = RowStyle {
         plan: &inputs.shown.ledger().plan,
         is_nominal: inputs.shown.basis.nominal,
-        is_compact: fit.is_compact,
+        form: if fit.is_compact {
+            MoneyForm::Compact
+        } else {
+            MoneyForm::Full
+        },
         columns: &columns,
     };
     commands
@@ -328,7 +332,7 @@ fn header_cells(classes: &[TreatmentClass]) -> Vec<Line<'static>> {
 struct RowStyle<'a> {
     plan: &'a Plan,
     is_nominal: bool,
-    is_compact: bool,
+    form: MoneyForm,
     columns: &'a [Column],
 }
 
@@ -339,12 +343,7 @@ fn class_columns(classes: &[TreatmentClass]) -> Vec<Column> {
 fn ledger_cells(row: &YearRow, style: RowStyle) -> Vec<Line<'static>> {
     let money = |amount: Dollars| {
         let amount = basis_amount(amount, row.deflator, style.is_nominal);
-        let text = if style.is_compact {
-            present::compact_dollars(amount)
-        } else {
-            present::money(amount)
-        };
-        Line::from(text).right_aligned()
+        Line::from(style.form.money(amount)).right_aligned()
     };
     let mut cells = vec![
         Line::from(row.year.to_string()),
@@ -363,7 +362,7 @@ mod tests {
         RowStyle {
             plan,
             is_nominal: true,
-            is_compact: false,
+            form: MoneyForm::Full,
             columns,
         }
     }

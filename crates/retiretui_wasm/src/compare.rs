@@ -6,6 +6,7 @@ use retiretui_client::compare::{
     self, Figured, Success, THE_BASELINE, THE_SAME, UNREACHED, amounts, figure, less,
 };
 use retiretui_client::metric::Metric;
+use retiretui_client::present::MoneyForm;
 use retiretui_client::session::{Projected, Today, YearCursor, span};
 use retiretui_engine::plan::Dollars;
 use serde::{Deserialize, Serialize};
@@ -101,7 +102,7 @@ fn metric_by_year(own: &Projected, base: Option<&Projected>, view: CompareView) 
         .map(|(year, amount)| YearFigure {
             year,
             amount,
-            figure: figure(Some(amount), base.is_some()),
+            figure: figure(Some(amount), base.is_some(), MoneyForm::Full),
         })
         .collect()
 }
@@ -123,7 +124,11 @@ fn plan_figures(
     };
     let own = figured(
         own,
-        in_year.map_or_else(|| UNREACHED.to_owned(), |shown| shown.figure.clone()),
+        figure(
+            in_year.map(|shown| shown.amount),
+            base.is_some(),
+            MoneyForm::Compact,
+        ),
     );
     let base = base.map(|base| figured(base, String::new()));
     compare::cells(&own, base.as_ref())

@@ -19,7 +19,7 @@ use crate::hints::Hints;
 use crate::layout::{self, filling, placed};
 use crate::nav::FocusStop;
 use crate::pane::Pane;
-use crate::present::{account_name, compact_dollars};
+use crate::present::{account_name, compact_money};
 use crate::session::Basis;
 use crate::table::basis_amount;
 use crate::tabulate;
@@ -129,7 +129,7 @@ fn conversion_rows(bracket: &SweptBracket, plan: &Plan, is_nominal: bool) -> Vec
         .iter()
         .map(|step| {
             let (taxable, deflator) = taxed_in(bracket, step.year);
-            let shown = |amount| compact_dollars(basis_amount(amount, deflator, is_nominal));
+            let shown = |amount| compact_money(basis_amount(amount, deflator, is_nominal));
             vec![
                 step.year.to_string(),
                 account_name(plan, &step.source).to_owned(),

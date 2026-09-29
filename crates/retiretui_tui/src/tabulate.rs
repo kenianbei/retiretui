@@ -11,6 +11,8 @@ use plurimus::core::ratatui_core::text::{Line, Span};
 use plurimus::ui::{ScrollArea, UiStyle};
 use plurimus::widgets::{ActiveDescendant, TableColumns, table_header, table_row};
 
+use crate::layout::CURSOR_COLS;
+
 /// What a table says in place of rows it has none of, and the width it
 /// was last wrapped to; rows spawned into the table take its place.
 #[derive(Component, Debug)]
@@ -38,6 +40,26 @@ pub(super) fn columns((header, rows): (&[String], &[Vec<String>]), gap: u16) -> 
         Constraint::Length(width.saturating_add(gap))
     });
     TableColumns(spaced.collect())
+}
+
+/// How many leading columns of `measured` fit in `given` cells beside
+/// the `beside` cells before them; the first always does.
+pub(super) fn fitting(measured: &TableColumns, given: u16, beside: u16) -> usize {
+    let mut used = beside;
+    let mut count = 0;
+    for constraint in &measured.0 {
+        let Constraint::Length(width) = *constraint else {
+            break;
+        };
+        let spacing = u16::from(count > 0);
+        let needed = used.saturating_add(width).saturating_add(spacing);
+        if count > 0 && needed > given {
+            break;
+        }
+        used = needed;
+        count += 1;
+    }
+    count
 }
 
 /// A label column as wide as its widest label and `gap` more, and the
@@ -70,19 +92,41 @@ fn cells(row: &[String], text: &[usize]) -> Vec<Line<'static>> {
         .collect()
 }
 
+/// `rows` measured as [`gapped_columns`] measures them, cut to the
+/// leading columns that fit in `given` cells beside the `beside` before
+/// them, and how many those are.
+fn fitted(
+    rows: (&[String], &[Vec<String>]),
+    gap: u16,
+    given: u16,
+    beside: u16,
+) -> (TableColumns, usize) {
+    let mut measured = gapped_columns(rows, gap);
+    let count = fitting(&measured, given, beside);
+    measured.0.truncate(count);
+    (measured, count)
+}
+
+/// A row's first `count` cells.
+fn leading(row: &[String], count: usize) -> &[String] {
+    &row[..count.min(row.len())]
+}
+
 /// Spawns `header`, bold, and `rows` into `table`, measured as
-/// [`gapped_columns`] measures them, the first column on the left and the rest
-/// right, answering with each row's entity.
+/// [`gapped_columns`] measures them and cut to the columns that fit in
+/// `given` cells beside the cursor, the first column on the left and the
+/// rest right, answering with each row's entity.
 pub(super) fn fill(
     commands: &mut Commands,
     table: Entity,
     rows: (&[String], &[Vec<String>]),
-    gap: u16,
+    (gap, given): (u16, u16),
 ) -> Vec<Entity> {
-    commands.entity(table).insert(gapped_columns(rows, gap));
+    let (measured, count) = fitted(rows, gap, given, CURSOR_COLS);
+    commands.entity(table).insert(measured);
     let (header, body) = rows;
-    let body = body.iter().map(|row| cells(row, &[0]));
-    spawn_rows(commands, table, cells(header, &[0]), body)
+    let body = body.iter().map(|row| cells(leading(row, count), &[0]));
+    spawn_rows(commands, table, cells(leading(header, count), &[0]), body)
 }
 
 /// What leads each of a keyed table's rows: a stroke of the line the row
@@ -105,28 +149,28 @@ pub(super) fn gapped_columns(rows: (&[String], &[Vec<String>]), gap: u16) -> Tab
 
 /// As [`fill`], each row's first cell drawn in its style from `keys` and
 /// led by a swatch in its colour, so the table names the lines a chart
-/// draws in them.
+/// draws in them; the columns fit beside the swatch as well as the cursor.
 pub(super) fn fill_keyed(
     commands: &mut Commands,
     table: Entity,
     rows: (&[String], &[Vec<String>]),
-    gap: u16,
+    (gap, given): (u16, u16),
     keys: &[(Color, Style)],
 ) -> Vec<Entity> {
-    let mut measured = gapped_columns(rows, gap);
+    let (mut measured, count) = fitted(rows, gap, given, CURSOR_COLS + SWATCH_COLS);
     if let Some(Constraint::Length(first)) = measured.0.first_mut() {
         *first = first.saturating_add(SWATCH_COLS);
     }
     commands.entity(table).insert(measured);
     let (header, body) = rows;
-    let mut header = cells(header, &[0]);
+    let mut header = cells(leading(header, count), &[0]);
     if let Some(first) = header.first_mut() {
         first
             .spans
             .insert(0, Span::raw(" ".repeat(SWATCH_COLS.into())));
     }
     let body = body.iter().zip(keys).map(|(row, &(key, named))| {
-        let mut row = cells(row, &[0]);
+        let mut row = cells(leading(row, count), &[0]);
         if let Some(first) = row.first_mut() {
             first.style = named;
             first

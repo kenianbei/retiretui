@@ -1,36 +1,37 @@
 ---
 source: crates/retiretui_tui/src/frames.rs
+assertion_line: 45
 expression: composed_frame(app)
 ---
 ╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                              
 │1 Overview││2 Ledger││3 Compare││4 Tools││5 Plan│                                                                  full.toml ● 
 ┴──────────┴┴────────┴┴─────────┴╯       ╰┴──────┴──────────────────────────────────────────────────────────────────────────────
 ╭ Tools ────────────╮╭ Constraints ───────────────────────────────────╮╭ Ladder Options ───────────────────────────────────────╮
-│▏ Roth Conversions ││                                                ││  Bracket converted unfunded final net taxes medicare  │
-│  SSA Benefits     ││▌ Convert from  Every deferred account          ││  Current      330k        0     2.09M  697k        0  │
-│  Monte Carlo      ││  Convert to    roth-ira                        ││▏ 22%          987k        0     2.15M  515k        0  │
-│  Historical       ││  Fill bracket  Every bracket                   ││  24%          961k        0     2.13M  512k        0  │
-│                   ││  First year    The plan's start                ││  32%          957k        0     2.09M  521k        0  │
-│                   ││  Last year     The year before RMDs            ││  10%          388k        0     2.06M  709k        0  │
-│                   ││  Annual cap    No cap                          ││  35%          956k        0     2.06M  527k        0  │
-│                   ││  Total cap     No cap                          ││  12%          982k        0     2.04M  581k        0  │
+│▏ Roth Conversions ││                                                ││  Bracket vs. the plan converted unfunded final net    │
+│  SSA Benefits     ││▌ Convert from  Every deferred account          ││  Current                  $330k       $0    $2.09M    │
+│  Monte Carlo      ││  Convert to    roth-ira                        ││▏ 22%            +$56k     $988k       $0    $2.15M    │
+│  Historical       ││  Fill bracket  Every bracket                   ││  24%            +$39k     $962k       $0    $2.13M    │
+│                   ││  First year    The plan's start                ││  32%          -$2,382     $958k       $0    $2.09M    │
+│                   ││  Last year     The year before RMDs            ││  10%            -$32k     $388k       $0    $2.06M    │
+│                   ││  Annual cap    No cap                          ││  35%            -$34k     $956k       $0    $2.06M    │
+│                   ││  Total cap     No cap                          ││  12%            -$51k     $983k       $0    $2.04M    │
 │                   ││  Headroom      None                            │╰───────────────────────────────────────────────────────╯
 │                   ││  IRMAA tier    Not held to one                 │╭ Conversions ──────────────────────────────────────────╮
 │                   ││  MAGI cap      No cap                          ││  Year           From  Amount Taxable                  │
-│                   ││                                                ││▏ 2026       fid-401k    125k    211k                  │
-│                   ││                                                ││  2027       fid-401k    125k    211k                  │
-│                   ││                                                ││  2028       fid-401k    125k    211k                  │
-│                   ││                                                ││  2029       fid-401k    125k    211k                  │
-│                   ││                                                ││  2030       fid-401k    125k    211k                  │
-│                   ││                                                ││  2031       fid-401k     46k    131k                  │
-│                   ││                                                ││  2032       fid-401k     33k    118k                  │
-│                   ││                                                ││  2033       fid-401k     33k    118k                  │
-│                   ││                                                ││  2034       fid-401k     33k    118k                  │
-│                   ││                                                ││  2035       fid-401k     33k    118k                  │
-│                   ││                                                ││  2036       fid-401k     33k    118k                  │
-│                   ││                                                ││  2037       fid-401k    3093     73k                  │
-│                   ││                                                ││  2037   rollover-ira     82k     73k                  │
-│                   ││                                                ││  2038       fid-401k    3092     23k                  │
+│                   ││                                                ││▏ 2026       fid-401k   $126k   $211k                  │
+│                   ││                                                ││  2027       fid-401k   $126k   $211k                  │
+│                   ││                                                ││  2028       fid-401k   $126k   $211k                  │
+│                   ││                                                ││  2029       fid-401k   $126k   $211k                  │
+│                   ││                                                ││  2030       fid-401k   $126k   $211k                  │
+│                   ││                                                ││  2031       fid-401k    $46k   $132k                  │
+│                   ││                                                ││  2032       fid-401k    $33k   $119k                  │
+│                   ││                                                ││  2033       fid-401k    $33k   $119k                  │
+│                   ││                                                ││  2034       fid-401k    $33k   $119k                  │
+│                   ││                                                ││  2035       fid-401k    $33k   $119k                  │
+│                   ││                                                ││  2036       fid-401k    $33k   $119k                  │
+│                   ││                                                ││  2037       fid-401k  $3,093    $74k                  │
+│                   ││                                                ││  2037   rollover-ira    $82k    $74k                  │
+│                   ││                                                ││  2038       fid-401k  $3,092    $23k                  │
 │                   │╰────────────────────────────────────────────────╯╰───────────────────────────────────────────────────────╯
 ╰───────────────────╯⏎ edits a constraint; the ladders are searched again once they are applied. ⇧⇥ back to them.               
  ⏎ edit  ⇥ pane  w write  t take  ctrl-s save  r reload  q quit  ctrl-↓ tab  n dollars                       : commands  ? help

@@ -1,7 +1,6 @@
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import {
   claimWords,
-  compactMoney,
   type ClaimOption,
   type ClaimsOptions,
 } from "@wasm/retiretui_wasm.js";
@@ -23,15 +22,10 @@ const WORDS = claimWords();
 
 /** The plan as it stands, then every set of claims. */
 function rowsOf(found: ClaimsOptions, basis: Basis): OptionRow<ClaimOption>[] {
-  const figures = (amounts: number[]) => amounts.map(compactMoney);
   return [
     {
       key: found.current,
-      cells: [
-        found.current,
-        ...found.current_ages,
-        ...figures(found.baseline[basis]),
-      ],
+      cells: [found.current, ...found.current_ages, ...found.baseline[basis]],
       narrow: found.current,
       option: null,
     },
@@ -39,7 +33,7 @@ function rowsOf(found: ClaimsOptions, basis: Basis): OptionRow<ClaimOption>[] {
       const ages = option.claims.map((claim) => String(claim.age));
       return {
         key: option.key,
-        cells: ["", ...ages, ...figures(option.figures[basis])],
+        cells: ["", ...ages, ...option.figures[basis]],
         narrow: ages.join(" · "),
         option,
       };
@@ -160,7 +154,7 @@ export function ClaimsPage() {
               label="Claim options"
               columns={columns ?? []}
               rows={rows ?? []}
-              narrowFigure={reply.current_ages.length + 2}
+              narrowFigure={(columns ?? []).indexOf(WORDS.against_plan)}
               highlighted={highlighted}
               highlight={(option) => {
                 void navigate({

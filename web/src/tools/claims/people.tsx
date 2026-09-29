@@ -21,6 +21,8 @@ import { Options, type OptionRow } from "@/tools/options";
 
 /** Which of the columns a phone's row shows beside the name: the FRA estimate. */
 const AT_FRA = 4;
+/** The person, their record and their income, before the benefits. */
+const WORDS = 3;
 
 /** What the last action did, or why it did nothing. */
 interface Outcome {
@@ -86,6 +88,7 @@ export function People({
         columns={columns}
         rows={rows}
         narrowFigure={AT_FRA}
+        words={WORDS}
         highlighted={person}
         highlight={(chosen) => {
           setOutcome(null);

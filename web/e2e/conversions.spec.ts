@@ -1,4 +1,6 @@
 import {
+  COMPACT_MONEY,
+  FULL_MONEY,
   SEARCH,
   example,
   expect,
@@ -36,6 +38,15 @@ test("ladders are searched, highlighted, taken and written as a scenario", async
     ? page.getByRole("region", { name: "Ladder options" }).getByRole("button")
     : page.getByRole("table", { name: "Ladder options" }).locator("tbody tr");
   await expect(options.nth(1)).toBeVisible();
+  const against = (at: number) =>
+    phone
+      ? options.nth(at).locator("span").nth(1)
+      : options.nth(at).locator("td").nth(1);
+  await expect(against(1)).toHaveText(/^([+-]\$\d{1,3}(,\d{3})*|\$0)$/);
+  if (!phone) await expect(against(0)).toHaveText("");
+  const years = page.getByRole("table", { name: /conversions$/ });
+  await expect(years).toContainText(FULL_MONEY);
+  await expect(years).not.toContainText(COMPACT_MONEY);
   const second = phone ? options.nth(1) : options.nth(2);
   const label = (await second.innerText()).split(/\s/)[0] ?? "";
   await second.click();

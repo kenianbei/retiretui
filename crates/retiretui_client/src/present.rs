@@ -114,24 +114,56 @@ pub fn parse_money(text: &str) -> Option<Dollars> {
     digits.parse().ok()
 }
 
-/// Dollars in as few cells as say how much: `450k`, `2.58M`.
-#[must_use]
-pub fn compact_dollars(amount: Dollars) -> String {
-    let magnitude = amount.abs();
-    if magnitude >= 1_000_000 {
-        format!("{:.2}M", amount as f64 / 1e6)
-    } else if magnitude >= 10_000 {
-        format!("{}k", amount / 1_000)
-    } else {
-        amount.to_string()
-    }
-}
+/// Below this many dollars a compact amount is written in full.
+const COMPACT_FROM: u64 = 10_000;
+/// From this many dollars a compact amount is in millions, since the
+/// nearest thousand would be `1000k`.
+const MILLIONS_FROM: u64 = 999_500;
 
-/// [`compact_dollars`] as a sum of money: `$2.58M`, `-$42k`.
+/// A sum of money in as few cells as say how much: `$2,086`, `$450k`,
+/// `$2.58M`, `-$42k` - in full under ten thousand, then to the nearest
+/// thousand, then to the nearest ten thousand in millions.
 #[must_use]
 pub fn compact_money(amount: Dollars) -> String {
+    let magnitude = amount.unsigned_abs();
+    if magnitude < COMPACT_FROM {
+        return money(amount);
+    }
     let sign = if amount < 0 { "-" } else { "" };
-    format!("{sign}${}", compact_dollars(amount.abs()))
+    if magnitude < MILLIONS_FROM {
+        return format!("{sign}${}k", (magnitude + 500) / 1_000);
+    }
+    let hundredths = (magnitude + 5_000) / 10_000;
+    format!("{sign}${}.{:02}M", hundredths / 100, hundredths % 100)
+}
+
+/// Whether money is written in full, where a column has the room, or
+/// compact, where it has not.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum MoneyForm {
+    /// [`money`]: `$4,437,120`.
+    Full,
+    /// [`compact_money`]: `$4.44M`.
+    Compact,
+}
+
+impl MoneyForm {
+    /// `amount` in this form.
+    #[must_use]
+    pub fn money(self, amount: Dollars) -> String {
+        match self {
+            Self::Full => money(amount),
+            Self::Compact => compact_money(amount),
+        }
+    }
+
+    /// A difference in this form, signed either way: `+$220k`, `-$12,000`,
+    /// `$0`.
+    #[must_use]
+    pub fn signed(self, amount: Dollars) -> String {
+        let sign = if amount > 0 { "+" } else { "" };
+        format!("{sign}{}", self.money(amount))
+    }
 }
 
 /// How many issues there are: `1 issue`, `3 issues`.
@@ -141,11 +173,11 @@ pub fn issue_count(count: usize) -> String {
     format!("{count} issue{plural}")
 }
 
-/// A difference in money, signed either way: `+$220k`, `-$12k`, `$0`.
+/// A difference in money, compact and signed either way: `+$220k`,
+/// `-$12k`, `$0`.
 #[must_use]
 pub fn signed_money(amount: Dollars) -> String {
-    let sign = if amount > 0 { "+" } else { "" };
-    format!("{sign}{}", compact_money(amount))
+    MoneyForm::Compact.signed(amount)
 }
 
 const PERCENT: f64 = 100.0;
@@ -370,15 +402,36 @@ mod tests {
     }
 
     #[test]
-    fn compact_dollars_scales() {
-        assert_eq!(compact_dollars(0), "0");
-        assert_eq!(compact_dollars(950), "950");
-        assert_eq!(compact_dollars(9_999), "9999");
-        assert_eq!(compact_dollars(42_000), "42k");
-        assert_eq!(compact_dollars(1_234_567), "1.23M");
-        assert_eq!(compact_dollars(-42_000), "-42k");
-        assert_eq!(compact_money(2_580_000), "$2.58M");
-        assert_eq!(compact_money(-42_000), "-$42k");
+    fn compact_money_is_full_then_thousands_then_millions() {
+        let cases = [
+            (0, "$0"),
+            (950, "$950"),
+            (2_086, "$2,086"),
+            (9_999, "$9,999"),
+            (10_000, "$10k"),
+            (19_999, "$20k"),
+            (42_000, "$42k"),
+            (999_499, "$999k"),
+            (999_500, "$1.00M"),
+            (1_234_567, "$1.23M"),
+            (2_580_000, "$2.58M"),
+            (4_437_120, "$4.44M"),
+            (-2_086, "-$2,086"),
+            (-42_000, "-$42k"),
+            (-4_437_120, "-$4.44M"),
+        ];
+        for (amount, shown) in cases {
+            assert_eq!(compact_money(amount), shown, "{amount}");
+        }
+    }
+
+    #[test]
+    fn a_money_form_is_full_or_compact_and_signs_a_difference() {
+        assert_eq!(MoneyForm::Full.money(4_437_120), "$4,437,120");
+        assert_eq!(MoneyForm::Compact.money(4_437_120), "$4.44M");
+        assert_eq!(MoneyForm::Full.signed(1_392_004), "+$1,392,004");
+        assert_eq!(MoneyForm::Full.signed(-12_000), "-$12,000");
+        assert_eq!(MoneyForm::Full.signed(0), "$0");
         assert_eq!(signed_money(220_000), "+$220k");
         assert_eq!(signed_money(-12_000), "-$12k");
         assert_eq!(signed_money(0), "$0");

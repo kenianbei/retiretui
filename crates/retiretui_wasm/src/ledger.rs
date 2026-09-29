@@ -8,8 +8,8 @@ use retiretui_client::ledger::{
 };
 use retiretui_client::overview::{ATTENTION, MILESTONES, NOTHING};
 use retiretui_client::present::{
-    BALANCES_CHART, ENDS_WITH, INCOME_CHART, LIFETIME_TAXES, MONEY_LASTS, NET_WORTH_CHART, SUCCESS,
-    basis_name, compact_money, money, treatment_class,
+    BALANCES_CHART, ENDS_WITH, INCOME_CHART, LIFETIME_TAXES, MONEY_LASTS, MoneyForm,
+    NET_WORTH_CHART, SUCCESS, basis_name, compact_money, money, treatment_class,
 };
 use retiretui_client::replies::year_row;
 use retiretui_client::session::Projected;
@@ -224,6 +224,20 @@ impl JsDocument {
 #[must_use]
 pub fn js_compact_money(amount: f64) -> String {
     compact_money(whole(amount))
+}
+
+/// `amount` in full: `$4,437,120`.
+#[wasm_bindgen(js_name = money)]
+#[must_use]
+pub fn js_money(amount: f64) -> String {
+    money(whole(amount))
+}
+
+/// A difference in full, signed either way: `+$12,345`, `-$50`.
+#[wasm_bindgen(js_name = signedMoney)]
+#[must_use]
+pub fn js_signed_money(amount: f64) -> String {
+    MoneyForm::Full.signed(whole(amount))
 }
 
 /// The percentiles each band's net worth is at, lowest first.

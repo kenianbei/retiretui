@@ -1,4 +1,5 @@
 import {
+  FULL_MONEY,
   SEARCH,
   example,
   expect,
@@ -36,6 +37,7 @@ test("the plan through random markets and history, a run opened in the Ledger", 
     phone ? "aria-pressed" : "aria-selected",
     "true",
   );
+  await expect(row("50th percentile")).toContainText(FULL_MONEY);
 
   await page.getByRole("tab", { name: "By year" }).click();
   await expect(
@@ -48,6 +50,9 @@ test("the plan through random markets and history, a run opened in the Ledger", 
   await page.getByRole("tab", { name: "Endings" }).click();
   await expect(
     page.getByLabel("What the runs end with").getByText("short").first(),
+  ).toBeVisible();
+  await expect(
+    page.getByLabel("What the runs end with").getByText("$1M–$2M"),
   ).toBeVisible();
 
   await page.locator('a[href*="field=monte_carlo.trials"]').click();
