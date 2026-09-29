@@ -14,6 +14,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { aligned } from "@/components/columns";
 import { cn } from "@/lib/utils";
 import { ImportStatement } from "@/plan/import-statement";
 import { useSession } from "@/session";
@@ -70,13 +71,11 @@ export function ReadOut({
 export function ReadRows({
   rows,
   isFlush = false,
-  figuresFrom,
 }: {
-  rows: readonly [string, string][];
+  /** Each label, what it holds, and whether that is a figure. */
+  rows: readonly (readonly [string, string, boolean?])[];
   /** Set in a container of its own: no frame but a rule above. */
   isFlush?: boolean;
-  /** The first row holding a figure, lined up by place from there on. */
-  figuresFrom?: number;
 }) {
   return (
     <dl
@@ -85,20 +84,13 @@ export function ReadRows({
         isFlush && "rounded-none border-x-0 border-b-0 bg-transparent",
       )}
     >
-      {rows.map(([label, text], at) => (
+      {rows.map(([label, text, isFigure]) => (
         <div
           key={label}
           className="grid grid-cols-[minmax(8rem,40%)_1fr] gap-3 px-4 py-2"
         >
           <dt className="text-muted-foreground">{label}</dt>
-          <dd
-            className={cn(
-              "break-words",
-              figuresFrom !== undefined &&
-                at >= figuresFrom &&
-                "text-right tabular-nums",
-            )}
-          >
+          <dd className={cn("break-words", isFigure && aligned(true))}>
             {text}
           </dd>
         </div>

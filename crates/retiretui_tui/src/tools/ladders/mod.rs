@@ -16,7 +16,7 @@ use retiretui_engine::optimize::{
     LadderStep, OptimizeOptions, SweptBracket, apply_ladder, ladder_overlay,
 };
 use retiretui_engine::plan::Plan;
-use retiretui_engine::project::{Projection, Summary};
+use retiretui_engine::project::Summary;
 
 use super::options::{CURRENT_PLAN, FIGURES, Laid};
 use super::{Found, NOTHING_SEARCHED_YET, Tool, ToolPage, write};
@@ -75,20 +75,18 @@ impl Found for Swept {
             .map(str::to_owned)
             .collect();
         let plan = self.sweep.baseline.summary(deflated);
-        let row = |label: String, projection: &Projection, against: Option<&Summary>| {
-            let summary = projection.summary(deflated);
+        let row = |label: String, summary: &Summary, against: Option<&Summary>| {
             std::iter::once(label)
-                .chain(option_cells(&summary, against, MoneyForm::Compact))
+                .chain(option_cells(summary, against, MoneyForm::Compact))
                 .collect()
         };
-        let options = self
-            .sweep
-            .brackets
-            .iter()
-            .map(|bracket| row(rate_label(bracket.rate), &bracket.optimized, Some(&plan)));
+        let options = self.sweep.brackets.iter().map(|bracket| {
+            let summary = bracket.optimized.summary(deflated);
+            row(rate_label(bracket.rate), &summary, Some(&plan))
+        });
         Laid {
             header,
-            current: row(CURRENT_PLAN.to_owned(), &self.sweep.baseline, None),
+            current: row(CURRENT_PLAN.to_owned(), &plan, None),
             options: options.collect(),
         }
     }

@@ -1,4 +1,5 @@
 import {
+  FULL_MONEY,
   SEARCH,
   example,
   expect,
@@ -36,7 +37,7 @@ test("the plan through random markets and history, a run opened in the Ledger", 
     phone ? "aria-pressed" : "aria-selected",
     "true",
   );
-  await expect(row("50th percentile")).toContainText(/\$\d{1,3}(,\d{3})+/);
+  await expect(row("50th percentile")).toContainText(FULL_MONEY);
 
   await page.getByRole("tab", { name: "By year" }).click();
   await expect(

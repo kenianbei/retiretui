@@ -154,7 +154,7 @@ export function ClaimsPage() {
               label="Claim options"
               columns={columns ?? []}
               rows={rows ?? []}
-              narrowFigure={reply.current_ages.length + 1}
+              narrowFigure={(columns ?? []).indexOf(WORDS.against_plan)}
               highlighted={highlighted}
               highlight={(option) => {
                 void navigate({

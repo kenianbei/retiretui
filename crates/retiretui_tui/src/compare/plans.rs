@@ -15,11 +15,11 @@ use retiretui_client::compare::{self, Figured};
 use super::Plans;
 use crate::edit::table_bundle;
 use crate::hints::Hints;
-use crate::layout::{self, CURSOR_COLS, filling, fixed, placed};
+use crate::layout::{self, filling, fixed, placed};
 use crate::nav::FocusStop;
 use crate::pane::{Framed, Pane};
 use crate::present;
-use crate::tabulate::{self, SWATCH_COLS};
+use crate::tabulate;
 
 const TITLE: &str = "Plans";
 /// Cells between columns past the one the table leaves.
@@ -117,11 +117,13 @@ pub(super) fn refresh_plans(
         if !is_moved && !area.is_changed() {
             continue;
         }
-        let (header, rows) = laid(&plans, scroll.content_width(area.0.width));
+        let (header, rows) = laid(&plans);
+        let given = scroll.content_width(area.0.width);
         scroll.content_size.height = u16::try_from(rows.len() + 1).unwrap_or(u16::MAX);
         commands.entity(table).despawn_related::<Children>();
         let keys = keys(&plans);
-        let spawned = tabulate::fill_keyed(&mut commands, table, (&header, &rows), GAP, &keys);
+        let spawned =
+            tabulate::fill_keyed(&mut commands, table, (&header, &rows), (GAP, given), &keys);
         for (place, &row) in spawned.iter().enumerate() {
             commands.entity(row).insert(PlanRow(place));
         }
@@ -172,9 +174,8 @@ fn title(plans: &Plans) -> String {
     }
 }
 
-/// The header and a row per plan, cut to the columns that fit in `given`
-/// cells.
-fn laid(plans: &Plans, given: u16) -> (Vec<String>, Vec<Vec<String>>) {
+/// The header and a row per plan.
+fn laid(plans: &Plans) -> (Vec<String>, Vec<Vec<String>>) {
     let (deflated, year) = (!plans.shown.basis.nominal, plans.year());
     let metric = plans.charted.metric;
     let header = compare::headers(metric, year);
@@ -187,7 +188,7 @@ fn laid(plans: &Plans, given: u16) -> (Vec<String>, Vec<Vec<String>>) {
         })
         .collect();
     let against = plans.against().map(|(at, ..)| at);
-    let mut rows: Vec<Vec<String>> = (plans.each().enumerate())
+    let rows: Vec<Vec<String>> = (plans.each().enumerate())
         .map(|(place, (name, _))| {
             let own = &figured[place];
             let base = against.filter(|&at| at != place).map(|at| &figured[at]);
@@ -196,10 +197,5 @@ fn laid(plans: &Plans, given: u16) -> (Vec<String>, Vec<Vec<String>>) {
                 .collect()
         })
         .collect();
-    let measured = tabulate::gapped_columns((&header, &rows), GAP);
-    let count = tabulate::fitting(&measured, given, CURSOR_COLS + SWATCH_COLS);
-    for row in &mut rows {
-        row.truncate(count);
-    }
-    (header[..count].to_vec(), rows)
+    (header, rows)
 }

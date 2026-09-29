@@ -24,7 +24,7 @@ use retiretui_engine::optimize::{
 };
 use retiretui_engine::plan::{Income, Plan};
 
-use super::options::{AGAINST_PLAN, CURRENT_PLAN, FIGURES, Laid};
+use super::options::{CURRENT_PLAN, Laid};
 use super::{Found, NOTHING_SEARCHED_YET, Tool, ToolPage, write};
 use crate::command::Outcome;
 use crate::confirm::{Answer, Confirm};
@@ -77,12 +77,7 @@ impl Found for ClaimSearch {
     fn laid(&self, plan: &Plan, is_nominal: bool) -> Laid {
         let deflated = !is_nominal;
         let header = std::iter::once(String::new())
-            .chain(claims::claimants(plan, self))
-            .chain(
-                std::iter::once(AGAINST_PLAN)
-                    .chain(FIGURES)
-                    .map(str::to_owned),
-            )
+            .chain(claims::option_columns(plan, self))
             .collect();
         let baseline = self.baseline.summary(deflated);
         let ages = self.current.iter().copied().map(claims::age_cell);

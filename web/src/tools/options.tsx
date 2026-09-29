@@ -98,9 +98,11 @@ export function Options<T>({
               {isChosen && (
                 <ReadRows
                   rows={columns
-                    .slice(1)
-                    .map((header, at) => [header, row.cells[at + 1] ?? ""])}
-                  figuresFrom={words - 1}
+                    .map(
+                      (header, at) =>
+                        [header, row.cells[at] ?? "", at >= words] as const,
+                    )
+                    .slice(1)}
                   isFlush
                 />
               )}

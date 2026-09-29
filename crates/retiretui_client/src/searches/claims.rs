@@ -62,6 +62,16 @@ pub fn claimants(plan: &Plan, search: &ClaimSearch) -> Vec<String> {
     .unwrap_or_default()
 }
 
+/// The options' columns: each person claimed for, what an option ends
+/// with against the plan, then the figures.
+#[must_use]
+pub fn option_columns(plan: &Plan, search: &ClaimSearch) -> Vec<String> {
+    let figures = std::iter::once(super::AGAINST_PLAN).chain(super::FIGURES);
+    let mut columns = claimants(plan, search);
+    columns.extend(figures.map(str::to_owned));
+    columns
+}
+
 /// An age a claim is at, or what an unpaid claim says.
 #[must_use]
 pub fn age_cell(age: Option<u8>) -> String {

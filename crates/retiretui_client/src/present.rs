@@ -130,13 +130,11 @@ pub fn compact_money(amount: Dollars) -> String {
         return money(amount);
     }
     let sign = if amount < 0 { "-" } else { "" };
-    let figure = if magnitude < MILLIONS_FROM {
-        format!("{}k", (magnitude + 500) / 1_000)
-    } else {
-        let hundredths = (magnitude + 5_000) / 10_000;
-        format!("{}.{:02}M", hundredths / 100, hundredths % 100)
-    };
-    format!("{sign}${figure}")
+    if magnitude < MILLIONS_FROM {
+        return format!("{sign}${}k", (magnitude + 500) / 1_000);
+    }
+    let hundredths = (magnitude + 5_000) / 10_000;
+    format!("{sign}${}.{:02}M", hundredths / 100, hundredths % 100)
 }
 
 /// Whether money is written in full, where a column has the room, or

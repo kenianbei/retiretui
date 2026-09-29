@@ -57,6 +57,13 @@ export async function seed(
 /** How long a search in a worker may take, on the slowest runner. */
 export const SEARCH = { timeout: 110_000 };
 
+/** A sum written in full, its thousands separated: `$1,392,004`. */
+export const FULL_MONEY = /\$\d{1,3}(,\d{3})+/;
+/** A difference written in full: `+$1,392,004`. */
+export const SIGNED_MONEY = new RegExp(`[+-]${FULL_MONEY.source}`);
+/** A sum written compact: `$42k`, `$4.44M`. */
+export const COMPACT_MONEY = /\$\d+(\.\d+)?[kM]\b/;
+
 export function isPhone(testInfo: TestInfo): boolean {
   return testInfo.project.name.endsWith("-phone");
 }

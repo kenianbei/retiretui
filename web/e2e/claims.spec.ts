@@ -1,4 +1,7 @@
 import {
+  COMPACT_MONEY,
+  FULL_MONEY,
+  SIGNED_MONEY,
   SEARCH,
   example,
   expect,
@@ -86,7 +89,7 @@ test("each Roth owner's ladder and the household's claims are searched and taken
     const options = claims.getByRole("table").locator("tbody tr");
     const [current, best] = [options.nth(0), options.nth(1)];
     await expect(current).not.toContainText(/[+-]\$/);
-    await expect(best).toContainText(/[+-]\$\d{1,3}(,\d{3})+/);
+    await expect(best).toContainText(SIGNED_MONEY);
   }
 
   await page.goto("#/tools/ssa-benefits?person=0");
@@ -194,13 +197,11 @@ test("a monthly benefit and what a claim does against the plan are said in full"
     "/robin.toml",
     "#/tools/ssa-benefits",
   );
-  await expect(rowNamed(page, testInfo, "Robin")).toContainText(
-    /\$\d{1,2},\d{3}/,
-  );
+  await expect(rowNamed(page, testInfo, "Robin")).toContainText(FULL_MONEY);
   const claims = page.getByRole("region", { name: "Claim options" });
   await expect(
     claims.getByRole("button", { name: "Take these claims" }),
   ).toBeVisible(SEARCH);
-  await expect(claims).toContainText(/[+-]\$\d{1,3}(,\d{3})+/);
-  await expect(claims).not.toContainText(/\$\d+(\.\d+)?[kM]\b/);
+  await expect(claims).toContainText(SIGNED_MONEY);
+  await expect(claims).not.toContainText(COMPACT_MONEY);
 });

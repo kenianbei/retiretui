@@ -4,42 +4,26 @@
 //! scenario; and what the Overview's Could do better card asks of the
 //! document.
 
-use retiretui_client::present::MoneyForm;
 use retiretui_client::searches::claims::{
-    NOBODY, NOTHING_SEARCHED, PEOPLE_COLUMNS, PersonAction, age_cell, claimants, person_row,
+    NOBODY, NOTHING_SEARCHED, PEOPLE_COLUMNS, PersonAction, age_cell, option_columns, person_row,
     take_question, taken,
 };
 use retiretui_client::searches::overview::{
     COULD_DO_BETTER, NOTHING_TO_SEARCH, REFUSED, claims_said, roth_owners,
 };
-use retiretui_client::searches::{AGAINST_PLAN, CURRENT_PLAN, FIGURES, option_cells, run_refusal};
+use retiretui_client::searches::{AGAINST_PLAN, CURRENT_PLAN, option_cells, run_refusal};
 use retiretui_engine::market::Progress;
 use retiretui_engine::optimize::{
     Claim, ClaimCandidate, ClaimSearch, apply_claims, claims_overlay, optimize_claims,
 };
 use retiretui_engine::plan::{Income, Item, Plan};
-use retiretui_engine::project::Projection;
+use retiretui_engine::project::Summary;
 use serde::Serialize;
 use wasm_bindgen::prelude::{JsError, JsValue, wasm_bindgen};
 
 use crate::document::Document;
 use crate::searches::gated;
-use crate::{Bases, JsDocument, from_js, refused, reply, tables, to_js};
-
-/// An option's cells under the reply's columns past the claimants.
-type ClaimFigures = Bases<Vec<String>>;
-
-/// `projection`'s cells, against `plan`'s where it is an option.
-fn figures_of(projection: &Projection, plan: Option<&Projection>) -> ClaimFigures {
-    Bases::of(|nominal| {
-        let plan = plan.map(|plan| plan.summary(!nominal));
-        option_cells(
-            &projection.summary(!nominal),
-            plan.as_ref(),
-            MoneyForm::Full,
-        )
-    })
-}
+use crate::{Bases, JsDocument, from_js, option_figures, refused, reply, tables, to_js};
 
 /// One set of claims the search tried.
 #[derive(Serialize, Debug)]
@@ -50,7 +34,7 @@ pub struct ClaimOption {
     /// One claim per claimant, in the reply's column order.
     pub claims: Vec<Claim>,
     /// The plan's figures under them.
-    pub figures: ClaimFigures,
+    pub figures: Bases<Vec<String>>,
     /// What is asked before they are taken into the plan searched.
     pub question: String,
 }
@@ -69,7 +53,7 @@ pub struct ClaimsOptions {
     /// unpaid one says.
     pub current_ages: Vec<String>,
     /// The plan's figures as it stands.
-    pub baseline: ClaimFigures,
+    pub baseline: Bases<Vec<String>>,
     /// Every set of claims, best first.
     pub options: Vec<ClaimOption>,
     /// The incomes the search made up for people with a record and none,
@@ -80,12 +64,12 @@ pub struct ClaimsOptions {
     pub better: Bases<String>,
 }
 
-fn option_of(plan: &Plan, candidate: &ClaimCandidate, baseline: &Projection) -> ClaimOption {
+fn option_of(plan: &Plan, candidate: &ClaimCandidate, summaries: &Bases<Summary>) -> ClaimOption {
     let ages = candidate.claims.iter().map(|claim| claim.age.to_string());
     ClaimOption {
         key: ages.collect::<Vec<_>>().join("-"),
         claims: candidate.claims.clone(),
-        figures: figures_of(&candidate.projection, Some(baseline)),
+        figures: option_figures(option_cells, &candidate.projection, Some(summaries)),
         question: take_question(plan, &candidate.claims),
     }
 }
@@ -94,20 +78,14 @@ impl ClaimsOptions {
     fn new(plan: &Plan, search: ClaimSearch) -> Self {
         let baseline = &search.baseline;
         let better = Bases::of(|nominal| claims_said(plan, &search, baseline, nominal));
+        let summaries = Bases::of(|nominal| baseline.summary(!nominal));
         Self {
-            columns: claimants(plan, &search)
-                .into_iter()
-                .chain(
-                    std::iter::once(AGAINST_PLAN)
-                        .chain(FIGURES)
-                        .map(str::to_owned),
-                )
-                .collect(),
+            columns: option_columns(plan, &search),
             current: CURRENT_PLAN,
             current_ages: search.current.iter().copied().map(age_cell).collect(),
-            baseline: figures_of(baseline, None),
+            baseline: option_figures(option_cells, baseline, None),
             options: (search.candidates.iter())
-                .map(|candidate| option_of(plan, candidate, baseline))
+                .map(|candidate| option_of(plan, candidate, &summaries))
                 .collect(),
             better,
             added: search.added,
@@ -183,6 +161,8 @@ pub struct ClaimWords {
     pub refused: &'static str,
     /// The card where there is nothing to search.
     pub nothing_to_search: &'static str,
+    /// The column a phone's row shows beside the ages.
+    pub against_plan: &'static str,
 }
 
 impl Document {
@@ -384,6 +364,7 @@ pub fn claim_words() -> Result<JsValue, JsError> {
         could_do_better: COULD_DO_BETTER,
         refused: REFUSED,
         nothing_to_search: NOTHING_TO_SEARCH,
+        against_plan: AGAINST_PLAN,
     })
 }
 
@@ -401,6 +382,7 @@ pub fn js_claims(plan: &str, held: Vec<String>) -> Result<JsValue, JsError> {
 #[cfg(test)]
 mod tests {
     use retiretui_client::files::OVERLAY_SAVE_FIRST;
+    use retiretui_client::searches::FIGURES;
     use retiretui_client::setup::EXAMPLES;
 
     use super::*;

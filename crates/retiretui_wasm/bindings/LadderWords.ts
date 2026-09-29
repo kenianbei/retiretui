@@ -15,4 +15,8 @@ no_bracket: string,
 /**
  * In place of a ladder that converts nothing.
  */
-converts_nothing: string, };
+converts_nothing: string, 
+/**
+ * The column a phone's row shows beside the bracket.
+ */
+against_plan: string, };

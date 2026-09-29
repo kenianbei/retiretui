@@ -52,7 +52,7 @@ pub(super) fn plugin_said(app: &mut App) {
     );
 }
 
-pub use retiretui_client::searches::{AGAINST_PLAN, CURRENT_PLAN, FIGURES};
+pub use retiretui_client::searches::{CURRENT_PLAN, FIGURES};
 
 /// What the rows say: the column names, the plan's own row, and an option
 /// per result, best first.
@@ -60,24 +60,6 @@ pub struct Laid {
     pub header: Vec<String>,
     pub current: Vec<String>,
     pub options: Vec<Vec<String>>,
-}
-
-impl Laid {
-    /// Cut to the leading columns that fit in `given` cells beside the
-    /// cursor, so a narrow pane drops the figures least wanted rather than
-    /// cutting every header short.
-    fn fitted(mut self, given: u16) -> Self {
-        let rows: Vec<Vec<String>> = std::iter::once(self.current.clone())
-            .chain(self.options.iter().cloned())
-            .collect();
-        let measured = tabulate::gapped_columns((&self.header, &rows), 0);
-        let count = tabulate::fitting(&measured, given, layout::CURSOR_COLS);
-        for row in std::iter::once(&mut self.current).chain(&mut self.options) {
-            row.truncate(count);
-        }
-        self.header.truncate(count);
-        self
-    }
 }
 
 /// The plan's own row, or the line saying why there is none: no option.
@@ -147,8 +129,8 @@ fn refresh_options<R: Found>(
         let rows = laid.options.len().saturating_add(2);
         scroll.content_size.height = u16::try_from(rows).unwrap_or(u16::MAX);
         let chosen = tool.highlighted().unwrap_or(0);
-        let laid = laid.fitted(scroll.content_width(area.0.width));
-        fill(&mut commands, table, laid, chosen, &theme);
+        let given = scroll.content_width(area.0.width);
+        fill(&mut commands, table, (laid, given), chosen, &theme);
     }
 }
 
@@ -195,15 +177,22 @@ fn wrap_said(
 }
 
 /// The table's rows: the column names, the plan's own row, dimmed, and an
-/// option per result, the cursor on option `chosen`.
-fn fill(commands: &mut Commands, table: Entity, laid: Laid, chosen: usize, theme: &Theme) {
+/// option per result, cut to the columns that fit in `given` cells, the
+/// cursor on option `chosen`.
+fn fill(
+    commands: &mut Commands,
+    table: Entity,
+    (laid, given): (Laid, u16),
+    chosen: usize,
+    theme: &Theme,
+) {
     let Laid {
         header,
         current,
         mut options,
     } = laid;
     options.insert(0, current);
-    let spawned = tabulate::fill(commands, table, (&header, &options), 0);
+    let spawned = tabulate::fill(commands, table, (&header, &options), (0, given));
     let Some((&current, options)) = spawned.split_first() else {
         return;
     };

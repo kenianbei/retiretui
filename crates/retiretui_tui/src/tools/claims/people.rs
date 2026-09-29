@@ -170,7 +170,7 @@ fn refresh_people(
     let at = cursor.index(&draft.plan);
     for table in &tables {
         commands.entity(table).despawn_related::<Children>();
-        let spawned = tabulate::fill(&mut commands, table, (&header, &rows), GAP);
+        let spawned = tabulate::fill(&mut commands, table, (&header, &rows), (GAP, u16::MAX));
         for (index, &row) in spawned.iter().enumerate() {
             commands.entity(row).insert(PersonRow(index));
         }

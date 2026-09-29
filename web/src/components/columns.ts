@@ -23,3 +23,8 @@ export type TableColumns<Row extends RowData> = ColumnDef<
   typeof FEATURES,
   Row
 >[];
+
+/** How a column's cells line up: a figure by its digits' places. */
+export function aligned(isNumeric: boolean | undefined): string {
+  return isNumeric ? "text-right tabular-nums" : "text-left";
+}

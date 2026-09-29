@@ -21,10 +21,6 @@ import { offeredName } from "@/workspace";
 
 const WORDS = ladderWords();
 
-/** Which of the columns a phone's row shows beside the bracket: what it
- * ends with against the plan. */
-const AGAINST_PLAN = 1;
-
 /** The plan as it stands, then every bracket's ladder. */
 function rowsOf(found: LaddersReply, basis: Basis): OptionRow<LadderOption>[] {
   const row = (
@@ -151,7 +147,7 @@ export function ConversionsPage() {
               label="Ladder options"
               columns={reply.columns}
               rows={rows ?? []}
-              narrowFigure={AGAINST_PLAN}
+              narrowFigure={reply.columns.indexOf(WORDS.against_plan)}
               highlighted={highlighted}
               highlight={highlight}
             />

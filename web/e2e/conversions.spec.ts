@@ -1,4 +1,6 @@
 import {
+  COMPACT_MONEY,
+  FULL_MONEY,
   SEARCH,
   example,
   expect,
@@ -43,8 +45,8 @@ test("ladders are searched, highlighted, taken and written as a scenario", async
   await expect(against(1)).toHaveText(/^([+-]\$\d{1,3}(,\d{3})*|\$0)$/);
   if (!phone) await expect(against(0)).toHaveText("");
   const years = page.getByRole("table", { name: /conversions$/ });
-  await expect(years).toContainText(/\$\d{1,3}(,\d{3})+/);
-  await expect(years).not.toContainText(/\$\d+(\.\d+)?[kM]\b/);
+  await expect(years).toContainText(FULL_MONEY);
+  await expect(years).not.toContainText(COMPACT_MONEY);
   const second = phone ? options.nth(1) : options.nth(2);
   const label = (await second.innerText()).split(/\s/)[0] ?? "";
   await second.click();

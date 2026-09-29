@@ -6,14 +6,13 @@ use std::path::Path;
 
 use retiretui_client::files::{OVERLAY_SAVE_FIRST, relative_path};
 use retiretui_client::forms::{Form, details};
-use retiretui_client::present::MoneyForm;
 use retiretui_client::searches::ladders::{
     CONVERSION_COLUMNS, CONVERTS_NOTHING, Constraints, DESTINATION, FIELDS, NO_BRACKET,
     OPTION_COLUMNS, PICK_DESTINATION, Swept, constraints_in, held_answers, only_roth, option_cells,
     rate_label, search, take_question, taken, taxed_in,
 };
 use retiretui_client::searches::overview::ladder_said;
-use retiretui_client::searches::{CURRENT_PLAN, FIGURES, run_refusal};
+use retiretui_client::searches::{AGAINST_PLAN, CURRENT_PLAN, FIGURES, run_refusal};
 use retiretui_client::store::normal;
 use retiretui_client::table::{account_name, basis_amount};
 use retiretui_engine::market::Progress;
@@ -21,7 +20,7 @@ use retiretui_engine::optimize::{
     LadderStep, OptimizeOptions, SweptBracket, apply_ladder, ladder_overlay,
 };
 use retiretui_engine::plan::{Dollars, Plan};
-use retiretui_engine::project::Projection;
+use retiretui_engine::project::Summary;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::{JsError, JsValue, wasm_bindgen};
 
@@ -29,27 +28,12 @@ use crate::document::Document;
 use crate::editor::Editor;
 use crate::edits::JsEditor;
 use crate::searches::gated;
-use crate::{Bases, JsDocument, from_js, refused, reply, tables, to_js};
+use crate::{Bases, JsDocument, from_js, option_figures, refused, reply, tables, to_js};
 
 /// A scenario written over a file it resolves through would name itself.
 const OVER_ITS_BASE: &str = "a scenario cannot be written over a file it is made from";
 
 static FORM: Form = Form::tool::<Constraints>("Constraints", FIELDS);
-
-/// An option's cells under the reply's columns past the first.
-type Figures = Bases<Vec<String>>;
-
-/// `projection`'s cells, against `plan`'s where it is an option.
-fn figures_of(projection: &Projection, plan: Option<&Projection>) -> Figures {
-    Bases::of(|nominal| {
-        let plan = plan.map(|plan| plan.summary(!nominal));
-        option_cells(
-            &projection.summary(!nominal),
-            plan.as_ref(),
-            MoneyForm::Full,
-        )
-    })
-}
 
 /// What the tool says of itself, beside what a search replies.
 #[derive(Serialize, Debug)]
@@ -61,6 +45,8 @@ pub struct LadderWords {
     pub no_bracket: &'static str,
     /// In place of a ladder that converts nothing.
     pub converts_nothing: &'static str,
+    /// The column a phone's row shows beside the bracket.
+    pub against_plan: &'static str,
 }
 
 /// One year of a ladder: what it converts, and from where.
@@ -92,7 +78,7 @@ pub struct LadderOption {
     /// The rate as a percent: `22%`.
     pub label: String,
     /// The plan's figures with the ladder.
-    pub figures: Figures,
+    pub figures: Bases<Vec<String>>,
     /// Its conversions, year by year.
     pub steps: Vec<LadderYear>,
     /// What is asked before it is taken into the plan searched.
@@ -114,7 +100,7 @@ pub struct LaddersReply {
     /// The Roth account the ladders fill.
     pub destination: String,
     /// The plan's figures as it stands.
-    pub baseline: Figures,
+    pub baseline: Bases<Vec<String>>,
     /// One option per bracket searched, best first.
     pub brackets: Vec<LadderOption>,
     /// What the best ladder does better than the plan, in either basis.
@@ -125,23 +111,24 @@ impl LaddersReply {
     fn new(plan: &Plan, swept: &Swept) -> Self {
         let Swept { sweep, options } = swept;
         let baseline = &sweep.baseline;
+        let summaries = Bases::of(|nominal| baseline.summary(!nominal));
         Self {
             columns: OPTION_COLUMNS.into_iter().chain(FIGURES).collect(),
             conversion_columns: CONVERSION_COLUMNS.to_vec(),
             current: CURRENT_PLAN,
             destination: options.destination.clone(),
-            baseline: figures_of(&sweep.baseline, None),
+            baseline: option_figures(option_cells, &sweep.baseline, None),
             brackets: sweep
                 .brackets
                 .iter()
-                .map(|bracket| option_of(plan, bracket, &sweep.baseline))
+                .map(|bracket| option_of(plan, bracket, &summaries))
                 .collect(),
             better: Bases::of(|nominal| ladder_said(Some(swept), baseline, nominal)),
         }
     }
 }
 
-fn option_of(plan: &Plan, bracket: &SweptBracket, baseline: &Projection) -> LadderOption {
+fn option_of(plan: &Plan, bracket: &SweptBracket, summaries: &Bases<Summary>) -> LadderOption {
     let steps = bracket.steps.iter().map(|step| {
         let (taxable, deflator) = taxed_in(bracket, step.year);
         LadderYear {
@@ -157,7 +144,7 @@ fn option_of(plan: &Plan, bracket: &SweptBracket, baseline: &Projection) -> Ladd
     LadderOption {
         rate: bracket.rate,
         label: rate_label(bracket.rate),
-        figures: figures_of(&bracket.optimized, Some(baseline)),
+        figures: option_figures(option_cells, &bracket.optimized, Some(summaries)),
         steps: steps.collect(),
         question: take_question(bracket, plan),
     }
@@ -392,6 +379,7 @@ pub fn ladder_words() -> Result<JsValue, JsError> {
         pick_destination: PICK_DESTINATION,
         no_bracket: NO_BRACKET,
         converts_nothing: CONVERTS_NOTHING,
+        against_plan: AGAINST_PLAN,
     })
 }
 

@@ -124,9 +124,10 @@ fn plan_figures(
     };
     let own = figured(
         own,
-        in_year.map_or_else(
-            || UNREACHED.to_owned(),
-            |shown| figure(Some(shown.amount), base.is_some(), MoneyForm::Compact),
+        figure(
+            in_year.map(|shown| shown.amount),
+            base.is_some(),
+            MoneyForm::Compact,
         ),
     );
     let base = base.map(|base| figured(base, String::new()));

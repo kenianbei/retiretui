@@ -28,4 +28,8 @@ refused: string,
 /**
  * The card where there is nothing to search.
  */
-nothing_to_search: string, };
+nothing_to_search: string, 
+/**
+ * The column a phone's row shows beside the ages.
+ */
+against_plan: string, };
