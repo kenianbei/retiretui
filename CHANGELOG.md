@@ -31,89 +31,90 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Beneath is what to do in the year shown, in the dollars shown and said as the
   terminal says it: today's by default, stepped by button or the arrow keys, or
   chosen with a click on a chart, and leading to that year in the Ledger. Then
-  what needs attention - the years the plan pays Medicare's surcharges,
-  contributions held back, a benefit estimated without its earnings record, an
-  amount too large to be likely - and what could do better, each row leading to
-  its year in the Ledger, its item or its tool. What to do, the milestones, what
-  needs attention and what could do better sit four across on a wide page, two
-  on a narrower one. Beneath them, all shown at once and two across on a wide
-  page, the plan's balances by tax treatment under its net worth, its net worth,
-  its income against its taxes, and its net worth through the random markets as
-  percentile bands, each salary's end marked and listed under its chart, each
-  chart read as one image with the Ledger as its table. The Ledger shows the
-  plan year by year, the year column staying in view as the table scrolls
-  sideways, and the chosen year's flows through each account - where each came
-  from or went, with the year's warnings - and its income and what it paid,
-  beneath the table on a wide screen and above it on a phone, where no page
-  scrolls sideways but its tables. The year and the dollars are in the page's
-  address, kept between the Overview, the Ledger, Compare and the tools and
-  across a reload. The Plan pages edit the plan: each domain's items are a table
-  sortable by its columns, or rows with a Sort by on a phone, beside the
-  highlighted item read out in the form's words - a field left blank read as
-  what it stands for, muted, such as `Earns nothing` or `6%, the default`, and
-  the Market's fields under headings - and a domain there is one of is that
-  read-out alone. Edit, Add and Delete work one item at a time; the form is a
-  sheet, full screen on a phone, whose fields are entered by their kind - picks
-  from the schema's sets and the plan's own ids, a searched list for a country
-  or U.S. state, a slider beside a rate, a trigger as its kind and sentence -
-  and applying stores the whole item or says why not. Every applied item or
-  deletion is a step Undo and Redo walk, by button or Ctrl/Cmd+Z, and Save or
-  Ctrl/Cmd+S writes the plan back through the same validation as every other
-  surface; Save as… writes it under another name, the one way to keep a
-  scenario's edits. Unsaved edits are asked about before a form closes, another
-  plan opens, or the page is left, and a file changed in another tab under them
-  is reported rather than overwritten. A plan with issues counts them in the
-  header and lists each by the page, item and field it is about, each a link to
-  that field in its form, while the figures keep the last ones it had without
-  issues. A Social Security statement downloaded from ssa.gov is imported onto a
-  person from the People page as one step of history. The Roth Conversions tool
-  searches every fillable bracket's conversion ladder, ranks them under the plan
-  as it stands, each saying what it ends with against the plan, and shows the
-  highlighted one's conversions year by year beside them on a wide page, in
-  either dollar basis, over the constraints it searched under, read out and
-  edited in a sheet; it searches again whenever the plan or the constraints
-  change, and takes the plan's one Roth account as the destination where there
-  is only one. The highlighted ladder is taken into the plan after asking, as
-  one step of history in place of any ladder taken before, or written as a
-  scenario beside the saved plan, compared with it at once and offered to open.
-  The SSA Benefits tool ranks every claim age for the household's computed
-  Social Security benefits under the plan as it stands, each against the plan as
-  a ladder is, beside each person's earnings record, how their benefit is set
-  and the benefit estimated at 62, full retirement age and 70, with what can be
-  done for the highlighted person: import a statement, estimate a record from
-  their salary, compute a stated benefit from their record, clear the record or
-  remove the benefit - the last two asked first - each one step of history, or
-  hold their claim as the plan states it while the others are searched. The
-  highlighted claims are taken into the plan after asking or written as a
-  scenario, as a ladder is; the claims highlighted, the person and who is held
-  are kept in the address. The Overview's Could do better gives each Roth
-  owner's best ladder and the household's best claims against the plan as it
-  stands, each leading to its tool, a ladder's aimed at that owner's account;
-  what it finds is what the tools then show without searching again. The Monte
-  Carlo and Historical tools run the plan through a thousand random markets, or
-  from every historical start year worst first, and say how it fared in one
-  sentence - `Money lasts in 87% of 1,000 markets` - in the colour of its zone -
-  as the Overview's figure is coloured - beside what the runs were made under,
-  each a link to the Market field it is edited at; beneath the runs singled out,
-  all shown at once, are the spread of net worth - percentile bands in a
-  neutral - under the highlighted run's line, the share still funded, what the
-  runs end with, and net worth by year at each percentile (Monte Carlo only).
-  The highlighted run opens in the Ledger, replayed through its market and named
-  by it - a random market's number, or the year retired into - kept in the
-  address through the year, the dollars and edits, with a link back to the
-  plan's own. Compare sets the plan beside the workspace plans chosen for it:
-  each plan's figures and its success through random markets - each plan
-  searched in a worker of its own - or its differences from the one chosen as
-  the baseline, what the highlighted plan changes of the baseline, and one of
-  eight metrics year by year, charted beside its table. A plan alone is offered
-  another from the workspace, or, where there is none, an example written beside
-  it and compared at once. The plans compared, the baseline and the metric are
-  kept in the address, the plans compared carried by every link; opening a
-  compared plan puts it in the document's place with the document joining the
-  compared, and opening any other plan leaves nothing compared. The Tax Tables
-  tool reads out the tables the plan's projection applies in the year shown -
-  brackets, deductions, long-term gains, Social Security's thresholds and
-  benefit formula, the contribution limits, Medicare surcharges, the RMD
+  what needs attention - the worst historical start the plan does not survive
+  and how many fail, as the terminal says it, leading to the Historical tool on
+  that start; the years the plan pays Medicare's surcharges, contributions held
+  back, a benefit estimated without its earnings record, an amount too large to
+  be likely - and what could do better, each row leading to its year in the
+  Ledger, its item or its tool. What to do, the milestones, what needs attention
+  and what could do better sit four across on a wide page, two on a narrower
+  one. Beneath them, all shown at once and two across on a wide page, the plan's
+  balances by tax treatment under its net worth, its net worth, its income
+  against its taxes, and its net worth through the random markets as percentile
+  bands, each salary's end marked and listed under its chart, each chart read as
+  one image with the Ledger as its table. The Ledger shows the plan year by
+  year, the year column staying in view as the table scrolls sideways, and the
+  chosen year's flows through each account - where each came from or went, with
+  the year's warnings - and its income and what it paid, beneath the table on a
+  wide screen and above it on a phone, where no page scrolls sideways but its
+  tables. The year and the dollars are in the page's address, kept between the
+  Overview, the Ledger, Compare and the tools and across a reload. The Plan
+  pages edit the plan: each domain's items are a table sortable by its columns,
+  or rows with a Sort by on a phone, beside the highlighted item read out in the
+  form's words - a field left blank read as what it stands for, muted, such as
+  `Earns nothing` or `6%, the default`, and the Market's fields under headings -
+  and a domain there is one of is that read-out alone. Edit, Add and Delete work
+  one item at a time; the form is a sheet, full screen on a phone, whose fields
+  are entered by their kind - picks from the schema's sets and the plan's own
+  ids, a searched list for a country or U.S. state, a slider beside a rate, a
+  trigger as its kind and sentence - and applying stores the whole item or says
+  why not. Every applied item or deletion is a step Undo and Redo walk, by
+  button or Ctrl/Cmd+Z, and Save or Ctrl/Cmd+S writes the plan back through the
+  same validation as every other surface; Save as… writes it under another name,
+  the one way to keep a scenario's edits. Unsaved edits are asked about before a
+  form closes, another plan opens, or the page is left, and a file changed in
+  another tab under them is reported rather than overwritten. A plan with issues
+  counts them in the header and lists each by the page, item and field it is
+  about, each a link to that field in its form, while the figures keep the last
+  ones it had without issues. A Social Security statement downloaded from
+  ssa.gov is imported onto a person from the People page as one step of history.
+  The Roth Conversions tool searches every fillable bracket's conversion ladder,
+  ranks them under the plan as it stands, each saying what it ends with against
+  the plan, and shows the highlighted one's conversions year by year beside them
+  on a wide page, in either dollar basis, over the constraints it searched
+  under, read out and edited in a sheet; it searches again whenever the plan or
+  the constraints change, and takes the plan's one Roth account as the
+  destination where there is only one. The highlighted ladder is taken into the
+  plan after asking, as one step of history in place of any ladder taken before,
+  or written as a scenario beside the saved plan, compared with it at once and
+  offered to open. The SSA Benefits tool ranks every claim age for the
+  household's computed Social Security benefits under the plan as it stands,
+  each against the plan as a ladder is, beside each person's earnings record,
+  how their benefit is set and the benefit estimated at 62, full retirement age
+  and 70, with what can be done for the highlighted person: import a statement,
+  estimate a record from their salary, compute a stated benefit from their
+  record, clear the record or remove the benefit - the last two asked first -
+  each one step of history, or hold their claim as the plan states it while the
+  others are searched. The highlighted claims are taken into the plan after
+  asking or written as a scenario, as a ladder is; the claims highlighted, the
+  person and who is held are kept in the address. The Overview's Could do better
+  gives each Roth owner's best ladder and the household's best claims against
+  the plan as it stands, each leading to its tool, a ladder's aimed at that
+  owner's account; what it finds is what the tools then show without searching
+  again. The Monte Carlo and Historical tools run the plan through a thousand
+  random markets, or from every historical start year worst first, and say how
+  it fared in one sentence - `Money lasts in 87% of 1,000 markets` - in the
+  colour of its zone - as the Overview's figure is coloured - beside what the
+  runs were made under, each a link to the Market field it is edited at; beneath
+  the runs singled out, all shown at once, are the spread of net worth -
+  percentile bands in a neutral - under the highlighted run's line, the share
+  still funded, what the runs end with, and net worth by year at each percentile
+  (Monte Carlo only). The highlighted run opens in the Ledger, replayed through
+  its market and named by it - a random market's number, or the year retired
+  into - kept in the address through the year, the dollars and edits, with a
+  link back to the plan's own. Compare sets the plan beside the workspace plans
+  chosen for it: each plan's figures and its success through random markets -
+  each plan searched in a worker of its own - or its differences from the one
+  chosen as the baseline, what the highlighted plan changes of the baseline, and
+  one of eight metrics year by year, charted beside its table. A plan alone is
+  offered another from the workspace, or, where there is none, an example
+  written beside it and compared at once. The plans compared, the baseline and
+  the metric are kept in the address, the plans compared carried by every link;
+  opening a compared plan puts it in the document's place with the document
+  joining the compared, and opening any other plan leaves nothing compared. The
+  Tax Tables tool reads out the tables the plan's projection applies in the year
+  shown - brackets, deductions, long-term gains, Social Security's thresholds
+  and benefit formula, the contribution limits, Medicare surcharges, the RMD
   divisors and the state's income tax - in columns as many as the page holds -
   for the plan's filing status and the state it lives in that year, grown past
   the last published table at the plan's inflation, or for any status or modeled
