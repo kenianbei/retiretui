@@ -111,6 +111,28 @@ export function ClaimsPage() {
         <BasisSwitch />
       </div>
       <div className="grid grid-cols-1 items-start gap-6 @wide/page:grid-cols-2">
+        <section aria-labelledby="people" className="min-w-0 space-y-3">
+          <h2 id="people" className="text-lg font-semibold">
+            People
+          </h2>
+          {people.length === 0 ? (
+            <p className="text-muted-foreground">{WORDS.nobody}</p>
+          ) : (
+            <People
+              columns={WORDS.people_columns}
+              spelledOut={WORDS.spelled_out}
+              people={people}
+              at={at}
+              highlight={(person) => {
+                void navigate({
+                  search: (kept) => ({ ...kept, person }),
+                  replace: true,
+                });
+              }}
+              hold={hold}
+            />
+          )}
+        </section>
         <section aria-labelledby="claims" className="min-w-0 space-y-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex items-baseline gap-3">
@@ -158,28 +180,6 @@ export function ClaimsPage() {
                   replace: true,
                 });
               }}
-            />
-          )}
-        </section>
-        <section aria-labelledby="people" className="min-w-0 space-y-3">
-          <h2 id="people" className="text-lg font-semibold">
-            People
-          </h2>
-          {people.length === 0 ? (
-            <p className="text-muted-foreground">{WORDS.nobody}</p>
-          ) : (
-            <People
-              columns={WORDS.people_columns}
-              spelledOut={WORDS.spelled_out}
-              people={people}
-              at={at}
-              highlight={(person) => {
-                void navigate({
-                  search: (kept) => ({ ...kept, person }),
-                  replace: true,
-                });
-              }}
-              hold={hold}
             />
           )}
         </section>
