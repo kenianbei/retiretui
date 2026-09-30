@@ -124,7 +124,7 @@ function WideTable({ slug, table, sort, onSort, highlighted }: ItemTableProps) {
       rows={table.rows}
       rowKey={(row) => String(row.index)}
       isSelected={(row) => row.index === highlighted}
-      className="hidden @lg:block"
+      className="hidden @lg/page:block"
     />
   );
 }
@@ -140,7 +140,7 @@ function NarrowRows({ slug, table, sort, onSort }: ItemTableProps) {
       ? ""
       : `${String(sort.column)}:${sort.is_descending ? "down" : "up"}`;
   return (
-    <div className="space-y-3 @lg:hidden">
+    <div className="space-y-3 @lg/page:hidden">
       <label className="flex items-center gap-2 text-sm">
         <span className="text-muted-foreground">Sort by</span>
         <select
@@ -193,12 +193,12 @@ function NarrowRows({ slug, table, sort, onSort }: ItemTableProps) {
   );
 }
 
-/** A domain's items: a table where it has the width, rows where it has not. */
+/** A domain's items: a table where the page has the width, rows where it has not. */
 export function ItemTable(props: ItemTableProps) {
   return (
-    <div className="@container">
+    <>
       <WideTable {...props} />
       <NarrowRows {...props} />
-    </div>
+    </>
   );
 }

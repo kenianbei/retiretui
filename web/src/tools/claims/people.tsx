@@ -3,7 +3,7 @@ import type {
   PersonAction,
   PersonRow,
 } from "@wasm/retiretui_wasm.js";
-import { useState } from "react";
+import { useId, useState } from "react";
 
 import {
   AlertDialog,
@@ -53,6 +53,7 @@ export function People({
   /** Holds or lets go of the claim of the person with `id`. */
   hold: (id: string, isHeld: boolean) => void;
 }) {
+  const actsFor = useId();
   const session = useSession();
   const [asking, setAsking] = useState<OfferedAction | null>(null);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
@@ -101,29 +102,33 @@ export function People({
         }}
       />
       {person && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-medium">{person.name}:</span>
-          {person.actions.map((offered) =>
-            offered.action === "import" ? (
-              <ImportStatement
-                key={offered.action}
-                index={at}
-                name={person.name}
-                label={offered.label}
-              />
-            ) : (
-              <Button
-                key={offered.action}
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  act(offered);
-                }}
-              >
-                {offered.label}
-              </Button>
-            ),
-          )}
+        <div role="group" aria-labelledby={actsFor} className="space-y-2">
+          <p id={actsFor} className="text-sm font-medium">
+            {person.name}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {person.actions.map((offered) =>
+              offered.action === "import" ? (
+                <ImportStatement
+                  key={offered.action}
+                  index={at}
+                  name={person.name}
+                  label={offered.label}
+                />
+              ) : (
+                <Button
+                  key={offered.action}
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    act(offered);
+                  }}
+                >
+                  {offered.label}
+                </Button>
+              ),
+            )}
+          </div>
         </div>
       )}
       <div aria-live="polite">

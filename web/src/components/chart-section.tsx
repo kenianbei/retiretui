@@ -3,8 +3,9 @@ import { useId, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * A chart as a section of its page: its title as its heading, what it is
- * in beneath, and the plot, which takes its shape from the section's width.
+ * A chart, or a chart's table, as a section of its page: its title as its
+ * heading, what it is in beneath, and the plot, which takes its shape from
+ * the section's width.
  */
 export function ChartSection({
   title,

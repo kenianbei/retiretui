@@ -110,70 +110,80 @@ export function ConversionsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Roth Conversions
-        </h1>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Roth Conversions
+          </h1>
+          <ToolAbout about={WORDS.about} />
+        </div>
         <BasisSwitch />
-        <ToolAbout about={WORDS.about} />
+      </div>
+      <div className="grid items-start gap-6 @wide/page:grid-cols-[auto_minmax(0,1fr)]">
+        <section aria-labelledby="options" className="min-w-0 space-y-3">
+          <div className="flex items-baseline gap-3">
+            <h2 id="options" className="text-lg font-semibold">
+              Ladder options
+            </h2>
+            {found.isFetching && (
+              <span className="text-muted-foreground text-sm">Searching…</span>
+            )}
+          </div>
+          {!isAimed ? (
+            <p className="text-muted-foreground">{WORDS.pick_destination}</p>
+          ) : !isValid ? (
+            <p className="text-muted-foreground">
+              The ladders are searched once the plan&apos;s issues are fixed;
+              the{" "}
+              <Link to="/overview" className="underline underline-offset-4">
+                Overview
+              </Link>{" "}
+              lists them.
+            </p>
+          ) : found.error && !found.isFetching ? (
+            <MarginNote zone="caution" role="alert">
+              <p className="text-sm">{found.error.message}</p>
+            </MarginNote>
+          ) : reply && reply.brackets.length === 0 ? (
+            <p className="text-muted-foreground">{WORDS.no_bracket}</p>
+          ) : (
+            reply && (
+              <Options
+                label="Ladder options"
+                columns={reply.columns}
+                rows={rows ?? []}
+                narrowFigure={reply.columns.indexOf(WORDS.against_plan)}
+                highlighted={highlighted}
+                highlight={highlight}
+              />
+            )
+          )}
+        </section>
+        {reply && highlighted && isAimed && isValid && !found.error && (
+          <section
+            aria-labelledby="conversions"
+            className="w-fit max-w-full min-w-0 space-y-3"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <h2 id="conversions" className="text-lg font-semibold">
+                Conversions ({highlighted.label})
+              </h2>
+              <SearchActions
+                key={highlighted.label}
+                chosen={chosenLadder(path, reply.destination, highlighted)}
+                isCurrent={isCurrent}
+              />
+            </div>
+            <Conversions
+              option={highlighted}
+              headers={reply.conversion_columns}
+              basis={basis}
+              nothing={WORDS.converts_nothing}
+            />
+          </section>
+        )}
       </div>
       <Constraints />
-      <section aria-labelledby="options" className="space-y-3">
-        <div className="flex items-baseline gap-3">
-          <h2 id="options" className="text-lg font-semibold">
-            Ladder options
-          </h2>
-          {found.isFetching && (
-            <span className="text-muted-foreground text-sm">Searching…</span>
-          )}
-        </div>
-        {!isAimed ? (
-          <p className="text-muted-foreground">{WORDS.pick_destination}</p>
-        ) : !isValid ? (
-          <p className="text-muted-foreground">
-            The ladders are searched once the plan&apos;s issues are fixed; the{" "}
-            <Link to="/overview" className="underline underline-offset-4">
-              Overview
-            </Link>{" "}
-            lists them.
-          </p>
-        ) : found.error && !found.isFetching ? (
-          <MarginNote zone="caution" role="alert">
-            <p className="text-sm">{found.error.message}</p>
-          </MarginNote>
-        ) : reply && reply.brackets.length === 0 ? (
-          <p className="text-muted-foreground">{WORDS.no_bracket}</p>
-        ) : (
-          reply && (
-            <Options
-              label="Ladder options"
-              columns={reply.columns}
-              rows={rows ?? []}
-              narrowFigure={reply.columns.indexOf(WORDS.against_plan)}
-              highlighted={highlighted}
-              highlight={highlight}
-            />
-          )
-        )}
-      </section>
-      {reply && highlighted && isAimed && isValid && !found.error && (
-        <section aria-labelledby="conversions" className="space-y-3">
-          <h2 id="conversions" className="text-lg font-semibold">
-            Conversions ({highlighted.label})
-          </h2>
-          <Conversions
-            option={highlighted}
-            headers={reply.conversion_columns}
-            basis={basis}
-            nothing={WORDS.converts_nothing}
-          />
-          <SearchActions
-            key={highlighted.label}
-            chosen={chosenLadder(path, reply.destination, highlighted)}
-            isCurrent={isCurrent}
-          />
-        </section>
-      )}
       {search.edit && <ConstraintsForm />}
     </div>
   );

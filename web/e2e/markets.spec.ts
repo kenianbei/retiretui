@@ -49,15 +49,13 @@ test("the plan through random markets and history, a run opened in the Ledger", 
   );
   await expect(row("50th percentile")).toContainText(FULL_MONEY);
 
-  await page.getByRole("tab", { name: "By year" }).click();
+  const byYear = page.getByRole("region", { name: "By year" });
   await expect(
-    page.getByRole("columnheader", { name: "Funded" }),
+    byYear.getByRole("columnheader", { name: "Funded" }),
   ).toBeVisible();
-  await page.getByRole("tab", { name: "Funded" }).click();
   await expect(
     page.getByLabel("Share of runs still funded").locator("svg").first(),
   ).toBeVisible();
-  await page.getByRole("tab", { name: "Endings" }).click();
   await expect(
     page.getByLabel("What the runs end with").getByText("short").first(),
   ).toBeVisible();
@@ -117,7 +115,7 @@ test("the plan through random markets and history, a run opened in the Ledger", 
   await expect(
     page.getByText(/^Money lasts in [\d.]+% of [\d,]+ start years$/),
   ).toBeVisible(SEARCH);
-  await expect(page.getByRole("tab", { name: "By year" })).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "By year" })).toHaveCount(0);
   await expectAccessible(page);
   const start = phone
     ? page.getByRole("button", { name: /^\d{4}/ }).first()

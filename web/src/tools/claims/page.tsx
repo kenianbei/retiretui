@@ -101,11 +101,63 @@ export function ClaimsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">SSA Benefits</h1>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            SSA Benefits
+          </h1>
+          <ToolAbout about={WORDS.about} />
+        </div>
         <BasisSwitch />
-        <ToolAbout about={WORDS.about} />
       </div>
+      <section aria-labelledby="claims" className="w-fit max-w-full space-y-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex items-baseline gap-3">
+            <h2 id="claims" className="text-lg font-semibold">
+              Claim options
+            </h2>
+            {found.isFetching && (
+              <span className="text-muted-foreground text-sm">Searching…</span>
+            )}
+          </div>
+          {reply && highlighted && isValid && !found.error && (
+            <SearchActions
+              key={highlighted.key}
+              chosen={chosenClaims(path, highlighted, reply.added)}
+              isCurrent={isCurrent}
+            />
+          )}
+        </div>
+        {!isValid ? (
+          <p className="text-muted-foreground">
+            The claims are searched once the plan&apos;s issues are fixed; the{" "}
+            <Link to="/overview" className="underline underline-offset-4">
+              Overview
+            </Link>{" "}
+            lists them.
+          </p>
+        ) : found.error && !found.isFetching ? (
+          <MarginNote zone="caution" role="alert">
+            <p className="text-sm">{found.error.message}</p>
+          </MarginNote>
+        ) : !reply ? (
+          <p className="text-muted-foreground">{WORDS.nothing_searched}</p>
+        ) : (
+          <Options
+            label="Claim options"
+            columns={columns ?? []}
+            rows={rows ?? []}
+            narrowFigure={(columns ?? []).indexOf(WORDS.against_plan)}
+            highlighted={highlighted}
+            highlight={(option) => {
+              void navigate({
+                search: (kept) => ({ ...kept, claim: option.key }),
+                replace: true,
+              });
+            }}
+          />
+        )}
+      </section>
       <section aria-labelledby="people" className="space-y-3">
         <h2 id="people" className="text-lg font-semibold">
           People
@@ -126,54 +178,6 @@ export function ClaimsPage() {
             }}
             hold={hold}
           />
-        )}
-      </section>
-      <section aria-labelledby="claims" className="space-y-3">
-        <div className="flex items-baseline gap-3">
-          <h2 id="claims" className="text-lg font-semibold">
-            Claim options
-          </h2>
-          {found.isFetching && (
-            <span className="text-muted-foreground text-sm">Searching…</span>
-          )}
-        </div>
-        {!isValid ? (
-          <p className="text-muted-foreground">
-            The claims are searched once the plan&apos;s issues are fixed; the{" "}
-            <Link to="/overview" className="underline underline-offset-4">
-              Overview
-            </Link>{" "}
-            lists them.
-          </p>
-        ) : found.error && !found.isFetching ? (
-          <MarginNote zone="caution" role="alert">
-            <p className="text-sm">{found.error.message}</p>
-          </MarginNote>
-        ) : !reply ? (
-          <p className="text-muted-foreground">{WORDS.nothing_searched}</p>
-        ) : (
-          <>
-            <Options
-              label="Claim options"
-              columns={columns ?? []}
-              rows={rows ?? []}
-              narrowFigure={(columns ?? []).indexOf(WORDS.against_plan)}
-              highlighted={highlighted}
-              highlight={(option) => {
-                void navigate({
-                  search: (kept) => ({ ...kept, claim: option.key }),
-                  replace: true,
-                });
-              }}
-            />
-            {highlighted && (
-              <SearchActions
-                key={highlighted.key}
-                chosen={chosenClaims(path, highlighted, reply.added)}
-                isCurrent={isCurrent}
-              />
-            )}
-          </>
         )}
       </section>
     </div>

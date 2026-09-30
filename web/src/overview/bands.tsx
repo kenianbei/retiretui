@@ -13,7 +13,7 @@ export const SERIES = [1, 2, 3, 4, 5].map((at) => `var(--chart-${String(at)})`);
 
 /** A chart's shape by the width it is given, not the window's; its section is the container. */
 export const PLOT_SIZE =
-  "aspect-[4/3] w-full @xl:aspect-[2/1] @3xl:aspect-[5/2]";
+  "aspect-[4/3] w-full @xl:aspect-[2/1] @3xl:aspect-[5/2] @6xl:aspect-[3/1]";
 
 /** The neutral the runs' spread is drawn in, so the plan's own line is the one in ink. */
 const SPREAD = "var(--muted-foreground)";
