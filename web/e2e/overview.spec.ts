@@ -3,6 +3,8 @@ import {
   example,
   expect,
   expectAccessible,
+  isPhone,
+  rowNamed,
   seed,
   test,
 } from "./support";
@@ -113,6 +115,28 @@ test("an issue leads to its field", async ({ page }) => {
     .getByRole("link", { name: /Balance: must not be negative/ })
     .click();
   await page.waitForURL(/#\/plan\/accounts\?.*field=balance/);
+});
+
+test("the worst historical start the plan does not survive leads to it", async ({
+  page,
+}, testInfo) => {
+  const spending = example("starter.toml").replace(
+    "amount = 24000",
+    "amount = 60000",
+  );
+  await seed(page, { "/spending.toml": spending }, "/spending.toml");
+  const attention = page.getByRole("region", { name: "Needs attention" });
+  const row = attention.getByRole("link", {
+    name: /^Fails from a \d{4} start · [\d,]+ of 155 fail/,
+  });
+  await expect(row).toBeVisible(SEARCH);
+  const year = /\d{4}/.exec((await row.textContent()) ?? "")?.[0] ?? "";
+  await row.click();
+  await page.waitForURL(new RegExp(`#/tools/historical\\?.*run=(%22)?${year}`));
+  await expect(rowNamed(page, testInfo, year)).toHaveAttribute(
+    isPhone(testInfo) ? "aria-pressed" : "aria-selected",
+    "true",
+  );
 });
 
 test("a milestone leads to its year in the Ledger", async ({ page }) => {

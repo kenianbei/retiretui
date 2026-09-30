@@ -44,13 +44,15 @@ function RowContent({
   );
 }
 
-/** A row that opens a tool's page. */
+/** A row that opens a tool's page, on the market run `run` where it names one. */
 export function ToolRow({
   page,
+  run,
   onClick,
   children,
 }: {
   page: string;
+  run?: string;
   onClick?: () => void;
   children: ReactNode;
 }) {
@@ -60,7 +62,10 @@ export function ToolRow({
       <Link
         to="/tools/$page"
         params={{ page }}
-        search={(kept) => keptSearch(kept, ["basis", "held"])}
+        search={(kept) => ({
+          ...keptSearch(kept, ["basis", "held"]),
+          ...(run !== undefined && { run }),
+        })}
         onClick={onClick}
         className={ROW}
       >
@@ -111,15 +116,17 @@ function PlanRow({ row }: { row: OverviewRow }) {
   );
 }
 
-/** A titled list of the client's rows, or `empty` where it has none. */
+/** A titled list of the client's rows under `lead`, or `empty` where it has neither. */
 export function RowList({
   id,
   title,
+  lead,
   rows,
   empty,
 }: {
   id: string;
   title: string;
+  lead?: ReactNode;
   rows: readonly OverviewRow[];
   empty?: string;
 }) {
@@ -128,10 +135,11 @@ export function RowList({
       <h2 id={id} className="text-lg font-semibold">
         {title}
       </h2>
-      {rows.length === 0 ? (
+      {!lead && rows.length === 0 ? (
         <p className="text-muted-foreground text-sm">{empty}</p>
       ) : (
         <Rows>
+          {lead}
           {rows.map((row) => (
             <li key={`${String(row.year)} ${row.text}`}>
               <PlanRow row={row} />

@@ -3,11 +3,13 @@ import { useMemo } from "react";
 
 import { Better } from "@/overview/better";
 import { EveryYear, PlanChart } from "@/overview/charts";
-import { RowList } from "@/overview/lists";
+import { HISTORICAL } from "@/nav";
+import { RowList, ToolRow } from "@/overview/lists";
 import { Problems, Shortfall } from "@/overview/notes";
 import { Strip } from "@/overview/strip";
 import { ThisYear } from "@/overview/this-year";
 import { VIEW_WORDS } from "@/overview/view-words";
+import { useMarkets } from "@/searches";
 import { useSession } from "@/session";
 import { basisOf, heldOf } from "@/year/search";
 import { useYear } from "@/year/use-year";
@@ -35,6 +37,8 @@ export function Overview() {
     () => (isValid ? (reading.document?.planText() ?? null) : null),
     [reading, isValid],
   );
+  const starts = useMarkets("historical", plan ?? "", plan !== null);
+  const failing = starts.isPlaceholderData ? null : starts.data?.failing;
   const view = useMemo(
     () => reading.document?.overview(basis === "nominal") ?? null,
     [reading, basis],
@@ -76,6 +80,13 @@ export function Overview() {
           <RowList
             id="attention"
             title={VIEW_WORDS.attention}
+            lead={
+              failing && (
+                <ToolRow page={HISTORICAL} run={failing.key}>
+                  {failing.said}
+                </ToolRow>
+              )
+            }
             rows={view.attention}
             empty={VIEW_WORDS.nothing_wanting}
           />
