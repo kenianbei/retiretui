@@ -184,5 +184,21 @@ fn tax() -> Vec<CommandSpec> {
             hint: Some("last year"),
             register: Box::new(|world| world.register_system(overview::previous_year)),
         },
+        CommandSpec {
+            name: "tax-status",
+            scope: Scope::On(Page::TaxTables),
+            doc: "pick the filing status the tax tables are for",
+            keys: vec![character("f")],
+            hint: Some("status"),
+            register: Box::new(|world| world.register_system(tools::tax::pick_status)),
+        },
+        CommandSpec {
+            name: "tax-state",
+            scope: Scope::On(Page::TaxTables),
+            doc: "pick the state the tax tables are for",
+            keys: vec![character("t")],
+            hint: Some("state"),
+            register: Box::new(|world| world.register_system(tools::tax::pick_state)),
+        },
     ]
 }

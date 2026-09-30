@@ -34,4 +34,4 @@ expression: composed_frame(app)
 │                   ││  Workplace catch-up from 50                                        $8,000                              ▼│
 │                   │╰─────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╰───────────────────╯The amounts the projection applies in a year; past the latest table, they grow at the plan's inflation.    
- ↑↓ line  ⇥ pane  ] next year  [ last year  ctrl-s save  r reload  q quit  ctrl-↓ tab  n dollars             : commands  ? help
+ ↑↓ line  ⇥ pane  ] next year  [ last year  f status  t state  ctrl-s save  r reload  q quit  ctrl-↓ tab     : commands  ? help

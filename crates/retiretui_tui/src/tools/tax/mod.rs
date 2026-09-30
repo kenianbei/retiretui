@@ -6,27 +6,31 @@ use bevy_app::{App, Startup, Update};
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{
-    Commands, Component, Entity, IntoScheduleConfigs, Query, Res, Resource, With,
+    Commands, Component, Entity, In, IntoScheduleConfigs, Query, Res, ResMut, Resource, With, World,
 };
+use bevy_ecs::system::SystemParam;
 use plurimus::core::UiWidget;
 use plurimus::core::ratatui_core::style::{Modifier, Style};
 use plurimus::ui::{ScrollArea, UiStyle};
-use retiretui_client::tax_tables::{TablesView, YearTables, year_tables};
+use retiretui_client::tax_tables::{STATE_PICK, STATUS_PICK, TablesView, YearTables, year_tables};
 use retiretui_engine::plan::{US_STATES, place_name};
 
 use super::{HelpLine, show_help};
+use crate::command::Outcome;
 use crate::edit::{Draft, table_bundle};
 use crate::hints::Hints;
 use crate::layout::{self, Body, filling, placed};
 use crate::nav::{self, FocusStop, Page};
 use crate::pane::{Framed, Pane};
+use crate::picker::{Offered, Picker, Picking, ranked};
 use crate::session::{Session, Shown};
 use crate::tabulate;
 use crate::theme::{Repainted, Theme};
 
 pub fn plugin(app: &mut App) {
     app.init_resource::<TaxPicks>();
-    app.add_systems(Startup, spawn_page.after(layout::spawn_frame));
+    app.init_resource::<Tabled>();
+    app.add_systems(Startup, (spawn_page.after(layout::spawn_frame), register));
     app.add_systems(Update, refresh_tables.before(Repainted));
 }
 
@@ -37,6 +41,10 @@ pub struct TaxPicks {
     pub status: Option<String>,
     pub state: Option<String>,
 }
+
+/// The tables last shown, which the pickers offer the choices of.
+#[derive(Resource, Default)]
+struct Tabled(Option<YearTables>);
 
 #[derive(Component)]
 struct TaxTable;
@@ -128,7 +136,7 @@ fn refresh_tables(
     mut tables: Query<(Entity, &mut ScrollArea, &ChildOf), With<TaxTable>>,
     mut panes: Query<&mut Framed>,
     mut help: Query<(&mut UiWidget, &HelpLine)>,
-    mut commands: Commands,
+    (mut last, mut commands): (ResMut<Tabled>, Commands),
 ) {
     let is_moved = draft.is_changed() || picks.is_changed() || shown.is_changed();
     if !is_moved && !theme.is_changed() {
@@ -159,6 +167,7 @@ fn refresh_tables(
             Framed::retitle(&mut framed, &title(&said));
         }
     }
+    last.0 = Some(said);
 }
 
 fn style_of(kind: Kind, theme: &Theme) -> Option<Style> {
@@ -168,3 +177,113 @@ fn style_of(kind: Kind, theme: &Theme) -> Option<Style> {
         Kind::Figures => None,
     }
 }
+
+/// Which of the view a picker picks.
+#[derive(Clone, Copy, Debug)]
+enum Pick {
+    Status,
+    State,
+}
+
+impl Pick {
+    fn held(self, picks: &TaxPicks) -> Option<&String> {
+        match self {
+            Self::Status => picks.status.as_ref(),
+            Self::State => picks.state.as_ref(),
+        }
+    }
+
+    /// Puts `value` in the pick's place, leaving the picks unchanged
+    /// where it is there already.
+    fn put(self, picks: &mut ResMut<TaxPicks>, value: Option<String>) {
+        if self.held(picks) == value.as_ref() {
+            return;
+        }
+        match self {
+            Self::Status => picks.status = value,
+            Self::State => picks.state = value,
+        }
+    }
+
+    /// What the picker offers, by id: the plan's own, then each choice.
+    fn choices(self, tables: &YearTables) -> Vec<(Option<String>, String)> {
+        let (own, offers) = match self {
+            Self::Status => (&tables.own_status, &tables.statuses),
+            Self::State => (&tables.own_state, &tables.states),
+        };
+        let each = (offers.iter()).map(|offer| (Some(offer.value.clone()), offer.label.clone()));
+        std::iter::once((None, own.clone())).chain(each).collect()
+    }
+}
+
+/// The page's two pickers.
+#[derive(Resource, Clone, Copy)]
+pub struct TaxPickers {
+    status: Picker,
+    state: Picker,
+}
+
+/// What was picked when a picker opened, put back where it closes with
+/// nothing chosen.
+#[derive(Resource, Default)]
+pub struct Held(Option<String>);
+
+fn register(world: &mut World) {
+    world.init_resource::<Held>();
+    let status = picker(world, Pick::Status, (STATUS_PICK, "filing status"));
+    let state = picker(world, Pick::State, (STATE_PICK, "state"));
+    world.insert_resource(TaxPickers { status, state });
+}
+
+fn picker(world: &mut World, pick: Pick, named: (&'static str, &'static str)) -> Picker {
+    let list = move |In(query): In<String>, tabled: Res<Tabled>| {
+        let choices = tabled.0.as_ref().map(|tables| pick.choices(tables));
+        let offered = (choices.into_iter().flatten().enumerate())
+            .map(|(id, (_, label))| Offered::new(id, label));
+        ranked(&query, offered)
+    };
+    let set = move |In(id): In<usize>, tabled: Res<Tabled>, mut picks: ResMut<TaxPicks>| {
+        let chosen =
+            (tabled.0.as_ref()).and_then(|tables| pick.choices(tables).into_iter().nth(id));
+        if let Some((value, _)) = chosen {
+            pick.put(&mut picks, value);
+        }
+    };
+    let restore = move |mut held: ResMut<Held>, mut picks: ResMut<TaxPicks>| {
+        pick.put(&mut picks, held.0.take());
+    };
+    Picker::new(world, named, list, set).trying(world, set, restore)
+}
+
+/// What opening a picker asks of the world.
+#[derive(SystemParam)]
+pub struct Opening<'w> {
+    pickers: Res<'w, TaxPickers>,
+    picks: Res<'w, TaxPicks>,
+    held: ResMut<'w, Held>,
+    picking: ResMut<'w, Picking>,
+}
+
+impl Opening<'_> {
+    fn open(&mut self, pick: Pick) -> Outcome {
+        self.held.0 = pick.held(&self.picks).cloned();
+        self.picking.open(match pick {
+            Pick::Status => self.pickers.status,
+            Pick::State => self.pickers.state,
+        });
+        Outcome::Done
+    }
+}
+
+/// The `tax-status` command: picks the filing status the tables are for.
+pub fn pick_status(mut opening: Opening) -> Outcome {
+    opening.open(Pick::Status)
+}
+
+/// The `tax-state` command: picks the state the tables are for.
+pub fn pick_state(mut opening: Opening) -> Outcome {
+    opening.open(Pick::State)
+}
+
+#[cfg(test)]
+mod tests;
