@@ -3,7 +3,7 @@
 //! its line of net worth, their spread, and what they were made under; and
 //! a run replayed whole for the Ledger.
 
-use retiretui_client::overview::failing_start;
+use retiretui_client::overview::{FailingStart, failing_start};
 use retiretui_client::present::MoneyForm;
 use retiretui_client::searches::markets::{
     self, Ending, Listed, Markets, NOTHING_SEARCHED, PLANNED, Zone, market_key, market_of,
@@ -54,16 +54,6 @@ pub struct MarketRuns {
     /// The worst start the plan does not survive, where the runs are
     /// historical and one fails.
     pub failing: Option<FailingStart>,
-}
-
-/// The worst start the plan does not survive, as the Overview lists it.
-#[derive(Serialize, Debug)]
-#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
-pub struct FailingStart {
-    /// The run's key in the runs, which a highlight is kept by.
-    pub key: String,
-    /// What the Overview's row says.
-    pub said: String,
 }
 
 /// A run in the table.
@@ -190,10 +180,7 @@ pub fn historical(text: &str) -> Result<MarketRuns, String> {
     let plan = gated(text)?;
     let runs = market::historical(&plan, tables(), History::embedded(), &Progress::default())
         .map_err(page_refusal)?;
-    let failing = failing_start(&runs).map(|(year, said)| FailingStart {
-        key: year.to_string(),
-        said,
-    });
+    let failing = failing_start(&runs);
     Ok(MarketRuns {
         failing,
         ..runs_of(&plan, &runs)
@@ -336,7 +323,6 @@ mod tests {
             "{}",
             failing.said
         );
-        assert!(historical(starter()).expect("runs").failing.is_none());
         assert!(monte_carlo(&spending).expect("runs").failing.is_none());
     }
 

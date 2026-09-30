@@ -5,7 +5,9 @@
 
 use std::collections::BTreeSet;
 
-use retiretui_engine::market::{RunName, Runs};
+use serde::Serialize;
+
+use retiretui_engine::market::Runs;
 use retiretui_engine::plan::{Dollars, Item, Plan};
 use retiretui_engine::project::YearRow;
 
@@ -15,6 +17,7 @@ use crate::draft::Draft;
 use crate::forms::DomainId;
 use crate::issues::{issue_place, issue_words};
 use crate::present::compact_money;
+use crate::searches::markets::Markets;
 use crate::session::Projected;
 use crate::table::{account_name, basis_amount, count};
 
@@ -54,25 +57,36 @@ pub fn attention(projected: &Projected, nominal: bool) -> Vec<Row> {
     found
 }
 
-/// The worst historical start the plan does not survive, the one the
-/// Historical tool lists first, and the row that says it and how many fail;
-/// none where every start survives.
+/// The worst historical start the plan does not survive, as the Overview
+/// lists it.
+#[derive(Serialize, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+pub struct FailingStart {
+    /// What the Historical tool keeps its run by.
+    pub key: String,
+    /// The row: the start, and how many fail.
+    pub said: String,
+}
+
+/// The start the Historical tool lists first, where the plan does not
+/// survive it; none where every start survives.
 #[must_use]
-pub fn failing_start(runs: &Runs) -> Option<(i16, String)> {
-    let worst = &runs.runs[*runs.worst_first().first()?];
-    let RunName::Start(year) = worst.name else {
-        return None;
-    };
-    if worst.is_success {
+pub fn failing_start(runs: &Runs) -> Option<FailingStart> {
+    let worst = runs.listed().into_iter().next()?;
+    if worst.run.is_success {
         return None;
     }
     let starts = runs.runs.len();
     let failed = count(starts - runs.successes);
     let said = format!(
-        "Fails from a {year} start · {failed} of {} fail",
+        "Fails from a {} start · {failed} of {} fail",
+        worst.first,
         count(starts)
     );
-    Some((year, said))
+    Some(FailingStart {
+        key: worst.key,
+        said,
+    })
 }
 
 /// The first year Medicare's surcharges or a cliff cost anything, and in
@@ -210,6 +224,7 @@ fn stated<T: Item>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use retiretui_engine::market::RunName;
     use retiretui_engine::params::TaxTables;
 
     use crate::overview::Place;
@@ -339,7 +354,8 @@ start = {{ age = 67, owner = \"me\" }}
             "Fails from a {year} start · {failed} of {} fail",
             runs.runs.len()
         );
-        assert_eq!(failing_start(&runs), Some((year, said)));
+        let key = year.to_string();
+        assert_eq!(failing_start(&runs), Some(FailingStart { key, said }));
         let modest = TEST_PLAN.replace("amount = 60000", "amount = 20000");
         assert_eq!(
             failing_start(&starts(&modest)),
