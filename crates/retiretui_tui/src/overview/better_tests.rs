@@ -387,9 +387,18 @@ fn a_failing_historical_start_leads_to_the_historical_page() {
     let mut app = searched_app(scratch_plan(), &plan, SIZE);
     hold(&mut app, "Needs attention");
     let frame = redrawn(&mut app);
-    assert!(frame.contains("▌ Fails from a "), "{frame}");
+    let (_, rest) = frame.split_once("▌ Fails from a ").expect(&frame);
+    let start = &rest[..4];
     press_key(&mut app, KeyCode::Enter);
     assert_eq!(active_page(&app), Page::Historical);
+    for _ in 0..SETTLING_TICKS {
+        app.update();
+    }
+    let frame = redrawn(&mut app);
+    assert!(
+        frame.contains(&format!("Net Worth · {start}")),
+        "the cursor on the {start} start: {frame}"
+    );
 }
 
 #[test]

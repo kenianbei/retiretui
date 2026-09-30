@@ -3,6 +3,7 @@
 //! its line of net worth, their spread, and what they were made under; and
 //! a run replayed whole for the Ledger.
 
+use retiretui_client::overview::{FailingStart, failing_start};
 use retiretui_client::present::MoneyForm;
 use retiretui_client::searches::markets::{
     self, Ending, Listed, Markets, NOTHING_SEARCHED, PLANNED, Zone, market_key, market_of,
@@ -50,6 +51,9 @@ pub struct MarketRuns {
     pub endings: Vec<Ending>,
     /// What the runs are made under, and where each is edited.
     pub assumptions: Vec<AssumptionRow>,
+    /// The worst start the plan does not survive, where the runs are
+    /// historical and one fails.
+    pub failing: Option<FailingStart>,
 }
 
 /// A run in the table.
@@ -151,6 +155,7 @@ fn runs_of<M: Markets>(plan: &Plan, found: &M) -> MarketRuns {
         by_year,
         endings: markets::endings(runs),
         assumptions,
+        failing: None,
     }
 }
 
@@ -175,7 +180,11 @@ pub fn historical(text: &str) -> Result<MarketRuns, String> {
     let plan = gated(text)?;
     let runs = market::historical(&plan, tables(), History::embedded(), &Progress::default())
         .map_err(page_refusal)?;
-    Ok(runs_of(&plan, &runs))
+    let failing = failing_start(&runs);
+    Ok(MarketRuns {
+        failing,
+        ..runs_of(&plan, &runs)
+    })
 }
 
 /// The market `key` names.
@@ -301,6 +310,20 @@ mod tests {
         let fields: Vec<Option<&str>> = found.assumptions.iter().map(|row| row.field).collect();
         assert!(fields.contains(&Some("historical.from")), "{fields:?}");
         assert_eq!(found.assumptions[0].domain, "market");
+    }
+
+    #[test]
+    fn historical_names_the_worst_start_the_plan_does_not_survive() {
+        let spending = starter().replace("amount = 24000", "amount = 60000");
+        let found = historical(&spending).expect("runs");
+        let failing = found.failing.expect("some starts fail");
+        assert_eq!(failing.key, found.runs[1].key, "the first start listed");
+        assert!(
+            failing.said.starts_with("Fails from a "),
+            "{}",
+            failing.said
+        );
+        assert!(monte_carlo(&spending).expect("runs").failing.is_none());
     }
 
     #[test]

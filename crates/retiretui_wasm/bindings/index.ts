@@ -22,6 +22,7 @@ export type { Domain } from "./Domain";
 export type { DomainTable } from "./DomainTable";
 export type { Ending } from "./Ending";
 export type { Example } from "./Example";
+export type { FailingStart } from "./FailingStart";
 export type { FieldView } from "./FieldView";
 export type { Issue } from "./Issue";
 export type { LadderOption } from "./LadderOption";

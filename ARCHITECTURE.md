@@ -140,7 +140,8 @@ depends on UI.
   beside its verdict - the draft's issues, the years the plan pays Medicare's
   surcharges, the contributions it could not make as stated, a benefit estimated
   without its record, an amount too large to be likely, and the plan's
-  milestones - each row led by its year or the item behind it, and a year's
+  milestones - each row led by its year or the item behind it, the worst
+  historical start the plan does not survive with how many do not, and a year's
   actions and warnings in either dollar basis; what plans compared side by side
   are said in - each one's figures, or its differences from a baseline's, a
   metric year by year, and what one changes of another; a year's tax tables as a
@@ -378,9 +379,10 @@ depends on UI.
   every option in both dollar bases and against the plan, with what the best
   does better than the plan, and the market runs' verdict in its zone, each run
   singled out with its net worth year by year and the market it went through,
-  their spread, and what they were made under with where each is edited. Values
-  cross as plain objects, typed by TypeScript generated from the Rust types; the
-  build fails where the two have drifted.
+  their spread, what they were made under with where each is edited, and of the
+  historical starts the worst the plan does not survive. Values cross as plain
+  objects, typed by TypeScript generated from the Rust types; the build fails
+  where the two have drifted.
 - `web/` - outside the cargo workspace, the web app, published at the Pages
   site's root with each release: a React page over `retiretui_wasm` for a phone
   or a desktop. Its plan files are kept in the page's own storage, under keys
@@ -403,48 +405,50 @@ depends on UI.
   route naming what of the address a tab's link carries to it, and every link
   carrying the plans compared: the Overview leads with how long the money lasts
   and how surely, noting the year a plan first runs short, then says the year's
-  actions in the dollars shown, its milestones and what needs attention, each
-  leading to its year in the Ledger or its item, and what each Roth owner's best
-  ladder and the household's best claims do better than the plan, each leading
-  to its tool, and charts at once the plan's balances by treatment, its net
-  worth, its income against its taxes, and its net worth through random markets
-  as percentile bands in today's dollars, each chart one image with the Ledger
-  as its table and a click choosing the year its actions are for; the Ledger is
-  every year in a table whose year column stays in view, and the chosen year's
-  flows through each account and its income and tax - under the table on a wide
-  screen, above it on a phone - the arrow keys stepping the year on both. The
-  Plan tab's pages are the plan's editing domains: a table - rows of a name and
-  one figure on a phone - with the highlighted item read out, or a domain's one
-  item read out alone, and one item at a time edited in a form over the page, a
-  sheet or a phone's whole screen, whose address names the item and the field an
-  issue's link lands on. A Social Security statement downloaded from ssa.gov is
-  recorded on a person from the People page. The Tools tab's Roth Conversions
-  page ranks every fillable bracket's ladder under and against the plan as it
-  stands, the highlighted one - kept in the address - year by year, taken into
-  the draft after asking or written as a scenario beside the saved plan and
-  compared with it at once, over the constraints its ladders are searched under,
-  read out and edited in the same sheet as an item; it searches again whenever
-  the plan or the constraints change. Its SSA Benefits page ranks every claim
-  age for the household the same way, taken or written the same way, beside each
-  person's earnings record, how their benefit is set and its estimated benefit,
-  with what can be done for the highlighted one, a held claim left as the plan
-  states it; what the Overview found is what each tool shows, a search answered
-  once for both. Its Monte Carlo and Historical pages say how the plan fared
-  through random markets or from every historical start, in the colour of its
-  zone, beside what the runs were made under - each a link to the field it is
-  edited at - over the runs singled out, the highlighted one kept in the
-  address, and the views of their spread, all shown at once; the highlighted run
-  opens in the Ledger, which shows the plan replayed through its market, named
-  by it and kept in the address through the year, the basis and edits, until a
-  link returns it to the plan's own. Its Tax Tables page reads out the tables
-  the plan's projection applies in the shared year, for the plan's filing status
-  and the state it lives in, or for any status or modeled state picked in the
-  address. The Compare tab sets the document beside the workspace files chosen
-  from a menu: each plan's figures and its success through random markets, or
-  their differences from the one chosen as the baseline, what the highlighted
-  plan changes of the baseline, and one metric year by year, charted and tabled
-  at once - a plan alone offered another file, or an example written beside it;
-  a compared plan opened takes the document's place, the document joining the
+  actions in the dollars shown, its milestones and what needs attention - led,
+  once the historical runs answer, by the worst start the plan does not
+  survive - each leading to its year in the Ledger, its item, or that start in
+  the Historical tool, and what each Roth owner's best ladder and the
+  household's best claims do better than the plan, each leading to its tool, and
+  charts at once the plan's balances by treatment, its net worth, its income
+  against its taxes, and its net worth through random markets as percentile
+  bands in today's dollars, each chart one image with the Ledger as its table
+  and a click choosing the year its actions are for; the Ledger is every year in
+  a table whose year column stays in view, and the chosen year's flows through
+  each account and its income and tax - under the table on a wide screen, above
+  it on a phone - the arrow keys stepping the year on both. The Plan tab's pages
+  are the plan's editing domains: a table - rows of a name and one figure on a
+  phone - with the highlighted item read out, or a domain's one item read out
+  alone, and one item at a time edited in a form over the page, a sheet or a
+  phone's whole screen, whose address names the item and the field an issue's
+  link lands on. A Social Security statement downloaded from ssa.gov is recorded
+  on a person from the People page. The Tools tab's Roth Conversions page ranks
+  every fillable bracket's ladder under and against the plan as it stands, the
+  highlighted one - kept in the address - year by year, taken into the draft
+  after asking or written as a scenario beside the saved plan and compared with
+  it at once, over the constraints its ladders are searched under, read out and
+  edited in the same sheet as an item; it searches again whenever the plan or
+  the constraints change. Its SSA Benefits page ranks every claim age for the
+  household the same way, taken or written the same way, beside each person's
+  earnings record, how their benefit is set and its estimated benefit, with what
+  can be done for the highlighted one, a held claim left as the plan states it;
+  what the Overview found is what each tool shows, a search answered once for
+  both. Its Monte Carlo and Historical pages say how the plan fared through
+  random markets or from every historical start, in the colour of its zone,
+  beside what the runs were made under - each a link to the field it is edited
+  at - over the runs singled out, the highlighted one kept in the address, and
+  the views of their spread, all shown at once; the highlighted run opens in the
+  Ledger, which shows the plan replayed through its market, named by it and kept
+  in the address through the year, the basis and edits, until a link returns it
+  to the plan's own. Its Tax Tables page reads out the tables the plan's
+  projection applies in the shared year, for the plan's filing status and the
+  state it lives in, or for any status or modeled state picked in the address.
+  The Compare tab sets the document beside the workspace files chosen from a
+  menu: each plan's figures and its success through random markets, or their
+  differences from the one chosen as the baseline, what the highlighted plan
+  changes of the baseline, and one metric year by year, charted and tabled at
+  once - a plan alone offered another file, or an example written beside it; a
+  compared plan opened takes the document's place, the document joining the
   compared, and any other plan opened leaves nothing compared. The compared
   files are opened again whenever the workspace is written, here or in another
   tab. What is applied is a step of the draft's history, undone and redone from
