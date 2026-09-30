@@ -18,6 +18,7 @@ mod market;
 
 pub(crate) use market::{INFLATION, VARIABLES, cholesky};
 mod medicare;
+mod overlay;
 mod places;
 mod references;
 mod residency;

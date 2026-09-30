@@ -4,7 +4,10 @@ use super::validate::push_issue;
 use super::{Issue, PlanError, SCHEMA_VERSION};
 
 pub(super) const SCHEMA_KEY: &str = "schema";
-const BASE_KEY: &str = "base";
+pub(super) const BASE_KEY: &str = "base";
+/// The markers an overlay's item carries to delete or substitute its match.
+pub(super) const REMOVE_KEY: &str = "remove";
+pub(super) const REPLACE_KEY: &str = "replace";
 
 /// Errors from reading a scenario document.
 #[derive(Debug, thiserror::Error)]
@@ -25,8 +28,8 @@ pub enum ScenarioError {
 /// caller's job; the engine only merges parsed tables.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Scenario {
-    base: String,
-    document: Table,
+    pub(super) base: String,
+    pub(super) document: Table,
 }
 
 impl Scenario {
@@ -213,8 +216,8 @@ fn merge_item(base_items: &mut Vec<Value>, path: &str, item: &Value, issues: &mu
         return;
     };
     let mut fields = table.clone();
-    let remove = take_marker(&mut fields, "remove", path, issues);
-    let replace = take_marker(&mut fields, "replace", path, issues);
+    let remove = take_marker(&mut fields, REMOVE_KEY, path, issues);
+    let replace = take_marker(&mut fields, REPLACE_KEY, path, issues);
     if remove && replace {
         push_issue(issues, path, "`remove` and `replace` are exclusive");
         return;
