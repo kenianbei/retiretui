@@ -339,6 +339,30 @@ fn save_as_over_a_file_asks_first() {
 }
 
 #[test]
+fn save_as_of_a_scenario_over_its_own_file_is_refused_before_asking() {
+    let dir = workspace();
+    let mut app = headless_app_at(dir.join("variant.toml"), SIZE);
+    save_as(&mut app);
+    type_text(&mut app, "variant");
+    press_key(&mut app, KeyCode::Enter);
+    assert!(!is_asking(&app), "nothing is asked");
+    let warned = said(&app).last().cloned().unwrap_or_default();
+    assert!(
+        warned.contains("a scenario cannot be saved over"),
+        "{warned}"
+    );
+    assert_eq!(
+        read(&dir.join("variant.toml")),
+        scenario(),
+        "the overlay is kept"
+    );
+    assert!(
+        draft(&app).refuse_if_read_only().is_some(),
+        "still the scenario"
+    );
+}
+
+#[test]
 fn save_as_of_a_scenario_writes_the_resolved_plan_and_opens_it_editable() {
     let dir = workspace();
     let mut app = headless_app_at(dir.join("variant.toml"), SIZE);

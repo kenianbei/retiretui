@@ -113,7 +113,13 @@ pub fn register(world: &mut World) {
             badges: Badges::Kind,
             chosen: world.register_system(open_chosen),
         },
-        save_as: writing(world, "Save as", write_as, SAVE_OVER),
+        save_as: FilePick {
+            title: "Save as",
+            extension: EXTENSION,
+            accepts_new: true,
+            badges: Badges::Kind,
+            chosen: world.register_system(save_as_chosen),
+        },
         compare: FilePick {
             title: "Compare with",
             extension: EXTENSION,
@@ -204,6 +210,17 @@ fn compare_chosen(In(path): In<PathBuf>, session: Res<Session>, mut compared: Re
         return;
     }
     compared.toggle(path, &session);
+}
+
+/// Saves the draft as `path`, after asking where the file exists; a
+/// scenario's own file is refused before anything is asked.
+fn save_as_chosen(In(path): In<PathBuf>, draft: Res<Draft>, mut asking: Asking) {
+    let is_its_file = is_the_document(&asking.session, &path);
+    if let Some(refusal) = draft.refuse_over_scenario(is_its_file) {
+        journal::warn(refusal);
+        return;
+    }
+    asking.write_or_ask(path, write_as, SAVE_OVER);
 }
 
 fn is_the_document(session: &Session, path: &Path) -> bool {

@@ -6,7 +6,7 @@ use std::cell::{OnceCell, RefCell};
 use std::path::{Path, PathBuf};
 
 use retiretui_client::actions::{collect_warnings, year_in_words};
-use retiretui_client::draft::Draft;
+use retiretui_client::draft::{Draft, draft_text};
 use retiretui_client::files::resolve_with_files;
 use retiretui_client::forms::{DomainId, Form, ToolAnswers};
 use retiretui_client::issues::{issue_field, issue_listing, issue_place, issue_words};
@@ -26,10 +26,6 @@ use crate::markets::{market_named, replayed};
 use crate::tables;
 use crate::vocabulary::{form_at, slug_of};
 use retiretui_client::forms::edit::{Entry, still_known};
-
-/// A scenario holds only its changes to a base; the plan resolved from it
-/// written in its place would lose which were its own.
-const OVER_SCENARIO: &str = "a scenario cannot be saved over; save it under a name of its own";
 
 /// A resolved plan and what the gate made of it.
 #[derive(Debug)]
@@ -356,8 +352,11 @@ impl Document {
         write: &mut dyn FnMut(&str) -> Result<(), String>,
     ) -> Result<(), String> {
         let path = normal(Path::new(path));
-        if self.is_read_only() && self.files.first() == Some(&path) {
-            return Err(OVER_SCENARIO.to_owned());
+        if let Some(refusal) = self
+            .draft
+            .refuse_over_scenario(self.files.first() == Some(&path))
+        {
+            return Err(refusal);
         }
         self.write_through(write)?;
         self.draft.saved_as();
@@ -381,10 +380,7 @@ impl Document {
         &self,
         write: &mut dyn FnMut(&str) -> Result<(), String>,
     ) -> Result<(), String> {
-        if let Some(reason) = self.draft.refuse_if_invalid() {
-            return Err(reason);
-        }
-        write(&self.plan_text()?)
+        write(&draft_text(&self.draft)?)
     }
 
     /// The projection, where the plan passed the gate.

@@ -203,16 +203,25 @@ pub fn write_atomic(path: &Path, text: &str) -> std::io::Result<()> {
     fs::write(&staged, text).and_then(|()| fs::rename(&staged, path))
 }
 
-/// Writes a plan to `path` as canonical TOML - comments and layout of the
-/// source file are not preserved - atomically. The caller has validated it.
+/// `plan` as canonical TOML: the comments and layout of the file it was
+/// read from are not kept.
+///
+/// # Errors
+///
+/// What it failed to serialize on, as "not saved: …".
+pub fn plan_text(plan: &Plan) -> Result<String, String> {
+    plan.to_toml_string()
+        .map_err(|error| format!("not saved: {error}"))
+}
+
+/// Writes a plan to `path` as canonical TOML, atomically. The caller has
+/// validated it.
 ///
 /// # Errors
 ///
 /// When the plan does not serialize or the file cannot be written.
 pub fn write_plan(store: &dyn Store, path: &Path, plan: &Plan) -> Result<(), String> {
-    let canonical = plan
-        .to_toml_string()
-        .map_err(|error| format!("not saved: {error}"))?;
+    let canonical = plan_text(plan)?;
     store
         .write(path, &canonical)
         .map_err(|error| format!("not saved: {}: {error}", path.display()))
