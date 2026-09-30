@@ -6,7 +6,6 @@ mod claims;
 mod compare;
 mod document;
 mod domain;
-mod editor;
 mod edits;
 mod ladders;
 mod ledger;

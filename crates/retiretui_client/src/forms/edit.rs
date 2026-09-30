@@ -15,6 +15,10 @@ use super::{FieldKind, FieldSpec, Form, Target};
 use crate::codec::{get_path, is_within, set_path};
 use crate::draft::Draft;
 
+mod entry;
+
+pub use entry::{Entry, place_of};
+
 /// An item is followed by what it was when opened, so one changed or
 /// renamed underneath may be another item altogether.
 const CHANGED_UNDERNEATH: &str =

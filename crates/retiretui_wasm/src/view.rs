@@ -5,15 +5,14 @@
 use retiretui_client::codec::{get_path, share_left, to_text};
 use retiretui_client::draft::Draft;
 use retiretui_client::forms::cells::field_text;
+use retiretui_client::forms::edit::{Entry, place_of};
 use retiretui_client::forms::offers::{Offer, RefSource, Vocabulary, ref_offers};
 use retiretui_client::forms::trigger::{Piece, SENTENCE, help_of, shows};
-use retiretui_client::forms::{BLANK, FieldKind, FieldSpec, lists};
+use retiretui_client::forms::{BLANK, FieldKind, FieldSpec};
 use retiretui_client::issues::{LocatedIssue, field_issue, located_issues};
 use retiretui_client::present;
 use serde::Serialize;
 use toml::Value;
-
-use crate::editor::{Editor, place_of};
 
 /// How a field is entered.
 #[derive(Serialize, Clone, Copy, PartialEq, Eq, Debug)]
@@ -169,148 +168,132 @@ fn blank_first(mut offers: Vec<Offer>, word: &str) -> Vec<Offer> {
     offers
 }
 
-impl Editor {
-    /// Every field on show, `focused` the one being typed into: a stale
-    /// field cleared and left is no longer shown.
-    pub fn view(&mut self, draft: &Draft, focused: Option<&str>) -> Vec<FieldView> {
-        self.edit.hide_cleared(focused);
-        let located = located_issues(draft);
-        let mut complained = Vec::new();
-        let fields = self.form.fields.iter();
-        let shown = fields.filter(|spec| self.edit.is_on_show(spec.key));
-        let mut views: Vec<FieldView> = shown
-            .map(|spec| self.field(spec, draft, &located))
-            .collect();
-        for view in &mut views {
-            if complained.contains(&view.key) {
-                view.complaint = None;
-            } else if view.complaint.is_some() {
-                complained.push(view.key);
-            }
+/// Every field of `entry` on show, `focused` the one being typed into: a
+/// stale field cleared and left is no longer shown.
+pub fn view(entry: &mut Entry, draft: &Draft, focused: Option<&str>) -> Vec<FieldView> {
+    entry.edit_mut().hide_cleared(focused);
+    let located = located_issues(draft);
+    let mut complained = Vec::new();
+    let fields = entry.form().fields.iter();
+    let shown = fields.filter(|spec| entry.edit().is_on_show(spec.key));
+    let mut views: Vec<FieldView> = shown
+        .map(|spec| field(entry, spec, draft, &located))
+        .collect();
+    for view in &mut views {
+        if complained.contains(&view.key) {
+            view.complaint = None;
+        } else if view.complaint.is_some() {
+            complained.push(view.key);
         }
-        views
     }
+    views
+}
 
-    fn field(
-        &self,
-        spec: &'static FieldSpec,
-        draft: &Draft,
-        located: &[LocatedIssue],
-    ) -> FieldView {
-        let snapshot = self.edit.snapshot();
-        let place = place_of(spec.kind);
-        let value = match place {
-            Some(place) => self
-                .lists
-                .get(spec.key)
-                .and_then(|parts| parts.get(&place)?.as_ref()),
-            None => get_path(snapshot, spec.key),
+fn field(
+    entry: &Entry,
+    spec: &'static FieldSpec,
+    draft: &Draft,
+    located: &[LocatedIssue],
+) -> FieldView {
+    let snapshot = entry.edit().snapshot();
+    let place = place_of(spec.kind);
+    let value = match place {
+        Some(place) => entry.list_part(spec.key, place),
+        None => get_path(snapshot, spec.key),
+    };
+    let left = matches!(spec.kind, FieldKind::Remainder)
+        .then(|| share_left(snapshot, spec.key))
+        .flatten();
+    let (text, typed) = match spec.kind {
+        FieldKind::Choice(_) | FieldKind::Ref(_) | FieldKind::Order(..) => {
+            (picked(value), picked(value))
+        }
+        FieldKind::Remainder => {
+            let left = left.map(present::rate).unwrap_or_default();
+            (left.clone(), left)
+        }
+        kind => (
+            field_text(kind, value, false),
+            field_text(kind, value, true),
+        ),
+    };
+    let offers = offers(entry, spec, draft, &text);
+    FieldView {
+        key: spec.key,
+        place,
+        label: spec.label,
+        help: spec.help,
+        control: control_of(spec.kind),
+        text,
+        typed,
+        placeholder: spec.placeholder(),
+        unstated: spec.unstated(),
+        group: spec.group,
+        number: value.and_then(Value::as_float),
+        is_ticked: match spec.kind {
+            FieldKind::Presence(_) => value.is_some_and(Value::is_table),
+            _ => value.and_then(Value::as_bool) == Some(true),
+        },
+        is_exceeded: left.is_some_and(|left| !(0.0..=1.0).contains(&left)),
+        offers,
+        trigger: (spec.kind == FieldKind::Trigger).then(|| trigger(entry, spec, draft)),
+        issue: issue(entry, spec, located).map(str::to_owned),
+        complaint: entry.edit().complaint_at(spec.key),
+    }
+}
+
+fn issue<'a>(entry: &Entry, spec: &FieldSpec, located: &[LocatedIssue<'a>]) -> Option<&'a str> {
+    // A new item is in no issue's path; the one item of a domain is at none.
+    let index = match entry.form().list {
+        Some(_) => entry.edit().index().map(Some),
+        None => Some(None),
+    };
+    let snapshot = Some(entry.edit().snapshot());
+    index.and_then(|index| field_issue(located, (entry.form(), index), spec, snapshot))
+}
+
+fn offers(entry: &Entry, spec: &FieldSpec, draft: &Draft, held: &str) -> Vec<Offer> {
+    let offers = match spec.kind {
+        FieldKind::Choice(vocabulary) => vocabulary.offers(),
+        FieldKind::Ref(source) => ref_offers(&draft.plan, source),
+        FieldKind::Order(vocabulary, place) => entry.unused(spec.key, vocabulary, place),
+        _ => return Vec::new(),
+    };
+    offered(offers, held, spec)
+}
+
+fn trigger(entry: &Entry, spec: &FieldSpec, draft: &Draft) -> TriggerView {
+    let (kind, parts) = entry.trigger_parts(spec.key).cloned().unwrap_or_default();
+    let held = |operand| {
+        let part = parts.iter().find(|(each, _)| *each == operand);
+        part.and_then(|(_, value)| value.as_ref())
+    };
+    let shown = SENTENCE.iter().filter(|piece| shows(kind, piece.operand()));
+    let operands = shown.map(|piece| {
+        let operand = piece.operand();
+        let (words, source): ([&str; 2], Option<RefSource>) = match *piece {
+            Piece::Text(_, words) => (words, None),
+            Piece::Pick(_, source) => (["", ""], Some(source)),
         };
-        let left = matches!(spec.kind, FieldKind::Remainder)
-            .then(|| share_left(snapshot, spec.key))
-            .flatten();
-        let (text, typed) = match spec.kind {
-            FieldKind::Choice(_) | FieldKind::Ref(_) | FieldKind::Order(..) => {
-                (picked(value), picked(value))
-            }
-            FieldKind::Remainder => {
-                let left = left.map(present::rate).unwrap_or_default();
-                (left.clone(), left)
-            }
-            kind => (
-                field_text(kind, value, false),
-                field_text(kind, value, true),
-            ),
+        let text = match source {
+            Some(_) => picked(held(operand)),
+            None => held(operand).map(to_text).unwrap_or_default(),
         };
-        let offers = self.offers(spec, draft, &text);
-        FieldView {
-            key: spec.key,
-            place,
-            label: spec.label,
-            help: spec.help,
-            control: control_of(spec.kind),
+        OperandView {
+            key: operand.key(),
+            before: words[0],
+            after: words[1],
+            help: help_of(operand),
             text,
-            typed,
-            placeholder: spec.placeholder(),
-            unstated: spec.unstated(),
-            group: spec.group,
-            number: value.and_then(Value::as_float),
-            is_ticked: match spec.kind {
-                FieldKind::Presence(_) => value.is_some_and(Value::is_table),
-                _ => value.and_then(Value::as_bool) == Some(true),
-            },
-            is_exceeded: left.is_some_and(|left| !(0.0..=1.0).contains(&left)),
-            offers,
-            trigger: (spec.kind == FieldKind::Trigger).then(|| self.trigger(spec, draft)),
-            issue: self.issue(spec, located).map(str::to_owned),
-            complaint: self.edit.complaint_at(spec.key),
+            offers: source.map(|source| blank_first(ref_offers(&draft.plan, source), BLANK)),
         }
-    }
-
-    fn issue<'a>(&self, spec: &FieldSpec, located: &[LocatedIssue<'a>]) -> Option<&'a str> {
-        // A new item is in no issue's path; the one item of a domain is at none.
-        let index = match self.form.list {
-            Some(_) => self.edit.index().map(Some),
-            None => Some(None),
-        };
-        let snapshot = Some(self.edit.snapshot());
-        index.and_then(|index| field_issue(located, (self.form, index), spec, snapshot))
-    }
-
-    fn offers(&self, spec: &FieldSpec, draft: &Draft, held: &str) -> Vec<Offer> {
-        let offers = match spec.kind {
-            FieldKind::Choice(vocabulary) => vocabulary.offers(),
-            FieldKind::Ref(source) => ref_offers(&draft.plan, source),
-            FieldKind::Order(vocabulary, place) => self.unused(spec.key, vocabulary, place),
-            _ => return Vec::new(),
-        };
-        offered(offers, held, spec)
-    }
-
-    /// What place `place` of the order at `key` may still pick.
-    fn unused(&self, key: &str, vocabulary: Vocabulary, place: usize) -> Vec<Offer> {
-        let parts = self.lists.get(key);
-        let own = parts.and_then(|parts| parts.get(&place)?.as_ref());
-        let is_held = |word: &Value| {
-            let mut others = parts.into_iter().flatten();
-            others.any(|(at, held)| *at != place && held.as_ref() == Some(word))
-        };
-        lists::unused(vocabulary, own, is_held)
-    }
-
-    fn trigger(&self, spec: &FieldSpec, draft: &Draft) -> TriggerView {
-        let (kind, parts) = self.triggers.get(spec.key).cloned().unwrap_or_default();
-        let held = |operand| {
-            let part = parts.iter().find(|(each, _)| *each == operand);
-            part.and_then(|(_, value)| value.as_ref())
-        };
-        let shown = SENTENCE.iter().filter(|piece| shows(kind, piece.operand()));
-        let operands = shown.map(|piece| {
-            let operand = piece.operand();
-            let (words, source): ([&str; 2], Option<RefSource>) = match *piece {
-                Piece::Text(_, words) => (words, None),
-                Piece::Pick(_, source) => (["", ""], Some(source)),
-            };
-            let text = match source {
-                Some(_) => picked(held(operand)),
-                None => held(operand).map(to_text).unwrap_or_default(),
-            };
-            OperandView {
-                key: operand.key(),
-                before: words[0],
-                after: words[1],
-                help: help_of(operand),
-                text,
-                offers: source.map(|source| blank_first(ref_offers(&draft.plan, source), BLANK)),
-            }
-        });
-        TriggerView {
-            basis: kind
-                .map(|kind| kind.as_str().to_owned())
-                .unwrap_or_default(),
-            bases: blank_first(Vocabulary::TriggerBasis.offers(), BLANK),
-            operands: operands.collect(),
-        }
+    });
+    TriggerView {
+        basis: kind
+            .map(|kind| kind.as_str().to_owned())
+            .unwrap_or_default(),
+        bases: blank_first(Vocabulary::TriggerBasis.offers(), BLANK),
+        operands: operands.collect(),
     }
 }
 
@@ -318,6 +301,8 @@ impl Editor {
 mod tests {
     use retiretui_client::setup::EXAMPLES;
     use retiretui_engine::plan::Plan;
+
+    use retiretui_client::forms::trigger::BASIS;
 
     use super::*;
     use crate::vocabulary::form_at;
@@ -329,8 +314,8 @@ mod tests {
     #[test]
     fn a_view_shows_each_field_in_the_words_it_is_entered_in() {
         let draft = draft();
-        let mut editor = Editor::open(form_at("accounts").expect("a domain"), &draft, Some(0));
-        let views = editor.view(&draft, None);
+        let mut entry = Entry::open(*form_at("accounts").expect("a domain"), &draft, Some(0));
+        let views = view(&mut entry, &draft, None);
         let kind = views
             .iter()
             .find(|view| view.key == "kind")
@@ -346,11 +331,9 @@ mod tests {
     #[test]
     fn a_trigger_view_shows_the_operands_its_kind_needs() {
         let draft = draft();
-        let mut editor = Editor::open(form_at("events").expect("a domain"), &draft, None);
-        editor
-            .set_trigger("trigger", crate::editor::BASIS, "age")
-            .expect("a kind");
-        let views = editor.view(&draft, None);
+        let mut entry = Entry::open(*form_at("events").expect("a domain"), &draft, None);
+        entry.set_trigger("trigger", BASIS, "age").expect("a kind");
+        let views = view(&mut entry, &draft, None);
         let trigger = views
             .iter()
             .find(|view| view.key == "trigger")

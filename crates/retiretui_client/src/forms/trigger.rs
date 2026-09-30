@@ -9,6 +9,12 @@ use toml::{Table, Value};
 
 use super::offers::RefSource;
 
+/// What a trigger's kind is set through, beside its operands' keys.
+pub const BASIS: &str = "basis";
+
+/// A trigger as its parts hold it: the kind chosen, and every operand.
+pub type TriggerParts = (Option<TriggerBasis>, Vec<(Operand, Option<Value>)>);
+
 /// What a trigger's sentence holds after its kind, in the order it is read.
 #[derive(Clone, Copy)]
 pub enum Piece {

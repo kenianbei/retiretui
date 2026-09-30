@@ -23,10 +23,10 @@ use retiretui_engine::project::{Projection, Summary, YearRow};
 use serde::Serialize;
 
 use crate::domain::{list_of, name_at};
-use crate::editor::Editor;
 use crate::markets::{market_named, replayed};
 use crate::tables;
 use crate::vocabulary::{form_at, slug_of};
+use retiretui_client::forms::edit::Entry;
 
 /// A scenario holds only its changes to a base; the plan resolved from it
 /// written in its place would lose which were its own.
@@ -167,8 +167,8 @@ impl Document {
     /// # Errors
     ///
     /// Why nothing was stored, in the form's words.
-    pub fn apply(&mut self, editor: &mut Editor) -> Result<Option<usize>, String> {
-        let stored = editor.edit.apply(&mut self.draft, None)?;
+    pub fn apply(&mut self, editor: &mut Entry) -> Result<Option<usize>, String> {
+        let stored = editor.edit_mut().apply(&mut self.draft, None)?;
         if stored.is_some() {
             self.commit();
         }
@@ -269,8 +269,8 @@ impl Document {
     /// # Errors
     ///
     /// Why they were not stored, in the form's words.
-    pub(crate) fn hold(&mut self, editor: &mut Editor) -> Result<(), String> {
-        editor.edit.apply(&mut self.draft, None).map(drop)
+    pub(crate) fn hold(&mut self, editor: &mut Entry) -> Result<(), String> {
+        editor.edit_mut().apply(&mut self.draft, None).map(drop)
     }
 
     fn commit(&mut self) {
