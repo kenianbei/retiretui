@@ -71,7 +71,7 @@ export function DomainPage() {
   const { page } = useRouteContext({ from: "/plan/$page" });
   const { edit, field } = useSearch({ from: "/plan/$page" });
   return (
-    <section className="max-w-6xl space-y-4">
+    <section className="space-y-6">
       {edit !== undefined && (
         <ItemForm
           key={`${page.slug}:${String(edit)}`}

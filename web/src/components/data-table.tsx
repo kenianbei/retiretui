@@ -1,7 +1,12 @@
 import { flexRender, useTable, type RowData } from "@tanstack/react-table";
 import type { KeyboardEvent } from "react";
 
-import { aligned, FEATURES, type TableColumns } from "@/components/columns";
+import {
+  aligned,
+  fitted,
+  FEATURES,
+  type TableColumns,
+} from "@/components/columns";
 import { cn } from "@/lib/utils";
 
 interface DataTableProps<Row extends RowData> {
@@ -19,6 +24,15 @@ interface DataTableProps<Row extends RowData> {
   /** Set in a container of its own: no frame but a rule above, the edge cells at the container's inset. */
   isFlush?: boolean;
   className?: string;
+}
+
+/** A clipped cell's whole text, shown over it. */
+function titleOf(
+  text: "wraps" | "clipped" | undefined,
+  cell: { getValue: () => unknown },
+): string | undefined {
+  const value = cell.getValue();
+  return text === "clipped" && typeof value === "string" ? value : undefined;
 }
 
 /**
@@ -64,9 +78,9 @@ export function DataTable<Row extends RowData>({
     <div
       {...reachable}
       className={cn(
-        "bg-card focus-visible:ring-ring/50 overflow-auto rounded-md border outline-none focus-visible:ring-[3px]",
+        "bg-card focus-visible:ring-ring/50 w-fit max-w-full overflow-auto rounded-md border outline-none focus-visible:ring-[3px]",
         isFlush &&
-          "rounded-none border-x-0 border-b-0 bg-transparent [&_tr>:first-child]:pl-4 [&_tr>:last-child]:pr-4",
+          "w-full rounded-none border-x-0 border-b-0 bg-transparent [&_tr>:first-child]:pl-4 [&_tr>:last-child]:pr-4",
         className,
       )}
     >
@@ -112,8 +126,10 @@ export function DataTable<Row extends RowData>({
                 {row.getAllCells().map((cell, at) => (
                   <td
                     key={cell.id}
+                    title={titleOf(cell.column.columnDef.meta?.text, cell)}
                     className={cn(
-                      "px-3 py-2 whitespace-nowrap",
+                      "px-3 py-2",
+                      fitted(cell.column.columnDef.meta?.text),
                       aligned(cell.column.columnDef.meta?.isNumeric),
                       isPinned(at) && "sticky left-0 z-10 bg-inherit",
                     )}

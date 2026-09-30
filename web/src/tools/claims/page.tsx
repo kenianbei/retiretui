@@ -100,7 +100,7 @@ export function ClaimsPage() {
   };
 
   return (
-    <div className="max-w-5xl space-y-6">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">SSA Benefits</h1>
         <BasisSwitch />

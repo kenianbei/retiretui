@@ -126,7 +126,7 @@ export function Plot({
 }: PlotProps) {
   const marksId = useId();
   return (
-    <div className="space-y-2">
+    <div className="@container space-y-2">
       <ChartContainer
         config={config}
         role="img"
@@ -360,7 +360,11 @@ export function Charts(props: ChartsProps) {
         </CardHeader>
         <CardContent className="px-4">
           {TABS.map(({ value, title, Chart }) => (
-            <TabsContent key={value} value={value} className="space-y-2">
+            <TabsContent
+              key={value}
+              value={value}
+              className="@container space-y-2"
+            >
               <p className="text-muted-foreground text-xs">
                 {title} · {unit(value)} · click a year to show it
               </p>

@@ -41,7 +41,7 @@ export function Overview() {
   if (!document) return null;
 
   return (
-    <div className="max-w-5xl space-y-8">
+    <div className="space-y-6">
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>

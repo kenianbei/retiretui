@@ -59,6 +59,7 @@ export function Conversions({
       columns={columns}
       rows={rows}
       rowKey={(cells) => cells.join("|")}
+      className="max-h-[28rem]"
     />
   );
 }

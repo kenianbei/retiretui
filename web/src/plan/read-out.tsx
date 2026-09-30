@@ -113,14 +113,15 @@ function RowList({
   return (
     <dl
       className={cn(
-        "bg-card divide-y rounded-md border text-sm",
-        isFlush && "rounded-none border-x-0 border-b-0 bg-transparent",
+        "bg-card max-w-2xl divide-y rounded-md border text-sm",
+        isFlush &&
+          "max-w-none rounded-none border-x-0 border-b-0 bg-transparent",
       )}
     >
       {rows.map(({ label, text, isFigure, is_unstated }) => (
         <div
           key={label}
-          className="grid grid-cols-[minmax(8rem,40%)_1fr] gap-3 px-4 py-2"
+          className="grid grid-cols-[minmax(8rem,min(40%,14rem))_1fr] gap-3 px-4 py-2"
         >
           <dt className="text-muted-foreground">{label}</dt>
           <dd

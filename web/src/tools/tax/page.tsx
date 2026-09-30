@@ -127,7 +127,7 @@ export function TaxTablesPage({ title }: { title: string }) {
     choices.find((choice) => choice.value === key)?.label ?? "none";
 
   return (
-    <div className="max-w-6xl space-y-4">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
         <div className="flex flex-wrap items-center gap-3">

@@ -141,7 +141,7 @@ export function LedgerPage() {
           }
         }}
         isFirstPinned
-        className="lg:max-h-[50vh]"
+        className="max-h-[70dvh] lg:max-h-[50vh]"
       />
     </div>
   );
@@ -157,7 +157,7 @@ export function LedgerPage() {
     </div>
   );
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">Ledger</h1>
         <div className="flex flex-wrap items-center gap-2">

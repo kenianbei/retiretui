@@ -246,7 +246,7 @@ export function MarketCharts({
             <TabsContent
               key={view.value}
               value={view.value}
-              className="space-y-2"
+              className="@container space-y-2"
             >
               <p className="text-muted-foreground text-xs">
                 {view.title} · {view.unit} ·{" "}

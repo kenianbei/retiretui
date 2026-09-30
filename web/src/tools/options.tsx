@@ -64,7 +64,7 @@ export function Options<T>({
     );
   }, [columns, words, spelledOut]);
   return (
-    <>
+    <div className="@container">
       <DataTable
         label={label}
         columns={tableColumns}
@@ -74,9 +74,9 @@ export function Options<T>({
         onSelect={(row) => {
           if (row.option) highlight(row.option);
         }}
-        className="hidden max-h-[28rem] md:block"
+        className="hidden max-h-[28rem] @lg:block"
       />
-      <ul className="bg-card max-h-[28rem] divide-y overflow-auto rounded-md border text-sm md:hidden">
+      <ul className="bg-card max-h-[28rem] divide-y overflow-auto rounded-md border text-sm @lg:hidden">
         {rows.map((row) => {
           const isChosen = row.option === highlighted;
           const content = (
@@ -120,6 +120,6 @@ export function Options<T>({
           );
         })}
       </ul>
-    </>
+    </div>
   );
 }

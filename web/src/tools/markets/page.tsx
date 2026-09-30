@@ -116,7 +116,7 @@ export function MarketsPage({
   );
 
   return (
-    <div className="max-w-5xl space-y-6">
+    <div className="space-y-6">
       <div className="space-y-1">
         <div className="flex flex-wrap items-baseline gap-3">
           <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>

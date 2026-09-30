@@ -11,7 +11,9 @@ import type { ChartConfig } from "@/components/ui/chart";
 /** The colour roles a chart's series take, in turn. */
 export const SERIES = [1, 2, 3, 4, 5].map((at) => `var(--chart-${String(at)})`);
 
-export const PLOT_SIZE = "aspect-[4/3] w-full sm:aspect-[5/2]";
+/** A chart's shape by the width it is given, not the window's; its section is the container. */
+export const PLOT_SIZE =
+  "aspect-[4/3] w-full @xl:aspect-[2/1] @3xl:aspect-[5/2]";
 
 /** The bands' spans and the median, named by their percentiles. */
 export function bandsConfig(): ChartConfig {
