@@ -55,16 +55,12 @@ function luminance(hex: string): number {
 /** A colour in CIELAB under D65, where distance is how far apart it looks. */
 function lab(hex: string): [number, number, number] {
   const [r, g, b] = linear(hex);
-  const [x, y, z] = [
+  const [x = 0, y = 0, z = 0] = [
     (0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047,
     0.2126 * r + 0.7152 * g + 0.0722 * b,
     (0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883,
   ].map((t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116));
-  return [
-    116 * (y ?? 0) - 16,
-    500 * ((x ?? 0) - (y ?? 0)),
-    200 * ((y ?? 0) - (z ?? 0)),
-  ];
+  return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
 }
 
 function distance(one: string, other: string): number {

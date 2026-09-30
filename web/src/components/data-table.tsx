@@ -1,12 +1,7 @@
 import { flexRender, useTable, type RowData } from "@tanstack/react-table";
 import type { KeyboardEvent } from "react";
 
-import {
-  aligned,
-  fitted,
-  FEATURES,
-  type TableColumns,
-} from "@/components/columns";
+import { aligned, FEATURES, type TableColumns } from "@/components/columns";
 import { cn } from "@/lib/utils";
 
 interface DataTableProps<Row extends RowData> {
@@ -118,8 +113,7 @@ export function DataTable<Row extends RowData>({
                   <td
                     key={cell.id}
                     className={cn(
-                      "px-3 py-2",
-                      fitted(cell.column.columnDef.meta?.text),
+                      "px-3 py-2 whitespace-nowrap",
                       aligned(cell.column.columnDef.meta?.isNumeric),
                       isPinned(at) && "sticky left-0 z-10 bg-inherit",
                     )}

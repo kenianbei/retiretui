@@ -197,12 +197,10 @@ export function TaxTablesPage({ title }: { title: string }) {
           />
         </div>
       </div>
-      <div className="@container">
-        <div className="gap-x-4 @3xl:columns-2 @7xl:columns-3">
-          {tables.sections.map((section) => (
-            <Section key={section.title} section={section} />
-          ))}
-        </div>
+      <div className="gap-x-4 @3xl/page:columns-2 @7xl/page:columns-3">
+        {tables.sections.map((section) => (
+          <Section key={section.title} section={section} />
+        ))}
       </div>
     </div>
   );

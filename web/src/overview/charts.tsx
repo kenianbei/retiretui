@@ -42,7 +42,7 @@ import { keptSearch } from "@/year/search";
 const FOREGROUND = "var(--foreground)";
 const MUTED = "var(--muted-foreground)";
 
-export interface ChartsProps {
+interface ChartsProps {
   series: ChartSeries;
   basis: Basis;
   /** The plan's text for its market runs; none while it has issues. */
@@ -125,7 +125,7 @@ export function Plot({
 }: PlotProps) {
   const marksId = useId();
   return (
-    <div className="@container space-y-2">
+    <div className="space-y-2">
       <ChartContainer
         config={config}
         role="img"

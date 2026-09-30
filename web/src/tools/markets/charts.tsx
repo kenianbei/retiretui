@@ -1,5 +1,5 @@
 import type { MarketRuns, RunRow, Table } from "@wasm/retiretui_wasm.js";
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import {
   Bar,
   BarChart,
@@ -64,7 +64,7 @@ function Bands({ found, run }: { found: MarketRuns; run: RunRow }) {
 const byYearColumn = columnsFor<string[]>();
 
 /** Net worth at each percentile, and the share still funded, year by year. */
-function ByYear({ table }: { table: Table }) {
+const ByYear = memo(function ByYear({ table }: { table: Table }) {
   const columns = useMemo(
     () =>
       table.columns.map((header, at) =>
@@ -87,14 +87,18 @@ function ByYear({ table }: { table: Table }) {
       className="max-h-[28rem]"
     />
   );
-}
+});
 
 const FUNDED: ChartConfig = {
   funded: { label: "Still funded", color: SERIES[0] },
 };
 
 /** The share of runs not yet short, year by year. */
-function StillFunded({ found }: { found: MarketRuns }) {
+const StillFunded = memo(function StillFunded({
+  found,
+}: {
+  found: MarketRuns;
+}) {
   const data = useMemo(
     () =>
       found.bands.map((band) => ({
@@ -139,14 +143,14 @@ function StillFunded({ found }: { found: MarketRuns }) {
       </LineChart>
     </ChartContainer>
   );
-}
+});
 
 const ENDINGS: ChartConfig = {
   count: { label: "Runs", color: SERIES[0] },
 };
 
 /** How many runs end in each bucket, those that fell short first. */
-function Endings({ found }: { found: MarketRuns }) {
+const Endings = memo(function Endings({ found }: { found: MarketRuns }) {
   const data = useMemo(
     () =>
       found.endings.map((ending) => ({
@@ -182,7 +186,7 @@ function Endings({ found }: { found: MarketRuns }) {
       </BarChart>
     </ChartContainer>
   );
-}
+});
 
 /** The runs' spread, each view a section of its own. */
 export function MarketCharts({
@@ -194,11 +198,11 @@ export function MarketCharts({
 }) {
   const runs = `${found.count.toLocaleString("en-US")} runs`;
   return (
-    <div className="@container space-y-6">
+    <div className="space-y-6">
       <ChartSection title="Net worth" unit={`${DOLLARS} · ${runs}`}>
         <Bands found={found} run={run} />
       </ChartSection>
-      <div className="grid items-start gap-6 @4xl:grid-cols-2">
+      <div className="grid items-start gap-6 @4xl/page:grid-cols-2">
         <ChartSection title="Still funded" unit={`share of runs · ${runs}`}>
           <StillFunded found={found} />
         </ChartSection>

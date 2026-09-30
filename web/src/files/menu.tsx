@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import type { Example } from "@wasm/retiretui_wasm.js";
 import {
   ChevronDown,
   Download,
@@ -121,16 +122,11 @@ export function FileMenu() {
               Add an example
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent className="max-w-80">
-              {actions.examples.map((example) => (
-                <DropdownMenuItem
-                  key={example.file}
-                  onSelect={() => {
-                    actions.add(example.file, example.text);
-                  }}
-                >
-                  {example.words}
-                </DropdownMenuItem>
-              ))}
+              <ExampleItems
+                pick={(example) => {
+                  actions.add(example.file, example.text);
+                }}
+              />
             </DropdownMenuSubContent>
           </DropdownMenuSub>
           <DropdownMenuSeparator />
@@ -163,4 +159,19 @@ export function FileMenu() {
       )}
     </div>
   );
+}
+
+/** The example plans as a menu's items, `pick` taking the one chosen. */
+export function ExampleItems({ pick }: { pick: (example: Example) => void }) {
+  const actions = useFileActions();
+  return actions.examples.map((example) => (
+    <DropdownMenuItem
+      key={example.file}
+      onSelect={() => {
+        pick(example);
+      }}
+    >
+      {example.words}
+    </DropdownMenuItem>
+  ));
 }

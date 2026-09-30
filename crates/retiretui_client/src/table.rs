@@ -101,12 +101,6 @@ pub fn event_name<'a>(plan: &'a Plan, id: &'a str) -> &'a str {
     named.map_or(id, Item::display_name)
 }
 
-/// A person by their display name, or by their id where they state none.
-#[must_use]
-pub fn person_name<'a>(plan: &'a Plan, id: &'a str) -> &'a str {
-    plan.person(id).map_or(id, |person| person.display_name())
-}
-
 /// An income by its display name, or by its id where it states none.
 pub fn income_name<'a>(plan: &'a Plan, id: &'a str) -> &'a str {
     plan.income_source(id).map_or(id, Item::display_name)

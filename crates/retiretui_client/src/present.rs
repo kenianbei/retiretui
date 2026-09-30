@@ -11,7 +11,7 @@ use toml::Value;
 
 use crate::codec::from_table;
 use crate::metric::Metric;
-pub use crate::table::{account_name, event_name, income_name, money, person_name, rate};
+pub use crate::table::{account_name, event_name, income_name, money, rate};
 
 /// The dollars figures are shown in.
 #[must_use]
@@ -391,7 +391,7 @@ pub fn trigger(value: &Value, plan: &Plan) -> String {
     };
     match stated.form() {
         Ok(TriggerForm::Date(date)) => month(date),
-        Ok(TriggerForm::Age { owner, years }) => format!("{} at {years}", person_name(plan, owner)),
+        Ok(TriggerForm::Age { owner, years }) => format!("{} at {years}", plan.person_name(owner)),
         Ok(TriggerForm::Event { id, offset }) => {
             let named = event_name(plan, id);
             shifted(offset, named, format!("at {named}"))

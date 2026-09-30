@@ -42,7 +42,7 @@ export function ReadOut({
   }, [reading, slug, index]);
   if (!rows) return null;
   return (
-    <section aria-label={name ?? "Details"} className="space-y-4">
+    <section aria-label={name ?? "Details"} className="max-w-2xl space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         {name && <h2 className="mr-auto text-lg font-semibold">{name}</h2>}
         <Button size="sm" asChild>
@@ -113,9 +113,8 @@ function RowList({
   return (
     <dl
       className={cn(
-        "bg-card max-w-2xl divide-y rounded-md border text-sm",
-        isFlush &&
-          "max-w-none rounded-none border-x-0 border-b-0 bg-transparent",
+        "bg-card divide-y rounded-md border text-sm",
+        isFlush && "rounded-none border-x-0 border-b-0 bg-transparent",
       )}
     >
       {rows.map(({ label, text, isFigure, is_unstated }) => (

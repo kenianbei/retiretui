@@ -48,7 +48,7 @@ pub struct TaxSection {
 }
 
 /// What the Tax Tables page is for, said once above its tables.
-pub const ABOUT: &str = "The amounts the projection applies in a year; past the latest table, they grow at the plan's inflation.";
+const ABOUT: &str = "The amounts the projection applies in a year; past the latest table, they grow at the plan's inflation.";
 
 /// A year's tables for a status and a state, and the others that can be
 /// asked for.
@@ -67,7 +67,7 @@ pub struct YearTables {
     pub states: Vec<Offer>,
     /// The tables, federal first.
     pub sections: Vec<TaxSection>,
-    /// What the tables are, as [`ABOUT`] says it.
+    /// What the tables are, said once above them.
     pub about: &'static str,
 }
 

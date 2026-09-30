@@ -58,13 +58,16 @@ export function Options<T>({
           const full = spelled.get(header);
           return full ? <abbr title={full}>{header}</abbr> : header;
         },
-        meta:
-          at === 0
-            ? { isNumeric: false, text: "clipped" }
-            : { isNumeric: at >= words },
+        meta: { isNumeric: at >= words },
         cell: ({ row }) => {
           const text = row.original.cells[at];
-          return at === 0 ? <span title={text}>{text}</span> : text;
+          return at === 0 ? (
+            <span title={text} className="block max-w-72 truncate">
+              {text}
+            </span>
+          ) : (
+            text
+          );
         },
       }),
     );

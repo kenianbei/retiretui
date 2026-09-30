@@ -32,6 +32,6 @@ states: Array<Offer>,
  */
 sections: Array<TaxSection>, 
 /**
- * What the tables are, as [`ABOUT`] says it.
+ * What the tables are, said once above them.
  */
 about: string, };

@@ -1,8 +1,9 @@
 import type { CompareWords, Metric, YearFigure } from "@wasm/retiretui_wasm.js";
-import { useId, useMemo } from "react";
+import { useMemo } from "react";
 import { Line } from "recharts";
 
 import { columnsFor } from "@/components/columns";
+import { ChartSection } from "@/components/chart-section";
 import { DataTable } from "@/components/data-table";
 import type { ChartConfig } from "@/components/ui/chart";
 import { cn, INPUT } from "@/lib/utils";
@@ -133,19 +134,11 @@ function PlansTable({ plans, words, year, onYear, caption }: ViewsProps) {
 /** The plans' metric year by year, charted and tabled at once, and the metric picked. */
 export function Views(props: ViewsProps) {
   const { words, metric, caption, onMetric } = props;
-  const id = useId();
   return (
-    <section
-      aria-labelledby={id}
-      className="bg-card @container min-w-0 space-y-3 rounded-xl border p-4 shadow-sm"
-    >
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="space-y-0.5">
-          <h2 id={id} className="text-lg font-semibold">
-            By year
-          </h2>
-          <p className="text-muted-foreground text-xs">{caption}</p>
-        </div>
+    <ChartSection
+      title="By year"
+      unit={caption}
+      controls={
         <label className="flex items-center gap-2 text-sm">
           <span className="text-muted-foreground">Metric</span>
           <select
@@ -165,11 +158,12 @@ export function Views(props: ViewsProps) {
             ))}
           </select>
         </label>
-      </div>
+      }
+    >
       <div className="grid items-start gap-4 @5xl:grid-cols-2">
         <PlansChart {...props} />
         <PlansTable {...props} />
       </div>
-    </section>
+    </ChartSection>
   );
 }

@@ -23,10 +23,10 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useFileActions } from "@/files/actions";
+import { ExampleItems } from "@/files/menu";
 import { messageOf } from "@/lib/utils";
 import { NEW_PLAN_START } from "@/onboarding/steps";
 import { BASIS_LABEL } from "@/overview/view-words";
@@ -104,7 +104,7 @@ function figuresOf(
         : row.document.planFigures(view, row.searched);
     }),
   }));
-  const charted = rows.map((row, place) => ({
+  const charted = (rows.length < 2 ? [] : rows).map((row, place) => ({
     name: nameOf(row.path),
     isAlongZero: baseline.isDifference && place === baseline.at,
     figures: attempt<YearFigure[]>(() => {
@@ -207,15 +207,7 @@ export function ComparePage() {
           <BasisSwitch />
         </div>
       </div>
-      {isAlone && (
-        <Invitation
-          offered={offered}
-          onCompared={onCompared}
-          compare={(path) => {
-            onCompared([path]);
-          }}
-        />
-      )}
+      {isAlone && <Invitation offered={offered} onCompared={onCompared} />}
       <Plans
         headers={compareHeaders(metricKey, year)}
         entries={entries}
@@ -246,7 +238,7 @@ export function ComparePage() {
               });
             }}
           />
-          <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 @4xl/page:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
+          <div className="grid grid-cols-1 items-start gap-6 @4xl/page:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
             <Changes
               title={
                 highlightedAt === baselineAt
@@ -284,11 +276,9 @@ export function ComparePage() {
 function Invitation({
   offered,
   onCompared,
-  compare,
 }: {
   offered: readonly string[];
   onCompared: (paths: string[]) => void;
-  compare: (path: string) => void;
 }) {
   const actions = useFileActions();
   if (offered.length > 0) {
@@ -297,12 +287,7 @@ function Invitation({
         <p className="text-muted-foreground">
           Compare this plan with others in the workspace: Compare with adds one.
         </p>
-        <CompareWith
-          offered={offered}
-          compared={[]}
-          onCompared={onCompared}
-          isPrimary
-        />
+        <CompareWith offered={offered} compared={[]} onCompared={onCompared} />
       </div>
     );
   }
@@ -320,18 +305,13 @@ function Invitation({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
-            {actions.examples.map((example) => (
-              <DropdownMenuItem
-                key={example.file}
-                onSelect={() => {
-                  actions.write(example.file, example.text, () => {
-                    compare(pathOf(example.file));
-                  });
-                }}
-              >
-                {example.words}
-              </DropdownMenuItem>
-            ))}
+            <ExampleItems
+              pick={(example) => {
+                actions.write(example.file, example.text, () => {
+                  onCompared([pathOf(example.file)]);
+                });
+              }}
+            />
           </DropdownMenuContent>
         </DropdownMenu>
         <Button variant="outline" asChild>

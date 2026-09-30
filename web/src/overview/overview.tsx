@@ -57,8 +57,8 @@ export function Overview() {
         {view?.shortfall && <Shortfall shortfall={view.shortfall} />}
         {view && <Strip view={view} basis={basis} plan={plan} />}
       </div>
-      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 @split/page:grid-cols-[minmax(0,48rem)_minmax(0,1fr)]">
-        <div className="min-w-0 space-y-6">
+      <div className="grid grid-cols-1 items-start gap-6 @split/page:grid-cols-[minmax(0,48rem)_minmax(0,1fr)]">
+        <div className="max-w-3xl min-w-0 space-y-6">
           <ThisYear shown={shown} basis={basis} />
           {view && (
             <RowList
@@ -77,14 +77,14 @@ export function Overview() {
               id="milestones"
               title={VIEW_WORDS.milestones}
               rows={view.milestones}
-              className="@split/page:max-w-none"
+              className="max-w-3xl @split/page:max-w-none"
             />
           )}
         </div>
       </div>
       {charts && (
-        <div className="@container space-y-3">
-          <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 @2xl:grid-cols-2 @6xl:grid-cols-3">
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 items-start gap-6 @2xl/page:grid-cols-2 @6xl/page:grid-cols-3">
             {(["net-worth", "income", "markets"] as const).map((chart) => (
               <PlanChart key={chart} chart={chart} {...charts} />
             ))}

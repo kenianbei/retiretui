@@ -127,10 +127,7 @@ export function RowList({
   className?: string;
 }) {
   return (
-    <section
-      aria-labelledby={id}
-      className={cn("max-w-3xl space-y-3", className)}
-    >
+    <section aria-labelledby={id} className={cn("space-y-3", className)}>
       <h2 id={id} className="text-lg font-semibold">
         {title}
       </h2>

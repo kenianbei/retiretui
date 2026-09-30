@@ -4,6 +4,7 @@ import type { Sort } from "@wasm/retiretui_wasm.js";
 import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { ItemForm } from "@/plan/form";
 import { ReadOut } from "@/plan/read-out";
 import { ItemTable } from "@/plan/table";
@@ -44,8 +45,10 @@ function ListDomain({ slug, purpose }: { slug: string; purpose: string }) {
       <div className={item !== undefined ? "max-md:hidden" : undefined}>
         {add}
       </div>
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 @3xl/page:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]">
-        <div className={item !== undefined ? "max-md:hidden" : undefined}>
+      <div className="grid grid-cols-1 gap-6 @3xl/page:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]">
+        <div
+          className={cn("@container", item !== undefined && "max-md:hidden")}
+        >
           <ItemTable
             slug={slug}
             table={table}
@@ -92,9 +95,7 @@ export function DomainPage() {
       )}
       <h1 className="text-2xl font-semibold tracking-tight">{page.title}</h1>
       {page.holds === null ? (
-        <div className="max-w-2xl">
-          <ReadOut slug={page.slug} index={0} />
-        </div>
+        <ReadOut slug={page.slug} index={0} />
       ) : (
         <ListDomain slug={page.slug} purpose={page.holds} />
       )}

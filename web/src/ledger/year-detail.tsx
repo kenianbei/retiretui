@@ -43,8 +43,15 @@ const flowColumn = (key: keyof FlowLine, header: string, isNumeric: boolean) =>
   column.display({
     id: key,
     header,
-    meta: NAMING.includes(key) ? { isNumeric, text: "wraps" } : { isNumeric },
-    cell: ({ row }) => row.original[key],
+    meta: { isNumeric },
+    cell: ({ row }) =>
+      NAMING.includes(key) ? (
+        <span className="block min-w-32 whitespace-normal">
+          {row.original[key]}
+        </span>
+      ) : (
+        row.original[key]
+      ),
   });
 /** Each flows column's key, in the order the client heads them. */
 const FLOW_KEYS = [

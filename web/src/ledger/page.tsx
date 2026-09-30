@@ -148,7 +148,7 @@ export function LedgerPage() {
   );
   const yearDetail = (
     <div key="detail" ref={details} className="@container min-w-0 scroll-mt-4">
-      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 @4xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 items-start gap-4 @4xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         {detail && year !== undefined && (
           <YearDetailCards year={year} unit={unit} detail={detail} />
         )}
@@ -178,7 +178,7 @@ export function LedgerPage() {
           </p>
         </MarginNote>
       )}
-      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 @min-[112rem]/page:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+      <div className="grid grid-cols-1 items-start gap-6 @widest/page:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         {isWide ? [years, yearDetail] : [yearDetail, years]}
       </div>
     </div>

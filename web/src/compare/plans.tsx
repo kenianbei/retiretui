@@ -75,24 +75,21 @@ interface ActionsProps {
   onRemove: () => void;
 }
 
-/** The files beside the document to compare it with, ticked while they are. */
+/** The files beside the document to compare it with, ticked while they are; what the page is for while none is. */
 export function CompareWith({
   offered,
   compared,
   onCompared,
-  isPrimary = false,
 }: {
   offered: readonly string[];
   compared: readonly string[];
   onCompared: (paths: string[]) => void;
-  /** Whether it is what the page is for while one plan is shown. */
-  isPrimary?: boolean;
 }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant={isPrimary ? "default" : "outline"}
+          variant={compared.length === 0 ? "default" : "outline"}
           disabled={offered.length === 0}
         >
           <GitCompareArrows aria-hidden />
