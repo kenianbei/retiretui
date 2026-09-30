@@ -97,7 +97,7 @@ export function Strip({
   const unit = BASIS_LABEL[basis];
   return (
     <div className="@container">
-      <dl className="bg-border grid gap-px overflow-hidden rounded-xl border @md:grid-cols-2 @2xl:grid-cols-4">
+      <dl className="bg-border grid gap-px overflow-hidden rounded-xl border @md:grid-cols-2 @6xl:grid-cols-4">
         <Reading label={MONEY_LASTS}>
           <span className={cn(view.shortfall && "text-destructive")}>
             {view.money_lasts}

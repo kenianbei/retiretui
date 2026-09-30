@@ -8,8 +8,8 @@ expression: composed_frame(app)
 ┴──────────┴┴────────┴┴─────────┴┴───────┴╯      ╰──────────────────────────────────────────────────────────────────────────────
 ╭ Plan ─────────────╮╭ Contributions ─────────────────────────────────────────────────────╮ ╭ Contribution ────────────────────╮
 │  Accounts       7 ││  Contribution   Pays into  Paid by   Amount   From       Until     │ │                                  │
-│  Income         4 ││▌ 401k-deferral  fid-401k   Employee  $24,000  Plan start at retire │ │▏ ID         401k-deferral        │
-│  Expenses       2 ││  401k-match     fid-401k   Employer  $8,000   Plan start at retire │ │  Name       The ID               │
+│  Income         4 ││▌ 401k-deferral  fid-401k   Employee  $24,000  Plan start at retire │ │▏ Name       The ID               │
+│  Expenses       2 ││  401k-match     fid-401k   Employer  $8,000   Plan start at retire │ │  ID         401k-deferral        │
 │  Cliffs         0 ││  hsa-deferral   hsa        Employee  $8,000   Plan start at retire │ │  Pays into  fid-401k             │
 │  Transfers      1 ││                                                                    │ │  Paid by    Employee             │
 │  Conversions    1 ││                                                                    │ │  Amount as  Dollars              │

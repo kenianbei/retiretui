@@ -7,7 +7,7 @@ expression: composed_frame(app)
 │1 Overview││2 Ledger││3 Compare││4 Tools││5 Plan│                                                                                                                                          plan.toml ● 
 ┴──────────┴┴────────┴╯         ╰┴───────┴┴──────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭ Plans · today's dollars ──────────────────────────────────────────────────────────────────────────────────────────────────────────╮╭ Changes · changed.toml against plan.toml ───────────────────────╮
-│     Plan           Ends with  Money lasts  Success  Net worth 2026  Lifetime taxes        Peaks at  Medicare                      ││▏ Income › ss-jordan › Starts: age 67 (jordan) → age 70 (jordan) │
+│     Plan           Ends with  Money lasts  Success  Net worth 2026  Lifetime taxes        Peaks at  Medicare                      ││▏ Income › ss-jordan › Starts: jordan at 67 → jordan at 70       │
 │  ━━ plan.toml         $2.09M  Never short     100%          $1.07M           $697k  $2.09M in 2074        $0                      ││  Expenses › travel: removed                                     │
 │▌ ━━ changed.toml      $2.51M  Never short     100%          $1.07M           $666k  $2.51M in 2074        $0                      ││  Conversions › roth-2027: added                                 │
 │                                                                                                                                   ││                                                                 │

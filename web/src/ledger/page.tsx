@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 
 import { columnsFor } from "@/components/columns";
 import { DataTable } from "@/components/data-table";
+import { MarginNote } from "@/components/margin-note";
 import { YearDetailCards } from "@/ledger/year-detail";
 import { messageOf } from "@/lib/utils";
 import { BASIS_LABEL } from "@/overview/view-words";
@@ -126,7 +127,7 @@ export function LedgerPage() {
   }
   const unit = BASIS_LABEL[basis];
   const years = (
-    <div key="years" ref={table}>
+    <div key="years" ref={table} className="min-w-0">
       <DataTable
         label={`The plan year by year, ${unit}`}
         columns={columns}
@@ -141,23 +142,21 @@ export function LedgerPage() {
           }
         }}
         isFirstPinned
-        className="lg:max-h-[50vh]"
+        className="max-h-[70dvh] lg:max-h-[50vh]"
       />
     </div>
   );
   const yearDetail = (
-    <div
-      key="detail"
-      ref={details}
-      className="grid min-w-0 scroll-mt-4 grid-cols-1 items-start gap-4 2xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]"
-    >
-      {detail && year !== undefined && (
-        <YearDetailCards year={year} unit={unit} detail={detail} />
-      )}
+    <div key="detail" ref={details} className="@container min-w-0 scroll-mt-4">
+      <div className="grid grid-cols-1 items-start gap-4 @4xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        {detail && year !== undefined && (
+          <YearDetailCards year={year} unit={unit} detail={detail} />
+        )}
+      </div>
     </div>
   );
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">Ledger</h1>
         <div className="flex flex-wrap items-center gap-2">
@@ -166,16 +165,22 @@ export function LedgerPage() {
         </div>
       </div>
       {market !== undefined && (
-        <p className="border-primary bg-card rounded-md border-l-4 px-3 py-2 text-sm first-letter:uppercase">
-          {replayed.said}: the plan as a market tool ran it. <BackToPlan />
-        </p>
+        <MarginNote zone="note">
+          <p className="text-sm first-letter:uppercase">
+            {replayed.said}: the plan as a market tool ran it. <BackToPlan />
+          </p>
+        </MarginNote>
       )}
       {issues.length > 0 && (
-        <p className="border-destructive text-muted-foreground border-l-4 px-3 text-sm">
-          These are the last figures the plan had without issues.
-        </p>
+        <MarginNote zone="shortfall">
+          <p className="text-muted-foreground text-sm">
+            These are the last figures the plan had without issues.
+          </p>
+        </MarginNote>
       )}
-      {isWide ? [years, yearDetail] : [yearDetail, years]}
+      <div className="space-y-6">
+        {isWide ? [years, yearDetail] : [yearDetail, years]}
+      </div>
     </div>
   );
 }

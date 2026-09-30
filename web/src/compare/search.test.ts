@@ -24,16 +24,11 @@ describe("compareSearch", () => {
     });
   });
 
-  it("keeps the difference, the metric and the table", () => {
+  it("keeps the difference and the metric", () => {
     expect(
-      compareSearch({
-        difference: true,
-        metric: "taxes",
-        view: "table",
-        year: 2031,
-      }),
-    ).toEqual({ difference: true, metric: "taxes", view: "table", year: 2031 });
-    expect(compareSearch({ difference: false, view: "chart" })).toEqual({});
+      compareSearch({ difference: true, metric: "taxes", year: 2031 }),
+    ).toEqual({ difference: true, metric: "taxes", year: 2031 });
+    expect(compareSearch({ difference: false })).toEqual({});
   });
 });
 

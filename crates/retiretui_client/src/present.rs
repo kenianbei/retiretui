@@ -381,7 +381,7 @@ pub fn mix(stocks: f64, bonds: f64, cash: f64) -> String {
     parts.join("/")
 }
 
-/// A trigger as a phrase: `Jan 2028`, `age 80 (jordan)`, `at retire`,
+/// A trigger as a phrase: `Jan 2028`, `Jordan at 80`, `at retire`,
 /// `2 yrs after retire`. It is read through the schema's own type, and a
 /// value that is no trigger reads as written.
 pub fn trigger(value: &Value, plan: &Plan) -> String {
@@ -391,7 +391,7 @@ pub fn trigger(value: &Value, plan: &Plan) -> String {
     };
     match stated.form() {
         Ok(TriggerForm::Date(date)) => month(date),
-        Ok(TriggerForm::Age { owner, years }) => format!("age {years} ({owner})"),
+        Ok(TriggerForm::Age { owner, years }) => format!("{} at {years}", plan.person_name(owner)),
         Ok(TriggerForm::Event { id, offset }) => {
             let named = event_name(plan, id);
             shifted(offset, named, format!("at {named}"))
@@ -564,7 +564,7 @@ mod tests {
         let cases = [
             ("{ date = 2028-01-01 }", "Jan 2028"),
             ("{ date = 2037-12-31 }", "Dec 2037"),
-            ("{ age = 80, owner = \"jordan\" }", "age 80 (jordan)"),
+            ("{ age = 80, owner = \"jordan\" }", "jordan at 80"),
             ("{ event = \"retire\" }", "at retire"),
             ("{ event = \"retire\", offset = 0 }", "at retire"),
             ("{ event = \"retire\", offset = 2 }", "2 yrs after retire"),
@@ -578,6 +578,10 @@ mod tests {
         for (stated, phrase) in cases {
             assert_eq!(trigger(&value(stated), &plan), phrase, "{stated}");
         }
+        let mut named = plan;
+        named.household.people[0].name = Some("Jordan".to_owned());
+        let age = value("{ age = 80, owner = \"jordan\" }");
+        assert_eq!(trigger(&age, &named), "Jordan at 80");
     }
 
     #[test]

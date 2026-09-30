@@ -124,7 +124,7 @@ export function RowList({
   empty?: string;
 }) {
   return (
-    <section aria-labelledby={id} className="space-y-3">
+    <section aria-labelledby={id} className="min-w-0 space-y-3">
       <h2 id={id} className="text-lg font-semibold">
         {title}
       </h2>

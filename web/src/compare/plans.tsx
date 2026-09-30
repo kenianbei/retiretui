@@ -75,7 +75,7 @@ interface ActionsProps {
   onRemove: () => void;
 }
 
-/** The files beside the document to compare it with, ticked while they are. */
+/** The files beside the document to compare it with, ticked while they are; what the page is for while none is. */
 export function CompareWith({
   offered,
   compared,
@@ -88,7 +88,10 @@ export function CompareWith({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" disabled={offered.length === 0}>
+        <Button
+          variant={compared.length === 0 ? "default" : "outline"}
+          disabled={offered.length === 0}
+        >
           <GitCompareArrows aria-hidden />
           Compare with
         </Button>

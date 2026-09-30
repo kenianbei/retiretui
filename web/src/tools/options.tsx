@@ -59,7 +59,16 @@ export function Options<T>({
           return full ? <abbr title={full}>{header}</abbr> : header;
         },
         meta: { isNumeric: at >= words },
-        cell: ({ row }) => row.original.cells[at],
+        cell: ({ row }) => {
+          const text = row.original.cells[at];
+          return at === 0 ? (
+            <span title={text} className="block max-w-72 truncate">
+              {text}
+            </span>
+          ) : (
+            text
+          );
+        },
       }),
     );
   }, [columns, words, spelledOut]);
@@ -74,9 +83,9 @@ export function Options<T>({
         onSelect={(row) => {
           if (row.option) highlight(row.option);
         }}
-        className="hidden max-h-[28rem] md:block"
+        className="hidden max-h-[28rem] @lg/page:block"
       />
-      <ul className="bg-card max-h-[28rem] divide-y overflow-auto rounded-md border text-sm md:hidden">
+      <ul className="bg-card max-h-[28rem] divide-y overflow-auto rounded-md border text-sm @lg/page:hidden">
         {rows.map((row) => {
           const isChosen = row.option === highlighted;
           const content = (

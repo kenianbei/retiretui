@@ -17,9 +17,9 @@ impl Domain for People {
     const PATH: &'static str = "household.people";
     const SINGULAR: &'static str = "Person";
     const FIELDS: &'static [FieldSpec] = &[
+        FieldSpec::name("The person's name as it is shown. Blank shows the ID."),
         FieldSpec::text("id", "ID")
             .help("A short name for this person, which accounts and income refer to."),
-        FieldSpec::name("The person's name as it is shown. Blank shows the ID."),
         FieldSpec::text("birth", "Birth date")
             .help("As year-month-day, such as 1975-06-14. Ages are counted from it."),
     ];

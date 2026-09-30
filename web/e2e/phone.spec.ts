@@ -6,7 +6,6 @@ import {
   expectAccessible,
   managePlans,
   openPlan,
-  SEARCH,
   searchesDone,
   seed,
   test,
@@ -143,9 +142,7 @@ async function expectOneRow(items: Locator, what: string) {
   expect(new Set(middles).size, `${what} wrap`).toBe(1);
 }
 
-test("the chart views share a row, and a long name keeps its row's actions beside it", async ({
-  page,
-}) => {
+test("a long name keeps its row's actions beside it", async ({ page }) => {
   const long = "a-plan-named-at-length-for-the-early-retirement-scenario.toml";
   await seed(
     page,
@@ -155,12 +152,6 @@ test("the chart views share a row, and a long name keeps its row's actions besid
     },
     "/couple.toml",
   );
-  await expect(page.getByRole("tab", { name: "Markets" })).toBeVisible();
-  await expectOneRow(page.getByRole("tab"), "the Overview's chart tabs");
-  await page.goto("#/tools/monte-carlo");
-  await expect(page.getByRole("tab", { name: "Endings" })).toBeVisible(SEARCH);
-  await expectOneRow(page.getByRole("tab"), "the market views");
-
   const row = (await managePlans(page))
     .getByRole("listitem")
     .filter({ hasText: long });

@@ -70,7 +70,7 @@ function Sidebar() {
   return (
     <nav
       aria-label="Main"
-      className="bg-card hidden border-r px-3 py-4 md:block"
+      className="bg-card hidden border-r px-3 py-4 md:sticky md:top-0 md:block md:h-dvh md:overflow-y-auto"
     >
       <p className="px-3 pb-4 font-semibold tracking-tight">RetireTui</p>
       <ul className="space-y-1">
@@ -294,10 +294,10 @@ export function Shell() {
       >
         Skip to the page
       </a>
-      <div className="min-h-dvh pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)] md:grid md:grid-cols-[15rem_1fr]">
+      <div className="min-h-dvh pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)] md:grid md:grid-cols-[12rem_1fr] lg:grid-cols-[15rem_1fr]">
         <Sidebar />
         <div className="flex min-h-dvh min-w-0 flex-col pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0">
-          <header className="bg-card flex h-14 items-center gap-2 border-b px-4 md:gap-3 md:px-8">
+          <header className="bg-card flex h-14 items-center gap-2 border-b px-4 md:sticky md:top-0 md:z-40 md:gap-3 md:px-8">
             <FileMenu />
             <Button
               variant="outline"
@@ -319,7 +319,7 @@ export function Shell() {
             id="main"
             ref={main}
             tabIndex={-1}
-            className="flex-1 px-4 py-6 outline-none md:px-8"
+            className="@container/page flex-1 px-4 py-6 outline-none md:px-8"
           >
             <DraftNotices />
             {isWithoutDocument ? (

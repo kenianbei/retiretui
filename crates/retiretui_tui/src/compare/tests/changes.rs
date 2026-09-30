@@ -88,8 +88,8 @@ amount = 5000
         rows(&mut app),
         [
             "Settings › Inflation: 2.5% → 3%",
-            "Income › salary › Ends: age 60 (me) →",
-            "  age 62 (me)",
+            "Income › salary › Ends: me at 60 → me",
+            "  at 62",
             "Expenses › living: removed",
             "Expenses › Travel: added",
         ]

@@ -1,6 +1,6 @@
 import { X } from "lucide-react";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { MarginNote } from "@/components/margin-note";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -64,33 +64,39 @@ export function DraftNotices() {
   return (
     <div className="mb-4 space-y-3">
       {session.isChangedElsewhere && (
-        <Alert>
-          <AlertTitle>The plan changed in another tab</AlertTitle>
-          <AlertDescription className="flex flex-wrap items-center gap-3">
+        <MarginNote zone="note" role="status" className="text-sm">
+          <p className="font-medium">The plan changed in another tab</p>
+          <p className="flex flex-wrap items-center gap-3">
             Your edits here are not saved. Reload to see the other tab's
             version, dropping your edits, or save to keep yours.
             <Button size="sm" variant="outline" onClick={session.reload}>
               Reload
             </Button>
-          </AlertDescription>
-        </Alert>
+          </p>
+        </MarginNote>
       )}
       {session.problem && (
-        <Alert variant="destructive" role="alert">
-          <AlertTitle>That could not be done</AlertTitle>
-          <AlertDescription>{session.problem}</AlertDescription>
+        <MarginNote
+          zone="shortfall"
+          role="alert"
+          className="flex items-start gap-3 text-sm"
+        >
+          <div className="mr-auto space-y-1">
+            <p className="font-medium">That could not be done</p>
+            <p>{session.problem}</p>
+          </div>
           <Button
             variant="ghost"
             size="icon"
             aria-label="Dismiss"
-            className="absolute top-2 right-2"
+            className="-my-1 shrink-0"
             onClick={() => {
               session.report(null);
             }}
           >
             <X aria-hidden />
           </Button>
-        </Alert>
+        </MarginNote>
       )}
     </div>
   );

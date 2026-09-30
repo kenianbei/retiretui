@@ -173,7 +173,7 @@ fn every_editing_page_renders_its_table() {
                 "$90,000",
                 "Growth",
                 "1 yr after retire",
-                "age 80 (jordan)",
+                "jordan at 80",
             ],
         ),
         (Page::Transfers, vec!["pension-dc", "rollover-ira"]),
@@ -245,6 +245,7 @@ fn the_add_button_and_the_add_command_both_append() {
         2,
         "nothing added until apply"
     );
+    press_key(&mut app, KeyCode::Tab);
     clear_field(&mut app);
     type_text(&mut app, "brokerage");
     press_key(&mut app, KeyCode::Enter);

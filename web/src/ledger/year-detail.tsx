@@ -6,6 +6,7 @@ import type {
 
 import { columnsFor } from "@/components/columns";
 import { DataTable } from "@/components/data-table";
+import { MarginNote } from "@/components/margin-note";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { VIEW_WORDS } from "@/overview/view-words";
 
@@ -35,12 +36,22 @@ function linesOf(flows: AccountFlows): FlowLine[] {
 }
 
 const column = columnsFor<FlowLine>();
+/** The columns naming where money came from or went, which wrap so the figures stay in view. */
+const NAMING: readonly (keyof FlowLine)[] = ["came", "went"];
+
 const flowColumn = (key: keyof FlowLine, header: string, isNumeric: boolean) =>
   column.display({
     id: key,
     header,
     meta: { isNumeric },
-    cell: ({ row }) => row.original[key],
+    cell: ({ row }) =>
+      NAMING.includes(key) ? (
+        <span className="block min-w-32 whitespace-normal">
+          {row.original[key]}
+        </span>
+      ) : (
+        row.original[key]
+      ),
   });
 /** Each flows column's key, in the order the client heads them. */
 const FLOW_KEYS = [
@@ -96,13 +107,13 @@ export function YearDetailCards({
             className="-mx-4"
           />
           {detail.warnings.length > 0 && (
-            <ul className="border-warning space-y-1 border-l-4 px-3 py-1 text-sm">
-              {detail.warnings.map((warning) => (
-                <li key={warning} className="text-warning">
-                  {warning}
-                </li>
-              ))}
-            </ul>
+            <MarginNote zone="caution">
+              <ul className="space-y-1 text-sm">
+                {detail.warnings.map((warning) => (
+                  <li key={warning}>{warning}</li>
+                ))}
+              </ul>
+            </MarginNote>
           )}
         </CardContent>
       </Card>

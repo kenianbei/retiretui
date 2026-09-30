@@ -14,6 +14,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -95,73 +101,79 @@ export function ManagePlans({ isOpen, setOpen, download }: ManagePlansProps) {
               <KeepPlans />
             </div>
           </DialogDescription>
-          <ul className="min-h-0 flex-1 divide-y overflow-y-auto">
-            {session.files.map((path) => {
-              const base = baseAt(path);
-              const fileName = nameOf(path);
-              const isCurrent = path === session.path;
-              const isBadged = isCurrent || base !== undefined;
-              const acts = [
-                {
-                  verb: "Rename",
-                  Icon: FilePen,
-                  act: () => {
-                    setRenaming(path);
-                    setName(fileName);
+          <TooltipProvider>
+            <ul className="min-h-0 flex-1 divide-y overflow-y-auto">
+              {session.files.map((path) => {
+                const base = baseAt(path);
+                const fileName = nameOf(path);
+                const isCurrent = path === session.path;
+                const isBadged = isCurrent || base !== undefined;
+                const acts = [
+                  {
+                    verb: "Rename",
+                    Icon: FilePen,
+                    act: () => {
+                      setRenaming(path);
+                      setName(fileName);
+                    },
                   },
-                },
-                {
-                  verb: "Download",
-                  Icon: Download,
-                  act: () => {
-                    download(path);
+                  {
+                    verb: "Download",
+                    Icon: Download,
+                    act: () => {
+                      download(path);
+                    },
                   },
-                },
-                {
-                  verb: "Delete",
-                  Icon: Trash2,
-                  act: () => {
-                    setDeleting(path);
+                  {
+                    verb: "Delete",
+                    Icon: Trash2,
+                    act: () => {
+                      setDeleting(path);
+                    },
                   },
-                },
-              ];
-              return (
-                <li
-                  key={path}
-                  className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1 px-4 py-2"
-                >
-                  <span title={fileName} className="truncate font-medium">
-                    {fileName}
-                  </span>
-                  <div className={cn("flex gap-1", isBadged && "row-span-2")}>
-                    {acts.map(({ verb, Icon, act }) => (
-                      <Button
-                        key={verb}
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`${verb} ${fileName}`}
-                        onClick={act}
-                      >
-                        <Icon aria-hidden />
-                      </Button>
-                    ))}
-                  </div>
-                  {isBadged && (
-                    <div className="flex min-w-0 flex-wrap gap-1">
-                      {isCurrent && <Badge>Open</Badge>}
-                      {base !== undefined && (
-                        <Badge variant="secondary" className="max-w-full">
-                          <span className="truncate">
-                            Scenario of {nameOf(base)}
-                          </span>
-                        </Badge>
-                      )}
+                ];
+                return (
+                  <li
+                    key={path}
+                    className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1 px-4 py-2"
+                  >
+                    <span title={fileName} className="truncate font-medium">
+                      {fileName}
+                    </span>
+                    <div className={cn("flex gap-1", isBadged && "row-span-2")}>
+                      {acts.map(({ verb, Icon, act }) => (
+                        <Tooltip key={verb}>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label={`${verb} ${fileName}`}
+                              onClick={act}
+                            >
+                              <Icon aria-hidden />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>{verb}</TooltipContent>
+                        </Tooltip>
+                      ))}
                     </div>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+                    {isBadged && (
+                      <div className="flex min-w-0 flex-wrap gap-1">
+                        {isCurrent && <Badge>Open</Badge>}
+                        {base !== undefined && (
+                          <Badge variant="secondary" className="max-w-full">
+                            <span className="truncate">
+                              Scenario of {nameOf(base)}
+                            </span>
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </TooltipProvider>
         </DialogContent>
       </Dialog>
       <NameDialog

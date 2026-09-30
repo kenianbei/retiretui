@@ -13,9 +13,9 @@ impl Domain for Expenses {
     const PATH: &'static str = "expenses";
     const SINGULAR: &'static str = "Expense";
     const FIELDS: &'static [FieldSpec] = &[
+        FieldSpec::name("What the spending is for. Blank shows the ID."),
         FieldSpec::text("id", "ID")
             .help("A short unique handle scenarios refer to this expense by."),
-        FieldSpec::name("What the spending is for. Blank shows the ID."),
         FieldSpec::money("amount", "Annual amount").help("Per year, in today's dollars."),
         FieldSpec::timing(),
         FieldSpec::starts(),
@@ -53,10 +53,10 @@ impl Domain for Cliffs {
     const PATH: &'static str = "cliffs";
     const SINGULAR: &'static str = "Cliff";
     const FIELDS: &'static [FieldSpec] = &[
-        FieldSpec::text("id", "ID").help("A short unique handle scenarios refer to this cliff by."),
         FieldSpec::name(
             "What crossing the threshold costs you, such as an ACA premium credit. Blank shows the ID.",
         ),
+        FieldSpec::text("id", "ID").help("A short unique handle scenarios refer to this cliff by."),
         FieldSpec::money("magi_over", "MAGI threshold").help(
             "A year whose modified adjusted gross income exceeds this pays the cost that year.",
         ),

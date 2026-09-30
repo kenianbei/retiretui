@@ -61,7 +61,7 @@ test("each Roth owner's ladder and the household's claims are searched and taken
     page.getByText(/at full retirement age \(FRA, 66 to 67\)/),
   ).toBeVisible();
   const people = page.getByRole("region", { name: "People" });
-  await expect(people.getByText("Priya:")).toBeVisible();
+  await expect(people.getByRole("group", { name: "Priya" })).toBeVisible();
   const shown = (text: string | RegExp) =>
     people.getByText(text, { exact: true }).filter({ visible: true }).first();
   await expect(shown("Stated")).toBeVisible();
@@ -83,7 +83,7 @@ test("each Roth owner's ladder and the household's claims are searched and taken
     : people.getByRole("row", { name: /Marcus/ });
   await marcus.click();
   await page.waitForURL(/person=1/);
-  await expect(people.getByText("Marcus:")).toBeVisible();
+  await expect(people.getByRole("group", { name: "Marcus" })).toBeVisible();
   await act("Compute from record").click();
   await expect(
     people.getByText("Marcus's benefit is computed from their record"),
@@ -105,7 +105,7 @@ test("each Roth owner's ladder and the household's claims are searched and taken
   }
 
   await page.goto("#/tools/ssa-benefits?person=0");
-  await expect(people.getByText("Priya:")).toBeVisible();
+  await expect(people.getByRole("group", { name: "Priya" })).toBeVisible();
   await act("Hold claim").click();
   await page.waitForURL(/held=priya/);
   await expect(act("Let claim vary")).toBeVisible();
@@ -164,7 +164,7 @@ test("each Roth owner's ladder and the household's claims are searched and taken
   await asked.getByRole("button", { name: "Cancel" }).click();
   await page.getByRole("button", { name: /^Save/ }).first().click();
 
-  await expect(people.getByText("Priya:")).toBeVisible();
+  await expect(people.getByRole("group", { name: "Priya" })).toBeVisible();
   await act("Estimate from salary").click();
   await expect(
     people.getByText(/estimated \d+ years of earnings for Priya/),

@@ -3,10 +3,9 @@ import { useMemo } from "react";
 import { Line } from "recharts";
 
 import { columnsFor } from "@/components/columns";
+import { ChartSection } from "@/components/chart-section";
 import { DataTable } from "@/components/data-table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ChartConfig } from "@/components/ui/chart";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn, INPUT } from "@/lib/utils";
 import { SERIES } from "@/overview/bands";
 import { Plot } from "@/overview/charts";
@@ -20,18 +19,14 @@ export interface Charted {
   isAlongZero: boolean;
 }
 
-export type ViewName = "chart" | "table";
-
 interface ViewsProps {
   plans: Charted[];
   words: CompareWords;
   metric: Metric;
-  view: ViewName;
   /** What the figures are in, and whether they are differences. */
   caption: string;
   year: number;
   onYear: (year: number) => void;
-  onView: (view: ViewName) => void;
   onMetric: (metric: Metric) => void;
 }
 
@@ -136,28 +131,15 @@ function PlansTable({ plans, words, year, onYear, caption }: ViewsProps) {
   );
 }
 
-/** The plans' metric year by year, charted or tabled, and the metric picked. */
+/** The plans' metric year by year, charted beside its table, and the metric picked. */
 export function Views(props: ViewsProps) {
-  const { words, metric, view, caption, onView, onMetric } = props;
+  const { words, metric, caption, onMetric } = props;
   return (
-    <Card className="min-w-0 gap-3 py-4">
-      <Tabs
-        value={view}
-        onValueChange={(value) => {
-          onView(value === "table" ? "table" : "chart");
-        }}
-        className="gap-3"
-      >
-        <CardHeader className="flex flex-wrap items-center justify-between gap-2 px-4">
-          <CardTitle className="sr-only">By year</CardTitle>
-          <TabsList>
-            <TabsTrigger value="chart" className="h-8">
-              Chart
-            </TabsTrigger>
-            <TabsTrigger value="table" className="h-8">
-              By year
-            </TabsTrigger>
-          </TabsList>
+    <>
+      <ChartSection
+        title="By year"
+        unit={caption}
+        controls={
           <label className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">Metric</span>
             <select
@@ -177,17 +159,13 @@ export function Views(props: ViewsProps) {
               ))}
             </select>
           </label>
-        </CardHeader>
-        <CardContent className="space-y-2 px-4">
-          <p className="text-muted-foreground text-xs">{caption}</p>
-          <TabsContent value="chart">
-            <PlansChart {...props} />
-          </TabsContent>
-          <TabsContent value="table">
-            <PlansTable {...props} />
-          </TabsContent>
-        </CardContent>
-      </Tabs>
-    </Card>
+        }
+      >
+        <PlansChart {...props} />
+      </ChartSection>
+      <ChartSection title="Year by year">
+        <PlansTable {...props} />
+      </ChartSection>
+    </>
   );
 }

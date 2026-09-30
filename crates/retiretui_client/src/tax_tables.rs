@@ -47,6 +47,9 @@ pub struct TaxSection {
     pub note: Option<String>,
 }
 
+/// What the Tax Tables page is for, said once above its tables.
+const ABOUT: &str = "The amounts the projection applies in a year; past the latest table, they grow at the plan's inflation.";
+
 /// A year's tables for a status and a state, and the others that can be
 /// asked for.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -64,6 +67,8 @@ pub struct YearTables {
     pub states: Vec<Offer>,
     /// The tables, federal first.
     pub sections: Vec<TaxSection>,
+    /// What the tables are, said once above them.
+    pub about: &'static str,
 }
 
 const BRACKET_COLUMNS: [&str; 2] = ["Taxable income over", "Rate"];
@@ -109,6 +114,7 @@ pub fn year_tables(plan: &Plan, tables: &TaxTables, view: &TablesView) -> YearTa
         statuses: Vocabulary::FilingStatus.offers(),
         states: params.states.keys().map(|code| state_offer(code)).collect(),
         sections,
+        about: ABOUT,
     }
 }
 

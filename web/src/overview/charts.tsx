@@ -17,7 +17,7 @@ import {
   YAxis,
 } from "recharts";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartSection } from "@/components/chart-section";
 import {
   ChartContainer,
   ChartLegend,
@@ -27,7 +27,6 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Basis } from "@/overview/words";
 import { BASIS_LABEL, VIEW_WORDS, metricTitle } from "@/overview/view-words";
 import {
@@ -263,7 +262,7 @@ function NetWorth(props: ChartsProps) {
 
 const INCOME_AND_TAX: ChartConfig = {
   income: { label: metricTitle("income"), color: SERIES[1] },
-  taxes: { label: metricTitle("taxes"), color: SERIES[3] },
+  taxes: { label: metricTitle("taxes"), color: SERIES[2] },
 };
 
 function IncomeAndTax(props: ChartsProps) {
@@ -323,59 +322,38 @@ function Bands(props: ChartsProps & { plan: string }) {
   );
 }
 
-/** Each chart, its tab named short where its whole name would not share a phone's row. */
-const TABS = [
-  { value: "balances", title: "Balances", Chart: Balances },
-  { value: "net-worth", title: "Net worth", Chart: NetWorth },
-  {
-    value: "income",
-    tab: "Income",
-    title: "Income & tax",
-    Chart: IncomeAndTax,
-  },
-  { value: "markets", tab: "Markets", title: "Market runs", Chart: MarketRuns },
-];
+const CHARTS = {
+  balances: { title: "Balances", Chart: Balances },
+  "net-worth": { title: "Net worth", Chart: NetWorth },
+  income: { title: "Income & tax", Chart: IncomeAndTax },
+  markets: { title: "Market runs", Chart: MarketRuns },
+};
 
-/** What the plan holds and earns year by year, and how random markets spread it. */
-export function Charts(props: ChartsProps) {
-  const unit = (value: string) =>
-    BASIS_LABEL[value === "markets" ? "today" : props.basis];
+export type ChartKey = keyof typeof CHARTS;
+
+/** One of what the plan holds and earns year by year, or how random markets spread it. */
+export function PlanChart({
+  chart,
+  ...props
+}: ChartsProps & { chart: ChartKey }) {
+  const { title, Chart } = CHARTS[chart];
+  const unit = BASIS_LABEL[chart === "markets" ? "today" : props.basis];
   return (
-    <Card className="gap-3 py-4">
-      <Tabs defaultValue="balances" className="gap-3">
-        <CardHeader className="flex flex-wrap items-center justify-between gap-2 px-4">
-          <CardTitle className="sr-only">Charts</CardTitle>
-          <TabsList className="w-full sm:w-fit">
-            {TABS.map(({ value, tab, title }) => (
-              <TabsTrigger
-                key={value}
-                value={value}
-                title={title}
-                className="h-8"
-              >
-                {tab ?? title}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </CardHeader>
-        <CardContent className="px-4">
-          {TABS.map(({ value, title, Chart }) => (
-            <TabsContent key={value} value={value} className="space-y-2">
-              <p className="text-muted-foreground text-xs">
-                {title} · {unit(value)} · click a year to show it
-              </p>
-              <Chart {...props} />
-            </TabsContent>
-          ))}
-          <Link
-            to="/ledger"
-            search={(kept) => keptSearch(kept, ["year", "basis", "held"])}
-            className="text-primary mt-3 inline-block text-sm underline-offset-4 hover:underline"
-          >
-            Every year in the Ledger
-          </Link>
-        </CardContent>
-      </Tabs>
-    </Card>
+    <ChartSection title={title} unit={`${unit} · click a year to show it`}>
+      <Chart {...props} />
+    </ChartSection>
+  );
+}
+
+/** The Ledger, every chart's table. */
+export function EveryYear() {
+  return (
+    <Link
+      to="/ledger"
+      search={(kept) => keptSearch(kept, ["year", "basis", "held"])}
+      className="text-primary inline-block text-sm underline-offset-4 hover:underline"
+    >
+      Every year in the Ledger
+    </Link>
   );
 }

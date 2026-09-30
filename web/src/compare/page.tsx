@@ -1,4 +1,4 @@
-import { useNavigate, useSearch } from "@tanstack/react-router";
+import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import {
   compareHeaders,
   compareWords,
@@ -6,6 +6,7 @@ import {
   type CompareView,
   type YearFigure,
 } from "@wasm/retiretui_wasm.js";
+import { FilePen, Sparkles } from "lucide-react";
 import { useMemo } from "react";
 
 import {
@@ -19,10 +20,18 @@ import { withIn } from "@/compare/search";
 import { useRows, type Row } from "@/compare/use-compared";
 import { Views, type Charted } from "@/compare/views";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useFileActions } from "@/files/actions";
+import { ExampleItems } from "@/files/menu";
 import { messageOf } from "@/lib/utils";
+import { NEW_PLAN_START } from "@/onboarding/steps";
 import { BASIS_LABEL } from "@/overview/view-words";
 import { useSession } from "@/session";
-import { nameOf } from "@/workspace";
+import { nameOf, pathOf } from "@/workspace";
 import { basisOf } from "@/year/search";
 import { BasisSwitch } from "@/year/year";
 
@@ -95,7 +104,7 @@ function figuresOf(
         : row.document.planFigures(view, row.searched);
     }),
   }));
-  const charted = rows.map((row, place) => ({
+  const charted = (rows.length < 2 ? [] : rows).map((row, place) => ({
     name: nameOf(row.path),
     isAlongZero: baseline.isDifference && place === baseline.at,
     figures: attempt<YearFigure[]>(() => {
@@ -165,37 +174,40 @@ export function ComparePage() {
   const pathOr = (path: string) => (path === own ? undefined : path);
   const name = nameOf(highlighted.path);
 
+  const offered = session.files.filter((path) => path !== own);
+  const onCompared = (paths: string[]) => {
+    place({ with: withIn(paths) });
+  };
+  const isAlone = compared.length === 0;
+
   return (
-    <div className="max-w-6xl space-y-4">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">Compare</h1>
         <div className="flex flex-wrap items-center gap-2">
-          <CompareWith
-            offered={session.files.filter((path) => path !== own)}
-            compared={compared}
-            onCompared={(paths) => {
-              place({ with: withIn(paths) });
-            }}
-          />
-          <Button
-            variant="outline"
-            aria-pressed={isDifference}
-            disabled={rows.length < 2}
-            className={isDifference ? "bg-accent" : undefined}
-            onClick={() => {
-              place({ difference: isDifference ? undefined : true });
-            }}
-          >
-            Difference
-          </Button>
+          {!isAlone && (
+            <>
+              <CompareWith
+                offered={offered}
+                compared={compared}
+                onCompared={onCompared}
+              />
+              <Button
+                variant="outline"
+                aria-pressed={isDifference}
+                className={isDifference ? "bg-accent" : undefined}
+                onClick={() => {
+                  place({ difference: isDifference ? undefined : true });
+                }}
+              >
+                Difference
+              </Button>
+            </>
+          )}
           <BasisSwitch />
         </div>
       </div>
-      {compared.length === 0 && (
-        <p className="text-muted-foreground">
-          Compare this plan with others in the workspace: Compare with adds one.
-        </p>
-      )}
+      {isAlone && <Invitation offered={offered} onCompared={onCompared} />}
       <Plans
         headers={compareHeaders(metricKey, year)}
         entries={entries}
@@ -205,50 +217,106 @@ export function ComparePage() {
         }}
         caption={`Plans${measured} · ${unit}`}
       />
-      <PlanActions
-        isDocument={highlightedAt === 0}
-        isBaseline={highlightedAt === baselineAt}
-        canOpen={highlighted.document !== null}
-        onOpen={() => {
-          session.open(highlighted.path);
-        }}
-        onBaseline={() => {
-          place({ baseline: pathOr(highlighted.path) });
-        }}
-        onRemove={() => {
-          place({
-            with: withIn(compared.filter((path) => path !== highlighted.path)),
-            plan: undefined,
-          });
-        }}
-      />
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
-        <Changes
-          title={
-            highlightedAt === baselineAt
-              ? `Changes · ${name}`
-              : `Changes · ${name} against ${nameOf(baseline.path)}`
-          }
-          lines={changes.lines}
-          isNote={changes.isNote}
-        />
-        <Views
-          plans={charted}
-          words={WORDS}
-          metric={metricKey}
-          view={search.view ?? "chart"}
-          caption={`${metric?.title ?? ""} by year${measured} · ${unit}`}
-          year={year}
-          onYear={(year) => {
-            place({ year });
-          }}
-          onView={(view) => {
-            place({ view: view === "table" ? view : undefined });
-          }}
-          onMetric={(metric) => {
-            place({ metric: metric === NET_WORTH ? undefined : metric });
-          }}
-        />
+      {!isAlone && (
+        <>
+          <PlanActions
+            isDocument={highlightedAt === 0}
+            isBaseline={highlightedAt === baselineAt}
+            canOpen={highlighted.document !== null}
+            onOpen={() => {
+              session.open(highlighted.path);
+            }}
+            onBaseline={() => {
+              place({ baseline: pathOr(highlighted.path) });
+            }}
+            onRemove={() => {
+              place({
+                with: withIn(
+                  compared.filter((path) => path !== highlighted.path),
+                ),
+                plan: undefined,
+              });
+            }}
+          />
+          <Changes
+            title={
+              highlightedAt === baselineAt
+                ? `Changes · ${name}`
+                : `Changes · ${name} against ${nameOf(baseline.path)}`
+            }
+            lines={changes.lines}
+            isNote={changes.isNote}
+          />
+          <div className="grid grid-cols-1 items-start gap-6 @3xl/page:grid-cols-2">
+            <Views
+              plans={charted}
+              words={WORDS}
+              metric={metricKey}
+              caption={`${metric?.title ?? ""} by year${measured} · ${unit}`}
+              year={year}
+              onYear={(year) => {
+                place({ year });
+              }}
+              onMetric={(metric) => {
+                place({ metric: metric === NET_WORTH ? undefined : metric });
+              }}
+            />
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/** What a lone plan is offered: another workspace file to set beside it, or,
+ * where there is none, an example written beside it and compared, or a new plan. */
+function Invitation({
+  offered,
+  onCompared,
+}: {
+  offered: readonly string[];
+  onCompared: (paths: string[]) => void;
+}) {
+  const actions = useFileActions();
+  if (offered.length > 0) {
+    return (
+      <div className="flex flex-wrap items-center gap-3">
+        <p className="text-muted-foreground">
+          Compare this plan with others in the workspace: Compare with adds one.
+        </p>
+        <CompareWith offered={offered} compared={[]} onCompared={onCompared} />
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-3">
+      <p className="text-muted-foreground">
+        There is no other plan in the workspace to compare this one with.
+      </p>
+      <div className="flex flex-wrap gap-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button>
+              <Sparkles aria-hidden />
+              Add an example
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <ExampleItems
+              pick={(example) => {
+                actions.write(example.file, example.text, () => {
+                  onCompared([pathOf(example.file)]);
+                });
+              }}
+            />
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <Button variant="outline" asChild>
+          <Link to="/new/$step" params={{ step: NEW_PLAN_START }}>
+            <FilePen aria-hidden />
+            New plan…
+          </Link>
+        </Button>
       </div>
     </div>
   );

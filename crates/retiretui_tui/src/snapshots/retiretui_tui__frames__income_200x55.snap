@@ -8,8 +8,8 @@ expression: composed_frame(app)
 ┴──────────┴┴────────┴┴─────────┴┴───────┴╯      ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭ Plan ─────────────╮╭ Income ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮ ╭ Income Source ───────────────────╮
 │  Accounts       7 ││  Income              Type                    Owner            Amount                                                                       │ │                                  │
-│▏ Income         4 ││▌ salary              Salary                  jordan         $150,000                                                                       │ │▏ ID             salary           │
-│  Expenses       2 ││  db-pension          Pension                 jordan          $30,000                                                                       │ │  Name           The ID           │
+│▏ Income         4 ││▌ salary              Salary                  jordan         $150,000                                                                       │ │▏ Name           The ID           │
+│  Expenses       2 ││  db-pension          Pension                 jordan          $30,000                                                                       │ │  ID             salary           │
 │  Cliffs         0 ││  ss-jordan           Social Security         jordan          $40,000                                                                       │ │  Type           Salary           │
 │  Transfers      1 ││  inheritance         Windfall                alex           $100,000                                                                       │ │  Owner          jordan           │
 │  Conversions    1 ││                                                                                                                                            │ │  Annual amount  $150,000         │

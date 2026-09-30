@@ -31,8 +31,6 @@ export interface CompareSearch extends YearSearch {
   difference?: true;
   /** The metric charted and tabled year by year; net worth where none. */
   metric?: string;
-  /** The year by year table in place of the chart. */
-  view?: "table";
 }
 
 /** The Compare page's search params from whatever the address holds. */
@@ -48,7 +46,6 @@ export function compareSearch(search: Record<string, unknown>): CompareSearch {
       difference: true,
     }),
     ...(metric && { metric }),
-    ...(search.view === "table" && { view: "table" }),
   };
 }
 

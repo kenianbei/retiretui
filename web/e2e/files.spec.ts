@@ -48,6 +48,8 @@ test("plans are renamed, their scenarios following, and deleted", async ({
   const dialog = await manage();
   await expect(dialog.getByText("Scenario of early.toml")).toBeVisible();
   await expectAccessible(page);
+  await dialog.getByRole("button", { name: "Download couple.toml" }).focus();
+  await expect(page.getByRole("tooltip")).toHaveText("Download");
   await dialog.getByRole("button", { name: "Rename couple.toml" }).click();
   const ask = page.getByRole("alertdialog");
   await ask.getByLabel("File name").fill("early");
@@ -74,8 +76,11 @@ test("plans are renamed, their scenarios following, and deleted", async ({
   expect(await stored("/early.toml")).toBeNull();
   expect(await stored("/ladder.toml")).toMatch(/base = "mine\.toml"/);
   await expect(
-    page.getByRole("button", { name: /unsaved edits/ }),
+    page.getByRole("button", { name: /^Save.*unsaved edits/ }),
   ).toBeEnabled();
+  await expect(
+    page.getByRole("button", { name: /^File, mine\.toml, unsaved edits/ }),
+  ).toBeVisible();
 
   const other = await context.newPage();
   await other.goto("#/overview");

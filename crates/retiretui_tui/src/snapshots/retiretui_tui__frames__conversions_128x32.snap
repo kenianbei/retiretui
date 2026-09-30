@@ -7,15 +7,15 @@ expression: composed_frame(app)
 │1 Overview││2 Ledger││3 Compare││4 Tools││5 Plan│                                                                  full.toml ● 
 ┴──────────┴┴────────┴┴─────────┴┴───────┴╯      ╰──────────────────────────────────────────────────────────────────────────────
 ╭ Plan ─────────────╮╭ Conversions ───────────────────────────────────────────────────────╮ ╭ Conversion ──────────────────────╮
-│  Accounts       7 ││  Conversion  Convert … Convert …  Amount From      Until           │ │                                  │
-│  Income         4 ││▌ roth-ladder fid-401k  roth-ira  $30,000 at retire age 72 (jordan) │ │▏ ID             roth-ladder      │
-│  Expenses       2 ││                                                                    │ │  Name           The ID           │
+│  Accounts       7 ││  Conversion  Convert fr… Convert to  Amount From      Until        │ │                                  │
+│  Income         4 ││▌ roth-ladder fid-401k    roth-ira   $30,000 at retire jordan at 72 │ │▏ Name           The ID           │
+│  Expenses       2 ││                                                                    │ │  ID             roth-ladder      │
 │  Cliffs         0 ││                                                                    │ │  From           fid-401k         │
 │  Transfers      1 ││                                                                    │ │  To             roth-ira         │
 │▏ Conversions    1 ││                                                                    │ │  Annual amount  $30,000          │
 │  Contributions  3 ││                                                                    │ │  Happens        Every year       │
 │  Events         1 ││                                                                    │ │  Starts         at retire        │
-│  People         2 ││                                                                    │ │  Ends           age 72 (jordan)  │
+│  People         2 ││                                                                    │ │  Ends           jordan at 72     │
 │  Residency      1 ││                                                                    │ │  Growth         Inflation        │
 │  Household        ││                                                                    │ │                                  │
 │  Settings         ││                                                                    │ │                                  │

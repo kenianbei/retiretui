@@ -6,7 +6,7 @@ import {
 } from "@wasm/retiretui_wasm.js";
 import { useMemo } from "react";
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { MarginNote } from "@/components/margin-note";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -116,7 +116,7 @@ export function MarketsPage({
   );
 
   return (
-    <div className="max-w-5xl space-y-6">
+    <div className="space-y-6">
       <div className="space-y-1">
         <div className="flex flex-wrap items-baseline gap-3">
           <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
@@ -146,16 +146,21 @@ export function MarketsPage({
           lists them.
         </p>
       ) : found.error && !found.isFetching ? (
-        <Alert>
-          <AlertDescription>{found.error.message}</AlertDescription>
-        </Alert>
+        <MarginNote zone="caution" role="alert">
+          <p className="text-sm">{found.error.message}</p>
+        </MarginNote>
       ) : !reply || !highlighted ? (
         <p className="text-muted-foreground">{WORDS.nothing_searched}</p>
       ) : (
         <>
-          <div className="grid items-start gap-4 md:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
-            <Assumptions rows={reply.assumptions} />
-            <div className="space-y-3">
+          <div className="grid grid-cols-1 items-start gap-6 @2xl/page:grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
+            <section aria-labelledby="runs" className="min-w-0 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 id="runs" className="text-lg font-semibold">
+                  {reply.columns[0]}
+                </h2>
+                <OpenInLedger run={highlighted} />
+              </div>
               <Options
                 label={reply.columns[0]}
                 columns={reply.columns}
@@ -169,8 +174,8 @@ export function MarketsPage({
                   });
                 }}
               />
-              <OpenInLedger run={highlighted} />
-            </div>
+            </section>
+            <Assumptions rows={reply.assumptions} />
           </div>
           <MarketCharts found={reply} run={highlighted} />
         </>

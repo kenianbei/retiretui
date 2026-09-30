@@ -131,6 +131,7 @@ export function FileActionsProvider({ children }: { children: ReactNode }) {
           <AlertDialogFooter>
             <AlertDialogCancel>Keep the one I have</AlertDialogCancel>
             <AlertDialogAction
+              variant="destructive"
               onClick={() => {
                 replacing?.replace();
               }}

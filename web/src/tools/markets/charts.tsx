@@ -1,5 +1,5 @@
 import type { MarketRuns, RunRow, Table } from "@wasm/retiretui_wasm.js";
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import {
   Bar,
   BarChart,
@@ -11,15 +11,14 @@ import {
 } from "recharts";
 
 import { columnsFor } from "@/components/columns";
+import { ChartSection } from "@/components/chart-section";
 import { DataTable } from "@/components/data-table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   bandAreas,
   bandData,
@@ -40,7 +39,7 @@ const BANDS = bandsConfig();
 function Bands({ found, run }: { found: MarketRuns; run: RunRow }) {
   const bands = useMemo(() => bandData(found.bands), [found]);
   const config: ChartConfig = useMemo(
-    () => ({ ...BANDS, run: { label: run.cells[0], color: SERIES[1] } }),
+    () => ({ ...BANDS, run: { label: run.cells[0], color: SERIES[0] } }),
     [run],
   );
   const data = useMemo(
@@ -65,7 +64,7 @@ function Bands({ found, run }: { found: MarketRuns; run: RunRow }) {
 const byYearColumn = columnsFor<string[]>();
 
 /** Net worth at each percentile, and the share still funded, year by year. */
-function ByYear({ table }: { table: Table }) {
+const ByYear = memo(function ByYear({ table }: { table: Table }) {
   const columns = useMemo(
     () =>
       table.columns.map((header, at) =>
@@ -88,14 +87,18 @@ function ByYear({ table }: { table: Table }) {
       className="max-h-[28rem]"
     />
   );
-}
+});
 
 const FUNDED: ChartConfig = {
   funded: { label: "Still funded", color: SERIES[0] },
 };
 
 /** The share of runs not yet short, year by year. */
-function StillFunded({ found }: { found: MarketRuns }) {
+const StillFunded = memo(function StillFunded({
+  found,
+}: {
+  found: MarketRuns;
+}) {
   const data = useMemo(
     () =>
       found.bands.map((band) => ({
@@ -107,6 +110,7 @@ function StillFunded({ found }: { found: MarketRuns }) {
   return (
     <ChartContainer
       config={FUNDED}
+      role="img"
       aria-label="Share of runs still funded"
       className={PLOT_SIZE}
     >
@@ -139,14 +143,14 @@ function StillFunded({ found }: { found: MarketRuns }) {
       </LineChart>
     </ChartContainer>
   );
-}
+});
 
 const ENDINGS: ChartConfig = {
   count: { label: "Runs", color: SERIES[0] },
 };
 
 /** How many runs end in each bucket, those that fell short first. */
-function Endings({ found }: { found: MarketRuns }) {
+const Endings = memo(function Endings({ found }: { found: MarketRuns }) {
   const data = useMemo(
     () =>
       found.endings.map((ending) => ({
@@ -158,6 +162,7 @@ function Endings({ found }: { found: MarketRuns }) {
   return (
     <ChartContainer
       config={ENDINGS}
+      role="img"
       aria-label="What the runs end with"
       className={PLOT_SIZE}
     >
@@ -181,9 +186,9 @@ function Endings({ found }: { found: MarketRuns }) {
       </BarChart>
     </ChartContainer>
   );
-}
+});
 
-/** The runs' spread, in each view the tool has. */
+/** The runs' spread, each view a section of its own, two across on a wide page. */
 export function MarketCharts({
   found,
   run,
@@ -191,72 +196,23 @@ export function MarketCharts({
   found: MarketRuns;
   run: RunRow;
 }) {
-  const views = [
-    {
-      value: "bands",
-      title: "Net worth",
-      unit: DOLLARS,
-      chart: <Bands found={found} run={run} />,
-    },
-    ...(found.by_year
-      ? [
-          {
-            value: "by-year",
-            title: "By year",
-            unit: DOLLARS,
-            chart: <ByYear table={found.by_year} />,
-          },
-        ]
-      : []),
-    {
-      value: "funded",
-      tab: "Funded",
-      title: "Still funded",
-      unit: "share of runs",
-      chart: <StillFunded found={found} />,
-    },
-    {
-      value: "endings",
-      tab: "Endings",
-      title: "Ends with",
-      unit: DOLLARS,
-      chart: <Endings found={found} />,
-    },
-  ];
+  const runs = `${found.count.toLocaleString("en-US")} runs`;
   return (
-    <Card className="gap-3 py-4">
-      <Tabs defaultValue="bands" className="gap-3">
-        <CardHeader className="px-4">
-          <CardTitle className="sr-only">Charts</CardTitle>
-          <TabsList className="w-full sm:w-fit">
-            {views.map((view) => (
-              <TabsTrigger
-                key={view.value}
-                value={view.value}
-                title={view.title}
-                className="h-8"
-              >
-                {view.tab ?? view.title}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </CardHeader>
-        <CardContent className="px-4">
-          {views.map((view) => (
-            <TabsContent
-              key={view.value}
-              value={view.value}
-              className="space-y-2"
-            >
-              <p className="text-muted-foreground text-xs">
-                {view.title} · {view.unit} ·{" "}
-                {found.count.toLocaleString("en-US")} runs
-              </p>
-              {view.chart}
-            </TabsContent>
-          ))}
-        </CardContent>
-      </Tabs>
-    </Card>
+    <div className="grid grid-cols-1 items-start gap-6 @3xl/page:grid-cols-2">
+      <ChartSection title="Net worth" unit={`${DOLLARS} · ${runs}`}>
+        <Bands found={found} run={run} />
+      </ChartSection>
+      <ChartSection title="Still funded" unit={`share of runs · ${runs}`}>
+        <StillFunded found={found} />
+      </ChartSection>
+      <ChartSection title="Ends with" unit={`${DOLLARS} · ${runs}`}>
+        <Endings found={found} />
+      </ChartSection>
+      {found.by_year && (
+        <ChartSection title="By year" unit={`${DOLLARS} · ${runs}`}>
+          <ByYear table={found.by_year} />
+        </ChartSection>
+      )}
+    </div>
   );
 }

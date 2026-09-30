@@ -82,8 +82,6 @@ test("plans compared against a baseline, and a written scenario compared at once
   await expect(
     page.getByLabel(/^Taxes by year/).locator(".recharts-line"),
   ).toHaveCount(2);
-  await page.getByRole("tab", { name: "By year" }).click();
-  await page.waitForURL(/view=table/);
   const years = page.getByRole("table", { name: /^Taxes by year/ });
   await expect(years.getByRole("columnheader", { name: "Year" })).toBeVisible();
   await years.getByRole("row", { name: /^2031/ }).click();
@@ -135,5 +133,35 @@ test("plans compared against a baseline, and a written scenario compared at once
   await expect(
     page.getByText(`Changes · ${ladder} against early.toml`),
   ).toBeVisible();
-  await expect(page.getByText(/^Conversions/).first()).toBeVisible();
+  await expect(
+    page
+      .getByRole("listitem")
+      .filter({ hasText: /^Conversions/ })
+      .first(),
+  ).toBeVisible();
+});
+
+test("a plan alone is offered one to compare with", async ({ page }) => {
+  await seed(
+    page,
+    { "/early.toml": example("early-retiree.toml") },
+    "/early.toml",
+    "#/compare",
+  );
+  await expect(
+    page.getByText(
+      "There is no other plan in the workspace to compare this one with.",
+    ),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Difference" })).toHaveCount(0);
+  await expect(
+    page.getByRole("region", { name: "By year", exact: true }),
+  ).toHaveCount(0);
+  await expectAccessible(page);
+  await page.getByRole("button", { name: "Add an example" }).click();
+  await page.getByRole("menuitem").first().click();
+  await expect(page.getByRole("button", { name: "Difference" })).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "By year", exact: true }),
+  ).toBeVisible();
 });

@@ -8,8 +8,8 @@ expression: composed_frame(app)
 ┴──────────┴┴────────┴┴─────────┴┴───────┴╯      ╰──────────────────────────────────────────────────────────────────────────────
 ╭ Plan ─────────────╮╭ People ────────────────────────────────────────────────────────────╮ ╭ Person ──────────────────────────╮
 │  Accounts       7 ││  Person         Birth date         Earnings                        │ │                                  │
-│  Income         4 ││▏ jordan         1975-06-14         -                               │ │▏ ID          jordan              │
-│  Expenses       2 ││  alex           1979-02-01         -                               │ │  Name        The ID              │
+│  Income         4 ││▏ jordan         1975-06-14         -                               │ │▏ Name        The ID              │
+│  Expenses       2 ││  alex           1979-02-01         -                               │ │  ID          jordan              │
 │  Cliffs         0 ││                                                                    │ │  Birth date  1975-06-14          │
 │  Transfers      1 ││                                                                    │ │  Earnings                        │
 │  Conversions    1 ││                                                                    │ │                                  │

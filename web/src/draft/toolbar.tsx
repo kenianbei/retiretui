@@ -113,16 +113,16 @@ export function DraftToolbar() {
         }
       >
         <Button
-          variant={document.isDirty ? "default" : "outline"}
+          variant="outline"
           size="sm"
           disabled={isReadOnly || !document.isDirty}
+          aria-label={
+            document.isDirty ? "Save, the plan has unsaved edits" : undefined
+          }
           onClick={save}
         >
           <Save aria-hidden className="max-md:hidden" />
           Save
-          {document.isDirty && (
-            <span className="sr-only">, the plan has unsaved edits</span>
-          )}
         </Button>
       </span>
     </div>

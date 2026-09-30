@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import type { Example } from "@wasm/retiretui_wasm.js";
 import {
   ChevronDown,
   Download,
@@ -39,6 +40,7 @@ export function FileMenu() {
   const name =
     session.document && session.path !== null ? nameOf(session.path) : null;
   const isReadOnly = session.document?.isReadOnly === true;
+  const isDirty = session.document?.isDirty === true;
 
   return (
     <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -48,6 +50,11 @@ export function FileMenu() {
             variant="ghost"
             size="sm"
             title={name ?? undefined}
+            aria-label={
+              name === null
+                ? undefined
+                : `File, ${name}${isDirty ? ", unsaved edits" : ""}`
+            }
             className="min-w-0 shrink justify-start px-2 text-base font-medium"
           >
             {name === null ? (
@@ -57,8 +64,13 @@ export function FileMenu() {
               </>
             ) : (
               <>
-                <span className="sr-only">File, </span>
                 <span className="truncate">{name}</span>
+                {isDirty && (
+                  <span
+                    aria-hidden
+                    className="bg-primary size-2 shrink-0 rounded-full"
+                  />
+                )}
               </>
             )}
             <ChevronDown aria-hidden className="text-muted-foreground" />
@@ -110,16 +122,11 @@ export function FileMenu() {
               Add an example
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent className="max-w-80">
-              {actions.examples.map((example) => (
-                <DropdownMenuItem
-                  key={example.file}
-                  onSelect={() => {
-                    actions.add(example.file, example.text);
-                  }}
-                >
-                  {example.words}
-                </DropdownMenuItem>
-              ))}
+              <ExampleItems
+                pick={(example) => {
+                  actions.add(example.file, example.text);
+                }}
+              />
             </DropdownMenuSubContent>
           </DropdownMenuSub>
           <DropdownMenuSeparator />
@@ -152,4 +159,19 @@ export function FileMenu() {
       )}
     </div>
   );
+}
+
+/** The example plans as a menu's items, `pick` taking the one chosen. */
+export function ExampleItems({ pick }: { pick: (example: Example) => void }) {
+  const actions = useFileActions();
+  return actions.examples.map((example) => (
+    <DropdownMenuItem
+      key={example.file}
+      onSelect={() => {
+        pick(example);
+      }}
+    >
+      {example.words}
+    </DropdownMenuItem>
+  ));
 }

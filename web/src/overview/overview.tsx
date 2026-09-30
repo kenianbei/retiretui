@@ -1,9 +1,8 @@
 import { useSearch } from "@tanstack/react-router";
 import { useMemo } from "react";
 
-import { cn } from "@/lib/utils";
 import { Better } from "@/overview/better";
-import { Charts } from "@/overview/charts";
+import { EveryYear, PlanChart } from "@/overview/charts";
 import { RowList } from "@/overview/lists";
 import { Problems, Shortfall } from "@/overview/notes";
 import { Strip } from "@/overview/strip";
@@ -13,6 +12,12 @@ import { useSession } from "@/session";
 import { basisOf, heldOf } from "@/year/search";
 import { useYear } from "@/year/use-year";
 import { BasisSwitch } from "@/year/year";
+
+/** Sections four across on a wide page, two on a narrower one, one on a phone. */
+const QUARTERS =
+  "grid grid-cols-1 items-start gap-6 @3xl/page:grid-cols-2 @wide/page:grid-cols-4";
+
+const CHART_ORDER = ["balances", "net-worth", "income", "markets"] as const;
 
 /**
  * The ledger's first page: whether the money lasts and how surely, what to
@@ -39,52 +44,53 @@ export function Overview() {
     [reading, basis],
   );
   if (!document) return null;
+  const charts = series && {
+    series,
+    basis,
+    plan,
+    year: shown.year,
+    onYear: shown.setYear,
+  };
 
   return (
-    <div className="max-w-5xl space-y-8">
-      <div className="space-y-4">
+    <div className="space-y-6">
+      <div className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>
-          <BasisSwitch />
+          {view && <BasisSwitch />}
         </div>
         {!isValid && <Problems issues={issues} hasFigures={view !== null} />}
         {view?.shortfall && <Shortfall shortfall={view.shortfall} />}
         {view && <Strip view={view} basis={basis} plan={plan} />}
       </div>
-      <ThisYear shown={shown} basis={basis} />
-      {view && (
-        <div
-          className={cn(
-            "grid items-start gap-8",
-            view.attention.length > 0 &&
-              view.milestones.length > 0 &&
-              "lg:grid-cols-2",
-          )}
-        >
+      <div className={QUARTERS}>
+        <ThisYear shown={shown} basis={basis} />
+        {view && view.milestones.length > 0 && (
+          <RowList
+            id="milestones"
+            title={VIEW_WORDS.milestones}
+            rows={view.milestones}
+          />
+        )}
+        {view && (
           <RowList
             id="attention"
             title={VIEW_WORDS.attention}
             rows={view.attention}
             empty={VIEW_WORDS.nothing_wanting}
           />
-          {view.milestones.length > 0 && (
-            <RowList
-              id="milestones"
-              title={VIEW_WORDS.milestones}
-              rows={view.milestones}
-            />
-          )}
+        )}
+        {plan !== null && <Better plan={plan} held={held} basis={basis} />}
+      </div>
+      {charts && (
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 items-start gap-6 @3xl/page:grid-cols-2">
+            {CHART_ORDER.map((chart) => (
+              <PlanChart key={chart} chart={chart} {...charts} />
+            ))}
+          </div>
+          <EveryYear />
         </div>
-      )}
-      {plan !== null && <Better plan={plan} held={held} basis={basis} />}
-      {series && (
-        <Charts
-          series={series}
-          basis={basis}
-          plan={plan}
-          year={shown.year}
-          onYear={shown.setYear}
-        />
       )}
     </div>
   );
