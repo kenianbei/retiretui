@@ -16,9 +16,17 @@ year: number,
  */
 status: string, 
 /**
+ * The filing status shown, as a person says it.
+ */
+status_name: string, 
+/**
  * The state shown, where there is one.
  */
 state: string | null, 
+/**
+ * The state shown, by its name.
+ */
+state_name: string | null, 
 /**
  * Every filing status.
  */

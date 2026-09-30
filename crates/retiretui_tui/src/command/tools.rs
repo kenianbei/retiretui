@@ -5,9 +5,10 @@ use super::{CommandSpec, Scope};
 use retiretui_engine::market::{MonteCarlo, Runs};
 
 use crate::nav::Page;
-use crate::overview;
+use crate::session;
 use crate::tools;
 use crate::tools::markets::MarketTool;
+use crate::tools::tax::Pick;
 
 pub const WRITE_LADDER: &str = "write-ladder";
 pub const TAKE_LADDER: &str = "take-ladder";
@@ -174,7 +175,7 @@ fn tax() -> Vec<CommandSpec> {
             doc: "move the year a year on",
             keys: vec![character("]")],
             hint: Some("next year"),
-            register: Box::new(|world| world.register_system(overview::next_year)),
+            register: Box::new(|world| world.register_system(session::next_year)),
         },
         CommandSpec {
             name: "tax-year-previous",
@@ -182,7 +183,7 @@ fn tax() -> Vec<CommandSpec> {
             doc: "move the year a year back",
             keys: vec![character("[")],
             hint: Some("last year"),
-            register: Box::new(|world| world.register_system(overview::previous_year)),
+            register: Box::new(|world| world.register_system(session::previous_year)),
         },
         CommandSpec {
             name: "tax-status",
@@ -190,7 +191,7 @@ fn tax() -> Vec<CommandSpec> {
             doc: "pick the filing status the tax tables are for",
             keys: vec![character("f")],
             hint: Some("status"),
-            register: Box::new(|world| world.register_system(tools::tax::pick_status)),
+            register: Box::new(|world| world.register_system(tools::tax::opens(Pick::Status))),
         },
         CommandSpec {
             name: "tax-state",
@@ -198,7 +199,7 @@ fn tax() -> Vec<CommandSpec> {
             doc: "pick the state the tax tables are for",
             keys: vec![character("t")],
             hint: Some("state"),
-            register: Box::new(|world| world.register_system(tools::tax::pick_state)),
+            register: Box::new(|world| world.register_system(tools::tax::opens(Pick::State))),
         },
     ]
 }

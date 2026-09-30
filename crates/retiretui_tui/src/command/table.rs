@@ -22,7 +22,7 @@ use crate::ledger;
 use crate::motion;
 use crate::nav::{self, Group, LastShown, Page, Turn};
 use crate::overview;
-use crate::session::Basis;
+use crate::session::{self, Basis};
 use crate::setup;
 use crate::sidebar;
 use crate::theme;
@@ -355,7 +355,7 @@ pub static COMMANDS: LazyLock<Vec<CommandSpec>> = LazyLock::new(|| {
         doc: "move the year a year on",
         keys: vec![KeyBinding::new(Key::ArrowRight)],
         hint: None,
-        register: Box::new(|world| world.register_system(overview::next_year)),
+        register: Box::new(|world| world.register_system(session::next_year)),
     });
     commands.push(CommandSpec {
         name: "overview-year-previous",
@@ -363,7 +363,7 @@ pub static COMMANDS: LazyLock<Vec<CommandSpec>> = LazyLock::new(|| {
         doc: "move the year a year back",
         keys: vec![KeyBinding::new(Key::ArrowLeft)],
         hint: None,
-        register: Box::new(|world| world.register_system(overview::previous_year)),
+        register: Box::new(|world| world.register_system(session::previous_year)),
     });
     commands.push(CommandSpec {
         name: "overview-chart",

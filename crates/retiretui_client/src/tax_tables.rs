@@ -65,8 +65,12 @@ pub struct YearTables {
     pub year: i16,
     /// The filing status shown, as the view names it.
     pub status: String,
+    /// The filing status shown, as a person says it.
+    pub status_name: &'static str,
     /// The state shown, where there is one.
     pub state: Option<String>,
+    /// The state shown, by its name.
+    pub state_name: Option<String>,
     /// Every filing status.
     pub statuses: Vec<Offer>,
     /// Every state the year's tables model.
@@ -124,6 +128,8 @@ pub fn year_tables(plan: &Plan, tables: &TaxTables, view: &TablesView) -> YearTa
     YearTables {
         year,
         status: status.as_str().to_owned(),
+        status_name: filing_status(status),
+        state_name: state.as_deref().map(|code| state_name(code).to_owned()),
         state,
         statuses: Vocabulary::FilingStatus.offers(),
         states: params.states.keys().map(|code| state_offer(code)).collect(),
@@ -313,7 +319,7 @@ fn state_sections(
     year: i16,
 ) -> Vec<TaxSection> {
     let Some(code) = state else {
-        let note = format!("The plan lives in no U.S. state in {year}, so it owes no state tax.");
+        let note = format!("The plan lives in {ABROAD} in {year}, so it owes no state tax.");
         return vec![noted(STATE_TITLE, note)];
     };
     let name = state_name(code);
@@ -389,6 +395,8 @@ mod tests {
         let tables = year_tables(&moving(), &TaxTables::embedded(), &single);
         assert_eq!(row(&tables, deductions, "Standard deduction"), "$16,100");
         assert_eq!(tables.own_status, "The plan's (Married filing jointly)");
+        assert_eq!(tables.status_name, "Single");
+        assert_eq!(tables.state_name.as_deref(), Some("Washington"));
         assert_eq!(tables.own_state, "Where the plan lives (Oregon)");
         let washington = tables
             .sections
