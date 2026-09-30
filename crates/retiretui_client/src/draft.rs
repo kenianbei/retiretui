@@ -29,9 +29,19 @@ pub struct Draft {
     undone: VecDeque<Plan>,
     redone: Vec<Plan>,
     is_dirty: bool,
-    is_read_only: bool,
-    beneath: Option<Beneath>,
+    origin: Origin,
     issues: Vec<Issue>,
+}
+
+/// What the draft was resolved from, and so how it is written back.
+#[derive(Debug)]
+enum Origin {
+    /// A plan file, or a plan not yet named.
+    Plan,
+    /// A scenario whose overlay the draft cannot be written back into.
+    ReadOnly,
+    /// A scenario, saved into its own overlay over what is beneath it.
+    Over(Beneath),
 }
 
 /// What a scenario's draft is stated over when it is saved: the plan the
@@ -39,8 +49,8 @@ pub struct Draft {
 /// written.
 #[derive(Debug, Clone)]
 pub struct Beneath {
-    /// The plan the overlay applies to.
-    pub plan: Plan,
+    /// The plan the overlay applies to, as its canonical table.
+    pub table: Table,
     /// The overlay as last read or written.
     pub kept: Scenario,
 }
@@ -78,8 +88,11 @@ impl Draft {
             undone: VecDeque::new(),
             redone: Vec::new(),
             is_dirty: false,
-            is_read_only,
-            beneath: None,
+            origin: if is_read_only {
+                Origin::ReadOnly
+            } else {
+                Origin::Plan
+            },
             issues: Vec::new(),
         }
     }
@@ -89,7 +102,7 @@ impl Draft {
     #[must_use]
     pub fn over(plan: Plan, beneath: Beneath) -> Self {
         Self {
-            beneath: Some(beneath),
+            origin: Origin::Over(beneath),
             ..Self::new(plan, false)
         }
     }
@@ -128,19 +141,19 @@ impl Draft {
     /// resolved from.
     #[must_use]
     pub const fn is_over_scenario(&self) -> bool {
-        self.beneath.is_some()
+        matches!(self.origin, Origin::Over(_))
     }
 
     /// Whether the session can be written to at all.
     #[must_use]
     pub const fn is_read_only(&self) -> bool {
-        self.is_read_only
+        matches!(self.origin, Origin::ReadOnly)
     }
 
     /// The refusal a mutating command gives in a read-only session.
     #[must_use]
     pub fn refuse_if_read_only(&self) -> Option<String> {
-        self.is_read_only.then(|| READ_ONLY_REASON.to_owned())
+        self.is_read_only().then(|| READ_ONLY_REASON.to_owned())
     }
 
     /// The refusal a write gives while the draft has issues.
@@ -157,23 +170,27 @@ impl Draft {
     /// scenario the draft was resolved from, as `is_its_file` says.
     #[must_use]
     pub fn refuse_over_scenario(&self, is_its_file: bool) -> Option<String> {
-        let is_scenario = self.is_read_only || self.beneath.is_some();
+        let is_scenario = !matches!(self.origin, Origin::Plan);
         (is_scenario && is_its_file).then(|| OVER_SCENARIO.to_owned())
     }
 
     /// The refusal an edit gives where the scenario's overlay cannot state
-    /// it: what its base states, cleared.
-    #[must_use]
-    pub fn refuse_if_unsaid(&self) -> Option<String> {
-        self.stated_over(self.beneath.as_ref()?).err()
+    /// it - what its base states, cleared - with the plan put back as last
+    /// committed, which is where every edit starts from.
+    pub fn refuse_if_unsaid(&mut self) -> Option<String> {
+        let Origin::Over(beneath) = &self.origin else {
+            return None;
+        };
+        let refusal = self.stated_over(beneath).err()?;
+        self.plan = self.committed.clone();
+        Some(refusal)
     }
 
     /// The draft as the overlay that makes `beneath`'s plan into it.
     fn stated_over(&self, beneath: &Beneath) -> Result<Scenario, String> {
-        let table = |plan: &Plan| to_table(plan).map_err(|error| format!("not saved: {error}"));
-        let (from, to) = (table(&beneath.plan)?, table(&self.plan)?);
+        let draft = to_table(&self.plan).map_err(crate::files::not_saved)?;
         let base = beneath.kept.base();
-        Scenario::over(base, &from, &to, Some(&beneath.kept)).map_err(|issues| {
+        Scenario::over(base, &beneath.table, &draft, Some(&beneath.kept)).map_err(|issues| {
             let issue = crate::issues::issue_words(&issues[0], self);
             format!("{issue}; clear it in {base}")
         })
@@ -182,8 +199,7 @@ impl Draft {
     /// Written under a name of its own, the draft is a plan whatever it
     /// was resolved from.
     pub fn saved_as(&mut self) {
-        self.beneath = None;
-        self.is_read_only = false;
+        self.origin = Origin::Plan;
         self.is_dirty = false;
     }
 
@@ -287,23 +303,18 @@ pub fn write_draft(store: &dyn Store, draft: &Draft, path: &Path) -> Result<(), 
 /// The refusal to say: the draft's first issue, what the overlay cannot
 /// state, or what the read or the write failed on.
 pub fn save_draft(store: &dyn Store, draft: &mut Draft, path: &Path) -> Result<(), String> {
-    if !draft.is_over_scenario() {
-        write_draft(store, draft, path)?;
-        draft.saved();
-        return Ok(());
-    }
     if let Some(reason) = draft.refuse_if_invalid() {
         return Err(reason);
     }
-    let beneath = crate::files::load_beneath(store, path)?;
-    let kept = draft.stated_over(&beneath)?;
-    let text = kept
-        .to_toml_string()
-        .map_err(|error| format!("not saved: {error}"))?;
-    store
-        .write(path, &text)
-        .map_err(|error| format!("not saved: {}: {error}", path.display()))?;
-    draft.beneath = Some(Beneath { kept, ..beneath });
+    if draft.is_over_scenario() {
+        let beneath = crate::files::load_beneath(store, path)?;
+        let kept = draft.stated_over(&beneath)?;
+        let text = kept.to_toml_string().map_err(crate::files::not_saved)?;
+        crate::files::write_text(store, path, &text)?;
+        draft.origin = Origin::Over(Beneath { kept, ..beneath });
+    } else {
+        crate::files::write_plan(store, path, &draft.plan)?;
+    }
     draft.saved();
     Ok(())
 }
@@ -398,6 +409,9 @@ mod tests {
             "Settings \u{203a} Plan name: a scenario cannot clear what its base states; \
              clear it in mid-career-couple.toml"
         );
+        let name = draft.plan.plan.name.as_deref();
+        assert_eq!(name, Some("Retire early"), "put back as last committed");
+        draft.plan.plan.name = None;
         assert!(draft.revalidate(&TaxTables::embedded()));
         assert_eq!(save_draft(&store, &mut draft, &path), Err(refusal));
         assert_eq!(store.read(&path).unwrap(), SCENARIO, "nothing written");

@@ -2,7 +2,7 @@
 //! refusing what no overlay can state.
 
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use plurimus::term::KeyCode;
 use retiretui_client::files::load_plan_with_files;
@@ -18,20 +18,13 @@ use crate::support::{
 
 const HORIZON_FIELD: usize = 2;
 
-/// The scratch scenario and the plan it names beneath it.
-fn scenario_and_base() -> (PathBuf, PathBuf) {
-    let scenario = support::scratch_scenario();
-    let base = scenario.with_extension("").with_extension("toml");
-    (scenario, base)
-}
-
 fn resolved(path: &Path) -> retiretui_engine::plan::Plan {
     load_plan_with_files(&DiskStore, path, &mut Vec::new()).unwrap()
 }
 
 #[test]
 fn an_edit_is_saved_into_the_scenarios_own_overlay_over_its_base_as_it_is_now() {
-    let (scenario, base) = scenario_and_base();
+    let (scenario, base) = support::scratch_scenario_and_base();
     let mut app = headless_app_at(scenario.clone(), SIZE);
     open(&mut app, Page::Settings);
     tab_to_field(&mut app, HORIZON_FIELD);
@@ -71,7 +64,7 @@ fn an_edit_is_saved_into_the_scenarios_own_overlay_over_its_base_as_it_is_now() 
 
 #[test]
 fn clearing_what_the_base_states_is_refused_in_the_forms_words() {
-    let (scenario, base) = scenario_and_base();
+    let (scenario, base) = support::scratch_scenario_and_base();
     let mut app = headless_app_at(scenario, SIZE);
     open(&mut app, Page::Settings);
     clear_field(&mut app);
@@ -90,7 +83,7 @@ fn clearing_what_the_base_states_is_refused_in_the_forms_words() {
 
 #[test]
 fn a_reload_reads_again_what_is_beneath_the_scenario() {
-    let (scenario, base) = scenario_and_base();
+    let (scenario, base) = support::scratch_scenario_and_base();
     let mut app = headless_app_at(scenario, SIZE);
     let unnamed = fs::read_to_string(&base)
         .unwrap()

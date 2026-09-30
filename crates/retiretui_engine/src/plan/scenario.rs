@@ -129,6 +129,13 @@ pub(super) const HOUSEHOLD_KEY: &str = "household";
 pub(super) const PEOPLE_KEY: &str = "people";
 pub(super) const PEOPLE_PATH: &str = "household.people";
 
+/// The household's own keys, and its people apart from them.
+pub(super) fn split_household(household: Option<&Value>) -> (Value, Option<Value>) {
+    let mut own = (household.and_then(Value::as_table).cloned()).unwrap_or_default();
+    let people = own.remove(PEOPLE_KEY);
+    (Value::Table(own), people)
+}
+
 /// Whether the top-level `section` is a list of items matched by [`ID_KEY`].
 pub(super) fn is_keyed(section: &str) -> bool {
     matches!(

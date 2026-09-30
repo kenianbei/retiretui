@@ -1,12 +1,12 @@
 //! One plan stated over another as a scenario overlay: the inverse of
 //! [`Scenario::apply`], read off both plans' canonical tables.
 
-use std::collections::BTreeSet;
-
 use toml::{Table, Value};
 
+use super::diff::sections;
 use super::scenario::{
     BASE_KEY, HOUSEHOLD_KEY, ID_KEY, PEOPLE_KEY, REMOVE_KEY, REPLACE_KEY, SCHEMA_KEY, is_keyed,
+    split_household,
 };
 use super::validate::push_issue;
 use super::{Issue, SCHEMA_VERSION, Scenario};
@@ -64,13 +64,6 @@ impl Scenario {
     }
 }
 
-fn sections<'a>(beneath: &'a Table, draft: &'a Table) -> BTreeSet<&'a str> {
-    (beneath.keys().chain(draft.keys()))
-        .map(String::as_str)
-        .filter(|&section| section != SCHEMA_KEY)
-        .collect()
-}
-
 fn state_section(section: &str, sides: Sides<'_>, issues: &mut Vec<Issue>) -> Option<Value> {
     match section {
         "plan" | "market" => state_fields(section, sides, issues).map(Value::Table),
@@ -99,34 +92,40 @@ fn state_fields(path: &str, sides: Sides<'_>, issues: &mut Vec<Issue>) -> Option
             push_issue(issues, format!("{path}.{key}"), CLEARED);
         }
     }
-    let stated: Table = (to.iter())
-        .filter(|&(key, value)| {
-            at(sides.from, key) != Some(value) || at(sides.kept, key) == Some(value)
-        })
-        .map(|(key, value)| (key.clone(), value.clone()))
-        .collect();
+    let stated = stated_keys(to, sides.from, sides.kept);
     (!stated.is_empty()).then_some(stated)
+}
+
+/// Each key of `to` the draft changed from `from`, and each `kept` stated
+/// at the value the draft holds.
+fn stated_keys(to: &Table, from: Option<&Value>, kept: Option<&Value>) -> Table {
+    (to.iter())
+        .filter(|&(key, value)| is_stated(value, at(from, key), at(kept, key)))
+        .map(|(key, value)| (key.clone(), value.clone()))
+        .collect()
+}
+
+/// Whether the draft's `value` is stated: changed from what is beneath, or
+/// stated as it is by the overlay last written.
+fn is_stated(value: &Value, from: Option<&Value>, kept: Option<&Value>) -> bool {
+    from != Some(value) || kept == Some(value)
 }
 
 /// The household's own fields as a table's, and its people as items.
 fn state_household(sides: Sides<'_>, issues: &mut Vec<Issue>) -> Option<Value> {
-    let without_people = |side: Option<&Value>| {
-        let mut table = side.and_then(Value::as_table)?.clone();
-        table.remove(PEOPLE_KEY);
-        Some(Value::Table(table))
-    };
-    let (from, to) = (without_people(sides.from), without_people(sides.to));
-    let kept = without_people(sides.kept);
+    let (from, from_people) = split_household(sides.from);
+    let (to, to_people) = split_household(sides.to);
+    let (kept, kept_people) = split_household(sides.kept);
     let own = Sides {
-        from: from.as_ref(),
-        to: to.as_ref(),
-        kept: kept.as_ref(),
+        from: Some(&from),
+        to: Some(&to),
+        kept: Some(&kept),
     };
     let mut stated = state_fields(HOUSEHOLD_KEY, own, issues).unwrap_or_default();
     let people = Sides {
-        from: at(sides.from, PEOPLE_KEY),
-        to: at(sides.to, PEOPLE_KEY),
-        kept: at(sides.kept, PEOPLE_KEY),
+        from: from_people.as_ref(),
+        to: to_people.as_ref(),
+        kept: kept_people.as_ref(),
     };
     if let Some(people) = state_items(people) {
         stated.insert(PEOPLE_KEY.to_owned(), people);
@@ -191,8 +190,7 @@ fn removal(item: &Value) -> Option<Value> {
 fn state_item(item: &Value, from: &[Value], kept: &[Value]) -> Option<Value> {
     let to = item.as_table()?;
     let beneath = from.iter().find(|beneath| is_same_item(beneath, item))?;
-    let beneath = beneath.as_table()?;
-    if beneath.keys().any(|key| !to.contains_key(key)) {
+    if beneath.as_table()?.keys().any(|key| !to.contains_key(key)) {
         let mut whole = to.clone();
         whole.insert(REPLACE_KEY.to_owned(), Value::Boolean(true));
         return Some(Value::Table(whole));
@@ -200,16 +198,13 @@ fn state_item(item: &Value, from: &[Value], kept: &[Value]) -> Option<Value> {
     let is_removal = |fragment: &Value| fragment.get(REMOVE_KEY) == Some(&Value::Boolean(true));
     let pinned =
         (kept.iter().rev()).find(|fragment| is_same_item(fragment, item) && !is_removal(fragment));
-    let mut stated = Table::new();
-    stated.insert(ID_KEY.to_owned(), Value::String(id_of(item)?.to_owned()));
-    stated.extend(
-        (to.iter())
-            .filter(|&(key, value)| {
-                key != ID_KEY && (beneath.get(key) != Some(value) || at(pinned, key) == Some(value))
-            })
-            .map(|(key, value)| (key.clone(), value.clone())),
-    );
-    (stated.len() > 1).then_some(Value::Table(stated))
+    let mut stated = stated_keys(to, Some(beneath), pinned);
+    stated.remove(ID_KEY);
+    if stated.is_empty() {
+        return None;
+    }
+    stated.insert(ID_KEY.to_owned(), item.get(ID_KEY)?.clone());
+    Some(Value::Table(stated))
 }
 
 /// A section the merge inserts whole: stated where the draft changed it or
@@ -226,5 +221,5 @@ fn state_whole(section: &str, sides: Sides<'_>, issues: &mut Vec<Issue>) -> Opti
         }
         (None, None) => return None,
     };
-    (sides.from != Some(to) || sides.kept == Some(to)).then(|| to.clone())
+    is_stated(to, sides.from, sides.kept).then(|| to.clone())
 }

@@ -6,7 +6,7 @@ use std::io;
 use std::path::{Path, PathBuf};
 
 use retiretui_engine::params::TaxTables;
-use retiretui_engine::plan::{Issue, Plan, Scenario};
+use retiretui_engine::plan::{Issue, Plan, Scenario, to_table};
 use retiretui_engine::project::validate_plan;
 
 use crate::draft::Beneath;
@@ -160,7 +160,8 @@ pub fn load_beneath(store: &dyn Store, path: &Path) -> Result<Beneath, String> {
     let base = directory_of(path).join(kept.base());
     let plan = load_plan_with_files(store, &base, &mut Vec::new())
         .map_err(|error| unopened::said(&error))?;
-    Ok(Beneath { plan, kept })
+    let table = to_table(&plan).map_err(|error| error.to_string())?;
+    Ok(Beneath { table, kept })
 }
 
 /// Loads a plan or scenario file, resolving `base` chains relative to each
@@ -229,8 +230,12 @@ pub fn write_atomic(path: &Path, text: &str) -> std::io::Result<()> {
 ///
 /// What it failed to serialize on, as "not saved: …".
 pub fn plan_text(plan: &Plan) -> Result<String, String> {
-    plan.to_toml_string()
-        .map_err(|error| format!("not saved: {error}"))
+    plan.to_toml_string().map_err(not_saved)
+}
+
+/// Why a write that could not be serialized was not made.
+pub(crate) fn not_saved(error: impl std::fmt::Display) -> String {
+    format!("not saved: {error}")
 }
 
 /// Writes a plan to `path` as canonical TOML, atomically. The caller has
@@ -240,8 +245,16 @@ pub fn plan_text(plan: &Plan) -> Result<String, String> {
 ///
 /// When the plan does not serialize or the file cannot be written.
 pub fn write_plan(store: &dyn Store, path: &Path, plan: &Plan) -> Result<(), String> {
-    let canonical = plan_text(plan)?;
+    write_text(store, path, &plan_text(plan)?)
+}
+
+/// Writes a plan file's `text` to `path`.
+///
+/// # Errors
+///
+/// When the file cannot be written.
+pub fn write_text(store: &dyn Store, path: &Path, text: &str) -> Result<(), String> {
     store
-        .write(path, &canonical)
+        .write(path, text)
         .map_err(|error| format!("not saved: {}: {error}", path.display()))
 }

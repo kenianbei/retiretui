@@ -3,7 +3,8 @@
 
 use bevy_ecs::prelude::{Res, ResMut};
 use bevy_ecs::system::SystemParam;
-pub use retiretui_client::draft::{Draft, save_draft, write_draft};
+use retiretui_client::draft::save_draft;
+pub use retiretui_client::draft::{Draft, write_draft};
 use retiretui_client::issues::issue_words;
 use retiretui_engine::project::project;
 
