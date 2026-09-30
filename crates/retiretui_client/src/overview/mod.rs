@@ -1,6 +1,7 @@
 //! What the Overview lists beside its verdict, as every surface lists it:
 //! what needs attention and the plan's milestones, each row led by the
-//! year it is about or by the item behind it.
+//! year it is about or by the item behind it, and the worst historical
+//! start the plan does not survive.
 
 mod attention;
 mod milestones;
