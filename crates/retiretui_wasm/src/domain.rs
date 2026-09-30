@@ -4,6 +4,7 @@
 use retiretui_client::draft::Draft;
 use retiretui_client::forms::cells::Cell;
 use retiretui_client::forms::details::{self, ReadRow};
+use retiretui_client::forms::edit::known_as;
 use retiretui_client::forms::offers::display_name;
 use retiretui_client::forms::sort::Sort;
 use retiretui_client::forms::{Form, ListOps};
@@ -39,8 +40,10 @@ pub struct TableColumn {
 pub struct TableRow {
     /// Where the item sits in the plan, whatever order the table shows.
     pub index: usize,
-    /// What the item is called: what removing it names it by.
+    /// What the item is called, as a question about it names it.
     pub name: String,
+    /// What the item is known by: what removing it checks it by.
+    pub known: String,
     /// Its cells, in column order.
     pub cells: Vec<Cell>,
 }
@@ -78,6 +81,7 @@ pub fn table(draft: &Draft, form: &Form, sort: Option<Sort>) -> Result<DomainTab
     let rows = items.into_iter().map(|(index, cells)| TableRow {
         index,
         name: name_of(index),
+        known: known_as(form, draft, index).unwrap_or_default(),
         cells,
     });
     Ok(DomainTable {

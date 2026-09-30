@@ -26,11 +26,14 @@ export function ReadOut({
   slug,
   index,
   name,
+  known,
 }: {
   slug: string;
   index: number;
   /** The item's name, where it is one of many and may be deleted. */
   name?: string;
+  /** What the item is known by, which deleting it checks. */
+  known?: string;
 }) {
   const { reading } = useSession();
   const rows = useMemo(() => {
@@ -55,11 +58,13 @@ export function ReadOut({
             Edit
           </Link>
         </Button>
-        {name && <DeleteItem slug={slug} index={index} name={name} />}
-        {name &&
+        {name && known !== undefined && (
+          <DeleteItem slug={slug} index={index} name={name} known={known} />
+        )}
+        {known !== undefined &&
           slug === STATEMENT_PAGE &&
           reading.document?.isReadOnly === false && (
-            <ImportStatement key={index} index={index} name={name} />
+            <ImportStatement key={index} index={index} known={known} />
           )}
       </div>
       <ReadRows rows={rows} />
@@ -142,10 +147,12 @@ function DeleteItem({
   slug,
   index,
   name,
+  known,
 }: {
   slug: string;
   index: number;
   name: string;
+  known: string;
 }) {
   const session = useSession();
   const [isAsking, setAsking] = useState(false);
@@ -175,7 +182,7 @@ function DeleteItem({
             <AlertDialogAction
               variant="destructive"
               onClick={() => {
-                session.remove(slug, index, name);
+                session.remove(slug, index, known);
               }}
             >
               Delete

@@ -65,8 +65,8 @@ export interface Session extends Opened {
    * answers; throws the refusal.
    */
   change: <T>(act: (document: Document) => T) => T | undefined;
-  /** Removes an item still called `name`; a refusal is reported. */
-  remove: (slug: string, index: number, name: string) => void;
+  /** Removes an item still known as `known`; a refusal is reported. */
+  remove: (slug: string, index: number, known: string) => void;
   undo: () => void;
   redo: () => void;
   /** Writes the draft back to its file; a refusal is reported. */
@@ -275,8 +275,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         return answer;
       },
       remove: attempt(
-        stepped((slug: string, index: number, name: string) => {
-          document?.remove(slug, index, name);
+        stepped((slug: string, index: number, known: string) => {
+          document?.remove(slug, index, known);
         }),
       ),
       undo: attempt(stepped(() => document?.undo())),

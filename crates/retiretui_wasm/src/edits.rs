@@ -148,7 +148,7 @@ impl JsDocument {
     }
 
     /// Records the statement `xml` on the person at `index` of the People
-    /// page, where they are still the one called `name`, as one step of
+    /// page, where they are still the one known as `known`, as one step of
     /// history, answering what it recorded.
     ///
     /// # Errors
@@ -159,21 +159,21 @@ impl JsDocument {
     pub fn import_earnings(
         &mut self,
         index: usize,
-        name: &str,
+        known: &str,
         xml: &str,
     ) -> Result<String, JsError> {
-        self.0.import_earnings(index, name, xml).map_err(refused)
+        self.0.import_earnings(index, known, xml).map_err(refused)
     }
 
     /// Removes item `index` of the domain at `slug`, where it is still the
-    /// item called `name`, as one step of history.
+    /// item known as `known`, as one step of history.
     ///
     /// # Errors
     ///
     /// Where the draft is read-only, or the item there is no longer it.
-    pub fn remove(&mut self, slug: &str, index: usize, name: &str) -> Result<(), JsError> {
+    pub fn remove(&mut self, slug: &str, index: usize, known: &str) -> Result<(), JsError> {
         let form = form_at(slug).map_err(refused)?;
-        self.0.remove(form, index, name).map_err(refused)
+        self.0.remove(form, index, known).map_err(refused)
     }
 
     /// Steps back over the last edit, answering whether there was one.
@@ -242,7 +242,6 @@ mod tests {
     use std::path::{Path, PathBuf};
 
     use retiretui_client::setup::EXAMPLES;
-    use retiretui_engine::plan::Item;
 
     use crate::document::Document;
     use crate::vocabulary::form_at;
@@ -376,8 +375,8 @@ mod tests {
         let accounts = form_at("accounts").expect("a domain");
         let count = document.draft().plan.accounts.len();
         assert!(document.remove(accounts, 0, "Someone else's").is_err());
-        let name = document.draft().plan.accounts[0].display_name().to_owned();
-        document.remove(accounts, 0, &name).expect("removed");
+        let known = document.draft().plan.accounts[0].id.clone();
+        document.remove(accounts, 0, &known).expect("removed");
         assert_eq!(document.draft().plan.accounts.len(), count - 1);
         assert!(document.undo());
         assert_eq!(document.draft().plan.accounts.len(), count);
