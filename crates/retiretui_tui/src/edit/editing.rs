@@ -21,7 +21,7 @@ use crate::overlay::{self, Standing};
 use crate::pane::Framed;
 use crate::scope::KeyScope;
 use crate::session::Session;
-use retiretui_client::forms::edit::ItemEdit;
+use retiretui_client::forms::edit::{Entry, ItemEdit};
 
 /// What is opened: the item at a row, or a new one.
 #[derive(Clone, Copy)]
@@ -35,7 +35,7 @@ pub struct EditSession(pub(super) Option<Editing>);
 
 /// The item open in the client's edit session, and where the TUI shows it.
 pub(super) struct Editing {
-    pub(super) edit: ItemEdit,
+    pub(super) entry: Entry,
     pub(super) ops: Ops,
     /// The table the item is one of; `None` for a single-item domain.
     pub(super) table: Option<Entity>,
@@ -54,24 +54,24 @@ impl Deref for Editing {
     type Target = ItemEdit;
 
     fn deref(&self) -> &ItemEdit {
-        &self.edit
+        self.entry.edit()
     }
 }
 
 impl DerefMut for Editing {
     fn deref_mut(&mut self) -> &mut ItemEdit {
-        &mut self.edit
+        self.entry.edit_mut()
     }
 }
 
 impl Editing {
     pub(super) fn new(ops: Ops, table: Option<Entity>, slot: Slot, draft: &Draft) -> Self {
-        let edit = match slot {
-            Slot::At(Row(index)) => ItemEdit::open(ops.form, draft, index),
-            Slot::New => ItemEdit::create(ops.form, draft),
+        let index = match slot {
+            Slot::At(Row(index)) => Some(index),
+            Slot::New => None,
         };
         Self {
-            edit,
+            entry: Entry::open(ops.form, draft, index),
             ops,
             table,
             form: None,
@@ -285,7 +285,7 @@ impl SessionFocus<'_, '_> {
 
     pub(super) fn discard(&mut self) {
         if let Some(editing) = self.session.0.as_mut() {
-            editing.discard();
+            editing.entry.discard();
             editing.is_seeded = false;
         }
         self.close();

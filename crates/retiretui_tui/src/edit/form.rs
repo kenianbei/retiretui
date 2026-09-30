@@ -3,7 +3,6 @@
 
 use bevy_app::{App, Update};
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
-use bevy_ecs::hierarchy::Children;
 use bevy_ecs::prelude::{ChildOf, Commands, Entity, Local, Mut, On, Query, Res, ResMut, With};
 use bevy_ecs::schedule::IntoScheduleConfigs;
 use bevy_ecs::system::SystemParam;
@@ -17,19 +16,18 @@ use plurimus::widgets::{Activate, Submit, TextInput, ValueChange};
 use toml::Value;
 
 use super::build::{EditForm, FieldLabel, FormButton, FormField, HelpFoot};
-use super::cells::parse_field;
-use super::codec::parse_text;
 use super::domain::{FieldKind, FieldSpec};
 use super::draft::{Draft, DraftEditor};
 use super::editing::{self, EditSession, SessionFocus};
 use super::field::{self, Fields, FormTree};
 use super::group;
-use super::select::{PickChanged, Select};
+use super::select::PickChanged;
 use super::table::Row;
 use super::trigger;
+use crate::journal;
 use crate::pane::Framed;
 use crate::theme::{Repainted, Theme};
-use retiretui_client::forms::lists;
+use retiretui_client::forms::edit::place_of;
 use retiretui_client::issues::{LocatedIssue, field_issue, located_issues};
 
 pub fn plugin(app: &mut App) {
@@ -214,90 +212,59 @@ fn show_help(
     }
 }
 
+/// What a widget reports it now holds.
+enum Entered<'a> {
+    /// Typed text, or a pick's word - empty where it holds none.
+    Text(&'a str),
+    /// A box's tick.
+    Tick(bool),
+    /// A value already made, such as a slider's rate.
+    Made(Value),
+}
+
 /// The widgets an edit landed from.
 #[derive(SystemParam)]
 pub struct Items<'w, 's> {
-    fields: Query<'w, 's, (&'static FormField, &'static ChildOf)>,
+    fields: Query<'w, 's, &'static FormField>,
     texts: Query<'w, 's, (), With<TextInput>>,
-    parts: Query<
-        'w,
-        's,
-        (
-            Entity,
-            &'static FormField,
-            Option<&'static TextInput>,
-            Option<&'static Select>,
-        ),
-    >,
-    targets: FormTargets<'w, 's>,
-    rows: Query<'w, 's, &'static Children>,
-    slots: trigger::Slots<'w, 's>,
+    slots: Query<'w, 's, &'static trigger::Slot>,
 }
 
 impl Items<'_, '_> {
-    /// Writes the field `widget` edits into the item's snapshot.
-    fn set(&self, widget: Entity, value: Option<Value>, state: &mut SessionFocus) {
-        let (Ok((field, row)), Some(editing)) = (self.fields.get(widget), state.session.0.as_mut())
-        else {
+    /// Writes what `widget` holds into the item, through the parts of the
+    /// field it is one of.
+    fn set(&self, widget: Entity, entered: Entered, state: &mut SessionFocus) {
+        let (Ok(field), Some(editing)) = (self.fields.get(widget), state.session.0.as_mut()) else {
             return;
         };
-        let key = field.spec.key;
-        // A trigger is composed from all of its row's widgets rather than
-        // the one that changed, and a list from every row that holds it.
-        let (value, complaint) = match field.spec.kind {
-            FieldKind::Trigger => {
-                let group = self
-                    .rows
-                    .get(row.parent())
-                    .map_or(&[][..], |group| &group[..]);
-                trigger::held(group, &self.slots)
+        let spec = field.spec;
+        let entry = &mut editing.entry;
+        let outcome = match entered {
+            Entered::Text(text) => match self.slots.get(widget) {
+                Ok(slot) => entry.set_trigger(spec.key, slot.part(), text),
+                Err(_) => entry.set(spec.key, place_of(spec.kind), text),
+            },
+            Entered::Tick(is_ticked) => {
+                if matches!(spec.kind, FieldKind::Presence(_)) {
+                    // What the table's own rows show is what it held before.
+                    editing.is_seeded = false;
+                }
+                editing.entry.tick(spec.key, is_ticked)
             }
-            FieldKind::Listed(_) => lists::listed(self.parts(widget, key)),
-            FieldKind::Order(..) => lists::ordered(self.parts(widget, key)),
-            FieldKind::Presence(_) => {
-                // What the table's own rows show is what it held before.
-                editing.is_seeded = false;
-                let is_ticked = value.as_ref().and_then(Value::as_bool) == Some(true);
-                editing.tick(key, is_ticked);
-                return;
+            Entered::Made(value) => {
+                entry.edit_mut().set(spec.key, Some(value), None);
+                Ok(())
             }
-            _ => (value, None),
         };
-        editing.set(key, value, complaint);
-    }
-
-    /// What each row holding a part of the list `key` holds, in the form
-    /// `widget` sits in, beside the place its kind gives it in the list.
-    fn parts(&self, widget: Entity, key: &str) -> impl Iterator<Item = (usize, Option<Value>)> {
-        let form = self.targets.form_of(widget);
-        self.parts
-            .iter()
-            .filter_map(move |(entity, field, text, select)| {
-                let (FieldKind::Listed(place) | FieldKind::Order(_, place)) = field.spec.kind
-                else {
-                    return None;
-                };
-                let is_part = field.spec.key == key && self.targets.form_of(entity) == form;
-                let value = match (text, select) {
-                    (Some(text), _) => parse_field(field.spec.kind, text.value()),
-                    (_, select) => select.and_then(Select::value),
-                };
-                is_part.then_some((place, value))
-            })
-    }
-
-    fn read(&self, widget: Entity, text: &str) -> Option<Value> {
-        let kind = self.fields.get(widget).map(|(field, ..)| field.spec.kind);
-        kind.map_or_else(|_| parse_text(text), |kind| parse_field(kind, text))
+        if let Err(refusal) = outcome {
+            journal::warn(refusal);
+        }
     }
 
     /// The key of the field `widget` edits, which a refusal is reported
     /// under.
     fn key_of(&self, widget: Entity) -> Option<&'static str> {
-        self.fields
-            .get(widget)
-            .ok()
-            .map(|(field, ..)| field.spec.key)
+        self.fields.get(widget).ok().map(|field| field.spec.key)
     }
 }
 
@@ -352,11 +319,7 @@ fn seed_fields(
 }
 
 fn handle_text_change(change: On<ValueChange<String>>, items: Items, mut state: SessionFocus) {
-    items.set(
-        change.source,
-        items.read(change.source, &change.value),
-        &mut state,
-    );
+    items.set(change.source, Entered::Text(&change.value), &mut state);
 }
 
 /// Submitting a field applies the whole item. It is the field's own event
@@ -368,30 +331,27 @@ fn handle_text_submit(
     mut state: SessionFocus,
     mut editor: DraftEditor,
 ) {
-    items.set(
-        submit.entity,
-        items.read(submit.entity, &submit.value),
-        &mut state,
-    );
+    items.set(submit.entity, Entered::Text(&submit.value), &mut state);
     state.apply(items.key_of(submit.entity), &mut editor);
 }
 
 /// A flag's box reports the state it moved to.
 fn handle_check_change(change: On<ValueChange<bool>>, items: Items, mut state: SessionFocus) {
+    items.set(change.source, Entered::Tick(change.value), &mut state);
+}
+
+fn handle_pick_change(change: On<PickChanged>, items: Items, mut state: SessionFocus) {
+    let word = change.value.as_ref().and_then(Value::as_str);
     items.set(
-        change.source,
-        Some(Value::Boolean(change.value)),
+        change.entity,
+        Entered::Text(word.unwrap_or_default()),
         &mut state,
     );
 }
 
-fn handle_pick_change(change: On<PickChanged>, items: Items, mut state: SessionFocus) {
-    items.set(change.entity, change.value.clone(), &mut state);
-}
-
 fn handle_slider_change(change: On<ValueChange<f32>>, items: Items, mut state: SessionFocus) {
     let value = super::field::slider_value(change.value);
-    items.set(change.source, Some(value), &mut state);
+    items.set(change.source, Entered::Made(value), &mut state);
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]

@@ -10,14 +10,14 @@ use retiretui_engine::plan::{Operand, Plan, TriggerBasis};
 use toml::Value;
 
 use super::build::FormField;
-use super::codec::{parse_text, to_text};
+use super::codec::to_text;
 use super::domain::{BLANK, FieldKind, FieldSpec};
 use super::field::{sharing, show_text, spawn_beside, spawn_text_as};
 use super::offers::Vocabulary;
 use super::select::{Select, spawn_select};
 use crate::layout::{set_display, sized};
 use retiretui_client::forms::trigger::{
-    self, Piece, SENTENCE, basis_named, help_of, kind_of, operand_of, shows,
+    BASIS, Piece, SENTENCE, basis_named, help_of, kind_of, operand_of, shows,
 };
 
 /// Which part of a trigger a widget edits.
@@ -25,6 +25,16 @@ use retiretui_client::forms::trigger::{
 pub enum Slot {
     Kind,
     Part(Operand),
+}
+
+impl Slot {
+    /// The part of the trigger the client's entry takes it as.
+    pub const fn part(self) -> &'static str {
+        match self {
+            Self::Kind => BASIS,
+            Self::Part(operand) => operand.key(),
+        }
+    }
 }
 
 /// Cells a date takes, the longest thing typed into a trigger.
@@ -127,17 +137,6 @@ pub fn place_slots(
     }
 }
 
-/// A trigger's widgets, for reading them together.
-pub type Slots<'w, 's> = Query<
-    'w,
-    's,
-    (
-        &'static Slot,
-        Option<&'static TextInput>,
-        Option<&'static Select>,
-    ),
->;
-
 /// A trigger's widgets, for filling them.
 pub type SlotsMut<'w, 's> = Query<
     'w,
@@ -148,27 +147,6 @@ pub type SlotsMut<'w, 's> = Query<
         Option<&'static mut Select>,
     ),
 >;
-
-/// The trigger the widgets of `group` hold between them, since its parts
-/// only mean something together, or the complaint where a kind is chosen
-/// that they do not yet make a trigger of.
-pub fn held(group: &[Entity], slots: &Slots) -> (Option<Value>, Option<&'static str>) {
-    let mut kind = None;
-    let mut parts = Vec::new();
-    for (slot, text, select) in slots.iter_many(group) {
-        let Slot::Part(operand) = *slot else {
-            kind = select.and_then(chosen_basis);
-            continue;
-        };
-        let value = match (text, select) {
-            (Some(text), _) => parse_text(text.value()),
-            (_, Some(select)) => select.value(),
-            _ => None,
-        };
-        parts.push((operand, value));
-    }
-    trigger::held(kind, &parts)
-}
 
 /// Fills a trigger's widgets from `value`: its kind, and every operand
 /// the value states.
