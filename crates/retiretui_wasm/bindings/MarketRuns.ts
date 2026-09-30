@@ -2,6 +2,7 @@
 import type { AssumptionRow } from "./AssumptionRow";
 import type { Band } from "./Band";
 import type { Ending } from "./Ending";
+import type { FailingStart } from "./FailingStart";
 import type { RunRow } from "./RunRow";
 import type { Table } from "./Table";
 import type { Zone } from "./Zone";
@@ -54,4 +55,9 @@ endings: Array<Ending>,
 /**
  * What the runs are made under, and where each is edited.
  */
-assumptions: Array<AssumptionRow>, };
+assumptions: Array<AssumptionRow>, 
+/**
+ * The worst start the plan does not survive, where the runs are
+ * historical and one fails.
+ */
+failing: FailingStart | null, };
