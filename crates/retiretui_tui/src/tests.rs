@@ -419,20 +419,6 @@ fn quitting_a_dirty_draft_asks_first() {
 }
 
 #[test]
-fn scenario_sessions_refuse_to_save() {
-    let scenario = support::scratch_scenario();
-    let mut app = headless_app_at(scenario.clone(), SIZE);
-    press_ctrl(&mut app, KeyCode::Char('s'));
-    let frame = composed_frame(&app);
-    assert!(frame.contains("read-only"), "{frame}");
-    assert!(
-        std::fs::read_to_string(&scenario)
-            .unwrap()
-            .contains("base =")
-    );
-}
-
-#[test]
 fn the_detail_is_as_tall_as_its_year_needs_up_to_half_the_page() {
     for size in [SIZE, ROOMY] {
         let mut app = headless_app(size);

@@ -157,6 +157,19 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   plan's own of each as a pick offers it - `The plan's (Single)`,
   `Where the plan lives (Oregon)` - and the status and state shown by name; the
   web's Tax Tables tool reads its pickers' words from it.
+- The terminal edits a scenario. It opens editable, and saving writes its edits
+  back into its own file, still naming its base and stating only what differs
+  from the base as the save reads it, beside whatever it stated before that
+  still holds, so a value it pinned stays pinned while the base agrees. The file
+  is rewritten canonically, as a plan is. An edit no scenario can state -
+  clearing what the base states outside an item, such as the plan's name - is
+  refused in the form's words, naming the file to clear it in. Save As still
+  writes the resolved plan as a plan of its own, and the web keeps a scenario
+  read-only.
+- The engine's `Scenario::over` states one plan as an overlay over another, the
+  inverse of `Scenario::apply`, restating what an earlier overlay stated that
+  still holds; the client's `Draft::over` and `save_draft` save a scenario's
+  draft through it.
 
 ### Changed
 

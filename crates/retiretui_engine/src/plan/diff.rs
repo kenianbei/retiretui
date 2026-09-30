@@ -6,7 +6,7 @@ use std::collections::BTreeSet;
 
 use toml::{Table, Value};
 
-use super::scenario::{HOUSEHOLD_KEY, ID_KEY, PEOPLE_KEY, PEOPLE_PATH, SCHEMA_KEY, is_keyed};
+use super::scenario::{HOUSEHOLD_KEY, ID_KEY, PEOPLE_PATH, SCHEMA_KEY, is_keyed, split_household};
 use super::{Plan, PlanError, to_table};
 
 /// The top-level sections in the order a plan file writes them.
@@ -82,7 +82,7 @@ pub fn diff(base: &Plan, other: &Plan) -> Result<Vec<Change>, PlanError> {
 }
 
 /// The tables' sections, those a plan file writes in its order.
-fn sections<'a>(base: &'a Table, other: &'a Table) -> Vec<&'a str> {
+pub(super) fn sections<'a>(base: &'a Table, other: &'a Table) -> Vec<&'a str> {
     let mut sections: Vec<&str> = keys(base, other)
         .into_iter()
         .filter(|&section| section != SCHEMA_KEY)
@@ -133,12 +133,8 @@ fn as_table<'a>(value: Option<&'a Value>, empty: &'a Table) -> Option<&'a Table>
 
 /// The household's own keys, then its people as items.
 fn diff_household(changes: &mut Vec<Change>, from: Option<&Value>, to: Option<&Value>) {
-    let split = |value: Option<&Value>| {
-        let mut own = value.and_then(Value::as_table).cloned().unwrap_or_default();
-        let people = own.remove(PEOPLE_KEY);
-        (Value::Table(own), people)
-    };
-    let ((from_own, from_people), (to_own, to_people)) = (split(from), split(to));
+    let ((from_own, from_people), (to_own, to_people)) =
+        (split_household(from), split_household(to));
     diff_fields(
         changes,
         (HOUSEHOLD_KEY, None),

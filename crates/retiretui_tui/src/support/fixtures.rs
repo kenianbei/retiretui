@@ -108,14 +108,18 @@ pub fn scenario_over(base: &str) -> String {
     format!("schema = 1\nbase = \"{base}\"\n\n[plan]\nname = \"variant\"\n")
 }
 
-/// A scenario file over a scratch copy of the test plan, which opens
-/// read-only.
+/// A scenario file over a scratch copy of the test plan, naming it.
 pub fn scratch_scenario() -> PathBuf {
+    scratch_scenario_and_base().0
+}
+
+/// A scenario file over a scratch copy of the test plan, and that copy.
+pub fn scratch_scenario_and_base() -> (PathBuf, PathBuf) {
     let base = scratch_plan();
     let scenario = base.with_extension("scenario.toml");
     let overlay = scenario_over(&base.file_name().unwrap().to_string_lossy());
     std::fs::write(&scenario, overlay).unwrap();
-    scenario
+    (scenario, base)
 }
 
 /// A directory of its own holding `plan_text` as plan.toml, a scenario

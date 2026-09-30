@@ -4,7 +4,7 @@
 
 use plurimus::term::KeyCode;
 
-use super::{fixture_app_sized, is_editing, is_on, retype_balance};
+use super::{Draft, fixture_app_sized, is_editing, is_on, retype_balance};
 use crate::edit::details::DetailsTable;
 use crate::edit::table::DomainTable;
 use crate::nav::Page;
@@ -75,6 +75,8 @@ fn an_open_menu_keeps_the_chords_that_would_turn_the_page() {
 fn tab_in_a_read_only_session_reaches_the_details_and_says_nothing() {
     let scenario = support::scratch_scenario();
     let mut app = headless_app_at(scenario, SIZE);
+    let plan = app.world().resource::<Draft>().plan.clone();
+    app.world_mut().insert_resource(Draft::new(plan, true));
     show(&mut app, Page::Accounts);
     app.update();
     let heard = said(&app);
