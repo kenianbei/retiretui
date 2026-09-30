@@ -263,7 +263,7 @@ function NetWorth(props: ChartsProps) {
 
 const INCOME_AND_TAX: ChartConfig = {
   income: { label: metricTitle("income"), color: SERIES[1] },
-  taxes: { label: metricTitle("taxes"), color: SERIES[3] },
+  taxes: { label: metricTitle("taxes"), color: SERIES[2] },
 };
 
 function IncomeAndTax(props: ChartsProps) {

@@ -40,7 +40,7 @@ const BANDS = bandsConfig();
 function Bands({ found, run }: { found: MarketRuns; run: RunRow }) {
   const bands = useMemo(() => bandData(found.bands), [found]);
   const config: ChartConfig = useMemo(
-    () => ({ ...BANDS, run: { label: run.cells[0], color: SERIES[1] } }),
+    () => ({ ...BANDS, run: { label: run.cells[0], color: SERIES[0] } }),
     [run],
   );
   const data = useMemo(
