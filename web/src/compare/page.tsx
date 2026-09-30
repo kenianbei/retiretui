@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useFileActions } from "@/files/actions";
 import { ExampleItems } from "@/files/menu";
-import { messageOf, QUARTERS } from "@/lib/utils";
+import { messageOf } from "@/lib/utils";
 import { NEW_PLAN_START } from "@/onboarding/steps";
 import { BASIS_LABEL } from "@/overview/view-words";
 import { useSession } from "@/session";
@@ -238,7 +238,16 @@ export function ComparePage() {
               });
             }}
           />
-          <div className={QUARTERS}>
+          <Changes
+            title={
+              highlightedAt === baselineAt
+                ? `Changes · ${name}`
+                : `Changes · ${name} against ${nameOf(baseline.path)}`
+            }
+            lines={changes.lines}
+            isNote={changes.isNote}
+          />
+          <div className="grid grid-cols-1 items-start gap-6 @3xl/page:grid-cols-2">
             <Views
               plans={charted}
               words={WORDS}
@@ -251,15 +260,6 @@ export function ComparePage() {
               onMetric={(metric) => {
                 place({ metric: metric === NET_WORTH ? undefined : metric });
               }}
-            />
-            <Changes
-              title={
-                highlightedAt === baselineAt
-                  ? `Changes · ${name}`
-                  : `Changes · ${name} against ${nameOf(baseline.path)}`
-              }
-              lines={changes.lines}
-              isNote={changes.isNote}
             />
           </div>
         </>
