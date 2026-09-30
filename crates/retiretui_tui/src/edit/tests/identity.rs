@@ -1,4 +1,4 @@
-//! How a listed item is known: by an id stated first, then a name.
+//! How a listed item is known: by a name stated first, then an id.
 
 use retiretui_engine::plan::ID_KEY;
 use toml::Value;
@@ -7,11 +7,11 @@ use super::screens;
 use crate::support;
 
 #[test]
-fn every_item_known_by_an_id_states_it_first_and_its_name_second() {
+fn every_item_known_by_an_id_states_its_name_first_and_the_id_second() {
     let keyed = screens().filter(|ops| ops.list.is_some_and(|list| list.identity == ID_KEY));
     for ops in keyed {
         let first: Vec<&str> = ops.fields.iter().take(2).map(|spec| spec.key).collect();
-        assert_eq!(first, [ID_KEY, "name"], "{}", ops.title);
+        assert_eq!(first, ["name", ID_KEY], "{}", ops.title);
     }
 }
 

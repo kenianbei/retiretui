@@ -141,9 +141,9 @@ impl Domain for Accounts {
     const PATH: &'static str = "accounts";
     const SINGULAR: &'static str = "Account";
     const FIELDS: &'static [FieldSpec] = &[
+        FieldSpec::name("What the account is called. Blank shows the ID."),
         FieldSpec::text("id", "ID")
             .help("A short unique handle other items refer to this account by."),
-        FieldSpec::name("What the account is called. Blank shows the ID."),
         FieldSpec::choice("kind", "Type", Vocabulary::AccountKind)
             .help("The kind of account, which decides how it is taxed."),
         FieldSpec::flag("roth", "Roth")

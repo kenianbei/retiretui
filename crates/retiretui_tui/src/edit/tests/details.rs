@@ -107,6 +107,7 @@ fn a_domain_emptied_can_still_be_added_to() {
     app.update();
     let frame = composed_frame(&app);
     assert!(frame.contains("╭ New Account "), "{frame}");
+    press_key(&mut app, KeyCode::Tab);
     clear_field(&mut app);
     type_text(&mut app, "spare");
     press_key(&mut app, KeyCode::Enter);

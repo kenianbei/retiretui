@@ -14,11 +14,14 @@ fn a_form_says_what_the_field_holding_the_keyboard_means() {
     let mut app = fixture_app();
     open(&mut app, Page::Accounts);
     let frame = composed_frame(&app);
-    assert!(frame.contains("A short unique handle"), "the id: {frame}");
+    assert!(
+        frame.contains("What the account is called"),
+        "the name: {frame}"
+    );
     tab_to_field(&mut app, BALANCE_FIELD);
     let frame = composed_frame(&app);
     assert!(frame.contains("What it holds at the start"), "{frame}");
-    assert!(!frame.contains("A short unique handle"), "{frame}");
+    assert!(!frame.contains("What the account is called"), "{frame}");
 }
 
 #[test]
@@ -34,8 +37,8 @@ fn a_field_the_draft_holds_an_issue_against_says_so_in_its_form() {
     let frame = composed_frame(&app);
     assert!(frame.contains("Balance !"), "brokerage is marked: {frame}");
     assert!(
-        frame.contains("A short unique handle"),
-        "the id is sound: {frame}"
+        frame.contains("What the account is called"),
+        "the name is sound: {frame}"
     );
     tab_to_field(&mut app, BALANCE_FIELD);
     let frame = composed_frame(&app);

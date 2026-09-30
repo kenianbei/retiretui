@@ -29,8 +29,11 @@ fn an_input_is_bracketed_and_its_brackets_follow_the_keyboard() {
         let (column, row) = cell_of(app, drawn);
         cell_fg(app, column, row)
     };
+    assert_eq!(bracket_fg(&app, "[ cash"), Some(dim), "at rest");
+    press_key(&mut app, KeyCode::Tab);
+    app.update();
     assert_eq!(bracket_fg(&app, "[ cash"), Some(accent), "held");
-    assert_eq!(bracket_fg(&app, "[ $40,000"), Some(dim), "at rest");
+    assert_eq!(bracket_fg(&app, "[ $40,000"), Some(dim), "the rest at rest");
     press_key(&mut app, KeyCode::Tab);
     app.update();
     assert_eq!(bracket_fg(&app, "[ cash"), Some(dim), "and let go");

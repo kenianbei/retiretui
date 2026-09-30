@@ -1,6 +1,6 @@
 ---
 source: crates/retiretui_tui/src/frames.rs
-assertion_line: 44
+assertion_line: 45
 expression: composed_frame(app)
 ---
 ╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                              
@@ -8,7 +8,7 @@ expression: composed_frame(app)
 ┴──────────┴┴────────┴┴─────────┴┴───────┴╯      ╰──────────────────────────────────────────────────────────────────────────────
 ╭ Plan ─────────────╮╭ Events ─────────────────────────────────────────────────────────────────────────────────────────────────╮
 │  Accounts       7 ││  Event          When                                                                                    │
-│  Income         4 ││▌ retire         age 62 (jordan)                                                                         │
+│  Income         4 ││▌ retire         jordan at 62                                                                            │
 │  Expenses       2 ││                                                                                                         │
 │  Cliffs         0 ││                                                                                                         │
 │  Transfers      1 ││                                                                                                         │

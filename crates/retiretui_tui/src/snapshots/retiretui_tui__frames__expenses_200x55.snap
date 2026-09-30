@@ -7,9 +7,9 @@ expression: composed_frame(app)
 │1 Overview││2 Ledger││3 Compare││4 Tools││5 Plan│                                                                                                                                          full.toml ● 
 ┴──────────┴┴────────┴┴─────────┴┴───────┴╯      ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭ Plan ─────────────╮╭ Expenses ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮ ╭ Expense ─────────────────────────╮
-│  Accounts       7 ││  Expense          Amount From                      Until                   Growth                                                          │ │                                  │
-│  Income         4 ││▌ living          $90,000 Plan start                Plan end                Inflation                                                       │ │▏ ID             living           │
-│▏ Expenses       2 ││  travel          $15,000 1 yr after retire         age 80 (jordan)         Inflation                                                       │ │  Name           The ID           │
+│  Accounts       7 ││  Expense          Amount From                      Until                Growth                                                             │ │                                  │
+│  Income         4 ││▌ living          $90,000 Plan start                Plan end             Inflation                                                          │ │▏ Name           The ID           │
+│▏ Expenses       2 ││  travel          $15,000 1 yr after retire         jordan at 80         Inflation                                                          │ │  ID             living           │
 │  Cliffs         0 ││                                                                                                                                            │ │  Annual amount  $90,000          │
 │  Transfers      1 ││                                                                                                                                            │ │  Happens        Every year       │
 │  Conversions    1 ││                                                                                                                                            │ │  Starts         Plan start       │

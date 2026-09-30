@@ -14,10 +14,10 @@ impl Domain for Incomes {
     const PATH: &'static str = "income";
     const SINGULAR: &'static str = "Income Source";
     const FIELDS: &'static [FieldSpec] = &[
+        FieldSpec::name("What the income is called. Blank shows the ID."),
         FieldSpec::text("id", "ID")
             .blank("None")
             .help("A short handle, needed only when something else refers to this income."),
-        FieldSpec::name("What the income is called. Blank shows the ID."),
         FieldSpec::choice("kind", "Type", Vocabulary::IncomeKind)
             .help("The kind of income, which decides how it is taxed."),
         FieldSpec::refers("owner", "Owner", RefSource::Person).help("Who receives it."),

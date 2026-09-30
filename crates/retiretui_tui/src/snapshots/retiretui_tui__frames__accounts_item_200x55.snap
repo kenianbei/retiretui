@@ -8,8 +8,8 @@ expression: composed_frame(app)
 ┴──────────┴┴────────┴┴─────────┴┴───────┴╯      ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭ Plan ─────────────╮╭ Accounts ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮ ╭ Account ─────────────────────────╮
 │▏ Accounts       7 ││  Account              Type              Owner           Balance                                                                            │ │                                  │
-│  Income         4 ││▌ cash                 Cash              jordan          $40,000                                                                            │ │▏ ID               cash           │
-│  Expenses       2 ││  brokerage            Brokerage         jordan         $300,000                                                                            │ │  Name             The ID         │
+│  Income         4 ││▌ cash                 Cash              jordan          $40,000                                                                            │ │▏ Name             The ID         │
+│  Expenses       2 ││  brokerage            Brokerage         jordan         $300,000                                                                            │ │  ID               cash           │
 │  Cliffs         0 ││  fid-401k             401(k)            jordan         $450,000                                                                            │ │  Type             Cash           │
 │  Transfers      1 ││  roth-ira             IRA               jordan          $90,000                                                                            │ │  Owner            jordan         │
 │  Conversions    1 ││  rollover-ira         IRA               jordan               $0                                                                            │ │  Balance          $40,000        │
@@ -24,8 +24,8 @@ expression: composed_frame(app)
 │                   ││                                                                                                                                            │ │                                  │
 │                   ││                                                                                                                                            │ │                                  │
 │                   ││                                            ╭ Edit cash ──────────────────────────────────────────────────────╮                             │ │                                  │
-│                   ││                                            │ID                [ cash                                       ] │                             │ │                                  │
 │                   ││                                            │Name              [                                            ] │                             │ │                                  │
+│                   ││                                            │ID                [ cash                                       ] │                             │ │                                  │
 │                   ││                                            │Type              [ Cash ▾ ]                                     │                             │ │                                  │
 │                   ││                                            │Owner             [ jordan ▾ ]                                   │                             │ │                                  │
 │                   ││                                            │Balance           [ $40,000                                    ] │                             │ │                                  │
@@ -34,7 +34,7 @@ expression: composed_frame(app)
 │                   ││                                            │Locked until      [ Never ▾ ]                                    │                             │ │                                  │
 │                   ││                                            │Drain priority    [                                            ] │                             │ │                                  │
 │                   ││                                            │─────────────────────────────────────────────────────────────────│                             │ │                                  │
-│                   ││                                            │A short unique handle other items refer to this account by.      │                             │ │                                  │
+│                   ││                                            │What the account is called. Blank shows the ID.                  │                             │ │                                  │
 │                   ││                                            │                                                                 │                             │ │                                  │
 │                   ││                                            │                                                                 │                             │ │                                  │
 │                   ││                                            │─────────────────────────────────────────────────────────────────│                             │ │                                  │

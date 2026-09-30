@@ -30,4 +30,8 @@ states: Array<Offer>,
 /**
  * The tables, federal first.
  */
-sections: Array<TaxSection>, };
+sections: Array<TaxSection>, 
+/**
+ * What the tables are, as [`ABOUT`] says it.
+ */
+about: string, };
