@@ -69,7 +69,7 @@ export function People({
     if (!person) return;
     try {
       const said = session.change((document) =>
-        document.act(action, at, person.name),
+        document.act(action, at, person.id),
       );
       if (said !== undefined) setOutcome({ said, isRefused: false });
     } catch (thrown) {
@@ -112,7 +112,7 @@ export function People({
                 <ImportStatement
                   key={offered.action}
                   index={at}
-                  name={person.name}
+                  known={person.id}
                   label={offered.label}
                 />
               ) : (

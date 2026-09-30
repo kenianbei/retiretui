@@ -6,12 +6,9 @@ use bevy_input_focus::InputFocus;
 use plurimus::widgets::ActiveDescendant;
 use retiretui_engine::plan::Plan;
 use retiretui_engine::statement::Statement;
-use toml::Table;
 
-use super::codec::to_text;
 use super::draft::{Draft, DraftEditor};
 use super::editing::{self, EditSession, Slot};
-use super::offers::display_name;
 use super::table::{DomainTable, Row, cursor_row};
 use crate::command::Outcome;
 use crate::confirm::Confirm;
@@ -19,6 +16,7 @@ use crate::documents::{Browsing, Pickers};
 use crate::journal;
 use crate::store::Store;
 use retiretui_client::forms::Domain;
+use retiretui_client::forms::edit::{known_as, name_at, still_known};
 use retiretui_client::forms::household::People;
 
 const NO_TABLE: &str = "nothing to add or delete here";
@@ -78,9 +76,9 @@ pub fn add(focused: FocusedTable, mut commands: Commands) -> Outcome {
     Outcome::Done
 }
 
-/// Asks before deleting the highlighted item. The answer carries the
-/// item's name as it stood, so a table that changed under the question is
-/// not deleted from.
+/// Asks before deleting the highlighted item. The answer carries what the
+/// item was known by, so a table that changed under the question is not
+/// deleted from.
 pub fn delete(focused: FocusedTable, draft: Res<Draft>, mut confirm: ResMut<Confirm>) -> Outcome {
     if let Some(refusal) = draft.refuse_if_read_only() {
         return Outcome::Refused(refusal);
@@ -91,13 +89,10 @@ pub fn delete(focused: FocusedTable, draft: Res<Draft>, mut confirm: ResMut<Conf
     let Some((entity, table, index)) = focused.cursor() else {
         return Outcome::Refused("nothing highlighted to delete".to_owned());
     };
-    let item = (table.ops.item)(&draft, index);
-    let name = item_name(table, item.as_ref());
-    let shown = item
-        .and_then(|item| display_name(&item, table.list.identity, table.ops.fields))
-        .unwrap_or_default();
+    let known = known_as(&table.ops.form, &draft, index).unwrap_or_default();
+    let shown = name_at(&table.ops.form, &draft, index).unwrap_or_default();
     confirm.ask(format!("Delete {shown}?"), "Delete", move |commands| {
-        commands.run_system_cached_with(remove_item, (entity, index, name));
+        commands.run_system_cached_with(remove_item, (entity, index, known));
     });
     Outcome::Done
 }
@@ -110,11 +105,14 @@ fn remove_item(
     let Ok(mut table) = tables.get_mut(entity) else {
         return;
     };
-    let item = (table.ops.item)(&editor.draft, index);
-    if item_name(&table, item.as_ref()) != asked_about {
-        return;
-    }
-    (table.list.remove)(&mut editor.draft.plan, index);
+    let list = match still_known(&table.ops.form, &editor.draft, index, &asked_about) {
+        Ok(list) => list,
+        Err(refusal) => {
+            journal::warn(refusal);
+            return;
+        }
+    };
+    (list.remove)(&mut editor.draft.plan, index);
     table.wanted = Some(Row(index.saturating_sub(1)));
     editor.commit();
 }
@@ -137,7 +135,7 @@ pub fn import_earnings(
     if table.ops.paths != [People::PATH] {
         return Outcome::Refused(NOT_A_PERSON.to_owned());
     }
-    let person = item_name(table, (table.ops.item)(&draft, index).as_ref());
+    let person = known_as(&table.ops.form, &draft, index).unwrap_or_default();
     importing.ask(person, &pickers, &mut browsing);
     Outcome::Done
 }
@@ -174,11 +172,4 @@ fn adopt(
         .read(path)
         .map_err(|error| format!("{}: {error}", path.display()))?;
     retiretui_client::statement::record(plan, person, &xml)
-}
-
-/// The field the domain knows `item` by, which is what a deletion names
-/// and re-checks.
-fn item_name(table: &DomainTable, item: Option<&Table>) -> String {
-    item.and_then(|item| item.get(table.list.identity).map(to_text))
-        .unwrap_or_default()
 }

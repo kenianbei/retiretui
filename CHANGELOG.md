@@ -229,6 +229,10 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     Headroom and IRMAA tier say what they mean in their help. Country's help no
     longer names the terminal's Space key.
 - A terminal form scrolls all the way back to a field above the screen.
+- A terminal Delete whose item moved under the question says so -
+  `Cash is no longer where it was in the plan` - where it did nothing without a
+  word. Both interfaces check the item by its ID, so of two accounts with one
+  name only the one asked about is deleted.
 - The command line and the MCP server are library crates of their own,
   `retiretui_cli` and `retiretui_mcp`, and the terminal launcher is
   `retiretui_tui`'s `terminal` feature, off by default; `retiretui` composes the
@@ -236,6 +240,12 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   help. The client loads the tax tables, the market history and the user's
   directories behind a `native` feature, and the MCP server reaches its
   sandboxed plan files through the client's store.
+
+### Fixed
+
+- The terminal no longer saves a scenario as a plan over its own file, which
+  replaced the overlay with the plan it resolved to; it says to save it under a
+  name of its own, as the web does.
 
 ## [0.2.0] - 2026-09-27
 

@@ -6,11 +6,12 @@ import type { OfferedAction } from "./OfferedAction";
  */
 export type PersonRow = { 
 /**
- * Their id, what `?held` names them by.
+ * Their id, what `?held` names them by and an edit checks they are
+ * still known by.
  */
 id: string, 
 /**
- * Their name, which an edit checks they still have.
+ * Their name.
  */
 name: string, 
 /**

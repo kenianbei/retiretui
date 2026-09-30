@@ -7,8 +7,8 @@ use retiretui_engine::plan::{Item, Plan};
 use serde::Serialize;
 use wasm_bindgen::prelude::{JsError, JsValue, wasm_bindgen};
 
-use crate::editor::Editor;
 use crate::{refused, reply, tables, to_js};
+use retiretui_client::forms::edit::Entry;
 
 static FORM: Form = Form::tool::<SetupAnswers>("New plan", FIELDS);
 
@@ -25,7 +25,7 @@ pub struct NewPlanMade {
 /// The new-plan answers, held over a plan no one sees until they make one.
 pub struct NewPlan {
     draft: Draft,
-    editor: Editor,
+    editor: Entry,
     today: i16,
 }
 
@@ -43,7 +43,7 @@ impl NewPlan {
             None => starting_answers(),
         };
         draft.set_answers::<SetupAnswers>(answers);
-        let editor = Editor::open(&FORM, &draft, Some(0));
+        let editor = Entry::open(FORM, &draft, Some(0));
         Ok(Self {
             draft,
             editor,
@@ -57,7 +57,7 @@ impl NewPlan {
     ///
     /// Where the answers do not serialize.
     pub fn answers(&self) -> Result<String, String> {
-        toml::to_string(self.editor.edit.snapshot()).map_err(|error| error.to_string())
+        toml::to_string(self.editor.edit().snapshot()).map_err(|error| error.to_string())
     }
 
     /// The plan the answers make.
@@ -66,7 +66,7 @@ impl NewPlan {
     ///
     /// Where a field does not yet hold a value, or the answers make no plan.
     pub fn create(&mut self) -> Result<NewPlanMade, String> {
-        self.editor.edit.apply(&mut self.draft, None)?;
+        self.editor.edit_mut().apply(&mut self.draft, None)?;
         let answers = self.draft.answers::<SetupAnswers>();
         let (plan, _) = setup::compose(answers, self.today, tables())?;
         let name = plan.household.people[0].display_name().to_owned();
@@ -102,7 +102,7 @@ impl JsNewPlan {
     #[wasm_bindgen(unchecked_return_type = "FieldView[]")]
     pub fn view(&mut self, focused: Option<String>) -> Result<JsValue, JsError> {
         let NewPlan { draft, editor, .. } = &mut self.0;
-        to_js(&editor.view(draft, focused.as_deref()))
+        to_js(&crate::view::view(editor, draft, focused.as_deref()))
     }
 
     /// Writes `text` into the field `key`, the row at `place` of a list.

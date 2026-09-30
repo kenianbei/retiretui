@@ -110,9 +110,10 @@ pub fn claims(text: &str, held: &[String]) -> Result<ClaimsOptions, String> {
 #[derive(Serialize, Debug)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct PersonRow {
-    /// Their id, what `?held` names them by.
+    /// Their id, what `?held` names them by and an edit checks they are
+    /// still known by.
     pub id: String,
-    /// Their name, which an edit checks they still have.
+    /// Their name.
     pub name: String,
     /// The cells under the table's columns.
     pub cells: Vec<String>,
@@ -241,14 +242,14 @@ impl Document {
         &mut self,
         action: PersonAction,
         index: usize,
-        name: &str,
+        known: &str,
     ) -> Result<String, String> {
         if action == PersonAction::FillCareer
             && let Some(issue) = self.draft().issues().first()
         {
             return Err(format!("not filled: {issue}"));
         }
-        self.person_step(index, name, |plan, id| {
+        self.person_step(index, known, |plan, id| {
             let edit = action.apply(plan, tables(), id);
             edit.unwrap_or_else(|| Err(format!("{} is not an edit", action.label())))
         })
@@ -306,7 +307,7 @@ impl JsDocument {
             .map_err(refused)
     }
 
-    /// Does `action` to the person at `index`, still `name`, as one step of
+    /// Does `action` to the person at `index`, still `known`, as one step of
     /// history, answering what it did.
     ///
     /// # Errors
@@ -317,9 +318,9 @@ impl JsDocument {
         &mut self,
         #[wasm_bindgen(unchecked_param_type = "PersonAction")] action: JsValue,
         index: usize,
-        name: &str,
+        known: &str,
     ) -> Result<String, JsError> {
-        self.0.act(from_js(action)?, index, name).map_err(refused)
+        self.0.act(from_js(action)?, index, known).map_err(refused)
     }
 
     /// The account the conversion constraints aim at; `undefined` where
@@ -470,8 +471,8 @@ mod tests {
         );
         let removal = PersonAction::RemoveBenefit;
         assert!(document.act(removal, 0, "Someone else").is_err());
-        assert!(document.act(PersonAction::Hold, 0, &person.name).is_err());
-        let removed = document.act(removal, 0, &person.name);
+        assert!(document.act(PersonAction::Hold, 0, &person.id).is_err());
+        let removed = document.act(removal, 0, &person.id);
         assert!(removed.is_ok(), "{removed:?}");
         assert!(document.draft().can_undo());
     }

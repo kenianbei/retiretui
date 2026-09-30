@@ -6,9 +6,9 @@ use std::cell::{OnceCell, RefCell};
 use std::path::{Path, PathBuf};
 
 use retiretui_client::actions::{collect_warnings, year_in_words};
-use retiretui_client::draft::Draft;
+use retiretui_client::draft::{Draft, draft_text};
 use retiretui_client::files::resolve_with_files;
-use retiretui_client::forms::{DomainId, Form, ListOps, ToolAnswers};
+use retiretui_client::forms::{DomainId, Form, ToolAnswers};
 use retiretui_client::issues::{issue_field, issue_listing, issue_place, issue_words};
 use retiretui_client::replies::{ActionsReply, year_row};
 use retiretui_client::searches::ladders::aim_at;
@@ -22,15 +22,10 @@ use retiretui_engine::plan::{Dollars, Item, Plan};
 use retiretui_engine::project::{Projection, Summary, YearRow};
 use serde::Serialize;
 
-use crate::domain::{list_of, name_at};
-use crate::editor::Editor;
 use crate::markets::{market_named, replayed};
 use crate::tables;
 use crate::vocabulary::{form_at, slug_of};
-
-/// A scenario holds only its changes to a base; the plan resolved from it
-/// written in its place would lose which were its own.
-const OVER_SCENARIO: &str = "a scenario cannot be saved over; save it under a name of its own";
+use retiretui_client::forms::edit::{Entry, still_known};
 
 /// A resolved plan and what the gate made of it.
 #[derive(Debug)]
@@ -167,8 +162,8 @@ impl Document {
     /// # Errors
     ///
     /// Why nothing was stored, in the form's words.
-    pub fn apply(&mut self, editor: &mut Editor) -> Result<Option<usize>, String> {
-        let stored = editor.edit.apply(&mut self.draft, None)?;
+    pub fn apply(&mut self, editor: &mut Entry) -> Result<Option<usize>, String> {
+        let stored = editor.edit_mut().apply(&mut self.draft, None)?;
         if stored.is_some() {
             self.commit();
         }
@@ -181,28 +176,18 @@ impl Document {
     /// # Errors
     ///
     /// Where the draft is read-only, the domain is a single item, or the
-    /// item at `index` is no longer the one named.
-    pub fn remove(&mut self, form: &Form, index: usize, name: &str) -> Result<(), String> {
-        let list = self.still_at(form, index, name)?;
+    /// item at `index` is no longer the one known as `known`.
+    pub fn remove(&mut self, form: &Form, index: usize, known: &str) -> Result<(), String> {
+        let list = still_known(form, &self.draft, index, known)?;
         self.step(|plan| {
             (list.remove)(plan, index);
             Ok(())
         })
     }
 
-    /// The list `form` edits, where item `index` of it is still the one
-    /// called `name`.
-    fn still_at(&self, form: &Form, index: usize, name: &str) -> Result<ListOps, String> {
-        let list = list_of(form)?;
-        if name_at(&self.draft, form, list, index).as_deref() != Some(name) {
-            return Err(format!("{name} is no longer where it was in the plan"));
-        }
-        Ok(list)
-    }
-
     /// Records the statement `xml` on the person at `index`, where they are
-    /// still the one called `name`, as one step of history, answering what
-    /// was recorded.
+    /// still the one known as `known`, as one step of history, answering
+    /// what was recorded.
     ///
     /// # Errors
     ///
@@ -211,17 +196,17 @@ impl Document {
     pub fn import_earnings(
         &mut self,
         index: usize,
-        name: &str,
+        known: &str,
         xml: &str,
     ) -> Result<String, String> {
-        self.person_step(index, name, |plan, person| {
+        self.person_step(index, known, |plan, person| {
             let statement = statement::record(plan, person, xml)?;
             Ok(recorded(plan.person_name(person), &statement))
         })
     }
 
     /// Makes `change` to the person at `index`, where they are still the
-    /// one called `name`, as one step of history, answering what it
+    /// one known as `known`, as one step of history, answering what it
     /// answers.
     ///
     /// # Errors
@@ -231,10 +216,15 @@ impl Document {
     pub(crate) fn person_step(
         &mut self,
         index: usize,
-        name: &str,
+        known: &str,
         change: impl FnOnce(&mut Plan, &str) -> Result<String, String>,
     ) -> Result<String, String> {
-        self.still_at(form_at(&slug_of(DomainId::People))?, index, name)?;
+        still_known(
+            form_at(&slug_of(DomainId::People))?,
+            &self.draft,
+            index,
+            known,
+        )?;
         let person = self.draft.plan.household.people[index].id.clone();
         self.step(|plan| change(plan, &person))
     }
@@ -269,8 +259,8 @@ impl Document {
     /// # Errors
     ///
     /// Why they were not stored, in the form's words.
-    pub(crate) fn hold(&mut self, editor: &mut Editor) -> Result<(), String> {
-        editor.edit.apply(&mut self.draft, None).map(drop)
+    pub(crate) fn hold(&mut self, editor: &mut Entry) -> Result<(), String> {
+        editor.edit_mut().apply(&mut self.draft, None).map(drop)
     }
 
     fn commit(&mut self) {
@@ -362,8 +352,11 @@ impl Document {
         write: &mut dyn FnMut(&str) -> Result<(), String>,
     ) -> Result<(), String> {
         let path = normal(Path::new(path));
-        if self.is_read_only() && self.files.first() == Some(&path) {
-            return Err(OVER_SCENARIO.to_owned());
+        if let Some(refusal) = self
+            .draft
+            .refuse_over_scenario(self.files.first() == Some(&path))
+        {
+            return Err(refusal);
         }
         self.write_through(write)?;
         self.draft.saved_as();
@@ -387,10 +380,7 @@ impl Document {
         &self,
         write: &mut dyn FnMut(&str) -> Result<(), String>,
     ) -> Result<(), String> {
-        if let Some(reason) = self.draft.refuse_if_invalid() {
-            return Err(reason);
-        }
-        write(&self.plan_text()?)
+        write(&draft_text(&self.draft)?)
     }
 
     /// The projection, where the plan passed the gate.

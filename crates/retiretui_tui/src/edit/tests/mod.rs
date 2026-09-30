@@ -262,6 +262,26 @@ fn the_add_button_and_the_add_command_both_append() {
 }
 
 #[test]
+fn a_delete_whose_item_moved_under_the_question_is_refused_and_said() {
+    let mut app = headless_app(SIZE);
+    show(&mut app, Page::Accounts);
+    press_key(&mut app, KeyCode::Char('d'));
+    assert!(composed_frame(&app).contains("Delete cash?"));
+    crate::support::commit_edit(&mut app, |plan| plan.accounts.swap(0, 1));
+    let before = draft_plan(&app).accounts;
+    press_key(&mut app, KeyCode::Enter);
+    assert_eq!(draft_plan(&app).accounts, before, "nothing is removed");
+    let warned = crate::support::said(&app)
+        .last()
+        .cloned()
+        .unwrap_or_default();
+    assert!(
+        warned.contains("is no longer where it was in the plan"),
+        "{warned}"
+    );
+}
+
+#[test]
 fn delete_asks_before_it_removes_the_item() {
     let mut app = headless_app(SIZE);
     show(&mut app, Page::Accounts);

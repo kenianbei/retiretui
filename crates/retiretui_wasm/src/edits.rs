@@ -5,13 +5,13 @@ use js_sys::Function;
 use retiretui_client::forms::DomainId;
 use wasm_bindgen::prelude::{JsError, JsValue, wasm_bindgen};
 
-use crate::editor::Editor;
 use crate::vocabulary::{form_at, slug_of};
 use crate::{JsDocument, refused, thrown_message, to_js};
+use retiretui_client::forms::edit::Entry;
 
 /// One item open in its form.
 #[wasm_bindgen(js_name = Editor)]
-pub struct JsEditor(pub(crate) Editor);
+pub struct JsEditor(pub(crate) Entry);
 
 #[wasm_bindgen(js_class = Editor)]
 impl JsEditor {
@@ -26,7 +26,11 @@ impl JsEditor {
         document: &JsDocument,
         focused: Option<String>,
     ) -> Result<JsValue, JsError> {
-        to_js(&self.0.view(document.0.draft(), focused.as_deref()))
+        to_js(&crate::view::view(
+            &mut self.0,
+            document.0.draft(),
+            focused.as_deref(),
+        ))
     }
 
     /// Writes `text` into the field `key`, the row at `place` of a list.
@@ -66,21 +70,21 @@ impl JsEditor {
     #[wasm_bindgen(getter)]
     #[must_use]
     pub fn title(&self) -> String {
-        self.0.edit.title()
+        self.0.edit().title()
     }
 
     /// Whether applying would store anything the item does not hold.
     #[wasm_bindgen(getter, js_name = isDirty)]
     #[must_use]
     pub fn is_dirty(&self) -> bool {
-        self.0.edit.is_dirty()
+        self.0.edit().is_dirty()
     }
 
     /// Where the item sits in the plan; `undefined` while it is new.
     #[wasm_bindgen(getter)]
     #[must_use]
     pub fn index(&self) -> Option<usize> {
-        self.0.edit.index()
+        self.0.edit().index()
     }
 
     /// Drops every edit, back to the item as it was opened.
@@ -120,7 +124,7 @@ impl JsDocument {
         if (form.item)(draft, index).is_none() {
             return Err(refused(format!("{} holds no item {index}", form.title)));
         }
-        Ok(JsEditor(Editor::open(form, draft, Some(index))))
+        Ok(JsEditor(Entry::open(*form, draft, Some(index))))
     }
 
     /// A new item of the domain at `slug` open in its form.
@@ -130,7 +134,7 @@ impl JsDocument {
     /// Where no domain is at `slug`.
     pub fn create(&self, slug: &str) -> Result<JsEditor, JsError> {
         let form = form_at(slug).map_err(refused)?;
-        Ok(JsEditor(Editor::open(form, self.0.draft(), None)))
+        Ok(JsEditor(Entry::open(*form, self.0.draft(), None)))
     }
 
     /// Stores `editor`'s item as one step of history, answering where it
@@ -144,7 +148,7 @@ impl JsDocument {
     }
 
     /// Records the statement `xml` on the person at `index` of the People
-    /// page, where they are still the one called `name`, as one step of
+    /// page, where they are still the one known as `known`, as one step of
     /// history, answering what it recorded.
     ///
     /// # Errors
@@ -155,21 +159,21 @@ impl JsDocument {
     pub fn import_earnings(
         &mut self,
         index: usize,
-        name: &str,
+        known: &str,
         xml: &str,
     ) -> Result<String, JsError> {
-        self.0.import_earnings(index, name, xml).map_err(refused)
+        self.0.import_earnings(index, known, xml).map_err(refused)
     }
 
     /// Removes item `index` of the domain at `slug`, where it is still the
-    /// item called `name`, as one step of history.
+    /// item known as `known`, as one step of history.
     ///
     /// # Errors
     ///
     /// Where the draft is read-only, or the item there is no longer it.
-    pub fn remove(&mut self, slug: &str, index: usize, name: &str) -> Result<(), JsError> {
+    pub fn remove(&mut self, slug: &str, index: usize, known: &str) -> Result<(), JsError> {
         let form = form_at(slug).map_err(refused)?;
-        self.0.remove(form, index, name).map_err(refused)
+        self.0.remove(form, index, known).map_err(refused)
     }
 
     /// Steps back over the last edit, answering whether there was one.
@@ -238,11 +242,10 @@ mod tests {
     use std::path::{Path, PathBuf};
 
     use retiretui_client::setup::EXAMPLES;
-    use retiretui_engine::plan::Item;
 
     use crate::document::Document;
-    use crate::editor::Editor;
     use crate::vocabulary::form_at;
+    use retiretui_client::forms::edit::Entry;
 
     fn starter() -> &'static str {
         EXAMPLES[0].2
@@ -277,7 +280,7 @@ mod tests {
         let mut document = opened();
         let own = document.files()[0].to_string_lossy().into_owned();
         let accounts = form_at("accounts").expect("a domain");
-        let mut editor = Editor::open(accounts, document.draft(), Some(0));
+        let mut editor = Entry::open(*accounts, document.draft(), Some(0));
         editor.set("name", None, "Renamed").expect("a field");
         document.apply(&mut editor).expect("applied");
         document.relocate(&own, "/renamed.toml");
@@ -316,7 +319,7 @@ mod tests {
     fn an_applied_edit_is_one_step_undone_redone_and_saved() {
         let mut document = opened();
         let accounts = form_at("accounts").expect("a domain");
-        let mut editor = Editor::open(accounts, document.draft(), Some(0));
+        let mut editor = Entry::open(*accounts, document.draft(), Some(0));
         editor.set("name", None, "Renamed").expect("a field");
         assert_eq!(document.apply(&mut editor), Ok(Some(0)));
         let renamed = |document: &Document| document.draft().plan.accounts[0].name.clone();
@@ -335,7 +338,7 @@ mod tests {
     fn an_invalid_draft_keeps_the_last_good_projection_and_is_not_saved() {
         let mut document = opened();
         let settings = form_at("settings").expect("a domain");
-        let mut editor = Editor::open(settings, document.draft(), Some(0));
+        let mut editor = Entry::open(*settings, document.draft(), Some(0));
         editor.set("inflation", None, "500%").expect("a field");
         assert_eq!(document.apply(&mut editor), Ok(Some(0)));
         assert!(!document.issues().is_empty());
@@ -352,8 +355,8 @@ mod tests {
         assert!(saved(&mut document).is_err());
         let over = document.save_as("/what-if/early.toml", &mut |_| Ok(()));
         assert!(over.is_err(), "the scenario's own file is not replaced");
-        let mut editor = Editor::open(
-            form_at("accounts").expect("a domain"),
+        let mut editor = Entry::open(
+            *form_at("accounts").expect("a domain"),
             document.draft(),
             Some(0),
         );
@@ -372,8 +375,8 @@ mod tests {
         let accounts = form_at("accounts").expect("a domain");
         let count = document.draft().plan.accounts.len();
         assert!(document.remove(accounts, 0, "Someone else's").is_err());
-        let name = document.draft().plan.accounts[0].display_name().to_owned();
-        document.remove(accounts, 0, &name).expect("removed");
+        let known = document.draft().plan.accounts[0].id.clone();
+        document.remove(accounts, 0, &known).expect("removed");
         assert_eq!(document.draft().plan.accounts.len(), count - 1);
         assert!(document.undo());
         assert_eq!(document.draft().plan.accounts.len(), count);

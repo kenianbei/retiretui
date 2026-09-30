@@ -11,14 +11,75 @@ use super::applies::{self, HAPPENS, ON_KEY, ONCE_UNDATED, happens_once};
 use super::cells::field_of;
 use super::lists::is_gate_open;
 use super::offers::display_name;
-use super::{FieldKind, FieldSpec, Form, Target};
-use crate::codec::{get_path, is_within, set_path};
+use super::{FieldKind, FieldSpec, Form, ListOps, Target};
+use crate::codec::{get_path, is_within, set_path, to_text};
 use crate::draft::Draft;
+
+mod entry;
+
+pub use entry::{Entry, place_of};
 
 /// An item is followed by what it was when opened, so one changed or
 /// renamed underneath may be another item altogether.
 const CHANGED_UNDERNEATH: &str =
     "the plan changed under this edit; discard it and open the item again";
+
+/// What item `index` of `form` is known by, which a removal names and
+/// checks again; none where there is no such item.
+#[must_use]
+pub fn known_as(form: &Form, draft: &Draft, index: usize) -> Option<String> {
+    let list = form.list?;
+    let item = (form.item)(draft, index)?;
+    item.get(list.identity).map(to_text)
+}
+
+/// The list `form` edits.
+///
+/// # Errors
+///
+/// Where the domain is a single item rather than a table.
+pub fn list_of(form: &Form) -> Result<ListOps, String> {
+    form.list
+        .ok_or_else(|| format!("{} is one item, not a table", form.title))
+}
+
+/// What item `index` of `form` is called, where there is one.
+#[must_use]
+pub fn name_at(form: &Form, draft: &Draft, index: usize) -> Option<String> {
+    let item = (form.item)(draft, index)?;
+    display_name(&item, form.list?.identity, form.fields)
+}
+
+/// The list `form` edits, where item `index` of it is still the one
+/// [`known_as`] answered `known` for.
+///
+/// # Errors
+///
+/// Where the domain is a single item, or the item there is no longer the
+/// one known, which is said by its display name.
+pub fn still_known(
+    form: &Form,
+    draft: &Draft,
+    index: usize,
+    known: &str,
+) -> Result<ListOps, String> {
+    let list = list_of(form)?;
+    let is_known = |&at: &usize| known_as(form, draft, at).as_deref() == Some(known);
+    if is_known(&index) {
+        return Ok(list);
+    }
+    let now = (0..(list.count)(&draft.plan)).find(is_known);
+    let name = now.and_then(|at| name_at(form, draft, at));
+    let name = name.unwrap_or_else(|| known.to_owned());
+    Err(format!("{name} is no longer where it was in the plan"))
+}
+
+/// The form of `domain`, for a test.
+#[cfg(test)]
+pub(crate) fn form_of(domain: super::DomainId) -> Form {
+    let is_it = |form: &&Form| form.domain == Some(domain);
+    *super::DOMAINS.iter().find(is_it).expect("a domain")
+}
 
 /// One item open in its form.
 pub struct ItemEdit {
@@ -282,13 +343,14 @@ impl ItemEdit {
 mod tests {
     use retiretui_engine::plan::Plan;
 
+    use retiretui_engine::plan::Item;
+
     use super::*;
-    use crate::forms::{DOMAINS, DomainId};
+    use crate::forms::DomainId;
     use crate::setup::EXAMPLES;
 
     fn accounts() -> Form {
-        let is_accounts = |form: &&Form| form.domain == Some(DomainId::Accounts);
-        *DOMAINS.iter().find(is_accounts).expect("a domain")
+        form_of(DomainId::Accounts)
     }
 
     fn draft(is_read_only: bool) -> Draft {
@@ -296,6 +358,27 @@ mod tests {
             Plan::from_toml_str(EXAMPLES[0].2).expect("parses"),
             is_read_only,
         )
+    }
+
+    #[test]
+    fn an_item_is_known_by_its_identity_and_refused_once_another_sits_there() {
+        let mut draft = draft(false);
+        let accounts = accounts();
+        let first = draft.plan.accounts[0].id.clone();
+        assert_eq!(
+            known_as(&accounts, &draft, 0).as_deref(),
+            Some(first.as_str())
+        );
+        assert!(still_known(&accounts, &draft, 0, &first).is_ok());
+        let name = draft.plan.accounts[0].display_name().to_owned();
+        draft.plan.accounts.swap(0, 1);
+        let refusal = still_known(&accounts, &draft, 0, &first).err();
+        let said = format!("{name} is no longer where it was in the plan");
+        assert_eq!(refusal, Some(said));
+        let residency = form_of(DomainId::Residency);
+        let country = draft.plan.residency[0].country.clone();
+        assert_eq!(known_as(&residency, &draft, 0), Some(country));
+        assert!(still_known(&form_of(DomainId::Settings), &draft, 0, "").is_err());
     }
 
     #[test]

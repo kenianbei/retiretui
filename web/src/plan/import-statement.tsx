@@ -6,14 +6,14 @@ import { useFilePicker } from "@/files/picker";
 import { cn, messageOf } from "@/lib/utils";
 import { useSession } from "@/session";
 
-/** The earnings of the person at `index`, called `name`, from an ssa.gov statement. */
+/** The earnings of the person at `index`, known as `known`, from an ssa.gov statement. */
 export function ImportStatement({
   index,
-  name,
+  known,
   label = "Import statement",
 }: {
   index: number;
-  name: string;
+  known: string;
   /** What the button says, where the client has said it. */
   label?: string;
 }) {
@@ -29,7 +29,7 @@ export function ImportStatement({
       try {
         const xml = await file.text();
         const said = session.change((document) =>
-          document.importEarnings(index, name, xml),
+          document.importEarnings(index, known, xml),
         );
         if (said !== undefined) setOutcome({ said, isRefused: false });
       } catch (thrown) {

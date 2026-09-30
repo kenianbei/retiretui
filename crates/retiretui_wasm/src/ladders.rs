@@ -26,10 +26,10 @@ use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::{JsError, JsValue, wasm_bindgen};
 
 use crate::document::Document;
-use crate::editor::Editor;
 use crate::edits::JsEditor;
 use crate::searches::gated;
 use crate::{Bases, JsDocument, from_js, option_figures, refused, reply, tables, to_js};
+use retiretui_client::forms::edit::Entry;
 
 /// A scenario written over a file it resolves through would name itself.
 const OVER_ITS_BASE: &str = "a scenario cannot be written over a file it is made from";
@@ -197,9 +197,9 @@ impl Document {
     }
 
     /// The constraints open in their form.
-    pub fn constraints(&mut self) -> Editor {
+    pub fn constraints(&mut self) -> Entry {
         self.hold_answers::<Constraints>(self.aimed());
-        Editor::open(&FORM, self.draft(), Some(0))
+        Entry::open(FORM, self.draft(), Some(0))
     }
 
     /// Holds what `editor` was given as the constraints, beside the plan
@@ -208,7 +208,7 @@ impl Document {
     /// # Errors
     ///
     /// Why the constraints were not held, in the form's words.
-    pub fn apply_constraints(&mut self, editor: &mut Editor) -> Result<(), String> {
+    pub fn apply_constraints(&mut self, editor: &mut Entry) -> Result<(), String> {
         self.hold(editor)
     }
 

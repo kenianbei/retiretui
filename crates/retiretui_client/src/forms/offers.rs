@@ -6,13 +6,13 @@ use retiretui_engine::plan::{
     TriggerBasis, US_STATES,
 };
 use serde::Serialize;
-use toml::Table;
+use toml::{Table, Value};
 
 use super::accounts;
 use super::applies;
 use super::cells::field_of;
 use super::contributions;
-use super::{FieldKind, FieldSpec};
+use super::{BLANK, FieldKind, FieldSpec};
 use crate::codec::to_text;
 use crate::present;
 use crate::setup::{EXAMPLES, LifeStage};
@@ -205,6 +205,76 @@ fn told_apart(offers: Vec<Offer>) -> Vec<Offer> {
         .collect()
 }
 
+/// What a pick offers: every candidate, a held word among them, and the
+/// word for holding none where it may.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct PickOffers {
+    /// What may be picked, in the order offered.
+    pub offers: Vec<Offer>,
+    /// What holding none reads as; none where the pick may not be emptied.
+    pub blank: Option<&'static str>,
+}
+
+/// The word a pick holding `value` shows: a string as spelt, anything else
+/// as the file writes it; none where nothing, or an empty word, is held.
+#[must_use]
+pub fn held_word(value: Option<&Value>) -> Option<String> {
+    let word = match value? {
+        Value::String(word) => word.clone(),
+        other => to_text(other),
+    };
+    (!word.is_empty()).then_some(word)
+}
+
+/// `candidates`, holding `held` whatever it is since the file stated it.
+fn holding(mut candidates: Vec<Offer>, held: Option<&str>) -> Vec<Offer> {
+    if let Some(held) = held.filter(|held| !held.is_empty())
+        && !candidates.iter().any(|offer| offer.value == held)
+    {
+        candidates.push(Offer::spelt(held.to_owned()));
+    }
+    candidates
+}
+
+/// `candidates`, holding `held` whatever it is since the file stated it, and
+/// `spec`'s blank word unless it may not be emptied.
+#[must_use]
+pub fn offered(spec: &FieldSpec, candidates: Vec<Offer>, held: Option<&str>) -> PickOffers {
+    PickOffers {
+        offers: holding(candidates, held),
+        blank: (!spec.is_required()).then(|| spec.blank_word()),
+    }
+}
+
+/// What a field's pick chooses between: its vocabulary, or the plan's ids.
+#[must_use]
+pub fn candidates(kind: FieldKind, plan: &Plan) -> Vec<Offer> {
+    match kind {
+        FieldKind::Choice(vocabulary) | FieldKind::Order(vocabulary, _) => vocabulary.offers(),
+        FieldKind::Ref(source) => ref_offers(plan, source),
+        _ => Vec::new(),
+    }
+}
+
+/// What a trigger's kind offers: every basis, and `spec`'s blank word,
+/// since clearing the kind is how a trigger is cleared.
+#[must_use]
+pub fn trigger_bases(spec: &FieldSpec) -> PickOffers {
+    PickOffers {
+        offers: Vocabulary::TriggerBasis.offers(),
+        blank: Some(spec.blank_word()),
+    }
+}
+
+/// What a trigger's operand picked from `source` offers, holding `held`.
+#[must_use]
+pub fn operand_offers(plan: &Plan, source: RefSource, held: Option<&str>) -> PickOffers {
+    PickOffers {
+        offers: holding(ref_offers(plan, source), held),
+        blank: Some(BLANK),
+    }
+}
+
 /// The key every item's display name is stated under.
 pub const NAME_KEY: &str = "name";
 
@@ -230,6 +300,44 @@ pub fn display_name(item: &Table, identity: &str, fields: &[FieldSpec]) -> Optio
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::forms::DomainId;
+    use crate::forms::edit::form_of;
+
+    fn account_field(key: &str) -> FieldSpec {
+        *field_of(form_of(DomainId::Accounts).fields, key).expect("a field")
+    }
+
+    #[test]
+    fn a_pick_holds_a_word_the_file_stated_but_not_an_empty_one() {
+        let kind = account_field("kind");
+        let offers = |held| offered(&kind, Vocabulary::AccountKind.offers(), held).offers;
+        let all = Vocabulary::AccountKind.offers().len();
+        assert_eq!(
+            offers(Some("brokerage")).len(),
+            all,
+            "a candidate is not added twice"
+        );
+        let stated = offers(Some("pension"));
+        assert_eq!(stated.last(), Some(&Offer::spelt("pension".to_owned())));
+        assert_eq!(offers(Some("")).len(), all);
+        assert_eq!(held_word(Some(&Value::String(String::new()))), None);
+        assert_eq!(held_word(Some(&Value::Integer(3))).as_deref(), Some("3"));
+    }
+
+    #[test]
+    fn a_blank_is_offered_in_the_fields_own_word_unless_it_is_required() {
+        let kind = account_field("kind");
+        assert_eq!(offered(&kind, Vec::new(), None).blank, None);
+        let locked = account_field("locked_until");
+        assert_eq!(trigger_bases(&locked).blank, Some("Never"));
+        let plan = Plan::from_toml_str(crate::setup::EXAMPLES[0].2).expect("parses");
+        let operand = operand_offers(&plan, RefSource::Event, Some("gone"));
+        assert_eq!(operand.blank, Some(BLANK));
+        assert_eq!(
+            operand.offers.last().map(|offer| offer.value.as_str()),
+            Some("gone")
+        );
+    }
 
     fn offer(value: &str, label: &str) -> Offer {
         Offer {

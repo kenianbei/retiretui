@@ -126,10 +126,12 @@ const statement = readFileSync(
   new URL("../retiretui_engine/tests/fixtures/statement.xml", import.meta.url),
   "utf8",
 );
-assert.throws(() => document.importEarnings(0, "Sam", statement), /was born/);
+const [sam] = document.table("people", null).rows;
+assert.throws(() => document.importEarnings(0, sam.known, statement), /was born/);
 files.set("/plans/born.toml", made.text.replace(/birth = \S+/, "birth = 1975-06-14"));
 const born = Document.open("/plans/born.toml", read);
-assert.match(born.importEarnings(0, "Jordan", statement), /recorded 3 years of earnings/);
+const [jordan] = born.table("people", null).rows;
+assert.match(born.importEarnings(0, jordan.known, statement), /recorded 3 years of earnings/);
 assert.equal(born.canUndo, true);
 assert.equal(statementPage(), "people");
 
@@ -214,7 +216,7 @@ assert.match(
 );
 const removal = person.actions.find(({ action }) => action === "remove-benefit");
 assert.match(removal.question, /^Remove /);
-assert.match(claiming.act("remove-benefit", 0, person.name), /^removed /);
+assert.match(claiming.act("remove-benefit", 0, person.id), /^removed /);
 assert.throws(() => claims(claiming.planText(), [person.id]));
 
 const scenario = files.get("/plans/claimed.toml") ?? 'schema = 1\nbase = "claiming.toml"\n';

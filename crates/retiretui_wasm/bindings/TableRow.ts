@@ -10,9 +10,13 @@ export type TableRow = {
  */
 index: number, 
 /**
- * What the item is called: what removing it names it by.
+ * What the item is called, as a question about it names it.
  */
 name: string, 
+/**
+ * What the item is known by: what removing it checks it by.
+ */
+known: string, 
 /**
  * Its cells, in column order.
  */

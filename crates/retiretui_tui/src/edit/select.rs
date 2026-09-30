@@ -22,9 +22,9 @@ use retiretui_engine::plan::Plan;
 use toml::Value;
 
 use super::build::FormField;
-use super::domain::FieldKind;
+use super::domain::{BLANK, FieldKind};
 use super::field::space;
-use super::offers::{Offer, Vocabulary, ref_offers};
+use super::offers::{Offer, PickOffers, Vocabulary, held_word, ref_offers};
 use super::search;
 use crate::hints::Hints;
 use crate::layout::placed;
@@ -50,12 +50,11 @@ pub struct Select {
     options: Vec<Offer>,
     /// `None` while the field is empty, which a `None` in the item is.
     chosen: Option<usize>,
-    /// What the empty state reads as, on the button and in the menu.
-    blank: &'static str,
+    /// What the empty state reads as, on the button and in the menu; none
+    /// where the field may not be emptied once it holds a value.
+    blank: Option<&'static str>,
     /// Whether the menu lists `options` as they now are.
     is_listed: bool,
-    /// Whether the field may not be emptied once it holds a value.
-    is_required: bool,
     /// Whether the arrows pass the empty state by, leaving it to the menu.
     skips_blank: bool,
 }
@@ -72,18 +71,13 @@ pub struct PickChanged {
 }
 
 impl Select {
-    pub fn new(kind: FieldKind, blank: &'static str) -> Self {
-        let options = match kind {
-            FieldKind::Choice(vocabulary) | FieldKind::Order(vocabulary, _) => vocabulary.offers(),
-            _ => Vec::new(),
-        };
+    pub fn new(kind: FieldKind, picks: PickOffers) -> Self {
         Self {
             kind,
-            options,
+            options: picks.offers,
             chosen: None,
-            blank,
+            blank: picks.blank,
             is_listed: false,
-            is_required: false,
             skips_blank: false,
         }
     }
@@ -94,13 +88,6 @@ impl Select {
     pub fn skipping_blank(self) -> Self {
         Self {
             skips_blank: true,
-            ..self
-        }
-    }
-
-    pub fn required(self, is_required: bool) -> Self {
-        Self {
-            is_required,
             ..self
         }
     }
@@ -148,11 +135,7 @@ impl Select {
     /// Shows `value`. One the options do not hold is kept as an option
     /// rather than dropped, since the file stated it.
     fn show(&mut self, value: Option<&Value>) {
-        let wanted = value.map(|value| match value {
-            Value::String(text) => text.clone(),
-            other => other.to_string(),
-        });
-        self.chosen = wanted.map(|wanted| {
+        self.chosen = held_word(value).map(|wanted| {
             self.position(&wanted).unwrap_or_else(|| {
                 self.options.push(Offer::spelt(wanted));
                 self.is_listed = false;
@@ -172,7 +155,7 @@ impl Select {
             return;
         }
         let count = self.options.len() as isize;
-        let stops = count + isize::from(!self.is_required && !self.skips_blank);
+        let stops = count + isize::from(self.blank.is_some() && !self.skips_blank);
         let next = match self.chosen {
             Some(chosen) => (chosen as isize + step).rem_euclid(stops),
             None if step > 0 => 0,
@@ -193,7 +176,7 @@ impl Select {
     /// What the select offers, and the word for holding none of it where
     /// it may.
     pub(super) fn offered(&self) -> (&[Offer], Option<&'static str>) {
-        (&self.options, (!self.is_required).then_some(self.blank))
+        (&self.options, self.blank)
     }
 
     /// Holds the option at `chosen`, or none; the value it then stands for.
@@ -204,7 +187,7 @@ impl Select {
 
     fn shown(&self) -> &str {
         let chosen = self.chosen.and_then(|chosen| self.options.get(chosen));
-        chosen.map_or(self.blank, |offer| offer.label.as_str())
+        chosen.map_or(self.blank.unwrap_or(BLANK), |offer| offer.label.as_str())
     }
 }
 
@@ -325,11 +308,19 @@ fn handle_step_key(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::edit::domain::{BLANK, FieldSpec};
+    use crate::edit::domain::FieldSpec;
     use crate::edit::offers::Vocabulary;
 
+    fn filing_as(blank: Option<&'static str>) -> Select {
+        let offers = Vocabulary::FilingStatus.offers();
+        Select::new(
+            FieldKind::Choice(Vocabulary::FilingStatus),
+            PickOffers { offers, blank },
+        )
+    }
+
     fn filing() -> Select {
-        Select::new(FieldKind::Choice(Vocabulary::FilingStatus), BLANK)
+        filing_as(Some(BLANK))
     }
 
     #[test]
@@ -349,7 +340,7 @@ mod tests {
 
     #[test]
     fn a_required_choice_never_steps_to_empty_and_lists_no_row_that_empties_it() {
-        let mut choice = filing().required(true);
+        let mut choice = filing_as(None);
         choice.step(1);
         let first = choice.value();
         assert!(first.is_some(), "an empty one steps onto its first option");
@@ -364,7 +355,7 @@ mod tests {
 
     /// How many rows of a select's menu empty the field.
     fn emptying_rows(is_required: bool) -> usize {
-        let rows = menu_rows(filing().required(is_required));
+        let rows = menu_rows(filing_as((!is_required).then_some(BLANK)));
         rows.iter().filter(|row| row.is_none()).count()
     }
 
@@ -424,5 +415,17 @@ mod tests {
         choice.show(Some(&Value::String("legacy".to_owned())));
         assert_eq!(choice.value(), Some(Value::String("legacy".to_owned())));
         assert!(!choice.is_listed, "and the menu is owed the new row");
+    }
+
+    #[test]
+    fn an_empty_word_holds_nothing_and_shows_the_blank() {
+        let mut choice = filing();
+        choice.show(Some(&Value::String(String::new())));
+        assert_eq!(choice.value(), None);
+        assert_eq!(choice.shown(), BLANK);
+        assert_eq!(
+            choice.options.len(),
+            Vocabulary::FilingStatus.offers().len()
+        );
     }
 }

@@ -71,6 +71,7 @@ function ListDomain({ slug, purpose }: { slug: string; purpose: string }) {
               slug={slug}
               index={highlighted.index}
               name={highlighted.name}
+              known={highlighted.known}
             />
           </div>
         )}
