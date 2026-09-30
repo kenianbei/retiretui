@@ -2,14 +2,13 @@
 //! what in the projection wants looking at - and the historical starts the
 //! plan does not survive.
 
-use retiretui_client::overview::{NOTHING, attention, issue_rows};
-use retiretui_engine::market::{RunName, Runs};
+use retiretui_client::overview::{NOTHING, attention, failing_start, issue_rows};
+use retiretui_engine::market::Runs;
 
 use super::rows::{Entry, Tone};
 use crate::edit::Draft;
 use crate::nav::Page;
 use crate::session::Projected;
-use crate::tools::count_text;
 
 /// Every row, what has no year first and the rest by year, or a line
 /// saying there is nothing; the starts are the plan's `historical` runs,
@@ -35,26 +34,11 @@ pub(super) fn entries(
     found
 }
 
-/// The worst historical start the plan does not survive - the one the
-/// Historical page lists first - and how many it does not.
-fn failing(historical: Option<&Runs>) -> Vec<Entry> {
-    let Some(runs) = historical else {
-        return Vec::new();
-    };
-    let worst = runs.worst_first().first().map(|&at| &runs.runs[at]);
-    let Some(run) = worst.filter(|run| !run.is_success) else {
-        return Vec::new();
-    };
-    let RunName::Start(year) = run.name else {
-        return Vec::new();
-    };
-    let starts = runs.runs.len();
-    let failed = count_text(starts - runs.successes);
-    let text = format!(
-        "Fails from a {year} start · {failed} of {} fail",
-        count_text(starts)
-    );
-    vec![Entry::leading(text, (Page::Historical, None))]
+/// The worst historical start the plan does not survive, leading to the
+/// Historical page.
+fn failing(historical: Option<&Runs>) -> Option<Entry> {
+    let (_, said) = failing_start(historical?)?;
+    Some(Entry::leading(said, (Page::Historical, None)))
 }
 
 #[cfg(test)]
@@ -83,24 +67,16 @@ mod tests {
     #[test]
     fn the_worst_failing_start_leads_to_the_historical_page() {
         let runs = starts(&TEST_PLAN.replace("amount = 60000", "amount = 70000"));
-        let worst = &runs.runs[runs.worst_first()[0]];
-        let RunName::Start(year) = worst.name else {
-            panic!("a historical run is named by its start");
-        };
-        let failed = runs.runs.len() - runs.successes;
-        assert!(failed > 0 && runs.successes > 0, "some starts fail");
-        let found = failing(Some(&runs));
-        assert_eq!(found.len(), 1);
-        let text = format!(
-            "Fails from a {year} start · {failed} of {} fail",
-            runs.runs.len()
+        let found = failing(Some(&runs)).expect("some starts fail");
+        assert_eq!(
+            Some(found.text.clone()),
+            failing_start(&runs).map(|(_, said)| said)
         );
-        assert_eq!(found[0].text, text);
-        assert_eq!(found[0].year, None, "a start is no year of the plan's");
-        assert_eq!(found[0].leads, Some((Page::Historical, None)));
+        assert_eq!(found.year, None, "a start is no year of the plan's");
+        assert_eq!(found.leads, Some((Page::Historical, None)));
         let modest = TEST_PLAN.replace("amount = 60000", "amount = 20000");
         assert!(
-            failing(Some(&starts(&modest))).is_empty(),
+            failing(Some(&starts(&modest))).is_none(),
             "every start survives"
         );
     }

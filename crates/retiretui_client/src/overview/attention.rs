@@ -1,10 +1,11 @@
 //! What needs attention: the draft's issues, the years the plan pays
 //! Medicare's surcharges, the contributions it could not make as stated, a
-//! benefit estimated without the record it is computed from, and amounts
-//! too large to be likely.
+//! benefit estimated without the record it is computed from, amounts too
+//! large to be likely, and the historical starts the plan does not survive.
 
 use std::collections::BTreeSet;
 
+use retiretui_engine::market::{RunName, Runs};
 use retiretui_engine::plan::{Dollars, Item, Plan};
 use retiretui_engine::project::YearRow;
 
@@ -15,7 +16,7 @@ use crate::forms::DomainId;
 use crate::issues::{issue_place, issue_words};
 use crate::present::compact_money;
 use crate::session::Projected;
-use crate::table::{account_name, basis_amount};
+use crate::table::{account_name, basis_amount, count};
 
 /// What a surface says where nothing needs attention.
 pub const NOTHING: &str = "No plan issues";
@@ -51,6 +52,27 @@ pub fn attention(projected: &Projected, nominal: bool) -> Vec<Row> {
     .collect();
     found.sort_by_key(|row| row.year);
     found
+}
+
+/// The worst historical start the plan does not survive, the one the
+/// Historical tool lists first, and the row that says it and how many fail;
+/// none where every start survives.
+#[must_use]
+pub fn failing_start(runs: &Runs) -> Option<(i16, String)> {
+    let worst = &runs.runs[*runs.worst_first().first()?];
+    let RunName::Start(year) = worst.name else {
+        return None;
+    };
+    if worst.is_success {
+        return None;
+    }
+    let starts = runs.runs.len();
+    let failed = count(starts - runs.successes);
+    let said = format!(
+        "Fails from a {year} start · {failed} of {} fail",
+        count(starts)
+    );
+    Some((year, said))
 }
 
 /// The first year Medicare's surcharges or a cliff cost anything, and in
@@ -295,5 +317,34 @@ start = {{ age = 67, owner = \"me\" }}
         let row = &rows[0];
         assert_eq!(row.place, Some((DomainId::Accounts, Some(1))));
         assert_eq!(row.text, issue_words(&draft.issues()[0], &draft));
+    }
+
+    fn starts(plan_text: &str) -> Runs {
+        use retiretui_engine::market::{History, Progress, historical};
+        let plan = projected_from(plan_text).plan;
+        let tables = TaxTables::embedded();
+        historical(&plan, &tables, History::embedded(), &Progress::default()).unwrap()
+    }
+
+    #[test]
+    fn the_worst_failing_start_is_said_with_how_many_fail() {
+        let runs = starts(&TEST_PLAN.replace("amount = 60000", "amount = 70000"));
+        let worst = &runs.runs[runs.worst_first()[0]];
+        let RunName::Start(year) = worst.name else {
+            panic!("a historical run is named by its start");
+        };
+        let failed = runs.runs.len() - runs.successes;
+        assert!(failed > 0 && runs.successes > 0, "some starts fail");
+        let said = format!(
+            "Fails from a {year} start · {failed} of {} fail",
+            runs.runs.len()
+        );
+        assert_eq!(failing_start(&runs), Some((year, said)));
+        let modest = TEST_PLAN.replace("amount = 60000", "amount = 20000");
+        assert_eq!(
+            failing_start(&starts(&modest)),
+            None,
+            "every start survives"
+        );
     }
 }

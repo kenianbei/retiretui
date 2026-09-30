@@ -10,7 +10,7 @@ mod tests;
 
 use crate::forms::DomainId;
 
-pub use attention::{NOTHING, attention, issue_rows};
+pub use attention::{NOTHING, attention, failing_start, issue_rows};
 pub use milestones::milestones;
 
 /// What the Overview titles its lists.
