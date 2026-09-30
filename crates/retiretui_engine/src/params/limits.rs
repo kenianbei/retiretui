@@ -97,6 +97,11 @@ pub struct ContributionLimits {
     /// The MAGI band over which a traditional IRA contribution stops being
     /// deductible for a person a workplace plan covers.
     pub ira_deduction_phase_out: PerStatus<PhaseOut>,
+    /// The MAGI band over which a traditional IRA contribution stops being
+    /// deductible, on a joint return, for a person no workplace plan covers
+    /// whose spouse one does; where a table leaves it out, deducted in full.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ira_deduction_phase_out_spouse: Option<PhaseOut>,
 }
 
 /// One IRMAA tier: the MAGI threshold it starts above and the annual

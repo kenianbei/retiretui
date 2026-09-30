@@ -85,6 +85,11 @@ pub struct Income {
     /// nominal (`false`), or a fixed annual rate of its own.
     #[serde(default)]
     pub cola: ColaSpec,
+    /// For a `salary`: the job's workplace plan covers the owner while it
+    /// pays, contributing or not, which decides whether a traditional IRA
+    /// contribution is deductible.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub covered: bool,
 }
 
 impl Income {

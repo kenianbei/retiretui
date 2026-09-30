@@ -10,6 +10,7 @@ mod collect;
 mod contribute;
 mod flows;
 mod invest;
+mod ira;
 mod path;
 mod residence;
 mod resolve;
@@ -62,9 +63,10 @@ pub struct Taxes {
     /// Ordinary, gains and state tax plus penalties.
     pub total: Dollars,
     /// What of the year's traditional IRA contributions the MAGI let be
-    /// deducted; settled with the taxes, not a figure of them.
+    /// deducted, by the band each phases out over; settled with the taxes,
+    /// not a figure of them.
     #[serde(skip)]
-    pub(crate) ira_deducted: Dollars,
+    pub(crate) ira_deducted: [Dollars; 2],
 }
 
 /// End-of-year balances aggregated by treatment class.
@@ -142,8 +144,8 @@ pub enum ContributionNote {
     /// contribution is not allowed.
     RothIraPhaseOut,
     /// Part of a traditional IRA contribution was not deductible, the owner
-    /// being covered by a workplace plan with MAGI in the band, and is kept
-    /// as basis.
+    /// or their spouse being covered by a workplace plan with MAGI in the
+    /// band, and is kept as basis.
     NotDeducted {
         /// Nominal dollars not deducted.
         amount: Dollars,

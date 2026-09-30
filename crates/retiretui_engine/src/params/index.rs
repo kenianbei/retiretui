@@ -102,14 +102,17 @@ pub(crate) fn scale(amount: Dollars, factor: f64) -> Dollars {
     (amount as f64 * factor).round() as Dollars
 }
 
-fn scale_phase_out(bands: PerStatus<PhaseOut>, factor: f64) -> PerStatus<PhaseOut> {
-    let scaled = |band: PhaseOut| PhaseOut {
+fn scale_band(band: PhaseOut, factor: f64) -> PhaseOut {
+    PhaseOut {
         from: scale(band.from, factor),
         to: scale(band.to, factor),
-    };
+    }
+}
+
+fn scale_phase_out(bands: PerStatus<PhaseOut>, factor: f64) -> PerStatus<PhaseOut> {
     PerStatus {
-        single: scaled(bands.single),
-        married_joint: scaled(bands.married_joint),
+        single: scale_band(bands.single, factor),
+        married_joint: scale_band(bands.married_joint, factor),
     }
 }
 
@@ -162,6 +165,10 @@ pub(super) fn inflate(base: &TaxParams, year: i16, factor: f64) -> TaxParams {
         hsa_catch_up_55: scale(base.limits.hsa_catch_up_55, factor),
         roth_ira_phase_out: scale_phase_out(base.limits.roth_ira_phase_out, factor),
         ira_deduction_phase_out: scale_phase_out(base.limits.ira_deduction_phase_out, factor),
+        ira_deduction_phase_out_spouse: base
+            .limits
+            .ira_deduction_phase_out_spouse
+            .map(|band| scale_band(band, factor)),
     };
     for tier in &mut params.irmaa {
         tier.magi_over = scale_status(tier.magi_over, factor);

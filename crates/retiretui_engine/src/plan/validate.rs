@@ -273,6 +273,12 @@ impl<'a> Checker<'a> {
                     format!("unknown person `{}`", income.owner),
                 );
             }
+            if income.covered && income.kind != IncomeKind::Salary {
+                self.push(
+                    format!("{path}.covered"),
+                    "only a salary makes its owner covered",
+                );
+            }
             match income.amount {
                 Some(amount) if amount < 0 => {
                     self.push(format!("{path}.amount"), "must not be negative");
