@@ -72,19 +72,20 @@ depends on UI.
   the month it starts), contributions, Roth conversions, a tax-aware withdrawal
   fixed point that also settles the year's MAGI-driven costs (IRMAA surcharges
   priced from the household MAGI two years earlier, declared cliffs crossed by
-  the current year's MAGI) and the MAGI-driven deduction of a covered person's
-  IRA contribution, surplus sweeping - emits one row per year, and aggregates a
-  projection into headline summary figures in either dollar basis. A
-  contribution is an item of its own that names the account it pays into, who
-  pays, and one amount - dollars, a share of a named income, the year's legal
-  maximum, or an employer's match on what the employee paid - and the law's
-  limits are applied rather than refused: employee amounts are held to each
-  person's pooled limit in the order the plan lists them, each plan to its
-  yearly cap, and what an account holds after tax comes back untaxed pro rata
-  whenever it is drawn. Every year's row says how each contribution came to be
-  what it is. `optimize` searches by re-projecting candidate plans - no
-  closed-form tax approximations: fill-bracket Roth conversion ladders, each in
-  place of any ladder the plan already holds, against a two-sided target, the
+  the current year's MAGI) and the MAGI-driven deduction of a traditional IRA
+  contribution by a person a workplace plan covers - through a salary that says
+  so, or what they pay into one - or by their spouse, surplus sweeping - emits
+  one row per year, and aggregates a projection into headline summary figures in
+  either dollar basis. A contribution is an item of its own that names the
+  account it pays into, who pays, and one amount - dollars, a share of a named
+  income, the year's legal maximum, or an employer's match on what the employee
+  paid - and the law's limits are applied rather than refused: employee amounts
+  are held to each person's pooled limit in the order the plan lists them, each
+  plan to its yearly cap, and what an account holds after tax comes back untaxed
+  pro rata whenever it is drawn. Every year's row says how each contribution
+  came to be what it is. `optimize` searches by re-projecting candidate plans -
+  no closed-form tax approximations: fill-bracket Roth conversion ladders, each
+  in place of any ladder the plan already holds, against a two-sided target, the
   bracket top in taxable-income space and optional MAGI ceilings (an IRMAA tier,
   an explicit cap, active cliffs), and Social Security claim ages, every
   computed benefit - and one made up for anyone with an earnings record and

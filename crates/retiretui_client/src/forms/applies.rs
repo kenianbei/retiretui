@@ -50,6 +50,14 @@ pub(crate) fn chooses_timing(item: &Table) -> bool {
     word(item, KIND_KEY) != Some(IncomeKind::Windfall.as_str())
 }
 
+/// Whether the income's job can have a workplace plan that covers its owner.
+#[must_use]
+pub(crate) fn can_be_covered(item: &Table) -> bool {
+    let kind = item.get(KIND_KEY).cloned();
+    let kind = kind.and_then(|kind| kind.try_into::<IncomeKind>().ok());
+    kind.is_some_and(IncomeKind::can_be_covered)
+}
+
 /// Whether the item happens once: picked so, or a windfall.
 #[must_use]
 pub fn happens_once(item: &Table) -> bool {
@@ -185,6 +193,17 @@ mod tests {
         let windfall = with_timing(item("kind = \"windfall\""));
         assert!(happens_once(&windfall) && !chooses_timing(&windfall));
         assert!(chooses_timing(&with_timing(item("kind = \"salary\""))));
+    }
+
+    #[test]
+    fn only_a_salary_is_asked_whether_its_job_covers_its_owner() {
+        use super::super::Domain;
+        use super::super::income::Incomes;
+        let covered = Incomes::FIELDS.iter().find(|field| field.key == "covered");
+        let covered = covered.expect("the Income form asks it");
+        assert!(covered.is_shown_for(&item("kind = \"salary\"")));
+        assert!(!covered.is_shown_for(&item("kind = \"pension\"")));
+        assert!(!covered.is_shown_for(&Table::new()));
     }
 
     #[test]

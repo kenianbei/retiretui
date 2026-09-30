@@ -170,6 +170,17 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   inverse of `Scenario::apply`, restating what an earlier overlay stated that
   still holds; the client's `Draft::over` and `save_draft` save a scenario's
   draft through it.
+- A salary may say that its job's workplace plan covers its owner - a pension
+  plan, say - with `covered = true`, which the Income form asks as "Workplace
+  plan" on a salary alone. While that salary pays, its owner's traditional IRA
+  contribution phases out over the covered band, as it already did for anyone
+  paying into a 401(k), 403(b), SIMPLE IRA, 414(k) or SEP IRA.
+- On a joint return, a traditional IRA contribution by a person no workplace
+  plan covers, whose spouse one does, phases out over the spouse's own band -
+  242,000 to 252,000 of MAGI in 2026 - where it was deducted in full. The tax
+  tables state it as `ira-deduction-phase-out-spouse`, grown past the last table
+  like the other bands; a user's table that leaves it out deducts the spouse in
+  full. The terminal's Tax Tables list it on a joint return.
 
 ### Changed
 
@@ -264,6 +275,9 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   help. The client loads the tax tables, the market history and the user's
   directories behind a `native` feature, and the MCP server reaches its
   sandboxed plan files through the client's store.
+- The engine's `Income` gains `covered` and `ContributionLimits` gains
+  `ira_deduction_phase_out_spouse`, so a struct literal of either written
+  outside the engine must add them.
 
 ### Fixed
 

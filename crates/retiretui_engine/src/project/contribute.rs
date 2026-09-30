@@ -9,7 +9,7 @@ use crate::plan::{Account, AccountKind, Contribution, Dollars, Payer, TreatmentC
 use crate::tax::{self, LimitPool};
 
 use super::year::{Simulation, YearAcc};
-use super::{Action, ContributionNote, Taxes, scale};
+use super::{Action, ContributionNote, scale};
 
 /// Whether everything paid into the account in a year, by whoever pays,
 /// is capped as one defined-contribution plan's is.
@@ -39,7 +39,7 @@ impl Paid {
     }
 }
 
-fn push_unique(notes: &mut Vec<ContributionNote>, note: ContributionNote) {
+pub(super) fn push_unique(notes: &mut Vec<ContributionNote>, note: ContributionNote) {
     if !notes.contains(&note) {
         notes.push(note);
     }
@@ -92,7 +92,7 @@ impl<'a> Simulation<'a> {
             left: BTreeMap::new(),
         };
         let active = self.active_contributions(year);
-        let mut covered = BTreeSet::new();
+        let mut covered = self.covered_by_salary(acc);
         for by in Payer::ALL {
             for &(index, contribution) in active.iter().filter(|(_, held)| held.by == *by) {
                 let account = &plan.accounts[index];
@@ -122,6 +122,17 @@ impl<'a> Simulation<'a> {
                 self.deposit(index, paid, &covered, acc);
             }
         }
+    }
+
+    /// The owners of the salaries paid this year whose job's workplace plan
+    /// covers them.
+    fn covered_by_salary(&self, acc: &YearAcc) -> BTreeSet<&'a str> {
+        self.plan
+            .income
+            .iter()
+            .filter(|income| income.covered && acc.income.contains_key(&income.id))
+            .map(|income| income.owner.as_str())
+            .collect()
     }
 
     /// The items paying this year, with the index of the account each pays
@@ -207,8 +218,8 @@ impl<'a> Simulation<'a> {
     /// Lands the year's payments in the account: pending until growth,
     /// the employee's pre-tax part deducted where the kind defers tax, and
     /// what was never taxed or already was kept as basis. A traditional
-    /// IRA contribution by someone a workplace plan covers waits for the
-    /// year's MAGI to say how much of it is deducted.
+    /// IRA contribution by someone a workplace plan covers, or by their
+    /// spouse, waits for the year's MAGI to say how much of it is deducted.
     fn deposit(
         &mut self,
         index: usize,
@@ -234,12 +245,9 @@ impl<'a> Simulation<'a> {
         });
         match account.treatment() {
             TreatmentClass::Deferred => {
-                let is_decided_by_magi =
-                    account.kind == AccountKind::Ira && covered.contains(account.owner.as_str());
-                if is_decided_by_magi {
-                    acc.ira_to_settle.push((index, paid.employee));
-                } else {
-                    acc.ordinary -= paid.employee;
+                match Self::ira_band(account, covered) {
+                    Some(band) => acc.ira_to_settle.push((index, band, paid.employee)),
+                    None => acc.ordinary -= paid.employee,
                 }
                 self.bases[index] += paid.after_tax;
             }
@@ -247,65 +255,5 @@ impl<'a> Simulation<'a> {
             TreatmentClass::Taxable if account.kind.tracks_basis() => self.bases[index] += total,
             TreatmentClass::Taxable | TreatmentClass::Roth => {}
         }
-    }
-}
-
-impl Simulation<'_> {
-    /// Once the year's MAGI is settled: what a traditional IRA contribution
-    /// could not deduct becomes basis and is said, and a Roth IRA
-    /// contribution over the income band is said.
-    pub(super) fn settle_ira_bands(
-        &mut self,
-        params: &TaxParams,
-        taxes: &Taxes,
-        acc: &mut YearAcc,
-    ) {
-        let pending: Dollars = acc.ira_to_settle.iter().map(|&(_, amount)| amount).sum();
-        let withheld = pending - taxes.ira_deducted;
-        if withheld > 0 {
-            for &(index, amount) in &acc.ira_to_settle {
-                let part = scale(amount, withheld as f64 / pending as f64);
-                self.bases[index] += part;
-                let id = &self.plan.accounts[index].id;
-                note_on(
-                    &mut acc.actions,
-                    id,
-                    ContributionNote::NotDeducted { amount: part },
-                );
-            }
-        }
-        let band = params
-            .limits
-            .roth_ira_phase_out
-            .for_status(self.plan.household.filing);
-        if band.position(taxes.magi) <= 0.0 {
-            return;
-        }
-        for account in &self.plan.accounts {
-            if account.kind == AccountKind::Ira && account.roth {
-                note_on(
-                    &mut acc.actions,
-                    &account.id,
-                    ContributionNote::RothIraPhaseOut,
-                );
-            }
-        }
-    }
-}
-
-/// Adds a note to the year's contribution into `id`, where there is one
-/// with an employee amount.
-fn note_on(actions: &mut [Action], id: &str, note: ContributionNote) {
-    let paid = actions.iter_mut().find_map(|action| match action {
-        Action::Contribution {
-            account,
-            employee,
-            notes,
-            ..
-        } if account == id && *employee > 0 => Some(notes),
-        _ => None,
-    });
-    if let Some(notes) = paid {
-        push_unique(notes, note);
     }
 }

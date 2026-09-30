@@ -6,6 +6,7 @@ use crate::plan::{Account, ColaSpec, Dollars, Plan, Span};
 use super::benefit::{Derived, first_paid_months};
 use super::collect::{default_cliff_end, seed_magi_lookback};
 use super::invest::Holding;
+use super::ira::IraBand;
 use super::resolve::Resolver;
 use super::{Action, ClassTotals, MarketPath, Projection, Taxes, YearRow, horizon_year};
 
@@ -62,8 +63,8 @@ pub(super) struct YearAcc {
     pub(super) unfunded: Dollars,
     pub(super) cliffs: Dollars,
     /// Traditional IRA contributions by account index whose deduction the
-    /// year's MAGI decides.
-    pub(super) ira_to_settle: Vec<(usize, Dollars)>,
+    /// year's MAGI decides, each with the band it phases out over.
+    pub(super) ira_to_settle: Vec<(usize, IraBand, Dollars)>,
     pub(super) actions: Vec<Action>,
     /// Settle-loop drains per account index, in first-drain order.
     pub(super) funding: Vec<(usize, Dollars)>,

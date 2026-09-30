@@ -49,6 +49,13 @@ impl IncomeKind {
             Self::Other => "other",
         }
     }
+
+    /// Whether the job an income of this kind is paid by can have a
+    /// workplace plan that covers its owner: a salary alone.
+    #[must_use]
+    pub const fn can_be_covered(self) -> bool {
+        matches!(self, Self::Salary)
+    }
 }
 
 /// An income source, in annual today's dollars.
@@ -85,6 +92,11 @@ pub struct Income {
     /// nominal (`false`), or a fixed annual rate of its own.
     #[serde(default)]
     pub cola: ColaSpec,
+    /// For a `salary`: the job's workplace plan covers the owner while it
+    /// pays, contributing or not, which decides whether a traditional IRA
+    /// contribution is deductible.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub covered: bool,
 }
 
 impl Income {

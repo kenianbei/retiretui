@@ -91,6 +91,9 @@ name = "Dana's salary"
 kind = "salary"
 owner = "dana"
 amount = 85000
+# The pension plan at this job covers Dana, which decides whether a
+# traditional IRA contribution is deductible.
+covered = true
 end = { event = "retire-dana", offset = -1 }
 
 # Grows 2% a year of its own, not with inflation.

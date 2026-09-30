@@ -3,7 +3,7 @@
 
 use retiretui_engine::params::{BenefitParams, Inflation, TaxTables};
 use retiretui_engine::plan::{Issue, Plan};
-use retiretui_engine::project::{Projection, project};
+use retiretui_engine::project::{Action, ContributionNote, Projection, project};
 
 pub const FULL: &str = include_str!("../fixtures/full.toml");
 
@@ -59,4 +59,26 @@ birth = 1980-06-15
 {text}
 "#
     )
+}
+
+/// The year's contribution into `account`: employee and employer amounts
+/// and its notes, or nothing paid.
+pub fn contribution<'a>(
+    projection: &'a Projection,
+    year: usize,
+    account: &str,
+) -> (i64, i64, &'a [ContributionNote]) {
+    projection.years[year]
+        .actions
+        .iter()
+        .find_map(|action| match action {
+            Action::Contribution {
+                account: paid,
+                employee,
+                employer,
+                notes,
+            } if paid == account => Some((*employee, *employer, notes.as_slice())),
+            _ => None,
+        })
+        .unwrap_or((0, 0, &[]))
 }

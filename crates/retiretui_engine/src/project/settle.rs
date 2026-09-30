@@ -3,6 +3,7 @@ use crate::plan::{Dollars, FilingStatus, Person, TreatmentClass};
 use crate::tax;
 
 use super::Taxes;
+use super::ira::ira_deducted;
 use super::residence;
 use super::scale;
 use super::year::{Simulation, YearAcc};
@@ -153,13 +154,12 @@ fn compute_taxes(
 ) -> Taxes {
     let before = acc.ordinary + acc.gains;
     let ss_before = tax::taxable_social_security(params, status, before, acc.ss_gross);
-    let pending: Dollars = acc.ira_to_settle.iter().map(|&(_, amount)| amount).sum();
-    let band = params.limits.ira_deduction_phase_out.for_status(status);
-    let ira_deducted = scale(pending, 1.0 - band.position(before + ss_before));
-    let other_income = before - ira_deducted;
+    let by_band = ira_deducted(params, status, &acc.ira_to_settle, before + ss_before);
+    let deducted: Dollars = by_band.iter().sum();
+    let other_income = before - deducted;
     let taxable_ss = tax::taxable_social_security(params, status, other_income, acc.ss_gross);
     let deduction = params.deductions.standard.get(status);
-    let ordinary_taxable = acc.ordinary - ira_deducted + taxable_ss - deduction;
+    let ordinary_taxable = acc.ordinary - deducted + taxable_ss - deduction;
     let ordinary = tax::ordinary_tax(params, status, ordinary_taxable);
     let ltcg = tax::ltcg_tax(params, status, ordinary_taxable, acc.gains);
     let penalty = scale(acc.penalty_base, params.early_withdrawal.penalty);
@@ -175,7 +175,7 @@ fn compute_taxes(
         ordinary_taxable: ordinary_taxable.max(0),
         magi: (other_income + taxable_ss).max(0),
         total: ordinary + ltcg + penalty + state,
-        ira_deducted,
+        ira_deducted: by_band,
     }
 }
 
