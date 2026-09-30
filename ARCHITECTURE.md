@@ -29,85 +29,87 @@ A cargo workspace splits the system into crates with a one-way rule: logic never
 depends on UI.
 
 - `retiretui_engine` - everything that computes. `plan` is the schema, its
-  semantic validation, the scenario overlay merge and the resolution that
-  follows a scenario's base chain through whatever reads the files it names, and
-  how one plan differs from another - items matched by id as the merge matches
-  them - both working on parsed TOML tables so the engine stays IO-free; it also
-  states its closed vocabularies - the kinds, statuses, trigger bases, and
-  places a plan may name - so that no surface restates them. `params` holds
-  per-year tax parameters: values are data, embedded as TOML tables for known
-  years, overridable from user directories - a year's table leaving out a state
-  takes it from the latest earlier table that has it - and extended past the
-  last known year by inflating indexed values by the inflation of the market
-  projected through - and the national average wage index, grown past its last
-  published year at an assumed rate a plan may override, from which the benefit
-  formula's wage bases and bend points derive by statute for any year, beside
-  every cost-of-living adjustment SSA has published. `tax` holds the formulas:
-  rule shapes are code, the Social Security benefit's among them - each year's
-  covered earnings capped at its own base and indexed to the average wage of the
-  year the worker turns 60, the highest years averaged, the primary insurance
-  amount through the bend points of the year they turn 62 and through each COLA
-  from that year, truncated to the dime after each, the reduction or credit for
-  each month the claim falls before or after full retirement age - credits
-  earned in the claim year paid from the next January, save at 70 - and the
-  share of the first year paid from the first month paid for, 62 being held
-  throughout it - and a career at one salary filled from the wage index, as SSA
-  fills a record from current earnings. `statement` reads the statement a person
-  downloads from `ssa.gov` to what a plan keeps of it - the birth date and the
-  covered earnings by year, a sum stated for several years spread evenly over
-  them - which replaces a person's record, once. `project` walks the years -
-  trigger resolution, a year's growth on what each account opened with - its
-  fixed return, or the year's class returns blended by the mix it holds that
-  year, a glide path stepping between mixes as triggers fire - credited before
-  anything draws on it, escalation and the deflator following the market's
-  inflation, scheduled transfers, RMDs, income and expense windows (a Social
-  Security benefit left unstated is computed the year it is claimed, at the
-  month of the date or age its start rests on, from the owner's record - or,
-  where they have none, a career before the plan at the salary its first year
-  pays them - extended with the nominal salary the walk has paid them, and
-  carried from their age-62 year by the COLAs SSA has published so that the
-  income's own escalation carries those still to come; every Social Security
-  benefit pays its first year from the month it starts), contributions, Roth
-  conversions, a tax-aware withdrawal fixed point that also settles the year's
-  MAGI-driven costs (IRMAA surcharges priced from the household MAGI two years
-  earlier, declared cliffs crossed by the current year's MAGI) and the
-  MAGI-driven deduction of a covered person's IRA contribution, surplus
-  sweeping - emits one row per year, and aggregates a projection into headline
-  summary figures in either dollar basis. A contribution is an item of its own
-  that names the account it pays into, who pays, and one amount - dollars, a
-  share of a named income, the year's legal maximum, or an employer's match on
-  what the employee paid - and the law's limits are applied rather than refused:
-  employee amounts are held to each person's pooled limit in the order the plan
-  lists them, each plan to its yearly cap, and what an account holds after tax
-  comes back untaxed pro rata whenever it is drawn. Every year's row says how
-  each contribution came to be what it is. `optimize` searches by re-projecting
-  candidate plans - no closed-form tax approximations: fill-bracket Roth
-  conversion ladders, each in place of any ladder the plan already holds,
-  against a two-sided target, the bracket top in taxable-income space and
-  optional MAGI ceilings (an IRMAA tier, an explicit cap, active cliffs), and
-  Social Security claim ages, every computed benefit - and one made up for
-  anyone with an earnings record and none, save the people whose claims are held
-  as the plan states them - tried at each whole age it can still reach, jointly
-  for the household - each search ranking what it finds by what the household
-  ends with; beside the claim search, a person's benefit is estimated at the
-  ages that frame the choice, by projection; each search emits its answer as a
-  scenario overlay through the schema's own serialization. Each projected row
-  also records the actions the engine executed - transfers, RMDs, contributions,
-  conversion steps, funding withdrawals, the surplus swept - with post-clamp
-  nominal amounts, and what each account grew, so every surface can answer "what
-  do I actually do this year" and where every account's money went without
-  re-deriving execution. `market` makes the markets a plan is walked through -
-  correlated draws from the plan's `[market]` assumptions on a seeded generator
-  of the engine's own, so a saved seed draws the same markets, historical years
-  bootstrapped in blocks, or history replayed from a start year - from an
-  embedded yearly record of U.S. returns and inflation since 1871 that a user
-  file may replace, and runs a plan through many of them at once across the
-  machine's threads where it has more than one, keeping of each run only what
-  the tools show: success, ending, shortfall and net worth by year in that run's
-  own today's dollars, with percentile bands and the runs singled out. `search`
-  is what every search shares: a way to follow it and to stop it at its next
-  step, and the machine's threads, where there are any, to run its independent
-  steps across - a market's runs, a sweep's brackets.
+  semantic validation, the scenario overlay merge and its inverse - the overlay
+  that makes one plan into another, restating what an earlier overlay stated
+  that still holds - the resolution that follows a scenario's base chain through
+  whatever reads the files it names, and how one plan differs from another -
+  items matched by id as the merge matches them - all working on parsed TOML
+  tables so the engine stays IO-free; it also states its closed vocabularies -
+  the kinds, statuses, trigger bases, and places a plan may name - so that no
+  surface restates them. `params` holds per-year tax parameters: values are
+  data, embedded as TOML tables for known years, overridable from user
+  directories - a year's table leaving out a state takes it from the latest
+  earlier table that has it - and extended past the last known year by inflating
+  indexed values by the inflation of the market projected through - and the
+  national average wage index, grown past its last published year at an assumed
+  rate a plan may override, from which the benefit formula's wage bases and bend
+  points derive by statute for any year, beside every cost-of-living adjustment
+  SSA has published. `tax` holds the formulas: rule shapes are code, the Social
+  Security benefit's among them - each year's covered earnings capped at its own
+  base and indexed to the average wage of the year the worker turns 60, the
+  highest years averaged, the primary insurance amount through the bend points
+  of the year they turn 62 and through each COLA from that year, truncated to
+  the dime after each, the reduction or credit for each month the claim falls
+  before or after full retirement age - credits earned in the claim year paid
+  from the next January, save at 70 - and the share of the first year paid from
+  the first month paid for, 62 being held throughout it - and a career at one
+  salary filled from the wage index, as SSA fills a record from current
+  earnings. `statement` reads the statement a person downloads from `ssa.gov` to
+  what a plan keeps of it - the birth date and the covered earnings by year, a
+  sum stated for several years spread evenly over them - which replaces a
+  person's record, once. `project` walks the years - trigger resolution, a
+  year's growth on what each account opened with - its fixed return, or the
+  year's class returns blended by the mix it holds that year, a glide path
+  stepping between mixes as triggers fire - credited before anything draws on
+  it, escalation and the deflator following the market's inflation, scheduled
+  transfers, RMDs, income and expense windows (a Social Security benefit left
+  unstated is computed the year it is claimed, at the month of the date or age
+  its start rests on, from the owner's record - or, where they have none, a
+  career before the plan at the salary its first year pays them - extended with
+  the nominal salary the walk has paid them, and carried from their age-62 year
+  by the COLAs SSA has published so that the income's own escalation carries
+  those still to come; every Social Security benefit pays its first year from
+  the month it starts), contributions, Roth conversions, a tax-aware withdrawal
+  fixed point that also settles the year's MAGI-driven costs (IRMAA surcharges
+  priced from the household MAGI two years earlier, declared cliffs crossed by
+  the current year's MAGI) and the MAGI-driven deduction of a covered person's
+  IRA contribution, surplus sweeping - emits one row per year, and aggregates a
+  projection into headline summary figures in either dollar basis. A
+  contribution is an item of its own that names the account it pays into, who
+  pays, and one amount - dollars, a share of a named income, the year's legal
+  maximum, or an employer's match on what the employee paid - and the law's
+  limits are applied rather than refused: employee amounts are held to each
+  person's pooled limit in the order the plan lists them, each plan to its
+  yearly cap, and what an account holds after tax comes back untaxed pro rata
+  whenever it is drawn. Every year's row says how each contribution came to be
+  what it is. `optimize` searches by re-projecting candidate plans - no
+  closed-form tax approximations: fill-bracket Roth conversion ladders, each in
+  place of any ladder the plan already holds, against a two-sided target, the
+  bracket top in taxable-income space and optional MAGI ceilings (an IRMAA tier,
+  an explicit cap, active cliffs), and Social Security claim ages, every
+  computed benefit - and one made up for anyone with an earnings record and
+  none, save the people whose claims are held as the plan states them - tried at
+  each whole age it can still reach, jointly for the household - each search
+  ranking what it finds by what the household ends with; beside the claim
+  search, a person's benefit is estimated at the ages that frame the choice, by
+  projection; each search emits its answer as a scenario overlay through the
+  schema's own serialization. Each projected row also records the actions the
+  engine executed - transfers, RMDs, contributions, conversion steps, funding
+  withdrawals, the surplus swept - with post-clamp nominal amounts, and what
+  each account grew, so every surface can answer "what do I actually do this
+  year" and where every account's money went without re-deriving execution.
+  `market` makes the markets a plan is walked through - correlated draws from
+  the plan's `[market]` assumptions on a seeded generator of the engine's own,
+  so a saved seed draws the same markets, historical years bootstrapped in
+  blocks, or history replayed from a start year - from an embedded yearly record
+  of U.S. returns and inflation since 1871 that a user file may replace, and
+  runs a plan through many of them at once across the machine's threads where it
+  has more than one, keeping of each run only what the tools show: success,
+  ending, shortfall and net worth by year in that run's own today's dollars,
+  with percentile bands and the runs singled out. `search` is what every search
+  shares: a way to follow it and to stop it at its next step, and the machine's
+  threads, where there are any, to run its independent steps across - a market's
+  runs, a sweep's brackets.
 - `retiretui_client` - what every interface shares over the engine, and draws in
   its own way; it depends on none of their own crates. The words a plan is said
   in - a value, a table, an action, and an issue read back as the domain, item
@@ -128,28 +130,30 @@ depends on UI.
   file read, written, listed and stamped through one store - the disk, or files
   kept as keys of a browser's storage, each file's count of writes its stamp.
   The document a shell holds open, its projection, and the draft every edit
-  lands in with its whole-plan history. A first plan from the new-plan answers -
-  asked of a partner only where the household files jointly, in the steps a page
-  asks them in - or an example; a statement's earnings recorded on a person; the
-  searches the tools and the overview share, the words their options and what
-  the overview finds better are said in - the market runs' among them: how the
-  plan fared and in which zone, what the runs were made under and where each is
-  edited, how they end, and the market a run went through as an address keeps it
-  and as it is named - and what can be done for a person beside the claim
-  search, each edit said and refused in its own words; what the Overview lists
-  beside its verdict - the draft's issues, the years the plan pays Medicare's
-  surcharges, the contributions it could not make as stated, a benefit estimated
-  without its record, an amount too large to be likely, and the plan's
-  milestones - each row led by its year or the item behind it, the worst
-  historical start the plan does not survive with how many do not, and a year's
-  actions and warnings in either dollar basis; what plans compared side by side
-  are said in - each one's figures, or its differences from a baseline's, a
-  metric year by year, and what one changes of another; a year's tax tables as a
-  plan's projection applies them - for its filing status and the state it lives
-  in that year, or any other picked, the plan's own offered first - in the words
-  its other tables are said in; and the shapes a search or a year's actions are
-  replied in as data. Where there is a machine beneath it, what that machine
-  supplies: the user's own tax tables, market history and directories.
+  lands in with its whole-plan history - a scenario's saved into its own overlay
+  over its base as the save reads it, and an edit no overlay can state refused.
+  A first plan from the new-plan answers - asked of a partner only where the
+  household files jointly, in the steps a page asks them in - or an example; a
+  statement's earnings recorded on a person; the searches the tools and the
+  overview share, the words their options and what the overview finds better are
+  said in - the market runs' among them: how the plan fared and in which zone,
+  what the runs were made under and where each is edited, how they end, and the
+  market a run went through as an address keeps it and as it is named - and what
+  can be done for a person beside the claim search, each edit said and refused
+  in its own words; what the Overview lists beside its verdict - the draft's
+  issues, the years the plan pays Medicare's surcharges, the contributions it
+  could not make as stated, a benefit estimated without its record, an amount
+  too large to be likely, and the plan's milestones - each row led by its year
+  or the item behind it, the worst historical start the plan does not survive
+  with how many do not, and a year's actions and warnings in either dollar
+  basis; what plans compared side by side are said in - each one's figures, or
+  its differences from a baseline's, a metric year by year, and what one changes
+  of another; a year's tax tables as a plan's projection applies them - for its
+  filing status and the state it lives in that year, or any other picked, the
+  plan's own offered first - in the words its other tables are said in; and the
+  shapes a search or a year's actions are replied in as data. Where there is a
+  machine beneath it, what that machine supplies: the user's own tax tables,
+  market history and directories.
 - `retiretui_tui` - the interactive planner described under `tui` below, as a
   library over the client and above whatever backend draws it, mapping each
   editing domain to its page. It runs each search beside the frames: on a thread
@@ -318,18 +322,21 @@ depends on UI.
   last good view, reports its first issue, counts them beside the file name, and
   lists every one in a panel whose rows turn to the item. Saving writes the
   draft as canonical TOML through the same validation gate as every other write;
-  scenario sessions are read-only, since a resolved plan cannot be written back
-  into an overlay, and saving one under a new name writes the resolved plan as a
-  plan of its own. The resolved chain's files are watched so edits made outside
-  the session - on disk, or from another tab of the page - re-project in place,
-  except under an unsaved draft or an item being edited, which is reported
-  rather than overwritten, and so are each compared file's, which have no draft
-  to protect; `mcp` serves the same contract to AI agents over stdio - list,
-  read, validate, write, project, actions, compare, earnings-import, optimizer
-  and market tools over plan files sandboxed to a served directory, plus
-  tax-parameter lookup and an embedded schema reference. Writes are gated on
-  full validation - scenarios validated fully resolved - and stored in canonical
-  TOML; the schema reference's worked example is kept valid by the test suite.
+  a scenario session saves into its own overlay, still naming its base and
+  stating what differs from it beside whatever it stated that still holds; an
+  edit no overlay can state - clearing what the base states outside an item - is
+  refused in the form's words, and saving one under a new name writes the
+  resolved plan as a plan of its own. The resolved chain's files are watched so
+  edits made outside the session - on disk, or from another tab of the page -
+  re-project in place, except under an unsaved draft or an item being edited,
+  which is reported rather than overwritten, and so are each compared file's,
+  which have no draft to protect; `mcp` serves the same contract to AI agents
+  over stdio - list, read, validate, write, project, actions, compare,
+  earnings-import, optimizer and market tools over plan files sandboxed to a
+  served directory, plus tax-parameter lookup and an embedded schema reference.
+  Writes are gated on full validation - scenarios validated fully resolved - and
+  stored in canonical TOML; the schema reference's worked example is kept valid
+  by the test suite.
 - `retiretui_web` - the planner in a browser page, built for wasm alone and
   published to GitHub Pages under `/ratzilla` with each release, apart from the
   web app it sits beside: plurimus's WebGL canvas, the workspace kept in the
