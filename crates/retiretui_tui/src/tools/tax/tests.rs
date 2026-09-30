@@ -44,10 +44,10 @@ fn the_tables_follow_the_year_and_the_picks() {
     let mut app = moving_app();
     let frame = redrawn(&mut app);
     assert!(
-        frame.contains("Tax Tables · 2026 · Married filing jointly · Oregon"),
+        frame.contains("Income tax brackets · 2026 · Married filing jointly · Oregon"),
         "{frame}"
     );
-    assert!(titles(&app).contains(&"Oregon income tax".to_owned()));
+    assert!(frame.contains("Oregon income tax"), "listed: {frame}");
     press_key(&mut app, KeyCode::Char(']'));
     assert_eq!(
         app.world().resource::<YearCursor>().0,
@@ -63,10 +63,10 @@ fn the_tables_follow_the_year_and_the_picks() {
     picked(&mut app, 'f', "single");
     let frame = redrawn(&mut app);
     assert!(
-        frame.contains("Tax Tables · 2027 · Single · Texas"),
+        frame.contains("Income tax brackets · 2027 · Single · Texas"),
         "{frame}"
     );
-    assert!(titles(&app).contains(&"Texas income tax".to_owned()));
+    assert!(frame.contains("Texas income tax"), "listed: {frame}");
     press_key(&mut app, KeyCode::Char('t'));
     type_text(&mut app, "washington");
     redrawn(&mut app);
@@ -81,7 +81,7 @@ fn the_tables_follow_the_year_and_the_picks() {
     app.world_mut().resource_mut::<YearCursor>().0 = Some(2060);
     let frame = redrawn(&mut app);
     assert!(
-        frame.contains("Tax Tables · 2060 · Single · Washington"),
+        frame.contains("Income tax brackets · 2060 · Single · Washington"),
         "{frame}"
     );
     assert!(composed_frame(&app).contains("] next year"));
@@ -90,10 +90,42 @@ fn the_tables_follow_the_year_and_the_picks() {
 #[test]
 fn a_year_moved_while_away_is_shown_on_return() {
     let mut app = moving_app();
-    assert!(redrawn(&mut app).contains("Tax Tables · 2026 ·"));
+    assert!(redrawn(&mut app).contains("Income tax brackets · 2026 ·"));
     show(&mut app, Page::Overview);
     press_key(&mut app, KeyCode::Right);
     show(&mut app, Page::TaxTables);
     let frame = redrawn(&mut app);
-    assert!(frame.contains("Tax Tables · 2027 ·"), "{frame}");
+    assert!(frame.contains("Income tax brackets · 2027 ·"), "{frame}");
+}
+
+#[test]
+fn the_highlighted_section_is_tabled_and_kept_across_a_year() {
+    let mut app = moving_app();
+    press_key(&mut app, KeyCode::Down);
+    let frame = redrawn(&mut app);
+    assert!(
+        frame.contains("Long-term capital gains · 2026 ·"),
+        "{frame}"
+    );
+    assert!(frame.contains("$98,900"), "its rows: {frame}");
+    press_key(&mut app, KeyCode::Char(']'));
+    let frame = redrawn(&mut app);
+    assert!(
+        frame.contains("Long-term capital gains · 2027 ·"),
+        "{frame}"
+    );
+    press_key(&mut app, KeyCode::End);
+    picked(&mut app, 't', "texas");
+    let frame = redrawn(&mut app);
+    assert!(frame.contains("Texas brackets · 2027 ·"), "{frame}");
+    assert!(
+        frame.contains("This state has no income tax."),
+        "its note: {frame}"
+    );
+    press_key(&mut app, KeyCode::Up);
+    let frame = redrawn(&mut app);
+    assert!(
+        frame.contains("Taxes Social Security"),
+        "rows again: {frame}"
+    );
 }
