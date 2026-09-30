@@ -6,7 +6,7 @@ import {
 } from "@wasm/retiretui_wasm.js";
 import { useMemo } from "react";
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { MarginNote } from "@/components/margin-note";
 import type { Basis } from "@/overview/words";
 import { useClaims } from "@/searches";
 import { useSession } from "@/session";
@@ -146,9 +146,9 @@ export function ClaimsPage() {
             lists them.
           </p>
         ) : found.error && !found.isFetching ? (
-          <Alert>
-            <AlertDescription>{found.error.message}</AlertDescription>
-          </Alert>
+          <MarginNote zone="caution" role="alert">
+            <p className="text-sm">{found.error.message}</p>
+          </MarginNote>
         ) : !reply ? (
           <p className="text-muted-foreground">{WORDS.nothing_searched}</p>
         ) : (

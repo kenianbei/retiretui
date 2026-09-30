@@ -14,6 +14,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -135,15 +140,19 @@ export function ManagePlans({ isOpen, setOpen, download }: ManagePlansProps) {
                   </span>
                   <div className={cn("flex gap-1", isBadged && "row-span-2")}>
                     {acts.map(({ verb, Icon, act }) => (
-                      <Button
-                        key={verb}
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`${verb} ${fileName}`}
-                        onClick={act}
-                      >
-                        <Icon aria-hidden />
-                      </Button>
+                      <Tooltip key={verb}>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`${verb} ${fileName}`}
+                            onClick={act}
+                          >
+                            <Icon aria-hidden />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>{verb}</TooltipContent>
+                      </Tooltip>
                     ))}
                   </div>
                   {isBadged && (

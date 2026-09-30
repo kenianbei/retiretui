@@ -13,6 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { MarginNote } from "@/components/margin-note";
 import { Button } from "@/components/ui/button";
 import { gathered } from "@/lib/utils";
 import { Field } from "@/plan/fields";
@@ -108,14 +109,15 @@ export function FormSheet({
                 className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-5"
               >
                 {refusal && (
-                  <div
+                  <MarginNote
                     ref={refused}
+                    zone="shortfall"
                     role="alert"
                     tabIndex={-1}
-                    className="border-destructive text-destructive rounded-md border-l-4 px-3 py-2 text-sm"
+                    className="text-sm outline-none"
                   >
-                    {refusal}
-                  </div>
+                    <p>{refusal}</p>
+                  </MarginNote>
                 )}
                 {gathered(views).map(({ group, items }) => {
                   const fields = items.map((view) => (

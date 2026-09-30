@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import type { FieldView } from "@wasm/retiretui_wasm.js";
 import { useMemo, useState } from "react";
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { MarginNote } from "@/components/margin-note";
 import { Button } from "@/components/ui/button";
 import { useFileActions } from "@/files/actions";
 import { INPUT, cn, messageOf } from "@/lib/utils";
@@ -69,9 +69,9 @@ export function CheckAnswers({ answering }: { answering: Answering }) {
         </div>
       ))}
       {made.problem !== null ? (
-        <Alert variant="destructive">
-          <AlertDescription>{made.problem}</AlertDescription>
-        </Alert>
+        <MarginNote zone="shortfall" role="alert">
+          <p className="text-sm">{made.problem}</p>
+        </MarginNote>
       ) : (
         <form
           className="space-y-3"

@@ -113,7 +113,7 @@ export function DraftToolbar() {
         }
       >
         <Button
-          variant={document.isDirty ? "default" : "outline"}
+          variant="outline"
           size="sm"
           disabled={isReadOnly || !document.isDirty}
           onClick={save}

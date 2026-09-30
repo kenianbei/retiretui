@@ -22,7 +22,7 @@ export function Constraints() {
         <h2 id="constraints" className="mr-auto text-lg font-semibold">
           Constraints
         </h2>
-        <Button size="sm" asChild>
+        <Button variant="outline" size="sm" asChild>
           <Link
             from="/tools/$page"
             to="."

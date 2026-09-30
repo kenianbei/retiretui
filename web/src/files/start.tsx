@@ -86,7 +86,7 @@ export function Start() {
 
       <div className="space-y-3">
         <h2 className="font-semibold">Or bring your own</h2>
-        <Button onClick={actions.upload}>
+        <Button variant="outline" onClick={actions.upload}>
           <Upload aria-hidden />
           Upload a plan
         </Button>

@@ -6,7 +6,7 @@ import {
 } from "@wasm/retiretui_wasm.js";
 import { useMemo } from "react";
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { MarginNote } from "@/components/margin-note";
 import { useLadders } from "@/searches";
 import { useSession } from "@/session";
 import { SearchActions, type Chosen } from "@/tools/act";
@@ -138,9 +138,9 @@ export function ConversionsPage() {
             lists them.
           </p>
         ) : found.error && !found.isFetching ? (
-          <Alert variant="destructive">
-            <AlertDescription>{found.error.message}</AlertDescription>
-          </Alert>
+          <MarginNote zone="caution" role="alert">
+            <p className="text-sm">{found.error.message}</p>
+          </MarginNote>
         ) : reply && reply.brackets.length === 0 ? (
           <p className="text-muted-foreground">{WORDS.no_bracket}</p>
         ) : (

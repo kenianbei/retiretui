@@ -6,7 +6,7 @@ import {
 } from "@wasm/retiretui_wasm.js";
 import { useMemo } from "react";
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { MarginNote } from "@/components/margin-note";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -146,9 +146,9 @@ export function MarketsPage({
           lists them.
         </p>
       ) : found.error && !found.isFetching ? (
-        <Alert>
-          <AlertDescription>{found.error.message}</AlertDescription>
-        </Alert>
+        <MarginNote zone="caution" role="alert">
+          <p className="text-sm">{found.error.message}</p>
+        </MarginNote>
       ) : !reply || !highlighted ? (
         <p className="text-muted-foreground">{WORDS.nothing_searched}</p>
       ) : (

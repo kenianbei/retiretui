@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 
 import { columnsFor } from "@/components/columns";
 import { DataTable } from "@/components/data-table";
+import { MarginNote } from "@/components/margin-note";
 import { YearDetailCards } from "@/ledger/year-detail";
 import { messageOf } from "@/lib/utils";
 import { BASIS_LABEL } from "@/overview/view-words";
@@ -166,14 +167,18 @@ export function LedgerPage() {
         </div>
       </div>
       {market !== undefined && (
-        <p className="border-primary bg-card rounded-md border-l-4 px-3 py-2 text-sm first-letter:uppercase">
-          {replayed.said}: the plan as a market tool ran it. <BackToPlan />
-        </p>
+        <MarginNote zone="note">
+          <p className="text-sm first-letter:uppercase">
+            {replayed.said}: the plan as a market tool ran it. <BackToPlan />
+          </p>
+        </MarginNote>
       )}
       {issues.length > 0 && (
-        <p className="border-destructive text-muted-foreground border-l-4 px-3 text-sm">
-          These are the last figures the plan had without issues.
-        </p>
+        <MarginNote zone="shortfall">
+          <p className="text-muted-foreground text-sm">
+            These are the last figures the plan had without issues.
+          </p>
+        </MarginNote>
       )}
       {isWide ? [years, yearDetail] : [yearDetail, years]}
     </div>

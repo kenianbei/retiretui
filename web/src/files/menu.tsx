@@ -39,6 +39,7 @@ export function FileMenu() {
   const name =
     session.document && session.path !== null ? nameOf(session.path) : null;
   const isReadOnly = session.document?.isReadOnly === true;
+  const isDirty = session.document?.isDirty === true;
 
   return (
     <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -48,6 +49,11 @@ export function FileMenu() {
             variant="ghost"
             size="sm"
             title={name ?? undefined}
+            aria-label={
+              name === null
+                ? undefined
+                : `File, ${name}${isDirty ? ", unsaved edits" : ""}`
+            }
             className="min-w-0 shrink justify-start px-2 text-base font-medium"
           >
             {name === null ? (
@@ -57,8 +63,13 @@ export function FileMenu() {
               </>
             ) : (
               <>
-                <span className="sr-only">File, </span>
                 <span className="truncate">{name}</span>
+                {isDirty && (
+                  <span
+                    aria-hidden
+                    className="bg-primary size-2 shrink-0 rounded-full"
+                  />
+                )}
               </>
             )}
             <ChevronDown aria-hidden className="text-muted-foreground" />
