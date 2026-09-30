@@ -2,12 +2,11 @@
 //! for the view alone, and an item read out in the form's words.
 
 use retiretui_client::draft::Draft;
+use retiretui_client::forms::Form;
 use retiretui_client::forms::cells::Cell;
 use retiretui_client::forms::details::{self, ReadRow};
-use retiretui_client::forms::edit::known_as;
-use retiretui_client::forms::offers::display_name;
+use retiretui_client::forms::edit::{known_as, list_of, name_at};
 use retiretui_client::forms::sort::Sort;
-use retiretui_client::forms::{Form, ListOps};
 use serde::Serialize;
 use wasm_bindgen::prelude::{JsError, JsValue, wasm_bindgen};
 
@@ -48,18 +47,6 @@ pub struct TableRow {
     pub cells: Vec<Cell>,
 }
 
-/// The table of the domain `form`, where it holds many items.
-pub(crate) fn list_of(form: &Form) -> Result<ListOps, String> {
-    form.list
-        .ok_or_else(|| format!("{} is one item, not a table", form.title))
-}
-
-/// What item `index` of `form`'s `list` is called, where there is one.
-pub(crate) fn name_at(draft: &Draft, form: &Form, list: ListOps, index: usize) -> Option<String> {
-    let item = (form.item)(draft, index)?;
-    display_name(&item, list.identity, form.fields)
-}
-
 /// The table of the domain `form`, ordered by `sort` where one is given.
 ///
 /// # Errors
@@ -76,8 +63,7 @@ pub fn table(draft: &Draft, form: &Form, sort: Option<Sort>) -> Result<DomainTab
         Some(sort) => sort.order(items),
         None => items,
     };
-    let name_of =
-        |index| name_at(draft, form, list, index).unwrap_or_else(|| list.singular.to_owned());
+    let name_of = |index| name_at(form, draft, index).unwrap_or_else(|| list.singular.to_owned());
     let rows = items.into_iter().map(|(index, cells)| TableRow {
         index,
         name: name_of(index),

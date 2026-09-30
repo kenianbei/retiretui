@@ -24,7 +24,7 @@ use toml::Value;
 use super::build::FormField;
 use super::domain::{BLANK, FieldKind};
 use super::field::space;
-use super::offers::{Offer, PickOffers, Vocabulary, held_word, operand_offers};
+use super::offers::{Offer, PickOffers, Vocabulary, held_word, ref_offers};
 use super::search;
 use crate::hints::Hints;
 use crate::layout::placed;
@@ -109,13 +109,10 @@ impl Select {
         }
     }
 
-    /// The ids of the plan the field refers to, holding `held`, where it
-    /// is a reference.
-    pub fn referred(&self, plan: &Plan, held: Option<&Value>) -> Option<Vec<Offer>> {
+    /// The ids of the plan the field refers to, where it is a reference.
+    pub fn referred(&self, plan: &Plan) -> Option<Vec<Offer>> {
         match self.kind {
-            FieldKind::Ref(source) => {
-                Some(operand_offers(plan, source, held_word(held).as_deref()).offers)
-            }
+            FieldKind::Ref(source) => Some(ref_offers(plan, source)),
             _ => None,
         }
     }

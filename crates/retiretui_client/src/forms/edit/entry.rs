@@ -231,13 +231,9 @@ mod tests {
     use retiretui_engine::plan::Plan;
 
     use super::*;
-    use crate::forms::{DOMAINS, DomainId};
+    use crate::forms::DomainId;
+    use crate::forms::edit::form_of;
     use crate::setup::EXAMPLES;
-
-    fn form(domain: DomainId) -> Form {
-        let is_it = |form: &&Form| form.domain == Some(domain);
-        *DOMAINS.iter().find(is_it).expect("a domain")
-    }
 
     fn draft() -> Draft {
         Draft::new(Plan::from_toml_str(EXAMPLES[0].2).expect("parses"), false)
@@ -246,7 +242,7 @@ mod tests {
     #[test]
     fn a_trigger_is_made_from_its_parts_and_refused_until_it_is_whole() {
         let draft = draft();
-        let mut entry = Entry::open(form(DomainId::Events), &draft, None);
+        let mut entry = Entry::open(form_of(DomainId::Events), &draft, None);
         entry
             .set_trigger("trigger", BASIS, "age")
             .expect("a trigger");
@@ -263,7 +259,7 @@ mod tests {
     #[test]
     fn a_pick_is_kept_as_the_word_the_file_spells() {
         let draft = draft();
-        let mut entry = Entry::open(form(DomainId::Accounts), &draft, Some(0));
+        let mut entry = Entry::open(form_of(DomainId::Accounts), &draft, Some(0));
         entry.set("kind", None, "true").expect("a pick");
         let kind = get_path(entry.edit().snapshot(), "kind");
         assert_eq!(kind, Some(&Value::String("true".to_owned())));

@@ -225,10 +225,10 @@ pub fn draft_text(draft: &Draft) -> Result<String, String> {
 /// The refusal to say: the draft's first issue, or what the write failed
 /// on.
 pub fn write_draft(store: &dyn Store, draft: &Draft, path: &Path) -> Result<(), String> {
-    let text = draft_text(draft)?;
-    store
-        .write(path, &text)
-        .map_err(|error| format!("not saved: {}: {error}", path.display()))
+    if let Some(reason) = draft.refuse_if_invalid() {
+        return Err(reason);
+    }
+    crate::files::write_plan(store, path, &draft.plan)
 }
 
 #[cfg(test)]

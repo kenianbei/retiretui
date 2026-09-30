@@ -9,7 +9,6 @@ use retiretui_engine::statement::Statement;
 
 use super::draft::{Draft, DraftEditor};
 use super::editing::{self, EditSession, Slot};
-use super::offers::display_name;
 use super::table::{DomainTable, Row, cursor_row};
 use crate::command::Outcome;
 use crate::confirm::Confirm;
@@ -17,7 +16,7 @@ use crate::documents::{Browsing, Pickers};
 use crate::journal;
 use crate::store::Store;
 use retiretui_client::forms::Domain;
-use retiretui_client::forms::edit::{known_as, still_known};
+use retiretui_client::forms::edit::{known_as, name_at, still_known};
 use retiretui_client::forms::household::People;
 
 const NO_TABLE: &str = "nothing to add or delete here";
@@ -91,9 +90,7 @@ pub fn delete(focused: FocusedTable, draft: Res<Draft>, mut confirm: ResMut<Conf
         return Outcome::Refused("nothing highlighted to delete".to_owned());
     };
     let known = known_as(&table.ops.form, &draft, index).unwrap_or_default();
-    let shown = (table.ops.item)(&draft, index)
-        .and_then(|item| display_name(&item, table.list.identity, table.ops.fields))
-        .unwrap_or_default();
+    let shown = name_at(&table.ops.form, &draft, index).unwrap_or_default();
     confirm.ask(format!("Delete {shown}?"), "Delete", move |commands| {
         commands.run_system_cached_with(remove_item, (entity, index, known));
     });

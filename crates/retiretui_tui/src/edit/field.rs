@@ -37,7 +37,7 @@ use crate::layout::{placed, sized};
 use crate::present;
 use crate::theme::Theme;
 use retiretui_client::forms::cells::{nth, nth_back};
-use retiretui_client::forms::offers::{candidates, held_word, offered};
+use retiretui_client::forms::offers::{candidates, offered};
 
 /// A widget activated by space alone, leaving Enter to apply the item.
 pub fn space() -> ActivateKeys {
@@ -381,13 +381,8 @@ impl Fields<'_, '_> {
                     FieldKind::Order(_, place) => nth(value, place),
                     _ => value,
                 };
-                let held = held_word(value);
-                let picks = offered(
-                    &field.spec,
-                    candidates(field.spec.kind, plan),
-                    held.as_deref(),
-                );
-                Select::fill(&mut select, Some(picks.offers), value);
+                let options = candidates(field.spec.kind, plan);
+                Select::fill(&mut select, Some(options), value);
             }
             if let Ok((field, is_checked)) = self.checks.get(widget) {
                 let value = get_path(table, field.spec.key);

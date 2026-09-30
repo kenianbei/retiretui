@@ -165,7 +165,7 @@ pub fn show_trigger(value: Option<&Value>, plan: &Plan, group: &[Entity], slots:
             show_text(&mut text, part.as_ref().map(to_text).unwrap_or_default());
         }
         if let Some(mut select) = select {
-            let options = select.referred(plan, part.as_ref());
+            let options = select.referred(plan);
             Select::fill(&mut select, options, part.as_ref());
         }
     }

@@ -300,12 +300,11 @@ pub fn display_name(item: &Table, identity: &str, fields: &[FieldSpec]) -> Optio
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::forms::{DOMAINS, DomainId, Form};
+    use crate::forms::DomainId;
+    use crate::forms::edit::form_of;
 
     fn account_field(key: &str) -> FieldSpec {
-        let is_accounts = |form: &&Form| form.domain == Some(DomainId::Accounts);
-        let form = DOMAINS.iter().find(is_accounts).expect("a domain");
-        *field_of(form.fields, key).expect("a field")
+        *field_of(form_of(DomainId::Accounts).fields, key).expect("a field")
     }
 
     #[test]

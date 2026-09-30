@@ -33,6 +33,23 @@ pub fn known_as(form: &Form, draft: &Draft, index: usize) -> Option<String> {
     item.get(list.identity).map(to_text)
 }
 
+/// The list `form` edits.
+///
+/// # Errors
+///
+/// Where the domain is a single item rather than a table.
+pub fn list_of(form: &Form) -> Result<ListOps, String> {
+    form.list
+        .ok_or_else(|| format!("{} is one item, not a table", form.title))
+}
+
+/// What item `index` of `form` is called, where there is one.
+#[must_use]
+pub fn name_at(form: &Form, draft: &Draft, index: usize) -> Option<String> {
+    let item = (form.item)(draft, index)?;
+    display_name(&item, form.list?.identity, form.fields)
+}
+
 /// The list `form` edits, where item `index` of it is still the one
 /// [`known_as`] answered `known` for.
 ///
@@ -46,18 +63,22 @@ pub fn still_known(
     index: usize,
     known: &str,
 ) -> Result<ListOps, String> {
-    let list = form
-        .list
-        .ok_or_else(|| format!("{} is one item, not a table", form.title))?;
-    if known_as(form, draft, index).as_deref() == Some(known) {
+    let list = list_of(form)?;
+    let is_known = |&at: &usize| known_as(form, draft, at).as_deref() == Some(known);
+    if is_known(&index) {
         return Ok(list);
     }
-    let is_known = |&at: &usize| known_as(form, draft, at).as_deref() == Some(known);
     let now = (0..(list.count)(&draft.plan)).find(is_known);
-    let item = now.and_then(|at| (form.item)(draft, at));
-    let name = item.and_then(|item| display_name(&item, list.identity, form.fields));
+    let name = now.and_then(|at| name_at(form, draft, at));
     let name = name.unwrap_or_else(|| known.to_owned());
     Err(format!("{name} is no longer where it was in the plan"))
+}
+
+/// The form of `domain`, for a test.
+#[cfg(test)]
+pub(crate) fn form_of(domain: super::DomainId) -> Form {
+    let is_it = |form: &&Form| form.domain == Some(domain);
+    *super::DOMAINS.iter().find(is_it).expect("a domain")
 }
 
 /// One item open in its form.
@@ -325,12 +346,11 @@ mod tests {
     use retiretui_engine::plan::Item;
 
     use super::*;
-    use crate::forms::{DOMAINS, DomainId};
+    use crate::forms::DomainId;
     use crate::setup::EXAMPLES;
 
     fn accounts() -> Form {
-        let is_accounts = |form: &&Form| form.domain == Some(DomainId::Accounts);
-        *DOMAINS.iter().find(is_accounts).expect("a domain")
+        form_of(DomainId::Accounts)
     }
 
     fn draft(is_read_only: bool) -> Draft {
@@ -338,11 +358,6 @@ mod tests {
             Plan::from_toml_str(EXAMPLES[0].2).expect("parses"),
             is_read_only,
         )
-    }
-
-    fn form(domain: DomainId) -> Form {
-        let is_it = |form: &&Form| form.domain == Some(domain);
-        *DOMAINS.iter().find(is_it).expect("a domain")
     }
 
     #[test]
@@ -360,10 +375,10 @@ mod tests {
         let refusal = still_known(&accounts, &draft, 0, &first).err();
         let said = format!("{name} is no longer where it was in the plan");
         assert_eq!(refusal, Some(said));
-        let residency = form(DomainId::Residency);
+        let residency = form_of(DomainId::Residency);
         let country = draft.plan.residency[0].country.clone();
         assert_eq!(known_as(&residency, &draft, 0), Some(country));
-        assert!(still_known(&form(DomainId::Settings), &draft, 0, "").is_err());
+        assert!(still_known(&form_of(DomainId::Settings), &draft, 0, "").is_err());
     }
 
     #[test]
