@@ -124,3 +124,29 @@ test("a statement's earnings are recorded on the person it names", async ({
     page.getByRole("button", { name: "Import statement" }),
   ).toHaveCount(0);
 });
+
+test("an empty domain says what it holds before Add, and a form leads with the name", async ({
+  page,
+}) => {
+  await seed(
+    page,
+    { "/starter.toml": example("starter.toml") },
+    "/starter.toml",
+    "#/plan/cliffs",
+  );
+  const main = page.locator("main");
+  const holds = main.getByText(/^Costs that start once your income passes/);
+  const add = main.getByRole("link", { name: "Add" });
+  await expect(add).toBeVisible();
+  const [said, offered] = await Promise.all([
+    holds.boundingBox(),
+    add.boundingBox(),
+  ]);
+  expect((said?.y ?? Infinity) < (offered?.y ?? 0)).toBe(true);
+  await expectAccessible(page);
+
+  await page.goto("#/plan/accounts?edit=0");
+  await expect(
+    page.getByRole("dialog").getByRole("textbox").first(),
+  ).toHaveAccessibleName("Name");
+});

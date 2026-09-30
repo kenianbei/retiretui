@@ -26,15 +26,6 @@ interface DataTableProps<Row extends RowData> {
   className?: string;
 }
 
-/** A clipped cell's whole text, shown over it. */
-function titleOf(
-  text: "wraps" | "clipped" | undefined,
-  cell: { getValue: () => unknown },
-): string | undefined {
-  const value = cell.getValue();
-  return text === "clipped" && typeof value === "string" ? value : undefined;
-}
-
 /**
  * A table whose rows are the plan's: figures in tabular numerals on the
  * right, the selected row marked, an exceeded one in the shortfall colour.
@@ -126,7 +117,6 @@ export function DataTable<Row extends RowData>({
                 {row.getAllCells().map((cell, at) => (
                   <td
                     key={cell.id}
-                    title={titleOf(cell.column.columnDef.meta?.text, cell)}
                     className={cn(
                       "px-3 py-2",
                       fitted(cell.column.columnDef.meta?.text),

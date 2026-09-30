@@ -153,7 +153,7 @@ export function MarketsPage({
         <p className="text-muted-foreground">{WORDS.nothing_searched}</p>
       ) : (
         <>
-          <div className="grid items-start gap-6 @2xl/page:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
+          <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 @2xl/page:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
             <Assumptions rows={reply.assumptions} />
             <section
               aria-labelledby="runs"

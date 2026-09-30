@@ -127,7 +127,7 @@ export function LedgerPage() {
   }
   const unit = BASIS_LABEL[basis];
   const years = (
-    <div key="years" ref={table}>
+    <div key="years" ref={table} className="min-w-0">
       <DataTable
         label={`The plan year by year, ${unit}`}
         columns={columns}
@@ -147,14 +147,12 @@ export function LedgerPage() {
     </div>
   );
   const yearDetail = (
-    <div
-      key="detail"
-      ref={details}
-      className="grid min-w-0 scroll-mt-4 grid-cols-1 items-start gap-4 2xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]"
-    >
-      {detail && year !== undefined && (
-        <YearDetailCards year={year} unit={unit} detail={detail} />
-      )}
+    <div key="detail" ref={details} className="@container min-w-0 scroll-mt-4">
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 @4xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        {detail && year !== undefined && (
+          <YearDetailCards year={year} unit={unit} detail={detail} />
+        )}
+      </div>
     </div>
   );
   return (
@@ -180,7 +178,9 @@ export function LedgerPage() {
           </p>
         </MarginNote>
       )}
-      {isWide ? [years, yearDetail] : [yearDetail, years]}
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 @min-[112rem]/page:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        {isWide ? [years, yearDetail] : [yearDetail, years]}
+      </div>
     </div>
   );
 }

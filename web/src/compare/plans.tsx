@@ -80,15 +80,21 @@ export function CompareWith({
   offered,
   compared,
   onCompared,
+  isPrimary = false,
 }: {
   offered: readonly string[];
   compared: readonly string[];
   onCompared: (paths: string[]) => void;
+  /** Whether it is what the page is for while one plan is shown. */
+  isPrimary?: boolean;
 }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" disabled={offered.length === 0}>
+        <Button
+          variant={isPrimary ? "default" : "outline"}
+          disabled={offered.length === 0}
+        >
           <GitCompareArrows aria-hidden />
           Compare with
         </Button>

@@ -58,8 +58,14 @@ export function Options<T>({
           const full = spelled.get(header);
           return full ? <abbr title={full}>{header}</abbr> : header;
         },
-        meta: { isNumeric: at >= words },
-        cell: ({ row }) => row.original.cells[at],
+        meta:
+          at === 0
+            ? { isNumeric: false, text: "clipped" }
+            : { isNumeric: at >= words },
+        cell: ({ row }) => {
+          const text = row.original.cells[at];
+          return at === 0 ? <span title={text}>{text}</span> : text;
+        },
       }),
     );
   }, [columns, words, spelledOut]);

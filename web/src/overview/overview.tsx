@@ -57,7 +57,7 @@ export function Overview() {
         {view?.shortfall && <Shortfall shortfall={view.shortfall} />}
         {view && <Strip view={view} basis={basis} plan={plan} />}
       </div>
-      <div className="grid items-start gap-6 @split/page:grid-cols-[minmax(0,48rem)_minmax(0,1fr)]">
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 @split/page:grid-cols-[minmax(0,48rem)_minmax(0,1fr)]">
         <div className="min-w-0 space-y-6">
           <ThisYear shown={shown} basis={basis} />
           {view && (
@@ -84,7 +84,7 @@ export function Overview() {
       </div>
       {charts && (
         <div className="@container space-y-3">
-          <div className="grid items-start gap-6 @2xl:grid-cols-2 @6xl:grid-cols-3">
+          <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 @2xl:grid-cols-2 @6xl:grid-cols-3">
             {(["net-worth", "income", "markets"] as const).map((chart) => (
               <PlanChart key={chart} chart={chart} {...charts} />
             ))}

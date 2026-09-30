@@ -14,7 +14,8 @@ export const FEATURES = tableFeatures({
     sorted?: "ascending" | "descending";
     /**
      * Text longer than a cell: `wraps` over lines so the figures beside it
-     * stay in view; `clipped` held to a name's width, whole in its title.
+     * stay in view; `clipped` held to a name's width, the cell giving its
+     * whole text a title.
      */
     text?: "wraps" | "clipped";
   },
@@ -30,7 +31,7 @@ export type TableColumns<Row extends RowData> = ColumnDef<
 >[];
 
 const TEXT_FIT = {
-  wraps: "min-w-48 whitespace-normal",
+  wraps: "min-w-32 whitespace-normal",
   clipped: "max-w-72 truncate",
 };
 

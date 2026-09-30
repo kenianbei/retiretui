@@ -1,12 +1,10 @@
 import type { CompareWords, Metric, YearFigure } from "@wasm/retiretui_wasm.js";
-import { useMemo } from "react";
+import { useId, useMemo } from "react";
 import { Line } from "recharts";
 
 import { columnsFor } from "@/components/columns";
 import { DataTable } from "@/components/data-table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ChartConfig } from "@/components/ui/chart";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn, INPUT } from "@/lib/utils";
 import { SERIES } from "@/overview/bands";
 import { Plot } from "@/overview/charts";
@@ -20,18 +18,14 @@ export interface Charted {
   isAlongZero: boolean;
 }
 
-export type ViewName = "chart" | "table";
-
 interface ViewsProps {
   plans: Charted[];
   words: CompareWords;
   metric: Metric;
-  view: ViewName;
   /** What the figures are in, and whether they are differences. */
   caption: string;
   year: number;
   onYear: (year: number) => void;
-  onView: (view: ViewName) => void;
   onMetric: (metric: Metric) => void;
 }
 
@@ -136,58 +130,46 @@ function PlansTable({ plans, words, year, onYear, caption }: ViewsProps) {
   );
 }
 
-/** The plans' metric year by year, charted or tabled, and the metric picked. */
+/** The plans' metric year by year, charted and tabled at once, and the metric picked. */
 export function Views(props: ViewsProps) {
-  const { words, metric, view, caption, onView, onMetric } = props;
+  const { words, metric, caption, onMetric } = props;
+  const id = useId();
   return (
-    <Card className="min-w-0 gap-3 py-4">
-      <Tabs
-        value={view}
-        onValueChange={(value) => {
-          onView(value === "table" ? "table" : "chart");
-        }}
-        className="gap-3"
-      >
-        <CardHeader className="flex flex-wrap items-center justify-between gap-2 px-4">
-          <CardTitle className="sr-only">By year</CardTitle>
-          <TabsList>
-            <TabsTrigger value="chart" className="h-8">
-              Chart
-            </TabsTrigger>
-            <TabsTrigger value="table" className="h-8">
-              By year
-            </TabsTrigger>
-          </TabsList>
-          <label className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">Metric</span>
-            <select
-              value={metric}
-              onChange={(event) => {
-                const picked = words.metrics.find(
-                  (each) => each.key === event.target.value,
-                );
-                if (picked) onMetric(picked.key);
-              }}
-              className={cn(INPUT, "h-8 w-auto")}
-            >
-              {words.metrics.map((each) => (
-                <option key={each.key} value={each.key}>
-                  {each.title}
-                </option>
-              ))}
-            </select>
-          </label>
-        </CardHeader>
-        <CardContent className="space-y-2 px-4">
+    <section
+      aria-labelledby={id}
+      className="bg-card @container min-w-0 space-y-3 rounded-xl border p-4 shadow-sm"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="space-y-0.5">
+          <h2 id={id} className="text-lg font-semibold">
+            By year
+          </h2>
           <p className="text-muted-foreground text-xs">{caption}</p>
-          <TabsContent value="chart">
-            <PlansChart {...props} />
-          </TabsContent>
-          <TabsContent value="table">
-            <PlansTable {...props} />
-          </TabsContent>
-        </CardContent>
-      </Tabs>
-    </Card>
+        </div>
+        <label className="flex items-center gap-2 text-sm">
+          <span className="text-muted-foreground">Metric</span>
+          <select
+            value={metric}
+            onChange={(event) => {
+              const picked = words.metrics.find(
+                (each) => each.key === event.target.value,
+              );
+              if (picked) onMetric(picked.key);
+            }}
+            className={cn(INPUT, "h-8 w-auto")}
+          >
+            {words.metrics.map((each) => (
+              <option key={each.key} value={each.key}>
+                {each.title}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <div className="grid items-start gap-4 @5xl:grid-cols-2">
+        <PlansChart {...props} />
+        <PlansTable {...props} />
+      </div>
+    </section>
   );
 }

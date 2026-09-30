@@ -119,7 +119,7 @@ export function ConversionsPage() {
         </div>
         <BasisSwitch />
       </div>
-      <div className="grid items-start gap-6 @wide/page:grid-cols-[auto_minmax(0,1fr)]">
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 @wide/page:grid-cols-[auto_minmax(0,1fr)]">
         <section aria-labelledby="options" className="min-w-0 space-y-3">
           <div className="flex items-baseline gap-3">
             <h2 id="options" className="text-lg font-semibold">

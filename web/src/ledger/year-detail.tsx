@@ -36,11 +36,14 @@ function linesOf(flows: AccountFlows): FlowLine[] {
 }
 
 const column = columnsFor<FlowLine>();
+/** The columns naming where money came from or went, which wrap so the figures stay in view. */
+const NAMING: readonly (keyof FlowLine)[] = ["came", "went"];
+
 const flowColumn = (key: keyof FlowLine, header: string, isNumeric: boolean) =>
   column.display({
     id: key,
     header,
-    meta: { isNumeric },
+    meta: NAMING.includes(key) ? { isNumeric, text: "wraps" } : { isNumeric },
     cell: ({ row }) => row.original[key],
   });
 /** Each flows column's key, in the order the client heads them. */
@@ -107,7 +110,7 @@ export function YearDetailCards({
           )}
         </CardContent>
       </Card>
-      <Card className="gap-3 py-4">
+      <Card className="max-w-lg gap-3 py-4">
         <CardHeader className="px-4">
           <CardTitle>{title(VIEW_WORDS.income_and_tax)}</CardTitle>
         </CardHeader>
