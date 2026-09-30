@@ -1,9 +1,8 @@
 import { useSearch } from "@tanstack/react-router";
 import { useMemo } from "react";
 
-import { cn } from "@/lib/utils";
 import { Better } from "@/overview/better";
-import { Charts } from "@/overview/charts";
+import { EveryYear, PlanChart } from "@/overview/charts";
 import { RowList } from "@/overview/lists";
 import { Problems, Shortfall } from "@/overview/notes";
 import { Strip } from "@/overview/strip";
@@ -39,52 +38,59 @@ export function Overview() {
     [reading, basis],
   );
   if (!document) return null;
+  const charts = series && {
+    series,
+    basis,
+    plan,
+    year: shown.year,
+    onYear: shown.setYear,
+  };
 
   return (
     <div className="space-y-6">
-      <div className="space-y-4">
+      <div className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>
-          <BasisSwitch />
+          {view && <BasisSwitch />}
         </div>
         {!isValid && <Problems issues={issues} hasFigures={view !== null} />}
         {view?.shortfall && <Shortfall shortfall={view.shortfall} />}
         {view && <Strip view={view} basis={basis} plan={plan} />}
       </div>
-      <ThisYear shown={shown} basis={basis} />
-      {view && (
-        <div
-          className={cn(
-            "grid items-start gap-8",
-            view.attention.length > 0 &&
-              view.milestones.length > 0 &&
-              "lg:grid-cols-2",
+      <div className="grid items-start gap-6 @split/page:grid-cols-[minmax(0,48rem)_minmax(0,1fr)]">
+        <div className="min-w-0 space-y-6">
+          <ThisYear shown={shown} basis={basis} />
+          {view && (
+            <RowList
+              id="attention"
+              title={VIEW_WORDS.attention}
+              rows={view.attention}
+              empty={VIEW_WORDS.nothing_wanting}
+            />
           )}
-        >
-          <RowList
-            id="attention"
-            title={VIEW_WORDS.attention}
-            rows={view.attention}
-            empty={VIEW_WORDS.nothing_wanting}
-          />
-          {view.milestones.length > 0 && (
+          {plan !== null && <Better plan={plan} held={held} basis={basis} />}
+        </div>
+        <div className="min-w-0 space-y-6">
+          {charts && <PlanChart chart="balances" {...charts} />}
+          {view && view.milestones.length > 0 && (
             <RowList
               id="milestones"
               title={VIEW_WORDS.milestones}
               rows={view.milestones}
+              className="@split/page:max-w-none"
             />
           )}
         </div>
-      )}
-      {plan !== null && <Better plan={plan} held={held} basis={basis} />}
-      {series && (
-        <Charts
-          series={series}
-          basis={basis}
-          plan={plan}
-          year={shown.year}
-          onYear={shown.setYear}
-        />
+      </div>
+      {charts && (
+        <div className="@container space-y-3">
+          <div className="grid items-start gap-6 @2xl:grid-cols-2 @6xl:grid-cols-3">
+            {(["net-worth", "income", "markets"] as const).map((chart) => (
+              <PlanChart key={chart} chart={chart} {...charts} />
+            ))}
+          </div>
+          <EveryYear />
+        </div>
       )}
     </div>
   );

@@ -24,7 +24,7 @@ export function ThisYear({ shown, basis }: { shown: ShownYear; basis: Basis }) {
   const ages = said.ages.map(([name, age]) => `${name} turns ${String(age)}`);
 
   return (
-    <section aria-labelledby="this-year" className="space-y-3">
+    <section aria-labelledby="this-year" className="max-w-3xl space-y-3">
       <div className="space-y-1">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 id="this-year" className="text-lg font-semibold">

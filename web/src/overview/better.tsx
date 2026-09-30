@@ -85,7 +85,7 @@ export function Better({
   const claims = useClaims(plan, held, true);
   const isNothing = owners.length === 0 && claims.error !== null;
   return (
-    <section aria-labelledby="better" className="space-y-3">
+    <section aria-labelledby="better" className="max-w-3xl space-y-3">
       <h2 id="better" className="text-lg font-semibold">
         {WORDS.could_do_better}
       </h2>

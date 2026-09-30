@@ -9,26 +9,22 @@ import {
 
 const FILES = { "/starter.toml": example("starter.toml") };
 
-test("the Overview charts the plan, and a click chooses the year", async ({
+test("the Overview charts the plan at once, and a click chooses the year", async ({
   page,
 }) => {
   await seed(page, FILES, "/starter.toml", "#/overview?basis=nominal");
-  const tabs = page.getByRole("tab");
-  await expect(tabs).toHaveText(["Balances", "Net worth", "Income", "Markets"]);
-  for (const name of ["Balances", "Net worth", "Income"]) {
-    await page.getByRole("tab", { name }).click();
-    const panel = page.getByRole("tabpanel");
-    await expect(panel.locator(".recharts-surface")).toBeVisible();
-    await expect(panel).toContainText("future dollars");
+  const chart = (name: string) =>
+    page.getByRole("region", { name, exact: true });
+  for (const name of ["Balances", "Net worth", "Income & tax"]) {
+    await expect(chart(name).locator(".recharts-surface")).toBeVisible();
+    await expect(chart(name)).toContainText("future dollars");
   }
-  await page.getByRole("tab", { name: "Markets" }).click();
-  const markets = page.getByRole("tabpanel");
+  const markets = chart("Market runs");
   await expect(markets.locator(".recharts-area").first()).toBeVisible(SEARCH);
   await expect(markets).toContainText("today's dollars");
   await expectAccessible(page);
 
-  await page.getByRole("tab", { name: "Net worth" }).click();
-  const plot = page.getByRole("tabpanel").locator(".recharts-surface");
+  const plot = chart("Net worth").locator(".recharts-surface");
   await plot.scrollIntoViewIfNeeded();
   const box = await plot.boundingBox();
   if (!box) throw new Error("the chart has no box");
@@ -38,14 +34,6 @@ test("the Overview charts the plan, and a click chooses the year", async ({
   await expect(page.locator("#this-year")).toContainText(year);
   await page.getByRole("link", { name: "Ledger" }).first().click();
   await expect(page.getByText(`${year} Flows · future dollars`)).toBeVisible();
-
-  await page.goto(`#/overview?year=${year}`);
-  await page.getByRole("tab", { name: "Net worth" }).focus();
-  await page.keyboard.press("ArrowRight");
-  await expect(
-    page.getByRole("tab", { name: "Income", selected: true }),
-  ).toBeVisible();
-  expect(page.url()).toContain(`year=${year}`);
 });
 
 test("the year steps by button and key, within the plan's years", async ({
@@ -117,6 +105,9 @@ test("an issue leads to its field", async ({ page }) => {
   const problems = page.getByRole("region", { name: "This plan has 1 issue" });
   await expect(problems).toContainText("Its figures show once they are fixed.");
   await expect(page.getByRole("term")).toHaveCount(0);
+  await expect(
+    page.getByRole("group", { name: "Show dollars as" }),
+  ).toHaveCount(0);
   await expectAccessible(page);
   await problems
     .getByRole("link", { name: /Balance: must not be negative/ })
