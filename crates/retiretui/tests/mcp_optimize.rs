@@ -50,7 +50,7 @@ fn optimizer_tools_sweep_emit_and_store() {
         "optimize_conversions",
         json!({"path": "opt.toml", "from": ["k"], "to": "r", "bracket": 99}),
     );
-    assert!(refused.contains("no bracket"), "{refused}");
+    assert!(refused.contains("have no 99% bracket"), "{refused}");
     let needs_bracket = client.call_expecting_error(
         "optimize_conversions",
         json!({"path": "opt.toml", "from": ["k"], "to": "r"}),

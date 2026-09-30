@@ -57,14 +57,26 @@ test("each Roth owner's ladder and the household's claims are searched and taken
   await expect(
     page.getByRole("heading", { name: "SSA Benefits" }),
   ).toBeVisible();
+  await expect(
+    page.getByText(/at full retirement age \(FRA, 66 to 67\)/),
+  ).toBeVisible();
   const people = page.getByRole("region", { name: "People" });
   await expect(people.getByText("Priya:")).toBeVisible();
+  const shown = (text: string | RegExp) =>
+    people.getByText(text, { exact: true }).filter({ visible: true }).first();
+  await expect(shown("Stated")).toBeVisible();
+  await expect(shown("No record")).toBeVisible();
+  if (!phone)
+    await expect(
+      people.locator('th abbr[title="full retirement age"]'),
+    ).toHaveText("FRA");
   const act = (name: string) =>
     people.getByRole("button", { name, exact: true });
   await act("Compute from record").click();
   await expect(
     people.getByText("Priya's benefit is computed from their record"),
   ).toBeVisible();
+  await expect(shown("Computed")).toBeVisible();
   await expect(undo).toBeEnabled();
   const marcus = phone
     ? people.getByRole("button", { name: /^Marcus/ })
@@ -84,7 +96,7 @@ test("each Roth owner's ladder and the household's claims are searched and taken
   await expectAccessible(page);
   if (!phone) {
     await expect(claims.getByRole("table").locator("thead")).toContainText(
-      /Priya[\s\S]*Marcus[\s\S]*vs\. the plan/,
+      /Priya[\s\S]*Marcus[\s\S]*Vs\. the plan/,
     );
     const options = claims.getByRole("table").locator("tbody tr");
     const [current, best] = [options.nth(0), options.nth(1)];
@@ -103,7 +115,7 @@ test("each Roth owner's ladder and the household's claims are searched and taken
       "Priya",
     );
     await expect(people.getByRole("row", { name: /Priya/ })).toContainText(
-      "held",
+      "Held",
     );
   }
   await page.getByRole("link", { name: "Overview" }).first().click();
@@ -155,7 +167,7 @@ test("each Roth owner's ladder and the household's claims are searched and taken
   await expect(people.getByText("Priya:")).toBeVisible();
   await act("Estimate from salary").click();
   await expect(
-    people.getByText(/estimated \d+ year\(s\) of earnings for Priya/),
+    people.getByText(/estimated \d+ years of earnings for Priya/),
   ).toBeVisible();
   await act("Clear record…").click();
   await expect(asked.getByText("Clear Priya's earnings record?")).toBeVisible();

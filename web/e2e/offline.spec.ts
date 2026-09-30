@@ -71,7 +71,7 @@ test("after one visit every page opens offline, searches and all", async ({
     ).toBeVisible();
   }
   await expect(
-    page.getByText(/^money lasts in [\d.]+% of [\d,]+$/),
+    page.getByText(/^Money lasts in [\d.]+% of [\d,]+ markets$/),
   ).toBeVisible(SEARCH);
   await context.setOffline(false);
 });

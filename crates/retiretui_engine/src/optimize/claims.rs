@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::params::TaxTables;
 use crate::plan::{
-    ColaSpec, Income, IncomeKind, Issue, Plan, PlanError, SCHEMA_VERSION, Trigger, push_issue,
+    ColaSpec, Income, IncomeKind, Issue, Item, Plan, PlanError, SCHEMA_VERSION, Trigger, push_issue,
 };
 use crate::project::{Projection, horizon_year, project};
 use crate::search::{Progress, RunError};
@@ -253,8 +253,8 @@ fn added_incomes(plan: &Plan, held: &[String], issues: &mut Vec<Issue>) -> Vec<I
                 issues,
                 "income",
                 format!(
-                    "`{id}` is taken, so {}'s benefit has no id to be added under",
-                    person.id
+                    "{}'s benefit would be added as `{id}`, but that id is taken",
+                    person.display_name()
                 ),
             );
             continue;
@@ -298,7 +298,7 @@ fn searched_incomes(
             push_issue(
                 issues,
                 "income",
-                "no social-security income computes its benefit, and no one without one has an earnings record",
+                "no one's Social Security benefit is computed from a record, and no one without a benefit has an earnings record to compute one from",
             );
         }
         return derived;
@@ -323,9 +323,9 @@ fn searched_incomes(
 
 fn refuse_named(income: &Income) -> Option<&'static str> {
     if income.kind != IncomeKind::SocialSecurity {
-        Some("must be a social-security income")
+        Some("must be a Social Security income")
     } else if income.amount.is_some() {
-        Some("states its amount, so its benefit cannot move")
+        Some("states its amount, so its claim cannot be searched")
     } else {
         None
     }
@@ -345,7 +345,9 @@ fn grid_of<'a>(plan: &'a Plan, index: usize, issues: &mut Vec<Issue>) -> Option<
         push_issue(
             issues,
             format!("income[{index}].start"),
-            format!("no claim age from {first} to {LATEST_CREDIT_AGE} falls inside the horizon"),
+            format!(
+                "no claim age from {first} to {LATEST_CREDIT_AGE} falls inside the plan's years"
+            ),
         );
         return None;
     }

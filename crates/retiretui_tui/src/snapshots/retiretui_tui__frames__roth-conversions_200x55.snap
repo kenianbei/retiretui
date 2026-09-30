@@ -7,7 +7,7 @@ expression: composed_frame(app)
 │1 Overview││2 Ledger││3 Compare││4 Tools││5 Plan│                                                                                                                                          full.toml ● 
 ┴──────────┴┴────────┴┴─────────┴╯       ╰┴──────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭ Tools ────────────╮╭ Constraints ───────────────────────────────────────────────────────────────────╮╭ Ladder Options ───────────────────────────────────────────────────────────────────────────────╮
-│▏ Roth Conversions ││                                                                                ││  Bracket vs. the plan converted unfunded final net taxes medicare                             │
+│▏ Roth Conversions ││                                                                                ││  Bracket Vs. the plan Converted Unfunded Ends with Taxes Medicare                             │
 │  SSA Benefits     ││▌ Convert from  Every deferred account                                          ││  Current                  $330k       $0    $2.09M $697k       $0                             │
 │  Monte Carlo      ││  Convert to    roth-ira                                                        ││▏ 22%            +$56k     $988k       $0    $2.15M $515k       $0                             │
 │  Historical       ││  Fill bracket  Every bracket                                                   ││  24%            +$39k     $962k       $0    $2.13M $513k       $0                             │
@@ -56,5 +56,5 @@ expression: composed_frame(app)
 │                   ││                                                                                ││                                                                                               │
 │                   ││                                                                                ││                                                                                               │
 │                   │╰────────────────────────────────────────────────────────────────────────────────╯╰───────────────────────────────────────────────────────────────────────────────────────────────╯
-╰───────────────────╯⏎ edits a constraint; the ladders are searched again once they are applied. ⇧⇥ back to them.                                                                                       
+╰───────────────────╯A ladder converts pre-tax savings to Roth yearly up to a bracket's top: tax now at that rate, not later.                                                                           
  ⏎ edit  ⇥ pane  w write  t take  ctrl-s save  r reload  q quit  ctrl-↓ tab  n dollars                                                                                               : commands  ? help

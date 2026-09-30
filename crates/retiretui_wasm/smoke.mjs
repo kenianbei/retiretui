@@ -129,7 +129,7 @@ const statement = readFileSync(
 assert.throws(() => document.importEarnings(0, "Sam", statement), /was born/);
 files.set("/plans/born.toml", made.text.replace(/birth = \S+/, "birth = 1975-06-14"));
 const born = Document.open("/plans/born.toml", read);
-assert.match(born.importEarnings(0, "Jordan", statement), /recorded 3 year\(s\)/);
+assert.match(born.importEarnings(0, "Jordan", statement), /recorded 3 years of earnings/);
 assert.equal(born.canUndo, true);
 assert.equal(statementPage(), "people");
 
@@ -170,7 +170,7 @@ assert.match(
   ),
   /base = "early.toml"/,
 );
-assert.ok(converting.constraintsRead().some(([label]) => label === "Fill bracket"));
+assert.ok(converting.constraintsRead().some(({ label }) => label === "Fill bracket"));
 
 files.set(
   "/plans/early-ladder.toml",

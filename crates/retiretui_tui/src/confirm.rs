@@ -296,7 +296,8 @@ mod tests {
         let fits = "a".repeat(usize::from(TEXT_COLS));
         assert_eq!(wrapped_rows(&fits), 1);
         assert_eq!(wrapped_rows(&format!("{fits} b")), 2);
-        let question = "Take the 24% ladder? 14 conversion(s), 2026–2038, in place of the ladder taken before.";
+        let question =
+            "Take the 24% ladder? 14 conversions, 2026–2038, in place of the ladder taken before.";
         assert_eq!(wrapped_rows(question), 3);
     }
 }

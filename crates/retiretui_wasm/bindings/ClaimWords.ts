@@ -6,9 +6,17 @@
  */
 export type ClaimWords = { 
 /**
+ * What the tool is for, in a line.
+ */
+about: string, 
+/**
  * The People table's columns.
  */
 people_columns: [string, string, string, string, string, string], 
+/**
+ * Its abbreviated columns, each with its words in full.
+ */
+spelled_out: Array<[string, string]>, 
 /**
  * Before anything is searched.
  */

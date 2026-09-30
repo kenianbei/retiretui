@@ -100,7 +100,7 @@ const TYPES: &str = r#"import type {
   Example, FieldView, Issue, LadderWords, LadderYear, LaddersReply,
   Ledger, MarketRuns, MarketWords, Metric, OverviewView, PersonAction, PersonRow, PlacedIssue,
   NewPlanMade, OpenFailure,
-  Projection, RothOwner, SaidYear, Searched, Sort, Step, Summary, TablesView, ViewWords,
+  Projection, ReadRow, RothOwner, SaidYear, Searched, Sort, Step, Summary, TablesView, ViewWords,
   YearDetail, YearFigure, YearTables,
 } from "../bindings/index";
 export type * from "../bindings/index";"#;
@@ -310,6 +310,7 @@ mod bindings {
     use crate::claims::{ClaimWords, ClaimsOptions, PersonRow, RothOwner};
     use crate::document::{PlacedIssue, SaidYear};
     use crate::unopened::{OpenFailure, Written};
+    use retiretui_client::forms::details::ReadRow;
     use retiretui_client::forms::sort::Sort;
 
     use crate::compare::{CompareView, CompareWords, Searched, YearFigure};
@@ -331,6 +332,7 @@ mod bindings {
     const EXPORTS: &[fn(&Config) -> Result<(), ExportError>] = &[
         Issue::export_all,
         PlacedIssue::export_all,
+        ReadRow::export_all,
         SaidYear::export_all,
         Projection::export_all,
         Summary::export_all,

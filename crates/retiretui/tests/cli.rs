@@ -250,7 +250,7 @@ fn import_earnings_records_the_statement_on_the_person() {
     assert!(ok.status.success(), "{ok:?}");
     let stdout = String::from_utf8(ok.stdout).unwrap();
     assert!(
-        stdout.contains("3 year(s) of earnings (1995-2024)"),
+        stdout.contains("3 years of earnings (1995-2024)"),
         "{stdout}"
     );
     let written = std::fs::read_to_string(plan).unwrap();

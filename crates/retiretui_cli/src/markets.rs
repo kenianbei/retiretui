@@ -190,12 +190,11 @@ fn monte_carlo_text(reply: &MonteCarloReply) -> String {
 fn historical_text(reply: &HistoricalReply) -> String {
     let wrapped = if reply.wrap { ", wrapped" } else { "" };
     format!(
-        "Survived {} of {} start years ({}-{}{wrapped}), {}, in today's dollars\n\n{}",
-        reply.successes,
+        "Money lasts in {} of {} start years ({}-{}{wrapped}), in today's dollars\n\n{}",
+        rate(reply.success_rate),
         reply.runs,
         reply.from,
         reply.to,
-        rate(reply.success_rate),
         runs_table("started", &reply.start_years),
     )
 }

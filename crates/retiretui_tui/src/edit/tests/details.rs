@@ -1,10 +1,16 @@
 //! Headless tests for the details pane beside a table: what it shows of
 //! the row under the cursor, and what ⏎ on it opens.
 
+use bevy_ecs::hierarchy::Children;
+use bevy_ecs::prelude::{Entity, With};
+use plurimus::core::ratatui_core::style::Modifier;
 use plurimus::term::KeyCode;
+use plurimus::ui::UiStyle;
+use retiretui_client::forms::{DOMAINS, DomainId, details};
 
 use super::{clear_field, cursor, draft_plan, fixture_app, fixture_app_sized, is_editing, is_on};
 use crate::edit::details::DetailsTable;
+use crate::edit::draft::Draft;
 use crate::edit::table::{DomainTable, Row};
 use crate::nav::Page;
 use crate::present::money;
@@ -160,4 +166,38 @@ fn a_name_shows_in_place_of_the_id_wherever_the_item_is_named() {
         frame.contains("after Retirement"),
         "and the details phrase it by name: {frame}"
     );
+}
+
+#[test]
+fn what_a_blank_field_stands_for_is_read_out_dimmed() {
+    let mut app = fixture_app();
+    show(&mut app, Page::Accounts);
+    app.update();
+    let world = app.world_mut();
+    let rows: Vec<Entity> = world
+        .query_filtered::<&Children, With<DetailsTable>>()
+        .iter(world)
+        .flat_map(|children| children.iter().skip(1).copied())
+        .collect();
+    let is_dimmed = |row: &Entity| {
+        world
+            .get::<UiStyle>(*row)
+            .is_some_and(|style| style.0.add_modifier.contains(Modifier::DIM))
+    };
+    let dimmed = rows.iter().filter(|row| is_dimmed(row)).count();
+    let draft = world.resource::<Draft>();
+    let form = DOMAINS
+        .iter()
+        .find(|form| form.domain == Some(DomainId::Accounts))
+        .expect("the accounts form");
+    let item = (form.item)(draft, 0).expect("the first account");
+    let unstated = details::rows(form, &item, &draft.plan)
+        .iter()
+        .filter(|row| row.is_unstated)
+        .count();
+    assert!(
+        unstated > 0,
+        "the fixture's cash account leaves fields blank"
+    );
+    assert_eq!(dimmed, unstated);
 }

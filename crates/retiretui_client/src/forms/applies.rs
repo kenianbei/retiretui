@@ -71,6 +71,12 @@ impl FieldSpec {
             .help("Every year between two dates, or once in a single year.")
     }
 
+    /// What an item is called, its ID shown while it is blank.
+    #[must_use]
+    pub const fn name(help: &'static str) -> Self {
+        Self::text("name", "Name").blank("The ID").help(help)
+    }
+
     /// When a recurring item begins.
     pub const fn starts() -> Self {
         Self::trigger("start", "Starts")

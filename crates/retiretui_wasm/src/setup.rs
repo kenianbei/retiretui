@@ -218,7 +218,7 @@ mod tests {
         let said = document
             .import_earnings(0, "me", STATEMENT)
             .expect("recorded");
-        assert!(said.starts_with("recorded 3 year(s) of earnings for"));
+        assert!(said.starts_with("recorded 3 years of earnings for"));
         assert_eq!(document.draft().plan.household.people[0].earnings.len(), 3);
         assert!(document.undo());
         assert!(

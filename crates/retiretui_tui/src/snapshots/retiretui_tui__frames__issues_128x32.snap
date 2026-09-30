@@ -7,7 +7,7 @@ expression: composed_frame(app)
 │1 Overview││2 Ledger││3 Compare││4 Tools││5 Plan│                                                         full.toml ● 3 issues 
 ╯          ╰┴────────┴┴─────────┴┴───────┴┴──────┴──────────────────────────────────────────────────────────────────────────────
  Money lasts                     Success                         Ends with                       Lifetime taxes                 
- Never short                     100% of 20                      $2.09M                          $697k                          
+ Never short                     100% of 20 markets              $2.09M                          $697k                          
 ╭ Milestones ──────────────────────────────────────────────────╮╭ Needs attention ─────────────────────────────────────────────╮
 │▏ 2032 inheritance arrives                                   ▲││▏ Settings › Inflation: must be between -0.1 and 0.5          │
 │  2037 retire                                                █││  Accounts › brokerage › Balance: must not be negative        │

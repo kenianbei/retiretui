@@ -155,13 +155,13 @@ fn a_stated_amount_leaves_nothing_to_search() {
     assert_eq!(
         refused,
         [
-            "income: no social-security income computes its benefit, and no one without one has an earnings record"
+            "income: no one's Social Security benefit is computed from a record, and no one without a benefit has an earnings record to compute one from"
         ]
     );
     let named = search(&plan, &["ss"]).unwrap_err();
     assert_eq!(
         named,
-        ["options.incomes[0]: states its amount, so its benefit cannot move"]
+        ["options.incomes[0]: states its amount, so its claim cannot be searched"]
     );
 }
 
@@ -182,7 +182,7 @@ fn named_incomes_are_checked() {
     );
     assert_eq!(
         search(&plan_from(&salaried), &["pay"]).unwrap_err(),
-        ["options.incomes[0]: must be a social-security income"]
+        ["options.incomes[0]: must be a Social Security income"]
     );
 }
 
@@ -191,7 +191,7 @@ fn a_person_past_seventy_has_no_age_left() {
     let plan = plan_from(&BASE.replace("birth = 1964-06-15", "birth = 1950-06-15"));
     assert_eq!(
         search(&plan, &[]).unwrap_err(),
-        ["income[0].start: no claim age from 76 to 70 falls inside the horizon"]
+        ["income[0].start: no claim age from 76 to 70 falls inside the plan's years"]
     );
 }
 
@@ -281,7 +281,7 @@ fn nothing_is_made_up_without_a_record_or_when_incomes_are_named() {
     assert_eq!(
         search(&plan_from(&no_record), &[]).unwrap_err(),
         [
-            "income: no social-security income computes its benefit, and no one without one has an earnings record"
+            "income: no one's Social Security benefit is computed from a record, and no one without a benefit has an earnings record to compute one from"
         ]
     );
     let couple = couple().replace(
@@ -301,7 +301,7 @@ fn a_held_id_leaves_a_made_up_income_nowhere_to_go() {
     );
     assert_eq!(
         search(&plan_from(&held), &[]).unwrap_err(),
-        ["income: `ss-me` is taken, so me's benefit has no id to be added under"]
+        ["income: me's benefit would be added as `ss-me`, but that id is taken"]
     );
 }
 

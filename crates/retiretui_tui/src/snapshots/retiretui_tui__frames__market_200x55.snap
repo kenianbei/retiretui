@@ -1,6 +1,6 @@
 ---
 source: crates/retiretui_tui/src/frames.rs
-assertion_line: 44
+assertion_line: 45
 expression: composed_frame(app)
 ---
 ╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                                                                                                      
@@ -8,35 +8,35 @@ expression: composed_frame(app)
 ┴──────────┴┴────────┴┴─────────┴┴───────┴╯      ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭ Plan ─────────────╮╭ Market ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │  Accounts       7 ││                                                                                                                                                                                 │
-│  Income         4 ││▌ Leave at least                                                                                                                                                                 │
-│  Expenses       2 ││  Stocks                                                                                                                                                                         │
-│  Cliffs         0 ││    spread                                                                                                                                                                       │
-│  Transfers      1 ││  Bonds                                                                                                                                                                          │
-│  Conversions    1 ││    spread                                                                                                                                                                       │
-│  Contributions  3 ││  Cash                                                                                                                                                                           │
-│  Events         1 ││    spread                                                                                                                                                                       │
-│  People         2 ││  Inflation spread                                                                                                                                                               │
-│  Residency      1 ││    persistence                                                                                                                                                                  │
-│  Household        ││  Stocks, bonds                                                                                                                                                                  │
-│  Settings         ││  Stocks, cash                                                                                                                                                                   │
-│▏ Market           ││  Stocks, inflation                                                                                                                                                              │
-│                   ││  Bonds, cash                                                                                                                                                                    │
-│                   ││  Bonds, inflation                                                                                                                                                               │
-│                   ││  Cash, inflation                                                                                                                                                                │
-│                   ││  Monte Carlo draws  The assumptions                                                                                                                                             │
-│                   ││    trials                                                                                                                                                                       │
-│                   ││    seed                                                                                                                                                                         │
-│                   ││  Historical from                                                                                                                                                                │
-│                   ││    to                                                                                                                                                                           │
-│                   ││    wrap             ✓                                                                                                                                                           │
-│                   ││                                                                                                                                                                                 │
-│                   ││                                                                                                                                                                                 │
-│                   ││                                                                                                                                                                                 │
-│                   ││                                                                                                                                                                                 │
-│                   ││                                                                                                                                                                                 │
-│                   ││                                                                                                                                                                                 │
-│                   ││                                                                                                                                                                                 │
-│                   ││                                                                                                                                                                                 │
+│  Income         4 ││▌ Success                                                                                                                                                                        │
+│  Expenses       2 ││    Leave at least        Nothing                                                                                                                                                │
+│  Cliffs         0 ││  Stocks                                                                                                                                                                         │
+│  Transfers      1 ││    Mean return           6%, the default                                                                                                                                        │
+│  Conversions    1 ││    Spread                16%, the default                                                                                                                                       │
+│  Contributions  3 ││  Bonds                                                                                                                                                                          │
+│  Events         1 ││    Mean return           4%, the default                                                                                                                                        │
+│  People         2 ││    Spread                6%, the default                                                                                                                                        │
+│  Residency      1 ││  Cash                                                                                                                                                                           │
+│  Household        ││    Mean return           2.5%, the default                                                                                                                                      │
+│  Settings         ││    Spread                1%, the default                                                                                                                                        │
+│▏ Market           ││  Inflation                                                                                                                                                                      │
+│                   ││    Spread                1.5%, the default                                                                                                                                      │
+│                   ││    Persistence           60%, the default                                                                                                                                       │
+│                   ││  Correlations                                                                                                                                                                   │
+│                   ││    Stocks and bonds      0.1, the default                                                                                                                                       │
+│                   ││    Stocks and cash       0, the default                                                                                                                                         │
+│                   ││    Stocks and inflation  -0.1, the default                                                                                                                                      │
+│                   ││    Bonds and cash        0, the default                                                                                                                                         │
+│                   ││    Bonds and inflation   -0.2, the default                                                                                                                                      │
+│                   ││    Cash and inflation    0.5, the default                                                                                                                                       │
+│                   ││  Monte Carlo                                                                                                                                                                    │
+│                   ││    Draws from            Your return assumptions                                                                                                                                │
+│                   ││    Trials                1,000, the default                                                                                                                                     │
+│                   ││    Seed                  42, the default                                                                                                                                        │
+│                   ││  Historical                                                                                                                                                                     │
+│                   ││    From                  1871, the default                                                                                                                                      │
+│                   ││    To                    2025, the default                                                                                                                                      │
+│                   ││    Wrap                  ✓                                                                                                                                                      │
 │                   ││                                                                                                                                                                                 │
 │                   ││                                                                                                                                                                                 │
 │                   ││                                                                                                                                                                                 │

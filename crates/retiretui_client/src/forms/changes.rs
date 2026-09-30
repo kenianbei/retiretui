@@ -71,5 +71,5 @@ fn value_words(
     if !shown.is_empty() {
         return shown.join(", ");
     }
-    value.map_or_else(|| spec.blank_word().to_owned(), to_text)
+    value.map_or_else(|| BLANK.to_owned(), to_text)
 }

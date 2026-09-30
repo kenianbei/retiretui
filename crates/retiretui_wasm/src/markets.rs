@@ -8,7 +8,7 @@ use retiretui_client::searches::markets::{
     self, Ending, Listed, Markets, NOTHING_SEARCHED, PLANNED, Zone, market_key, market_of,
     market_said, zone_of,
 };
-use retiretui_client::searches::run_refusal;
+use retiretui_client::searches::page_refusal;
 use retiretui_client::session::Projected;
 use retiretui_engine::market::{self, Band, History, Progress, RunName};
 use retiretui_engine::plan::{Dollars, Plan};
@@ -26,9 +26,10 @@ const PLANNED_KEY: &str = "planned";
 #[derive(Serialize, Debug)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct MarketRuns {
-    /// How the plan fared: "money lasts in 87% of 1,000".
+    /// How the plan fared: "Money lasts in 87% of 1,000 markets".
     pub verdict: String,
-    /// The share of runs it survives and of how many: "87% of 1,000".
+    /// The share of runs it survives and of how many: "87% of 1,000
+    /// markets".
     pub success: String,
     /// The zone its share falls in.
     pub zone: Zone,
@@ -97,6 +98,10 @@ pub struct AssumptionRow {
 pub struct MarketWords {
     /// What the runs say before their first search answers.
     pub nothing_searched: &'static str,
+    /// What the Monte Carlo tool is for, in a line.
+    pub monte_carlo_about: &'static str,
+    /// What the Historical tool is for, in a line.
+    pub historical_about: &'static str,
 }
 
 fn row(plan: &Plan, key: String, first: String, run: &market::Run) -> RunRow {
@@ -135,7 +140,7 @@ fn runs_of<M: Markets>(plan: &Plan, found: &M) -> MarketRuns {
         })
         .collect();
     MarketRuns {
-        verdict: format!("{} {}", M::HEADLINE, found.verdict()),
+        verdict: found.headline(),
         success: found.verdict(),
         zone: zone_of(runs.success_rate()),
         success_rate: runs.success_rate(),
@@ -157,7 +162,7 @@ fn runs_of<M: Markets>(plan: &Plan, found: &M) -> MarketRuns {
 pub fn monte_carlo(text: &str) -> Result<MarketRuns, String> {
     let plan = gated(text)?;
     let found = market::monte_carlo(&plan, tables(), History::embedded(), &Progress::default())
-        .map_err(run_refusal)?;
+        .map_err(page_refusal)?;
     Ok(runs_of(&plan, &found))
 }
 
@@ -169,7 +174,7 @@ pub fn monte_carlo(text: &str) -> Result<MarketRuns, String> {
 pub fn historical(text: &str) -> Result<MarketRuns, String> {
     let plan = gated(text)?;
     let runs = market::historical(&plan, tables(), History::embedded(), &Progress::default())
-        .map_err(run_refusal)?;
+        .map_err(page_refusal)?;
     Ok(runs_of(&plan, &runs))
 }
 
@@ -241,6 +246,8 @@ pub fn js_historical(plan: &str) -> Result<JsValue, JsError> {
 pub fn market_words() -> Result<JsValue, JsError> {
     to_js(&MarketWords {
         nothing_searched: NOTHING_SEARCHED,
+        monte_carlo_about: <market::MonteCarlo as Markets>::ABOUT,
+        historical_about: <market::Runs as Markets>::ABOUT,
     })
 }
 
@@ -266,7 +273,7 @@ mod tests {
         let trial = found.runs[1].market.as_deref().expect("a trial");
         assert!(trial.starts_with("trial-"), "{trial}");
         assert!(
-            found.verdict.starts_with("money lasts in "),
+            found.verdict.starts_with("Money lasts in ") && found.verdict.ends_with(" markets"),
             "{}",
             found.verdict
         );
@@ -282,7 +289,12 @@ mod tests {
     fn historical_lists_its_start_years_worst_first_without_the_by_year_table() {
         let found = historical(starter()).expect("runs");
         assert!(found.by_year.is_none());
-        assert!(found.verdict.starts_with("survived "), "{}", found.verdict);
+        assert!(
+            found.verdict.starts_with("Money lasts in ")
+                && found.verdict.ends_with(" of 155 start years"),
+            "{}",
+            found.verdict
+        );
         let first = &found.runs[1];
         assert_eq!(first.market.as_deref(), Some(first.key.as_str()));
         assert_eq!(found.runs.len(), found.count + 1, "every start year listed");

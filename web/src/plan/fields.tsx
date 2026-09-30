@@ -111,7 +111,7 @@ function TextField({
       id={fieldId(view)}
       className={INPUT}
       inputMode={mode}
-      placeholder={view.blank}
+      placeholder={view.placeholder ?? undefined}
       aria-describedby={described}
       aria-invalid={Boolean(view.complaint ?? view.issue) || undefined}
       {...typing}

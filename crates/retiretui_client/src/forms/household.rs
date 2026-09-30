@@ -19,8 +19,7 @@ impl Domain for People {
     const FIELDS: &'static [FieldSpec] = &[
         FieldSpec::text("id", "ID")
             .help("A short name for this person, which accounts and income refer to."),
-        FieldSpec::text("name", "Name")
-            .help("The person's name as it is shown. Blank shows the ID."),
+        FieldSpec::name("The person's name as it is shown. Blank shows the ID."),
         FieldSpec::text("birth", "Birth date")
             .help("As year-month-day, such as 1975-06-14. Ages are counted from it."),
     ];
@@ -83,7 +82,7 @@ impl Domain for Residencies {
     const IDENTITY: &'static str = "country";
     const FIELDS: &'static [FieldSpec] = &[
         FieldSpec::choice("country", "Country", Vocabulary::Country)
-            .help("Where you live. Space searches the countries by name or code."),
+            .help("Where you live, found by name or code."),
         FieldSpec::choice("state", "State", Vocabulary::UsState)
             .shown_when(applies::is_in_the_us)
             .blank("None")
@@ -133,10 +132,10 @@ impl Single for Household {
             .help("Whether to charge IRMAA, what Medicare adds to a premium at a higher income."),
         FieldSpec::flag("medicare.part_d", "Include Part D")
             .help("Whether the surcharge on drug coverage is charged beside Part B's."),
-        FieldSpec::listed("medicare.prior_magi", "Income last year", 0).help(
+        FieldSpec::listed("medicare.prior_magi", "Income last year", 0).defaults_to("$0").help(
             "Your MAGI the year before the plan starts, which prices its second year. Optional.",
         ),
-        FieldSpec::listed("medicare.prior_magi", "Income year before", 1).help(
+        FieldSpec::listed("medicare.prior_magi", "Income year before", 1).defaults_to("$0").help(
             "Your MAGI two years before the plan starts, which prices its first year. Optional.",
         ),
     ];

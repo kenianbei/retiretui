@@ -7,6 +7,8 @@ use bevy_ecs::prelude::{Commands, Component, Entity};
 use bevy_input_focus::tab_navigation::TabGroup;
 use bevy_ui::{FlexDirection, Node, Overflow, PositionType, Val};
 use plurimus::core::UiWidget;
+use plurimus::core::ratatui_core::style::{Modifier, Style};
+use plurimus::ui::UiStyle;
 use plurimus::widgets::button;
 use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
 
@@ -17,6 +19,7 @@ use super::group::Dependent;
 use crate::layout::{Emphasis, button_node, fixed, growing, placed, rule, sized, spawn_button_row};
 use crate::overlay::{self, Centred};
 use crate::scope::KeyScope;
+use retiretui_client::forms::heading;
 use retiretui_client::forms::lists::gate_of;
 
 /// The form over one item of a domain.
@@ -179,7 +182,12 @@ pub fn spawn_form(commands: &mut Commands, form: Entity, ops: Ops, is_alone: boo
         ))
         .id();
     commands.entity(bar).insert(ChildOf(form));
+    let mut before = None;
     for &spec in ops.fields {
+        if let Some(heading) = heading(before, spec.group) {
+            spawn_heading(commands, column, heading);
+        }
+        before = spec.group;
         let gutter = gutter_cols(ops.fields, &spec);
         let row = spawn_row(commands, column, spec, gutter, label_cols - gutter);
         if let Some(dependent) = Dependent::of(ops.fields, &spec) {
@@ -196,6 +204,17 @@ pub fn spawn_form(commands: &mut Commands, form: Entity, ops: Ops, is_alone: boo
     ));
     commands.spawn((rule(), ChildOf(form)));
     spawn_buttons(commands, form, ops.actions, is_alone);
+}
+
+/// A row naming the group of the fields below it, which takes no focus.
+fn spawn_heading(commands: &mut Commands, column: Entity, heading: &'static str) {
+    commands.spawn((
+        fixed(1.0),
+        UiWidget::new(Paragraph::new(heading)),
+        UiStyle(Style::new().add_modifier(Modifier::BOLD)),
+        placed(),
+        ChildOf(column),
+    ));
 }
 
 /// One field of a form: its label in `label_cols` behind a gutter of

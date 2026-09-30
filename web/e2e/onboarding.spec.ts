@@ -15,6 +15,11 @@ test("a first plan is made from a few questions, read back to be changed", async
   await page.getByLabel("Filing status").selectOption({ label: "Single" });
   await page.getByRole("button", { name: "Continue" }).click();
   await page.waitForURL(/#\/new\/you/);
+  await expect(page.getByLabel("Your name")).not.toHaveAttribute("placeholder");
+  await expect(page.getByLabel("Retirement age")).toHaveAttribute(
+    "placeholder",
+    "Blank is 65",
+  );
   await page.getByLabel("Your name").fill("Jordan");
   await page.getByLabel("Birth year").fill("1975");
   await page.getByLabel("Salary").fill("90000");
@@ -29,6 +34,9 @@ test("a first plan is made from a few questions, read back to be changed", async
   await expect(
     page.getByRole("heading", { name: "About your partner" }),
   ).toHaveCount(0);
+  await expect(page.getByText("65, the default", { exact: true })).toHaveClass(
+    /text-muted-foreground/,
+  );
   await expectAccessible(page);
 
   await page.getByRole("link", { name: "Change Birth year" }).click();

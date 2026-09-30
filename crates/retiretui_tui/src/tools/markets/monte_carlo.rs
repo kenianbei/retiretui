@@ -29,7 +29,6 @@ impl Found for MonteCarlo {
 
 impl MarketTool for MonteCarlo {
     const PAGE: Page = Page::MonteCarlo;
-    const HELP: &'static str = "Random markets from the assumptions or from history; the same seed draws the same markets. Today's dollars.";
 
     const OPEN: &'static str = "open-monte-carlo-run";
     const EDIT: &'static str = "monte-carlo-assumption";

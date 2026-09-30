@@ -5,13 +5,13 @@
 //! document.
 
 use retiretui_client::searches::claims::{
-    NOBODY, NOTHING_SEARCHED, PEOPLE_COLUMNS, PersonAction, age_cell, option_columns, person_row,
-    take_question, taken,
+    NOBODY, NOTHING_SEARCHED, PEOPLE_COLUMNS, PersonAction, SPELLED_OUT, age_cell, option_columns,
+    person_row, take_question, taken,
 };
 use retiretui_client::searches::overview::{
     COULD_DO_BETTER, NOTHING_TO_SEARCH, REFUSED, claims_said, roth_owners,
 };
-use retiretui_client::searches::{AGAINST_PLAN, CURRENT_PLAN, option_cells, run_refusal};
+use retiretui_client::searches::{AGAINST_PLAN, CURRENT_PLAN, option_cells, page_refusal};
 use retiretui_engine::market::Progress;
 use retiretui_engine::optimize::{
     Claim, ClaimCandidate, ClaimSearch, apply_claims, claims_overlay, optimize_claims,
@@ -102,7 +102,7 @@ impl ClaimsOptions {
 pub fn claims(text: &str, held: &[String]) -> Result<ClaimsOptions, String> {
     let plan = gated(text)?;
     let search =
-        optimize_claims(&plan, tables(), &[], held, &Progress::default()).map_err(run_refusal)?;
+        optimize_claims(&plan, tables(), &[], held, &Progress::default()).map_err(page_refusal)?;
     Ok(ClaimsOptions::new(&plan, search))
 }
 
@@ -149,8 +149,12 @@ pub struct RothOwner {
 #[derive(Serialize, Debug)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct ClaimWords {
+    /// What the tool is for, in a line.
+    pub about: &'static str,
     /// The People table's columns.
     pub people_columns: [&'static str; 6],
+    /// Its abbreviated columns, each with its words in full.
+    pub spelled_out: &'static [(&'static str, &'static str)],
     /// Before anything is searched.
     pub nothing_searched: &'static str,
     /// Where the household has no one.
@@ -358,7 +362,9 @@ impl JsDocument {
 #[wasm_bindgen(js_name = claimWords, unchecked_return_type = "ClaimWords")]
 pub fn claim_words() -> Result<JsValue, JsError> {
     to_js(&ClaimWords {
+        about: retiretui_client::searches::claims::ABOUT,
         people_columns: PEOPLE_COLUMNS,
+        spelled_out: SPELLED_OUT,
         nothing_searched: NOTHING_SEARCHED,
         nobody: NOBODY,
         could_do_better: COULD_DO_BETTER,

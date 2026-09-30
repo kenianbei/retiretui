@@ -12,4 +12,9 @@ text: string,
 /**
  * The number it says, where it is one.
  */
-number: number | null, };
+number: number | null, 
+/**
+ * Whether it says what an empty field stands for rather than a value
+ * the plan states.
+ */
+is_unstated: boolean, };

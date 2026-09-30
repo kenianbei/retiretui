@@ -20,8 +20,8 @@ pub fn record(plan: &mut Plan, person: &str, xml: &str) -> Result<Statement, Str
 /// recorded, and the statement's note on any it spread.
 #[must_use]
 pub fn recorded(name: &str, statement: &Statement) -> String {
-    let years = statement.earnings.len();
-    let said = format!("recorded {years} year(s) of earnings for {name}");
+    let years = crate::present::counted(statement.earnings.len(), "year", "years");
+    let said = format!("recorded {years} of earnings for {name}");
     match statement.spread_note() {
         Some(note) => format!("{said}; {note}"),
         None => said,
@@ -68,7 +68,7 @@ mod tests {
         };
         assert_eq!(
             recorded("Jordan", &statement),
-            "recorded 2 year(s) of earnings for Jordan"
+            "recorded 2 years of earnings for Jordan"
         );
         statement.grouped.push((2023, 2024));
         assert!(recorded("Jordan", &statement).ends_with(

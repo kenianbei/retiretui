@@ -145,7 +145,7 @@ impl ItemEdit {
     fn complaint(&self) -> Option<String> {
         let (key, complaint) = self.held_back()?;
         let spec = field_of(self.form.fields, key);
-        let named = spec.map_or(key, |spec| spec.label);
+        let named = spec.map_or_else(|| key.to_owned(), FieldSpec::named);
         Some(format!("{named}: {complaint}"))
     }
 

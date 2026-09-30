@@ -43,9 +43,9 @@ fn ledger_run(app: &App) -> Option<String> {
 fn monte_carlo_searches_by_itself_and_says_how_the_plan_fares() {
     let mut app = app_on(Page::MonteCarlo);
     let frame = redrawn(&mut app);
-    assert!(frame.contains("money lasts in"), "{frame}");
+    assert!(frame.contains("Money lasts in"), "{frame}");
     assert!(
-        frame.contains("of 1,000") && frame.contains("Worst"),
+        frame.contains("of 1,000 markets") && frame.contains("Worst"),
         "{frame}"
     );
     assert!(
@@ -167,7 +167,7 @@ fn historical_lists_every_start_year_worst_first() {
     assert_eq!(listed.len(), 155);
     let worst = &runs.runs[runs.worst_first()[0]];
     assert_eq!(listed[0].run, worst);
-    assert!(redrawn(&mut app).contains("survived"));
+    assert!(redrawn(&mut app).contains("of 155 start years"));
 }
 
 #[test]

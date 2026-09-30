@@ -8,8 +8,9 @@ use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Component, Entity, On, Query, Res, With};
 use bevy_input::keyboard::KeyboardInput;
 use bevy_input_focus::FocusedInput;
+use plurimus::core::ratatui_core::style::{Modifier, Style};
 use plurimus::term::bevy_compat::HeldModifiers;
-use plurimus::ui::{ScrollArea, first_bound};
+use plurimus::ui::{ScrollArea, UiStyle, first_bound};
 use plurimus::widgets::ActiveDescendant;
 
 use super::domain::Ops;
@@ -21,15 +22,23 @@ use crate::layout::{self, filling, placed};
 use crate::nav::{FocusStop, ShownSurface};
 use crate::pane::Pane;
 use crate::tabulate;
-use retiretui_client::forms::details;
+use retiretui_client::forms::details::{self, ReadRow};
+use retiretui_client::forms::heading;
 
 /// The width of the pane beside a table, borders included: the longest
 /// label, a gap, and a value's worth of cells; beside the sidebar and a
 /// table it fits the narrowest terminal.
-pub const DETAILS_COLS: u16 = 34;
+pub const DETAILS_COLS: u16 = 36;
 const GAP: u16 = 1;
 const HEADER: [&str; 2] = ["", ""];
 const TEXT_COLUMNS: [usize; 2] = [0, 1];
+/// A field read out as what its blank stands for, dimmed beside the
+/// values the plan states.
+const UNSTATED: Style = Style::new().add_modifier(Modifier::DIM);
+/// What sets a field in under the heading that gathers it.
+const GATHERED: &str = "  ";
+/// A heading over the fields it gathers.
+const HEADING: Style = Style::new().add_modifier(Modifier::BOLD);
 const BESIDE_HINTS: Hints = Hints(&[("↑↓", "scroll"), ("⏎", "edit")]);
 
 /// The table an item's details are rows of: of the domain `ops`, and of
@@ -94,21 +103,48 @@ pub fn refresh(
         }
         let item = shown_row(cursor.as_deref(), &cursors)
             .and_then(|Row(index)| (shown_of.ops.item)(&draft, index));
-        let rows: Vec<Vec<String>> = item.map_or_else(Vec::new, |item| {
-            let rows = details::rows(&shown_of.ops, &item, &draft.plan);
-            rows.into_iter().map(Vec::from).collect()
+        let read = item.map_or_else(Vec::new, |item| {
+            details::rows(&shown_of.ops, &item, &draft.plan)
         });
+        let (rows, styles) = drawn(read);
         commands
             .entity(table)
             .insert(tabulate::labelled(&rows, GAP));
         let header = HEADER.map(str::to_owned);
-        tabulate::refill(
+        let spawned = tabulate::refill(
             &mut commands,
             (table, &mut scroll),
             (&header, &rows),
             &TEXT_COLUMNS,
         );
+        for (&row, style) in spawned.iter().zip(styles) {
+            if let Some(style) = style {
+                commands.entity(row).insert(UiStyle(style));
+            }
+        }
     }
+}
+
+/// The rows `read` is drawn as, each heading above the fields it gathers,
+/// and the style each row stands out in, where it does.
+fn drawn(read: Vec<ReadRow>) -> (Vec<Vec<String>>, Vec<Option<Style>>) {
+    let mut rows = Vec::with_capacity(read.len());
+    let mut styles = Vec::with_capacity(read.len());
+    let mut before = None;
+    for row in read {
+        if let Some(group) = heading(before, row.group) {
+            rows.push(vec![group.to_owned(), String::new()]);
+            styles.push(Some(HEADING));
+        }
+        before = row.group;
+        let label = match row.group {
+            Some(_) => format!("{GATHERED}{}", row.label),
+            None => row.label,
+        };
+        rows.push(vec![label, row.text]);
+        styles.push(row.is_unstated.then_some(UNSTATED));
+    }
+    (rows, styles)
 }
 
 /// Enter on the details opens the item they show.

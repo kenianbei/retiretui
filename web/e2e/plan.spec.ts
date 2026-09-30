@@ -22,6 +22,12 @@ test("a domain's items are tabled in any column's order", async ({
     page.getByRole("heading", { name: "Accounts", level: 1 }),
   ).toBeVisible();
   await expectAccessible(page);
+  if (!isPhone(testInfo))
+    await expect(
+      page
+        .getByRole("region", { name: "Checking" })
+        .getByText("Earns nothing", { exact: true }),
+    ).toHaveClass(/text-muted-foreground/);
   if (isPhone(testInfo)) {
     await page
       .getByLabel("Sort by")
@@ -94,7 +100,7 @@ test("a statement's earnings are recorded on the person it names", async ({
   await expect(
     page
       .getByRole("status")
-      .filter({ hasText: /recorded 3 year\(s\) of earnings for Sam/ }),
+      .filter({ hasText: /recorded 3 years of earnings for Sam/ }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Undo" }).first().click();
   await expect(

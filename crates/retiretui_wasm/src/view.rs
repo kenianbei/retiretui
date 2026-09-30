@@ -66,8 +66,13 @@ pub struct FieldView {
     pub text: String,
     /// What it shows while typed into: money as plain digits.
     pub typed: String,
-    /// What a blank field reads as.
-    pub blank: &'static str,
+    /// What it shows while entered empty: `Blank is 65`; none where it
+    /// may not be left empty.
+    pub placeholder: Option<String>,
+    /// What it reads as once left empty: `65, the default`.
+    pub unstated: String,
+    /// The heading it is gathered under with its neighbours, where it is.
+    pub group: Option<&'static str>,
     /// A rate's or a share's number, for its slider.
     pub number: Option<f64>,
     /// Whether a flag or a tick is set.
@@ -226,7 +231,9 @@ impl Editor {
             control: control_of(spec.kind),
             text,
             typed,
-            blank: spec.blank_word(),
+            placeholder: spec.placeholder(),
+            unstated: spec.unstated(),
+            group: spec.group,
             number: value.and_then(Value::as_float),
             is_ticked: match spec.kind {
                 FieldKind::Presence(_) => value.is_some_and(Value::is_table),

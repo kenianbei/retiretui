@@ -5,14 +5,14 @@ import { useMemo, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useFileActions } from "@/files/actions";
-import { INPUT, messageOf } from "@/lib/utils";
+import { INPUT, cn, messageOf } from "@/lib/utils";
 import type { Answering } from "@/onboarding/page";
 import { planName } from "@/workspace";
 
-/** What a field holds, as its control shows it. */
+/** What a field holds, as its control shows it, or what its blank stands for. */
 function answerOf(view: FieldView): string {
   const offer = view.offers.find((each) => each.value === view.text);
-  return offer?.label ?? (view.text || view.blank);
+  return offer?.label ?? (view.text || view.unstated);
 }
 
 /** Every answer read back, each to be changed, then the plan named and made. */
@@ -45,7 +45,14 @@ export function CheckAnswers({ answering }: { answering: Answering }) {
                   className="grid grid-cols-[minmax(8rem,40%)_1fr_auto] items-baseline gap-3 px-4 py-2"
                 >
                   <dt className="text-muted-foreground">{view.label}</dt>
-                  <dd className="break-words">{answerOf(view)}</dd>
+                  <dd
+                    className={cn(
+                      "break-words",
+                      view.text === "" && "text-muted-foreground",
+                    )}
+                  >
+                    {answerOf(view)}
+                  </dd>
                   <dd>
                     <Link
                       to="/new/$step"

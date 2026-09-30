@@ -64,7 +64,7 @@ pub(crate) fn table_rows(frame: &str) -> Vec<(bool, Vec<String>)> {
     const CHROME: [char; 8] = ['│', '▌', '▏', '▲', '▼', '█', '░', '║'];
     frame
         .lines()
-        .skip_while(|line| !line.contains(" unfunded "))
+        .skip_while(|line| !line.contains(" Unfunded "))
         .skip(1)
         .take_while(|line| !line.contains('╰'))
         .map_while(|line| line.rsplit_once("││").map(|(_, pane)| pane))
@@ -146,7 +146,7 @@ fn the_one_roth_account_is_the_destination_and_the_help_follows_the_keyboard() {
         tool(&app),
         redrawn(&mut app)
     );
-    assert!(redrawn(&mut app).contains("⏎ edits a constraint"));
+    assert!(redrawn(&mut app).contains(retiretui_client::searches::ladders::ABOUT));
     to_options(&mut app);
     let frame = redrawn(&mut app);
     assert!(frame.contains("⏎ takes the highlighted ladder"), "{frame}");
@@ -172,7 +172,7 @@ fn a_search_needs_a_destination_and_a_valid_draft() {
     settle(&mut app);
     assert_eq!(
         app.world().resource::<Ladders>().refused.as_deref(),
-        Some("must be a Roth account"),
+        Some("Must be a Roth account."),
         "a destination is searched, and the engine answers"
     );
     commit_edit(&mut app, |plan| plan.plan.start_year = 1000);
@@ -280,8 +280,8 @@ fn one_bracket_gives_one_row_and_an_engine_refusal_is_shown() {
     settle(&mut app);
     let ladders = app.world().resource::<Ladders>();
     assert!(ladders.found().is_none());
-    assert_eq!(ladders.said(), "no bracket with rate 0.99");
-    assert!(redrawn(&mut app).contains("no bracket with rate 0.99"));
+    assert_eq!(ladders.said(), "The tax tables have no 99% bracket.");
+    assert!(redrawn(&mut app).contains("The tax tables have no 99% bracket."));
 }
 
 #[test]
@@ -424,7 +424,7 @@ fn t_and_enter_ask_then_take_the_ladder_in_place_of_the_last_one() {
     assert!(draft.plan.conversions[own..].iter().all(is_ladder));
     assert_eq!(
         said(&app).last().map(String::as_str),
-        Some(format!("took {best} conversion(s) into the plan").as_str())
+        Some(format!("took {best} conversions into the plan").as_str())
     );
     settle(&mut app);
     assert_eq!(

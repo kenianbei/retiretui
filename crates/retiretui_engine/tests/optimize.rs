@@ -396,7 +396,7 @@ fn bad_options_are_refused() {
     assert!(
         issues
             .iter()
-            .any(|issue| issue.message.contains("no bracket"))
+            .any(|issue| issue.message.contains("have no 99% bracket"))
     );
     let issues =
         optimize_conversions(&plan, &TaxTables::embedded(), &options(), top_rate).unwrap_err();

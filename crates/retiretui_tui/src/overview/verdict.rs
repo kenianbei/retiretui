@@ -11,6 +11,8 @@ use plurimus::core::UiWidget;
 use plurimus::core::ratatui_core::style::{Modifier, Style};
 use plurimus::core::ratatui_core::text::Line;
 use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
+use retiretui_client::searches::markets::{self, Markets};
+use retiretui_engine::market::MonteCarlo;
 
 use crate::hints::Hints;
 use crate::layout::{fixed, placed};
@@ -19,7 +21,7 @@ use crate::present::{self, ENDS_WITH, LIFETIME_TAXES, MONEY_LASTS, SUCCESS, comp
 use crate::session::{Basis, Projected};
 use crate::success::{Success, Successes};
 use crate::theme::Theme;
-use crate::tools::{EnterRuns, count_text, handle_enter};
+use crate::tools::{EnterRuns, handle_enter};
 
 /// A tile's label over its value.
 const STRIP_ROWS: f32 = 2.0;
@@ -98,9 +100,9 @@ impl Tile {
 /// The share of markets survived, and of how many.
 fn success_text(success: Success, projected: &Projected) -> String {
     match success {
-        Success::Rate(_) => {
+        Success::Rate(rate) => {
             let trials = usize::try_from(projected.plan.market().trials()).unwrap_or_default();
-            format!("{} of {}", success.text(), count_text(trials))
+            markets::verdict_of(rate, trials, <MonteCarlo as Markets>::RUN_NOUN)
         }
         _ => success.text(),
     }
@@ -166,7 +168,7 @@ mod tests {
         let projected = test_projected();
         let todays = values(&projected, false, Success::Rate(0.997));
         let nominal = values(&projected, true, Success::Rate(0.997));
-        assert_eq!(todays[1], "99.7% of 1,000");
+        assert_eq!(todays[1], "99.7% of 1,000 markets");
         assert_ne!(todays[2], nominal[2], "basis must change the figures");
         assert!(todays[2].starts_with('$'), "{}", todays[2]);
         let running = Success::Running {

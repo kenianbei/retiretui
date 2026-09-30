@@ -9,16 +9,16 @@ use retiretui_engine::market::RunError;
 use retiretui_engine::project::Summary;
 
 use crate::issues::issue_listing;
-use crate::present::MoneyForm;
+use crate::present::{self, MoneyForm};
 
 /// What the plan's own row says first, above a search's options.
 pub const CURRENT_PLAN: &str = "Current";
 /// The figures an option is chosen by, in the order the options are ranked
 /// by and then what they cost; the rest of a summary is the Compare tab's.
-pub const FIGURES: [&str; 4] = ["unfunded", "final net", "taxes", "medicare"];
+pub const FIGURES: [&str; 4] = ["Unfunded", present::ENDS_WITH, "Taxes", "Medicare"];
 
 /// The column saying how much more an option ends with than the plan.
-pub const AGAINST_PLAN: &str = "vs. the plan";
+pub const AGAINST_PLAN: &str = "Vs. the plan";
 
 /// An option's cells from [`AGAINST_PLAN`] on, in `form`: what `own`
 /// ends with against `plan`, blank on the plan's own row, where there is
@@ -46,6 +46,22 @@ pub fn run_refusal(error: RunError) -> String {
         RunError::Cancelled => "the search was cancelled".to_owned(),
         RunError::Refused(issues) => issue_listing(&issues),
     }
+}
+
+/// Why a search answered nothing, as a page says it: each issue a
+/// sentence of its own, without the path the CLI names it by.
+#[must_use]
+pub fn page_refusal(error: RunError) -> String {
+    let RunError::Refused(issues) = error else {
+        return run_refusal(error);
+    };
+    let sentences = issues.iter().map(|issue| {
+        let mut letters = issue.message.chars();
+        letters.next().map_or_else(String::new, |first| {
+            format!("{}{}.", first.to_uppercase(), letters.as_str())
+        })
+    });
+    sentences.collect::<Vec<_>>().join("\n")
 }
 
 #[cfg(test)]

@@ -8,6 +8,7 @@ use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Component, Entity, IntoScheduleConfigs, Query, Res};
 use plurimus::ui::ScrollArea;
 use plurimus::widgets::{ActiveDescendant, WidgetSystems};
+use retiretui_client::present;
 use retiretui_client::searches::markets;
 use retiretui_engine::plan::Plan;
 
@@ -60,7 +61,7 @@ type Row = (&'static str, String, Page);
 
 fn rows<R: MarketTool>(plan: &Plan, found: Option<&R>) -> Vec<Row> {
     let verdict = found.map_or_else(|| NOT_YET.to_owned(), R::verdict);
-    let mut rows = vec![(R::VERDICT, verdict, Page::Market)];
+    let mut rows = vec![(present::MONEY_LASTS, verdict, Page::Market)];
     rows.extend(
         markets::assumptions::<R>(plan)
             .into_iter()

@@ -88,6 +88,9 @@ pub struct Cell {
     pub text: String,
     /// The number it says, where it is one.
     pub number: Option<f64>,
+    /// Whether it says what an empty field stands for rather than a value
+    /// the plan states.
+    pub is_unstated: bool,
 }
 
 /// What a column's cells are read against, found once per table rather
@@ -145,17 +148,30 @@ impl<'a> Shown<'a> {
     pub fn cell(&self, item: &Table, plan: &Plan) -> Cell {
         if let Some(identity) = self.identity {
             let text = display_name(item, identity, self.fields).unwrap_or_default();
-            return Cell { text, number: None };
+            return Cell {
+                text,
+                ..Cell::default()
+            };
         }
         if let Some(phrase) = self.phrase {
-            let text = phrase(item, plan);
-            return Cell { text, number: None };
+            return Cell {
+                text: phrase(item, plan),
+                ..Cell::default()
+            };
         }
         let value = get_path(item, self.key);
-        let number = value.and_then(as_number);
         Cell {
             text: self.text(value, plan),
-            number,
+            number: value.and_then(as_number),
+            is_unstated: self.spec.is_some() && self.held(value).is_none(),
+        }
+    }
+
+    fn held<'v>(&self, value: Option<&'v Value>) -> Option<&'v Value> {
+        match self.spec.map(|spec| spec.kind) {
+            Some(FieldKind::Listed(back)) => nth_back(value, back),
+            Some(FieldKind::Order(_, place)) => nth(value, place),
+            _ => value,
         }
     }
 
@@ -165,13 +181,8 @@ impl<'a> Shown<'a> {
         let Some(spec) = self.spec else {
             return value.map(to_text).unwrap_or_default();
         };
-        let value = match spec.kind {
-            FieldKind::Listed(back) => nth_back(value, back),
-            FieldKind::Order(_, place) => nth(value, place),
-            _ => value,
-        };
-        let Some(value) = value else {
-            return spec.blank.unwrap_or_default().to_owned();
+        let Some(value) = self.held(value) else {
+            return spec.unstated();
         };
         match spec.kind {
             FieldKind::Flag => ticked(value.as_bool() == Some(true)),

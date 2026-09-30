@@ -115,9 +115,9 @@ impl Domain for Contributions {
     const SINGULAR: &'static str = "Contribution";
     const FIELDS: &'static [FieldSpec] = &[
         FieldSpec::text("id", "ID")
+            .blank("None")
             .help("A short handle scenarios address this contribution by. Optional."),
-        FieldSpec::text("name", "Name")
-            .help("What the contribution is called. Blank shows the ID."),
+        FieldSpec::name("What the contribution is called. Blank shows the ID."),
         FieldSpec::refers("to", "Pays into", RefSource::Account)
             .help("The account the money lands in."),
         FieldSpec::choice("by", "Paid by", Vocabulary::Payer)

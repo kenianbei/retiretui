@@ -16,7 +16,7 @@ use crate::draft::Draft;
 use crate::forms::offers::{RefSource, ref_offers};
 use crate::forms::{FieldSpec, ToolAnswers};
 use crate::ladder::LadderConstraints;
-use crate::present::MoneyForm;
+use crate::present::{self, MoneyForm};
 
 /// The constraints as the form holds them: the CLI's flags, blank where
 /// its are optional; `bracket` is a percent, blank sweeping every one.
@@ -53,10 +53,10 @@ pub const FIELDS: &[FieldSpec] = &[
         .help("The most to convert over the whole ladder. Blank sets no cap."),
     FieldSpec::money("headroom", "Headroom")
         .blank("None")
-        .help("Dollars to stay below the top of the bracket, as a margin for error."),
+        .help("Dollars left below the top of the bracket each year, so an estimate that runs high does not spill into the next bracket."),
     FieldSpec::whole("irmaa_tier", "IRMAA tier")
         .blank("Not held to one")
-        .help("Stay under this Medicare surcharge tier; 0 avoids them all. Blank ignores it."),
+        .help("IRMAA is what Medicare adds to the Part B and D premiums once income passes a tier. Stay under this one; 0 stays under them all. Blank ignores it."),
     FieldSpec::money("max_magi", "MAGI cap")
         .blank("No cap")
         .help("Keep every year's MAGI (modified adjusted gross income) under this."),
@@ -79,8 +79,11 @@ impl Constraints {
     }
 }
 
+/// What the tool is for, in a line.
+pub const ABOUT: &str = "A ladder converts pre-tax savings to Roth yearly up to a bracket's top: tax now at that rate, not later.";
+
 /// What names an option's columns before its [`FIGURES`](super::FIGURES).
-pub const OPTION_COLUMNS: [&str; 3] = ["Bracket", super::AGAINST_PLAN, "converted"];
+pub const OPTION_COLUMNS: [&str; 3] = ["Bracket", super::AGAINST_PLAN, "Converted"];
 /// The columns a ladder's conversions are tabled under, year by year.
 pub const CONVERSION_COLUMNS: [&str; 4] = ["Year", "From", "Amount", "Taxable"];
 
@@ -177,18 +180,20 @@ pub fn take_question(bracket: &SweptBracket, plan: &Plan) -> String {
 /// What is said once `steps` are taken into the plan.
 #[must_use]
 pub fn taken(steps: &[LadderStep]) -> String {
-    format!("took {} conversion(s) into the plan", steps.len())
+    format!("took {} into the plan", conversions(steps))
 }
 
-/// A ladder as a sentence says it: `9 conversion(s), 2027–2035`.
+/// How many conversions `steps` makes: `1 conversion`, `9 conversions`.
+fn conversions(steps: &[LadderStep]) -> String {
+    present::counted(steps.len(), "conversion", "conversions")
+}
+
+/// A ladder as a sentence says it: `9 conversions, 2027–2035`.
 fn said(steps: &[LadderStep]) -> String {
     match (steps.first(), steps.last()) {
-        (Some(first), Some(last)) => format!(
-            "{} conversion(s), {}–{}",
-            steps.len(),
-            first.year,
-            last.year
-        ),
+        (Some(first), Some(last)) => {
+            format!("{}, {}–{}", conversions(steps), first.year, last.year)
+        }
         _ => "It converts nothing".to_owned(),
     }
 }
@@ -351,11 +356,11 @@ mod tests {
         };
         assert_eq!(
             take_question(&bracket, &plan),
-            "Take the 22% ladder? 2 conversion(s), 2027–2035."
+            "Take the 22% ladder? 2 conversions, 2027–2035."
         );
         retiretui_engine::optimize::apply_ladder(&mut plan, &options, &bracket.steps);
         assert!(take_question(&bracket, &plan).ends_with(", in place of the ladder taken before."));
-        assert_eq!(taken(&bracket.steps), "took 2 conversion(s) into the plan");
+        assert_eq!(taken(&bracket.steps), "took 2 conversions into the plan");
         let none = SweptBracket {
             steps: Vec::new(),
             ..bracket

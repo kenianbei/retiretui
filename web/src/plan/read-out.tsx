@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { statementPage } from "@wasm/retiretui_wasm.js";
+import { statementPage, type ReadRow } from "@wasm/retiretui_wasm.js";
 import { Pencil, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { aligned } from "@/components/columns";
-import { cn } from "@/lib/utils";
+import { cn, gathered } from "@/lib/utils";
 import { ImportStatement } from "@/plan/import-statement";
 import { useSession } from "@/session";
 
@@ -67,15 +67,48 @@ export function ReadOut({
   );
 }
 
-/** Each label beside what it holds. */
+/** A label beside what it holds, as the client reads it out, and whether
+ * it is a figure, aligned as one. */
+export type ReadRowView = Pick<ReadRow, "label" | "text"> &
+  Partial<Pick<ReadRow, "is_unstated" | "group">> & { isFigure?: boolean };
+
+/**
+ * Each label beside what it holds, what a blank stands for muted, and
+ * neighbours gathered under a heading of their own.
+ */
 export function ReadRows({
   rows,
   isFlush = false,
 }: {
-  /** Each label, what it holds, and whether that is a figure. */
-  rows: readonly (readonly [string, string, boolean?])[];
+  rows: readonly ReadRowView[];
   /** Set in a container of its own: no frame but a rule above. */
   isFlush?: boolean;
+}) {
+  const runs = gathered(rows);
+  if (runs.every((run) => run.group === null))
+    return <RowList rows={rows} isFlush={isFlush} />;
+  return (
+    <div className="space-y-4">
+      {runs.map((run) => (
+        <section
+          key={run.group ?? run.items[0]?.label}
+          aria-label={run.group ?? undefined}
+          className="space-y-1.5"
+        >
+          {run.group && <h3 className="text-sm font-semibold">{run.group}</h3>}
+          <RowList rows={run.items} isFlush={isFlush} />
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function RowList({
+  rows,
+  isFlush,
+}: {
+  rows: readonly ReadRowView[];
+  isFlush: boolean;
 }) {
   return (
     <dl
@@ -84,13 +117,19 @@ export function ReadRows({
         isFlush && "rounded-none border-x-0 border-b-0 bg-transparent",
       )}
     >
-      {rows.map(([label, text, isFigure]) => (
+      {rows.map(({ label, text, isFigure, is_unstated }) => (
         <div
           key={label}
           className="grid grid-cols-[minmax(8rem,40%)_1fr] gap-3 px-4 py-2"
         >
           <dt className="text-muted-foreground">{label}</dt>
-          <dd className={cn("break-words", isFigure && aligned(true))}>
+          <dd
+            className={cn(
+              "break-words",
+              isFigure && aligned(true),
+              is_unstated && "text-muted-foreground",
+            )}
+          >
             {text}
           </dd>
         </div>

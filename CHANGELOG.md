@@ -14,28 +14,29 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   plan is made from a few questions asked a step at a time - the household, then
   each person - which read every answer back to be changed before the plan is
   named, made and opened on the Overview; a blank age, start of work or Social
-  Security benefit reads as what the plan will assume, and the answers survive a
-  reload until the plan is made. The example plans and an upload are offered
-  beside them. It reopens the plan last open, and downloads the open plan; a
-  plan that does not open is said on the Start page by the file that failed, the
-  line and why, with that file to download or replace by an upload, and its text
-  as written beneath, the failing line marked. Its Overview reads as the
-  ledger's first page. It leads with how long the money lasts, the share of a
-  thousand random markets it survives - run off the page's thread, and leading
-  to the Monte Carlo tool - what it ends with and what it pays in tax, in
-  today's or future dollars and in the terminal's words, as rows of a label and
-  a figure on a phone; a plan that runs short is noted above them with the year
-  it first does and what it leaves uncovered, leading to that year in the Ledger
-  and to Expenses, and how long the money lasts then reads the last year it
-  covers. Beneath is what to do in the year shown, in the dollars shown and said
-  as the terminal says it: today's by default, stepped by button or the arrow
-  keys, or chosen with a click on a chart, and leading to that year in the
-  Ledger. Then what needs attention - the years the plan pays Medicare's
-  surcharges, contributions held back, a benefit estimated without its earnings
-  record, an amount too large to be likely - beside the plan's milestones, each
-  row leading to its year in the Ledger or its item, and what could do better.
-  Last, the plan charted: its balances by tax treatment under its net worth, its
-  net worth, its income against its taxes, and its net worth through the random
+  Security benefit reads as what the plan will assume - `Blank is 65` while
+  answered, `65, the default` read back - and the answers survive a reload until
+  the plan is made. The example plans and an upload are offered beside them. It
+  reopens the plan last open, and downloads the open plan; a plan that does not
+  open is said on the Start page by the file that failed, the line and why, with
+  that file to download or replace by an upload, and its text as written
+  beneath, the failing line marked. Its Overview reads as the ledger's first
+  page. It leads with how long the money lasts, the share of a thousand random
+  markets it survives - run off the page's thread, and leading to the Monte
+  Carlo tool - what it ends with and what it pays in tax, in today's or future
+  dollars and in the terminal's words, as rows of a label and a figure on a
+  phone; a plan that runs short is noted above them with the year it first does
+  and what it leaves uncovered, leading to that year in the Ledger and to
+  Expenses, and how long the money lasts then reads the last year it covers.
+  Beneath is what to do in the year shown, in the dollars shown and said as the
+  terminal says it: today's by default, stepped by button or the arrow keys, or
+  chosen with a click on a chart, and leading to that year in the Ledger. Then
+  what needs attention - the years the plan pays Medicare's surcharges,
+  contributions held back, a benefit estimated without its earnings record, an
+  amount too large to be likely - beside the plan's milestones, each row leading
+  to its year in the Ledger or its item, and what could do better. Last, the
+  plan charted: its balances by tax treatment under its net worth, its net
+  worth, its income against its taxes, and its net worth through the random
   markets as percentile bands, each salary's end marked and listed beneath, each
   chart read as one image with the Ledger as its table. The Ledger shows the
   plan year by year, the year column staying in view as the table scrolls
@@ -46,15 +47,17 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   address, kept between the Overview, the Ledger, Compare and the tools and
   across a reload. The Plan pages edit the plan: each domain's items are a table
   sortable by its columns, or rows with a Sort by on a phone, beside the
-  highlighted item read out in the form's words, and a domain there is one of is
-  that read-out alone. Edit, Add and Delete work one item at a time; the form is
-  a sheet, full screen on a phone, whose fields are entered by their kind -
-  picks from the schema's sets and the plan's own ids, a searched list for a
-  country or U.S. state, a slider beside a rate, a trigger as its kind and
-  sentence - and applying stores the whole item or says why not. Every applied
-  item or deletion is a step Undo and Redo walk, by button or Ctrl/Cmd+Z, and
-  Save or Ctrl/Cmd+S writes the plan back through the same validation as every
-  other surface; Save as… writes it under another name, the one way to keep a
+  highlighted item read out in the form's words - a field left blank read as
+  what it stands for, muted, such as `Earns nothing` or `6%, the default`, and
+  the Market's fields under headings - and a domain there is one of is that
+  read-out alone. Edit, Add and Delete work one item at a time; the form is a
+  sheet, full screen on a phone, whose fields are entered by their kind - picks
+  from the schema's sets and the plan's own ids, a searched list for a country
+  or U.S. state, a slider beside a rate, a trigger as its kind and sentence -
+  and applying stores the whole item or says why not. Every applied item or
+  deletion is a step Undo and Redo walk, by button or Ctrl/Cmd+Z, and Save or
+  Ctrl/Cmd+S writes the plan back through the same validation as every other
+  surface; Save as… writes it under another name, the one way to keep a
   scenario's edits. Unsaved edits are asked about before a form closes, another
   plan opens, or the page is left, and a file changed in another tab under them
   is reported rather than overwritten. A plan with issues counts them in the
@@ -72,62 +75,64 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   ladder taken before, or written as a scenario beside the saved plan, compared
   with it at once and offered to open. The SSA Benefits tool ranks every claim
   age for the household's computed Social Security benefits under the plan as it
-  stands, each against the plan as a ladder is, beside each person's record,
-  income and benefit estimated at 62, full retirement age and 70, with what can
-  be done for the highlighted person: import a statement, estimate a record from
-  their salary, compute a typed benefit from their record, clear the record or
-  remove the benefit - the last two asked first - each one step of history, or
-  hold their claim as the plan states it while the others are searched. The
-  highlighted claims are taken into the plan after asking or written as a
-  scenario, as a ladder is; the claims highlighted, the person and who is held
-  are kept in the address. The Overview's Could do better gives each Roth
-  owner's best ladder and the household's best claims against the plan as it
-  stands, each leading to its tool, a ladder's aimed at that owner's account;
-  what it finds is what the tools then show without searching again. The Monte
-  Carlo and Historical tools run the plan through a thousand random markets, or
-  from every historical start year worst first, and say how it fared in the
-  colour of its zone - as the Overview's figure is coloured - beside what the
-  runs were made under, each a link to the Market field it is edited at; the
-  runs singled out are charted as the spread of net worth under the highlighted
-  run's line, net worth by year at each percentile (Monte Carlo only), the share
-  still funded, and what the runs end with. The highlighted run opens in the
-  Ledger, replayed through its market and named by it - a random market's
-  number, or the year retired into - kept in the address through the year, the
-  dollars and edits, with a link back to the plan's own. Compare sets the plan
-  beside the workspace plans chosen for it: each plan's figures and its success
-  through random markets - each plan searched in a worker of its own - or its
-  differences from the one chosen as the baseline, what the highlighted plan
-  changes of the baseline, and one of eight metrics year by year as a chart or a
-  table. The plans compared, the baseline, the metric and the view are kept in
-  the address, the plans compared carried by every link; opening a compared plan
-  puts it in the document's place with the document joining the compared, and
-  opening any other plan leaves nothing compared. The Tax Tables tool reads out
-  the tables the plan's projection applies in the year shown - brackets,
-  deductions, long-term gains, Social Security's thresholds and benefit formula,
-  the contribution limits, Medicare surcharges, the RMD divisors and the state's
-  income tax - for the plan's filing status and the state it lives in that year,
-  grown past the last published table at the plan's inflation, or for any status
-  or modeled state picked. The header names the open plan, and the name opens
-  the File menu. Manage plans, in that menu, renames, downloads and deletes the
-  workspace's plans: a rename rewrites the scenarios built on the plan and keeps
-  an open plan's unsaved edits, a delete names the scenarios it breaks, and both
-  are followed by the plans compared and by other tabs. The page says that
-  clearing the browser's site data deletes the plans, and asks the browser to
-  keep them on a button. A palette opened with Ctrl/Cmd+K, or from the header's
-  search button on any screen, finds any page, plan or action by part of its
-  name; the digits 1-5 go to the tabs and ? lists every key. The app installs,
-  and works offline once it has been visited: each page loads the first time it
-  is shown and the rest once the app is idle. A skip link leads to the page,
-  focus moves to a new page's heading, and every page is checked against WCAG
-  2.1 A and AA in Chromium, Firefox and WebKit. Light or dark follows the
-  system, and navigation is a bottom bar on a phone - a grouped tab's pages a
-  row of chips above the page, faded at an edge with more beyond it - and a
-  sidebar on a wider screen; on a phone every button, tab and chip is touched
-  across 44px whatever size it is drawn. Money is written in full wherever a
-  table has room for it - a ladder's years, a monthly benefit, the tools'
-  options and runs, and the years compared - and compact only where it has not,
-  as in the Overview's figures and Compare's plans; a phone's row of options
-  shows what each ends with against the plan.
+  stands, each against the plan as a ladder is, beside each person's earnings
+  record, how their benefit is set and the benefit estimated at 62, full
+  retirement age and 70, with what can be done for the highlighted person:
+  import a statement, estimate a record from their salary, compute a stated
+  benefit from their record, clear the record or remove the benefit - the last
+  two asked first - each one step of history, or hold their claim as the plan
+  states it while the others are searched. The highlighted claims are taken into
+  the plan after asking or written as a scenario, as a ladder is; the claims
+  highlighted, the person and who is held are kept in the address. The
+  Overview's Could do better gives each Roth owner's best ladder and the
+  household's best claims against the plan as it stands, each leading to its
+  tool, a ladder's aimed at that owner's account; what it finds is what the
+  tools then show without searching again. The Monte Carlo and Historical tools
+  run the plan through a thousand random markets, or from every historical start
+  year worst first, and say how it fared in one sentence -
+  `Money lasts in 87% of 1,000 markets` - in the colour of its zone - as the
+  Overview's figure is coloured - beside what the runs were made under, each a
+  link to the Market field it is edited at; the runs singled out are charted as
+  the spread of net worth under the highlighted run's line, net worth by year at
+  each percentile (Monte Carlo only), the share still funded, and what the runs
+  end with. The highlighted run opens in the Ledger, replayed through its market
+  and named by it - a random market's number, or the year retired into - kept in
+  the address through the year, the dollars and edits, with a link back to the
+  plan's own. Compare sets the plan beside the workspace plans chosen for it:
+  each plan's figures and its success through random markets - each plan
+  searched in a worker of its own - or its differences from the one chosen as
+  the baseline, what the highlighted plan changes of the baseline, and one of
+  eight metrics year by year as a chart or a table. The plans compared, the
+  baseline, the metric and the view are kept in the address, the plans compared
+  carried by every link; opening a compared plan puts it in the document's place
+  with the document joining the compared, and opening any other plan leaves
+  nothing compared. The Tax Tables tool reads out the tables the plan's
+  projection applies in the year shown - brackets, deductions, long-term gains,
+  Social Security's thresholds and benefit formula, the contribution limits,
+  Medicare surcharges, the RMD divisors and the state's income tax - for the
+  plan's filing status and the state it lives in that year, grown past the last
+  published table at the plan's inflation, or for any status or modeled state
+  picked. The header names the open plan, and the name opens the File menu.
+  Manage plans, in that menu, renames, downloads and deletes the workspace's
+  plans: a rename rewrites the scenarios built on the plan and keeps an open
+  plan's unsaved edits, a delete names the scenarios it breaks, and both are
+  followed by the plans compared and by other tabs. The page says that clearing
+  the browser's site data deletes the plans, and asks the browser to keep them
+  on a button. A palette opened with Ctrl/Cmd+K, or from the header's search
+  button on any screen, finds any page, plan or action by part of its name; the
+  digits 1-5 go to the tabs and ? lists every key. The app installs, and works
+  offline once it has been visited: each page loads the first time it is shown
+  and the rest once the app is idle. A skip link leads to the page, focus moves
+  to a new page's heading, and every page is checked against WCAG 2.1 A and AA
+  in Chromium, Firefox and WebKit. Light or dark follows the system, and
+  navigation is a bottom bar on a phone - a grouped tab's pages a row of chips
+  above the page, faded at an edge with more beyond it - and a sidebar on a
+  wider screen; on a phone every button, tab and chip is touched across 44px
+  whatever size it is drawn. Money is written in full wherever a table has room
+  for it - a ladder's years, a monthly benefit, the tools' options and runs, and
+  the years compared - and compact only where it has not, as in the Overview's
+  figures and Compare's plans; a phone's row of options shows what each ends
+  with against the plan.
 - The engine exposes `Scenario::set_base`, which makes an overlay name another
   base, and `project::benefit_params` and `project::state_lived_in`, the benefit
   formula's parameters and the state taxing a year as a plan's projection takes
@@ -164,7 +169,7 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   thousands separated under $10,000 (`$2,086`), and rounded rather than cut
   short (`$19,999` is `$20k`), and in billions from a billion (`$1.23B`); what
   the market runs end with is bucketed in whole millions (`$1M–$2M`). The
-  terminal's Roth Conversions and SSA Benefits options gain a vs. the plan
+  terminal's Roth Conversions and SSA Benefits options gain a Vs. the plan
   column - what each ends with against the plan, blank on the plan's own row -
   and an options table too narrow for every column drops the figures at its end
   rather than cutting every header short.
@@ -180,6 +185,38 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   same.
 - Could do better says what an option covers rather than a signed difference in
   what is left unfunded: `ends +$120k, covers $46k more spending`.
+- The words every interface says are a person's rather than the schema's:
+  - Counts take their noun's form - `1 person`, `3 years of earnings`,
+    `2 conversions`, `1 issue` - on the command line, in the MCP server and in
+    the terminal, where `(s)` had stood.
+  - The claim search refuses in sentences naming people, such as that no one's
+    Social Security benefit is computed from a record, and a bracket the tax
+    tables lack is `the tax tables have no 99% bracket`. The terminal says a
+    search's refusal as sentences, every issue rather than the first.
+  - The SSA Benefits People table is headed Earnings and Benefit, its cells
+    `No record`, `6 years`, `Computed`, `Stated`, `No benefit` and `Held`; a
+    plan without a claim reads `No claim`.
+  - The options tables are headed `Converted`, `Unfunded`, `Ends with`, `Taxes`
+    and `Medicare`, Compare's words, and Historical's runs `Start years`.
+  - Monte Carlo and Historical say how the plan fared the same way, the command
+    line too: `Money lasts in 87% of 1,000 markets`,
+    `Money lasts in 85.2% of 155 start years`; the Overview's Success figure
+    reads `87% of 1,000 markets`. What the runs were made under reads
+    `Counts as a success` (`Never running short`,
+    `Ending with at least $500,000`), `Markets drawn from`
+    (`Your return assumptions`, `Historical years`) and `Fixed return` for the
+    accounts no market moves.
+  - A field left blank says what it stands for wherever it is read: the value it
+    is made as, `6%, the default`, or what absence means, `Earns nothing`,
+    `Usual order`, `The ID`, dimmed in the terminal and muted on the web.
+  - The Market's fields are gathered under headings - Success, Stocks, Bonds,
+    Cash, Inflation, Correlations, Monte Carlo, Historical - and an issue or a
+    change names one with its heading, as `Stocks: Spread`.
+  - Each search tool says what it is for in a line, on its page and on the
+    terminal's help line; SSA Benefits says what full retirement age is, and
+    Headroom and IRMAA tier say what they mean in their help. Country's help no
+    longer names the terminal's Space key.
+- A terminal form scrolls all the way back to a field above the screen.
 - The command line and the MCP server are library crates of their own,
   `retiretui_cli` and `retiretui_mcp`, and the terminal launcher is
   `retiretui_tui`'s `terminal` feature, off by default; `retiretui` composes the

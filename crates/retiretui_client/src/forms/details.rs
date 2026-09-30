@@ -2,6 +2,7 @@
 //! words, then what it keeps that no field edits.
 
 use retiretui_engine::plan::Plan;
+use serde::Serialize;
 use toml::Table;
 
 use super::cells::Shown;
@@ -25,26 +26,50 @@ pub fn has_details(form: &Form, list: ListOps) -> bool {
             .any(|spec| !is_known(spec.key) && !is_column(spec.key))
 }
 
+/// A row of an item read out: a field's label and what it holds.
+#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+pub struct ReadRow {
+    /// What the form calls the field.
+    pub label: String,
+    /// What it holds, in the form's words.
+    pub text: String,
+    /// Whether that is what an empty field stands for rather than a value
+    /// the plan states.
+    pub is_unstated: bool,
+    /// The heading the field is gathered under, where it is.
+    pub group: Option<&'static str>,
+}
+
 /// The item's rows: each field it has a use for - shown by its own rule,
 /// and by the tick whose table it is in - labelled and phrased as the
 /// form phrases it, then the record where the domain keeps one.
 #[must_use]
-pub fn rows(form: &Form, item: &Table, plan: &Plan) -> Vec<[String; 2]> {
+pub fn rows(form: &Form, item: &Table, plan: &Plan) -> Vec<ReadRow> {
     let opened = applies::opened(form, item);
     let is_used = |spec: &&FieldSpec| {
         spec.is_shown_for(&opened) && is_gate_open(form.fields, spec.key, &opened)
     };
-    let mut rows: Vec<[String; 2]> = form
+    let mut rows: Vec<ReadRow> = form
         .fields
         .iter()
         .filter(is_used)
         .map(|spec| {
-            let shown = Shown::of_field(spec, form.fields, plan);
-            [spec.label.to_owned(), shown.cell(&opened, plan).text]
+            let cell = Shown::of_field(spec, form.fields, plan).cell(&opened, plan);
+            ReadRow {
+                label: spec.label.to_owned(),
+                text: cell.text,
+                is_unstated: cell.is_unstated,
+                group: spec.group,
+            }
         })
         .collect();
     if let Some(record) = form.list.and_then(|list| list.record) {
-        rows.extend(record(item));
+        rows.extend(record(item).into_iter().map(|[label, text]| ReadRow {
+            label,
+            text,
+            ..ReadRow::default()
+        }));
     }
     rows
 }

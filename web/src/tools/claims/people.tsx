@@ -31,17 +31,21 @@ interface Outcome {
 }
 
 /**
- * The household's People table - each person's record, income and
- * estimated benefit - over what can be done for the highlighted one.
+ * The household's People table - each person's earnings record, how their
+ * benefit is set and its estimates - over what can be done for the
+ * highlighted one.
  */
 export function People({
   columns,
+  spelledOut,
   people,
   at,
   highlight,
   hold,
 }: {
   columns: readonly string[];
+  /** The columns abbreviated, each with its words in full. */
+  spelledOut: readonly (readonly [string, string])[];
   people: PersonRow[];
   /** The highlighted person's place in the household. */
   at: number;
@@ -89,6 +93,7 @@ export function People({
         rows={rows}
         narrowFigure={AT_FRA}
         words={WORDS}
+        spelledOut={spelledOut}
         highlighted={person}
         highlight={(chosen) => {
           setOutcome(null);

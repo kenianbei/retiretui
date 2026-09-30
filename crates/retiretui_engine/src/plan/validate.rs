@@ -161,10 +161,11 @@ impl<'a> Checker<'a> {
             FilingStatus::MarriedJoint => 2,
         };
         if household.people.len() != expected {
+            let people = if expected == 1 { "person" } else { "people" };
             self.push(
                 "household.people",
                 format!(
-                    "filing status requires exactly {expected} person(s), found {}",
+                    "filing status requires exactly {expected} {people}, found {}",
                     household.people.len()
                 ),
             );

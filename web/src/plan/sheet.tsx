@@ -14,6 +14,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { gathered } from "@/lib/utils";
 import { Field } from "@/plan/fields";
 import { fieldId, landOnField } from "@/plan/search";
 import { useSession } from "@/session";
@@ -116,17 +117,29 @@ export function FormSheet({
                     {refusal}
                   </div>
                 )}
-                {views.map((view) => (
-                  <Field
-                    key={fieldId(view)}
-                    view={view}
-                    editor={editor}
-                    changed={() => {
-                      setChanges((count) => count + 1);
-                    }}
-                    focus={setFocused}
-                  />
-                ))}
+                {gathered(views).map(({ group, items }) => {
+                  const fields = items.map((view) => (
+                    <Field
+                      key={fieldId(view)}
+                      view={view}
+                      editor={editor}
+                      changed={() => {
+                        setChanges((count) => count + 1);
+                      }}
+                      focus={setFocused}
+                    />
+                  ));
+                  return group ? (
+                    <fieldset key={group} className="space-y-5">
+                      <legend className="mb-3 text-sm font-semibold">
+                        {group}
+                      </legend>
+                      {fields}
+                    </fieldset>
+                  ) : (
+                    fields
+                  );
+                })}
               </div>
               <footer className="flex justify-end gap-2 border-t px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
                 <Dialog.Close asChild>

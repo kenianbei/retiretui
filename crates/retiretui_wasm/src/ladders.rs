@@ -5,14 +5,15 @@
 use std::path::Path;
 
 use retiretui_client::files::{OVERLAY_SAVE_FIRST, relative_path};
-use retiretui_client::forms::{Form, details};
+use retiretui_client::forms::Form;
+use retiretui_client::forms::details::{self, ReadRow};
 use retiretui_client::searches::ladders::{
     CONVERSION_COLUMNS, CONVERTS_NOTHING, Constraints, DESTINATION, FIELDS, NO_BRACKET,
     OPTION_COLUMNS, PICK_DESTINATION, Swept, constraints_in, held_answers, only_roth, option_cells,
     rate_label, search, take_question, taken, taxed_in,
 };
 use retiretui_client::searches::overview::ladder_said;
-use retiretui_client::searches::{AGAINST_PLAN, CURRENT_PLAN, FIGURES, run_refusal};
+use retiretui_client::searches::{AGAINST_PLAN, CURRENT_PLAN, FIGURES, page_refusal};
 use retiretui_client::store::normal;
 use retiretui_client::table::{account_name, basis_amount};
 use retiretui_engine::market::Progress;
@@ -39,6 +40,8 @@ static FORM: Form = Form::tool::<Constraints>("Constraints", FIELDS);
 #[derive(Serialize, Debug)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct LadderWords {
+    /// What the tool is for, in a line.
+    pub about: &'static str,
     /// While no Roth account is named to convert to.
     pub pick_destination: &'static str,
     /// Where the constraints leave no bracket to fill.
@@ -163,7 +166,7 @@ pub fn ladders(text: &str, answers: &str, destination: &str) -> Result<LaddersRe
     answers.insert(DESTINATION.to_owned(), destination.into());
     let (options, rate) = constraints_in(answers)?;
     let sweep =
-        search(&plan, tables(), &options, rate, &Progress::default()).map_err(run_refusal)?;
+        search(&plan, tables(), &options, rate, &Progress::default()).map_err(page_refusal)?;
     Ok(LaddersReply::new(&plan, &Swept { sweep, options }))
 }
 
@@ -228,7 +231,7 @@ impl Document {
 
     /// The constraints read out, each field's label beside what it holds.
     #[must_use]
-    pub fn constraints_read(&self) -> Vec<[String; 2]> {
+    pub fn constraints_read(&self) -> Vec<ReadRow> {
         details::rows(&FORM, &self.aimed(), &self.draft().plan)
     }
 
@@ -325,7 +328,7 @@ impl JsDocument {
     /// # Errors
     ///
     /// Where the rows do not convert.
-    #[wasm_bindgen(js_name = constraintsRead, unchecked_return_type = "[string, string][]")]
+    #[wasm_bindgen(js_name = constraintsRead, unchecked_return_type = "ReadRow[]")]
     pub fn constraints_read(&self) -> Result<JsValue, JsError> {
         to_js(&self.0.constraints_read())
     }
@@ -376,6 +379,7 @@ impl JsDocument {
 #[wasm_bindgen(js_name = ladderWords, unchecked_return_type = "LadderWords")]
 pub fn ladder_words() -> Result<JsValue, JsError> {
     to_js(&LadderWords {
+        about: retiretui_client::searches::ladders::ABOUT,
         pick_destination: PICK_DESTINATION,
         no_bracket: NO_BRACKET,
         converts_nothing: CONVERTS_NOTHING,
@@ -439,10 +443,7 @@ mod tests {
         assert_eq!(best.label, rate_label(best.rate));
         assert!(best.question.starts_with("Take the "), "{}", best.question);
         let read = document.constraints_read();
-        assert!(
-            read.iter().any(|[_, value]| value.contains("Roth")),
-            "{read:?}"
-        );
+        assert!(read.iter().any(|row| row.text.contains("Roth")), "{read:?}");
     }
 
     #[test]
@@ -471,7 +472,7 @@ mod tests {
         let years = || reply.brackets[0].steps.clone();
         let count = reply.brackets[0].steps.len();
         let said = document.take_ladder(ROTH, years()).expect("taken");
-        assert_eq!(said, format!("took {count} conversion(s) into the plan"));
+        assert_eq!(said, format!("took {count} conversions into the plan"));
         let held = document
             .draft()
             .plan

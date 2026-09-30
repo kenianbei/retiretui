@@ -19,15 +19,25 @@ test("the plan through random markets and history, a run opened in the Ledger", 
   await seed(page, { "/mix.toml": example("market-mix.toml") }, "/mix.toml");
   const row = (name: string) => rowNamed(page, testInfo, name);
 
-  const figure = page.getByText(/^\d+(\.\d+)?% of [\d,]+$/).first();
+  const figure = page.getByText(/^\d+(\.\d+)?% of [\d,]+ markets$/).first();
   await expect(figure).toHaveClass(ZONED, SEARCH);
 
   await page.goto("#/tools/monte-carlo");
   await expect(
     page.getByRole("heading", { name: "Monte Carlo" }),
   ).toBeVisible();
-  const verdict = page.getByText(/^money lasts in [\d.]+% of [\d,]+$/);
+  await expect(
+    page.getByText(/^The plan through many random markets; /),
+  ).toBeVisible();
+  const verdict = page.getByText(/^Money lasts in [\d.]+% of [\d,]+ markets$/);
   await expect(verdict).toHaveClass(ZONED, SEARCH);
+  for (const [label, value] of [
+    ["Counts as a success", /^Ending with at least \$[\d,]+$/],
+    ["Markets drawn from", "Your return assumptions"],
+  ] as const) {
+    await expect(page.getByText(label, { exact: true })).toBeVisible();
+    await expect(page.getByText(value, { exact: true })).toBeVisible();
+  }
   await expectAccessible(page);
   await row("10th percentile").click();
   await page.waitForURL(/run=p10/);
@@ -58,7 +68,18 @@ test("the plan through random markets and history, a run opened in the Ledger", 
   await page.locator('a[href*="field=monte_carlo.trials"]').click();
   await page.waitForURL(/#\/plan\/market\?.*field=monte_carlo\.trials/);
   await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(
+    page
+      .getByRole("dialog")
+      .getByRole("group", { name: "Monte Carlo" })
+      .getByLabel("Trials"),
+  ).toBeFocused();
   await page.keyboard.press("Escape");
+  await expect(
+    page
+      .getByRole("region", { name: "Stocks" })
+      .getByText("Mean return", { exact: true }),
+  ).toBeVisible();
 
   await page.goto("#/tools/monte-carlo?run=p10");
   await expect(verdict).toBeVisible(SEARCH);
@@ -93,9 +114,9 @@ test("the plan through random markets and history, a run opened in the Ledger", 
 
   await page.goto("#/tools/historical");
   await expect(page.getByRole("heading", { name: "Historical" })).toBeVisible();
-  await expect(page.getByText(/^survived [\d,]+ of [\d,]+$/)).toBeVisible(
-    SEARCH,
-  );
+  await expect(
+    page.getByText(/^Money lasts in [\d.]+% of [\d,]+ start years$/),
+  ).toBeVisible(SEARCH);
   await expect(page.getByRole("tab", { name: "By year" })).toHaveCount(0);
   await expectAccessible(page);
   const start = phone

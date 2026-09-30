@@ -89,7 +89,11 @@ pub fn validated_plan_with_files(
             if issues.is_empty() {
                 return Ok(plan);
             }
-            let headline = format!("{} issue(s) found in {}:", issues.len(), path.display());
+            let headline = format!(
+                "{} found in {}:",
+                crate::present::issue_count(issues.len()),
+                path.display()
+            );
             Err(Invalid::Issues { headline, issues })
         });
     (validated, files)

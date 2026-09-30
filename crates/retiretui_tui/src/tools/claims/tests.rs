@@ -98,7 +98,7 @@ fn table_rows(frame: &str) -> Vec<(bool, Vec<String>)> {
     const CHROME: [char; 8] = ['│', '▌', '▏', '▲', '▼', '█', '░', '║'];
     frame
         .lines()
-        .skip_while(|line| !line.contains(" unfunded "))
+        .skip_while(|line| !line.contains(" Unfunded "))
         .skip(1)
         .map(|line| {
             let pane = line.rsplit_once("││").map_or(line, |(_, pane)| pane);
@@ -215,7 +215,7 @@ fn a_couple_s_options_scroll_to_keep_the_cursor_in_view() {
     let frame = composed_frame(&app);
     let header = frame
         .lines()
-        .find(|line| line.contains(" unfunded "))
+        .find(|line| line.contains(" Unfunded "))
         .unwrap_or_else(|| panic!("no header: {frame}"));
     assert!(
         header.contains(" me ") && header.contains(" you "),
@@ -253,7 +253,7 @@ fn the_pane_says_why_nothing_could_be_searched_and_an_edit_drops_a_search() {
     assert!(app.world().resource::<Claims>().found().is_none());
     let frame = composed_frame(&app);
     assert!(
-        frame.contains("no social-security income computes its benefit"),
+        frame.contains("No one's Social Security benefit is computed"),
         "{frame}"
     );
     assert!(!frame.contains("w write"), "nothing to write: {frame}");
@@ -364,7 +364,7 @@ fn the_options_come_back_after_nothing_could_be_searched() {
     settle_claims(&mut app);
     let frame = composed_frame(&app);
     assert!(
-        frame.contains("no social-security income computes"),
+        frame.contains("No one's Social Security benefit is computed"),
         "{frame}"
     );
     assert!(!frame.contains("Current"), "no options: {frame}");
@@ -395,7 +395,7 @@ fn a_held_claim_stays_out_of_the_search() {
     assert_eq!(found.incomes, ["ss"], "only me is searched");
     assert_eq!(found.candidates.len(), 9);
     assert!(
-        composed_frame(&app).contains(" held "),
+        composed_frame(&app).contains(" Held "),
         "{}",
         composed_frame(&app)
     );

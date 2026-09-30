@@ -14,6 +14,7 @@ use super::{PICK_DESTINATION, Swept, held};
 use crate::edit::Draft;
 use crate::nav::{self, Page, ShownSurface};
 use crate::theme::{Repainted, Theme};
+use retiretui_client::searches::ladders::ABOUT;
 
 pub fn plugin(app: &mut App) {
     app.add_systems(
@@ -24,8 +25,6 @@ pub fn plugin(app: &mut App) {
     );
 }
 
-const ON_FORM: &str =
-    "⏎ edits a constraint; the ladders are searched again once they are applied. ⇧⇥ back to them.";
 const ON_OPTIONS: &str =
     "⏎ takes the highlighted ladder into the plan, after asking; w writes it as a scenario.";
 const ON_CONVERSIONS: &str =
@@ -49,7 +48,7 @@ fn say_help(
         _ if held(&draft).is_err() => PICK_DESTINATION,
         Some(holder) if options.contains(holder) => ON_OPTIONS,
         Some(holder) if conversions.contains(holder) => ON_CONVERSIONS,
-        _ => ON_FORM,
+        _ => ABOUT,
     };
     if *said == text && !theme.is_changed() {
         return;
