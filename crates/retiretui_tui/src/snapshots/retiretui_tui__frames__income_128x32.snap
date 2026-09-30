@@ -8,16 +8,16 @@ expression: composed_frame(app)
 ┴──────────┴┴────────┴┴─────────┴┴───────┴╯      ╰──────────────────────────────────────────────────────────────────────────────
 ╭ Plan ─────────────╮╭ Income ────────────────────────────────────────────────────────────╮ ╭ Income Source ───────────────────╮
 │  Accounts       7 ││  Income              Type                   Owner           Amount │ │                                  │
-│▏ Income         4 ││▌ salary              Salary                 jordan        $150,000 │ │▏ Name           The ID           │
-│  Expenses       2 ││  db-pension          Pension                jordan         $30,000 │ │  ID             salary           │
-│  Cliffs         0 ││  ss-jordan           Social Security        jordan         $40,000 │ │  Type           Salary           │
-│  Transfers      1 ││  inheritance         Windfall               alex          $100,000 │ │  Owner          jordan           │
-│  Conversions    1 ││                                                                    │ │  Annual amount  $150,000         │
-│  Contributions  3 ││                                                                    │ │  Happens        Every year       │
-│  Events         1 ││                                                                    │ │  Starts         Plan start       │
-│  People         2 ││                                                                    │ │  Ends           1 yr before reti │
-│  Residency      1 ││                                                                    │ │  Growth         Inflation        │
-│  Household        ││                                                                    │ │                                  │
+│▏ Income         4 ││▌ salary              Salary                 jordan        $150,000 │ │▏ Name            The ID          │
+│  Expenses       2 ││  db-pension          Pension                jordan         $30,000 │ │  ID              salary          │
+│  Cliffs         0 ││  ss-jordan           Social Security        jordan         $40,000 │ │  Type            Salary          │
+│  Transfers      1 ││  inheritance         Windfall               alex          $100,000 │ │  Owner           jordan          │
+│  Conversions    1 ││                                                                    │ │  Workplace plan                  │
+│  Contributions  3 ││                                                                    │ │  Annual amount   $150,000        │
+│  Events         1 ││                                                                    │ │  Happens         Every year      │
+│  People         2 ││                                                                    │ │  Starts          Plan start      │
+│  Residency      1 ││                                                                    │ │  Ends            1 yr before ret │
+│  Household        ││                                                                    │ │  Growth          Inflation       │
 │  Settings         ││                                                                    │ │                                  │
 │  Market           ││                                                                    │ │                                  │
 │                   ││                                                                    │ │                                  │

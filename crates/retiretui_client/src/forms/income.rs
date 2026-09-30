@@ -2,7 +2,7 @@ use retiretui_engine::plan::{Income, Plan};
 
 use super::cells::Column;
 use super::offers::{RefSource, Vocabulary};
-use super::{Domain, DomainId, FieldSpec, GROWTH_HELP};
+use super::{Domain, DomainId, FieldSpec, GROWTH_HELP, applies};
 
 /// The plan's incomes, edited as a table.
 pub struct Incomes;
@@ -21,6 +21,9 @@ impl Domain for Incomes {
         FieldSpec::choice("kind", "Type", Vocabulary::IncomeKind)
             .help("The kind of income, which decides how it is taxed."),
         FieldSpec::refers("owner", "Owner", RefSource::Person).help("Who receives it."),
+        FieldSpec::flag("covered", "Workplace plan")
+            .shown_when(applies::is_salary)
+            .help("A workplace plan at this job covers its owner, contributing or not - a pension plan, say. Decides whether a traditional IRA contribution is deductible."),
         FieldSpec::money("amount", "Annual amount")
             .help("Per year, in today's dollars. Blank on Social Security computes it from the earnings record."),
         FieldSpec::timing(),

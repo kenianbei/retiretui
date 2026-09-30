@@ -143,6 +143,9 @@ else is deferred unless `roth = true`.
 - `cola` (see escalation). On a computed `social-security` benefit it is also
   the COLA SSA adds each year from the owner's age-62 year, before and after the
   claim, for every year SSA has not yet published a COLA for.
+- `covered` (bool, default false, `salary` only) - the job's workplace plan
+  covers the owner in every year the salary pays, contributing or not: a pension
+  plan, say. It decides whether a traditional IRA contribution is deductible.
 
 ## [[expenses]]
 
@@ -265,8 +268,13 @@ contributions count) - filled in the order the items are listed; each account's
 employee plus employer total is held to the overall plan cap, the employer share
 giving way. What was held is said in the year's actions, as is a Roth IRA
 contribution in a year whose MAGI is over the Roth income band, and the part of
-a traditional IRA contribution a workplace-plan-covered person cannot deduct -
-which stays in the account as basis.
+a traditional IRA contribution the year's MAGI does not let be deducted - which
+stays in the account as basis. A person is covered by a workplace plan in a year
+a `covered` salary of theirs pays, or anything is paid into a 401(k), 403(b),
+SIMPLE IRA, 414(k) or SEP IRA of theirs; a covered person's deduction phases out
+over one band, and on a joint return, the deduction of a person not covered
+whose spouse is phases out over a higher band of its own. Anyone else deducts in
+full.
 
 ## [[residency]]
 

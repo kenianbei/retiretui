@@ -96,6 +96,7 @@ const RMD_COLUMNS: [&str; 2] = ["Age", "Divisor"];
 const NOT_PUBLISHED: &str = "not yet published";
 const NO_SURCHARGES: &str = "No surcharges in this year's table.";
 const NO_INCOME_TAX: &str = "This state has no income tax.";
+const SPOUSE_BAND: &str = "IRA deduction phase-out, spouse covered (MAGI)";
 const STATE_TITLE: &str = "State income tax";
 /// Where a plan living in no U.S. state lives, as the state pick says it.
 const ABROAD: &str = "no U.S. state";
@@ -274,7 +275,11 @@ fn limits(params: &TaxParams, status: FilingStatus) -> Vec<Vec<String>> {
     ];
     let dollars = dollars.map(|(label, amount)| labelled(label, money(amount)));
     let bands = bands.map(|(label, band)| labelled(label, phase_out(band.get(status))));
-    dollars.into_iter().chain(bands).collect()
+    let spouse = limits
+        .ira_deduction_phase_out_spouse
+        .filter(|_| status == FilingStatus::MarriedJoint)
+        .map(|band| labelled(SPOUSE_BAND, phase_out(band)));
+    dollars.into_iter().chain(bands).chain(spouse).collect()
 }
 
 fn social_security(
@@ -422,6 +427,21 @@ mod tests {
             "Bend points, first eligible this year",
         );
         assert!(bends.ends_with("a month"));
+    }
+
+    #[test]
+    fn the_spouse_s_ira_band_is_shown_on_a_joint_return_alone() {
+        let title = "Contribution limits";
+        let joint = year_tables(&moving(), &TaxTables::embedded(), &asked(2026));
+        assert_eq!(row(&joint, title, SPOUSE_BAND), "$242,000 to $252,000");
+        let single = TablesView {
+            status: Some("single".to_owned()),
+            ..asked(2026)
+        };
+        let single = year_tables(&moving(), &TaxTables::embedded(), &single);
+        let section = single.sections.iter().find(|each| each.title == title);
+        let rows = &section.expect(title).rows;
+        assert!(rows.iter().all(|row| row[0] != SPOUSE_BAND));
     }
 
     #[test]
