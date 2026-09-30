@@ -1,8 +1,6 @@
 import { useSearch } from "@tanstack/react-router";
 import { useMemo } from "react";
 
-import { QUARTERS } from "@/lib/utils";
-
 import { Better } from "@/overview/better";
 import { EveryYear, PlanChart } from "@/overview/charts";
 import { RowList } from "@/overview/lists";
@@ -14,6 +12,10 @@ import { useSession } from "@/session";
 import { basisOf, heldOf } from "@/year/search";
 import { useYear } from "@/year/use-year";
 import { BasisSwitch } from "@/year/year";
+
+/** Sections four across on a wide page, two on a narrower one, one on a phone. */
+const QUARTERS =
+  "grid grid-cols-1 items-start gap-6 @3xl/page:grid-cols-2 @wide/page:grid-cols-4";
 
 const CHART_ORDER = ["balances", "net-worth", "income", "markets"] as const;
 

@@ -27,7 +27,3 @@ export function gathered<T extends { group?: string | null }>(
   }
   return runs;
 }
-
-/** Sections four across on a wide page, two on a narrower one, one on a phone. */
-export const QUARTERS =
-  "grid grid-cols-1 items-start gap-6 @3xl/page:grid-cols-2 @wide/page:grid-cols-4";

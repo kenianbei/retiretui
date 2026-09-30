@@ -26,7 +26,6 @@ import {
   PLOT_SIZE,
   SERIES,
 } from "@/overview/bands";
-import { QUARTERS } from "@/lib/utils";
 import { Plot } from "@/overview/charts";
 import { BASIS_LABEL } from "@/overview/view-words";
 
@@ -189,7 +188,7 @@ const Endings = memo(function Endings({ found }: { found: MarketRuns }) {
   );
 });
 
-/** The runs' spread, each view a section of its own, four across on a wide page. */
+/** The runs' spread, each view a section of its own, two across on a wide page. */
 export function MarketCharts({
   found,
   run,
@@ -199,7 +198,7 @@ export function MarketCharts({
 }) {
   const runs = `${found.count.toLocaleString("en-US")} runs`;
   return (
-    <div className={QUARTERS}>
+    <div className="grid grid-cols-1 items-start gap-6 @3xl/page:grid-cols-2">
       <ChartSection title="Net worth" unit={`${DOLLARS} · ${runs}`}>
         <Bands found={found} run={run} />
       </ChartSection>
