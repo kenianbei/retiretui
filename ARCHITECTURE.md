@@ -146,10 +146,10 @@ depends on UI.
   are said in - each one's figures, or its differences from a baseline's, a
   metric year by year, and what one changes of another; a year's tax tables as a
   plan's projection applies them - for its filing status and the state it lives
-  in that year, or any other - in the words its other tables are said in; and
-  the shapes a search or a year's actions are replied in as data. Where there is
-  a machine beneath it, what that machine supplies: the user's own tax tables,
-  market history and directories.
+  in that year, or any other picked, the plan's own offered first - in the words
+  its other tables are said in; and the shapes a search or a year's actions are
+  replied in as data. Where there is a machine beneath it, what that machine
+  supplies: the user's own tax tables, market history and directories.
 - `retiretui_tui` - the interactive planner described under `tui` below, as a
   library over the client and above whatever backend draws it, mapping each
   editing domain to its page. It runs each search beside the frames: on a thread
@@ -226,28 +226,31 @@ depends on UI.
   chosen as the baseline, beside the plans charted or tabled year by year, whole
   or as their difference from the baseline, ⏎ on one taking it into the
   document's place with the others kept - and the tools, each panes of its own
-  over a line of help and a search beside the frames that runs by itself
-  whenever what it would search changes, a newer search stopping one under way,
-  taking instead what the overview has already found over the same plan, its
-  options ranked best first, each against the plan, in one shared table under a
-  row for the plan as it stands - the conversion search's beside what it runs
-  under, read out and edited as a domain's one item is, and over the highlighted
-  ladder year by year, the claim search's beside a table of each person's
-  earnings record, how their benefit is set and its estimates, ⏎ on a person
-  offering what can be done for them, and the claims held out of the search
-  among what it watches, and the market tools' runs - the plan through random
-  markets, or from every historical start year worst first - beside what they
-  run under and how the plan fared, over a chart of the runs' spread that `v`
-  turns to other views, ⏎ on a run opening it in the ledger, and on the plan's
-  own row the plan's own projection - the searches' highlighted option written
-  as a scenario over the document into the workspace and compared at once, or
-  taken into the draft, after asking, as one applied item - a Roth conversion
-  ladder as conversions of its own, in place of the ladder taken before, a set
-  of Social Security claims as each searched income's start, adding the incomes
-  the search made up. Viewing and editing are distinct: a domain with many items
-  is a table, shown in the plan's order or ordered by a column for the view
-  alone, with the row under the cursor read out beside it, every field the item
-  has a use for in the form's words, wherever the columns do not say
+  over a line of help and, but for the tax tables, a search beside the frames
+  that runs by itself whenever what it would search changes, a newer search
+  stopping one under way, taking instead what the overview has already found
+  over the same plan, its options ranked best first, each against the plan, in
+  one shared table under a row for the plan as it stands - the conversion
+  search's beside what it runs under, read out and edited as a domain's one item
+  is, and over the highlighted ladder year by year, the claim search's beside a
+  table of each person's earnings record, how their benefit is set and its
+  estimates, ⏎ on a person offering what can be done for them, and the claims
+  held out of the search among what it watches, and the market tools' runs - the
+  plan through random markets, or from every historical start year worst first -
+  beside what they run under and how the plan fared, over a chart of the runs'
+  spread that `v` turns to other views, ⏎ on a run opening it in the ledger, and
+  on the plan's own row the plan's own projection - the searches' highlighted
+  option written as a scenario over the document into the workspace and compared
+  at once, or taken into the draft, after asking, as one applied item - a Roth
+  conversion ladder as conversions of its own, in place of the ladder taken
+  before, a set of Social Security claims as each searched income's start,
+  adding the incomes the search made up - and the year's tax tables, read out as
+  one table in the year the overview and the ledger share, for the plan's filing
+  status and the state it lives in or any other picked, each tried on as a
+  picker's cursor reaches it. Viewing and editing are distinct: a domain with
+  many items is a table, shown in the plan's order or ordered by a column for
+  the view alone, with the row under the cursor read out beside it, every field
+  the item has a use for in the form's words, wherever the columns do not say
   everything - a person's ending with their earnings record - and a domain there
   is exactly one of is that read-out alone. Nothing on a page edits: one item at
   a time is the editing session, a form standing over the page as tall as the
