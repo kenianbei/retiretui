@@ -64,9 +64,9 @@ export function DataTable<Row extends RowData>({
     <div
       {...reachable}
       className={cn(
-        "bg-card focus-visible:ring-ring/50 w-fit max-w-full overflow-auto rounded-md border outline-none focus-visible:ring-[3px]",
+        "bg-card focus-visible:ring-ring/50 overflow-auto rounded-md border outline-none focus-visible:ring-[3px]",
         isFlush &&
-          "w-full rounded-none border-x-0 border-b-0 bg-transparent [&_tr>:first-child]:pl-4 [&_tr>:last-child]:pr-4",
+          "rounded-none border-x-0 border-b-0 bg-transparent [&_tr>:first-child]:pl-4 [&_tr>:last-child]:pr-4",
         className,
       )}
     >

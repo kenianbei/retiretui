@@ -62,12 +62,9 @@
   }
 }
 
-/* The page's widths at which its sections sit side by side: two columns,
-   an answer beside its detail, and the Ledger's year beside its table. */
+/* The page's width at which its sections go from two across to four. */
 @theme {
-  --container-split: 72rem;
   --container-wide: 100rem;
-  --container-widest: 112rem;
 }
 
 @theme inline {

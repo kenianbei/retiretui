@@ -119,7 +119,7 @@ export function ConversionsPage() {
         </div>
         <BasisSwitch />
       </div>
-      <div className="grid grid-cols-1 items-start gap-6 @wide/page:grid-cols-[auto_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 items-start gap-6 @wide/page:grid-cols-2">
         <section aria-labelledby="options" className="min-w-0 space-y-3">
           <div className="flex items-baseline gap-3">
             <h2 id="options" className="text-lg font-semibold">
@@ -160,10 +160,7 @@ export function ConversionsPage() {
           )}
         </section>
         {reply && highlighted && isAimed && isValid && !found.error && (
-          <section
-            aria-labelledby="conversions"
-            className="w-fit max-w-full min-w-0 space-y-3"
-          >
+          <section aria-labelledby="conversions" className="min-w-0 space-y-3">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <h2 id="conversions" className="text-lg font-semibold">
                 Conversions ({highlighted.label})
@@ -182,8 +179,8 @@ export function ConversionsPage() {
             />
           </section>
         )}
+        <Constraints />
       </div>
-      <Constraints />
       {search.edit && <ConstraintsForm />}
     </div>
   );

@@ -133,7 +133,12 @@ test("plans compared against a baseline, and a written scenario compared at once
   await expect(
     page.getByText(`Changes · ${ladder} against early.toml`),
   ).toBeVisible();
-  await expect(page.getByText(/^Conversions/).first()).toBeVisible();
+  await expect(
+    page
+      .getByRole("listitem")
+      .filter({ hasText: /^Conversions/ })
+      .first(),
+  ).toBeVisible();
 });
 
 test("a plan alone is offered one to compare with", async ({ page }) => {
@@ -149,10 +154,14 @@ test("a plan alone is offered one to compare with", async ({ page }) => {
     ),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "Difference" })).toHaveCount(0);
-  await expect(page.getByRole("region", { name: "By year" })).toHaveCount(0);
+  await expect(
+    page.getByRole("region", { name: "By year", exact: true }),
+  ).toHaveCount(0);
   await expectAccessible(page);
   await page.getByRole("button", { name: "Add an example" }).click();
   await page.getByRole("menuitem").first().click();
   await expect(page.getByRole("button", { name: "Difference" })).toBeVisible();
-  await expect(page.getByRole("region", { name: "By year" })).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "By year", exact: true }),
+  ).toBeVisible();
 });

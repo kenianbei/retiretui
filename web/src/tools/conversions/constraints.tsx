@@ -17,7 +17,7 @@ export function Constraints() {
     [reading],
   );
   return (
-    <section aria-labelledby="constraints" className="max-w-2xl space-y-3">
+    <section aria-labelledby="constraints" className="space-y-3">
       <div className="flex items-center gap-2">
         <h2 id="constraints" className="mr-auto text-lg font-semibold">
           Constraints

@@ -9,7 +9,8 @@ export function ChartSection({
   children,
 }: {
   title: string;
-  unit: string;
+  /** What its figures are in; left out where the chart beside it says. */
+  unit?: string;
   controls?: ReactNode;
   children: ReactNode;
 }) {
@@ -24,7 +25,7 @@ export function ChartSection({
           <h2 id={id} className="text-lg font-semibold">
             {title}
           </h2>
-          <p className="text-muted-foreground text-xs">{unit}</p>
+          {unit && <p className="text-muted-foreground text-xs">{unit}</p>}
         </div>
         {controls}
       </div>

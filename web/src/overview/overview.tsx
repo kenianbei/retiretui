@@ -1,6 +1,8 @@
 import { useSearch } from "@tanstack/react-router";
 import { useMemo } from "react";
 
+import { QUARTERS } from "@/lib/utils";
+
 import { Better } from "@/overview/better";
 import { EveryYear, PlanChart } from "@/overview/charts";
 import { RowList } from "@/overview/lists";
@@ -12,6 +14,8 @@ import { useSession } from "@/session";
 import { basisOf, heldOf } from "@/year/search";
 import { useYear } from "@/year/use-year";
 import { BasisSwitch } from "@/year/year";
+
+const CHART_ORDER = ["balances", "net-worth", "income", "markets"] as const;
 
 /**
  * The ledger's first page: whether the money lasts and how surely, what to
@@ -57,35 +61,29 @@ export function Overview() {
         {view?.shortfall && <Shortfall shortfall={view.shortfall} />}
         {view && <Strip view={view} basis={basis} plan={plan} />}
       </div>
-      <div className="grid grid-cols-1 items-start gap-6 @split/page:grid-cols-[minmax(0,48rem)_minmax(0,1fr)]">
-        <div className="max-w-3xl min-w-0 space-y-6">
-          <ThisYear shown={shown} basis={basis} />
-          {view && (
-            <RowList
-              id="attention"
-              title={VIEW_WORDS.attention}
-              rows={view.attention}
-              empty={VIEW_WORDS.nothing_wanting}
-            />
-          )}
-          {plan !== null && <Better plan={plan} held={held} basis={basis} />}
-        </div>
-        <div className="min-w-0 space-y-6">
-          {charts && <PlanChart chart="balances" {...charts} />}
-          {view && view.milestones.length > 0 && (
-            <RowList
-              id="milestones"
-              title={VIEW_WORDS.milestones}
-              rows={view.milestones}
-              className="max-w-3xl @split/page:max-w-none"
-            />
-          )}
-        </div>
+      <div className={QUARTERS}>
+        <ThisYear shown={shown} basis={basis} />
+        {view && view.milestones.length > 0 && (
+          <RowList
+            id="milestones"
+            title={VIEW_WORDS.milestones}
+            rows={view.milestones}
+          />
+        )}
+        {view && (
+          <RowList
+            id="attention"
+            title={VIEW_WORDS.attention}
+            rows={view.attention}
+            empty={VIEW_WORDS.nothing_wanting}
+          />
+        )}
+        {plan !== null && <Better plan={plan} held={held} basis={basis} />}
       </div>
       {charts && (
         <div className="space-y-3">
-          <div className="grid grid-cols-1 items-start gap-6 @2xl/page:grid-cols-2 @6xl/page:grid-cols-3">
-            {(["net-worth", "income", "markets"] as const).map((chart) => (
+          <div className={QUARTERS}>
+            {CHART_ORDER.map((chart) => (
               <PlanChart key={chart} chart={chart} {...charts} />
             ))}
           </div>

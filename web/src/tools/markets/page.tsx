@@ -153,12 +153,8 @@ export function MarketsPage({
         <p className="text-muted-foreground">{WORDS.nothing_searched}</p>
       ) : (
         <>
-          <div className="grid grid-cols-1 items-start gap-6 @2xl/page:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
-            <Assumptions rows={reply.assumptions} />
-            <section
-              aria-labelledby="runs"
-              className="w-fit max-w-full min-w-0 space-y-3"
-            >
+          <div className="grid grid-cols-1 items-start gap-6 @2xl/page:grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
+            <section aria-labelledby="runs" className="min-w-0 space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 id="runs" className="text-lg font-semibold">
                   {reply.columns[0]}
@@ -179,6 +175,7 @@ export function MarketsPage({
                 }}
               />
             </section>
+            <Assumptions rows={reply.assumptions} />
           </div>
           <MarketCharts found={reply} run={highlighted} />
         </>

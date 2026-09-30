@@ -178,7 +178,7 @@ export function LedgerPage() {
           </p>
         </MarginNote>
       )}
-      <div className="grid grid-cols-1 items-start gap-6 @widest/page:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+      <div className="space-y-6">
         {isWide ? [years, yearDetail] : [yearDetail, years]}
       </div>
     </div>

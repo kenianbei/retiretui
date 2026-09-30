@@ -110,76 +110,80 @@ export function ClaimsPage() {
         </div>
         <BasisSwitch />
       </div>
-      <section aria-labelledby="claims" className="w-fit max-w-full space-y-3">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="flex items-baseline gap-3">
-            <h2 id="claims" className="text-lg font-semibold">
-              Claim options
-            </h2>
-            {found.isFetching && (
-              <span className="text-muted-foreground text-sm">Searching…</span>
+      <div className="grid grid-cols-1 items-start gap-6 @wide/page:grid-cols-2">
+        <section aria-labelledby="claims" className="min-w-0 space-y-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex items-baseline gap-3">
+              <h2 id="claims" className="text-lg font-semibold">
+                Claim options
+              </h2>
+              {found.isFetching && (
+                <span className="text-muted-foreground text-sm">
+                  Searching…
+                </span>
+              )}
+            </div>
+            {reply && highlighted && isValid && !found.error && (
+              <SearchActions
+                key={highlighted.key}
+                chosen={chosenClaims(path, highlighted, reply.added)}
+                isCurrent={isCurrent}
+              />
             )}
           </div>
-          {reply && highlighted && isValid && !found.error && (
-            <SearchActions
-              key={highlighted.key}
-              chosen={chosenClaims(path, highlighted, reply.added)}
-              isCurrent={isCurrent}
+          {!isValid ? (
+            <p className="text-muted-foreground">
+              The claims are searched once the plan&apos;s issues are fixed; the{" "}
+              <Link to="/overview" className="underline underline-offset-4">
+                Overview
+              </Link>{" "}
+              lists them.
+            </p>
+          ) : found.error && !found.isFetching ? (
+            <MarginNote zone="caution" role="alert">
+              <p className="text-sm">{found.error.message}</p>
+            </MarginNote>
+          ) : !reply ? (
+            <p className="text-muted-foreground">{WORDS.nothing_searched}</p>
+          ) : (
+            <Options
+              label="Claim options"
+              columns={columns ?? []}
+              rows={rows ?? []}
+              narrowFigure={(columns ?? []).indexOf(WORDS.against_plan)}
+              highlighted={highlighted}
+              highlight={(option) => {
+                void navigate({
+                  search: (kept) => ({ ...kept, claim: option.key }),
+                  replace: true,
+                });
+              }}
             />
           )}
-        </div>
-        {!isValid ? (
-          <p className="text-muted-foreground">
-            The claims are searched once the plan&apos;s issues are fixed; the{" "}
-            <Link to="/overview" className="underline underline-offset-4">
-              Overview
-            </Link>{" "}
-            lists them.
-          </p>
-        ) : found.error && !found.isFetching ? (
-          <MarginNote zone="caution" role="alert">
-            <p className="text-sm">{found.error.message}</p>
-          </MarginNote>
-        ) : !reply ? (
-          <p className="text-muted-foreground">{WORDS.nothing_searched}</p>
-        ) : (
-          <Options
-            label="Claim options"
-            columns={columns ?? []}
-            rows={rows ?? []}
-            narrowFigure={(columns ?? []).indexOf(WORDS.against_plan)}
-            highlighted={highlighted}
-            highlight={(option) => {
-              void navigate({
-                search: (kept) => ({ ...kept, claim: option.key }),
-                replace: true,
-              });
-            }}
-          />
-        )}
-      </section>
-      <section aria-labelledby="people" className="space-y-3">
-        <h2 id="people" className="text-lg font-semibold">
-          People
-        </h2>
-        {people.length === 0 ? (
-          <p className="text-muted-foreground">{WORDS.nobody}</p>
-        ) : (
-          <People
-            columns={WORDS.people_columns}
-            spelledOut={WORDS.spelled_out}
-            people={people}
-            at={at}
-            highlight={(person) => {
-              void navigate({
-                search: (kept) => ({ ...kept, person }),
-                replace: true,
-              });
-            }}
-            hold={hold}
-          />
-        )}
-      </section>
+        </section>
+        <section aria-labelledby="people" className="min-w-0 space-y-3">
+          <h2 id="people" className="text-lg font-semibold">
+            People
+          </h2>
+          {people.length === 0 ? (
+            <p className="text-muted-foreground">{WORDS.nobody}</p>
+          ) : (
+            <People
+              columns={WORDS.people_columns}
+              spelledOut={WORDS.spelled_out}
+              people={people}
+              at={at}
+              highlight={(person) => {
+                void navigate({
+                  search: (kept) => ({ ...kept, person }),
+                  replace: true,
+                });
+              }}
+              hold={hold}
+            />
+          )}
+        </section>
+      </div>
     </div>
   );
 }

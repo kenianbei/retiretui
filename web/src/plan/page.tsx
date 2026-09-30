@@ -45,7 +45,7 @@ function ListDomain({ slug, purpose }: { slug: string; purpose: string }) {
       <div className={item !== undefined ? "max-md:hidden" : undefined}>
         {add}
       </div>
-      <div className="grid grid-cols-1 gap-6 @3xl/page:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]">
+      <div className="grid grid-cols-1 gap-6 @3xl/page:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <div
           className={cn("@container", item !== undefined && "max-md:hidden")}
         >

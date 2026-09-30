@@ -42,7 +42,7 @@ export function ReadOut({
   }, [reading, slug, index]);
   if (!rows) return null;
   return (
-    <section aria-label={name ?? "Details"} className="max-w-2xl space-y-4">
+    <section aria-label={name ?? "Details"} className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         {name && <h2 className="mr-auto text-lg font-semibold">{name}</h2>}
         <Button size="sm" asChild>

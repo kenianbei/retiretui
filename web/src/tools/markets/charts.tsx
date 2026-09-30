@@ -26,6 +26,7 @@ import {
   PLOT_SIZE,
   SERIES,
 } from "@/overview/bands";
+import { QUARTERS } from "@/lib/utils";
 import { Plot } from "@/overview/charts";
 import { BASIS_LABEL } from "@/overview/view-words";
 
@@ -188,7 +189,7 @@ const Endings = memo(function Endings({ found }: { found: MarketRuns }) {
   );
 });
 
-/** The runs' spread, each view a section of its own. */
+/** The runs' spread, each view a section of its own, four across on a wide page. */
 export function MarketCharts({
   found,
   run,
@@ -198,18 +199,16 @@ export function MarketCharts({
 }) {
   const runs = `${found.count.toLocaleString("en-US")} runs`;
   return (
-    <div className="space-y-6">
+    <div className={QUARTERS}>
       <ChartSection title="Net worth" unit={`${DOLLARS} · ${runs}`}>
         <Bands found={found} run={run} />
       </ChartSection>
-      <div className="grid items-start gap-6 @4xl/page:grid-cols-2">
-        <ChartSection title="Still funded" unit={`share of runs · ${runs}`}>
-          <StillFunded found={found} />
-        </ChartSection>
-        <ChartSection title="Ends with" unit={`${DOLLARS} · ${runs}`}>
-          <Endings found={found} />
-        </ChartSection>
-      </div>
+      <ChartSection title="Still funded" unit={`share of runs · ${runs}`}>
+        <StillFunded found={found} />
+      </ChartSection>
+      <ChartSection title="Ends with" unit={`${DOLLARS} · ${runs}`}>
+        <Endings found={found} />
+      </ChartSection>
       {found.by_year && (
         <ChartSection title="By year" unit={`${DOLLARS} · ${runs}`}>
           <ByYear table={found.by_year} />

@@ -117,7 +117,7 @@ export function YearDetailCards({
           )}
         </CardContent>
       </Card>
-      <Card className="max-w-lg gap-3 py-4">
+      <Card className="gap-3 py-4">
         <CardHeader className="px-4">
           <CardTitle>{title(VIEW_WORDS.income_and_tax)}</CardTitle>
         </CardHeader>

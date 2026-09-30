@@ -3,7 +3,6 @@ import type { OverviewRow } from "@wasm/retiretui_wasm.js";
 import { ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { cn } from "@/lib/utils";
 import { pageOf, TOOLS } from "@/nav";
 import { YearInLedger } from "@/year/ledger-link";
 import { keptSearch } from "@/year/search";
@@ -118,16 +117,14 @@ export function RowList({
   title,
   rows,
   empty,
-  className,
 }: {
   id: string;
   title: string;
   rows: readonly OverviewRow[];
   empty?: string;
-  className?: string;
 }) {
   return (
-    <section aria-labelledby={id} className={cn("space-y-3", className)}>
+    <section aria-labelledby={id} className="min-w-0 space-y-3">
       <h2 id={id} className="text-lg font-semibold">
         {title}
       </h2>

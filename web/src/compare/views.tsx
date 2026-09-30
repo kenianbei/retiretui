@@ -131,39 +131,46 @@ function PlansTable({ plans, words, year, onYear, caption }: ViewsProps) {
   );
 }
 
-/** The plans' metric year by year, charted and tabled at once, and the metric picked. */
+/**
+ * The plans' metric year by year, charted beside its table: the chart, with
+ * the metric picked, spans two of its grid's columns.
+ */
 export function Views(props: ViewsProps) {
   const { words, metric, caption, onMetric } = props;
   return (
-    <ChartSection
-      title="By year"
-      unit={caption}
-      controls={
-        <label className="flex items-center gap-2 text-sm">
-          <span className="text-muted-foreground">Metric</span>
-          <select
-            value={metric}
-            onChange={(event) => {
-              const picked = words.metrics.find(
-                (each) => each.key === event.target.value,
-              );
-              if (picked) onMetric(picked.key);
-            }}
-            className={cn(INPUT, "h-8 w-auto")}
-          >
-            {words.metrics.map((each) => (
-              <option key={each.key} value={each.key}>
-                {each.title}
-              </option>
-            ))}
-          </select>
-        </label>
-      }
-    >
-      <div className="grid items-start gap-4 @5xl:grid-cols-2">
-        <PlansChart {...props} />
-        <PlansTable {...props} />
+    <>
+      <div className="min-w-0 @3xl/page:col-span-2">
+        <ChartSection
+          title="By year"
+          unit={caption}
+          controls={
+            <label className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground">Metric</span>
+              <select
+                value={metric}
+                onChange={(event) => {
+                  const picked = words.metrics.find(
+                    (each) => each.key === event.target.value,
+                  );
+                  if (picked) onMetric(picked.key);
+                }}
+                className={cn(INPUT, "h-8 w-auto")}
+              >
+                {words.metrics.map((each) => (
+                  <option key={each.key} value={each.key}>
+                    {each.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+          }
+        >
+          <PlansChart {...props} />
+        </ChartSection>
       </div>
-    </ChartSection>
+      <ChartSection title="Year by year">
+        <PlansTable {...props} />
+      </ChartSection>
+    </>
   );
 }
