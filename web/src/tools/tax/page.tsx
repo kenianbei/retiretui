@@ -161,8 +161,6 @@ export function TaxTablesPage({ title }: { title: string }) {
       replace: true,
     });
   };
-  const named = (choices: Offer[], key: string | null) =>
-    choices.find((choice) => choice.value === key)?.label ?? "none";
 
   return (
     <div className="space-y-6">
@@ -174,8 +172,8 @@ export function TaxTablesPage({ title }: { title: string }) {
         <div className="flex flex-wrap items-center gap-3">
           <YearStepper shown={shown} />
           <Picker
-            label="Filing status"
-            own={`The plan's (${named(tables.statuses, tables.status)})`}
+            label={tables.status_pick}
+            own={tables.own_status}
             value={search.status}
             choices={tables.statuses}
             pick={(status) => {
@@ -183,12 +181,8 @@ export function TaxTablesPage({ title }: { title: string }) {
             }}
           />
           <Picker
-            label="State"
-            own={
-              search.state === undefined
-                ? `Where the plan lives (${named(tables.states, tables.state)})`
-                : "Where the plan lives"
-            }
+            label={tables.state_pick}
+            own={tables.own_state}
             value={search.state}
             choices={tables.states}
             pick={(state) => {

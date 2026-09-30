@@ -31,7 +31,7 @@ export const HISTORICAL = "historical";
 /** The Tax Tables tool's page. */
 export const TAX_TABLES = "tax-tables";
 
-/** The tools that act on the plan as a whole, in the TUI's order, then the page's own. */
+/** The tools that act on the plan as a whole, in the TUI's order. */
 export const TOOLS: readonly Page[] = [
   {
     slug: ROTH_CONVERSIONS,

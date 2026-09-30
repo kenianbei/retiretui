@@ -5,8 +5,10 @@ use super::{CommandSpec, Scope};
 use retiretui_engine::market::{MonteCarlo, Runs};
 
 use crate::nav::Page;
+use crate::session;
 use crate::tools;
 use crate::tools::markets::MarketTool;
+use crate::tools::tax::Pick;
 
 pub const WRITE_LADDER: &str = "write-ladder";
 pub const TAKE_LADDER: &str = "take-ladder";
@@ -21,6 +23,7 @@ pub(super) fn commands() -> Vec<CommandSpec> {
         people(),
         market::<MonteCarlo>(),
         market::<Runs>(),
+        tax(),
     ]
     .into_iter()
     .flatten()
@@ -159,6 +162,44 @@ fn market<R: MarketTool>() -> Vec<CommandSpec> {
             keys: vec![],
             hint: None,
             register: Box::new(|world| world.register_system(tools::markets::edit_assumption::<R>)),
+        },
+    ]
+}
+
+/// The Tax Tables page's rows.
+fn tax() -> Vec<CommandSpec> {
+    vec![
+        CommandSpec {
+            name: "tax-year-next",
+            scope: Scope::On(Page::TaxTables),
+            doc: "move the year a year on",
+            keys: vec![character("]")],
+            hint: Some("next year"),
+            register: Box::new(|world| world.register_system(session::next_year)),
+        },
+        CommandSpec {
+            name: "tax-year-previous",
+            scope: Scope::On(Page::TaxTables),
+            doc: "move the year a year back",
+            keys: vec![character("[")],
+            hint: Some("last year"),
+            register: Box::new(|world| world.register_system(session::previous_year)),
+        },
+        CommandSpec {
+            name: "tax-status",
+            scope: Scope::On(Page::TaxTables),
+            doc: "pick the filing status the tax tables are for",
+            keys: vec![character("f")],
+            hint: Some("status"),
+            register: Box::new(|world| world.register_system(tools::tax::opens(Pick::Status))),
+        },
+        CommandSpec {
+            name: "tax-state",
+            scope: Scope::On(Page::TaxTables),
+            doc: "pick the state the tax tables are for",
+            keys: vec![character("t")],
+            hint: Some("state"),
+            register: Box::new(|world| world.register_system(tools::tax::opens(Pick::State))),
         },
     ]
 }

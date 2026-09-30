@@ -147,6 +147,16 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   base, and `project::benefit_params` and `project::state_lived_in`, the benefit
   formula's parameters and the state taxing a year as a plan's projection takes
   them.
+- The terminal's Tools gain a Tax Tables page, reading out the tables the plan's
+  projection applies in the year shown, for its filing status and the state it
+  lives in: its sections listed beside the highlighted one's table. `[` and `]`
+  step the year the Overview and the Ledger share; `f` and `t` pick another
+  filing status or modeled state, the plan's own first, each tried on as the
+  cursor reaches it and put back by Esc.
+- The client's `YearTables` says what its status and state are picked under, the
+  plan's own of each as a pick offers it - `The plan's (Single)`,
+  `Where the plan lives (Oregon)` - and the status and state shown by name; the
+  web's Tax Tables tool reads its pickers' words from it.
 
 ### Changed
 

@@ -1,0 +1,37 @@
+---
+source: crates/retiretui_tui/src/frames.rs
+assertion_line: 45
+expression: composed_frame(app)
+---
+╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                              
+│1 Overview││2 Ledger││3 Compare││4 Tools││5 Plan│                                                                  full.toml ● 
+┴──────────┴┴────────┴┴─────────┴╯       ╰┴──────┴──────────────────────────────────────────────────────────────────────────────
+╭ Tools ────────────╮╭ Sections ───────────────────────╮╭ Income tax brackets · 2026 · Married filing jointly · Oregon ────────╮
+│  Roth Conversions ││▌ Income tax brackets            ││  Taxable income over   Rate                                          │
+│  SSA Benefits     ││  Long-term capital gains        ││▏ $0                     10%                                          │
+│  Monte Carlo      ││  Deductions and penalties       ││  $24,800                12%                                          │
+│  Historical       ││  Contribution limits            ││  $100,800               22%                                          │
+│▏ Tax Tables       ││  Medicare surcharges (IRMAA)    ││  $211,400               24%                                          │
+│                   ││  Required minimum distributions ││  $403,550               32%                                          │
+│                   ││  Social Security                ││  $512,450               35%                                          │
+│                   ││  Oregon income tax              ││  $768,700               37%                                          │
+│                   ││  Oregon brackets                ││                                                                      │
+│                   ││                                 ││                                                                      │
+│                   ││                                 ││                                                                      │
+│                   ││                                 ││                                                                      │
+│                   ││                                 ││                                                                      │
+│                   ││                                 ││                                                                      │
+│                   ││                                 ││                                                                      │
+│                   ││                                 ││                                                                      │
+│                   ││                                 ││                                                                      │
+│                   ││                                 ││                                                                      │
+│                   ││                                 ││                                                                      │
+│                   ││                                 ││                                                                      │
+│                   ││                                 ││                                                                      │
+│                   ││                                 ││                                                                      │
+│                   ││                                 ││                                                                      │
+│                   ││                                 ││                                                                      │
+│                   ││                                 ││                                                                      │
+│                   │╰─────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────╯
+╰───────────────────╯The amounts the projection applies in a year; past the latest table, they grow at the plan's inflation.    
+ ↑↓ section  ⇥ pane  ] next year  [ last year  f status  t state  ctrl-s save  r reload  q quit  ctrl-↓ tab  : commands  ? help

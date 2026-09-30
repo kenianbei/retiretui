@@ -4,9 +4,45 @@ use bevy_ecs::system::SystemParam;
 use plurimus::widgets::ActiveDescendant;
 use retiretui_engine::project::YearRow;
 
+use crate::command::Outcome;
+
 pub use retiretui_client::session::{
     NO_DOCUMENT, Projected, Session, Today, YearCursor, cursor_year, file_name, span,
 };
+
+/// Moves the year cursor `step` years within the projected ones.
+fn step_year(
+    projected: &Projected,
+    today: Today,
+    cursor: &mut ResMut<YearCursor>,
+    step: i16,
+) -> Outcome {
+    let planned = span(&projected.projection.years);
+    let year = cursor_year(projected, today, **cursor);
+    let stepped = (year + step).clamp(planned.0, planned.1);
+    if stepped != year {
+        cursor.set_if_neq(YearCursor(Some(stepped)));
+    }
+    Outcome::Done
+}
+
+/// Steps the shared year a year on.
+pub(crate) fn next_year(
+    projected: Res<Projected>,
+    today: Res<Today>,
+    mut cursor: ResMut<YearCursor>,
+) -> Outcome {
+    step_year(&projected, *today, &mut cursor, 1)
+}
+
+/// Steps the shared year a year back.
+pub(crate) fn previous_year(
+    projected: Res<Projected>,
+    today: Res<Today>,
+    mut cursor: ResMut<YearCursor>,
+) -> Outcome {
+    step_year(&projected, *today, &mut cursor, -1)
+}
 
 /// The calendar year a table's row shows.
 #[derive(Component, Clone, Copy)]

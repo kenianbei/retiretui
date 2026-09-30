@@ -16,9 +16,17 @@ year: number,
  */
 status: string, 
 /**
+ * The filing status shown, as a person says it.
+ */
+status_name: string, 
+/**
  * The state shown, where there is one.
  */
 state: string | null, 
+/**
+ * The state shown, by its name.
+ */
+state_name: string | null, 
 /**
  * Every filing status.
  */
@@ -34,4 +42,20 @@ sections: Array<TaxSection>,
 /**
  * What the tables are, said once above them.
  */
-about: string, };
+about: string, 
+/**
+ * What the filing status is picked under.
+ */
+status_pick: string, 
+/**
+ * What the state is picked under.
+ */
+state_pick: string, 
+/**
+ * The plan's own filing status, as a pick offers it.
+ */
+own_status: string, 
+/**
+ * Where the plan lives in the year, as a pick offers it.
+ */
+own_state: string, };

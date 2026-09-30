@@ -16,9 +16,8 @@ mod better_tests;
 mod tests;
 
 use bevy_app::{App, Startup, Update};
-use bevy_ecs::change_detection::DetectChangesMut;
 use bevy_ecs::hierarchy::ChildOf;
-use bevy_ecs::prelude::{Commands, Entity, IntoScheduleConfigs, Query, Res, ResMut, With};
+use bevy_ecs::prelude::{Commands, Entity, IntoScheduleConfigs, Query, With};
 use bevy_ui::{FlexDirection, Node, Val};
 
 pub(crate) use better::Better;
@@ -29,12 +28,10 @@ use rows::List;
 pub(crate) use rows::edit_row;
 pub(crate) use todo::WARNING_MARK;
 
-use super::command::Outcome;
 use super::hints::Hints;
 use super::layout::{self, Body};
 use super::nav::{self, Page};
 use super::pane::Pane;
-use super::session::{Projected, Today, YearCursor, cursor_year, span};
 
 pub fn plugin(app: &mut App) {
     app.init_resource::<charts::ChartView>();
@@ -98,38 +95,4 @@ fn spawn_band(commands: &mut Commands, view: Entity, (least, share): (f32, f32))
 fn spawn_list(commands: &mut Commands, band: Entity, title: &str, share: f32) -> Entity {
     let pane = Pane::new(title).sharing(share).spawn(commands, band);
     layout::spawn_scrolled_list(commands, pane, SCROLL_HINTS)
-}
-
-/// Moves the year cursor `step` years within the projected ones.
-fn step_year(
-    projected: &Projected,
-    today: Today,
-    cursor: &mut ResMut<YearCursor>,
-    step: i16,
-) -> Outcome {
-    let planned = span(&projected.projection.years);
-    let year = cursor_year(projected, today, **cursor);
-    let stepped = (year + step).clamp(planned.0, planned.1);
-    if stepped != year {
-        cursor.set_if_neq(YearCursor(Some(stepped)));
-    }
-    Outcome::Done
-}
-
-/// The `overview-year-next` command.
-pub(crate) fn next_year(
-    projected: Res<Projected>,
-    today: Res<Today>,
-    mut cursor: ResMut<YearCursor>,
-) -> Outcome {
-    step_year(&projected, *today, &mut cursor, 1)
-}
-
-/// The `overview-year-previous` command.
-pub(crate) fn previous_year(
-    projected: Res<Projected>,
-    today: Res<Today>,
-    mut cursor: ResMut<YearCursor>,
-) -> Outcome {
-    step_year(&projected, *today, &mut cursor, -1)
 }

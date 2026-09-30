@@ -21,7 +21,7 @@ fn every_page_is_a_domain_a_tool_or_a_view() {
     let tools = Page::ALL
         .into_iter()
         .filter(|page| page.group() == Some(Group::Tools));
-    assert_eq!(tools.count(), 4);
+    assert_eq!(tools.count(), 5);
     for page in Page::ALL {
         assert_eq!(
             page.is_domain(),
