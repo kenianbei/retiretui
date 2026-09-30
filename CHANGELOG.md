@@ -34,21 +34,22 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   what needs attention - the years the plan pays Medicare's surcharges,
   contributions held back, a benefit estimated without its earnings record, an
   amount too large to be likely - and what could do better, each row leading to
-  its year in the Ledger, its item or its tool. On a wide page these sit beside
-  the plan's balances by tax treatment under its net worth, charted over its
-  milestones; a narrower one reads them in that order. Beneath, all shown at
-  once, its net worth, its income against its taxes, and its net worth through
-  the random markets as percentile bands, each salary's end marked and listed
-  under its chart, each chart read as one image with the Ledger as its table.
-  The Ledger shows the plan year by year, the year column staying in view as the
-  table scrolls sideways, and the chosen year's flows through each account -
-  where each came from or went, with the year's warnings - and its income and
-  what it paid, beneath the table on a wide screen and above it on a phone,
-  where no page scrolls sideways but its tables. The year and the dollars are in
-  the page's address, kept between the Overview, the Ledger, Compare and the
-  tools and across a reload. The Plan pages edit the plan: each domain's items
-  are a table sortable by its columns, or rows with a Sort by on a phone, beside
-  the highlighted item read out in the form's words - a field left blank read as
+  its year in the Ledger, its item or its tool. What to do, the milestones, what
+  needs attention and what could do better sit four across on a wide page, two
+  on a narrower one. Beneath them, all shown at once and laid out the same way,
+  the plan's balances by tax treatment under its net worth, its net worth, its
+  income against its taxes, and its net worth through the random markets as
+  percentile bands, each salary's end marked and listed under its chart, each
+  chart read as one image with the Ledger as its table. The Ledger shows the
+  plan year by year, the year column staying in view as the table scrolls
+  sideways, and the chosen year's flows through each account - where each came
+  from or went, with the year's warnings - and its income and what it paid,
+  beneath the table on a wide screen and above it on a phone, where no page
+  scrolls sideways but its tables. The year and the dollars are in the page's
+  address, kept between the Overview, the Ledger, Compare and the tools and
+  across a reload. The Plan pages edit the plan: each domain's items are a table
+  sortable by its columns, or rows with a Sort by on a phone, beside the
+  highlighted item read out in the form's words - a field left blank read as
   what it stands for, muted, such as `Earns nothing` or `6%, the default`, and
   the Market's fields under headings - and a domain there is one of is that
   read-out alone. Edit, Add and Delete work one item at a time; the form is a
@@ -68,14 +69,14 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   person from the People page as one step of history. The Roth Conversions tool
   searches every fillable bracket's conversion ladder, ranks them under the plan
   as it stands, each saying what it ends with against the plan, and shows the
-  highlighted one's conversions year by year - beside the options on a wide
-  page - in either dollar basis, over the constraints it searched under, read
-  out and edited in a sheet; it searches again whenever the plan or the
-  constraints change, and takes the plan's one Roth account as the destination
-  where there is only one. The highlighted ladder is taken into the plan after
-  asking, as one step of history in place of any ladder taken before, or written
-  as a scenario beside the saved plan, compared with it at once and offered to
-  open. The SSA Benefits tool ranks every claim age for the household's computed
+  highlighted one's conversions year by year beside them on a wide page, in
+  either dollar basis, over the constraints it searched under, read out and
+  edited in a sheet; it searches again whenever the plan or the constraints
+  change, and takes the plan's one Roth account as the destination where there
+  is only one. The highlighted ladder is taken into the plan after asking, as
+  one step of history in place of any ladder taken before, or written as a
+  scenario beside the saved plan, compared with it at once and offered to open.
+  The SSA Benefits tool ranks every claim age for the household's computed
   Social Security benefits under the plan as it stands, each against the plan as
   a ladder is, above each person's earnings record, how their benefit is set and
   the benefit estimated at 62, full retirement age and 70, with what can be done
@@ -104,15 +105,15 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   each plan's figures and its success through random markets - each plan
   searched in a worker of its own - or its differences from the one chosen as
   the baseline, what the highlighted plan changes of the baseline, and one of
-  eight metrics year by year, charted and tabled at once. A plan alone is
-  offered another from the workspace, or, where there is none, an example
-  written beside it and compared at once. The plans compared, the baseline and
-  the metric are kept in the address, the plans compared carried by every link;
-  opening a compared plan puts it in the document's place with the document
-  joining the compared, and opening any other plan leaves nothing compared. The
-  Tax Tables tool reads out the tables the plan's projection applies in the year
-  shown - brackets, deductions, long-term gains, Social Security's thresholds
-  and benefit formula, the contribution limits, Medicare surcharges, the RMD
+  eight metrics year by year, charted beside its table. A plan alone is offered
+  another from the workspace, or, where there is none, an example written beside
+  it and compared at once. The plans compared, the baseline and the metric are
+  kept in the address, the plans compared carried by every link; opening a
+  compared plan puts it in the document's place with the document joining the
+  compared, and opening any other plan leaves nothing compared. The Tax Tables
+  tool reads out the tables the plan's projection applies in the year shown -
+  brackets, deductions, long-term gains, Social Security's thresholds and
+  benefit formula, the contribution limits, Medicare surcharges, the RMD
   divisors and the state's income tax - in columns as many as the page holds -
   for the plan's filing status and the state it lives in that year, grown past
   the last published table at the plan's inflation, or for any status or modeled
@@ -133,13 +134,14 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   follows the system, and navigation is a bottom bar on a phone - a grouped
   tab's pages a row of chips above the page, faded at an edge with more beyond
   it - and a sidebar on a wider screen that stays in view with the header as the
-  page scrolls. Pages fill the width beside it, each section held to its own
-  measure and set beside another where there is room; on a phone every button,
-  tab and chip is touched across 44px whatever size it is drawn. Money is
-  written in full wherever a table has room for it - a ladder's years, a monthly
-  benefit, the tools' options and runs, and the years compared - and compact
-  only where it has not, as in the Overview's figures and Compare's plans; a
-  phone's row of options shows what each ends with against the plan.
+  page scrolls. Pages fill the width beside it, their tables and read-outs
+  filling their columns and their sections two or four across where there is
+  room; on a phone every button, tab and chip is touched across 44px whatever
+  size it is drawn. Money is written in full wherever a table has room for it -
+  a ladder's years, a monthly benefit, the tools' options and runs, and the
+  years compared - and compact only where it has not, as in the Overview's
+  figures and Compare's plans; a phone's row of options shows what each ends
+  with against the plan.
 - The engine exposes `Scenario::set_base`, which makes an overlay name another
   base, and `project::benefit_params` and `project::state_lived_in`, the benefit
   formula's parameters and the state taxing a year as a plan's projection takes
