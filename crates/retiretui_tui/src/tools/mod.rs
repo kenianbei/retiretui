@@ -8,6 +8,7 @@ pub mod claims;
 pub mod ladders;
 pub mod markets;
 mod options;
+pub mod tax;
 mod worker;
 mod write;
 
@@ -54,6 +55,7 @@ pub fn plugin(app: &mut App) {
         claims::plugin,
         markets::plugin,
         options::plugin_said,
+        tax::plugin,
     ));
 }
 

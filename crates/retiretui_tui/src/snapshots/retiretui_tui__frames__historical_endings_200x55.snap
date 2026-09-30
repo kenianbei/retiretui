@@ -11,7 +11,7 @@ expression: composed_frame(app)
 │  SSA Benefits     ││▌ Money lasts          85.2% of 155 start years ││  As planned     $2.09M     never                                                                                             █│
 │  Monte Carlo      ││  Counts as a success  Never running short      ││▏ 1968               $0 2055 (80)                                                                                             ║│
 │▏ Historical       ││  Years                1871–2025, wrapped       ││  1969               $0 2055 (80)                                                                                             ║│
-│                   ││  Fixed return         cash, brokerage, fid-401 ││  1967               $0 2055 (80)                                                                                             ║│
+│  Tax Tables       ││  Fixed return         cash, brokerage, fid-401 ││  1967               $0 2055 (80)                                                                                             ║│
 │                   ││                                                ││  1966               $0 2055 (80)                                                                                             ║│
 │                   ││                                                ││  1970               $0 2055 (80)                                                                                             ║│
 │                   ││                                                ││  1965               $0 2056 (81)                                                                                             ▼│

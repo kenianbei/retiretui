@@ -11,7 +11,7 @@ expression: composed_frame(app)
 │▏ SSA Benefits     ││▌ jordan No record     Stated  -   -  -                                                 ││benefit has an earnings record to compute one from.                                    │
 │  Monte Carlo      ││  alex   No record No benefit  -   -  -                                                 ││                                                                                       │
 │  Historical       ││                                                                                        ││                                                                                       │
-│                   ││                                                                                        ││                                                                                       │
+│  Tax Tables       ││                                                                                        ││                                                                                       │
 │                   ││                                                                                        ││                                                                                       │
 │                   ││                                                                                        ││                                                                                       │
 │                   ││                                                                                        ││                                                                                       │

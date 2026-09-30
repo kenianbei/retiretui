@@ -1,0 +1,37 @@
+---
+source: crates/retiretui_tui/src/frames.rs
+assertion_line: 45
+expression: composed_frame(app)
+---
+╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                              
+│1 Overview││2 Ledger││3 Compare││4 Tools││5 Plan│                                                                  full.toml ● 
+┴──────────┴┴────────┴┴─────────┴╯       ╰┴──────┴──────────────────────────────────────────────────────────────────────────────
+╭ Tools ────────────╮╭ Tax Tables · 2026 · Married filing jointly · Oregon ────────────────────────────────────────────────────╮
+│  Roth Conversions ││▌ Income tax brackets                                                                                   ▲│
+│  SSA Benefits     ││  Taxable income over                                                 Rate                              █│
+│  Monte Carlo      ││  $0                                                                   10%                              █│
+│  Historical       ││  $24,800                                                              12%                              █│
+│▏ Tax Tables       ││  $100,800                                                             22%                              █│
+│                   ││  $211,400                                                             24%                              █│
+│                   ││  $403,550                                                             32%                              ║│
+│                   ││  $512,450                                                             35%                              ║│
+│                   ││  $768,700                                                             37%                              ║│
+│                   ││                                                                                                        ║│
+│                   ││  Long-term capital gains                                                                               ║│
+│                   ││  Taxable income over                                                 Rate                              ║│
+│                   ││  $0                                                                    0%                              ║│
+│                   ││  $98,900                                                              15%                              ║│
+│                   ││  $613,700                                                             20%                              ║│
+│                   ││                                                                                                        ║│
+│                   ││  Deductions and penalties                                                                              ║│
+│                   ││                                                                    Amount                              ║│
+│                   ││  Standard deduction                                               $32,200                              ║│
+│                   ││  Early-withdrawal penalty                                             10%                              ║│
+│                   ││                                                                                                        ║│
+│                   ││  Contribution limits                                                                                   ║│
+│                   ││                                                                    Amount                              ║│
+│                   ││  401(k), 403(b) and 457(b) deferral                               $24,500                              ║│
+│                   ││  Workplace catch-up from 50                                        $8,000                              ▼│
+│                   │╰─────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╰───────────────────╯The amounts the projection applies in a year; past the latest table, they grow at the plan's inflation.    
+ ↑↓ line  ⇥ pane  ] next year  [ last year  ctrl-s save  r reload  q quit  ctrl-↓ tab  n dollars             : commands  ? help

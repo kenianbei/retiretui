@@ -47,6 +47,8 @@ pub enum Page {
     MonteCarlo,
     /// The plan run from every historical start year.
     Historical,
+    /// The year's tax tables, as the projection applies them.
+    TaxTables,
     Accounts,
     Income,
     Expenses,
@@ -109,7 +111,7 @@ impl Group {
 
 impl Page {
     /// Every page, in the order the tabs and the sidebars reach them.
-    pub const ALL: [Self; 20] = [
+    pub const ALL: [Self; 21] = [
         Self::Overview,
         Self::Ledger,
         Self::Compare,
@@ -117,6 +119,7 @@ impl Page {
         Self::SsaBenefits,
         Self::MonteCarlo,
         Self::Historical,
+        Self::TaxTables,
         Self::Accounts,
         Self::Income,
         Self::Expenses,
@@ -142,6 +145,7 @@ impl Page {
             Self::SsaBenefits => "SSA Benefits",
             Self::MonteCarlo => "Monte Carlo",
             Self::Historical => "Historical",
+            Self::TaxTables => "Tax Tables",
             Self::Accounts => "Accounts",
             Self::Income => "Income",
             Self::Expenses => "Expenses",
@@ -169,6 +173,7 @@ impl Page {
             Self::SsaBenefits => "ssa-benefits",
             Self::MonteCarlo => "monte-carlo",
             Self::Historical => "historical",
+            Self::TaxTables => "tax-tables",
             Self::Accounts => "accounts",
             Self::Income => "income",
             Self::Expenses => "expenses",
@@ -195,6 +200,7 @@ impl Page {
             Self::SsaBenefits => "search Social Security claim ages",
             Self::MonteCarlo => "run the plan through random markets",
             Self::Historical => "run the plan from every historical start year",
+            Self::TaxTables => "read the tax tables the projection applies in the year",
             Self::Accounts => "edit the accounts",
             Self::Income => "edit the income sources",
             Self::Expenses => "edit the expenses",
@@ -231,9 +237,11 @@ impl Page {
     pub const fn group(self) -> Option<Group> {
         match self {
             Self::Overview | Self::Ledger | Self::Compare => None,
-            Self::RothConversions | Self::SsaBenefits | Self::MonteCarlo | Self::Historical => {
-                Some(Group::Tools)
-            }
+            Self::RothConversions
+            | Self::SsaBenefits
+            | Self::MonteCarlo
+            | Self::Historical
+            | Self::TaxTables => Some(Group::Tools),
             Self::Accounts
             | Self::Income
             | Self::Expenses

@@ -5,6 +5,7 @@ use super::{CommandSpec, Scope};
 use retiretui_engine::market::{MonteCarlo, Runs};
 
 use crate::nav::Page;
+use crate::overview;
 use crate::tools;
 use crate::tools::markets::MarketTool;
 
@@ -21,6 +22,7 @@ pub(super) fn commands() -> Vec<CommandSpec> {
         people(),
         market::<MonteCarlo>(),
         market::<Runs>(),
+        tax(),
     ]
     .into_iter()
     .flatten()
@@ -159,6 +161,28 @@ fn market<R: MarketTool>() -> Vec<CommandSpec> {
             keys: vec![],
             hint: None,
             register: Box::new(|world| world.register_system(tools::markets::edit_assumption::<R>)),
+        },
+    ]
+}
+
+/// The Tax Tables page's rows.
+fn tax() -> Vec<CommandSpec> {
+    vec![
+        CommandSpec {
+            name: "tax-year-next",
+            scope: Scope::On(Page::TaxTables),
+            doc: "move the year a year on",
+            keys: vec![character("]")],
+            hint: Some("next year"),
+            register: Box::new(|world| world.register_system(overview::next_year)),
+        },
+        CommandSpec {
+            name: "tax-year-previous",
+            scope: Scope::On(Page::TaxTables),
+            doc: "move the year a year back",
+            keys: vec![character("[")],
+            hint: Some("last year"),
+            register: Box::new(|world| world.register_system(overview::previous_year)),
         },
     ]
 }

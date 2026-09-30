@@ -1,0 +1,60 @@
+---
+source: crates/retiretui_tui/src/frames.rs
+assertion_line: 45
+expression: composed_frame(app)
+---
+╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                                                                                                      
+│1 Overview││2 Ledger││3 Compare││4 Tools││5 Plan│                                                                                                                                          full.toml ● 
+┴──────────┴┴────────┴┴─────────┴╯       ╰┴──────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭ Tools ────────────╮╭ Tax Tables · 2026 · Married filing jointly · Oregon ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│  Roth Conversions ││▌ Income tax brackets                                                                                                                                                           ▲│
+│  SSA Benefits     ││  Taxable income over                                                 Rate                                                                                                      █│
+│  Monte Carlo      ││  $0                                                                   10%                                                                                                      █│
+│  Historical       ││  $24,800                                                              12%                                                                                                      █│
+│▏ Tax Tables       ││  $100,800                                                             22%                                                                                                      █│
+│                   ││  $211,400                                                             24%                                                                                                      █│
+│                   ││  $403,550                                                             32%                                                                                                      █│
+│                   ││  $512,450                                                             35%                                                                                                      █│
+│                   ││  $768,700                                                             37%                                                                                                      █│
+│                   ││                                                                                                                                                                                █│
+│                   ││  Long-term capital gains                                                                                                                                                       █│
+│                   ││  Taxable income over                                                 Rate                                                                                                      █│
+│                   ││  $0                                                                    0%                                                                                                      █│
+│                   ││  $98,900                                                              15%                                                                                                      █│
+│                   ││  $613,700                                                             20%                                                                                                      █│
+│                   ││                                                                                                                                                                                █│
+│                   ││  Deductions and penalties                                                                                                                                                      █│
+│                   ││                                                                    Amount                                                                                                      █│
+│                   ││  Standard deduction                                               $32,200                                                                                                      █│
+│                   ││  Early-withdrawal penalty                                             10%                                                                                                      █│
+│                   ││                                                                                                                                                                                ║│
+│                   ││  Contribution limits                                                                                                                                                           ║│
+│                   ││                                                                    Amount                                                                                                      ║│
+│                   ││  401(k), 403(b) and 457(b) deferral                               $24,500                                                                                                      ║│
+│                   ││  Workplace catch-up from 50                                        $8,000                                                                                                      ║│
+│                   ││  Workplace catch-up at 60 to 63                                   $11,250                                                                                                      ║│
+│                   ││  Everything paid into one plan                                    $72,000                                                                                                      ║│
+│                   ││  SIMPLE IRA deferral                                              $17,000                                                                                                      ║│
+│                   ││  SIMPLE catch-up from 50                                           $4,000                                                                                                      ║│
+│                   ││  SIMPLE catch-up at 60 to 63                                       $5,250                                                                                                      ║│
+│                   ││  IRA, traditional and Roth together                                $7,500                                                                                                      ║│
+│                   ││  IRA catch-up from 50                                              $1,100                                                                                                      ║│
+│                   ││  HSA, self-only coverage                                           $4,400                                                                                                      ║│
+│                   ││  HSA, family coverage                                              $8,750                                                                                                      ║│
+│                   ││  HSA catch-up from 55                                              $1,000                                                                                                      ║│
+│                   ││  Roth IRA phase-out (MAGI)                           $242,000 to $252,000                                                                                                      ║│
+│                   ││  IRA deduction phase-out (MAGI)                      $129,000 to $149,000                                                                                                      ║│
+│                   ││                                                                                                                                                                                ║│
+│                   ││  Medicare surcharges (IRMAA)                                                                                                                                                   ║│
+│                   ││  MAGI over                                                  Part B a year Part D a year                                                                                        ║│
+│                   ││  $218,000                                                            $888          $168                                                                                        ║│
+│                   ││  $274,000                                                          $2,220          $434                                                                                        ║│
+│                   ││  $342,000                                                          $3,552          $700                                                                                        ║│
+│                   ││  $410,000                                                          $4,884          $967                                                                                        ║│
+│                   ││  $750,000                                                          $5,328        $1,056                                                                                        ║│
+│                   ││                                                                                                                                                                                ║│
+│                   ││  Required minimum distributions                                                                                                                                                ║│
+│                   ││  Age                                                              Divisor                                                                                                      ▼│
+│                   │╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╰───────────────────╯The amounts the projection applies in a year; past the latest table, they grow at the plan's inflation.                                                                            
+ ↑↓ line  ⇥ pane  ] next year  [ last year  ctrl-s save  r reload  q quit  ctrl-↓ tab  n dollars                                                                                     : commands  ? help
