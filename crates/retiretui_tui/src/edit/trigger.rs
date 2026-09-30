@@ -13,7 +13,7 @@ use super::build::FormField;
 use super::codec::to_text;
 use super::domain::{BLANK, FieldKind, FieldSpec};
 use super::field::{sharing, show_text, spawn_beside, spawn_text_as};
-use super::offers::Vocabulary;
+use super::offers::{PickOffers, Vocabulary, trigger_bases};
 use super::select::{Select, spawn_select};
 use crate::layout::{set_display, sized};
 use retiretui_client::forms::trigger::{
@@ -72,7 +72,7 @@ fn kind_node() -> Node {
 /// the sentence. Each operand says what it means for itself.
 pub fn spawn(commands: &mut Commands, row: Entity, field: FormField) {
     let kind = FieldKind::Choice(Vocabulary::TriggerBasis);
-    let kind = Select::new(kind, field.spec.blank_word()).skipping_blank();
+    let kind = Select::new(kind, trigger_bases(&field.spec)).skipping_blank();
     let kind = spawn_select(commands, kind, field);
     commands
         .entity(kind)
@@ -94,7 +94,11 @@ pub fn spawn(commands: &mut Commands, row: Entity, field: FormField) {
                 spawn_beside(commands, row, input, after);
             }
             Piece::Pick(_, source) => {
-                let select = Select::new(FieldKind::Ref(source), BLANK);
+                let offers = PickOffers {
+                    offers: Vec::new(),
+                    blank: Some(BLANK),
+                };
+                let select = Select::new(FieldKind::Ref(source), offers);
                 let pick = spawn_select(commands, select, field);
                 commands
                     .entity(pick)
@@ -161,7 +165,7 @@ pub fn show_trigger(value: Option<&Value>, plan: &Plan, group: &[Entity], slots:
             show_text(&mut text, part.as_ref().map(to_text).unwrap_or_default());
         }
         if let Some(mut select) = select {
-            let options = select.referred(plan);
+            let options = select.referred(plan, part.as_ref());
             Select::fill(&mut select, options, part.as_ref());
         }
     }

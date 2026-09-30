@@ -37,6 +37,7 @@ use crate::layout::{placed, sized};
 use crate::present;
 use crate::theme::Theme;
 use retiretui_client::forms::cells::{nth, nth_back};
+use retiretui_client::forms::offers::{candidates, held_word, offered};
 
 /// A widget activated by space alone, leaving Enter to apply the item.
 pub fn space() -> ActivateKeys {
@@ -248,7 +249,8 @@ pub fn spawn_field(commands: &mut Commands, row: Entity, spec: FieldSpec) {
         }
         FieldKind::Trigger => super::trigger::spawn(commands, row, field),
         kind => {
-            let select = Select::new(kind, spec.blank_word()).required(spec.is_required());
+            // What it chooses between is filled in with the item.
+            let select = Select::new(kind, offered(&spec, Vec::new(), None));
             let select = spawn_select(commands, select, field);
             commands.entity(select).insert((sharing(), ChildOf(row)));
         }
@@ -375,13 +377,17 @@ impl Fields<'_, '_> {
                 let value = get_path(table, field.spec.key);
                 // An order's place is offered every word again, since what
                 // the other places leave it is decided once all are filled.
-                let (options, value) = match field.spec.kind {
-                    FieldKind::Order(vocabulary, place) => {
-                        (Some(vocabulary.offers()), nth(value, place))
-                    }
-                    _ => (select.referred(plan), value),
+                let value = match field.spec.kind {
+                    FieldKind::Order(_, place) => nth(value, place),
+                    _ => value,
                 };
-                Select::fill(&mut select, options, value);
+                let held = held_word(value);
+                let picks = offered(
+                    &field.spec,
+                    candidates(field.spec.kind, plan),
+                    held.as_deref(),
+                );
+                Select::fill(&mut select, Some(picks.offers), value);
             }
             if let Ok((field, is_checked)) = self.checks.get(widget) {
                 let value = get_path(table, field.spec.key);

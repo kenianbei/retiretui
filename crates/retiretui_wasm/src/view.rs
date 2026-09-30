@@ -6,9 +6,11 @@ use retiretui_client::codec::{get_path, share_left, to_text};
 use retiretui_client::draft::Draft;
 use retiretui_client::forms::cells::field_text;
 use retiretui_client::forms::edit::{Entry, place_of};
-use retiretui_client::forms::offers::{Offer, RefSource, Vocabulary, ref_offers};
+use retiretui_client::forms::offers::{
+    Offer, PickOffers, RefSource, candidates, held_word, offered, operand_offers, trigger_bases,
+};
 use retiretui_client::forms::trigger::{Piece, SENTENCE, help_of, shows};
-use retiretui_client::forms::{BLANK, FieldKind, FieldSpec};
+use retiretui_client::forms::{FieldKind, FieldSpec};
 use retiretui_client::issues::{LocatedIssue, field_issue, located_issues};
 use retiretui_client::present;
 use serde::Serialize;
@@ -136,25 +138,16 @@ const fn control_of(kind: FieldKind) -> Control {
     }
 }
 
-/// What a pick shows it holds: the word the file spells.
+/// What a pick shows it holds: the word the file spells, or none.
 fn picked(value: Option<&Value>) -> String {
-    match value {
-        Some(Value::String(word)) => word.clone(),
-        Some(other) => to_text(other),
-        None => String::new(),
-    }
+    held_word(value).unwrap_or_default()
 }
 
-/// `offers` holding `held` whatever it is, since the file stated it, and
-/// a blank first unless `spec` may not be emptied.
-fn offered(mut offers: Vec<Offer>, held: &str, spec: &FieldSpec) -> Vec<Offer> {
-    if !held.is_empty() && !offers.iter().any(|offer| offer.value == held) {
-        offers.push(Offer::spelt(held.to_owned()));
-    }
-    if spec.is_required() {
-        offers
-    } else {
-        blank_first(offers, spec.blank_word())
+/// What a select lists: a pick's offers, after its blank where it has one.
+fn listed(picks: PickOffers) -> Vec<Offer> {
+    match picks.blank {
+        Some(word) => blank_first(picks.offers, word),
+        None => picks.offers,
     }
 }
 
@@ -253,13 +246,12 @@ fn issue<'a>(entry: &Entry, spec: &FieldSpec, located: &[LocatedIssue<'a>]) -> O
 }
 
 fn offers(entry: &Entry, spec: &FieldSpec, draft: &Draft, held: &str) -> Vec<Offer> {
-    let offers = match spec.kind {
-        FieldKind::Choice(vocabulary) => vocabulary.offers(),
-        FieldKind::Ref(source) => ref_offers(&draft.plan, source),
+    let candidates = match spec.kind {
         FieldKind::Order(vocabulary, place) => entry.unused(spec.key, vocabulary, place),
+        FieldKind::Choice(_) | FieldKind::Ref(_) => candidates(spec.kind, &draft.plan),
         _ => return Vec::new(),
     };
-    offered(offers, held, spec)
+    listed(offered(spec, candidates, Some(held)))
 }
 
 fn trigger(entry: &Entry, spec: &FieldSpec, draft: &Draft) -> TriggerView {
@@ -279,20 +271,21 @@ fn trigger(entry: &Entry, spec: &FieldSpec, draft: &Draft) -> TriggerView {
             Some(_) => picked(held(operand)),
             None => held(operand).map(to_text).unwrap_or_default(),
         };
+        let offers = source.map(|source| listed(operand_offers(&draft.plan, source, Some(&text))));
         OperandView {
             key: operand.key(),
             before: words[0],
             after: words[1],
             help: help_of(operand),
             text,
-            offers: source.map(|source| blank_first(ref_offers(&draft.plan, source), BLANK)),
+            offers,
         }
     });
     TriggerView {
         basis: kind
             .map(|kind| kind.as_str().to_owned())
             .unwrap_or_default(),
-        bases: blank_first(Vocabulary::TriggerBasis.offers(), BLANK),
+        bases: listed(trigger_bases(spec)),
         operands: operands.collect(),
     }
 }
@@ -347,5 +340,17 @@ mod tests {
             .collect();
         assert_eq!(keys.len(), 2, "{keys:?}");
         assert!(trigger.complaint.is_some());
+    }
+
+    #[test]
+    fn a_trigger_kind_left_blank_reads_as_what_its_field_says_blank_means() {
+        let draft = draft();
+        let mut entry = Entry::open(*form_at("accounts").expect("a domain"), &draft, Some(0));
+        entry.edit_mut().set("locked_until", None, None);
+        let views = view(&mut entry, &draft, None);
+        let locked = views.iter().find(|view| view.key == "locked_until");
+        let sentence = locked.and_then(|view| view.trigger.as_ref());
+        let blank = sentence.and_then(|sentence| sentence.bases.first());
+        assert_eq!(blank.map(|offer| offer.label.as_str()), Some("Never"));
     }
 }
