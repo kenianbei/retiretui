@@ -82,7 +82,7 @@ export function Overview() {
       </div>
       {charts && (
         <div className="space-y-3">
-          <div className={QUARTERS}>
+          <div className="grid grid-cols-1 items-start gap-6 @3xl/page:grid-cols-2">
             {CHART_ORDER.map((chart) => (
               <PlanChart key={chart} chart={chart} {...charts} />
             ))}
