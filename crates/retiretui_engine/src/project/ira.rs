@@ -5,7 +5,7 @@
 use std::collections::BTreeSet;
 
 use crate::params::{ContributionLimits, PhaseOut, TaxParams};
-use crate::plan::{AccountKind, Dollars, FilingStatus};
+use crate::plan::{Account, AccountKind, Dollars, FilingStatus};
 
 use super::contribute::push_unique;
 use super::year::{Simulation, YearAcc};
@@ -24,12 +24,12 @@ pub(super) enum IraBand {
 impl IraBand {
     const ALL: [Self; 2] = [Self::Covered, Self::SpouseCovered];
 
-    /// The MAGI band this contribution phases out over; none where the
-    /// year's table leaves the spouse's out, and it is deducted in full.
+    /// The MAGI band this contribution phases out over; none where there is
+    /// no spouse's band, and it is deducted in full.
     fn phase_out(self, limits: &ContributionLimits, status: FilingStatus) -> Option<PhaseOut> {
         match self {
             Self::Covered => Some(*limits.ira_deduction_phase_out.for_status(status)),
-            Self::SpouseCovered => limits.ira_deduction_phase_out_spouse,
+            Self::SpouseCovered => limits.spouse_ira_deduction_phase_out(status),
         }
     }
 
@@ -60,15 +60,18 @@ pub(super) fn ira_deducted(
 }
 
 impl Simulation<'_> {
-    /// The band a traditional IRA contribution of `owner`'s phases out
-    /// over, if any: their own while a workplace plan covers them, their
-    /// spouse's on a joint return while one covers the spouse.
-    pub(super) fn ira_band(&self, owner: &str, covered: &BTreeSet<&str>) -> Option<IraBand> {
-        if covered.contains(owner) {
+    /// The band a traditional IRA contribution into `account` phases out
+    /// over, if any: its owner's while a workplace plan covers them, their
+    /// spouse's while one covers the spouse. Any other account's is
+    /// deducted in full.
+    pub(super) fn ira_band(account: &Account, covered: &BTreeSet<&str>) -> Option<IraBand> {
+        if account.kind != AccountKind::Ira {
+            return None;
+        }
+        if covered.contains(account.owner.as_str()) {
             return Some(IraBand::Covered);
         }
-        let is_spouse_covered = self.plan.household.filing == FilingStatus::MarriedJoint
-            && covered.iter().any(|&person| person != owner);
+        let is_spouse_covered = covered.iter().any(|&person| person != account.owner);
         is_spouse_covered.then_some(IraBand::SpouseCovered)
     }
 

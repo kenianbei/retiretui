@@ -4,7 +4,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::PerStatus;
-use crate::plan::Dollars;
+use crate::plan::{Dollars, FilingStatus};
 
 /// Early-withdrawal parameters.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -45,6 +45,16 @@ pub struct PhaseOut {
     pub from: Dollars,
     /// MAGI at or above which all is lost.
     pub to: Dollars,
+}
+
+impl ContributionLimits {
+    /// The band a person no workplace plan covers phases out over while one
+    /// covers their spouse: on a joint return, where the table states it.
+    #[must_use]
+    pub fn spouse_ira_deduction_phase_out(&self, status: FilingStatus) -> Option<PhaseOut> {
+        self.ira_deduction_phase_out_spouse
+            .filter(|_| status == FilingStatus::MarriedJoint)
+    }
 }
 
 impl PhaseOut {

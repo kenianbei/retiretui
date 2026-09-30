@@ -22,7 +22,7 @@ impl Domain for Incomes {
             .help("The kind of income, which decides how it is taxed."),
         FieldSpec::refers("owner", "Owner", RefSource::Person).help("Who receives it."),
         FieldSpec::flag("covered", "Workplace plan")
-            .shown_when(applies::is_salary)
+            .shown_when(applies::can_be_covered)
             .help("A workplace plan at this job covers its owner, contributing or not - a pension plan, say. Decides whether a traditional IRA contribution is deductible."),
         FieldSpec::money("amount", "Annual amount")
             .help("Per year, in today's dollars. Blank on Social Security computes it from the earnings record."),

@@ -50,11 +50,12 @@ pub(crate) fn chooses_timing(item: &Table) -> bool {
     word(item, KIND_KEY) != Some(IncomeKind::Windfall.as_str())
 }
 
-/// Whether the income is a salary, whose job's workplace plan can cover its
-/// owner.
+/// Whether the income's job can have a workplace plan that covers its owner.
 #[must_use]
-pub(crate) fn is_salary(item: &Table) -> bool {
-    word(item, KIND_KEY) == Some(IncomeKind::Salary.as_str())
+pub(crate) fn can_be_covered(item: &Table) -> bool {
+    let kind = item.get(KIND_KEY).cloned();
+    let kind = kind.and_then(|kind| kind.try_into::<IncomeKind>().ok());
+    kind.is_some_and(IncomeKind::can_be_covered)
 }
 
 /// Whether the item happens once: picked so, or a windfall.

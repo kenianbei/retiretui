@@ -276,8 +276,7 @@ fn limits(params: &TaxParams, status: FilingStatus) -> Vec<Vec<String>> {
     let dollars = dollars.map(|(label, amount)| labelled(label, money(amount)));
     let bands = bands.map(|(label, band)| labelled(label, phase_out(band.get(status))));
     let spouse = limits
-        .ira_deduction_phase_out_spouse
-        .filter(|_| status == FilingStatus::MarriedJoint)
+        .spouse_ira_deduction_phase_out(status)
         .map(|band| labelled(SPOUSE_BAND, phase_out(band)));
     dollars.into_iter().chain(bands).chain(spouse).collect()
 }

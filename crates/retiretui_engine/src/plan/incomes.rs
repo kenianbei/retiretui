@@ -49,6 +49,13 @@ impl IncomeKind {
             Self::Other => "other",
         }
     }
+
+    /// Whether the job an income of this kind is paid by can have a
+    /// workplace plan that covers its owner: a salary alone.
+    #[must_use]
+    pub const fn can_be_covered(self) -> bool {
+        matches!(self, Self::Salary)
+    }
 }
 
 /// An income source, in annual today's dollars.

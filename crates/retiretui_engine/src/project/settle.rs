@@ -154,8 +154,8 @@ fn compute_taxes(
 ) -> Taxes {
     let before = acc.ordinary + acc.gains;
     let ss_before = tax::taxable_social_security(params, status, before, acc.ss_gross);
-    let ira_deducted = ira_deducted(params, status, &acc.ira_to_settle, before + ss_before);
-    let deducted: Dollars = ira_deducted.iter().sum();
+    let by_band = ira_deducted(params, status, &acc.ira_to_settle, before + ss_before);
+    let deducted: Dollars = by_band.iter().sum();
     let other_income = before - deducted;
     let taxable_ss = tax::taxable_social_security(params, status, other_income, acc.ss_gross);
     let deduction = params.deductions.standard.get(status);
@@ -175,7 +175,7 @@ fn compute_taxes(
         ordinary_taxable: ordinary_taxable.max(0),
         magi: (other_income + taxable_ss).max(0),
         total: ordinary + ltcg + penalty + state,
-        ira_deducted,
+        ira_deducted: by_band,
     }
 }
 

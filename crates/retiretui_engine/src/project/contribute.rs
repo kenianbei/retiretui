@@ -245,10 +245,7 @@ impl<'a> Simulation<'a> {
         });
         match account.treatment() {
             TreatmentClass::Deferred => {
-                let band = (account.kind == AccountKind::Ira)
-                    .then(|| self.ira_band(&account.owner, covered))
-                    .flatten();
-                match band {
+                match Self::ira_band(account, covered) {
                     Some(band) => acc.ira_to_settle.push((index, band, paid.employee)),
                     None => acc.ordinary -= paid.employee,
                 }

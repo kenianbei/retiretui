@@ -273,7 +273,7 @@ impl<'a> Checker<'a> {
                     format!("unknown person `{}`", income.owner),
                 );
             }
-            if income.covered && income.kind != IncomeKind::Salary {
+            if income.covered && !income.kind.can_be_covered() {
                 self.push(
                     format!("{path}.covered"),
                     "only a salary makes its owner covered",

@@ -30,23 +30,8 @@ amount = 3000
 cola = false
 "#;
 
-/// A joint household whose traditional IRAs are paid 3,000 each: Dana's
-/// job covers Dana, Sam's covers no one, and the salaries set the MAGI.
+/// Dana beside `me`, and a traditional IRA each paid 3,000.
 const JOINT: &str = r#"
-schema = 1
-
-[plan]
-start_year = START_YEAR
-horizon_age = 70
-inflation = 0.025
-
-[household]
-filing = "married-joint"
-
-[[household.people]]
-id = "sam"
-birth = 1980-06-15
-
 [[household.people]]
 id = "dana"
 birth = 1981-03-01
@@ -54,13 +39,13 @@ birth = 1981-03-01
 [[accounts]]
 id = "cash"
 kind = "cash"
-owner = "sam"
+owner = "me"
 balance = 0
 
 [[accounts]]
-id = "ira-sam"
+id = "ira-me"
 kind = "ira"
-owner = "sam"
+owner = "me"
 balance = 0
 
 [[accounts]]
@@ -69,24 +54,9 @@ kind = "ira"
 owner = "dana"
 balance = 0
 
-[[income]]
-id = "salary-sam"
-kind = "salary"
-owner = "sam"
-amount = SAM_SALARY
-cola = false
-
-[[income]]
-id = "salary-dana"
-kind = "salary"
-owner = "dana"
-amount = DANA_SALARY
-cola = false
-covered = true
-
 [[contributions]]
-id = "to-ira-sam"
-to = "ira-sam"
+id = "to-ira-me"
+to = "ira-me"
 amount = 3000
 cola = false
 
@@ -97,11 +67,36 @@ amount = 3000
 cola = false
 "#;
 
-fn joint(start_year: i16, sam: i64, dana: i64) -> String {
-    JOINT
-        .replace("START_YEAR", &start_year.to_string())
-        .replace("SAM_SALARY", &sam.to_string())
-        .replace("DANA_SALARY", &dana.to_string())
+/// A joint household whose salaries set the MAGI: Dana's job covers Dana,
+/// and the other covers no one.
+fn joint(me: i64, dana: i64) -> String {
+    let text = head(&format!(
+        r#"{JOINT}
+[[income]]
+id = "salary-me"
+kind = "salary"
+owner = "me"
+amount = {me}
+cola = false
+
+[[income]]
+id = "salary-dana"
+kind = "salary"
+owner = "dana"
+amount = {dana}
+cola = false
+covered = true
+"#
+    ));
+    text.replace("filing = \"single\"", "filing = \"married-joint\"")
+}
+
+fn with_override() -> TaxTables {
+    let mut tables = TaxTables::embedded();
+    tables
+        .add_dir(Path::new("tests/fixtures/tax-override"))
+        .unwrap();
+    tables
 }
 
 fn not_deducted(projection: &Projection, year: usize, account: &str) -> i64 {
@@ -152,9 +147,9 @@ start = {{ date = 2027-01-01 }}
 
 #[test]
 fn the_spouse_of_a_covered_person_phases_out_over_their_own_band() {
-    let below = run(&joint(2026, 120_000, 120_000));
+    let below = run(&joint(120_000, 120_000));
     assert_eq!(
-        not_deducted(&below, 0, "ira-sam"),
+        not_deducted(&below, 0, "ira-me"),
         0,
         "MAGI 240,000 is below the spouse band"
     );
@@ -163,25 +158,22 @@ fn the_spouse_of_a_covered_person_phases_out_over_their_own_band() {
         3_000,
         "and past the covered band"
     );
-    let middle = run(&joint(2026, 127_000, 120_000));
+    let middle = run(&joint(127_000, 120_000));
     assert_eq!(
-        not_deducted(&middle, 0, "ira-sam"),
+        not_deducted(&middle, 0, "ira-me"),
         1_500,
         "247,000 is halfway"
     );
     assert_eq!(not_deducted(&middle, 0, "ira-dana"), 3_000);
-    let top = run(&joint(2026, 140_000, 120_000));
-    assert_eq!(not_deducted(&top, 0, "ira-sam"), 3_000);
+    let top = run(&joint(140_000, 120_000));
+    assert_eq!(not_deducted(&top, 0, "ira-me"), 3_000);
 }
 
 #[test]
 fn a_year_whose_table_leaves_the_spouse_band_out_deducts_the_spouse_in_full() {
-    let mut tables = TaxTables::embedded();
-    tables
-        .add_dir(Path::new("tests/fixtures/tax-override"))
-        .unwrap();
-    let projection = project(&plan_from(&joint(2027, 127_000, 120_000)), &tables);
-    assert_eq!(not_deducted(&projection, 0, "ira-sam"), 0);
+    let text = joint(127_000, 120_000).replace("start_year = 2026", "start_year = 2027");
+    let projection = project(&plan_from(&text), &with_override());
+    assert_eq!(not_deducted(&projection, 0, "ira-me"), 0);
     assert_eq!(not_deducted(&projection, 0, "ira-dana"), 3_000);
 }
 
@@ -204,11 +196,7 @@ fn the_spouse_band_is_inflated_and_an_override_year_may_leave_it_out() {
     );
     let later = band(&embedded, 2030).unwrap();
     assert!(later.from > 242_000 && later.to > later.from, "{later:?}");
-    let mut overridden = TaxTables::embedded();
-    overridden
-        .add_dir(Path::new("tests/fixtures/tax-override"))
-        .unwrap();
-    assert_eq!(band(&overridden, 2027), None);
+    assert_eq!(band(&with_override(), 2027), None);
 }
 
 #[test]
