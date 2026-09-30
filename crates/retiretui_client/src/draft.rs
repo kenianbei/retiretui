@@ -105,16 +105,11 @@ impl Draft {
         }
     }
 
-    /// Starts over from `plan`, as after a reload, a scenario's over what
-    /// is now beneath it.
-    pub fn reset(&mut self, plan: Plan, beneath: Option<Beneath>) {
-        self.beneath = beneath;
-        self.committed = plan.clone();
-        self.plan = plan;
-        self.undone.clear();
-        self.redone.clear();
-        self.issues.clear();
-        self.is_dirty = false;
+    /// Starts over as `fresh`, as after a reload, keeping what the tools
+    /// hold beside the plan.
+    pub fn reset(&mut self, fresh: Self) {
+        let tools = mem::take(&mut self.tools);
+        *self = Self { tools, ..fresh };
     }
 
     /// Whether the draft holds edits not yet saved.

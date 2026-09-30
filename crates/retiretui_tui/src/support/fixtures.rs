@@ -108,8 +108,7 @@ pub fn scenario_over(base: &str) -> String {
     format!("schema = 1\nbase = \"{base}\"\n\n[plan]\nname = \"variant\"\n")
 }
 
-/// A scenario file over a scratch copy of the test plan, which opens
-/// read-only.
+/// A scenario file over a scratch copy of the test plan, naming it.
 pub fn scratch_scenario() -> PathBuf {
     let base = scratch_plan();
     let scenario = base.with_extension("scenario.toml");

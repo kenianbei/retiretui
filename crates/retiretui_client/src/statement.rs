@@ -30,7 +30,7 @@ pub fn recorded(name: &str, statement: &Statement) -> String {
 
 /// The plan `text` holds with a statement's earnings recorded on `person`,
 /// and the statement's note on any years it spread. A scenario is refused:
-/// a resolved plan cannot be written back into an overlay, so the record
+/// the plan is written back whole, which would flatten it, so the record
 /// belongs in its base plan.
 ///
 /// # Errors

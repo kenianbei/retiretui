@@ -129,7 +129,7 @@ fn save_writes_then_switches_and_a_refused_save_stops_the_switch() {
 }
 
 #[test]
-fn a_scenario_opens_read_only_and_a_failed_load_changes_nothing() {
+fn a_scenario_opens_editable_and_a_failed_load_changes_nothing() {
     let mut app = headless_app(SIZE);
     let base = document(&app);
     let scenario = base.with_extension("scenario.toml");
@@ -140,7 +140,8 @@ fn a_scenario_opens_read_only_and_a_failed_load_changes_nothing() {
     std::fs::write(&scenario, overlay).unwrap();
     open(&mut app, &scenario);
     assert_eq!(document(&app), scenario);
-    assert!(draft(&app).refuse_if_read_only().is_some());
+    assert!(draft(&app).refuse_if_read_only().is_none());
+    assert!(draft(&app).is_over_scenario(), "saved into its overlay");
     let projected = app.world().resource::<Projected>();
     assert_eq!(projected.plan.plan.name.as_deref(), Some("variant"));
 
@@ -356,17 +357,14 @@ fn save_as_of_a_scenario_over_its_own_file_is_refused_before_asking() {
         scenario(),
         "the overlay is kept"
     );
-    assert!(
-        draft(&app).refuse_if_read_only().is_some(),
-        "still the scenario"
-    );
+    assert!(draft(&app).is_over_scenario(), "still the scenario");
 }
 
 #[test]
 fn save_as_of_a_scenario_writes_the_resolved_plan_and_opens_it_editable() {
     let dir = workspace();
     let mut app = headless_app_at(dir.join("variant.toml"), SIZE);
-    assert!(draft(&app).refuse_if_read_only().is_some());
+    assert!(draft(&app).is_over_scenario());
     save_as(&mut app);
     type_text(&mut app, "flat");
     press_key(&mut app, KeyCode::Enter);
@@ -374,7 +372,7 @@ fn save_as_of_a_scenario_writes_the_resolved_plan_and_opens_it_editable() {
     assert!(flat.contains("name = \"variant\""), "{flat}");
     assert!(!flat.contains("base"), "resolved, not an overlay: {flat}");
     assert_eq!(document(&app), dir.join("flat.toml"));
-    assert!(draft(&app).refuse_if_read_only().is_none(), "editable now");
+    assert!(!draft(&app).is_over_scenario(), "a plan of its own now");
 
     commit(&mut app, |plan| plan.plan.inflation = 9.0);
     save_as(&mut app);

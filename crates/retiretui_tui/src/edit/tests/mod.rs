@@ -14,6 +14,7 @@ mod keyboard;
 mod leaving;
 mod panes;
 mod places;
+mod scenario;
 mod scroll;
 mod sorting;
 mod structured;
@@ -347,20 +348,6 @@ fn a_domain_emptied_of_items_says_what_it_is_for() {
     assert!(
         frame.contains("nothing highlighted"),
         "and holds no item to delete: {frame}"
-    );
-}
-
-#[test]
-fn scenario_sessions_refuse_to_edit() {
-    let scenario = support::scratch_scenario();
-    let mut app = headless_app_at(scenario, SIZE);
-    open(&mut app, Page::Accounts);
-    assert!(!is_editing(&app));
-    let frame = composed_frame(&app);
-    assert!(frame.contains("read-only"), "{frame}");
-    assert!(
-        !frame.contains(ADD_ACCOUNT),
-        "nothing offers what the session refuses: {frame}"
     );
 }
 

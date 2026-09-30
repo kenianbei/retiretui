@@ -3,7 +3,7 @@
 
 use bevy_ecs::prelude::{Res, ResMut};
 use bevy_ecs::system::SystemParam;
-pub use retiretui_client::draft::{Draft, write_draft};
+pub use retiretui_client::draft::{Draft, save_draft, write_draft};
 use retiretui_client::issues::issue_words;
 use retiretui_engine::project::project;
 
@@ -25,7 +25,8 @@ impl DraftEditor<'_> {
     /// both the draft and the last good view.
     pub fn reload(&mut self, watch: &mut Watch) -> Result<(), String> {
         watch::apply_reload(&self.session, &mut self.projected, watch)?;
-        self.draft.reset(self.projected.plan.clone(), None);
+        let fresh = super::seeded(self.projected.plan.clone(), &self.session, watch);
+        self.draft.reset(fresh);
         journal::say("plan reloaded");
         Ok(())
     }
@@ -73,11 +74,10 @@ pub fn save(mut draft: ResMut<Draft>, session: Res<Session>, mut watch: ResMut<W
         Ok(path) => path,
         Err(refusal) => return Outcome::Refused(refusal),
     };
-    if let Err(refusal) = write_draft(session.store.as_ref(), &draft, path) {
+    if let Err(refusal) = save_draft(session.store.as_ref(), &mut draft, path) {
         return Outcome::Refused(refusal);
     }
     watch.restamp();
-    draft.saved();
     journal::say(format!("saved {}", path.display()));
     Outcome::Done
 }

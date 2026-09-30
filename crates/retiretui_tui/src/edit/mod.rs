@@ -22,6 +22,7 @@ mod trigger;
 mod widths;
 
 use retiretui_client::codec;
+use retiretui_client::files::load_beneath;
 use retiretui_client::forms::{cells, offers};
 
 use bevy_app::{App, Startup, Update};
@@ -46,7 +47,8 @@ pub use sort::sort;
 pub use table::DomainTable;
 pub use table::{Row, Turn, table_bundle};
 
-use super::session::Projected;
+use super::journal;
+use super::session::{Projected, Session};
 use super::watch::Watch;
 
 /// Every domain's form, on the page that shows it.
@@ -73,11 +75,27 @@ pub fn plugin(app: &mut App) {
     );
 }
 
-/// The draft over the projected plan, read-only for a scenario.
+/// The draft over the projected plan.
 pub fn seed_draft(world: &mut World) {
     let plan = world.resource::<Projected>().plan.clone();
-    let is_scenario = world.resource::<Watch>().is_scenario();
-    world.insert_resource(Draft::new(plan, is_scenario));
+    let draft = seeded(plan, world.resource::<Session>(), world.resource::<Watch>());
+    world.insert_resource(draft);
+}
+
+/// A draft of `plan` as `watch` last read it: a scenario's saved into its
+/// own overlay, or read-only where what is beneath it cannot be read.
+fn seeded(plan: Plan, session: &Session, watch: &Watch) -> Draft {
+    if !watch.is_scenario() {
+        return Draft::new(plan, false);
+    }
+    let document = session.document();
+    match document.and_then(|path| load_beneath(session.store.as_ref(), path)) {
+        Ok(beneath) => Draft::over(plan, beneath),
+        Err(reason) => {
+            journal::warn(format!("read-only: {reason}"));
+            Draft::new(plan, true)
+        }
+    }
 }
 
 fn spawn_screens(bodies: Query<Entity, With<Body>>, mut commands: Commands) {
