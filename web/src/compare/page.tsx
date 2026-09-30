@@ -268,11 +268,8 @@ export function ComparePage() {
   );
 }
 
-/**
- * What a page of one plan asks for: another file of the workspace to set
- * beside it, or, where there is none, an example written beside it and
- * compared, or a new plan.
- */
+/** What a lone plan is offered: another workspace file to set beside it, or,
+ * where there is none, an example written beside it and compared, or a new plan. */
 function Invitation({
   offered,
   onCompared,

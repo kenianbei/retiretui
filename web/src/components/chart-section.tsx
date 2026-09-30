@@ -1,11 +1,7 @@
 import { useId, type ReactNode } from "react";
 
-/**
- * A chart, or a chart's table, as a section of its page: its title as its
- * heading, what it is in beneath, anything that changes what it shows at
- * the heading's end, and the plot, which takes its shape from the
- * section's width.
- */
+/** A chart, or its table, as a section: its title the heading, its unit under it,
+ * its controls at the heading's end; the section is the plot's container. */
 export function ChartSection({
   title,
   unit,

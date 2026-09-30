@@ -322,7 +322,6 @@ function Bands(props: ChartsProps & { plan: string }) {
   );
 }
 
-/** The Overview's charts, each by its key. */
 const CHARTS = {
   balances: { title: "Balances", Chart: Balances },
   "net-worth": { title: "Net worth", Chart: NetWorth },
