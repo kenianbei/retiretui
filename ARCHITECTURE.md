@@ -425,7 +425,7 @@ depends on UI.
   compared with it at once, over the constraints its ladders are searched under,
   read out and edited in the same sheet as an item; it searches again whenever
   the plan or the constraints change. Its SSA Benefits page ranks every claim
-  age for the household the same way, taken or written the same way, over each
+  age for the household the same way, taken or written the same way, beside each
   person's earnings record, how their benefit is set and its estimated benefit,
   with what can be done for the highlighted one, a held claim left as the plan
   states it; what the Overview found is what each tool shows, a search answered

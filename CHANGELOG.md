@@ -36,9 +36,9 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   amount too large to be likely - and what could do better, each row leading to
   its year in the Ledger, its item or its tool. What to do, the milestones, what
   needs attention and what could do better sit four across on a wide page, two
-  on a narrower one. Beneath them, all shown at once and laid out the same way,
-  the plan's balances by tax treatment under its net worth, its net worth, its
-  income against its taxes, and its net worth through the random markets as
+  on a narrower one. Beneath them, all shown at once and two across on a wide
+  page, the plan's balances by tax treatment under its net worth, its net worth,
+  its income against its taxes, and its net worth through the random markets as
   percentile bands, each salary's end marked and listed under its chart, each
   chart read as one image with the Ledger as its table. The Ledger shows the
   plan year by year, the year column staying in view as the table scrolls
@@ -78,12 +78,12 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   scenario beside the saved plan, compared with it at once and offered to open.
   The SSA Benefits tool ranks every claim age for the household's computed
   Social Security benefits under the plan as it stands, each against the plan as
-  a ladder is, above each person's earnings record, how their benefit is set and
-  the benefit estimated at 62, full retirement age and 70, with what can be done
-  for the highlighted person: import a statement, estimate a record from their
-  salary, compute a stated benefit from their record, clear the record or remove
-  the benefit - the last two asked first - each one step of history, or hold
-  their claim as the plan states it while the others are searched. The
+  a ladder is, beside each person's earnings record, how their benefit is set
+  and the benefit estimated at 62, full retirement age and 70, with what can be
+  done for the highlighted person: import a statement, estimate a record from
+  their salary, compute a stated benefit from their record, clear the record or
+  remove the benefit - the last two asked first - each one step of history, or
+  hold their claim as the plan states it while the others are searched. The
   highlighted claims are taken into the plan after asking or written as a
   scenario, as a ladder is; the claims highlighted, the person and who is held
   are kept in the address. The Overview's Could do better gives each Roth
