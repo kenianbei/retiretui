@@ -34,4 +34,20 @@ sections: Array<TaxSection>,
 /**
  * What the tables are, said once above them.
  */
-about: string, };
+about: string, 
+/**
+ * What the filing status is picked under.
+ */
+status_pick: string, 
+/**
+ * What the state is picked under.
+ */
+state_pick: string, 
+/**
+ * The plan's own filing status, as a pick offers it.
+ */
+own_status: string, 
+/**
+ * Where the plan lives in the year, as a pick offers it.
+ */
+own_state: string, };

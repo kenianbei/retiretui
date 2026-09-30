@@ -12,6 +12,7 @@ use retiretui_engine::project::{benefit_params, state_lived_in};
 use serde::{Deserialize, Serialize};
 
 use crate::forms::offers::{Offer, Vocabulary};
+use crate::present::filing_status;
 use crate::table::{money, rate};
 
 /// Which tables are asked for: a year, and a status and state other than
@@ -47,6 +48,11 @@ pub struct TaxSection {
     pub note: Option<String>,
 }
 
+/// What the filing status is picked under.
+pub const STATUS_PICK: &str = "Filing status";
+/// What the state is picked under.
+pub const STATE_PICK: &str = "State";
+
 /// What the Tax Tables page is for, said once above its tables.
 const ABOUT: &str = "The amounts the projection applies in a year; past the latest table, they grow at the plan's inflation.";
 
@@ -69,6 +75,14 @@ pub struct YearTables {
     pub sections: Vec<TaxSection>,
     /// What the tables are, said once above them.
     pub about: &'static str,
+    /// What the filing status is picked under.
+    pub status_pick: &'static str,
+    /// What the state is picked under.
+    pub state_pick: &'static str,
+    /// The plan's own filing status, as a pick offers it.
+    pub own_status: String,
+    /// Where the plan lives in the year, as a pick offers it.
+    pub own_state: String,
 }
 
 const BRACKET_COLUMNS: [&str; 2] = ["Taxable income over", "Rate"];
@@ -79,6 +93,8 @@ const NOT_PUBLISHED: &str = "not yet published";
 const NO_SURCHARGES: &str = "No surcharges in this year's table.";
 const NO_INCOME_TAX: &str = "This state has no income tax.";
 const STATE_TITLE: &str = "State income tax";
+/// Where a plan living in no U.S. state lives, as the state pick says it.
+const ABROAD: &str = "no U.S. state";
 
 /// What `view` asks of `plan`'s tables: those its projection applies in
 /// the year, the latest table grown past its year at the plan's inflation,
@@ -87,6 +103,7 @@ const STATE_TITLE: &str = "State income tax";
 pub fn year_tables(plan: &Plan, tables: &TaxTables, view: &TablesView) -> YearTables {
     let year = view.year;
     let params = tables.params_for(year, &Inflation::constant(plan.plan.inflation));
+    let own_state = state_lived_in(plan, year);
     let status = (view.status.as_deref())
         .and_then(|key| {
             FilingStatus::ALL
@@ -95,10 +112,7 @@ pub fn year_tables(plan: &Plan, tables: &TaxTables, view: &TablesView) -> YearTa
                 .find(|each| each.as_str() == key)
         })
         .unwrap_or(plan.household.filing);
-    let state = view
-        .state
-        .clone()
-        .or_else(|| state_lived_in(plan, year).map(str::to_owned));
+    let state = (view.state.clone()).or_else(|| own_state.map(str::to_owned));
     let mut sections = federal(&params, status);
     sections.push(social_security(
         &params,
@@ -115,6 +129,13 @@ pub fn year_tables(plan: &Plan, tables: &TaxTables, view: &TablesView) -> YearTa
         states: params.states.keys().map(|code| state_offer(code)).collect(),
         sections,
         about: ABOUT,
+        status_pick: STATUS_PICK,
+        state_pick: STATE_PICK,
+        own_status: format!("The plan's ({})", filing_status(plan.household.filing)),
+        own_state: format!(
+            "Where the plan lives ({})",
+            own_state.map_or(ABROAD, state_name)
+        ),
     }
 }
 
@@ -367,6 +388,8 @@ mod tests {
         };
         let tables = year_tables(&moving(), &TaxTables::embedded(), &single);
         assert_eq!(row(&tables, deductions, "Standard deduction"), "$16,100");
+        assert_eq!(tables.own_status, "The plan's (Married filing jointly)");
+        assert_eq!(tables.own_state, "Where the plan lives (Oregon)");
         let washington = tables
             .sections
             .iter()
@@ -399,6 +422,7 @@ mod tests {
         abroad.residency.clear();
         let tables = year_tables(&abroad, &TaxTables::embedded(), &asked(2026));
         assert_eq!(tables.state, None);
+        assert_eq!(tables.own_state, "Where the plan lives (no U.S. state)");
         let state = tables.sections.last().unwrap();
         assert_eq!(state.title, STATE_TITLE);
         assert!(state.note.as_deref().unwrap().contains("no U.S. state"));
