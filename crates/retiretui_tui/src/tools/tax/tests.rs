@@ -86,3 +86,14 @@ fn the_tables_follow_the_year_and_the_picks() {
     );
     assert!(composed_frame(&app).contains("] next year"));
 }
+
+#[test]
+fn a_year_moved_while_away_is_shown_on_return() {
+    let mut app = moving_app();
+    assert!(redrawn(&mut app).contains("Tax Tables · 2026 ·"));
+    show(&mut app, Page::Overview);
+    press_key(&mut app, KeyCode::Right);
+    show(&mut app, Page::TaxTables);
+    let frame = redrawn(&mut app);
+    assert!(frame.contains("Tax Tables · 2027 ·"), "{frame}");
+}
