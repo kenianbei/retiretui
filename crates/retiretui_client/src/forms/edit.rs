@@ -307,7 +307,8 @@ impl ItemEdit {
     /// # Errors
     ///
     /// Why nothing was stored: a read-only draft, a field not yet making a
-    /// value, an item changed underneath, or what the schema refuses.
+    /// value, an item changed underneath, what the schema refuses, or what
+    /// a scenario's overlay cannot state.
     pub fn apply(
         &mut self,
         draft: &mut Draft,
@@ -328,10 +329,17 @@ impl ItemEdit {
             return Err(format!("{}: {CHANGED_UNDERNEATH}", self.title()));
         };
         let written = self.written();
+        let before = draft.is_over_scenario().then(|| draft.plan.clone());
         if let Err(message) = (self.form.store)(draft, index, written.clone()) {
             let form = self.form;
             let named = label.unwrap_or_else(|| form.list.map_or(form.title, |list| list.singular));
             return Err(format!("{named}: {message}"));
+        }
+        if let Some(before) = before
+            && let Some(refusal) = draft.refuse_if_unsaid()
+        {
+            draft.plan = before;
+            return Err(refusal);
         }
         self.pristine = written;
         self.index = Some(index);

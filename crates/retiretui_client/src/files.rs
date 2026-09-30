@@ -9,6 +9,7 @@ use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::{Issue, Plan, Scenario};
 use retiretui_engine::project::validate_plan;
 
+use crate::draft::Beneath;
 use crate::store::{Store, normal};
 use crate::unopened;
 use retiretui_engine::plan::resolve::{self, ResolveError};
@@ -142,6 +143,24 @@ pub fn overlay_base(store: &dyn Store, out: &Path, plan_path: &Path) -> std::io:
     let out_dir = store.canonical(directory_of(out))?;
     let plan = store.canonical(plan_path)?;
     Ok(relative_path(&out_dir, &plan))
+}
+
+/// What the scenario at `path` is saved over: the plan its base resolves
+/// to, found beside it as every read finds it, and its own overlay.
+///
+/// # Errors
+///
+/// When the file names no base, or it or its base chain cannot be read or
+/// resolved.
+pub fn load_beneath(store: &dyn Store, path: &Path) -> Result<Beneath, String> {
+    let text = (store.read(path))
+        .map_err(|error| format!("failed to read {}: {error}", path.display()))?;
+    let read = Scenario::from_toml_str(&text).map_err(|error| error.to_string())?;
+    let kept = read.ok_or_else(|| NOT_A_SCENARIO.to_owned())?;
+    let base = directory_of(path).join(kept.base());
+    let plan = load_plan_with_files(store, &base, &mut Vec::new())
+        .map_err(|error| unopened::said(&error))?;
+    Ok(Beneath { plan, kept })
 }
 
 /// Loads a plan or scenario file, resolving `base` chains relative to each

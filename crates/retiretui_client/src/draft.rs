@@ -6,7 +6,7 @@ use std::mem;
 use std::path::Path;
 
 use retiretui_engine::params::TaxTables;
-use retiretui_engine::plan::{Issue, Plan};
+use retiretui_engine::plan::{Issue, Plan, Scenario, to_table};
 use retiretui_engine::project::validate_plan;
 use toml::{Table, Value};
 
@@ -30,7 +30,19 @@ pub struct Draft {
     redone: Vec<Plan>,
     is_dirty: bool,
     is_read_only: bool,
+    beneath: Option<Beneath>,
     issues: Vec<Issue>,
+}
+
+/// What a scenario's draft is stated over when it is saved: the plan the
+/// scenario's own overlay applies to, and that overlay as last read or
+/// written.
+#[derive(Debug, Clone)]
+pub struct Beneath {
+    /// The plan the overlay applies to.
+    pub plan: Plan,
+    /// The overlay as last read or written.
+    pub kept: Scenario,
 }
 
 /// Why a scenario session refuses a write.
@@ -55,8 +67,8 @@ impl Draft {
         self.tools.insert(T::SLOT.to_owned(), Value::Table(answers));
     }
 
-    /// A scenario session is read-only: the resolved plan cannot be written
-    /// back into an overlay.
+    /// `plan` as a draft of its own, read-only where it was resolved from a
+    /// scenario whose overlay it cannot be written back into.
     #[must_use]
     pub fn new(plan: Plan, is_read_only: bool) -> Self {
         Self {
@@ -67,7 +79,18 @@ impl Draft {
             redone: Vec::new(),
             is_dirty: false,
             is_read_only,
+            beneath: None,
             issues: Vec::new(),
+        }
+    }
+
+    /// `plan`, resolved from a scenario, as a draft saved back into the
+    /// scenario's overlay over `beneath`.
+    #[must_use]
+    pub fn over(plan: Plan, beneath: Beneath) -> Self {
+        Self {
+            beneath: Some(beneath),
+            ..Self::new(plan, false)
         }
     }
 
@@ -82,8 +105,10 @@ impl Draft {
         }
     }
 
-    /// Starts over from `plan`, as after a reload.
-    pub fn reset(&mut self, plan: Plan) {
+    /// Starts over from `plan`, as after a reload, a scenario's over what
+    /// is now beneath it.
+    pub fn reset(&mut self, plan: Plan, beneath: Option<Beneath>) {
+        self.beneath = beneath;
         self.committed = plan.clone();
         self.plan = plan;
         self.undone.clear();
@@ -102,6 +127,13 @@ impl Draft {
     #[must_use]
     pub fn issues(&self) -> &[Issue] {
         &self.issues
+    }
+
+    /// Whether the draft is saved into the overlay of the scenario it was
+    /// resolved from.
+    #[must_use]
+    pub const fn is_over_scenario(&self) -> bool {
+        self.beneath.is_some()
     }
 
     /// Whether the session can be written to at all.
@@ -130,12 +162,32 @@ impl Draft {
     /// scenario the draft was resolved from, as `is_its_file` says.
     #[must_use]
     pub fn refuse_over_scenario(&self, is_its_file: bool) -> Option<String> {
-        (self.is_read_only && is_its_file).then(|| OVER_SCENARIO.to_owned())
+        let is_scenario = self.is_read_only || self.beneath.is_some();
+        (is_scenario && is_its_file).then(|| OVER_SCENARIO.to_owned())
+    }
+
+    /// The refusal an edit gives where the scenario's overlay cannot state
+    /// it: what its base states, cleared.
+    #[must_use]
+    pub fn refuse_if_unsaid(&self) -> Option<String> {
+        self.stated_over(self.beneath.as_ref()?).err()
+    }
+
+    /// The draft as the overlay that makes `beneath`'s plan into it.
+    fn stated_over(&self, beneath: &Beneath) -> Result<Scenario, String> {
+        let table = |plan: &Plan| to_table(plan).map_err(|error| format!("not saved: {error}"));
+        let (from, to) = (table(&beneath.plan)?, table(&self.plan)?);
+        let base = beneath.kept.base();
+        Scenario::over(base, &from, &to, Some(&beneath.kept)).map_err(|issues| {
+            let issue = crate::issues::issue_words(&issues[0], self);
+            format!("{issue}; clear it in {base}")
+        })
     }
 
     /// Written under a name of its own, the draft is a plan whatever it
     /// was resolved from.
     pub fn saved_as(&mut self) {
+        self.beneath = None;
         self.is_read_only = false;
         self.is_dirty = false;
     }
@@ -231,10 +283,45 @@ pub fn write_draft(store: &dyn Store, draft: &Draft, path: &Path) -> Result<(), 
     crate::files::write_plan(store, path, &draft.plan)
 }
 
+/// Writes the draft back to `path`, where it was opened from, through the
+/// same gate as [`write_draft`]: a scenario's as its overlay, stated over
+/// what is beneath it as read now, and any other as a plan.
+///
+/// # Errors
+///
+/// The refusal to say: the draft's first issue, what the overlay cannot
+/// state, or what the read or the write failed on.
+pub fn save_draft(store: &dyn Store, draft: &mut Draft, path: &Path) -> Result<(), String> {
+    if !draft.is_over_scenario() {
+        write_draft(store, draft, path)?;
+        draft.saved();
+        return Ok(());
+    }
+    if let Some(reason) = draft.refuse_if_invalid() {
+        return Err(reason);
+    }
+    let beneath = crate::files::load_beneath(store, path)?;
+    let kept = draft.stated_over(&beneath)?;
+    let text = kept
+        .to_toml_string()
+        .map_err(|error| format!("not saved: {error}"))?;
+    store
+        .write(path, &text)
+        .map_err(|error| format!("not saved: {}: {error}", path.display()))?;
+    draft.beneath = Some(Beneath { kept, ..beneath });
+    draft.saved();
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
+
     use super::*;
+    use crate::files::{load_beneath, load_plan_with_files};
     use crate::setup::EXAMPLES;
+    use crate::store::KeyStore;
+    use crate::store::memory::Memory;
 
     fn draft(is_read_only: bool) -> Draft {
         let plan = Plan::from_toml_str(EXAMPLES[0].2).expect("parses");
@@ -257,5 +344,67 @@ mod tests {
         assert_eq!(draft(false).refuse_over_scenario(true), None);
         assert_eq!(draft(true).refuse_over_scenario(false), None);
         assert!(draft(true).refuse_over_scenario(true).is_some());
+        let (_, _, mut over) = scenario_draft();
+        assert!(
+            over.refuse_over_scenario(true).is_some(),
+            "an editable one too"
+        );
+        over.saved_as();
+        assert!(!over.is_over_scenario());
+        assert_eq!(over.refuse_over_scenario(true), None);
+    }
+
+    const BASE: &str = "/w/mid-career-couple.toml";
+    /// Pins the base's own inflation, and names the plan.
+    const SCENARIO: &str = "schema = 1\nbase = \"mid-career-couple.toml\"\n\n\
+        [plan]\ninflation = 0.025\nname = \"Retire early\"\n";
+
+    fn scenario_draft() -> (KeyStore<Memory>, PathBuf, Draft) {
+        let store = KeyStore::new(Memory::default());
+        store.create_dir_all(Path::new("/w")).unwrap();
+        store.write(Path::new(BASE), EXAMPLES[1].2).unwrap();
+        let path = PathBuf::from("/w/early.toml");
+        store.write(&path, SCENARIO).unwrap();
+        let plan = load_plan_with_files(&store, &path, &mut Vec::new()).unwrap();
+        let beneath = load_beneath(&store, &path).unwrap();
+        (store, path, Draft::over(plan, beneath))
+    }
+
+    #[test]
+    fn a_scenario_draft_is_saved_into_its_overlay() {
+        let (store, path, mut draft) = scenario_draft();
+        let base = store.read(Path::new(BASE)).unwrap();
+        draft.plan.plan.horizon_age = 97;
+        assert!(draft.revalidate(&TaxTables::embedded()));
+        save_draft(&store, &mut draft, &path).expect("saved");
+        assert!(!draft.is_dirty());
+        let text = store.read(&path).unwrap();
+        let saved = Scenario::from_toml_str(&text).unwrap().expect("a scenario");
+        assert_eq!(saved.base(), "mid-career-couple.toml");
+        assert!(text.contains("inflation = 0.025"), "still pinned: {text}");
+        assert!(text.contains("horizon_age = 97"), "{text}");
+        let resolved = load_plan_with_files(&store, &path, &mut Vec::new()).unwrap();
+        assert_eq!(resolved, draft.plan);
+        assert_eq!(
+            store.read(Path::new(BASE)).unwrap(),
+            base,
+            "the base untouched"
+        );
+    }
+
+    #[test]
+    fn clearing_what_the_base_states_is_refused_in_the_forms_words() {
+        let (store, path, mut draft) = scenario_draft();
+        assert_eq!(draft.refuse_if_unsaid(), None);
+        draft.plan.plan.name = None;
+        let refusal = draft.refuse_if_unsaid().expect("refused");
+        assert_eq!(
+            refusal,
+            "Settings \u{203a} Plan name: a scenario cannot clear what its base states; \
+             clear it in mid-career-couple.toml"
+        );
+        assert!(draft.revalidate(&TaxTables::embedded()));
+        assert_eq!(save_draft(&store, &mut draft, &path), Err(refusal));
+        assert_eq!(store.read(&path).unwrap(), SCENARIO, "nothing written");
     }
 }

@@ -25,7 +25,7 @@ impl DraftEditor<'_> {
     /// both the draft and the last good view.
     pub fn reload(&mut self, watch: &mut Watch) -> Result<(), String> {
         watch::apply_reload(&self.session, &mut self.projected, watch)?;
-        self.draft.reset(self.projected.plan.clone());
+        self.draft.reset(self.projected.plan.clone(), None);
         journal::say("plan reloaded");
         Ok(())
     }
