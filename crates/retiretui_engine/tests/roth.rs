@@ -159,8 +159,8 @@ expected_return = -0.5
     assert_eq!(drawn(&projection, "roth", 2026), free(25_000));
 }
 
-/// A Roth account of `kind` that opens empty and earns 10% a year, beside
-/// what `funded` pays into it in 2026.
+/// A Roth IRA that opens empty and earns 10% a year, beside what `funded`
+/// pays into it in 2026.
 fn opened_in_2026(birth_year: i16, funded: &str, spent: &[(i16, Dollars)]) -> Projection {
     let spent: String = spent
         .iter()

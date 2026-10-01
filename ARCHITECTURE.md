@@ -82,38 +82,40 @@ depends on UI.
   paid - and the law's limits are applied rather than refused: employee amounts
   are held to each person's pooled limit in the order the plan lists them, each
   plan to its yearly cap, and what an account holds after tax comes back untaxed
-  pro rata whenever it is drawn. Every year's row says how each contribution
-  came to be what it is. `optimize` searches by re-projecting candidate plans -
-  no closed-form tax approximations: fill-bracket Roth conversion ladders, each
-  in place of any ladder the plan already holds, filled to the bracket top in
-  taxable-income space and held, where asked, under MAGI ceilings (an IRMAA
-  tier, an explicit cap, active cliffs) and a long-term gains rate the year's
-  realized gains may not be pushed past, Social Security claim ages, every
-  computed benefit - and one made up for anyone with an earnings record and
-  none, save the people whose claims are held as the plan states them - tried at
-  each whole age it can still reach, jointly for the household, and the order
-  the plan withdraws in, the classes its order lists tried in every order they
-  can be drained in, a class it leaves out left out, and the orders that project
-  alike kept as one - each search ranking what it finds by what the household
-  ends with; beside the claim search, a person's benefit is estimated at the
-  ages that frame the choice, by projection; each search emits its answer as a
-  scenario overlay through the schema's own serialization. Each projected row
-  also records the actions the engine executed - transfers, RMDs, contributions,
-  conversion steps, funding withdrawals, the surplus swept - with post-clamp
-  nominal amounts, and what each account grew, so every surface can answer "what
-  do I actually do this year" and where every account's money went without
-  re-deriving execution. `market` makes the markets a plan is walked through -
-  correlated draws from the plan's `[market]` assumptions on a seeded generator
-  of the engine's own, so a saved seed draws the same markets, historical years
-  bootstrapped in blocks, or history replayed from a start year - from an
-  embedded yearly record of U.S. returns and inflation since 1871 that a user
-  file may replace, and runs a plan through many of them at once across the
-  machine's threads where it has more than one, keeping of each run only what
-  the tools show: success, ending, shortfall and net worth by year in that run's
-  own today's dollars, with percentile bands and the runs singled out. `search`
-  is what every search shares: a way to follow it and to stop it at its next
-  step, and the machine's threads, where there are any, to run its independent
-  steps across - a market's runs, a sweep's brackets.
+  whenever it is drawn - pro rata, save from a person's Roth IRAs before they
+  are drawn untaxed whole, which give it up first, then what was converted into
+  them, oldest first, then what they earned. Every year's row says how each
+  contribution came to be what it is. `optimize` searches by re-projecting
+  candidate plans - no closed-form tax approximations: fill-bracket Roth
+  conversion ladders, each in place of any ladder the plan already holds, filled
+  to the bracket top in taxable-income space and held, where asked, under MAGI
+  ceilings (an IRMAA tier, an explicit cap, active cliffs) and a long-term gains
+  rate the year's realized gains may not be pushed past, Social Security claim
+  ages, every computed benefit - and one made up for anyone with an earnings
+  record and none, save the people whose claims are held as the plan states
+  them - tried at each whole age it can still reach, jointly for the household,
+  and the order the plan withdraws in, the classes its order lists tried in
+  every order they can be drained in, a class it leaves out left out, and the
+  orders that project alike kept as one - each search ranking what it finds by
+  what the household ends with; beside the claim search, a person's benefit is
+  estimated at the ages that frame the choice, by projection; each search emits
+  its answer as a scenario overlay through the schema's own serialization. Each
+  projected row also records the actions the engine executed - transfers, RMDs,
+  contributions, conversion steps, funding withdrawals, the surplus swept - with
+  post-clamp nominal amounts, and what each account grew, so every surface can
+  answer "what do I actually do this year" and where every account's money went
+  without re-deriving execution. `market` makes the markets a plan is walked
+  through - correlated draws from the plan's `[market]` assumptions on a seeded
+  generator of the engine's own, so a saved seed draws the same markets,
+  historical years bootstrapped in blocks, or history replayed from a start
+  year - from an embedded yearly record of U.S. returns and inflation since 1871
+  that a user file may replace, and runs a plan through many of them at once
+  across the machine's threads where it has more than one, keeping of each run
+  only what the tools show: success, ending, shortfall and net worth by year in
+  that run's own today's dollars, with percentile bands and the runs singled
+  out. `search` is what every search shares: a way to follow it and to stop it
+  at its next step, and the machine's threads, where there are any, to run its
+  independent steps across - a market's runs, a sweep's brackets.
 - `retiretui_client` - what every interface shares over the engine, and draws in
   its own way; it depends on none of their own crates. The words a plan is said
   in - a value, a table, an action, and an issue read back as the domain, item
