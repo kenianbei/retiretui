@@ -203,6 +203,71 @@ fn project_honors_tax_dir_overrides() {
     assert!(output.status.success(), "{output:?}");
 }
 
+/// Someone of 46 moving 100,000 from a 401(k) to a brokerage.
+const EARLY_TRANSFER: &str = r#"
+schema = 1
+
+[plan]
+start_year = 2026
+horizon_age = 60
+inflation = 0.0
+
+[household]
+filing = "single"
+
+[[household.people]]
+id = "me"
+birth = 1980-06-15
+
+[[accounts]]
+id = "cash"
+kind = "cash"
+owner = "me"
+balance = 200000
+
+[[accounts]]
+id = "brokerage"
+kind = "brokerage"
+owner = "me"
+balance = 0
+
+[[accounts]]
+id = "k"
+kind = "401k"
+owner = "me"
+balance = 400000
+
+[[transfers]]
+id = "cash-out"
+from = "k"
+to = "brokerage"
+amount = 100000
+on = { date = 2026-01-01 }
+"#;
+
+#[test]
+fn actions_says_the_penalty_an_early_transfer_pays() {
+    let dir = scratch_dir(
+        "cli-penalty",
+        "base.toml",
+        &[("early.toml", EARLY_TRANSFER)],
+    );
+    let plan = dir.join("early.toml");
+    let plan = plan.to_str().unwrap();
+    let paid = "Early-withdrawal penalty paid this year: $10,000";
+    let said = retiretui(&["actions", plan, "--year", "2026"]);
+    assert!(said.status.success(), "{said:?}");
+    let text = String::from_utf8_lossy(&said.stdout).into_owned();
+    assert!(text.contains(paid), "{text}");
+    let later = retiretui(&["actions", plan, "--year", "2027"]);
+    let text = String::from_utf8_lossy(&later.stdout).into_owned();
+    assert!(!text.contains("penalty"), "{text}");
+    let json = json_of(&retiretui(&[
+        "actions", plan, "--year", "2026", "--format", "json",
+    ]));
+    assert_eq!(json["warnings"], serde_json::json!([paid]));
+}
+
 #[test]
 fn actions_reports_one_year_and_rejects_out_of_range() {
     let year_2040 = retiretui(&["actions", FULL_PLAN, "--year", "2040"]);

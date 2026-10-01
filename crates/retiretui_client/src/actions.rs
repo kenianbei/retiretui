@@ -189,6 +189,12 @@ pub fn collect_warnings(
             money(dollars(row.year, row.unfunded))
         ));
     }
+    if row.taxes.penalty > 0 {
+        warnings.push(format!(
+            "Early-withdrawal penalty paid this year: {}",
+            money(dollars(row.year, row.taxes.penalty))
+        ));
+    }
     if row.medicare > 0 {
         warnings.push(format!(
             "Medicare surcharges and cliff costs paid this year: {}",
@@ -205,4 +211,38 @@ pub fn collect_warnings(
         ));
     }
     warnings
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::overview::tests::{TEST_PLAN, projected_from, test_projected};
+
+    const PENALTY_PAID: &str = "Early-withdrawal penalty paid this year: ";
+
+    #[test]
+    fn a_year_that_pays_the_early_withdrawal_penalty_says_so_in_the_basis_shown() {
+        let tables = TaxTables::embedded();
+        let early = projected_from(&TEST_PLAN.replace("amount = 60000", "amount = 160000"));
+        let row = &early.projection.years[2];
+        assert!(
+            row.taxes.penalty > 0,
+            "a year that draws on the 401(k) at 48"
+        );
+        let said = |deflating| collect_warnings(&early.plan, &tables, row, deflating);
+        let nominal = format!("{PENALTY_PAID}{}", money(row.taxes.penalty));
+        assert!(said(None).contains(&nominal), "{:?}", said(None));
+        let deflated = early.projection.deflate_in(row.year, row.taxes.penalty);
+        assert_ne!(deflated, row.taxes.penalty);
+        let todays = format!("{PENALTY_PAID}{}", money(deflated));
+        let in_todays = said(Some(&early.projection));
+        assert!(in_todays.contains(&todays), "{in_todays:?}");
+
+        let unpenalized = test_projected();
+        for row in &unpenalized.projection.years {
+            assert_eq!(row.taxes.penalty, 0);
+            let said = collect_warnings(&unpenalized.plan, &tables, row, None);
+            assert!(!said.iter().any(|line| line.starts_with(PENALTY_PAID)));
+        }
+    }
 }
