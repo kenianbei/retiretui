@@ -64,9 +64,9 @@ pub fn optimize_order(
     let orders = orders_of(plan).ok_or_else(|| {
         RunError::Refused(vec![Issue {
             path: "plan.withdrawal_order".to_owned(),
-            message:
-                "fewer than two of the listed classes hold an account, so there is nothing to order"
-                    .to_owned(),
+            message: "fewer than two of the listed classes hold an account without a drain \
+                      priority, so there is nothing to order"
+                .to_owned(),
         }])
     })?;
     let projections = run_all(orders.len(), progress, |at| {

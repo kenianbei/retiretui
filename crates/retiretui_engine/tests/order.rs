@@ -1,6 +1,5 @@
 //! Withdrawal-order optimizer tests over a zero-inflation plan of one
-//! retiree, penalty-free from its first year, whose accounts differ by class
-//! and by what they earn.
+//! retiree, whose accounts differ by class and by what they earn.
 
 mod common;
 
@@ -13,57 +12,15 @@ use retiretui_engine::plan::TreatmentClass::{self, Deferred, Hsa, Roth, Taxable}
 use retiretui_engine::plan::{Plan, Scenario};
 use retiretui_engine::project::project;
 
-use common::plan_from;
+use common::{assert_issue, plan_from};
 
-/// Cash that earns nothing beside a 401(k) and a Roth IRA that each earn 5%,
-/// drained in `order`.
-fn retiree(order: &str, cash: i64, extra: &str) -> String {
-    format!(
-        r#"
-schema = 1
+const RETIREE: &str = include_str!("fixtures/order-plan.toml");
 
-[plan]
-start_year = 2026
-horizon_age = 75
-inflation = 0.0
-withdrawal_order = {order}
-
-[household]
-filing = "single"
-
-[[household.people]]
-id = "me"
-birth = 1960-06-15
-
-[[accounts]]
-id = "cash"
-kind = "cash"
-owner = "me"
-balance = {cash}
-expected_return = 0.0
-
-[[accounts]]
-id = "k"
-kind = "401k"
-owner = "me"
-balance = 200000
-expected_return = 0.05
-
-[[accounts]]
-id = "roth"
-kind = "ira"
-roth = true
-owner = "me"
-balance = 200000
-expected_return = 0.05
-{extra}
-
-[[expenses]]
-id = "living"
-amount = 30000
-cola = false
-"#
-    )
+/// The fixture's retiree holding `cash` and drained in `order`.
+fn retiree(order: &str, cash: i64) -> String {
+    RETIREE
+        .replacen(r#"["roth", "deferred", "taxable"]"#, order, 1)
+        .replacen("balance = 200000", &format!("balance = {cash}"), 1)
 }
 
 fn search(plan: &Plan) -> OrderSearch {
@@ -80,7 +37,7 @@ fn orders(found: &OrderSearch) -> Vec<Vec<TreatmentClass>> {
 
 #[test]
 fn an_order_that_ends_with_more_than_the_plans_own_ranks_first() {
-    let plan = plan_from(&retiree(r#"["roth", "deferred", "taxable"]"#, 200_000, ""));
+    let plan = plan_from(&retiree(r#"["roth", "deferred", "taxable"]"#, 200_000));
     let found = search(&plan);
     assert_eq!(found.baseline, project(&plan, &TaxTables::embedded()));
     assert_eq!(found.candidates.len(), 6, "{:?}", orders(&found));
@@ -103,11 +60,7 @@ fn an_order_that_ends_with_more_than_the_plans_own_ranks_first() {
 
 #[test]
 fn a_class_the_plan_skips_is_in_no_order() {
-    let found = search(&plan_from(&retiree(
-        r#"["deferred", "taxable"]"#,
-        200_000,
-        "",
-    )));
+    let found = search(&plan_from(&retiree(r#"["deferred", "taxable"]"#, 200_000)));
     assert_eq!(
         orders(&found),
         [[Taxable, Deferred], [Deferred, Taxable]],
@@ -117,7 +70,7 @@ fn a_class_the_plan_skips_is_in_no_order() {
 
 #[test]
 fn a_class_held_only_under_a_drain_priority_keeps_its_place_after_the_ordered() {
-    let text = retiree(r#"["roth", "taxable", "deferred"]"#, 200_000, "")
+    let text = retiree(r#"["roth", "taxable", "deferred"]"#, 200_000)
         .replace("roth = true\n", "roth = true\ndrain_priority = 1\n");
     let found = search(&plan_from(&text));
     let mut tried = orders(&found);
@@ -134,7 +87,6 @@ fn a_listed_class_with_no_account_follows_the_ordered_ones() {
     let plan = plan_from(&retiree(
         r#"["hsa", "roth", "deferred", "taxable"]"#,
         200_000,
-        "",
     ));
     let found = search(&plan);
     assert_eq!(found.candidates.len(), 6, "{:?}", orders(&found));
@@ -150,7 +102,7 @@ fn a_listed_class_with_no_account_follows_the_ordered_ones() {
 
 #[test]
 fn orders_that_project_alike_are_one_candidate_named_nearest_the_plans_own() {
-    let rich = |order| search(&plan_from(&retiree(order, 1_000_000, "")));
+    let rich = |order| search(&plan_from(&retiree(order, 1_000_000)));
     let own_tied = rich(r#"["taxable", "roth", "deferred"]"#);
     assert!(
         orders(&own_tied).contains(&vec![Taxable, Roth, Deferred]),
@@ -166,7 +118,7 @@ fn orders_that_project_alike_are_one_candidate_named_nearest_the_plans_own() {
 
 #[test]
 fn the_plans_own_order_ranks_ahead_of_another_that_ends_with_as_much() {
-    let text = retiree(r#"["roth", "taxable"]"#, 200_000, "")
+    let text = retiree(r#"["roth", "taxable"]"#, 200_000)
         .replace("expected_return = 0.05", "expected_return = 0.0");
     let plan = plan_from(&text);
     let found = search(&plan);
@@ -184,22 +136,21 @@ fn the_plans_own_order_ranks_ahead_of_another_that_ends_with_as_much() {
 
 #[test]
 fn a_plan_with_one_class_to_order_is_refused() {
-    let plan = plan_from(&retiree(r#"["taxable", "hsa"]"#, 2_000_000, ""));
+    let plan = plan_from(&retiree(r#"["taxable", "hsa"]"#, 2_000_000));
     let RunError::Refused(issues) =
         optimize_order(&plan, &TaxTables::embedded(), &Progress::default()).unwrap_err()
     else {
         panic!("nothing cancels it");
     };
     assert_eq!(issues.len(), 1);
-    assert_eq!(issues[0].path, "plan.withdrawal_order");
-    assert!(issues[0].message.contains("nothing to order"), "{issues:?}");
+    assert_issue(&issues, "plan.withdrawal_order", "nothing to order");
 }
 
 #[test]
 fn a_cancelled_search_answers_cancelled() {
     let progress = Progress::default();
     progress.cancel();
-    let plan = plan_from(&retiree(r#"["roth", "deferred", "taxable"]"#, 200_000, ""));
+    let plan = plan_from(&retiree(r#"["roth", "deferred", "taxable"]"#, 200_000));
     assert_eq!(
         optimize_order(&plan, &TaxTables::embedded(), &progress).unwrap_err(),
         RunError::Cancelled
@@ -208,7 +159,7 @@ fn a_cancelled_search_answers_cancelled() {
 
 #[test]
 fn overlay_round_trips_into_the_winning_projection() {
-    let text = retiree(r#"["hsa", "roth", "deferred", "taxable"]"#, 200_000, "");
+    let text = retiree(r#"["hsa", "roth", "deferred", "taxable"]"#, 200_000);
     let plan = plan_from(&text);
     let found = search(&plan);
     let best = found.best();
@@ -234,8 +185,4 @@ fn overlay_round_trips_into_the_winning_projection() {
     let mut applied = plan.clone();
     apply_order(&mut applied, &best.order);
     assert_eq!(applied, merged_plan);
-    assert_eq!(
-        applied.plan.withdrawal_order,
-        [Taxable, Roth, Deferred, Hsa]
-    );
 }

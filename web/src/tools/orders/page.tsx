@@ -90,7 +90,7 @@ export function OrdersPage({ title }: { title: string }) {
               <span className="text-muted-foreground text-sm">Searching…</span>
             )}
           </div>
-          {reply && highlighted && isValid && !found.error && (
+          {highlighted && isValid && !found.error && (
             <SearchActions
               key={highlighted.key}
               chosen={chosenOrder(path, highlighted)}

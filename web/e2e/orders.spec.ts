@@ -5,6 +5,7 @@ import {
   expect,
   expectAccessible,
   isPhone,
+  rowNamed,
   searchesDone,
   seed,
   test,
@@ -48,10 +49,7 @@ test("the orders are ranked, the best said on the Overview, and one taken and wr
   }
 
   const another = "Roth, deferred, taxable, HSA";
-  const row = phone
-    ? orders.getByRole("button", { name: new RegExp(`^${another}`) })
-    : orders.getByRole("row", { name: new RegExp(`^${another}`) });
-  await row.click();
+  await rowNamed(page, testInfo, another).click();
   await page.waitForURL(/order=roth-deferred-taxable-hsa/);
   await page.reload();
   await expect(take).toBeVisible(SEARCH);

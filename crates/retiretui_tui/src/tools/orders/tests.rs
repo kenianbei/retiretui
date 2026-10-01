@@ -7,57 +7,15 @@ use retiretui_engine::plan::TreatmentClass::{Deferred, Roth, Taxable};
 
 use super::*;
 use crate::compare::Compared;
-use crate::confirm::Confirm;
 use crate::support::{
-    Headless, SIZE, composed_frame, headless_app_at, press_ctrl, press_key, redrawn, said,
-    scratch_workspace, show, type_text,
+    Headless, SIZE, answer_back, composed_frame, headless_app_at, is_asking, press_ctrl, press_key,
+    redrawn, said, scratch_workspace, show, type_text,
 };
 
-/// A retiree whose cash earns nothing beside a 401(k) and a Roth IRA that
-/// each earn 5%, drained Roth first: taxable, Roth, deferred ends with more.
-pub(crate) const RETIREE: &str = r#"
-schema = 1
-
-[plan]
-start_year = 2026
-horizon_age = 75
-inflation = 0.0
-withdrawal_order = ["roth", "deferred", "taxable"]
-
-[household]
-filing = "single"
-
-[[household.people]]
-id = "me"
-birth = 1960-06-15
-
-[[accounts]]
-id = "cash"
-kind = "cash"
-owner = "me"
-balance = 200000
-expected_return = 0.0
-
-[[accounts]]
-id = "k"
-kind = "401k"
-owner = "me"
-balance = 200000
-expected_return = 0.05
-
-[[accounts]]
-id = "roth"
-kind = "ira"
-roth = true
-owner = "me"
-balance = 200000
-expected_return = 0.05
-
-[[expenses]]
-id = "living"
-amount = 30000
-cola = false
-"#;
+/// A retiree drained Roth first, who ends with more drained taxable, Roth,
+/// deferred.
+pub(crate) const RETIREE: &str =
+    include_str!("../../../../retiretui_engine/tests/fixtures/order-plan.toml");
 
 /// A workspace holding `plan` as plan.toml, opened on the Withdrawal Order
 /// page with its search answered.
@@ -75,8 +33,8 @@ fn settle(app: &mut App) {
 
 /// Answers the question on show with the answer the keyboard opens on.
 fn answer_yes(app: &mut App) {
-    assert!(app.world().resource::<Confirm>().is_open(), "nothing asked");
-    press_key(app, KeyCode::Enter);
+    assert!(is_asking(app), "nothing asked");
+    answer_back(app, 0);
     app.update();
 }
 
@@ -137,7 +95,7 @@ fn the_pane_says_why_there_is_nothing_to_order() {
     let frame = redrawn(&mut app);
     assert!(
         frame.contains(
-            "Fewer than two of the listed classes hold an account, so there is nothing to order."
+            "Fewer than two of the listed classes hold an account without a drain priority"
         ),
         "{frame}"
     );

@@ -147,7 +147,6 @@ fn search_by_itself(
 fn say_help(
     (focus, shown, theme): (Res<InputFocus>, ShownSurface, Res<Theme>),
     options: Query<(), With<OptionsTable<OrderSearch>>>,
-    mut said: Local<&'static str>,
     mut lines: Query<(&mut UiWidget, &HelpLine)>,
 ) {
     if !(focus.is_changed() || shown.is_changed() || theme.is_changed()) {
@@ -157,10 +156,6 @@ fn say_help(
         Some(holder) if options.contains(holder) => ON_OPTIONS,
         _ => orders::ABOUT,
     };
-    if *said == text && !theme.is_changed() {
-        return;
-    }
-    *said = text;
     show_help(&mut lines, Page::WithdrawalOrder, text, &theme);
 }
 

@@ -15,6 +15,7 @@ use retiretui_engine::project::Projection;
 
 use super::claims::said;
 use super::ladders::{Swept, rate_label};
+use super::orders::said_within;
 use crate::present::{compact_money, signed_money};
 
 /// The card's title.
@@ -28,6 +29,9 @@ pub const REFUSED: &str = "not searchable under the Roth Conversions answers";
 
 /// What the claims row says where no claims beat the plan's own.
 pub const CLAIMS_AS_PLANNED: &str = "Claims as planned are best";
+
+/// What the order row says where no order beats the plan's own.
+pub const ORDER_AS_PLANNED: &str = "Withdrawal order as planned is best";
 
 /// What the card says where there is nothing to search.
 pub const NOTHING_TO_SEARCH: &str = "No conversion, claim or withdrawal order to search";
@@ -171,10 +175,44 @@ pub fn claims_said(
     format!("Claim {}: {gain}", said(plan, &best.claims))
 }
 
+/// What the order row says of `search`: the best order and its gain where
+/// it beats the plan's own.
+#[must_use]
+pub fn order_said(search: &OrderSearch, nominal: bool) -> String {
+    let best = search.best();
+    if !beats(&best.projection, &search.baseline) {
+        return ORDER_AS_PLANNED.to_owned();
+    }
+    let gain = gain(&best.projection, &search.baseline, nominal);
+    format!("Withdraw in the order {}: {gain}", said_within(&best.order))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::setup::EXAMPLES;
+    use crate::setup::examples::named;
+
+    #[test]
+    fn the_best_order_is_said_only_where_it_beats_the_plans_own() {
+        let searched = |file: &str| {
+            let (_, _, text) = named(file).expect("the example");
+            let plan = Plan::from_toml_str(text).expect("the plan parses");
+            optimize_order(&plan, &TaxTables::embedded(), &Progress::default()).expect("searched")
+        };
+        let better = searched("early-retiree.toml");
+        assert_eq!(
+            order_said(&better, false),
+            format!(
+                "Withdraw in the order deferred, taxable, Roth, HSA: {}",
+                gain(&better.best().projection, &better.baseline, false)
+            )
+        );
+        assert_eq!(
+            order_said(&searched("starter.toml"), false),
+            ORDER_AS_PLANNED
+        );
+    }
 
     /// A plan whose historical runs are refused without a look at the
     /// progress, so only the checks between the steps can stop it.

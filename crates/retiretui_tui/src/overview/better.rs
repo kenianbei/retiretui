@@ -22,9 +22,8 @@ use crate::tools::claims::HeldClaims;
 use crate::tools::ladders::{self, Swept};
 use crate::tools::markets::MarketHistory;
 use crate::tools::{Keyed, Searches};
-use retiretui_client::searches::orders::order_said;
 use retiretui_client::searches::overview::{
-    Found, NOTHING_TO_SEARCH, Searched, claims_said, ladder_said, search,
+    Found, NOTHING_TO_SEARCH, Searched, claims_said, ladder_said, order_said, search,
 };
 
 /// What the searches found, and what they were made over.
@@ -185,7 +184,7 @@ pub(super) fn entries(better: &Better, projected: &Projected, nominal: bool) -> 
         Entry::leading(text, (Page::SsaBenefits, None))
     }));
     rows.extend(found.order.as_ref().map(|search| {
-        let text = order_said(search, current, nominal);
+        let text = order_said(search, nominal);
         Entry::leading(text, (Page::WithdrawalOrder, None))
     }));
     if rows.is_empty() {

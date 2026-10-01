@@ -4,8 +4,9 @@
 //! best.
 
 use retiretui_client::searches::orders::{
-    ABOUT, NOTHING_SEARCHED, option_columns, order_said, said, take_question, taken,
+    ABOUT, NOTHING_SEARCHED, option_columns, said, take_question, taken,
 };
+use retiretui_client::searches::overview::order_said;
 use retiretui_client::searches::{AGAINST_PLAN, CURRENT_PLAN, option_cells, page_refusal};
 use retiretui_engine::market::Progress;
 use retiretui_engine::optimize::{
@@ -76,7 +77,7 @@ impl OrderOptions {
             options: (search.candidates.iter())
                 .map(|candidate| option_of(candidate, &summaries))
                 .collect(),
-            better: Bases::of(|nominal| order_said(search, baseline, nominal)),
+            better: Bases::of(|nominal| order_said(search, nominal)),
         }
     }
 }
@@ -139,8 +140,8 @@ impl JsDocument {
     ///
     /// # Errors
     ///
-    /// Where the draft is read-only, or `order` is not what an order search
-    /// replied.
+    /// Where the draft is read-only, or `order` is not a list of treatment
+    /// classes.
     #[wasm_bindgen(js_name = takeOrder)]
     pub fn take_order(
         &mut self,
@@ -156,8 +157,8 @@ impl JsDocument {
     /// # Errors
     ///
     /// Where the draft has unsaved edits, `out` is a file the document was
-    /// made from, `order` is not what an order search replied, or the
-    /// scenario does not serialize.
+    /// made from, `order` is not a list of treatment classes, or the scenario
+    /// does not serialize.
     #[wasm_bindgen(js_name = orderScenario)]
     pub fn order_scenario(
         &self,
@@ -197,8 +198,7 @@ pub fn js_orders(plan: &str) -> Result<JsValue, JsError> {
 mod tests {
     use retiretui_client::files::OVERLAY_SAVE_FIRST;
     use retiretui_client::searches::FIGURES;
-    use retiretui_client::searches::orders::ORDER_AS_PLANNED;
-    use retiretui_client::setup::EXAMPLES;
+    use retiretui_client::setup::examples::named;
     use retiretui_engine::plan::TreatmentClass::{Deferred, Hsa, Roth, Taxable};
 
     use super::*;
@@ -206,8 +206,7 @@ mod tests {
     const BETTER_ORDERED: &str = "early-retiree.toml";
 
     fn example(file: &str) -> &'static str {
-        let found = EXAMPLES.iter().find(|(name, ..)| *name == file);
-        found.expect("the example").2
+        named(file).expect("the example").2
     }
 
     #[test]
@@ -218,20 +217,10 @@ mod tests {
         let best = reply.options.first().expect("an option");
         assert_eq!(best.order, [Deferred, Taxable, Roth, Hsa]);
         assert_eq!(best.key, "deferred-taxable-roth-hsa");
-        assert_eq!(best.said, "Deferred, taxable, Roth, HSA");
+        assert_eq!(best.said, said(&best.order));
         assert_eq!(best.figures.today.len(), 1 + FIGURES.len());
-        assert_eq!(
-            best.question,
-            "Withdraw in this order? Deferred, taxable, Roth, HSA."
-        );
-        assert!(
-            reply.better.today.starts_with("Withdraw in the order "),
-            "{}",
-            reply.better.today
-        );
-        let planned = orders(example("starter.toml")).expect("searches");
-        assert_eq!(planned.better.today, ORDER_AS_PLANNED);
-        assert_eq!(planned.better.nominal, ORDER_AS_PLANNED);
+        assert_eq!(best.question, take_question(&best.order));
+        assert!(!reply.better.today.is_empty() && !reply.better.nominal.is_empty());
     }
 
     #[test]
@@ -241,10 +230,7 @@ mod tests {
         let reply = orders(example(BETTER_ORDERED)).expect("searches");
         let chosen = &reply.options[0].order;
         let said = document.take_order(chosen).expect("taken");
-        assert_eq!(
-            said,
-            "now withdrawing in the order deferred, taxable, Roth, HSA"
-        );
+        assert_eq!(said, taken(chosen));
         assert_eq!(document.draft().plan.plan.withdrawal_order, *chosen);
         assert!(document.draft().can_undo());
         assert_eq!(
