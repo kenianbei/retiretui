@@ -9,8 +9,8 @@ use retiretui_engine::params::{
 use retiretui_engine::plan::{Dollars, FilingStatus};
 
 use super::{
-    ABROAD, BRACKET_COLUMNS, LABELLED_COLUMNS, TaxSection, brackets, labelled, noted, section,
-    state_name,
+    ABROAD, BRACKET_COLUMNS, LABELLED_COLUMNS, TaxSection, brackets, labelled, noted, phase_out,
+    section, state_name,
 };
 use crate::table::{money, rate};
 
@@ -21,7 +21,9 @@ const DEFERRALS: &str = "Retirement contributions";
 const DEDUCTION_AT_65: &str = "More deduction for each person from 65";
 const DEDUCTION_UNTIL: &str = "No deduction over AGI of";
 const SUBTRACTION: &str = "Federal tax subtracted, up to";
+const SUBTRACTION_BAND: &str = "Subtraction phase-out (AGI)";
 const CREDIT: &str = "Credit for each person";
+const CREDIT_UNTIL: &str = "No credit over AGI of";
 const CREDIT_AT_65: &str = "More credit for each person from 65";
 const HALF_A_YEAR: f64 = 0.5;
 
@@ -74,7 +76,7 @@ fn income_rows(table: &StateParams, status: FilingStatus) -> Vec<Vec<String>> {
         rows.push(labelled(DEDUCTION_UNTIL, of(limit)));
     }
     if let Some(subtraction) = &table.federal_tax_subtraction {
-        rows.push(subtraction_row(subtraction, status));
+        rows.extend(subtraction_rows(subtraction, status));
     }
     if let Some(credit) = &table.exemption_credit {
         rows.extend(credit_rows(credit, status));
@@ -87,24 +89,21 @@ fn income_rows(table: &StateParams, status: FilingStatus) -> Vec<Vec<String>> {
     rows
 }
 
-fn subtraction_row(subtraction: &FederalTaxSubtraction, status: FilingStatus) -> Vec<String> {
-    let band = subtraction.phase_out.get(status);
-    let said = format!(
-        "{}, less from {} of AGI, none from {}",
-        money(subtraction.cap),
-        money(band.from),
-        money(band.to)
-    );
-    labelled(SUBTRACTION, said)
+fn subtraction_rows(subtraction: &FederalTaxSubtraction, status: FilingStatus) -> [Vec<String>; 2] {
+    [
+        labelled(SUBTRACTION, money(subtraction.cap)),
+        labelled(
+            SUBTRACTION_BAND,
+            phase_out(subtraction.phase_out.get(status)),
+        ),
+    ]
 }
 
 fn credit_rows(credit: &ExemptionCredit, status: FilingStatus) -> Vec<Vec<String>> {
-    let each = money(credit.per_person);
-    let said = credit.until_agi.map_or_else(
-        || each.clone(),
-        |limit| format!("{each}, none over {} of AGI", money(limit.get(status))),
-    );
-    let mut rows = vec![labelled(CREDIT, said)];
+    let mut rows = vec![labelled(CREDIT, money(credit.per_person))];
+    if let Some(limit) = credit.until_agi {
+        rows.push(labelled(CREDIT_UNTIL, money(limit.get(status))));
+    }
     if credit.at_65 > 0 {
         rows.push(labelled(CREDIT_AT_65, money(credit.at_65)));
     }
@@ -193,14 +192,13 @@ mod tests {
     fn a_state_s_table_says_what_it_adjusts_its_tax_by() {
         let oregon = rows("or", 2026);
         assert_eq!(said(&oregon, DEDUCTION_AT_65).as_deref(), Some("$1,200"));
+        assert_eq!(said(&oregon, SUBTRACTION).as_deref(), Some("$8,750"));
         assert_eq!(
-            said(&oregon, SUBTRACTION).as_deref(),
-            Some("$8,750, less from $125,000 of AGI, none from $145,000")
+            said(&oregon, SUBTRACTION_BAND).as_deref(),
+            Some("$125,000 to $145,000")
         );
-        assert_eq!(
-            said(&oregon, CREDIT).as_deref(),
-            Some("$263, none over $100,000 of AGI")
-        );
+        assert_eq!(said(&oregon, CREDIT).as_deref(), Some("$263"));
+        assert_eq!(said(&oregon, CREDIT_UNTIL).as_deref(), Some("$100,000"));
         assert_eq!(said(&oregon, CREDIT_AT_65), None);
         assert_eq!(said(&oregon, DEDUCTION_UNTIL), None);
         let illinois = rows("il", 2026);
@@ -211,6 +209,7 @@ mod tests {
         assert_eq!(said(&illinois, SUBTRACTION), None);
         let iowa = rows("ia", 2026);
         assert_eq!(said(&iowa, CREDIT).as_deref(), Some("$40"));
+        assert_eq!(said(&iowa, CREDIT_UNTIL), None);
         assert_eq!(said(&iowa, CREDIT_AT_65).as_deref(), Some("$20"));
         assert_eq!(said(&iowa, DEDUCTION_AT_65), None);
     }
