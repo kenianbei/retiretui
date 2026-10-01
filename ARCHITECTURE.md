@@ -39,40 +39,44 @@ depends on UI.
   surface restates them. `params` holds per-year tax parameters: values are
   data, embedded as TOML tables for known years, overridable from user
   directories - a year's table leaving out a state takes it from the latest
-  earlier table that has it - and extended past the last known year by inflating
-  indexed values by the inflation of the market projected through - and the
-  national average wage index, grown past its last published year at an assumed
-  rate a plan may override, from which the benefit formula's wage bases and bend
-  points derive by statute for any year, beside every cost-of-living adjustment
-  SSA has published. `tax` holds the formulas: rule shapes are code, the Social
-  Security benefit's among them - each year's covered earnings capped at its own
-  base and indexed to the average wage of the year the worker turns 60, the
-  highest years averaged, the primary insurance amount through the bend points
-  of the year they turn 62 and through each COLA from that year, truncated to
-  the dime after each, the reduction or credit for each month the claim falls
-  before or after full retirement age - credits earned in the claim year paid
-  from the next January, save at 70 - and the share of the first year paid from
-  the first month paid for, 62 being held throughout it - and a career at one
-  salary filled from the wage index, as SSA fills a record from current
-  earnings. `statement` reads the statement a person downloads from `ssa.gov` to
-  what a plan keeps of it - the birth date and the covered earnings by year, a
-  sum stated for several years spread evenly over them - which replaces a
-  person's record, once. `project` walks the years - trigger resolution, a
-  year's growth on what each account opened with - its fixed return, or the
-  year's class returns blended by the mix it holds that year, a glide path
-  stepping between mixes as triggers fire - credited before anything draws on
-  it, escalation and the deflator following the market's inflation, scheduled
-  transfers, RMDs, income and expense windows (a Social Security benefit left
-  unstated is computed the year it is claimed, at the month of the date or age
-  its start rests on, from the owner's record - or, where they have none, a
-  career before the plan at the salary its first year pays them - extended with
-  the nominal salary the walk has paid them, and carried from their age-62 year
-  by the COLAs SSA has published so that the income's own escalation carries
-  those still to come; every Social Security benefit pays its first year from
-  the month it starts), contributions, Roth conversions, a tax-aware withdrawal
-  fixed point that also settles the year's MAGI-driven costs (IRMAA surcharges
-  priced from the household MAGI two years earlier, declared cliffs crossed by
-  the current year's MAGI) and the MAGI-driven deduction of a traditional IRA
+  earlier table that has it, and a state's table says what income it leaves
+  untaxed, by where it came from and its owner's age - and extended past the
+  last known year by inflating indexed values by the inflation of the market
+  projected through, a rate the law has already set for a later year taken from
+  that year - and the national average wage index, grown past its last published
+  year at an assumed rate a plan may override, from which the benefit formula's
+  wage bases and bend points derive by statute for any year, beside every
+  cost-of-living adjustment SSA has published. `tax` holds the formulas: rule
+  shapes are code, the Social Security benefit's among them - each year's
+  covered earnings capped at its own base and indexed to the average wage of the
+  year the worker turns 60, the highest years averaged, the primary insurance
+  amount through the bend points of the year they turn 62 and through each COLA
+  from that year, truncated to the dime after each, the reduction or credit for
+  each month the claim falls before or after full retirement age - credits
+  earned in the claim year paid from the next January, save at 70 - and the
+  share of the first year paid from the first month paid for, 62 being held
+  throughout it - and a career at one salary filled from the wage index, as SSA
+  fills a record from current earnings. `statement` reads the statement a person
+  downloads from `ssa.gov` to what a plan keeps of it - the birth date and the
+  covered earnings by year, a sum stated for several years spread evenly over
+  them - which replaces a person's record, once. `project` walks the years -
+  trigger resolution, a year's growth on what each account opened with - its
+  fixed return, or the year's class returns blended by the mix it holds that
+  year, a glide path stepping between mixes as triggers fire - credited before
+  anything draws on it, escalation and the deflator following the market's
+  inflation, scheduled transfers, RMDs, income and expense windows (a Social
+  Security benefit left unstated is computed the year it is claimed, at the
+  month of the date or age its start rests on, from the owner's record - or,
+  where they have none, a career before the plan at the salary its first year
+  pays them - extended with the nominal salary the walk has paid them, and
+  carried from their age-62 year by the COLAs SSA has published so that the
+  income's own escalation carries those still to come; every Social Security
+  benefit pays its first year from the month it starts), contributions, Roth
+  conversions, a tax-aware withdrawal fixed point - the year's taxable income
+  kept by person and by where it came from, which the state's tax is figured
+  from - that also settles the year's MAGI-driven costs (IRMAA surcharges priced
+  from the household MAGI two years earlier, declared cliffs crossed by the
+  current year's MAGI) and the MAGI-driven deduction of a traditional IRA
   contribution by a person a workplace plan covers - through a salary that says
   so, or what they pay into one - or by their spouse, surplus sweeping - emits
   one row per year, and aggregates a projection into headline summary figures in
