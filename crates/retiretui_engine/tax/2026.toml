@@ -309,7 +309,7 @@ part-d = 1056
 single = 500000
 married-joint = 750000
 
-# No income tax. Washington's excise on long-term gains is not modeled.
+# No income tax.
 [states.ak]
 [states.fl]
 [states.nv]
@@ -317,13 +317,29 @@ married-joint = 750000
 [states.sd]
 [states.tn]
 [states.tx]
-[states.wa]
 [states.wy]
 
-# Oregon Publication OR-ESTIMATE, 2026. The top bracket's floor is statutory.
+# Washington: no income tax; RCW 82.87.040, .060, .120 and .150 levy an excise
+# on long-term gains, one deduction to a couple. The department publishes
+# 2026's deduction by October 31, 2026: this is 2025's 278,000 by the statute's
+# index, the Seattle CPI-U of August 2026 over August 2025.
+[states.wa.gains-excise]
+deduction = 290000
+brackets = [
+  { over = 0, rate = 0.07 },
+  { over = 1000000, rate = 0.099, unindexed = true },
+]
+
+# Oregon: ORS 316.037, 316.085, 316.680(1)(b), 316.695(3) and (7); Withholding
+# Tax Formulas 150-206-436, 2026; Publication OR-17, 2025. The top bracket's
+# floor, the incomes and what 65 adds are statutory.
 [states.or.deduction]
-single = 2900
-married-joint = 5800
+single = 2910
+married-joint = 5820
+
+[states.or.deduction-at-65]
+single = 1200
+married-joint = 1000
 
 [states.or.brackets]
 single = [
@@ -339,12 +355,36 @@ married-joint = [
   { over = 250000, rate = 0.099, unindexed = true },
 ]
 
-# Illinois: 35 ILCS 5/201(b)(5.4), 5/203(a)(2)(F) and (L); Informational
-# Bulletin FY 2026-15; Booklet IL-700-T, 2026; Publication 120. The deduction
-# is the exemption allowance, one a person.
+[states.or.federal-tax-subtraction]
+cap = 8750
+steps = 5
+
+[states.or.federal-tax-subtraction.phase-out]
+single = { from = 125000, to = 145000 }
+married-joint = { from = 250000, to = 290000 }
+
+[states.or.exemption-credit]
+per-person = 263
+
+[states.or.exemption-credit.until-agi]
+single = 100000
+married-joint = 200000
+
+# Illinois: 35 ILCS 5/201(b)(5.4), 5/203(a)(2)(F) and (L), 5/204(d) and (g);
+# Informational Bulletin FY 2026-15; Booklet IL-700-T, 2026; Publication 120;
+# IL-1040 instructions, 2025. The deduction is the exemption allowance, one a
+# person.
 [states.il.deduction]
 single = 2925
 married-joint = 5850
+
+[states.il.deduction-at-65]
+single = 1000
+married-joint = 1000
+
+[states.il.deduction-until-agi]
+single = 250000
+married-joint = 500000
 
 [states.il.brackets]
 single = [{ over = 0, rate = 0.0495 }]
@@ -381,6 +421,10 @@ deduction-unindexed = true
 single = 8300
 married-joint = 16600
 
+[states.ms.deduction-at-65]
+single = 1500
+married-joint = 1500
+
 [states.ms.brackets]
 single = [
   { over = 10000, rate = 0.04, unindexed = true, later = [
@@ -402,9 +446,9 @@ married-joint = [
 [[states.ms.exclusions]]
 sources = ["pension", "distribution", "conversion"]
 
-# Iowa: Iowa Code 422.5(1)(a), 422.7(8) and (19); IA 1040ES, 2026. Iowa starts
-# from federal taxable income, so the deduction is the federal standard one,
-# and a later year's table restates it beside its own.
+# Iowa: Iowa Code 422.5(1)(a), 422.7(8) and (19), 422.12(2)(a); IA 1040ES,
+# 2026. Iowa starts from federal taxable income, so the deduction is the
+# federal standard one, and a later year's table restates it beside its own.
 [states.ia.deduction]
 single = 16100
 married-joint = 32200
@@ -416,3 +460,8 @@ married-joint = [{ over = 0, rate = 0.038 }]
 [[states.ia.exclusions]]
 sources = ["pension", "distribution", "early-distribution", "conversion"]
 from-age = 55
+
+[states.ia.exemption-credit]
+per-person = 40
+at-65 = 20
+unindexed = true

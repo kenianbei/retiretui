@@ -46,15 +46,15 @@ pub struct RmdTable {
     pub divisors: Vec<RmdDivisor>,
 }
 
-/// A MAGI band over which something phases out: whole below `from`, gone
-/// at `to`, linear between.
+/// An income band something is lost across: whole below `from`, gone at
+/// `to`.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct PhaseOut {
-    /// MAGI at or below which nothing is lost.
+    /// The income the loss begins at.
     pub from: Dollars,
-    /// MAGI at or above which all is lost.
+    /// The income at or above which all is lost.
     pub to: Dollars,
 }
 
@@ -69,7 +69,8 @@ impl ContributionLimits {
 }
 
 impl PhaseOut {
-    /// How far into the band `magi` is, from 0 at its foot to 1 at its top.
+    /// How far into the band `magi` is, linearly, from 0 at its foot to 1
+    /// at its top.
     #[must_use]
     pub fn position(self, magi: Dollars) -> f64 {
         if magi <= self.from {

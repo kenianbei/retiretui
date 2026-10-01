@@ -47,7 +47,7 @@ impl AssetClass {
 pub type ClassReturns = [f64; 3];
 
 /// Generic because serde's `skip_serializing_if` passes a reference.
-fn is_zero<T: Default + PartialEq>(share: &T) -> bool {
+pub(crate) fn is_zero<T: Default + PartialEq>(share: &T) -> bool {
     *share == T::default()
 }
 

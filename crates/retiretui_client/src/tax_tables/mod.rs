@@ -360,7 +360,7 @@ mod tests {
         assert_eq!(row(&tables, deductions, hsa_penalty), "20%");
         assert_eq!(
             row(&tables, "Oregon income tax", "Standard deduction"),
-            "$5,800"
+            "$5,820"
         );
         let single = TablesView {
             status: Some("single".to_owned()),

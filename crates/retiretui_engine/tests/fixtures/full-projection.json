@@ -43,25 +43,25 @@
         {
           "kind": "surplus",
           "account": "cash",
-          "amount": 9020
+          "amount": 10314
         }
       ],
       "taxes": {
         "ordinary": 9800,
         "ltcg": 0,
         "penalty": 0,
-        "state": 9180,
+        "state": 7886,
         "taxable_social_security": 0,
         "ordinary_taxable": 85800,
         "gains": 0,
         "magi": 118000,
-        "total": 18980
+        "total": 17686
       },
-      "surplus": 9020,
+      "surplus": 10314,
       "unfunded": 0,
       "balances": {
         "brokerage": 315000,
-        "cash": 49020,
+        "cash": 50314,
         "fid-401k": 509000,
         "hsa": 34250,
         "pension-dc": 63000,
@@ -69,12 +69,12 @@
         "roth-ira": 95400
       },
       "class_totals": {
-        "taxable": 364020,
+        "taxable": 365314,
         "deferred": 572000,
         "roth": 95400,
         "hsa": 34250
       },
-      "net_worth": 1065670
+      "net_worth": 1066964
     },
     {
       "year": 2027,
@@ -119,25 +119,25 @@
         {
           "kind": "surplus",
           "account": "cash",
-          "amount": 9246
+          "amount": 10573
         }
       ],
       "taxes": {
         "ordinary": 10045,
         "ltcg": 0,
         "penalty": 0,
-        "state": 9409,
+        "state": 8082,
         "taxable_social_security": 0,
         "ordinary_taxable": 87945,
         "gains": 0,
         "magi": 120950,
-        "total": 19454
+        "total": 18127
       },
-      "surplus": 9246,
+      "surplus": 10573,
       "unfunded": 0,
       "balances": {
         "brokerage": 330750,
-        "cash": 58266,
+        "cash": 60887,
         "fid-401k": 572340,
         "hsa": 44163,
         "pension-dc": 66150,
@@ -145,12 +145,12 @@
         "roth-ira": 101124
       },
       "class_totals": {
-        "taxable": 389016,
+        "taxable": 391637,
         "deferred": 638490,
         "roth": 101124,
         "hsa": 44163
       },
-      "net_worth": 1172793
+      "net_worth": 1175414
     },
     {
       "year": 2028,
@@ -195,25 +195,25 @@
         {
           "kind": "surplus",
           "account": "cash",
-          "amount": 9478
+          "amount": 10836
         }
       ],
       "taxes": {
         "ordinary": 10296,
         "ltcg": 0,
         "penalty": 0,
-        "state": 9644,
+        "state": 8286,
         "taxable_social_security": 0,
         "ordinary_taxable": 90144,
         "gains": 0,
         "magi": 123974,
-        "total": 19940
+        "total": 18582
       },
-      "surplus": 9478,
+      "surplus": 10836,
       "unfunded": 0,
       "balances": {
         "brokerage": 347288,
-        "cash": 67744,
+        "cash": 71723,
         "fid-401k": 640300,
         "hsa": 54776,
         "pension-dc": 69458,
@@ -221,12 +221,12 @@
         "roth-ira": 107191
       },
       "class_totals": {
-        "taxable": 415032,
+        "taxable": 419011,
         "deferred": 709758,
         "roth": 107191,
         "hsa": 54776
       },
-      "net_worth": 1286757
+      "net_worth": 1290736
     },
     {
       "year": 2029,
@@ -271,25 +271,25 @@
         {
           "kind": "surplus",
           "account": "cash",
-          "amount": 9715
+          "amount": 11107
         }
       ],
       "taxes": {
         "ordinary": 10554,
         "ltcg": 0,
         "penalty": 0,
-        "state": 9885,
+        "state": 8493,
         "taxable_social_security": 0,
         "ordinary_taxable": 92398,
         "gains": 0,
         "magi": 127074,
-        "total": 20439
+        "total": 19047
       },
-      "surplus": 9715,
+      "surplus": 11107,
       "unfunded": 0,
       "balances": {
         "brokerage": 364652,
-        "cash": 77459,
+        "cash": 82830,
         "fid-401k": 713178,
         "hsa": 66130,
         "pension-dc": 72931,
@@ -297,12 +297,12 @@
         "roth-ira": 113622
       },
       "class_totals": {
-        "taxable": 442111,
+        "taxable": 447482,
         "deferred": 786109,
         "roth": 113622,
         "hsa": 66130
       },
-      "net_worth": 1407972
+      "net_worth": 1413343
     },
     {
       "year": 2030,
@@ -347,25 +347,25 @@
         {
           "kind": "surplus",
           "account": "cash",
-          "amount": 9957
+          "amount": 11384
         }
       ],
       "taxes": {
         "ordinary": 10817,
         "ltcg": 0,
         "penalty": 0,
-        "state": 10132,
+        "state": 8705,
         "taxable_social_security": 0,
         "ordinary_taxable": 94706,
         "gains": 0,
         "magi": 130249,
-        "total": 20949
+        "total": 19522
       },
-      "surplus": 9957,
+      "surplus": 11384,
       "unfunded": 0,
       "balances": {
         "brokerage": 382885,
-        "cash": 87416,
+        "cash": 94214,
         "fid-401k": 791292,
         "hsa": 78268,
         "pension-dc": 76578,
@@ -373,12 +373,12 @@
         "roth-ira": 120439
       },
       "class_totals": {
-        "taxable": 470301,
+        "taxable": 477099,
         "deferred": 867870,
         "roth": 120439,
         "hsa": 78268
       },
-      "net_worth": 1536878
+      "net_worth": 1543676
     },
     {
       "year": 2031,
@@ -423,25 +423,25 @@
         {
           "kind": "surplus",
           "account": "cash",
-          "amount": 10205
+          "amount": 11670
         }
       ],
       "taxes": {
         "ordinary": 11088,
         "ltcg": 0,
         "penalty": 0,
-        "state": 10386,
+        "state": 8921,
         "taxable_social_security": 0,
         "ordinary_taxable": 97075,
         "gains": 0,
         "magi": 133506,
-        "total": 21474
+        "total": 20009
       },
-      "surplus": 10205,
+      "surplus": 11670,
       "unfunded": 0,
       "balances": {
         "brokerage": 402029,
-        "cash": 97621,
+        "cash": 105884,
         "fid-401k": 874975,
         "hsa": 91232,
         "pension-dc": 80407,
@@ -449,12 +449,12 @@
         "roth-ira": 127665
       },
       "class_totals": {
-        "taxable": 499650,
+        "taxable": 507913,
         "deferred": 955382,
         "roth": 127665,
         "hsa": 91232
       },
-      "net_worth": 1673929
+      "net_worth": 1682192
     },
     {
       "year": 2032,
@@ -500,25 +500,25 @@
         {
           "kind": "surplus",
           "account": "cash",
-          "amount": 126430
+          "amount": 127930
         }
       ],
       "taxes": {
         "ordinary": 11365,
         "ltcg": 0,
         "penalty": 0,
-        "state": 10645,
+        "state": 9145,
         "taxable_social_security": 0,
         "ordinary_taxable": 99501,
         "gains": 0,
         "magi": 136843,
-        "total": 22010
+        "total": 20510
       },
-      "surplus": 126430,
+      "surplus": 127930,
       "unfunded": 0,
       "balances": {
         "brokerage": 422130,
-        "cash": 224051,
+        "cash": 233814,
         "fid-401k": 964585,
         "hsa": 105072,
         "pension-dc": 84427,
@@ -526,12 +526,12 @@
         "roth-ira": 135325
       },
       "class_totals": {
-        "taxable": 646181,
+        "taxable": 655944,
         "deferred": 1049012,
         "roth": 135325,
         "hsa": 105072
       },
-      "net_worth": 1935590
+      "net_worth": 1945353
     },
     {
       "year": 2033,
@@ -576,25 +576,25 @@
         {
           "kind": "surplus",
           "account": "cash",
-          "amount": 10723
+          "amount": 12262
         }
       ],
       "taxes": {
         "ordinary": 11649,
         "ltcg": 0,
         "penalty": 0,
-        "state": 10912,
+        "state": 9373,
         "taxable_social_security": 0,
         "ordinary_taxable": 101990,
         "gains": 0,
         "magi": 140266,
-        "total": 22561
+        "total": 21022
       },
-      "surplus": 10723,
+      "surplus": 12262,
       "unfunded": 0,
       "balances": {
         "brokerage": 443237,
-        "cash": 234774,
+        "cash": 246076,
         "fid-401k": 1060497,
         "hsa": 119835,
         "pension-dc": 88648,
@@ -602,12 +602,12 @@
         "roth-ira": 143445
       },
       "class_totals": {
-        "taxable": 678011,
+        "taxable": 689313,
         "deferred": 1149145,
         "roth": 143445,
         "hsa": 119835
       },
-      "net_worth": 2090436
+      "net_worth": 2101738
     },
     {
       "year": 2034,
@@ -652,25 +652,25 @@
         {
           "kind": "surplus",
           "account": "cash",
-          "amount": 10991
+          "amount": 12566
         }
       ],
       "taxes": {
         "ordinary": 11940,
         "ltcg": 0,
         "penalty": 0,
-        "state": 11184,
+        "state": 9609,
         "taxable_social_security": 0,
         "ordinary_taxable": 104538,
         "gains": 0,
         "magi": 143771,
-        "total": 23124
+        "total": 21549
       },
-      "surplus": 10991,
+      "surplus": 12566,
       "unfunded": 0,
       "balances": {
         "brokerage": 465399,
-        "cash": 245765,
+        "cash": 258642,
         "fid-401k": 1163116,
         "hsa": 135574,
         "pension-dc": 93080,
@@ -678,12 +678,12 @@
         "roth-ira": 152052
       },
       "class_totals": {
-        "taxable": 711164,
+        "taxable": 724041,
         "deferred": 1256196,
         "roth": 152052,
         "hsa": 135574
       },
-      "net_worth": 2254986
+      "net_worth": 2267863
     },
     {
       "year": 2035,
@@ -728,25 +728,25 @@
         {
           "kind": "surplus",
           "account": "cash",
-          "amount": 11264
+          "amount": 12878
         }
       ],
       "taxes": {
         "ordinary": 12239,
         "ltcg": 0,
         "penalty": 0,
-        "state": 11464,
+        "state": 9850,
         "taxable_social_security": 0,
         "ordinary_taxable": 107152,
         "gains": 0,
         "magi": 147365,
-        "total": 23703
+        "total": 22089
       },
-      "surplus": 11264,
+      "surplus": 12878,
       "unfunded": 0,
       "balances": {
         "brokerage": 488669,
-        "cash": 257029,
+        "cash": 271520,
         "fid-401k": 1272867,
         "hsa": 152344,
         "pension-dc": 97734,
@@ -754,12 +754,12 @@
         "roth-ira": 161175
       },
       "class_totals": {
-        "taxable": 745698,
+        "taxable": 760189,
         "deferred": 1370601,
         "roth": 161175,
         "hsa": 152344
       },
-      "net_worth": 2429818
+      "net_worth": 2444309
     },
     {
       "year": 2036,
@@ -804,25 +804,25 @@
         {
           "kind": "surplus",
           "account": "cash",
-          "amount": 11546
+          "amount": 13203
         }
       ],
       "taxes": {
         "ordinary": 12545,
         "ltcg": 0,
         "penalty": 0,
-        "state": 11751,
+        "state": 10094,
         "taxable_social_security": 0,
         "ordinary_taxable": 109831,
         "gains": 0,
         "magi": 151050,
-        "total": 24296
+        "total": 22639
       },
-      "surplus": 11546,
+      "surplus": 13203,
       "unfunded": 0,
       "balances": {
         "brokerage": 513102,
-        "cash": 268575,
+        "cash": 284723,
         "fid-401k": 1390202,
         "hsa": 170202,
         "pension-dc": 102621,
@@ -830,12 +830,12 @@
         "roth-ira": 170846
       },
       "class_totals": {
-        "taxable": 781677,
+        "taxable": 797825,
         "deferred": 1492823,
         "roth": 170846,
         "hsa": 170202
       },
-      "net_worth": 2615548
+      "net_worth": 2631696
     },
     {
       "year": 2037,
@@ -855,7 +855,7 @@
       "rmds": 0,
       "conversions": 39363,
       "withdrawals": {
-        "cash": 131170
+        "cash": 130479
       },
       "growth": {
         "brokerage": 25655,
@@ -894,25 +894,25 @@
         {
           "kind": "withdrawal",
           "account": "cash",
-          "amount": 131170
+          "amount": 130479
         }
       ],
       "taxes": {
         "ordinary": 0,
         "ltcg": 0,
         "penalty": 0,
-        "state": 1095,
+        "state": 404,
         "taxable_social_security": 0,
         "ordinary_taxable": 0,
         "gains": 0,
         "magi": 27376,
-        "total": 1095
+        "total": 404
       },
       "surplus": 0,
       "unfunded": 0,
       "balances": {
         "brokerage": 538757,
-        "cash": 137405,
+        "cash": 154244,
         "fid-401k": 1476238,
         "hsa": 189209,
         "pension-dc": 0,
@@ -920,12 +920,12 @@
         "roth-ira": 220460
       },
       "class_totals": {
-        "taxable": 676162,
+        "taxable": 693001,
         "deferred": 1583990,
         "roth": 220460,
         "hsa": 189209
       },
-      "net_worth": 2669821
+      "net_worth": 2686660
     },
     {
       "year": 2038,
@@ -945,7 +945,7 @@
       "rmds": 0,
       "conversions": 40347,
       "withdrawals": {
-        "cash": 118532
+        "cash": 117585
       },
       "growth": {
         "brokerage": 26938,
@@ -964,25 +964,25 @@
         {
           "kind": "withdrawal",
           "account": "cash",
-          "amount": 118532
+          "amount": 117585
         }
       ],
       "taxes": {
         "ordinary": 2704,
         "ltcg": 0,
         "penalty": 0,
-        "state": 4615,
+        "state": 3668,
         "taxable_social_security": 0,
         "ordinary_taxable": 27042,
         "gains": 0,
         "magi": 70347,
-        "total": 7319
+        "total": 6372
       },
       "surplus": 0,
       "unfunded": 0,
       "balances": {
         "brokerage": 565695,
-        "cash": 18873,
+        "cash": 36659,
         "fid-401k": 1524465,
         "hsa": 198669,
         "pension-dc": 0,
@@ -990,12 +990,12 @@
         "roth-ira": 274035
       },
       "class_totals": {
-        "taxable": 584568,
+        "taxable": 602354,
         "deferred": 1637605,
         "roth": 274035,
         "hsa": 198669
       },
-      "net_worth": 2694877
+      "net_worth": 2712663
     },
     {
       "year": 2039,
@@ -1015,8 +1015,8 @@
       "rmds": 0,
       "conversions": 41355,
       "withdrawals": {
-        "brokerage": 109251,
-        "cash": 18873
+        "brokerage": 89408,
+        "cash": 36659
       },
       "growth": {
         "brokerage": 28285,
@@ -1035,29 +1035,29 @@
         {
           "kind": "withdrawal",
           "account": "cash",
-          "amount": 18873
+          "amount": 36659
         },
         {
           "kind": "withdrawal",
           "account": "brokerage",
-          "amount": 109251
+          "amount": 89408
         }
       ],
       "taxes": {
         "ordinary": 2697,
         "ltcg": 0,
         "penalty": 0,
-        "state": 10683,
+        "state": 8626,
         "taxable_social_security": 0,
         "ordinary_taxable": 26967,
-        "gains": 68787,
-        "magi": 140142,
-        "total": 13380
+        "gains": 56293,
+        "magi": 127648,
+        "total": 11323
       },
       "surplus": 0,
       "unfunded": 0,
       "balances": {
-        "brokerage": 484729,
+        "brokerage": 504572,
         "cash": 0,
         "fid-401k": 1574578,
         "hsa": 208602,
@@ -1066,12 +1066,12 @@
         "roth-ira": 331832
       },
       "class_totals": {
-        "taxable": 484729,
+        "taxable": 504572,
         "deferred": 1693375,
         "roth": 331832,
         "hsa": 208602
       },
-      "net_worth": 2718538
+      "net_worth": 2738381
     },
     {
       "year": 2040,
@@ -1091,10 +1091,10 @@
       "rmds": 0,
       "conversions": 42389,
       "withdrawals": {
-        "brokerage": 133318
+        "brokerage": 132184
       },
       "growth": {
-        "brokerage": 24236,
+        "brokerage": 25229,
         "fid-401k": 94475,
         "hsa": 10430,
         "rollover-ira": 5940,
@@ -1110,24 +1110,24 @@
         {
           "kind": "withdrawal",
           "account": "brokerage",
-          "amount": 133318
+          "amount": 132184
         }
       ],
       "taxes": {
         "ordinary": 2689,
         "ltcg": 0,
         "penalty": 0,
-        "state": 12266,
+        "state": 11132,
         "taxable_social_security": 0,
         "ordinary_taxable": 26891,
-        "gains": 86289,
-        "magi": 158678,
-        "total": 14955
+        "gains": 85557,
+        "magi": 157946,
+        "total": 13821
       },
       "surplus": 0,
       "unfunded": 0,
       "balances": {
-        "brokerage": 375647,
+        "brokerage": 397617,
         "cash": 0,
         "fid-401k": 1626664,
         "hsa": 219032,
@@ -1136,12 +1136,12 @@
         "roth-ira": 394131
       },
       "class_totals": {
-        "taxable": 375647,
+        "taxable": 397617,
         "deferred": 1751401,
         "roth": 394131,
         "hsa": 219032
       },
-      "net_worth": 2740211
+      "net_worth": 2762181
     },
     {
       "year": 2041,
@@ -1161,10 +1161,10 @@
       "rmds": 0,
       "conversions": 43449,
       "withdrawals": {
-        "brokerage": 137510
+        "brokerage": 136356
       },
       "growth": {
-        "brokerage": 18782,
+        "brokerage": 19881,
         "fid-401k": 97600,
         "hsa": 10952,
         "rollover-ira": 6237,
@@ -1180,24 +1180,24 @@
         {
           "kind": "withdrawal",
           "account": "brokerage",
-          "amount": 137510
+          "amount": 136356
         }
       ],
       "taxes": {
         "ordinary": 2681,
         "ltcg": 0,
         "penalty": 0,
-        "state": 12758,
+        "state": 11604,
         "taxable_social_security": 0,
         "ordinary_taxable": 26814,
-        "gains": 91314,
-        "magi": 164763,
-        "total": 15439
+        "gains": 90548,
+        "magi": 163997,
+        "total": 14285
       },
       "surplus": 0,
       "unfunded": 0,
       "balances": {
-        "brokerage": 256919,
+        "brokerage": 281142,
         "cash": 0,
         "fid-401k": 1680815,
         "hsa": 229984,
@@ -1206,12 +1206,12 @@
         "roth-ira": 461228
       },
       "class_totals": {
-        "taxable": 256919,
+        "taxable": 281142,
         "deferred": 1811789,
         "roth": 461228,
         "hsa": 229984
       },
-      "net_worth": 2759920
+      "net_worth": 2784143
     },
     {
       "year": 2042,
@@ -1232,10 +1232,10 @@
       "rmds": 0,
       "conversions": 44535,
       "withdrawals": {
-        "brokerage": 108520
+        "brokerage": 107036
       },
       "growth": {
-        "brokerage": 12846,
+        "brokerage": 14057,
         "fid-401k": 100849,
         "hsa": 11499,
         "rollover-ira": 6549,
@@ -1251,24 +1251,24 @@
         {
           "kind": "withdrawal",
           "account": "brokerage",
-          "amount": 108520
+          "amount": 107036
         }
       ],
       "taxes": {
         "ordinary": 6005,
         "ltcg": 0,
         "penalty": 0,
-        "state": 11279,
+        "state": 9795,
         "taxable_social_security": 29442,
         "ordinary_taxable": 56176,
-        "gains": 73798,
-        "magi": 177775,
-        "total": 17284
+        "gains": 72788,
+        "magi": 176765,
+        "total": 15800
       },
       "surplus": 0,
       "unfunded": 0,
       "balances": {
-        "brokerage": 161245,
+        "brokerage": 188163,
         "cash": 0,
         "fid-401k": 1737129,
         "hsa": 241483,
@@ -1277,12 +1277,12 @@
         "roth-ira": 533437
       },
       "class_totals": {
-        "taxable": 161245,
+        "taxable": 188163,
         "deferred": 1874652,
         "roth": 533437,
         "hsa": 241483
       },
-      "net_worth": 2810817
+      "net_worth": 2837735
     },
     {
       "year": 2043,
@@ -1303,10 +1303,10 @@
       "rmds": 0,
       "conversions": 45649,
       "withdrawals": {
-        "brokerage": 87773
+        "brokerage": 86019
       },
       "growth": {
-        "brokerage": 8062,
+        "brokerage": 9408,
         "fid-401k": 104228,
         "hsa": 12074,
         "rollover-ira": 6876,
@@ -1322,24 +1322,24 @@
         {
           "kind": "withdrawal",
           "account": "brokerage",
-          "amount": 87773
+          "amount": 86019
         }
       ],
       "taxes": {
         "ordinary": 8652,
         "ltcg": 0,
         "penalty": 0,
-        "state": 10216,
+        "state": 8462,
         "taxable_social_security": 51735,
         "ordinary_taxable": 78388,
-        "gains": 61028,
-        "magi": 188412,
-        "total": 18868
+        "gains": 59809,
+        "magi": 187193,
+        "total": 17114
       },
       "surplus": 0,
       "unfunded": 0,
       "balances": {
-        "brokerage": 81534,
+        "brokerage": 111552,
         "cash": 0,
         "fid-401k": 1795708,
         "hsa": 253557,
@@ -1348,12 +1348,12 @@
         "roth-ira": 611092
       },
       "class_totals": {
-        "taxable": 81534,
+        "taxable": 111552,
         "deferred": 1940107,
         "roth": 611092,
         "hsa": 253557
       },
-      "net_worth": 2886290
+      "net_worth": 2916308
     },
     {
       "year": 2044,
@@ -1374,11 +1374,10 @@
       "rmds": 0,
       "conversions": 46790,
       "withdrawals": {
-        "brokerage": 85611,
-        "fid-401k": 6050
+        "brokerage": 88840
       },
       "growth": {
-        "brokerage": 4077,
+        "brokerage": 5578,
         "fid-401k": 107742,
         "hsa": 12678,
         "rollover-ira": 7220,
@@ -1394,43 +1393,38 @@
         {
           "kind": "withdrawal",
           "account": "brokerage",
-          "amount": 85611
-        },
-        {
-          "kind": "withdrawal",
-          "account": "fid-401k",
-          "amount": 6050
+          "amount": 88840
         }
       ],
       "taxes": {
-        "ordinary": 9504,
+        "ordinary": 8778,
         "ltcg": 0,
         "penalty": 0,
-        "state": 10779,
+        "state": 8684,
         "taxable_social_security": 53028,
-        "ordinary_taxable": 85647,
-        "gains": 60767,
-        "magi": 196635,
-        "total": 20283
+        "ordinary_taxable": 79597,
+        "gains": 63058,
+        "magi": 192876,
+        "total": 17462
       },
       "surplus": 0,
       "unfunded": 0,
       "balances": {
-        "brokerage": 0,
+        "brokerage": 28290,
         "cash": 0,
-        "fid-401k": 1850610,
+        "fid-401k": 1856660,
         "hsa": 266235,
         "pension-dc": 0,
         "rollover-ira": 151619,
         "roth-ira": 694548
       },
       "class_totals": {
-        "taxable": 0,
-        "deferred": 2002229,
+        "taxable": 28290,
+        "deferred": 2008279,
         "roth": 694548,
         "hsa": 266235
       },
-      "net_worth": 2963012
+      "net_worth": 2997352
     },
     {
       "year": 2045,
@@ -1451,10 +1445,12 @@
       "rmds": 0,
       "conversions": 47960,
       "withdrawals": {
-        "fid-401k": 115206
+        "brokerage": 29705,
+        "fid-401k": 77993
       },
       "growth": {
-        "fid-401k": 111037,
+        "brokerage": 1415,
+        "fid-401k": 111400,
         "hsa": 13312,
         "rollover-ira": 7581,
         "roth-ira": 41673
@@ -1468,27 +1464,32 @@
         },
         {
           "kind": "withdrawal",
+          "account": "brokerage",
+          "amount": 29705
+        },
+        {
+          "kind": "withdrawal",
           "account": "fid-401k",
-          "amount": 115206
+          "amount": 77993
         }
       ],
       "taxes": {
-        "ordinary": 26222,
-        "ltcg": 0,
+        "ordinary": 18267,
+        "ltcg": 3224,
         "penalty": 0,
-        "state": 15071,
+        "state": 12294,
         "taxable_social_security": 54354,
-        "ordinary_taxable": 196043,
-        "gains": 0,
-        "magi": 247520,
-        "total": 41293
+        "ordinary_taxable": 158830,
+        "gains": 21495,
+        "magi": 231802,
+        "total": 33785
       },
       "surplus": 0,
       "unfunded": 0,
       "balances": {
         "brokerage": 0,
         "cash": 0,
-        "fid-401k": 1798481,
+        "fid-401k": 1842107,
         "hsa": 279547,
         "pension-dc": 0,
         "rollover-ira": 159200,
@@ -1496,11 +1497,11 @@
       },
       "class_totals": {
         "taxable": 0,
-        "deferred": 1957681,
+        "deferred": 2001307,
         "roth": 784181,
         "hsa": 279547
       },
-      "net_worth": 3021409
+      "net_worth": 3065035
     },
     {
       "year": 2046,
@@ -1521,10 +1522,10 @@
       "rmds": 0,
       "conversions": 49158,
       "withdrawals": {
-        "fid-401k": 118833
+        "fid-401k": 117126
       },
       "growth": {
-        "fid-401k": 107909,
+        "fid-401k": 110526,
         "hsa": 13977,
         "rollover-ira": 7960,
         "roth-ira": 47051
@@ -1539,26 +1540,26 @@
         {
           "kind": "withdrawal",
           "account": "fid-401k",
-          "amount": 118833
+          "amount": 117126
         }
       ],
       "taxes": {
-        "ordinary": 26877,
+        "ordinary": 26501,
         "ltcg": 0,
         "penalty": 0,
-        "state": 15447,
+        "state": 14116,
         "taxable_social_security": 55713,
-        "ordinary_taxable": 200941,
+        "ordinary_taxable": 199234,
         "gains": 0,
-        "magi": 253704,
-        "total": 42324
+        "magi": 251997,
+        "total": 40617
       },
       "surplus": 0,
       "unfunded": 0,
       "balances": {
         "brokerage": 0,
         "cash": 0,
-        "fid-401k": 1738399,
+        "fid-401k": 1786349,
         "hsa": 293524,
         "pension-dc": 0,
         "rollover-ira": 167160,
@@ -1566,11 +1567,11 @@
       },
       "class_totals": {
         "taxable": 0,
-        "deferred": 1905559,
+        "deferred": 1953509,
         "roth": 880390,
         "hsa": 293524
       },
-      "net_worth": 3079473
+      "net_worth": 3127423
     },
     {
       "year": 2047,
@@ -1591,10 +1592,10 @@
       "rmds": 0,
       "conversions": 50387,
       "withdrawals": {
-        "fid-401k": 122555
+        "fid-401k": 120813
       },
       "growth": {
-        "fid-401k": 104304,
+        "fid-401k": 107181,
         "hsa": 14676,
         "rollover-ira": 8358,
         "roth-ira": 52823
@@ -1609,26 +1610,26 @@
         {
           "kind": "withdrawal",
           "account": "fid-401k",
-          "amount": 122555
+          "amount": 120813
         }
       ],
       "taxes": {
-        "ordinary": 27549,
+        "ordinary": 27166,
         "ltcg": 0,
         "penalty": 0,
-        "state": 15833,
+        "state": 14474,
         "taxable_social_security": 57106,
-        "ordinary_taxable": 205965,
+        "ordinary_taxable": 204223,
         "gains": 0,
-        "magi": 260048,
-        "total": 43382
+        "magi": 258306,
+        "total": 41640
       },
       "surplus": 0,
       "unfunded": 0,
       "balances": {
         "brokerage": 0,
         "cash": 0,
-        "fid-401k": 1669761,
+        "fid-401k": 1722330,
         "hsa": 308200,
         "pension-dc": 0,
         "rollover-ira": 175518,
@@ -1636,11 +1637,11 @@
       },
       "class_totals": {
         "taxable": 0,
-        "deferred": 1845279,
+        "deferred": 1897848,
         "roth": 983600,
         "hsa": 308200
       },
-      "net_worth": 3137079
+      "net_worth": 3189648
     },
     {
       "year": 2048,
@@ -1661,10 +1662,10 @@
       "rmds": 0,
       "conversions": 0,
       "withdrawals": {
-        "fid-401k": 108104
+        "fid-401k": 105074
       },
       "growth": {
-        "fid-401k": 100186,
+        "fid-401k": 103340,
         "hsa": 15410,
         "rollover-ira": 8776,
         "roth-ira": 59016
@@ -1673,26 +1674,26 @@
         {
           "kind": "withdrawal",
           "account": "fid-401k",
-          "amount": 108104
+          "amount": 105074
         }
       ],
       "taxes": {
-        "ordinary": 16090,
+        "ordinary": 15727,
         "ltcg": 0,
         "penalty": 0,
-        "state": 10112,
+        "state": 7445,
         "taxable_social_security": 58534,
-        "ordinary_taxable": 141203,
+        "ordinary_taxable": 138173,
         "gains": 0,
-        "magi": 196638,
-        "total": 26202
+        "magi": 193608,
+        "total": 23172
       },
       "surplus": 0,
       "unfunded": 0,
       "balances": {
         "brokerage": 0,
         "cash": 0,
-        "fid-401k": 1661843,
+        "fid-401k": 1720596,
         "hsa": 323610,
         "pension-dc": 0,
         "rollover-ira": 184294,
@@ -1700,11 +1701,11 @@
       },
       "class_totals": {
         "taxable": 0,
-        "deferred": 1846137,
+        "deferred": 1904890,
         "roth": 1042616,
         "hsa": 323610
       },
-      "net_worth": 3212363
+      "net_worth": 3271116
     },
     {
       "year": 2049,
@@ -1725,10 +1726,10 @@
       "rmds": 0,
       "conversions": 0,
       "withdrawals": {
-        "fid-401k": 111558
+        "fid-401k": 108458
       },
       "growth": {
-        "fid-401k": 99711,
+        "fid-401k": 103236,
         "hsa": 16181,
         "rollover-ira": 9215,
         "roth-ira": 62557
@@ -1737,26 +1738,26 @@
         {
           "kind": "withdrawal",
           "account": "fid-401k",
-          "amount": 111558
+          "amount": 108458
         }
       ],
       "taxes": {
-        "ordinary": 16493,
+        "ordinary": 16121,
         "ltcg": 0,
         "penalty": 0,
-        "state": 10365,
+        "state": 7637,
         "taxable_social_security": 59996,
-        "ordinary_taxable": 144734,
+        "ordinary_taxable": 141634,
         "gains": 0,
-        "magi": 201554,
-        "total": 26858
+        "magi": 198454,
+        "total": 23758
       },
       "surplus": 0,
       "unfunded": 0,
       "balances": {
         "brokerage": 0,
         "cash": 0,
-        "fid-401k": 1649996,
+        "fid-401k": 1715374,
         "hsa": 339791,
         "pension-dc": 0,
         "rollover-ira": 193509,
@@ -1764,11 +1765,11 @@
       },
       "class_totals": {
         "taxable": 0,
-        "deferred": 1843505,
+        "deferred": 1908883,
         "roth": 1105173,
         "hsa": 339791
       },
-      "net_worth": 3288469
+      "net_worth": 3353847
     },
     {
       "year": 2050,
@@ -1786,14 +1787,14 @@
       "medicare": 0,
       "contributions_employee": 0,
       "contributions_employer": 0,
-      "rmds": 74939,
+      "rmds": 77597,
       "conversions": 0,
       "withdrawals": {
-        "fid-401k": 107230,
+        "fid-401k": 105257,
         "rollover-ira": 7866
       },
       "growth": {
-        "fid-401k": 99000,
+        "fid-401k": 102922,
         "hsa": 16990,
         "rollover-ira": 9675,
         "roth-ira": 66310
@@ -1802,7 +1803,7 @@
         {
           "kind": "rmd",
           "account": "fid-401k",
-          "amount": 67073
+          "amount": 69731
         },
         {
           "kind": "rmd",
@@ -1812,26 +1813,26 @@
         {
           "kind": "withdrawal",
           "account": "fid-401k",
-          "amount": 40157
+          "amount": 35526
         }
       ],
       "taxes": {
-        "ordinary": 16905,
+        "ordinary": 16668,
         "ltcg": 0,
         "penalty": 0,
-        "state": 10624,
+        "state": 8888,
         "taxable_social_security": 61497,
-        "ordinary_taxable": 148352,
+        "ordinary_taxable": 146379,
         "gains": 0,
-        "magi": 206593,
-        "total": 27529
+        "magi": 204620,
+        "total": 25556
       },
       "surplus": 0,
       "unfunded": 0,
       "balances": {
         "brokerage": 0,
         "cash": 0,
-        "fid-401k": 1641766,
+        "fid-401k": 1713039,
         "hsa": 356781,
         "pension-dc": 0,
         "rollover-ira": 195318,
@@ -1839,11 +1840,11 @@
       },
       "class_totals": {
         "taxable": 0,
-        "deferred": 1837084,
+        "deferred": 1908357,
         "roth": 1171483,
         "hsa": 356781
       },
-      "net_worth": 3365348
+      "net_worth": 3436621
     },
     {
       "year": 2051,
@@ -1861,14 +1862,14 @@
       "medicare": 0,
       "contributions_employee": 0,
       "contributions_employer": 0,
-      "rmds": 77514,
+      "rmds": 80521,
       "conversions": 0,
       "withdrawals": {
-        "fid-401k": 110483,
+        "fid-401k": 108466,
         "rollover-ira": 8241
       },
       "growth": {
-        "fid-401k": 98506,
+        "fid-401k": 102782,
         "hsa": 17839,
         "rollover-ira": 9766,
         "roth-ira": 70289
@@ -1877,7 +1878,7 @@
         {
           "kind": "rmd",
           "account": "fid-401k",
-          "amount": 69273
+          "amount": 72280
         },
         {
           "kind": "rmd",
@@ -1887,26 +1888,26 @@
         {
           "kind": "withdrawal",
           "account": "fid-401k",
-          "amount": 41210
+          "amount": 36186
         }
       ],
       "taxes": {
-        "ordinary": 17328,
+        "ordinary": 17086,
         "ltcg": 0,
         "penalty": 0,
-        "state": 10890,
+        "state": 9115,
         "taxable_social_security": 63034,
-        "ordinary_taxable": 152061,
+        "ordinary_taxable": 150044,
         "gains": 0,
-        "magi": 211758,
-        "total": 28218
+        "magi": 209741,
+        "total": 26201
       },
       "surplus": 0,
       "unfunded": 0,
       "balances": {
         "brokerage": 0,
         "cash": 0,
-        "fid-401k": 1629789,
+        "fid-401k": 1707355,
         "hsa": 374620,
         "pension-dc": 0,
         "rollover-ira": 196843,
@@ -1914,11 +1915,11 @@
       },
       "class_totals": {
         "taxable": 0,
-        "deferred": 1826632,
+        "deferred": 1904198,
         "roth": 1241772,
         "hsa": 374620
       },
-      "net_worth": 3443024
+      "net_worth": 3520590
     },
     {
       "year": 2052,
@@ -1936,14 +1937,14 @@
       "medicare": 0,
       "contributions_employee": 0,
       "contributions_employer": 0,
-      "rmds": 79766,
+      "rmds": 83153,
       "conversions": 0,
       "withdrawals": {
-        "fid-401k": 113845,
+        "fid-401k": 111783,
         "rollover-ira": 8596
       },
       "growth": {
-        "fid-401k": 97787,
+        "fid-401k": 102441,
         "hsa": 18731,
         "rollover-ira": 9842,
         "roth-ira": 74506
@@ -1952,7 +1953,7 @@
         {
           "kind": "rmd",
           "account": "fid-401k",
-          "amount": 71170
+          "amount": 74557
         },
         {
           "kind": "rmd",
@@ -1962,26 +1963,26 @@
         {
           "kind": "withdrawal",
           "account": "fid-401k",
-          "amount": 42675
+          "amount": 37226
         }
       ],
       "taxes": {
-        "ordinary": 17761,
+        "ordinary": 17513,
         "ltcg": 0,
         "penalty": 0,
-        "state": 11162,
+        "state": 9348,
         "taxable_social_security": 64610,
-        "ordinary_taxable": 155862,
+        "ordinary_taxable": 153800,
         "gains": 0,
-        "magi": 217051,
-        "total": 28923
+        "magi": 214989,
+        "total": 26861
       },
       "surplus": 0,
       "unfunded": 0,
       "balances": {
         "brokerage": 0,
         "cash": 0,
-        "fid-401k": 1613731,
+        "fid-401k": 1698013,
         "hsa": 393351,
         "pension-dc": 0,
         "rollover-ira": 198089,
@@ -1989,11 +1990,11 @@
       },
       "class_totals": {
         "taxable": 0,
-        "deferred": 1811820,
+        "deferred": 1896102,
         "roth": 1316278,
         "hsa": 393351
       },
-      "net_worth": 3521449
+      "net_worth": 3605731
     },
     {
       "year": 2053,
@@ -2011,14 +2012,14 @@
       "medicare": 0,
       "contributions_employee": 0,
       "contributions_employer": 0,
-      "rmds": 82355,
+      "rmds": 86186,
       "conversions": 0,
       "withdrawals": {
-        "fid-401k": 117249,
+        "fid-401k": 115142,
         "rollover-ira": 9004
       },
       "growth": {
-        "fid-401k": 96824,
+        "fid-401k": 101881,
         "hsa": 19668,
         "rollover-ira": 9904,
         "roth-ira": 78977
@@ -2027,7 +2028,7 @@
         {
           "kind": "rmd",
           "account": "fid-401k",
-          "amount": 73351
+          "amount": 77182
         },
         {
           "kind": "rmd",
@@ -2037,26 +2038,26 @@
         {
           "kind": "withdrawal",
           "account": "fid-401k",
-          "amount": 43898
+          "amount": 37960
         }
       ],
       "taxes": {
-        "ordinary": 18205,
+        "ordinary": 17952,
         "ltcg": 0,
         "penalty": 0,
-        "state": 11441,
+        "state": 9587,
         "taxable_social_security": 66225,
-        "ordinary_taxable": 159759,
+        "ordinary_taxable": 157652,
         "gains": 0,
-        "magi": 222478,
-        "total": 29646
+        "magi": 220371,
+        "total": 27539
       },
       "surplus": 0,
       "unfunded": 0,
       "balances": {
         "brokerage": 0,
         "cash": 0,
-        "fid-401k": 1593306,
+        "fid-401k": 1684752,
         "hsa": 413019,
         "pension-dc": 0,
         "rollover-ira": 198989,
@@ -2064,11 +2065,11 @@
       },
       "class_totals": {
         "taxable": 0,
-        "deferred": 1792295,
+        "deferred": 1883741,
         "roth": 1395255,
         "hsa": 413019
       },
-      "net_worth": 3600569
+      "net_worth": 3692015
     },
     {
       "year": 2054,
@@ -2086,14 +2087,14 @@
       "medicare": 0,
       "contributions_employee": 0,
       "contributions_employer": 0,
-      "rmds": 84943,
+      "rmds": 89277,
       "conversions": 0,
       "withdrawals": {
-        "fid-401k": 120728,
+        "fid-401k": 118574,
         "rollover-ira": 9431
       },
       "growth": {
-        "fid-401k": 95598,
+        "fid-401k": 101085,
         "hsa": 20651,
         "rollover-ira": 9949,
         "roth-ira": 83715
@@ -2102,7 +2103,7 @@
         {
           "kind": "rmd",
           "account": "fid-401k",
-          "amount": 75512
+          "amount": 79846
         },
         {
           "kind": "rmd",
@@ -2112,26 +2113,26 @@
         {
           "kind": "withdrawal",
           "account": "fid-401k",
-          "amount": 45216
+          "amount": 38728
         }
       ],
       "taxes": {
-        "ordinary": 18660,
+        "ordinary": 18402,
         "ltcg": 0,
         "penalty": 0,
-        "state": 11727,
+        "state": 9831,
         "taxable_social_security": 67881,
-        "ordinary_taxable": 163753,
+        "ordinary_taxable": 161599,
         "gains": 0,
-        "magi": 228040,
-        "total": 30387
+        "magi": 225886,
+        "total": 28233
       },
       "surplus": 0,
       "unfunded": 0,
       "balances": {
         "brokerage": 0,
         "cash": 0,
-        "fid-401k": 1568176,
+        "fid-401k": 1667263,
         "hsa": 433670,
         "pension-dc": 0,
         "rollover-ira": 199507,
@@ -2139,11 +2140,11 @@
       },
       "class_totals": {
         "taxable": 0,
-        "deferred": 1767683,
+        "deferred": 1866770,
         "roth": 1478970,
         "hsa": 433670
       },
-      "net_worth": 3680323
+      "net_worth": 3779410
     },
     {
       "year": 2055,
@@ -2161,14 +2162,14 @@
       "medicare": 0,
       "contributions_employee": 0,
       "contributions_employer": 0,
-      "rmds": 87509,
+      "rmds": 92415,
       "conversions": 0,
       "withdrawals": {
-        "fid-401k": 124287,
+        "fid-401k": 122084,
         "rollover-ira": 9877
       },
       "growth": {
-        "fid-401k": 94091,
+        "fid-401k": 100036,
         "hsa": 21684,
         "rollover-ira": 9975,
         "roth-ira": 88738
@@ -2177,7 +2178,7 @@
         {
           "kind": "rmd",
           "account": "fid-401k",
-          "amount": 77632
+          "amount": 82538
         },
         {
           "kind": "rmd",
@@ -2187,26 +2188,26 @@
         {
           "kind": "withdrawal",
           "account": "fid-401k",
-          "amount": 46655
+          "amount": 39546
         }
       ],
       "taxes": {
-        "ordinary": 19127,
+        "ordinary": 18862,
         "ltcg": 0,
         "penalty": 0,
-        "state": 12020,
+        "state": 10082,
         "taxable_social_security": 69578,
-        "ordinary_taxable": 167848,
+        "ordinary_taxable": 165645,
         "gains": 0,
-        "magi": 233742,
-        "total": 31147
+        "magi": 231539,
+        "total": 28944
       },
       "surplus": 0,
       "unfunded": 0,
       "balances": {
         "brokerage": 0,
         "cash": 0,
-        "fid-401k": 1537980,
+        "fid-401k": 1645215,
         "hsa": 455354,
         "pension-dc": 0,
         "rollover-ira": 199605,
@@ -2214,11 +2215,11 @@
       },
       "class_totals": {
         "taxable": 0,
-        "deferred": 1737585,
+        "deferred": 1844820,
         "roth": 1567708,
         "hsa": 455354
       },
-      "net_worth": 3760647
+      "net_worth": 3867882
     },
     {
       "year": 2056,
@@ -2236,14 +2237,14 @@
       "medicare": 0,
       "contributions_employee": 0,
       "contributions_employer": 0,
-      "rmds": 89566,
+      "rmds": 95094,
       "conversions": 0,
       "withdrawals": {
-        "fid-401k": 88277,
+        "fid-401k": 85062,
         "rollover-ira": 10289
       },
       "growth": {
-        "fid-401k": 92279,
+        "fid-401k": 98713,
         "hsa": 22768,
         "rollover-ira": 9980,
         "roth-ira": 94062
@@ -2252,7 +2253,7 @@
         {
           "kind": "rmd",
           "account": "fid-401k",
-          "amount": 79277
+          "amount": 84805
         },
         {
           "kind": "rmd",
@@ -2262,26 +2263,26 @@
         {
           "kind": "withdrawal",
           "account": "fid-401k",
-          "amount": 9000
+          "amount": 257
         }
       ],
       "taxes": {
-        "ordinary": 14841,
+        "ordinary": 14455,
         "ltcg": 0,
         "penalty": 0,
-        "state": 8847,
+        "state": 6018,
         "taxable_social_security": 71318,
-        "ordinary_taxable": 132342,
+        "ordinary_taxable": 129127,
         "gains": 0,
-        "magi": 199884,
-        "total": 23688
+        "magi": 196669,
+        "total": 20473
       },
       "surplus": 0,
       "unfunded": 0,
       "balances": {
         "brokerage": 0,
         "cash": 0,
-        "fid-401k": 1541982,
+        "fid-401k": 1658866,
         "hsa": 478122,
         "pension-dc": 0,
         "rollover-ira": 199296,
@@ -2289,11 +2290,11 @@
       },
       "class_totals": {
         "taxable": 0,
-        "deferred": 1741278,
+        "deferred": 1858162,
         "roth": 1661770,
         "hsa": 478122
       },
-      "net_worth": 3881170
+      "net_worth": 3998054
     },
     {
       "year": 2057,
@@ -2311,14 +2312,14 @@
       "medicare": 0,
       "contributions_employee": 0,
       "contributions_employer": 0,
-      "rmds": 94123,
+      "rmds": 100441,
       "conversions": 0,
       "withdrawals": {
-        "fid-401k": 91008,
+        "fid-401k": 89668,
         "rollover-ira": 10773
       },
       "growth": {
-        "fid-401k": 92519,
+        "fid-401k": 99532,
         "hsa": 23906,
         "rollover-ira": 9965,
         "roth-ira": 99706
@@ -2327,7 +2328,7 @@
         {
           "kind": "rmd",
           "account": "fid-401k",
-          "amount": 83350
+          "amount": 89668
         },
         {
           "kind": "rmd",
@@ -2335,40 +2336,40 @@
           "amount": 10773
         },
         {
-          "kind": "withdrawal",
-          "account": "fid-401k",
-          "amount": 7658
+          "kind": "surplus",
+          "account": "cash",
+          "amount": 434
         }
       ],
       "taxes": {
-        "ordinary": 15212,
+        "ordinary": 15051,
         "ltcg": 0,
         "penalty": 0,
-        "state": 9068,
+        "state": 7455,
         "taxable_social_security": 73100,
-        "ordinary_taxable": 135651,
+        "ordinary_taxable": 134311,
         "gains": 0,
-        "magi": 204881,
-        "total": 24280
+        "magi": 203541,
+        "total": 22506
       },
-      "surplus": 0,
+      "surplus": 434,
       "unfunded": 0,
       "balances": {
         "brokerage": 0,
-        "cash": 0,
-        "fid-401k": 1543493,
+        "cash": 434,
+        "fid-401k": 1668730,
         "hsa": 502028,
         "pension-dc": 0,
         "rollover-ira": 198488,
         "roth-ira": 1761476
       },
       "class_totals": {
-        "taxable": 0,
-        "deferred": 1741981,
+        "taxable": 434,
+        "deferred": 1867218,
         "roth": 1761476,
         "hsa": 502028
       },
-      "net_worth": 4005485
+      "net_worth": 4131156
     },
     {
       "year": 2058,
@@ -2386,14 +2387,14 @@
       "medicare": 0,
       "contributions_employee": 0,
       "contributions_employer": 0,
-      "rmds": 98417,
+      "rmds": 105493,
       "conversions": 0,
       "withdrawals": {
-        "fid-401k": 93861,
+        "fid-401k": 94279,
         "rollover-ira": 11214
       },
       "growth": {
-        "fid-401k": 92610,
+        "fid-401k": 100124,
         "hsa": 25101,
         "rollover-ira": 9924,
         "roth-ira": 105689
@@ -2402,7 +2403,7 @@
         {
           "kind": "rmd",
           "account": "fid-401k",
-          "amount": 87203
+          "amount": 94279
         },
         {
           "kind": "rmd",
@@ -2410,40 +2411,40 @@
           "amount": 11214
         },
         {
-          "kind": "withdrawal",
-          "account": "fid-401k",
-          "amount": 6658
+          "kind": "surplus",
+          "account": "cash",
+          "amount": 1879
         }
       ],
       "taxes": {
-        "ordinary": 15592,
+        "ordinary": 15642,
         "ltcg": 0,
         "penalty": 0,
-        "state": 9295,
+        "state": 7784,
         "taxable_social_security": 74928,
-        "ordinary_taxable": 139042,
+        "ordinary_taxable": 139460,
         "gains": 0,
-        "magi": 210003,
-        "total": 24887
+        "magi": 210421,
+        "total": 23426
       },
-      "surplus": 0,
+      "surplus": 1879,
       "unfunded": 0,
       "balances": {
         "brokerage": 0,
-        "cash": 0,
-        "fid-401k": 1542242,
+        "cash": 2313,
+        "fid-401k": 1674575,
         "hsa": 527129,
         "pension-dc": 0,
         "rollover-ira": 197198,
         "roth-ira": 1867165
       },
       "class_totals": {
-        "taxable": 0,
-        "deferred": 1739440,
+        "taxable": 2313,
+        "deferred": 1871773,
         "roth": 1867165,
         "hsa": 527129
       },
-      "net_worth": 4133734
+      "net_worth": 4268380
     },
     {
       "year": 2059,
@@ -2461,14 +2462,14 @@
       "medicare": 0,
       "contributions_employee": 0,
       "contributions_employer": 0,
-      "rmds": 103538,
+      "rmds": 111415,
       "conversions": 0,
       "withdrawals": {
-        "fid-401k": 96714,
+        "fid-401k": 99677,
         "rollover-ira": 11738
       },
       "growth": {
-        "fid-401k": 92535,
+        "fid-401k": 100475,
         "hsa": 26356,
         "rollover-ira": 9860,
         "roth-ira": 112030
@@ -2477,7 +2478,7 @@
         {
           "kind": "rmd",
           "account": "fid-401k",
-          "amount": 91800
+          "amount": 99677
         },
         {
           "kind": "rmd",
@@ -2485,40 +2486,40 @@
           "amount": 11738
         },
         {
-          "kind": "withdrawal",
-          "account": "fid-401k",
-          "amount": 4914
+          "kind": "surplus",
+          "account": "cash",
+          "amount": 3957
         }
       ],
       "taxes": {
-        "ordinary": 15982,
+        "ordinary": 16337,
         "ltcg": 0,
         "penalty": 0,
-        "state": 9527,
+        "state": 8178,
         "taxable_social_security": 76801,
-        "ordinary_taxable": 142518,
+        "ordinary_taxable": 145481,
         "gains": 0,
-        "magi": 215253,
-        "total": 25509
+        "magi": 218216,
+        "total": 24515
       },
-      "surplus": 0,
+      "surplus": 3957,
       "unfunded": 0,
       "balances": {
         "brokerage": 0,
-        "cash": 0,
-        "fid-401k": 1538063,
+        "cash": 6270,
+        "fid-401k": 1675373,
         "hsa": 553485,
         "pension-dc": 0,
         "rollover-ira": 195320,
         "roth-ira": 1979195
       },
       "class_totals": {
-        "taxable": 0,
-        "deferred": 1733383,
+        "taxable": 6270,
+        "deferred": 1870693,
         "roth": 1979195,
         "hsa": 553485
       },
-      "net_worth": 4266063
+      "net_worth": 4409643
     },
     {
       "year": 2060,
@@ -2536,14 +2537,14 @@
       "medicare": 0,
       "contributions_employee": 0,
       "contributions_employer": 0,
-      "rmds": 108337,
+      "rmds": 116919,
       "conversions": 0,
       "withdrawals": {
-        "fid-401k": 99704,
+        "fid-401k": 104711,
         "rollover-ira": 12208
       },
       "growth": {
-        "fid-401k": 92284,
+        "fid-401k": 100522,
         "hsa": 27674,
         "rollover-ira": 9766,
         "roth-ira": 118752
@@ -2552,7 +2553,7 @@
         {
           "kind": "rmd",
           "account": "fid-401k",
-          "amount": 96129
+          "amount": 104711
         },
         {
           "kind": "rmd",
@@ -2560,40 +2561,40 @@
           "amount": 12208
         },
         {
-          "kind": "withdrawal",
-          "account": "fid-401k",
-          "amount": 3575
+          "kind": "surplus",
+          "account": "cash",
+          "amount": 5633
         }
       ],
       "taxes": {
-        "ordinary": 16381,
+        "ordinary": 16982,
         "ltcg": 0,
         "penalty": 0,
-        "state": 9765,
+        "state": 8538,
         "taxable_social_security": 78721,
-        "ordinary_taxable": 146080,
+        "ordinary_taxable": 151087,
         "gains": 0,
-        "magi": 220633,
-        "total": 26146
+        "magi": 225640,
+        "total": 25520
       },
-      "surplus": 0,
+      "surplus": 5633,
       "unfunded": 0,
       "balances": {
         "brokerage": 0,
-        "cash": 0,
-        "fid-401k": 1530643,
+        "cash": 11903,
+        "fid-401k": 1671184,
         "hsa": 581159,
         "pension-dc": 0,
         "rollover-ira": 192878,
         "roth-ira": 2097947
       },
       "class_totals": {
-        "taxable": 0,
-        "deferred": 1723521,
+        "taxable": 11903,
+        "deferred": 1864062,
         "roth": 2097947,
         "hsa": 581159
       },
-      "net_worth": 4402627
+      "net_worth": 4555071
     },
     {
       "year": 2061,
@@ -2611,14 +2612,14 @@
       "medicare": 0,
       "contributions_employee": 0,
       "contributions_employer": 0,
-      "rmds": 113389,
+      "rmds": 122635,
       "conversions": 0,
       "withdrawals": {
-        "fid-401k": 102771,
+        "fid-401k": 109946,
         "rollover-ira": 12689
       },
       "growth": {
-        "fid-401k": 91839,
+        "fid-401k": 100271,
         "hsa": 29058,
         "rollover-ira": 9644,
         "roth-ira": 125877
@@ -2627,7 +2628,7 @@
         {
           "kind": "rmd",
           "account": "fid-401k",
-          "amount": 100700
+          "amount": 109946
         },
         {
           "kind": "rmd",
@@ -2635,40 +2636,40 @@
           "amount": 12689
         },
         {
-          "kind": "withdrawal",
-          "account": "fid-401k",
-          "amount": 2071
+          "kind": "surplus",
+          "account": "cash",
+          "amount": 7410
         }
       ],
       "taxes": {
-        "ordinary": 16791,
+        "ordinary": 17652,
         "ltcg": 0,
         "penalty": 0,
-        "state": 10009,
+        "state": 8913,
         "taxable_social_security": 80689,
-        "ordinary_taxable": 149732,
+        "ordinary_taxable": 156907,
         "gains": 0,
-        "magi": 226149,
-        "total": 26800
+        "magi": 233324,
+        "total": 26565
       },
-      "surplus": 0,
+      "surplus": 7410,
       "unfunded": 0,
       "balances": {
         "brokerage": 0,
-        "cash": 0,
-        "fid-401k": 1519711,
+        "cash": 19313,
+        "fid-401k": 1661509,
         "hsa": 610217,
         "pension-dc": 0,
         "rollover-ira": 189833,
         "roth-ira": 2223824
       },
       "class_totals": {
-        "taxable": 0,
-        "deferred": 1709544,
+        "taxable": 19313,
+        "deferred": 1851342,
         "roth": 2223824,
         "hsa": 610217
       },
-      "net_worth": 4543585
+      "net_worth": 4704696
     },
     {
       "year": 2062,
@@ -2686,14 +2687,14 @@
       "medicare": 0,
       "contributions_employee": 0,
       "contributions_employer": 0,
-      "rmds": 118718,
+      "rmds": 128566,
       "conversions": 0,
       "withdrawals": {
-        "fid-401k": 105913,
+        "fid-401k": 115383,
         "rollover-ira": 13183
       },
       "growth": {
-        "fid-401k": 91183,
+        "fid-401k": 99691,
         "hsa": 30511,
         "rollover-ira": 9492,
         "roth-ira": 133429
@@ -2702,7 +2703,7 @@
         {
           "kind": "rmd",
           "account": "fid-401k",
-          "amount": 105535
+          "amount": 115383
         },
         {
           "kind": "rmd",
@@ -2710,40 +2711,40 @@
           "amount": 13183
         },
         {
-          "kind": "withdrawal",
-          "account": "fid-401k",
-          "amount": 378
+          "kind": "surplus",
+          "account": "cash",
+          "amount": 9289
         }
       ],
       "taxes": {
-        "ordinary": 17210,
+        "ordinary": 18347,
         "ltcg": 0,
         "penalty": 0,
-        "state": 10259,
+        "state": 9303,
         "taxable_social_security": 82706,
-        "ordinary_taxable": 153474,
+        "ordinary_taxable": 162944,
         "gains": 0,
-        "magi": 231802,
-        "total": 27469
+        "magi": 241272,
+        "total": 27650
       },
-      "surplus": 0,
+      "surplus": 9289,
       "unfunded": 0,
       "balances": {
         "brokerage": 0,
-        "cash": 0,
-        "fid-401k": 1504981,
+        "cash": 28602,
+        "fid-401k": 1645817,
         "hsa": 640728,
         "pension-dc": 0,
         "rollover-ira": 186142,
         "roth-ira": 2357253
       },
       "class_totals": {
-        "taxable": 0,
-        "deferred": 1691123,
+        "taxable": 28602,
+        "deferred": 1831959,
         "roth": 2357253,
         "hsa": 640728
       },
-      "net_worth": 4689104
+      "net_worth": 4858542
     },
     {
       "year": 2063,
@@ -2761,14 +2762,14 @@
       "medicare": 0,
       "contributions_employee": 0,
       "contributions_employer": 0,
-      "rmds": 123440,
+      "rmds": 133720,
       "conversions": 0,
       "withdrawals": {
-        "fid-401k": 109853,
+        "fid-401k": 120133,
         "rollover-ira": 13587
       },
       "growth": {
-        "fid-401k": 90299,
+        "fid-401k": 98749,
         "hsa": 32036,
         "rollover-ira": 9307,
         "roth-ira": 141435
@@ -2777,7 +2778,7 @@
         {
           "kind": "rmd",
           "account": "fid-401k",
-          "amount": 109853
+          "amount": 120133
         },
         {
           "kind": "rmd",
@@ -2787,38 +2788,38 @@
         {
           "kind": "surplus",
           "account": "cash",
-          "amount": 488
+          "amount": 10473
         }
       ],
       "taxes": {
-        "ordinary": 17715,
+        "ordinary": 18948,
         "ltcg": 0,
         "penalty": 0,
-        "state": 10570,
+        "state": 9632,
         "taxable_social_security": 84774,
-        "ordinary_taxable": 157928,
+        "ordinary_taxable": 168208,
         "gains": 0,
-        "magi": 238214,
-        "total": 28285
+        "magi": 248494,
+        "total": 28580
       },
-      "surplus": 488,
+      "surplus": 10473,
       "unfunded": 0,
       "balances": {
         "brokerage": 0,
-        "cash": 488,
-        "fid-401k": 1485427,
+        "cash": 39075,
+        "fid-401k": 1624433,
         "hsa": 672764,
         "pension-dc": 0,
         "rollover-ira": 181862,
         "roth-ira": 2498688
       },
       "class_totals": {
-        "taxable": 488,
-        "deferred": 1667289,
+        "taxable": 39075,
+        "deferred": 1806295,
         "roth": 2498688,
         "hsa": 672764
       },
-      "net_worth": 4839229
+      "net_worth": 5016822
     },
     {
       "year": 2064,
@@ -2836,14 +2837,14 @@
       "medicare": 0,
       "contributions_employee": 0,
       "contributions_employer": 0,
-      "rmds": 129247,
+      "rmds": 140023,
       "conversions": 0,
       "withdrawals": {
-        "fid-401k": 115149,
+        "fid-401k": 125925,
         "rollover-ira": 14098
       },
       "growth": {
-        "fid-401k": 89126,
+        "fid-401k": 97466,
         "hsa": 33638,
         "rollover-ira": 9093,
         "roth-ira": 149921
@@ -2852,7 +2853,7 @@
         {
           "kind": "rmd",
           "account": "fid-401k",
-          "amount": 115149
+          "amount": 125925
         },
         {
           "kind": "rmd",
@@ -2862,38 +2863,38 @@
         {
           "kind": "surplus",
           "account": "cash",
-          "amount": 2062
+          "amount": 12347
         }
       ],
       "taxes": {
-        "ordinary": 18394,
+        "ordinary": 19687,
         "ltcg": 0,
         "penalty": 0,
-        "state": 11007,
+        "state": 10205,
         "taxable_social_security": 86893,
-        "ordinary_taxable": 163847,
+        "ordinary_taxable": 174623,
         "gains": 0,
-        "magi": 246140,
-        "total": 29401
+        "magi": 256916,
+        "total": 29892
       },
-      "surplus": 2062,
+      "surplus": 12347,
       "unfunded": 0,
       "balances": {
         "brokerage": 0,
-        "cash": 2550,
-        "fid-401k": 1459404,
+        "cash": 51422,
+        "fid-401k": 1595974,
         "hsa": 706402,
         "pension-dc": 0,
         "rollover-ira": 176857,
         "roth-ira": 2648609
       },
       "class_totals": {
-        "taxable": 2550,
-        "deferred": 1636261,
+        "taxable": 51422,
+        "deferred": 1772831,
         "roth": 2648609,
         "hsa": 706402
       },
-      "net_worth": 4993822
+      "net_worth": 5179264
     },
     {
       "year": 2065,
@@ -2911,14 +2912,14 @@
       "medicare": 0,
       "contributions_employee": 0,
       "contributions_employer": 0,
-      "rmds": 134119,
+      "rmds": 145314,
       "conversions": 0,
       "withdrawals": {
-        "fid-401k": 119623,
+        "fid-401k": 130818,
         "rollover-ira": 14496
       },
       "growth": {
-        "fid-401k": 87564,
+        "fid-401k": 95758,
         "hsa": 35320,
         "rollover-ira": 8843,
         "roth-ira": 158917
@@ -2927,7 +2928,7 @@
         {
           "kind": "rmd",
           "account": "fid-401k",
-          "amount": 119623
+          "amount": 130818
         },
         {
           "kind": "rmd",
@@ -2937,38 +2938,38 @@
         {
           "kind": "surplus",
           "account": "cash",
-          "amount": 2819
+          "amount": 13075
         }
       ],
       "taxes": {
-        "ordinary": 18961,
+        "ordinary": 20304,
         "ltcg": 0,
         "penalty": 0,
-        "state": 11360,
+        "state": 10956,
         "taxable_social_security": 89066,
-        "ordinary_taxable": 168835,
+        "ordinary_taxable": 180030,
         "gains": 0,
-        "magi": 253185,
-        "total": 30321
+        "magi": 264380,
+        "total": 31260
       },
-      "surplus": 2819,
+      "surplus": 13075,
       "unfunded": 0,
       "balances": {
         "brokerage": 0,
-        "cash": 5369,
-        "fid-401k": 1427345,
+        "cash": 64497,
+        "fid-401k": 1560914,
         "hsa": 741722,
         "pension-dc": 0,
         "rollover-ira": 171204,
         "roth-ira": 2807526
       },
       "class_totals": {
-        "taxable": 5369,
-        "deferred": 1598549,
+        "taxable": 64497,
+        "deferred": 1732118,
         "roth": 2807526,
         "hsa": 741722
       },
-      "net_worth": 5153166
+      "net_worth": 5345863
     },
     {
       "year": 2066,
@@ -2986,14 +2987,14 @@
       "medicare": 0,
       "contributions_employee": 0,
       "contributions_employer": 0,
-      "rmds": 139004,
+      "rmds": 150619,
       "conversions": 0,
       "withdrawals": {
-        "fid-401k": 124117,
+        "fid-401k": 135732,
         "rollover-ira": 14887
       },
       "growth": {
-        "fid-401k": 85641,
+        "fid-401k": 93655,
         "hsa": 37086,
         "rollover-ira": 8560,
         "roth-ira": 168452
@@ -3002,7 +3003,7 @@
         {
           "kind": "rmd",
           "account": "fid-401k",
-          "amount": 124117
+          "amount": 135732
         },
         {
           "kind": "rmd",
@@ -3012,38 +3013,38 @@
         {
           "kind": "surplus",
           "account": "cash",
-          "amount": 3510
+          "amount": 13716
         }
       ],
       "taxes": {
-        "ordinary": 19529,
+        "ordinary": 20923,
         "ltcg": 0,
         "penalty": 0,
-        "state": 11712,
+        "state": 11727,
         "taxable_social_security": 91293,
-        "ordinary_taxable": 173838,
+        "ordinary_taxable": 185453,
         "gains": 0,
-        "magi": 260297,
-        "total": 31241
+        "magi": 271912,
+        "total": 32650
       },
-      "surplus": 3510,
+      "surplus": 13716,
       "unfunded": 0,
       "balances": {
         "brokerage": 0,
-        "cash": 8879,
-        "fid-401k": 1388869,
+        "cash": 78213,
+        "fid-401k": 1518837,
         "hsa": 778808,
         "pension-dc": 0,
         "rollover-ira": 164877,
         "roth-ira": 2975978
       },
       "class_totals": {
-        "taxable": 8879,
-        "deferred": 1553746,
+        "taxable": 78213,
+        "deferred": 1683714,
         "roth": 2975978,
         "hsa": 778808
       },
-      "net_worth": 5317411
+      "net_worth": 5516713
     },
     {
       "year": 2067,
@@ -3061,14 +3062,14 @@
       "medicare": 0,
       "contributions_employee": 0,
       "contributions_employer": 0,
-      "rmds": 143865,
+      "rmds": 155899,
       "conversions": 0,
       "withdrawals": {
-        "fid-401k": 128599,
+        "fid-401k": 140633,
         "rollover-ira": 15266
       },
       "growth": {
-        "fid-401k": 83332,
+        "fid-401k": 91130,
         "hsa": 38940,
         "rollover-ira": 8244,
         "roth-ira": 178559
@@ -3077,7 +3078,7 @@
         {
           "kind": "rmd",
           "account": "fid-401k",
-          "amount": 128599
+          "amount": 140633
         },
         {
           "kind": "rmd",
@@ -3087,38 +3088,38 @@
         {
           "kind": "surplus",
           "account": "cash",
-          "amount": 4102
+          "amount": 14662
         }
       ],
       "taxes": {
-        "ordinary": 20093,
+        "ordinary": 21537,
         "ltcg": 0,
         "penalty": 0,
-        "state": 12061,
+        "state": 12091,
         "taxable_social_security": 93575,
-        "ordinary_taxable": 178819,
+        "ordinary_taxable": 190853,
         "gains": 0,
-        "magi": 267440,
-        "total": 32154
+        "magi": 279474,
+        "total": 33628
       },
-      "surplus": 4102,
+      "surplus": 14662,
       "unfunded": 0,
       "balances": {
         "brokerage": 0,
-        "cash": 12981,
-        "fid-401k": 1343602,
+        "cash": 92875,
+        "fid-401k": 1469334,
         "hsa": 817748,
         "pension-dc": 0,
         "rollover-ira": 157855,
         "roth-ira": 3154537
       },
       "class_totals": {
-        "taxable": 12981,
-        "deferred": 1501457,
+        "taxable": 92875,
+        "deferred": 1627189,
         "roth": 3154537,
         "hsa": 817748
       },
-      "net_worth": 5486723
+      "net_worth": 5692349
     },
     {
       "year": 2068,
@@ -3136,14 +3137,14 @@
       "medicare": 0,
       "contributions_employee": 0,
       "contributions_employer": 0,
-      "rmds": 148659,
+      "rmds": 161108,
       "conversions": 0,
       "withdrawals": {
-        "fid-401k": 133030,
+        "fid-401k": 145479,
         "rollover-ira": 15629
       },
       "growth": {
-        "fid-401k": 80616,
+        "fid-401k": 88160,
         "hsa": 40887,
         "rollover-ira": 7893,
         "roth-ira": 189272
@@ -3152,7 +3153,7 @@
         {
           "kind": "rmd",
           "account": "fid-401k",
-          "amount": 133030
+          "amount": 145479
         },
         {
           "kind": "rmd",
@@ -3162,38 +3163,38 @@
         {
           "kind": "surplus",
           "account": "cash",
-          "amount": 4559
+          "amount": 15036
         }
       ],
       "taxes": {
-        "ordinary": 20649,
+        "ordinary": 22143,
         "ltcg": 0,
         "penalty": 0,
-        "state": 12401,
+        "state": 12879,
         "taxable_social_security": 95914,
-        "ordinary_taxable": 183737,
+        "ordinary_taxable": 196186,
         "gains": 0,
-        "magi": 274573,
-        "total": 33050
+        "magi": 287022,
+        "total": 35022
       },
-      "surplus": 4559,
+      "surplus": 15036,
       "unfunded": 0,
       "balances": {
         "brokerage": 0,
-        "cash": 17540,
-        "fid-401k": 1291188,
+        "cash": 107911,
+        "fid-401k": 1412015,
         "hsa": 858635,
         "pension-dc": 0,
         "rollover-ira": 150119,
         "roth-ira": 3343809
       },
       "class_totals": {
-        "taxable": 17540,
-        "deferred": 1441307,
+        "taxable": 107911,
+        "deferred": 1562134,
         "roth": 3343809,
         "hsa": 858635
       },
-      "net_worth": 5661291
+      "net_worth": 5872489
     },
     {
       "year": 2069,
@@ -3211,14 +3212,14 @@
       "medicare": 0,
       "contributions_employee": 0,
       "contributions_employer": 0,
-      "rmds": 151717,
+      "rmds": 164435,
       "conversions": 0,
       "withdrawals": {
-        "fid-401k": 135915,
+        "fid-401k": 148633,
         "rollover-ira": 15802
       },
       "growth": {
-        "fid-401k": 77471,
+        "fid-401k": 84721,
         "hsa": 42932,
         "rollover-ira": 7506,
         "roth-ira": 200629
@@ -3227,7 +3228,7 @@
         {
           "kind": "rmd",
           "account": "fid-401k",
-          "amount": 135915
+          "amount": 148633
         },
         {
           "kind": "rmd",
@@ -3237,38 +3238,38 @@
         {
           "kind": "surplus",
           "account": "cash",
-          "amount": 3557
+          "amount": 13815
         }
       ],
       "taxes": {
-        "ordinary": 20996,
+        "ordinary": 22523,
         "ltcg": 0,
         "penalty": 0,
-        "state": 12588,
+        "state": 13521,
         "taxable_social_security": 98312,
-        "ordinary_taxable": 186922,
+        "ordinary_taxable": 199640,
         "gains": 0,
-        "magi": 280029,
-        "total": 33584
+        "magi": 292747,
+        "total": 36044
       },
-      "surplus": 3557,
+      "surplus": 13815,
       "unfunded": 0,
       "balances": {
         "brokerage": 0,
-        "cash": 21097,
-        "fid-401k": 1232744,
+        "cash": 121726,
+        "fid-401k": 1348103,
         "hsa": 901567,
         "pension-dc": 0,
         "rollover-ira": 141823,
         "roth-ira": 3544438
       },
       "class_totals": {
-        "taxable": 21097,
-        "deferred": 1374567,
+        "taxable": 121726,
+        "deferred": 1489926,
         "roth": 3544438,
         "hsa": 901567
       },
-      "net_worth": 5841669
+      "net_worth": 6057657
     },
     {
       "year": 2070,
@@ -3286,14 +3287,14 @@
       "medicare": 0,
       "contributions_employee": 0,
       "contributions_employer": 0,
-      "rmds": 154446,
+      "rmds": 167407,
       "conversions": 0,
       "withdrawals": {
-        "fid-401k": 138511,
+        "fid-401k": 151472,
         "rollover-ira": 15935
       },
       "growth": {
-        "fid-401k": 73965,
+        "fid-401k": 80886,
         "hsa": 45078,
         "rollover-ira": 7091,
         "roth-ira": 212666
@@ -3302,7 +3303,7 @@
         {
           "kind": "rmd",
           "account": "fid-401k",
-          "amount": 138511
+          "amount": 151472
         },
         {
           "kind": "rmd",
@@ -3312,38 +3313,38 @@
         {
           "kind": "surplus",
           "account": "cash",
-          "amount": 2207
+          "amount": 12659
         }
       ],
       "taxes": {
-        "ordinary": 21304,
+        "ordinary": 22859,
         "ltcg": 0,
         "penalty": 0,
-        "state": 12744,
+        "state": 13698,
         "taxable_social_security": 100769,
-        "ordinary_taxable": 189780,
+        "ordinary_taxable": 202741,
         "gains": 0,
-        "magi": 285215,
-        "total": 34048
+        "magi": 298176,
+        "total": 36557
       },
-      "surplus": 2207,
+      "surplus": 12659,
       "unfunded": 0,
       "balances": {
         "brokerage": 0,
-        "cash": 23304,
-        "fid-401k": 1168198,
+        "cash": 134385,
+        "fid-401k": 1277517,
         "hsa": 946645,
         "pension-dc": 0,
         "rollover-ira": 132979,
         "roth-ira": 3757104
       },
       "class_totals": {
-        "taxable": 23304,
-        "deferred": 1301177,
+        "taxable": 134385,
+        "deferred": 1410496,
         "roth": 3757104,
         "hsa": 946645
       },
-      "net_worth": 6028230
+      "net_worth": 6248630
     },
     {
       "year": 2071,
@@ -3361,15 +3362,14 @@
       "medicare": 0,
       "contributions_employee": 0,
       "contributions_employer": 0,
-      "rmds": 154902,
+      "rmds": 167916,
       "conversions": 0,
       "withdrawals": {
-        "cash": 1030,
-        "fid-401k": 139071,
+        "fid-401k": 152085,
         "rollover-ira": 15831
       },
       "growth": {
-        "fid-401k": 70092,
+        "fid-401k": 76651,
         "hsa": 47332,
         "rollover-ira": 6649,
         "roth-ira": 225426
@@ -3378,7 +3378,7 @@
         {
           "kind": "rmd",
           "account": "fid-401k",
-          "amount": 139071
+          "amount": 152085
         },
         {
           "kind": "rmd",
@@ -3386,40 +3386,40 @@
           "amount": 15831
         },
         {
-          "kind": "withdrawal",
+          "kind": "surplus",
           "account": "cash",
-          "amount": 1030
+          "amount": 9465
         }
       ],
       "taxes": {
-        "ordinary": 21338,
+        "ordinary": 22899,
         "ltcg": 0,
         "penalty": 0,
-        "state": 12699,
+        "state": 13657,
         "taxable_social_security": 103289,
-        "ordinary_taxable": 190371,
+        "ordinary_taxable": 203385,
         "gains": 0,
-        "magi": 288191,
-        "total": 34037
+        "magi": 301205,
+        "total": 36556
       },
-      "surplus": 0,
+      "surplus": 9465,
       "unfunded": 0,
       "balances": {
         "brokerage": 0,
-        "cash": 22274,
-        "fid-401k": 1099219,
+        "cash": 143850,
+        "fid-401k": 1202083,
         "hsa": 993977,
         "pension-dc": 0,
         "rollover-ira": 123797,
         "roth-ira": 3982530
       },
       "class_totals": {
-        "taxable": 22274,
-        "deferred": 1223016,
+        "taxable": 143850,
+        "deferred": 1325880,
         "roth": 3982530,
         "hsa": 993977
       },
-      "net_worth": 6221797
+      "net_worth": 6446237
     },
     {
       "year": 2072,
@@ -3437,15 +3437,14 @@
       "medicare": 0,
       "contributions_employee": 0,
       "contributions_employer": 0,
-      "rmds": 156797,
+      "rmds": 169984,
       "conversions": 0,
       "withdrawals": {
-        "cash": 3218,
-        "fid-401k": 140926,
+        "fid-401k": 154113,
         "rollover-ira": 15871
       },
       "growth": {
-        "fid-401k": 65953,
+        "fid-401k": 72125,
         "hsa": 49699,
         "rollover-ira": 6190,
         "roth-ira": 238952
@@ -3454,7 +3453,7 @@
         {
           "kind": "rmd",
           "account": "fid-401k",
-          "amount": 140926
+          "amount": 154113
         },
         {
           "kind": "rmd",
@@ -3462,40 +3461,40 @@
           "amount": 15871
         },
         {
-          "kind": "withdrawal",
+          "kind": "surplus",
           "account": "cash",
-          "amount": 3218
+          "amount": 7414
         }
       ],
       "taxes": {
-        "ordinary": 21544,
+        "ordinary": 23126,
         "ltcg": 0,
         "penalty": 0,
-        "state": 12778,
+        "state": 13751,
         "taxable_social_security": 105871,
-        "ordinary_taxable": 192402,
+        "ordinary_taxable": 205589,
         "gains": 0,
-        "magi": 292668,
-        "total": 34322
+        "magi": 305855,
+        "total": 36877
       },
-      "surplus": 0,
+      "surplus": 7414,
       "unfunded": 0,
       "balances": {
         "brokerage": 0,
-        "cash": 19056,
-        "fid-401k": 1024246,
+        "cash": 151264,
+        "fid-401k": 1120095,
         "hsa": 1043676,
         "pension-dc": 0,
         "rollover-ira": 114116,
         "roth-ira": 4221482
       },
       "class_totals": {
-        "taxable": 19056,
-        "deferred": 1138362,
+        "taxable": 151264,
+        "deferred": 1234211,
         "roth": 4221482,
         "hsa": 1043676
       },
-      "net_worth": 6422576
+      "net_worth": 6650633
     },
     {
       "year": 2073,
@@ -3513,15 +3512,14 @@
       "medicare": 0,
       "contributions_employee": 0,
       "contributions_employer": 0,
-      "rmds": 155940,
+      "rmds": 169070,
       "conversions": 0,
       "withdrawals": {
-        "cash": 7678,
-        "fid-401k": 140308,
+        "fid-401k": 153438,
         "rollover-ira": 15632
       },
       "growth": {
-        "fid-401k": 61455,
+        "fid-401k": 67206,
         "hsa": 52184,
         "rollover-ira": 5706,
         "roth-ira": 253289
@@ -3530,7 +3528,7 @@
         {
           "kind": "rmd",
           "account": "fid-401k",
-          "amount": 140308
+          "amount": 153438
         },
         {
           "kind": "rmd",
@@ -3538,40 +3536,40 @@
           "amount": 15632
         },
         {
-          "kind": "withdrawal",
+          "kind": "surplus",
           "account": "cash",
-          "amount": 7678
+          "amount": 2908
         }
       ],
       "taxes": {
-        "ordinary": 21419,
+        "ordinary": 22995,
         "ltcg": 0,
         "penalty": 0,
-        "state": 12614,
+        "state": 13582,
         "taxable_social_security": 108518,
-        "ordinary_taxable": 191685,
+        "ordinary_taxable": 204815,
         "gains": 0,
-        "magi": 294458,
-        "total": 34033
+        "magi": 307588,
+        "total": 36577
       },
-      "surplus": 0,
+      "surplus": 2908,
       "unfunded": 0,
       "balances": {
         "brokerage": 0,
-        "cash": 11378,
-        "fid-401k": 945393,
+        "cash": 154172,
+        "fid-401k": 1033863,
         "hsa": 1095860,
         "pension-dc": 0,
         "rollover-ira": 104190,
         "roth-ira": 4474771
       },
       "class_totals": {
-        "taxable": 11378,
-        "deferred": 1049583,
+        "taxable": 154172,
+        "deferred": 1138053,
         "roth": 4474771,
         "hsa": 1095860
       },
-      "net_worth": 6631592
+      "net_worth": 6862856
     },
     {
       "year": 2074,
@@ -3589,15 +3587,15 @@
       "medicare": 0,
       "contributions_employee": 0,
       "contributions_employer": 0,
-      "rmds": 154350,
+      "rmds": 167361,
       "conversions": 0,
       "withdrawals": {
-        "cash": 11378,
-        "fid-401k": 140838,
+        "cash": 2321,
+        "fid-401k": 152039,
         "rollover-ira": 15322
       },
       "growth": {
-        "fid-401k": 56724,
+        "fid-401k": 62032,
         "hsa": 54793,
         "rollover-ira": 5210,
         "roth-ira": 268486
@@ -3606,7 +3604,7 @@
         {
           "kind": "rmd",
           "account": "fid-401k",
-          "amount": 139028
+          "amount": 152039
         },
         {
           "kind": "rmd",
@@ -3616,43 +3614,38 @@
         {
           "kind": "withdrawal",
           "account": "cash",
-          "amount": 11378
-        },
-        {
-          "kind": "withdrawal",
-          "account": "fid-401k",
-          "amount": 1810
+          "amount": 2321
         }
       ],
       "taxes": {
-        "ordinary": 21423,
+        "ordinary": 22767,
         "ltcg": 0,
         "penalty": 0,
-        "state": 12541,
+        "state": 13341,
         "taxable_social_security": 111231,
-        "ordinary_taxable": 192049,
+        "ordinary_taxable": 203250,
         "gains": 0,
-        "magi": 297391,
-        "total": 33964
+        "magi": 308592,
+        "total": 36108
       },
       "surplus": 0,
       "unfunded": 0,
       "balances": {
         "brokerage": 0,
-        "cash": 0,
-        "fid-401k": 861279,
+        "cash": 151851,
+        "fid-401k": 943856,
         "hsa": 1150653,
         "pension-dc": 0,
         "rollover-ira": 94078,
         "roth-ira": 4743257
       },
       "class_totals": {
-        "taxable": 0,
-        "deferred": 955357,
+        "taxable": 151851,
+        "deferred": 1037934,
         "roth": 4743257,
         "hsa": 1150653
       },
-      "net_worth": 6849267
+      "net_worth": 7083695
     }
   ]
 }

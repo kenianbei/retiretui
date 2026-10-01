@@ -8,13 +8,13 @@ expression: composed_frame(app)
 ┴──────────┴┴────────┴┴─────────┴╯       ╰┴──────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭ Tools ────────────╮╭ Constraints ───────────────────────────────────────────────────────────────────╮╭ Ladder Options ───────────────────────────────────────────────────────────────────────────────╮
 │▏ Roth Conversions ││                                                                                ││  Bracket Vs. the plan Converted Unfunded Ends with Taxes Medicare                             │
-│  SSA Benefits     ││▌ Convert from  Every deferred account                                          ││  Current                  $330k       $0    $2.09M $697k       $0                             │
-│  Withdrawal Order ││  Convert to    roth-ira                                                        ││▏ 22%            +$56k     $988k       $0    $2.15M $515k       $0                             │
-│  Monte Carlo      ││  Fill bracket  Every bracket                                                   ││  24%            +$39k     $962k       $0    $2.13M $513k       $0                             │
-│  Historical       ││  First year    The plan's start                                                ││  32%          -$2,382     $958k       $0    $2.09M $521k       $0                             │
-│  Tax Tables       ││  Last year     The year before RMDs                                            ││  10%            -$32k     $388k       $0    $2.06M $709k       $0                             │
-│                   ││  Annual cap    No cap                                                          ││  35%            -$34k     $956k       $0    $2.06M $528k       $0                             │
-│                   ││  Total cap     No cap                                                          ││  12%            -$51k     $983k       $0    $2.04M $581k       $0                             │
+│  SSA Benefits     ││▌ Convert from  Every deferred account                                          ││  Current                  $330k       $0    $2.17M $661k       $0                             │
+│  Withdrawal Order ││  Convert to    roth-ira                                                        ││▏ 22%            +$58k     $988k       $0    $2.22M $489k       $0                             │
+│  Monte Carlo      ││  Fill bracket  Every bracket                                                   ││  24%            +$40k     $962k       $0    $2.21M $485k       $0                             │
+│  Historical       ││  First year    The plan's start                                                ││  10%            +$17k     $388k       $0    $2.18M $656k       $0                             │
+│  Tax Tables       ││  Last year     The year before RMDs                                            ││  32%          +$1,681     $958k       $0    $2.17M $492k       $0                             │
+│                   ││  Annual cap    No cap                                                          ││  35%            -$30k     $956k       $0    $2.14M $498k       $0                             │
+│                   ││  Total cap     No cap                                                          ││  12%            -$44k     $951k       $0    $2.12M $550k       $0                             │
 │                   ││  Headroom      None                                                            │╰───────────────────────────────────────────────────────────────────────────────────────────────╯
 │                   ││  IRMAA tier    Not held to one                                                 │╭ Conversions ──────────────────────────────────────────────────────────────────────────────────╮
 │                   ││  MAGI cap      No cap                                                          ││  Year           From  Amount Taxable                                                          │

@@ -1,8 +1,10 @@
 //! A state's income tax table, as a year's parameters hold it.
 
+use std::num::NonZeroU32;
+
 use serde::{Deserialize, Serialize};
 
-use super::{Bracket, PerStatus};
+use super::{Bracket, PerStatus, PhaseOut};
 use crate::plan::Dollars;
 
 /// One state's income tax. A state with no income tax is an empty table,
@@ -28,6 +30,70 @@ pub struct StateParams {
     /// is not inflated past the last known year.
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     pub deduction_unindexed: bool,
+    /// What each person adds to the deduction from the year they reach 65,
+    /// in nominal dollars.
+    #[serde(skip_serializing_if = "crate::plan::is_zero")]
+    pub deduction_at_65: PerStatus<Dollars>,
+    /// The federal AGI above which there is no deduction, in nominal
+    /// dollars.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub deduction_until_agi: Option<PerStatus<Dollars>>,
+    /// The federal income tax the state lets be subtracted from income.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub federal_tax_subtraction: Option<FederalTaxSubtraction>,
+    /// The credit against its tax the state gives for each person.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub exemption_credit: Option<ExemptionCredit>,
+    /// The tax the state levies on long-term gains apart from income.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub gains_excise: Option<GainsExcise>,
+}
+
+/// Federal income tax subtracted from a state's income, up to a cap the
+/// federal AGI steps down.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+pub struct FederalTaxSubtraction {
+    /// The most that is subtracted.
+    pub cap: Dollars,
+    /// How many equal parts the cap is lost in.
+    pub steps: NonZeroU32,
+    /// The federal AGI the cap is lost across, in nominal dollars: a part at
+    /// `from` itself, and a part more at each even step up to `to`, where
+    /// the last goes.
+    pub phase_out: PerStatus<PhaseOut>,
+}
+
+/// A credit against a state's tax for each person, never refunded.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+pub struct ExemptionCredit {
+    /// The credit for each person.
+    pub per_person: Dollars,
+    /// What each person adds to it from the year they reach 65, in nominal
+    /// dollars.
+    #[serde(default, skip_serializing_if = "crate::plan::is_zero")]
+    pub at_65: Dollars,
+    /// The federal AGI above which there is no credit, in nominal dollars.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub until_agi: Option<PerStatus<Dollars>>,
+    /// Set where the law fixes `per-person` in nominal dollars, so that it
+    /// is not inflated past the last known year.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub unindexed: bool,
+}
+
+/// A tax on the household's long-term gains, whatever its filing status.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+pub struct GainsExcise {
+    /// The gains left untaxed.
+    pub deduction: Dollars,
+    /// Brackets over the gains beyond the deduction.
+    pub brackets: Vec<Bracket>,
 }
 
 /// Sources of income a state leaves untaxed, whole, for each person old

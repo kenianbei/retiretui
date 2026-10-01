@@ -5,15 +5,7 @@ mod common;
 
 use retiretui_engine::plan::Dollars;
 
-use common::{living_in, run};
-
-const SALARY: &str = r#"
-[[income]]
-id = "pay"
-kind = "salary"
-owner = "me"
-amount = 100000
-"#;
+use common::{cashing_out, living_in, run, salary};
 
 /// A pension of 20,000, a conversion of 30,000 out of an IRA, and 10,000
 /// of rent.
@@ -51,34 +43,6 @@ amount = 30000
 on = { date = 2026-01-01 }
 "#;
 
-/// 50,000 moved in 2026 out of `owner`'s 401(k), whose table ends with
-/// `stated`, into a brokerage of theirs.
-fn cashing_out(owner: &str, stated: &str) -> String {
-    format!(
-        r#"
-[[accounts]]
-id = "k-{owner}"
-kind = "401k"
-owner = "{owner}"
-balance = 400000
-{stated}
-
-[[accounts]]
-id = "brokerage-{owner}"
-kind = "brokerage"
-owner = "{owner}"
-balance = 0
-
-[[transfers]]
-id = "cash-out-{owner}"
-from = "k-{owner}"
-to = "brokerage-{owner}"
-amount = 50000
-on = {{ date = 2026-01-01 }}
-"#
-    )
-}
-
 /// What the state takes in 2026.
 fn state_tax(text: &str) -> Dollars {
     run(text).years[0].taxes.state
@@ -87,7 +51,7 @@ fn state_tax(text: &str) -> Dollars {
 #[test]
 fn illinois_taxes_wages_less_the_exemption_and_no_retirement_income() {
     // 4.95% of 100,000 less 2,925.
-    assert_eq!(state_tax(&living_in("il", 1976, SALARY)), 4_805);
+    assert_eq!(state_tax(&living_in("il", 1976, &salary(100_000))), 4_805);
     // Born June 1976: 50 in 2026. Only the rent is taxed: 4.95% of 10,000
     // less 2,925.
     let early = format!("{RETIRED}{}", cashing_out("me", ""));
@@ -97,7 +61,7 @@ fn illinois_taxes_wages_less_the_exemption_and_no_retirement_income() {
 #[test]
 fn pennsylvania_taxes_what_is_deferred_and_not_what_an_hsa_is_paid() {
     let paying_in = format!(
-        r#"{SALARY}
+        r#"{}
 [[accounts]]
 id = "k"
 kind = "401k"
@@ -119,7 +83,8 @@ amount = 10000
 id = "health"
 to = "hsa"
 amount = 4000
-"#
+"#,
+        salary(100_000)
     );
     // 3.07% of 100,000 less the 4,000.
     assert_eq!(state_tax(&living_in("pa", 1976, &paying_in)), 2_947);
@@ -161,7 +126,7 @@ fn mississippi_taxes_an_early_distribution_and_no_other() {
 fn mississippi_s_rate_steps_down_as_enacted_over_a_deduction_held_nominal() {
     // 58,300 a year in nominal dollars: 40,000 above the 8,300 and the
     // 10,000, whatever inflation does.
-    let nominal = SALARY.replace("amount = 100000", "amount = 58300\ncola = false");
+    let nominal = salary(58_300).replace("58300", "58300\ncola = false");
     let text = living_in("ms", 1980, &nominal).replace("inflation = 0.0", "inflation = 0.02");
     let projection = run(&text);
     let taken: Vec<Dollars> = (2026..=2032)
@@ -172,18 +137,19 @@ fn mississippi_s_rate_steps_down_as_enacted_over_a_deduction_held_nominal() {
 
 #[test]
 fn iowa_taxes_retirement_income_until_the_year_its_owner_turns_55() {
-    // Born June 1972: 54 in 2026. 3.8% of 50,000 less 16,100.
+    // Born June 1972: 54 in 2026. 3.8% of 50,000 less 16,100, less the
+    // credit of 40.
     let early = cashing_out("me", "");
-    assert_eq!(state_tax(&living_in("ia", 1972, &early)), 1_288);
+    assert_eq!(state_tax(&living_in("ia", 1972, &early)), 1_248);
     assert_eq!(state_tax(&living_in("ia", 1971, &early)), 0);
-    // 3.8% of 100,000 less 16,100.
-    assert_eq!(state_tax(&living_in("ia", 1972, SALARY)), 3_188);
+    // 3.8% of 100,000 less 16,100, less the credit.
+    assert_eq!(state_tax(&living_in("ia", 1972, &salary(100_000))), 3_148);
 }
 
 #[test]
 fn iowa_exempts_each_spouse_by_their_own_age() {
     // Born 1971 and 1975: 55 and 51 in 2026. The younger's 50,000 is taxed:
-    // 3.8% of it less 32,200.
+    // 3.8% of it less 32,200, less a credit of 40 each.
     let body = format!("{}{}", cashing_out("me", ""), cashing_out("you", ""));
     let couple = living_in("ia", 1971, &body)
         .replace("filing = \"single\"", "filing = \"married-joint\"")
@@ -191,5 +157,5 @@ fn iowa_exempts_each_spouse_by_their_own_age() {
             "birth = 1971-06-15",
             "birth = 1971-06-15\n\n[[household.people]]\nid = \"you\"\nbirth = 1975-06-15",
         );
-    assert_eq!(state_tax(&couple), 676);
+    assert_eq!(state_tax(&couple), 596);
 }

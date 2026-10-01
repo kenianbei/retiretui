@@ -4,39 +4,12 @@
 mod common;
 
 use retiretui_engine::params::{Inflation, Source, StateParams, TaxParams, TaxTables};
-use retiretui_engine::plan::{Dollars, FilingStatus, PlanDate};
+use retiretui_engine::plan::{Dollars, FilingStatus};
 use retiretui_engine::tax::{self, PersonIncome, StateIncome};
 
-use common::{params_2026, tables_with};
+use common::{flat_tenth, in_year, params_2026, person, tables_with};
 
 const INFLATION: f64 = 0.02;
-
-/// A state taking a tenth of everything, with `rows` before its brackets.
-fn flat_tenth(rows: &str) -> StateParams {
-    let text = format!(
-        "{rows}\n[brackets]\nsingle = [{{ over = 0, rate = 0.1 }}]\nmarried-joint = [{{ over = 0, rate = 0.1 }}]\n"
-    );
-    toml::from_str(&text).unwrap()
-}
-
-/// Someone born on the 15th of `month` in `year`, with `income` by source.
-fn person(year: i16, month: i8, income: &[(Source, Dollars)]) -> PersonIncome {
-    let mut person = PersonIncome::new(PlanDate(jiff::civil::date(year, month, 15)));
-    for &(source, amount) in income {
-        person.add(source, amount);
-    }
-    person
-}
-
-fn in_year(year: i16, people: &[PersonIncome]) -> StateIncome<'_> {
-    StateIncome {
-        year,
-        people,
-        gains: 0,
-        taxable_social_security: 0,
-        deferred: 0,
-    }
-}
 
 /// What one person owes `state` in `year`.
 fn owed(state: &StateParams, year: i16, person: PersonIncome) -> Dollars {
@@ -51,14 +24,15 @@ fn earning(wages: Dollars) -> PersonIncome {
 fn a_state_taxes_income_less_its_deduction_through_its_own_brackets() {
     let params = params_2026();
     let oregon = &params.states["or"];
-    // Publication OR-ESTIMATE's own example: 68,000 taxable, jointly.
-    let joint = [earning(68_000 + 5_800)];
+    // Publication OR-ESTIMATE's own example: 68,000 taxable, jointly, owes
+    // 5,312 before the credit of 263 for each of two.
+    let joint = [earning(68_000 + 5_820), earning(0)];
     assert_eq!(
         tax::state_tax(oregon, FilingStatus::MarriedJoint, &in_year(2026, &joint)),
-        5_312
+        5_312 - 526
     );
-    // Single, 50,000 taxable: 216 + 462 + 3,377.50.
-    assert_eq!(owed(oregon, 2026, earning(50_000 + 2_900)), 4_056);
+    // Single, 50,000 taxable: 216 + 462 + 3,377.50, less the credit.
+    assert_eq!(owed(oregon, 2026, earning(50_000 + 2_910)), 4_056 - 263);
     assert_eq!(owed(oregon, 2026, earning(1_000)), 0);
 }
 
@@ -108,10 +82,13 @@ fn a_state_with_no_income_tax_is_a_table_and_one_not_modeled_is_none() {
 fn state_tables_extend_with_inflation() {
     let later = TaxTables::embedded().params_for(2036, &Inflation::constant(INFLATION));
     let oregon = &later.states["or"];
-    assert_eq!(oregon.deduction.single, 3_535);
+    assert_eq!(oregon.deduction.single, 3_547);
     assert_eq!(oregon.brackets.single[1].over, 5_546);
     assert!((oregon.brackets.single[1].rate - 0.0675).abs() < f64::EPSILON);
     assert_eq!(oregon.brackets.single[3].over, 125_000, "set by statute");
+    let credit = |code: &str| later.states[code].exemption_credit.as_ref().unwrap();
+    assert_eq!(credit("or").per_person, 321);
+    assert_eq!(credit("ia").per_person, 40, "set by statute");
 }
 
 #[test]

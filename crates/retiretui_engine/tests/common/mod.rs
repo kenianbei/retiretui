@@ -2,9 +2,12 @@
 #![allow(dead_code, reason = "each test crate uses its own share of these")]
 
 use retiretui_engine::optimize::{OptimizeOptions, SweptBracket, optimize_conversions};
-use retiretui_engine::params::{BenefitParams, Inflation, TaxParams, TaxTables};
-use retiretui_engine::plan::{Dollars, Issue, Plan};
+use retiretui_engine::params::{
+    BenefitParams, Inflation, Source, StateParams, TaxParams, TaxTables,
+};
+use retiretui_engine::plan::{Dollars, Issue, Plan, PlanDate};
 use retiretui_engine::project::{Action, ContributionNote, Projection, project};
+use retiretui_engine::tax::{PersonIncome, StateIncome};
 
 pub const FULL: &str = include_str!("../fixtures/full.toml");
 
@@ -76,6 +79,42 @@ pub fn tables_with(state: &str) -> TaxTables {
     tables
 }
 
+/// Brackets taking a tenth of everything.
+pub const TENTH: &str =
+    "[brackets]\nsingle = [{ over = 0, rate = 0.1 }]\nmarried-joint = [{ over = 0, rate = 0.1 }]\n";
+
+/// A state taking a tenth of everything, with `keys` before its brackets.
+pub fn flat_tenth(keys: &str) -> StateParams {
+    toml::from_str(&format!("{keys}\n{TENTH}")).unwrap()
+}
+
+/// Someone born on the 15th of `month` in `year`, with `income` by source.
+pub fn person(year: i16, month: i8, income: &[(Source, Dollars)]) -> PersonIncome {
+    let mut person = PersonIncome::new(PlanDate(jiff::civil::date(year, month, 15)));
+    for &(source, amount) in income {
+        person.add(source, amount);
+    }
+    person
+}
+
+/// `year` for `people`, with nothing but their own income.
+pub fn in_year(year: i16, people: &[PersonIncome]) -> StateIncome<'_> {
+    StateIncome {
+        year,
+        people,
+        gains: 0,
+        taxable_social_security: 0,
+        deferred: 0,
+        federal_tax: 0,
+        agi: 0,
+    }
+}
+
+/// A plan's body: a salary of `amount`.
+pub fn salary(amount: Dollars) -> String {
+    format!("\n[[income]]\nid = \"pay\"\nkind = \"salary\"\nowner = \"me\"\namount = {amount}\n")
+}
+
 /// What `year` drew on `account`, what the year taxed, and the penalty it
 /// paid.
 #[track_caller]
@@ -125,6 +164,34 @@ pub fn living_in(state: &str, birth_year: i16, body: &str) -> String {
         "[[residency]]\ncountry = \"us\"\nstate = \"{state}\"\n\n[[accounts]]\nid = \"cash\"\nkind = \"cash\"\nowner = \"me\"\nbalance = 500000\n{body}"
     );
     born_in(birth_year, &home)
+}
+
+/// 50,000 moved in 2026 out of `owner`'s 401(k), whose table ends with
+/// `stated`, into a brokerage of theirs.
+pub fn cashing_out(owner: &str, stated: &str) -> String {
+    format!(
+        r#"
+[[accounts]]
+id = "k-{owner}"
+kind = "401k"
+owner = "{owner}"
+balance = 400000
+{stated}
+
+[[accounts]]
+id = "brokerage-{owner}"
+kind = "brokerage"
+owner = "{owner}"
+balance = 0
+
+[[transfers]]
+id = "cash-out-{owner}"
+from = "k-{owner}"
+to = "brokerage-{owner}"
+amount = 50000
+on = {{ date = 2026-01-01 }}
+"#
+    )
 }
 
 pub fn head(text: &str) -> String {

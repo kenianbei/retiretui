@@ -17,7 +17,9 @@ pub use index::Inflation;
 pub(crate) use index::scale;
 use index::{inflate, inflate_state, step_rates};
 pub use limits::{ContributionLimits, EarlyWithdrawal, IrmaaTier, PhaseOut, RmdDivisor, RmdTable};
-pub use states::{Exclusion, Source, StateParams};
+pub use states::{
+    Exclusion, ExemptionCredit, FederalTaxSubtraction, GainsExcise, Source, StateParams,
+};
 
 /// The tax parameter file schema version this build reads.
 const PARAMS_SCHEMA_VERSION: u32 = 1;
