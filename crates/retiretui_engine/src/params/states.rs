@@ -17,6 +17,31 @@ pub struct StateParams {
     pub brackets: PerStatus<Vec<Bracket>>,
     /// Whether the federally taxable share of Social Security is taxed.
     pub taxes_social_security: bool,
+    /// What the state leaves untaxed, a person at a time.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub exclusions: Vec<Exclusion>,
+    /// Whether what a person pays into a tax-deferred account is taxed in
+    /// the year it is paid, a deducted traditional IRA contribution with it.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub taxes_deferrals: bool,
+    /// Set where the law fixes the deduction in nominal dollars, so that it
+    /// is not inflated past the last known year.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub deduction_unindexed: bool,
+}
+
+/// Sources of income a state leaves untaxed, whole, for each person old
+/// enough.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+pub struct Exclusion {
+    /// The sources left untaxed.
+    pub sources: Vec<Source>,
+    /// The age, in years, from which they are: throughout the calendar year
+    /// it is reached, and after. None leaves them untaxed at any age.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub from_age: Option<f64>,
 }
 
 /// Where a dollar of taxable ordinary income came from, as a state's table
@@ -39,8 +64,8 @@ pub enum Source {
     /// Rental, annuity and other income, and what an HSA pays beyond
     /// medical spending.
     Other,
-    /// What the employee paid into a workplace plan before tax; never above
-    /// nothing.
+    /// What a person paid into a tax-deferred account and deducted whatever
+    /// the year's income; never above nothing.
     Deferral,
 }
 

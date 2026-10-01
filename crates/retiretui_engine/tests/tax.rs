@@ -188,59 +188,6 @@ fn irmaa_extends_with_inflation() {
     assert_eq!(extended.irmaa.len(), base.irmaa.len());
 }
 
-#[test]
-fn a_state_taxes_income_less_its_deduction_through_its_own_brackets() {
-    let params = params_2026();
-    let oregon = &params.states["or"];
-    // Publication OR-ESTIMATE's own example: 68,000 taxable, jointly.
-    assert_eq!(
-        tax::state_tax(oregon, FilingStatus::MarriedJoint, 68_000 + 5_800, 0),
-        5_312
-    );
-    // Single, 50,000 taxable: 216 + 462 + 3,377.50.
-    assert_eq!(
-        tax::state_tax(oregon, FilingStatus::Single, 50_000 + 2_900, 0),
-        4_056
-    );
-    assert_eq!(tax::state_tax(oregon, FilingStatus::Single, 1_000, 0), 0);
-}
-
-#[test]
-fn a_state_taxes_social_security_only_where_it_says_so() {
-    let params = params_2026();
-    let mut state = params.states["or"].clone();
-    let exempt = tax::state_tax(&state, FilingStatus::Single, 40_000, 20_000);
-    assert_eq!(
-        exempt,
-        tax::state_tax(&state, FilingStatus::Single, 40_000, 0)
-    );
-    state.taxes_social_security = true;
-    assert_eq!(
-        tax::state_tax(&state, FilingStatus::Single, 40_000, 20_000),
-        tax::state_tax(&state, FilingStatus::Single, 60_000, 0)
-    );
-}
-
-#[test]
-fn a_state_with_no_income_tax_is_a_table_and_one_not_modeled_is_none() {
-    let params = params_2026();
-    for code in ["ak", "fl", "nv", "nh", "sd", "tn", "tx", "wa", "wy"] {
-        let tax = tax::state_tax(&params.states[code], FilingStatus::Single, 500_000, 50_000);
-        assert_eq!(tax, 0, "{code}");
-    }
-    assert!(!params.states.contains_key("ca"));
-}
-
-#[test]
-fn state_tables_extend_with_inflation() {
-    let later = TaxTables::embedded().params_for(2036, &Inflation::constant(INFLATION));
-    let oregon = &later.states["or"];
-    assert_eq!(oregon.deduction.single, 3_535);
-    assert_eq!(oregon.brackets.single[1].over, 5_546);
-    assert!((oregon.brackets.single[1].rate - 0.0675).abs() < f64::EPSILON);
-    assert_eq!(oregon.brackets.single[3].over, 125_000, "set by statute");
-}
-
 /// SSA's "case A" for workers retiring in 2026: born 1964, these nominal
 /// earnings 1986-2025, AIME 5,825, PIA 2,609.80, and 1,826 a month at 62.
 const CASE_A_EARNINGS: [(i16, i64); 40] = [

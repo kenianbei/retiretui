@@ -9,7 +9,7 @@ use crate::plan::{AccountKind, Dollars, FilingStatus, Person, PlanDate};
 
 mod state;
 
-pub use state::{PersonIncome, state_tax};
+pub use state::{PersonIncome, StateIncome, state_tax};
 
 /// The age Medicare coverage (and IRMAA exposure) begins.
 pub const MEDICARE_AGE: u8 = 65;
@@ -56,6 +56,18 @@ const FRA_STEP_MONTHS: i32 = 2;
 
 /// Years between the MAGI that is measured and the premiums it prices.
 pub const IRMAA_LOOKBACK_YEARS: i16 = 2;
+
+/// Whether someone born on `birth` reaches `age`, in years and a fraction of
+/// one, by the end of `year`.
+#[must_use]
+pub fn is_age_reached(birth: PlanDate, age: f64, year: i16) -> bool {
+    let months = (age * f64::from(MONTHS_PER_YEAR)).round() as i64;
+    let past_january = i64::from(birth.0.month()) - 1;
+    let reached_in = months
+        .saturating_add(past_january)
+        .div_euclid(i64::from(MONTHS_PER_YEAR));
+    i64::from(birth.year()) + reached_in <= i64::from(year)
+}
 
 /// Whether a person is Medicare-covered in `year`.
 #[must_use]

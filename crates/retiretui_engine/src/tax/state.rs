@@ -1,7 +1,7 @@
 //! State income tax. The rule shape lives here; each state's values come
 //! from [`crate::params::StateParams`].
 
-use super::walk_brackets;
+use super::{is_age_reached, walk_brackets};
 use crate::params::{Source, StateParams};
 use crate::plan::{Dollars, FilingStatus, PlanDate};
 
@@ -37,20 +37,63 @@ impl PersonIncome {
     }
 }
 
-/// A state's income tax: ordinary income and gains alike, with the taxable
-/// share of Social Security where the state taxes it, less its deduction.
+/// What a year's state income tax is figured from.
+#[derive(Debug, Clone, Copy)]
+pub struct StateIncome<'a> {
+    /// The calendar year, which the ages a state's table names are read in.
+    pub year: i16,
+    /// The household's people, each with their taxable ordinary income.
+    pub people: &'a [PersonIncome],
+    /// Realized long-term gains.
+    pub gains: Dollars,
+    /// The federally taxable share of Social Security.
+    pub taxable_social_security: Dollars,
+    /// Traditional IRA contributions the year's MAGI let be deducted.
+    pub ira_deducted: Dollars,
+}
+
+/// A state's income tax: what each person's ordinary income leaves once the
+/// state's exclusions are taken out of it, gains, and the taxable share of
+/// Social Security where the state taxes it, less its deduction.
 #[must_use]
-pub fn state_tax(
-    state: &StateParams,
-    status: FilingStatus,
-    income: Dollars,
-    taxable_social_security: Dollars,
-) -> Dollars {
+pub fn state_tax(state: &StateParams, status: FilingStatus, income: &StateIncome) -> Dollars {
+    let people = income.people.iter();
+    let ordinary: Dollars = people
+        .map(|person| taxed_of(state, person, income.year))
+        .sum();
+    let ira_deducted = if state.taxes_deferrals {
+        0
+    } else {
+        income.ira_deducted
+    };
     let benefits = if state.taxes_social_security {
-        taxable_social_security
+        income.taxable_social_security
     } else {
         0
     };
-    let taxable = income + benefits - state.deduction.get(status);
+    let taxable = ordinary + income.gains - ira_deducted + benefits - state.deduction.get(status);
     walk_brackets(state.brackets.for_status(status), taxable)
+}
+
+/// What of a person's ordinary income the state taxes in `year`. A row
+/// exempts what a source holds and no more, so one that reduces income is
+/// left as it is.
+fn taxed_of(state: &StateParams, person: &PersonIncome, year: i16) -> Dollars {
+    let mut by_source = person.by_source;
+    if state.taxes_deferrals {
+        by_source[Source::Deferral as usize] = 0;
+    }
+    for row in &state.exclusions {
+        if row
+            .from_age
+            .is_some_and(|age| !is_age_reached(person.birth, age, year))
+        {
+            continue;
+        }
+        for &source in &row.sources {
+            let held = &mut by_source[source as usize];
+            *held = (*held).min(0);
+        }
+    }
+    by_source.iter().sum()
 }

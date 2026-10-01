@@ -135,8 +135,27 @@ fn scale_brackets(brackets: &mut PerStatus<Vec<Bracket>>, factor: f64) {
     }
 }
 
+/// Sets every bracket to the rate its table says the law has set by `year`.
+pub(super) fn step_rates(params: &mut TaxParams, year: i16) {
+    let states = params.states.values_mut().map(|state| &mut state.brackets);
+    for brackets in std::iter::once(&mut params.brackets).chain(states) {
+        for bracket in brackets
+            .single
+            .iter_mut()
+            .chain(&mut brackets.married_joint)
+        {
+            let begun = bracket.later.iter().filter(|step| step.from <= year);
+            if let Some(step) = begun.max_by_key(|step| step.from) {
+                bracket.rate = step.rate;
+            }
+        }
+    }
+}
+
 pub(super) fn inflate_state(state: &mut StateParams, factor: f64) {
-    state.deduction = scale_status(state.deduction, factor);
+    if !state.deduction_unindexed {
+        state.deduction = scale_status(state.deduction, factor);
+    }
     scale_brackets(&mut state.brackets, factor);
 }
 

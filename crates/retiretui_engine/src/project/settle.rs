@@ -1,6 +1,6 @@
 use crate::params::{Source, StateParams, TaxParams};
 use crate::plan::{Account, Dollars, FilingStatus, Person, TreatmentClass};
-use crate::tax;
+use crate::tax::{self, StateIncome};
 
 use super::Taxes;
 use super::ira::ira_deducted;
@@ -9,8 +9,8 @@ use super::scale;
 use super::year::{Simulation, YearAcc};
 
 const MAX_TAX_ITERATIONS: usize = 30;
-const PENALTY_FREE_YEARS: i64 = 59;
-const PENALTY_FREE_MONTHS: i64 = 6;
+/// IRC §72(t)(2)(A)(i).
+const PENALTY_FREE_AGE: f64 = 59.5;
 /// IRC §72(t)(2)(A)(v).
 const SEPARATION_AGE: i16 = 55;
 /// IRC §72(t)(10).
@@ -235,9 +235,14 @@ fn compute_taxes(
     let early = params.early_withdrawal;
     let penalty =
         scale(acc.penalty_base, early.penalty) + scale(acc.hsa_penalty_base, early.hsa_penalty);
-    let state = state.map_or(0, |state| {
-        tax::state_tax(state, status, other_income, taxable_ss)
-    });
+    let income = StateIncome {
+        year: params.year,
+        people: &acc.taxed,
+        gains: acc.gains,
+        taxable_social_security: taxable_ss,
+        ira_deducted: deducted,
+    };
+    let state = state.map_or(0, |state| tax::state_tax(state, status, &income));
     Taxes {
         ordinary,
         ltcg,
@@ -253,12 +258,5 @@ fn compute_taxes(
 }
 
 fn is_penalty_free_age(person: &Person, year: i16) -> bool {
-    let span = jiff::Span::new()
-        .years(PENALTY_FREE_YEARS)
-        .months(PENALTY_FREE_MONTHS);
-    person
-        .birth
-        .0
-        .checked_add(span)
-        .is_ok_and(|date| date.year() <= year)
+    tax::is_age_reached(person.birth, PENALTY_FREE_AGE, year)
 }

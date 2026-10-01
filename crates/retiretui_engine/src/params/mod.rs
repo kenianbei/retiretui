@@ -15,9 +15,9 @@ mod states;
 
 pub use index::Inflation;
 pub(crate) use index::scale;
-use index::{inflate, inflate_state};
+use index::{inflate, inflate_state, step_rates};
 pub use limits::{ContributionLimits, EarlyWithdrawal, IrmaaTier, PhaseOut, RmdDivisor, RmdTable};
-pub use states::{Source, StateParams};
+pub use states::{Exclusion, Source, StateParams};
 
 /// The tax parameter file schema version this build reads.
 const PARAMS_SCHEMA_VERSION: u32 = 1;
@@ -86,7 +86,7 @@ impl<T: Copy> PerStatus<T> {
 }
 
 /// One ordinary-income bracket: `rate` applies above `over`.
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub struct Bracket {
@@ -98,6 +98,21 @@ pub struct Bracket {
     /// inflated past the last known year.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub unindexed: bool,
+    /// Rates the law has already set for years after the table's own; the
+    /// latest that has begun is the year's `rate`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub later: Vec<RateStep>,
+}
+
+/// A bracket's rate from a year on.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[serde(deny_unknown_fields)]
+pub struct RateStep {
+    /// The first year the rate applies.
+    pub from: i16,
+    /// Marginal rate.
+    pub rate: f64,
 }
 
 /// Standard deductions.
@@ -374,6 +389,7 @@ impl TaxTables {
                 params.states.insert(code.clone(), state);
             }
         }
+        step_rates(&mut params, year);
         params
     }
 }

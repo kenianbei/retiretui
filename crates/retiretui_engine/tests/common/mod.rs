@@ -67,6 +67,15 @@ pub fn with_override() -> TaxTables {
     tables
 }
 
+/// The embedded tables with `state` - a `[states.xx]` table and whatever
+/// hangs off it - added to 2026's.
+pub fn tables_with(state: &str) -> TaxTables {
+    let text = format!("{}\n{state}", include_str!("../../tax/2026.toml"));
+    let mut tables = TaxTables::embedded();
+    tables.add_source(&text, "test").unwrap();
+    tables
+}
+
 /// What `year` drew on `account`, what the year taxed, and the penalty it
 /// paid.
 #[track_caller]
