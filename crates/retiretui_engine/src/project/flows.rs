@@ -40,9 +40,9 @@ impl Simulation<'_> {
             if take <= 0 {
                 continue;
             }
-            let distributed = self.move_between_accounts(from, to, take);
+            let distributed = self.move_between_accounts(from, to, take, year);
             acc.ordinary += distributed;
-            if self.is_penalized(from, year) {
+            if self.pays_penalty(&self.plan.accounts[from], year) {
                 acc.penalty_base += distributed;
             }
             acc.actions.push(Action::Transfer {
@@ -54,9 +54,17 @@ impl Simulation<'_> {
     }
 
     /// Moves `take` and answers the part of it taxed as a distribution.
-    fn move_between_accounts(&mut self, from: usize, to: usize, take: Dollars) -> Dollars {
+    /// What a qualified Roth account gives up arrives as money paid in.
+    fn move_between_accounts(
+        &mut self,
+        from: usize,
+        to: usize,
+        take: Dollars,
+        year: i16,
+    ) -> Dollars {
         let from_account = &self.plan.accounts[from];
         let to_account = &self.plan.accounts[to];
+        let is_paid_in = self.is_qualified_roth(from, year);
         let basis_out = if from_account.keeps_basis() {
             self.remove_basis(from, take)
         } else {
@@ -67,15 +75,16 @@ impl Simulation<'_> {
         let is_distribution = from_account.treatment() == TreatmentClass::Deferred
             && to_account.treatment() == TreatmentClass::Taxable;
         if to_account.keeps_basis() {
-            self.bases[to] += if is_distribution { take } else { basis_out };
+            let is_whole = is_distribution || is_paid_in;
+            self.bases[to] += if is_whole { take } else { basis_out };
         }
+        self.open_roth(to, year);
         if is_distribution { take - basis_out } else { 0 }
     }
 
     /// The untaxed part of `take` from an account: pro rata over the
     /// account's basis and balance - or, for an IRA, over the owner's IRAs
-    /// together, as Form 8606 has it, the account taken from giving up its
-    /// basis first and then the others.
+    /// of its tax treatment together, as Form 8606 has it.
     pub(super) fn remove_basis(&mut self, index: usize, take: Dollars) -> Dollars {
         let (basis, balance) = self.basis_pool(index).fold((0, 0), |(basis, balance), i| {
             (basis + self.bases[i], balance + self.balances[i])
@@ -86,6 +95,13 @@ impl Simulation<'_> {
         let removed = scale(take, basis as f64 / balance as f64)
             .min(take)
             .min(basis);
+        self.take_basis(index, removed);
+        removed
+    }
+
+    /// Takes `removed` out of the basis `index` pools, the account itself
+    /// giving up its own first and then the others.
+    pub(super) fn take_basis(&mut self, index: usize, removed: Dollars) {
         let mut left = removed;
         let others: Vec<usize> = self.basis_pool(index).filter(|&i| i != index).collect();
         for i in std::iter::once(index).chain(others) {
@@ -93,17 +109,16 @@ impl Simulation<'_> {
             self.bases[i] -= cut;
             left -= cut;
         }
-        removed
     }
 
     /// The accounts whose basis is one pool with `index`'s: the owner's
-    /// traditional IRAs together, any other account alone.
-    fn basis_pool(&self, index: usize) -> impl Iterator<Item = usize> + '_ {
+    /// IRAs of its tax treatment together, any other account alone.
+    pub(super) fn basis_pool(&self, index: usize) -> impl Iterator<Item = usize> + '_ {
         let account = &self.plan.accounts[index];
         let is_pooled = move |(i, other): (usize, &Account)| {
             let is_same_pool = other.kind.is_ira()
                 && other.owner == account.owner
-                && other.treatment() == TreatmentClass::Deferred;
+                && other.treatment() == account.treatment();
             (i == index || (account.kind.is_ira() && is_same_pool)).then_some(i)
         };
         self.plan.accounts.iter().enumerate().filter_map(is_pooled)
@@ -181,6 +196,7 @@ impl Simulation<'_> {
             let untaxed = self.remove_basis(from, take);
             self.balances[from] -= take;
             self.balances[to] += take;
+            self.land_conversion(to, year, take - untaxed, untaxed);
             acc.ordinary += take - untaxed;
             acc.conversions += take;
             acc.actions.push(Action::Conversion {

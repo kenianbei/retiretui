@@ -3,7 +3,7 @@
 
 use retiretui_engine::optimize::{OptimizeOptions, SweptBracket, optimize_conversions};
 use retiretui_engine::params::{BenefitParams, Inflation, TaxParams, TaxTables};
-use retiretui_engine::plan::{Issue, Plan};
+use retiretui_engine::plan::{Dollars, Issue, Plan};
 use retiretui_engine::project::{Action, ContributionNote, Projection, project};
 
 pub const FULL: &str = include_str!("../fixtures/full.toml");
@@ -58,6 +58,24 @@ pub fn run(text: &str) -> Projection {
     project(&plan_from(text), &TaxTables::embedded())
 }
 
+/// The embedded tax tables under the override fixture's 2027.
+pub fn with_override() -> TaxTables {
+    let mut tables = TaxTables::embedded();
+    tables
+        .add_dir(std::path::Path::new("tests/fixtures/tax-override"))
+        .unwrap();
+    tables
+}
+
+/// What `year` drew on `account`, what the year taxed, and the penalty it
+/// paid.
+#[track_caller]
+pub fn drawn(projection: &Projection, account: &str, year: i16) -> [Dollars; 3] {
+    let row = projection.row(year).unwrap();
+    let amount = row.withdrawals.get(account).copied().unwrap_or(0);
+    [amount, row.taxes.magi, row.taxes.penalty]
+}
+
 #[track_caller]
 pub fn assert_issue(found: &[Issue], path: &str, message: &str) {
     assert!(
@@ -66,6 +84,29 @@ pub fn assert_issue(found: &[Issue], path: &str, message: &str) {
             .any(|issue| issue.path == path && issue.message.contains(message)),
         "no issue at `{path}` containing `{message}` in {found:?}"
     );
+}
+
+/// A plan from 2026 without inflation, for someone born in June of
+/// `birth_year`.
+pub fn born_in(birth_year: i16, body: &str) -> String {
+    format!(
+        r#"
+schema = 1
+
+[plan]
+start_year = 2026
+horizon_age = 70
+inflation = 0.0
+
+[household]
+filing = "single"
+
+[[household.people]]
+id = "me"
+birth = {birth_year}-06-15
+{body}
+"#
+    )
 }
 
 pub fn head(text: &str) -> String {

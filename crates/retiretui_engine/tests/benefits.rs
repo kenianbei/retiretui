@@ -251,11 +251,7 @@ start = { age = 67, owner = "me" }
     )
     .replace("start_year = 2026", "start_year = 2027");
     let plan = Plan::from_toml_str(&plan).unwrap();
-    let mut tables = TaxTables::embedded();
-    tables
-        .add_dir(std::path::Path::new("tests/fixtures/tax-override"))
-        .unwrap();
-    let issues = validate_plan(&plan, &tables);
+    let issues = validate_plan(&plan, &common::with_override());
     assert!(
         issues
             .iter()

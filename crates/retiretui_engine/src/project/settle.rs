@@ -52,20 +52,48 @@ impl Simulation<'_> {
         taxes
     }
 
+    /// Takes `want` from the candidates in two passes: from each, in order,
+    /// what leaves it without penalty, then the rest, which only those a
+    /// penalty held back still have.
     fn drain(&mut self, order: &[usize], year: i16, want: Dollars, acc: &mut YearAcc) -> Dollars {
         let mut remaining = want;
-        for penalized_pass in [false, true] {
+        for is_free_pass in [true, false] {
             for &index in order {
                 if remaining <= 0 {
                     break;
                 }
-                if self.is_penalized(index, year) != penalized_pass {
+                if self.balances[index] <= 0 {
                     continue;
                 }
-                remaining -= self.withdraw(index, remaining, penalized_pass, acc);
+                let limit = if is_free_pass {
+                    remaining.min(self.penalty_free_room(index, year, acc))
+                } else {
+                    remaining
+                };
+                remaining -= self.withdraw(index, limit, year, acc);
             }
         }
         want - remaining
+    }
+
+    /// What can leave the account in `year` without paying a penalty:
+    /// without limit where none can reach it.
+    fn penalty_free_room(&self, index: usize, year: i16, acc: &YearAcc) -> Dollars {
+        let account = &self.plan.accounts[index];
+        match account.treatment() {
+            TreatmentClass::Roth => self.roth_room(index, year),
+            TreatmentClass::Hsa if self.is_under_medicare_age(account, year) => acc.medical,
+            TreatmentClass::Deferred if self.pays_penalty(account, year) => 0,
+            TreatmentClass::Deferred | TreatmentClass::Taxable | TreatmentClass::Hsa => {
+                Dollars::MAX
+            }
+        }
+    }
+
+    fn is_under_medicare_age(&self, account: &Account, year: i16) -> bool {
+        self.plan
+            .person(&account.owner)
+            .is_none_or(|owner| !tax::is_medicare_covered(owner, year))
     }
 
     fn drain_candidates(&self, year: i16) -> Vec<usize> {
@@ -98,14 +126,21 @@ impl Simulation<'_> {
         }
     }
 
-    pub(super) fn is_penalized(&self, index: usize, year: i16) -> bool {
-        let account = &self.plan.accounts[index];
-        if account.treatment() != TreatmentClass::Deferred || tax::is_penalty_exempt(account.kind) {
+    /// Whether the penalty reaches the account in `year`: its owner under
+    /// 59½, its kind not exempt, its job not left at the age that frees it.
+    pub(super) fn pays_penalty(&self, account: &Account, year: i16) -> bool {
+        if tax::is_penalty_exempt(account.kind) {
             return false;
         }
         self.plan.person(&account.owner).is_none_or(|owner| {
             !is_penalty_free_age(owner, year) && !self.is_freed_by_separation(account, owner, year)
         })
+    }
+
+    pub(super) fn is_under_penalty_age(&self, account: &Account, year: i16) -> bool {
+        self.plan
+            .person(&account.owner)
+            .is_none_or(|owner| !is_penalty_free_age(owner, year))
     }
 
     /// Whether the owner has left the job the plan is with by `year`, in or
@@ -124,23 +159,38 @@ impl Simulation<'_> {
             .is_some_and(|left| left <= year && owner.age_in_year(left) >= freeing_age)
     }
 
-    fn withdraw(
-        &mut self,
-        index: usize,
-        want: Dollars,
-        is_penalized: bool,
-        acc: &mut YearAcc,
-    ) -> Dollars {
+    fn withdraw(&mut self, index: usize, want: Dollars, year: i16, acc: &mut YearAcc) -> Dollars {
         let take = want.min(self.balances[index]);
         if take <= 0 {
             return 0;
         }
         let account = &self.plan.accounts[index];
-        let untaxed = if account.keeps_basis() {
-            self.remove_basis(index, take)
-        } else {
-            0
-        };
+        match account.treatment() {
+            TreatmentClass::Deferred => {
+                let taxed = take - self.remove_basis(index, take);
+                acc.ordinary += taxed;
+                if self.pays_penalty(account, year) {
+                    acc.penalty_base += taxed;
+                }
+            }
+            TreatmentClass::Taxable if account.kind.tracks_basis() => {
+                acc.gains += take - self.remove_basis(index, take);
+            }
+            TreatmentClass::Roth => {
+                let draw = self.draw_roth(index, take, year);
+                acc.ordinary += draw.taxed;
+                acc.penalty_base += draw.penalized;
+            }
+            TreatmentClass::Hsa => {
+                let medical = take.min(acc.medical);
+                acc.medical -= medical;
+                acc.ordinary += take - medical;
+                if self.is_under_medicare_age(account, year) {
+                    acc.hsa_penalty_base += take - medical;
+                }
+            }
+            TreatmentClass::Taxable => {}
+        }
         self.balances[index] -= take;
         acc.drained_cash += take;
         *acc.withdrawals.entry(account.id.clone()).or_default() += take;
@@ -151,18 +201,6 @@ impl Simulation<'_> {
         {
             Some((_, total)) => *total += take,
             None => acc.funding.push((index, take)),
-        }
-        match account.treatment() {
-            TreatmentClass::Deferred => {
-                acc.ordinary += take - untaxed;
-                if is_penalized {
-                    acc.penalty_base += take - untaxed;
-                }
-            }
-            TreatmentClass::Taxable if account.kind.tracks_basis() => {
-                acc.gains += take - untaxed;
-            }
-            TreatmentClass::Taxable | TreatmentClass::Roth | TreatmentClass::Hsa => {}
         }
         take
     }
@@ -187,7 +225,9 @@ fn compute_taxes(
     let ordinary_taxable = acc.ordinary - deducted + taxable_ss - deduction;
     let ordinary = tax::ordinary_tax(params, status, ordinary_taxable);
     let ltcg = tax::ltcg_tax(params, status, ordinary_taxable, acc.gains);
-    let penalty = scale(acc.penalty_base, params.early_withdrawal.penalty);
+    let early = params.early_withdrawal;
+    let penalty =
+        scale(acc.penalty_base, early.penalty) + scale(acc.hsa_penalty_base, early.hsa_penalty);
     let state = state.map_or(0, |state| {
         tax::state_tax(state, status, other_income, taxable_ss)
     });

@@ -30,4 +30,7 @@ pub struct Expense {
     /// nominal (`false`), or a fixed annual rate of its own.
     #[serde(default)]
     pub cola: ColaSpec,
+    /// Health spending, which an HSA pays without tax.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub medical: bool,
 }

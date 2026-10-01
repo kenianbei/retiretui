@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use crate::params::TaxTables;
-use crate::plan::{Account, ColaSpec, Dollars, Plan, Span};
+use crate::plan::{Account, ColaSpec, Dollars, Plan, Span, TreatmentClass};
 
 use super::benefit::{Derived, first_paid_months};
 use super::collect::{default_cliff_end, seed_magi_lookback};
@@ -22,6 +22,14 @@ pub(crate) struct Simulation<'a> {
     pub(super) end_year: i16,
     pub(super) balances: Vec<Dollars>,
     pub(super) bases: Vec<Dollars>,
+    /// What each owner's Roth IRAs still hold of each conversion into them
+    /// that was taxed, by the first year it is five years old, oldest
+    /// first.
+    pub(super) layers: BTreeMap<&'a str, Vec<(i16, Dollars)>>,
+    /// The first year each Roth account has been held five years, by
+    /// account index: the plan's first where it opens with money in, none
+    /// while it has held nothing.
+    pub(super) seasoned_from: Vec<Option<i16>>,
     pub(super) transfer_done: Vec<bool>,
     pub(super) conversion_done: Vec<bool>,
     pub(super) surplus_index: Option<usize>,
@@ -49,7 +57,10 @@ pub(super) struct YearAcc {
     pub(super) ss_gross: Dollars,
     pub(super) gains: Dollars,
     pub(super) penalty_base: Dollars,
+    pub(super) hsa_penalty_base: Dollars,
     pub(super) expenses: Dollars,
+    /// The year's medical spending no HSA draw has yet paid.
+    pub(super) medical: Dollars,
     pub(super) medicare: Dollars,
     pub(super) employee: Dollars,
     pub(super) employer: Dollars,
@@ -102,6 +113,16 @@ impl<'a> Simulation<'a> {
                 .map(|account| account.balance)
                 .collect(),
             bases: plan.accounts.iter().map(Account::starting_basis).collect(),
+            layers: BTreeMap::new(),
+            seasoned_from: plan
+                .accounts
+                .iter()
+                .map(|account| {
+                    let is_held =
+                        account.treatment() == TreatmentClass::Roth && account.balance > 0;
+                    is_held.then_some(plan.plan.start_year)
+                })
+                .collect(),
             transfer_done: vec![false; plan.transfers.len()],
             conversion_done: vec![false; plan.conversions.len()],
             surplus_index,

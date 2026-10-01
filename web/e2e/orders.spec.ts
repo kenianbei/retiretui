@@ -11,7 +11,7 @@ import {
   test,
 } from "./support";
 
-const BEST = "Deferred, taxable, Roth, HSA";
+const BEST = "Roth, deferred, taxable, HSA";
 
 test("the orders are ranked, the best said on the Overview, and one taken and written", async ({
   page,
@@ -24,7 +24,7 @@ test("the orders are ranked, the best said on the Overview, and one taken and wr
   );
   const card = page.getByRole("region", { name: "Could do better" });
   const said = card.getByRole("link", {
-    name: /^Withdraw in the order deferred, taxable, Roth, HSA: ends \+\$/,
+    name: /^Withdraw in the order Roth, deferred, taxable, HSA: ends \+\$/,
   });
   await expect(said).toBeVisible(SEARCH);
   await said.click();
@@ -48,9 +48,9 @@ test("the orders are ranked, the best said on the Overview, and one taken and wr
     await expect(rows.nth(1)).toContainText(SIGNED_MONEY);
   }
 
-  const another = "Roth, deferred, taxable, HSA";
+  const another = "Deferred, Roth, taxable, HSA";
   await rowNamed(page, testInfo, another).click();
-  await page.waitForURL(/order=roth-deferred-taxable-hsa/);
+  await page.waitForURL(/order=deferred-roth-taxable-hsa/);
   await page.reload();
   await expect(take).toBeVisible(SEARCH);
   await searchesDone(page);
@@ -61,7 +61,7 @@ test("the orders are ranked, the best said on the Overview, and one taken and wr
   ).toBeVisible();
   await asked.getByRole("button", { name: "Take", exact: true }).click();
   await expect(
-    page.getByText("now withdrawing in the order Roth, deferred, taxable, HSA"),
+    page.getByText("now withdrawing in the order deferred, Roth, taxable, HSA"),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Undo" }).first(),

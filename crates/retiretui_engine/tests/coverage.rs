@@ -3,12 +3,10 @@
 
 mod common;
 
-use std::path::Path;
-
 use retiretui_engine::params::{Inflation, PhaseOut, TaxTables};
 use retiretui_engine::project::{ContributionNote, Projection, project};
 
-use common::{assert_issue, contribution, head, issues, plan_from, run};
+use common::{assert_issue, contribution, head, issues, plan_from, run, with_override};
 
 const IRA: &str = r#"
 [[accounts]]
@@ -89,14 +87,6 @@ covered = true
 "#
     ));
     text.replace("filing = \"single\"", "filing = \"married-joint\"")
-}
-
-fn with_override() -> TaxTables {
-    let mut tables = TaxTables::embedded();
-    tables
-        .add_dir(Path::new("tests/fixtures/tax-override"))
-        .unwrap();
-    tables
 }
 
 fn not_deducted(projection: &Projection, year: usize, account: &str) -> i64 {

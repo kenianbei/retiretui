@@ -119,6 +119,7 @@ impl<'a> Simulation<'a> {
         }
         for (index, paid) in paid.into_iter().enumerate() {
             if paid.employee > 0 || paid.employer > 0 || paid.after_tax > 0 {
+                self.open_roth(index, year);
                 self.deposit(index, paid, &covered, acc);
             }
         }
@@ -217,7 +218,8 @@ impl<'a> Simulation<'a> {
 
     /// Lands the year's payments in the account: pending until growth,
     /// the employee's pre-tax part deducted where the kind defers tax, and
-    /// what was never taxed or already was kept as basis. A traditional
+    /// what was never taxed or already was kept as basis, as what the
+    /// employee pays into a Roth account is. A traditional
     /// IRA contribution by someone a workplace plan covers, or by their
     /// spouse, waits for the year's MAGI to say how much of it is deducted.
     fn deposit(
@@ -253,7 +255,8 @@ impl<'a> Simulation<'a> {
             }
             TreatmentClass::Hsa => acc.ordinary -= paid.employee,
             TreatmentClass::Taxable if account.kind.tracks_basis() => self.bases[index] += total,
-            TreatmentClass::Taxable | TreatmentClass::Roth => {}
+            TreatmentClass::Roth => self.bases[index] += paid.employee + paid.after_tax,
+            TreatmentClass::Taxable => {}
         }
     }
 }

@@ -7,32 +7,9 @@ use std::ops::RangeInclusive;
 use retiretui_engine::plan::{Dollars, Plan};
 use retiretui_engine::project::Projection;
 
-use common::{assert_issue, head, issues, plan_from, run};
+use common::{assert_issue, born_in, head, issues, plan_from, run};
 
 const PENALTY_RATE: f64 = 0.10;
-
-/// A plan from 2026 without inflation, for someone born in June of
-/// `birth_year`.
-fn born_in(birth_year: i16, body: &str) -> String {
-    format!(
-        r#"
-schema = 1
-
-[plan]
-start_year = 2026
-horizon_age = 70
-inflation = 0.0
-
-[household]
-filing = "single"
-
-[[household.people]]
-id = "me"
-birth = {birth_year}-06-15
-{body}
-"#
-    )
-}
 
 /// Someone who lives on a 401(k) alone, its table ended by `stated`.
 fn living_on_a_plan(birth_year: i16, stated: &str) -> String {
@@ -265,7 +242,7 @@ fn a_transfer_to_a_taxable_account_pays_the_penalty_a_withdrawal_would() {
 }
 
 #[test]
-fn only_a_tax_deferred_workplace_plan_states_when_its_job_is_left() {
+fn only_a_workplace_plan_states_when_its_job_is_left() {
     let stating = |account: &str| {
         issues(&living_on_a_plan(
             1970,
@@ -290,7 +267,7 @@ fn only_a_tax_deferred_workplace_plan_states_when_its_job_is_left() {
         assert_issue(&found, "accounts[2].separated", "is freed by leaving a job");
     }
     let roth = stating(&format!("kind = \"401k\"\nroth = true\n{left}"));
-    assert_issue(&roth, "accounts[2].separated", "is freed by leaving a job");
+    assert!(roth.is_empty(), "{roth:?}");
     let flag_alone = stating("kind = \"401k\"\npublic_safety = true");
     assert_issue(
         &flag_alone,

@@ -217,7 +217,7 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `OrderSearch` and `OrderCandidate`. The JavaScript bindings gain `orders`,
   `orderWords`, and the document's `takeOrder` and `orderScenario`, with the
   types `OrderOptions`, `OrderOption`, `OrderWords` and `TreatmentClass`.
-- The rule of 55. A tax-deferred 401(k), 403(b) or 414(k) states `separated`,
+- The rule of 55. A 401(k), 403(b) or 414(k), Roth or not, states `separated`,
   when its owner leaves the job the plan is with: a date, an age, or the event
   the salary ends on, and a date in the past for a job already left. Left in or
   after the year the owner turns 55, the plan pays no early-withdrawal penalty
@@ -225,14 +225,38 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   than last. `public_safety = true` beside it lowers the age to 50, for a
   public-safety employee of the plan's employer. Money rolled out of the plan
   into an IRA pays the penalty again until 59 and a half. Any other kind of
-  account, and a Roth one, is refused the field, and the flag is refused alone.
-  The Accounts form of the terminal and the web asks "Job left" of such a plan,
-  and "Public safety" once it is answered. Not modeled: 25 years of service in
-  place of the public-safety age, and a 72(t) series of equal payments.
+  account is refused the field, and the flag is refused alone. The Accounts form
+  of the terminal and the web asks "Job left" of such a plan, and "Public
+  safety" once it is answered. Not modeled: 25 years of service in place of the
+  public-safety age, and a 72(t) series of equal payments.
 - A year that pays the early-withdrawal penalty says so among its warnings,
   `Early-withdrawal penalty paid this year: $10,000`, in the dollars shown: on
   the Overview and the Ledger of the terminal and the web, and from `actions`
   and the MCP server's actions tool.
+- An early Roth withdrawal is priced as the law orders it. A Roth account keeps
+  a `basis`, what was paid into it, the whole balance where left blank. Until
+  its owner is 59 and a half and the account has been held five years, a
+  person's Roth IRAs give up, as one, what was paid in first, untaxed; then each
+  conversion the plan makes, oldest first, which pays the early-withdrawal
+  penalty inside five years of it; then earnings, taxed as ordinary income and
+  penalized. A Roth 401(k), 403(b) or 457(b) gives up what was paid in pro rata,
+  its earnings taxed and penalized the same way, though never penalized in a
+  457(b) or a plan the rule of 55 frees. A Roth holding a balance at plan start
+  has been held its five years, and one that opens empty counts them from its
+  first contribution, conversion or transfer in. What the employee contributes
+  and what is converted add to what was paid in, and a transfer out of a Roth
+  that is drawn untaxed arrives as money paid in. The Accounts form shows Basis
+  on a Roth account. Not modeled: earnings made before the plan where the basis
+  is left blank, conversions made in the five years before the plan, a Roth
+  opened in the four years before it, the five years of a conversion into a
+  workplace plan, and the first-home and disability exceptions.
+- An HSA withdrawal beyond the year's medical spending is taxed. An expense
+  states `medical = true`, "Medical" in the Expenses form, and the household's
+  HSAs pay the year's marked total untaxed. What they pay beyond it is ordinary
+  income, and until the year its owner turns 65 pays a 20% penalty besides. A
+  tax table states the rate as `hsa-penalty` under `[early-withdrawal]`, and the
+  Tax Tables list it. Not modeled: medical bills of earlier years reimbursed
+  later.
 
 ### Changed
 
@@ -343,7 +367,23 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The engine's `Account` gains `separated` and `public_safety`, so a struct
   literal of it written outside the engine must add them.
 - The MCP schema reference says who pays the early-withdrawal penalty, until
-  when, and what frees an account from it.
+  when, and what frees an account from it, and how a Roth and an HSA withdrawal
+  are taxed.
+- Every Roth and HSA withdrawal was untaxed at any age. A plan that draws a Roth
+  account before 59 and a half beyond what was paid in, or draws an HSA and
+  marks no expense `medical`, now pays tax and penalty on it. Its ledger, its
+  market runs and what its searches rank best can move: the withdrawal-order
+  search no longer finds an order better for emptying a Roth IRA at 50.
+- The withdrawal order is walked for what each account gives up without a
+  penalty before anything pays one. In its place in the order, a Roth IRA under
+  59 and a half gives up what was paid in and the conversions past their five
+  years, and an HSA under 65 the year's medical spending. The rest of each comes
+  after every other account, as a penalized tax-deferred account does.
+- The engine's `AccountKind::keeps_basis` answers true for a Roth account, and
+  validation accepts `basis` on one. `Expense` gains `medical` and
+  `EarlyWithdrawal` gains `hsa_penalty`, so a struct literal of either written
+  outside the engine must add it. A tax table that leaves `hsa-penalty` out
+  charges 20%.
 
 ### Fixed
 

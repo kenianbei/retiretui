@@ -15,7 +15,7 @@ expression: composed_frame(app)
 │  Conversions    1 ││                                                                                                                                            │ │  Starts         Plan start       │
 │  Contributions  3 ││                                                                                                                                            │ │  Ends           Plan end         │
 │  Events         1 ││                                                                                                                                            │ │  Growth         Inflation        │
-│  People         2 ││                                                                                                                                            │ │                                  │
+│  People         2 ││                                                                                                                                            │ │  Medical                         │
 │  Residency      1 ││                                                                                                                                            │ │                                  │
 │  Household        ││                                                                                                                                            │ │                                  │
 │  Settings         ││                                                                                                                                            │ │                                  │

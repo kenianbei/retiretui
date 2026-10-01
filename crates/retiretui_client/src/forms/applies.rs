@@ -130,8 +130,7 @@ pub(crate) fn supports_roth(item: &Table) -> bool {
 /// Whether leaving the job the account is with can free it from the
 /// early-withdrawal penalty.
 pub(crate) fn frees_on_separation(item: &Table) -> bool {
-    let is_roth = item.get(ROTH_KEY).and_then(Value::as_bool) == Some(true);
-    account_is(item, |kind| kind.frees_on_separation(is_roth))
+    account_is(item, AccountKind::frees_on_separation)
 }
 
 /// Whether the account says when its job is left, and so has an age to
@@ -224,14 +223,15 @@ mod tests {
     fn an_account_s_kind_decides_what_it_can_hold() {
         assert!(keeps_basis(&item("kind = \"brokerage\"")));
         assert!(keeps_basis(&item("kind = \"ira\"")));
-        assert!(!keeps_basis(&item("kind = \"ira\"\nroth = true")));
+        assert!(keeps_basis(&item("kind = \"ira\"\nroth = true")));
+        assert!(!keeps_basis(&item("kind = \"hsa\"")));
         assert!(!keeps_basis(&item("kind = \"cash\"")));
         assert!(supports_roth(&item("kind = \"ira\"")));
         assert!(!keeps_basis(&Table::new()), "no kind holds nothing");
     }
 
     #[test]
-    fn only_a_tax_deferred_workplace_plan_is_asked_when_its_job_is_left() {
+    fn only_a_workplace_plan_is_asked_when_its_job_is_left() {
         use super::super::Domain;
         use super::super::accounts::Accounts;
         let field = |key: &str| Accounts::FIELDS.iter().find(|field| field.key == key);
@@ -242,7 +242,7 @@ mod tests {
         for kind in ["457b", "ira", "brokerage"] {
             assert!(!left.is_shown_for(&item(&format!("kind = \"{kind}\""))));
         }
-        assert!(!left.is_shown_for(&item("kind = \"401k\"\nroth = true")));
+        assert!(left.is_shown_for(&item("kind = \"401k\"\nroth = true")));
         assert!(!left.is_shown_for(&Table::new()));
         let flag = field("public_safety").expect("the Account form asks it");
         assert!(!flag.is_shown_for(&item("kind = \"401k\"")));

@@ -6,13 +6,24 @@ use serde::{Deserialize, Serialize};
 use super::PerStatus;
 use crate::plan::{Dollars, FilingStatus};
 
+/// IRC §223(f)(4).
+const STATUTORY_HSA_PENALTY: f64 = 0.20;
+
+fn statutory_hsa_penalty() -> f64 {
+    STATUTORY_HSA_PENALTY
+}
+
 /// Early-withdrawal parameters.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct EarlyWithdrawal {
     /// Penalty rate on early distributions.
     pub penalty: f64,
+    /// Penalty rate on what an HSA pays before 65 that is not medical
+    /// spending; the statutory rate where a table leaves it out.
+    #[serde(default = "statutory_hsa_penalty")]
+    pub hsa_penalty: f64,
 }
 
 /// One row of the RMD Uniform Lifetime Table.

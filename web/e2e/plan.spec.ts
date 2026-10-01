@@ -182,3 +182,35 @@ test("a workplace plan asks when its job is left, and only then whether it is pu
   await expect(sheet).toHaveCount(0);
   await expect(page.locator("main")).toContainText("Public safety");
 });
+
+test("a Roth account says what was paid in, a Roth plan when its job is left, and an expense that it is medical", async ({
+  page,
+}) => {
+  await seed(
+    page,
+    { "/starter.toml": example("starter.toml") },
+    "/starter.toml",
+    "#/plan/accounts?edit=2",
+  );
+  const sheet = page.getByRole("dialog");
+  const id = sheet.getByLabel("ID", { exact: true });
+  const basis = sheet.getByLabel("Basis", { exact: true });
+  const left = sheet.getByLabel("Job left", { exact: true });
+  await expect(id).toHaveValue("roth-ira-sam");
+  await expect(basis).toBeVisible();
+  await expect(left).toHaveCount(0);
+
+  await page.goto("#/plan/expenses?edit=0");
+  await expect(id).toHaveValue("rent");
+  await sheet.getByRole("checkbox", { name: /^Medical/ }).check();
+  await expectAccessible(page);
+  await sheet.getByRole("button", { name: "Apply" }).click();
+  await expect(sheet).toHaveCount(0);
+  await expect(page.locator("main")).toContainText("Medical✓");
+
+  await page.goto("#/plan/accounts?edit=1");
+  await expect(id).toHaveValue("401k-sam");
+  await sheet.getByRole("checkbox", { name: /^Roth/ }).check();
+  await expect(basis).toBeVisible();
+  await expect(left).toBeVisible();
+});

@@ -7,9 +7,9 @@ expression: composed_frame(app)
 │1 Overview││2 Ledger││3 Compare││4 Tools││5 Plan│                                                                  full.toml ● 
 ╯          ╰┴────────┴┴─────────┴┴───────┴┴──────┴──────────────────────────────────────────────────────────────────────────────
  Money lasts                     Success                         Ends with                       Lifetime taxes                 
- Never short                     99.7% of 1,000 markets          $2.09M                          $697k                          
+ Never short                     99.6% of 1,000 markets          $2.09M                          $697k                          
 ╭ Milestones ──────────────────────────────────────────────────╮╭ Needs attention ─────────────────────────────────────────────╮
-│▏ 2032 inheritance arrives                                   ▲││▏ Fails from a 1968 start · 23 of 155 fail                    │
+│▏ 2032 inheritance arrives                                   ▲││▏ Fails from a 1968 start · 24 of 155 fail                    │
 │  2037 retire                                                █││                                                              │
 │  2037 db-pension starts                                     ║││                                                              │
 │  2037 401k-deferral ends                                    ▼││                                                              │
@@ -31,7 +31,7 @@ expression: composed_frame(app)
 ╰──────────────────────────────────────────────────────────────────────────╯╰──────────────────────────────────────────────────╯
 ╭ Could do better ─────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │▏ jordan: convert to 22%, ends +$56k                                                                                          │
-│  Withdraw in the order taxable, HSA, deferred, Roth: ends +$394                                                              │
+│  Withdrawal order as planned is best                                                                                         │
 │                                                                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
  ⏎ markets  ←→ year  ⇥ pane  v chart  e edit  ctrl-s save  r reload  q quit  ctrl-↓ tab  n dollars           : commands  ? help
