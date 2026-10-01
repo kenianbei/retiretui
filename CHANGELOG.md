@@ -453,8 +453,9 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   2,910 and 5,820 its department's withholding formulas give for 2026, where the
   table held an earlier estimate of 2,900 and 5,800. A plan living in Washington
   pays its excise in a year it realizes more than 290,000 of long-term gains.
-  `taxes.state` is what the state takes, an excise with its income tax. No plan
-  in another state modeled before projects differently.
+  `taxes.state` is what the state takes, an excise with its income tax. Of the
+  states 0.2.0 modeled, no other projects differently: each of the rest has no
+  income tax.
 - A year's resolved tax table, as `TaxTables::params_for` and the MCP
   `tax_parameters` tool give it, lists under a bracket's `later` only the rates
   still to come.
