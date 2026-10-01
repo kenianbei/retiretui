@@ -39,7 +39,8 @@ Unknown keys are rejected everywhere.
   Security benefit is indexed; same bounds as `inflation`. Default the tax
   table's own assumption.
 - `withdrawal_order` (array of treatment classes, optional) - classes drained in
-  order to cover shortfalls; default `["taxable", "deferred", "roth", "hsa"]`.
+  order to cover shortfalls; a class left out is never drained. Default
+  `["taxable", "deferred", "roth", "hsa"]`.
 - `surplus_to` (account id, optional) - receives unspent income; defaults to the
   first cash account.
 
@@ -408,4 +409,5 @@ or `monte_carlo` table replaces the base's whole. Within a matched item each
 stated field replaces the base field entirely - triggers never merge internally.
 `replace = true` substitutes the stated item wholesale, which is also how an
 optional field is cleared. `write_plan` accepts scenario documents and validates
-them fully resolved; `optimize_conversions` and `optimize_claims` emit one.
+them fully resolved; `optimize_conversions`, `optimize_claims` and
+`optimize_order` each emit one.

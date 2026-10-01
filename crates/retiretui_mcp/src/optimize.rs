@@ -4,7 +4,7 @@ use retiretui_client::searches::run_refusal;
 use retiretui_engine::market::Progress;
 use retiretui_engine::optimize::{
     OptimizeOptions, claims_overlay, ladder_overlay, optimize_claims, optimize_conversions,
-    sweep_brackets,
+    optimize_order, order_overlay, sweep_brackets,
 };
 use retiretui_engine::plan::PlanError;
 use rmcp::handler::server::wrapper::{Json, Parameters};
@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 
 use super::PlanServer;
 use retiretui_client::ladder::LadderConstraints;
-use retiretui_client::replies::{ClaimsReply, LadderReply, SweepReply};
+use retiretui_client::replies::{ClaimsReply, LadderReply, OrderReply, SweepReply};
 
 /// What the conversion tools take besides the ladder's constraints.
 #[derive(Deserialize, JsonSchema)]
@@ -64,6 +64,19 @@ pub struct ClaimToolArgs {
     #[serde(default)]
     pub nominal: bool,
     /// Store the best-ranked claims as a scenario overlay at this path
+    /// (`.toml`, relative to the served directory); its `base` points back
+    /// at `path`.
+    pub write_to: Option<String>,
+}
+
+#[derive(Deserialize, JsonSchema)]
+pub struct OrderToolArgs {
+    /// Plan or scenario path, relative to the served directory.
+    pub path: String,
+    /// Report nominal dollars instead of today's dollars.
+    #[serde(default)]
+    pub nominal: bool,
+    /// Store the best-ranked order as a scenario overlay at this path
     /// (`.toml`, relative to the served directory); its `base` points back
     /// at `path`.
     pub write_to: Option<String>,
@@ -149,6 +162,32 @@ impl PlanServer {
             })?;
         Ok(Json(WithOverlay {
             reply: ClaimsReply::new(&search, !args.nominal),
+            scenario_toml,
+            written,
+        }))
+    }
+
+    /// Try the treatment classes the plan's `withdrawal_order` lists in
+    /// every order they can be drained in, and rank the orders by what the
+    /// household ends with. A class the plan leaves out stays out, accounts
+    /// with a `drain_priority` still drain first, and orders that project
+    /// alike are one candidate. The best order is returned as a scenario
+    /// overlay document restating `[plan] withdrawal_order` and, with
+    /// `write_to`, stored through the validated write gate.
+    #[tool]
+    fn optimize_order(
+        &self,
+        Parameters(args): Parameters<OrderToolArgs>,
+    ) -> Result<Json<WithOverlay<OrderReply>>, String> {
+        let plan = self.load_valid_plan(&args.path)?;
+        let search =
+            optimize_order(&plan, &self.tables, &Progress::default()).map_err(run_refusal)?;
+        let (scenario_toml, written) =
+            self.emit_overlay(&args.path, args.write_to.as_deref(), |base| {
+                order_overlay(base, &search.best().order)
+            })?;
+        Ok(Json(WithOverlay {
+            reply: OrderReply::new(&search, !args.nominal),
             scenario_toml,
             written,
         }))

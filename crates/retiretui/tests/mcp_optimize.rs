@@ -85,3 +85,40 @@ fn optimize_claims_ranks_the_grid_and_stores_the_best() {
     );
     assert!(refused.contains("unknown income"), "{refused}");
 }
+
+#[test]
+fn optimize_order_ranks_the_orders_and_stores_the_best() {
+    let root = scratch_dir(
+        "mcp-order",
+        "plan.toml",
+        &[("opt.toml", OPT_PLAN), ("claims.toml", CLAIMS_PLAN)],
+    );
+    let mut client = McpClient::spawn(&root);
+    let reply = client.call(
+        "optimize_order",
+        json!({"path": "opt.toml", "write_to": "nested/order.toml"}),
+    );
+    let candidates = reply["candidates"].as_array().unwrap();
+    assert!(candidates.len() >= 2, "{reply}");
+    assert_eq!(
+        candidates[0]["order"],
+        json!(["taxable", "deferred", "roth", "hsa"]),
+        "{reply}"
+    );
+    assert_eq!(
+        candidates[0]["summary"], reply["baseline"],
+        "the plan's own order is best here: {reply}"
+    );
+    assert_eq!(reply["written"], true, "{reply}");
+    let scenario = reply["scenario_toml"].as_str().unwrap();
+    assert!(scenario.contains("base = \"../opt.toml\""), "{scenario}");
+    assert!(
+        scenario.contains("[plan]\nwithdrawal_order = ["),
+        "{scenario}"
+    );
+    let valid = client.call("validate_plan", json!({"path": "nested/order.toml"}));
+    assert_eq!(valid["issues"].as_array().unwrap().len(), 0, "{valid}");
+
+    let refused = client.call_expecting_error("optimize_order", json!({"path": "claims.toml"}));
+    assert!(refused.contains("nothing to order"), "{refused}");
+}

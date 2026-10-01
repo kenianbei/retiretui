@@ -31,6 +31,7 @@ fn lists_tools_and_finds_plans_recursively() {
         "optimize_conversions",
         "sweep_conversion_brackets",
         "optimize_claims",
+        "optimize_order",
         "plan_actions",
         "plan_monte_carlo",
         "plan_historical",

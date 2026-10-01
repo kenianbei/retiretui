@@ -3,6 +3,7 @@
 pub mod claims;
 pub mod ladders;
 pub mod markets;
+pub mod orders;
 pub mod overview;
 
 use retiretui_engine::market::RunError;
