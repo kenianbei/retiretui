@@ -86,6 +86,9 @@ fn state_tables_extend_with_inflation() {
     assert_eq!(oregon.brackets.single[1].over, 5_546);
     assert!((oregon.brackets.single[1].rate - 0.0675).abs() < f64::EPSILON);
     assert_eq!(oregon.brackets.single[3].over, 125_000, "set by statute");
+    let credit = |code: &str| later.states[code].exemption_credit.as_ref().unwrap();
+    assert_eq!(credit("or").per_person, 321);
+    assert_eq!(credit("ia").per_person, 40, "set by statute");
 }
 
 #[test]

@@ -212,6 +212,7 @@ mod tests {
         let iowa = rows("ia", 2026);
         assert_eq!(said(&iowa, CREDIT).as_deref(), Some("$40"));
         assert_eq!(said(&iowa, CREDIT_AT_65).as_deref(), Some("$20"));
+        assert_eq!(said(&iowa, DEDUCTION_AT_65), None);
     }
 
     #[test]
