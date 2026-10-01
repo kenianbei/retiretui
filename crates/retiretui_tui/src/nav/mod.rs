@@ -43,6 +43,8 @@ pub enum Page {
     RothConversions,
     /// Social Security claim ages searched, jointly for the household.
     SsaBenefits,
+    /// The orders the plan's accounts can be withdrawn from, searched.
+    WithdrawalOrder,
     /// The plan run through many random markets.
     MonteCarlo,
     /// The plan run from every historical start year.
@@ -111,12 +113,13 @@ impl Group {
 
 impl Page {
     /// Every page, in the order the tabs and the sidebars reach them.
-    pub const ALL: [Self; 21] = [
+    pub const ALL: [Self; 22] = [
         Self::Overview,
         Self::Ledger,
         Self::Compare,
         Self::RothConversions,
         Self::SsaBenefits,
+        Self::WithdrawalOrder,
         Self::MonteCarlo,
         Self::Historical,
         Self::TaxTables,
@@ -143,6 +146,7 @@ impl Page {
             Self::Compare => "Compare",
             Self::RothConversions => "Roth Conversions",
             Self::SsaBenefits => "SSA Benefits",
+            Self::WithdrawalOrder => "Withdrawal Order",
             Self::MonteCarlo => "Monte Carlo",
             Self::Historical => "Historical",
             Self::TaxTables => "Tax Tables",
@@ -171,6 +175,7 @@ impl Page {
             Self::Compare => "compare",
             Self::RothConversions => "roth-conversions",
             Self::SsaBenefits => "ssa-benefits",
+            Self::WithdrawalOrder => "withdrawal-order",
             Self::MonteCarlo => "monte-carlo",
             Self::Historical => "historical",
             Self::TaxTables => "tax-tables",
@@ -198,6 +203,7 @@ impl Page {
             Self::Compare => "compare the document with other files",
             Self::RothConversions => "search Roth conversion ladders",
             Self::SsaBenefits => "search Social Security claim ages",
+            Self::WithdrawalOrder => "search the order accounts are withdrawn from",
             Self::MonteCarlo => "run the plan through random markets",
             Self::Historical => "run the plan from every historical start year",
             Self::TaxTables => "read the tax tables the projection applies in the year",
@@ -239,6 +245,7 @@ impl Page {
             Self::Overview | Self::Ledger | Self::Compare => None,
             Self::RothConversions
             | Self::SsaBenefits
+            | Self::WithdrawalOrder
             | Self::MonteCarlo
             | Self::Historical
             | Self::TaxTables => Some(Group::Tools),

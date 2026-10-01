@@ -1,11 +1,14 @@
 //! What the Overview asks is better than the plan: each Roth owner's best
-//! ladder, the household's best claims, and the plan from every historical
-//! start, searched as the tools search them.
+//! ladder, the household's best claims and the best order to withdraw in,
+//! and the plan from every historical start, searched as the tools search
+//! them.
 
 use std::collections::BTreeSet;
 
 use retiretui_engine::market::{History, Progress, Runs, historical};
-use retiretui_engine::optimize::{ClaimSearch, optimize_claims, rank_key};
+use retiretui_engine::optimize::{
+    ClaimSearch, OrderSearch, optimize_claims, optimize_order, rank_key,
+};
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::{Plan, TreatmentClass};
 use retiretui_engine::project::Projection;
@@ -27,7 +30,7 @@ pub const REFUSED: &str = "not searchable under the Roth Conversions answers";
 pub const CLAIMS_AS_PLANNED: &str = "Claims as planned are best";
 
 /// What the card says where there is nothing to search.
-pub const NOTHING_TO_SEARCH: &str = "No conversion or claim to search";
+pub const NOTHING_TO_SEARCH: &str = "No conversion, claim or withdrawal order to search";
 
 /// A plan, the people whose claims are held as it states them, and the
 /// conversion answers held but the destination.
@@ -39,6 +42,8 @@ pub struct Found {
     pub historical: Option<Runs>,
     /// The claim search, where anything computes a benefit.
     pub claims: Option<ClaimSearch>,
+    /// The order search, where the plan withdraws from two classes or more.
+    pub order: Option<OrderSearch>,
     /// Each Roth owner's best ladder.
     pub ladders: Vec<Ladder>,
 }
@@ -63,6 +68,7 @@ pub fn search(
     let historical = historical(plan, tables, history, progress).ok();
     let held: Vec<String> = held.iter().cloned().collect();
     let claims = optimize_claims(plan, tables, &[], &held, progress).ok();
+    let order = optimize_order(plan, tables, progress).ok();
     let mut ladders = Vec::new();
     for owner in roth_owners(plan) {
         if progress.is_cancelled() {
@@ -76,6 +82,7 @@ pub fn search(
     Some(Found {
         historical,
         claims,
+        order,
         ladders,
     })
 }

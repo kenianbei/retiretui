@@ -9,10 +9,10 @@ expression: composed_frame(app)
 ╭ Tools ────────────╮╭ People ────────────────────────────────────────────╮╭ Claim Options ────────────────────────────────────╮
 │  Roth Conversions ││  Person  Earnings    Benefit 62 FRA 70             ││No one's Social Security benefit is computed from  │
 │▏ SSA Benefits     ││▌ jordan No record     Stated  -   -  -             ││a record, and no one without a benefit has an      │
-│  Monte Carlo      ││  alex   No record No benefit  -   -  -             ││earnings record to compute one from.               │
+│  Withdrawal Order ││  alex   No record No benefit  -   -  -             ││earnings record to compute one from.               │
+│  Monte Carlo      ││                                                    ││                                                   │
 │  Historical       ││                                                    ││                                                   │
 │  Tax Tables       ││                                                    ││                                                   │
-│                   ││                                                    ││                                                   │
 │                   ││                                                    ││                                                   │
 │                   ││                                                    ││                                                   │
 │                   ││                                                    ││                                                   │

@@ -2,8 +2,8 @@ use bevy_app::App;
 use plurimus::term::KeyCode;
 use retiretui_engine::market::Progress;
 use retiretui_engine::optimize::{
-    ClaimSearch, OptimizeOptions, SweptBracket, apply_claims, apply_ladder, optimize_claims,
-    rank_key, sweep_brackets,
+    ClaimSearch, OptimizeOptions, OrderSearch, SweptBracket, apply_claims, apply_ladder,
+    apply_order, optimize_claims, rank_key, sweep_brackets,
 };
 use retiretui_engine::plan::Plan;
 use retiretui_engine::project::Projection;
@@ -22,6 +22,7 @@ use crate::support::{
 use crate::tools::ladders::Swept;
 use crate::tools::ladders::tests::table_rows;
 use crate::tools::ladders::{self, Constraints, rate_label};
+use crate::tools::orders::tests::RETIREE;
 use crate::tools::{self, Claims, Found, Tool, settle_all};
 use retiretui_engine::market::Runs;
 
@@ -352,10 +353,45 @@ fn claims_already_at_their_best_say_so() {
 
 #[test]
 fn a_plan_with_nothing_to_search_says_so() {
-    let mut app = searched_app(scratch_plan(), TEST_PLAN, SIZE);
+    let one_class = TEST_PLAN.replace(
+        "inflation = 0.025",
+        "inflation = 0.025\nwithdrawal_order = [\"deferred\"]",
+    );
+    let mut app = searched_app(scratch_plan(), &one_class, SIZE);
     let frame = redrawn(&mut app);
     assert!(
-        frame.contains("No conversion or claim to search"),
+        frame.contains("No conversion, claim or withdrawal order to search"),
+        "{frame}"
+    );
+}
+
+#[test]
+fn the_order_search_shows_its_best_and_enter_opens_it() {
+    let mut app = searched_app(scratch_plan(), RETIREE, SIZE);
+    let found = app.world().resource::<Better>().found().unwrap();
+    let best = found.order.as_ref().expect("searched").best().clone();
+    let row = format!(
+        "Withdraw in the order taxable, Roth, deferred: {}",
+        ends(&app, &best.projection)
+    );
+    hold(&mut app, "Could do better");
+    let frame = redrawn(&mut app);
+    assert!(frame.contains(&row), "{row}: {frame}");
+    tools::hold::<OrderSearch>(&mut app, true);
+    press_key(&mut app, KeyCode::Down);
+    press_key(&mut app, KeyCode::Enter);
+    assert_eq!(active_page(&app), Page::WithdrawalOrder);
+    assert_taken::<OrderSearch>(&mut app);
+
+    tools::hold::<OrderSearch>(&mut app, false);
+    show(&mut app, Page::Overview);
+    commit_edit(&mut app, move |plan: &mut Plan| {
+        apply_order(plan, &best.order);
+    });
+    settle_all(&mut app);
+    let frame = redrawn(&mut app);
+    assert!(
+        frame.contains("Withdrawal order as planned is best"),
         "{frame}"
     );
 }

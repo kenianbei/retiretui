@@ -8,6 +8,7 @@ pub mod claims;
 pub mod ladders;
 pub mod markets;
 mod options;
+pub mod orders;
 pub mod tax;
 mod worker;
 mod write;
@@ -37,6 +38,7 @@ use retiretui_engine::plan::Plan;
 
 pub use claims::Claims;
 pub use ladders::Ladders;
+pub use orders::Orders;
 pub(crate) use worker::Keyed;
 pub use worker::Searches;
 pub use write::OVERLAY_OVER;
@@ -53,6 +55,7 @@ pub fn plugin(app: &mut App) {
     app.add_plugins((
         ladders::plugin,
         claims::plugin,
+        orders::plugin,
         markets::plugin,
         options::plugin_said,
         tax::plugin,
@@ -67,15 +70,19 @@ const NOTHING_SEARCHED_YET: &str = "nothing searched yet";
 pub struct Idle<'w> {
     ladders: Res<'w, Ladders>,
     claims: Res<'w, Claims>,
+    orders: Res<'w, Orders>,
 }
 
 impl Idle<'_> {
     /// Whether the command named `name` would refuse for want of a result.
     pub fn is_idle(&self, name: &str) -> bool {
-        use super::command::{TAKE_CLAIMS, TAKE_LADDER, WRITE_CLAIMS, WRITE_LADDER};
+        use super::command::{
+            TAKE_CLAIMS, TAKE_LADDER, TAKE_ORDER, WRITE_CLAIMS, WRITE_LADDER, WRITE_ORDER,
+        };
         match name {
             WRITE_LADDER | TAKE_LADDER => self.ladders.highlighted_bracket().is_none(),
             WRITE_CLAIMS | TAKE_CLAIMS => self.claims.found().is_none(),
+            WRITE_ORDER | TAKE_ORDER => self.orders.found().is_none(),
             _ => false,
         }
     }
@@ -377,6 +384,7 @@ fn poll_search<R: Found>(
 #[cfg(test)]
 pub fn settle_all(app: &mut bevy_app::App) {
     settle_claims(app);
+    settle::<retiretui_engine::optimize::OrderSearch>(app);
     settle::<ladders::Swept>(app);
     settle::<retiretui_engine::market::MonteCarlo>(app);
     settle::<retiretui_engine::market::Runs>(app);

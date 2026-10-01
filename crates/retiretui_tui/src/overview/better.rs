@@ -1,16 +1,16 @@
 //! Could do better: each Roth owner's conversion sweep, the household's
-//! claim search and the plan from every historical start, searched beside
-//! the frames while the Overview is shown - as the Roth
-//! Conversions, SSA Benefits and Historical pages search them, under the
-//! conversion answers and the claims those pages hold - and the answer
-//! kept for what it describes.
+//! claim search, the order search and the plan from every historical start,
+//! searched beside the frames while the Overview is shown - as the Roth
+//! Conversions, SSA Benefits, Withdrawal Order and Historical pages search
+//! them, under the conversion answers and the claims those pages hold - and
+//! the answer kept for what it describes.
 
 use std::collections::BTreeSet;
 
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::prelude::{Res, ResMut, Resource};
 use retiretui_engine::market::{History, Runs};
-use retiretui_engine::optimize::ClaimSearch;
+use retiretui_engine::optimize::{ClaimSearch, OrderSearch};
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::Plan;
 
@@ -22,6 +22,7 @@ use crate::tools::claims::HeldClaims;
 use crate::tools::ladders::{self, Swept};
 use crate::tools::markets::MarketHistory;
 use crate::tools::{Keyed, Searches};
+use retiretui_client::searches::orders::order_said;
 use retiretui_client::searches::overview::{
     Found, NOTHING_TO_SEARCH, Searched, claims_said, ladder_said, search,
 };
@@ -54,6 +55,11 @@ impl Better {
             return None;
         }
         found.claims.as_ref()
+    }
+
+    /// The order search over `plan`, where it is answered.
+    pub(crate) fn order(&self, plan: &Plan) -> Option<&OrderSearch> {
+        self.found_over(plan)?.1.order.as_ref()
     }
 
     /// The plan from every start year, where it is answered.
@@ -157,7 +163,7 @@ pub(super) fn work(
 }
 
 /// The Could do better rows: each Roth owner's best ladder, then the best
-/// claims, each against the plan as it stands.
+/// claims and the best order, each against the plan as it stands.
 pub(super) fn entries(better: &Better, projected: &Projected, nominal: bool) -> Vec<Entry> {
     let Some(found) = better.found() else {
         return vec![quiet(super::PENDING)];
@@ -177,6 +183,10 @@ pub(super) fn entries(better: &Better, projected: &Projected, nominal: bool) -> 
     rows.extend(found.claims.as_ref().map(|search| {
         let text = claims_said(plan, search, current, nominal);
         Entry::leading(text, (Page::SsaBenefits, None))
+    }));
+    rows.extend(found.order.as_ref().map(|search| {
+        let text = order_said(search, current, nominal);
+        Entry::leading(text, (Page::WithdrawalOrder, None))
     }));
     if rows.is_empty() {
         rows.push(quiet(NOTHING_TO_SEARCH));
