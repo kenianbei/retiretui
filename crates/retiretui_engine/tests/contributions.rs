@@ -2,17 +2,15 @@
 
 mod common;
 
-use retiretui_engine::params::{Inflation, TaxTables};
 use retiretui_engine::plan::{AccountKind, FilingStatus};
 use retiretui_engine::project::ContributionNote;
 use retiretui_engine::tax;
 
-use common::{contribution, head, run};
+use common::{contribution, head, params_2026, run};
 
 /// The 2026 limit for a single person under fifty, as the table has it.
 fn limit_2026(kind: AccountKind) -> i64 {
-    let params = TaxTables::embedded().params_for(2026, &Inflation::constant(0.0));
-    tax::employee_limit(&params, FilingStatus::Single, kind, 46).unwrap()
+    tax::employee_limit(&params_2026(), FilingStatus::Single, kind, 46).unwrap()
 }
 
 const ONE_401K: &str = r#"

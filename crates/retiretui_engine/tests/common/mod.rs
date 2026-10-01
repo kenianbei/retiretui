@@ -1,7 +1,8 @@
 //! Helpers the engine's test crates share.
 #![allow(dead_code, reason = "each test crate uses its own share of these")]
 
-use retiretui_engine::params::{BenefitParams, Inflation, TaxTables};
+use retiretui_engine::optimize::{OptimizeOptions, SweptBracket, optimize_conversions};
+use retiretui_engine::params::{BenefitParams, Inflation, TaxParams, TaxTables};
 use retiretui_engine::plan::{Issue, Plan};
 use retiretui_engine::project::{Action, ContributionNote, Projection, project};
 
@@ -14,6 +15,33 @@ pub fn benefit_params() -> BenefitParams {
         .social_security
         .benefit
         .unwrap()
+}
+
+/// The embedded 2026 tables as a zero-inflation plan reads them.
+pub fn params_2026() -> TaxParams {
+    TaxTables::embedded().params_for(2026, &Inflation::constant(0.0))
+}
+
+/// A ladder from `k` into `r`, held to nothing.
+pub fn ladder_options() -> OptimizeOptions {
+    OptimizeOptions {
+        sources: vec!["k".to_owned()],
+        destination: "r".to_owned(),
+        start_year: None,
+        end_year: None,
+        annual_max: None,
+        total_max: None,
+        headroom: 0,
+        irmaa_tier: None,
+        max_magi: None,
+        gains_rate: None,
+    }
+}
+
+pub fn searched_ladder(plan: &Plan, options: &OptimizeOptions, rate: f64) -> SweptBracket {
+    optimize_conversions(plan, &TaxTables::embedded(), options, rate)
+        .unwrap()
+        .ladder
 }
 
 pub fn plan_from(text: &str) -> Plan {

@@ -4,6 +4,7 @@
 use std::collections::BTreeSet;
 use std::fmt::Debug;
 
+use retiretui_engine::optimize::GainsRate;
 use retiretui_engine::plan::{
     AccountKind, AssetClass, Draw, FilingStatus, IncomeKind, Operand, PlanDate, TreatmentClass,
     Trigger, TriggerBasis,
@@ -47,6 +48,15 @@ fn every_closed_enum_is_spelt_as_serde_spells_it() {
     assert_spelt_as_serde_spells(TreatmentClass::ALL, TreatmentClass::as_str);
     assert_spelt_as_serde_spells(AssetClass::ALL, AssetClass::as_str);
     assert_spelt_as_serde_spells(Draw::ALL, Draw::as_str);
+    assert_spelt_as_serde_spells(GainsRate::ALL, GainsRate::as_str);
+}
+
+#[test]
+fn a_gains_rate_parses_from_its_spelling() {
+    for &rate in GainsRate::ALL {
+        assert_eq!(rate.as_str().parse(), Ok(rate));
+    }
+    assert!("5".parse::<GainsRate>().is_err());
 }
 
 #[test]

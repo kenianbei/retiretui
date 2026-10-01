@@ -74,32 +74,26 @@ struct FillYear<'a> {
 }
 
 impl FillYear<'_> {
-    /// Whether a probed year has passed one of its ceilings. A gain is past
-    /// its top when the stack it sits on ends above it.
-    fn is_over(&self, metrics: &YearFill) -> bool {
-        let ceilings = self.ceilings;
-        metrics.taxable > ceilings.target
-            || ceilings.magi.is_some_and(|ceiling| metrics.magi > ceiling)
-            || ceilings
-                .gains
-                .is_some_and(|top| metrics.gains > 0 && metrics.taxable + metrics.gains > top)
-    }
-
-    /// Whether a year has no room left under one of its ceilings.
-    fn is_at_limit(&self, metrics: &YearFill) -> bool {
-        let ceilings = self.ceilings;
-        metrics.taxable >= ceilings.target
-            || ceilings.magi.is_some_and(|ceiling| metrics.magi >= ceiling)
-            || ceilings
-                .gains
-                .is_some_and(|top| metrics.gains > 0 && metrics.taxable + metrics.gains >= top)
+    /// The least room a probed year has left under any of its ceilings,
+    /// negative once past one. A gain is past its top when the stack it
+    /// sits on ends above it, and a year that realizes none is not held.
+    fn slack(&self, metrics: &YearFill) -> Dollars {
+        let YearCeilings {
+            target,
+            magi,
+            gains,
+        } = self.ceilings;
+        let under_magi = magi.map_or(Dollars::MAX, |ceiling| ceiling - metrics.magi);
+        let under_gains = gains
+            .filter(|_| metrics.gains > 0)
+            .map_or(Dollars::MAX, |top| top - metrics.taxable - metrics.gains);
+        (target - metrics.taxable).min(under_magi).min(under_gains)
     }
 }
 
-/// The stated amount converting from one source in one year so that the
-/// year's projected ordinary taxable income reaches the target within a
-/// dollar - or everything the source can give under the cap, when that
-/// still falls short. `current` must be `working`'s projection; candidate
+/// The most to convert from one source in one year that passes none of
+/// the year's ceilings, to the dollar - or everything the source can give
+/// under the cap, when that passes none either. `current` must be `working`'s projection; candidate
 /// conversions are pushed and popped on `working` per probe.
 fn fill_year(
     working: &mut Plan,
@@ -108,18 +102,18 @@ fn fill_year(
     current: &Projection,
 ) -> Dollars {
     let base = year_metrics(current, fill.year);
-    if fill.is_at_limit(&base) {
+    if fill.slack(&base) <= 0 {
         return 0;
     }
     let poured = probe(working, tables, fill, fill.cap);
     let achievable = (poured.converted - base.converted).min(fill.cap);
-    if !fill.is_over(&poured) {
+    if fill.slack(&poured) >= 0 {
         return achievable;
     }
     let (mut lo, mut hi) = (0, achievable);
     while hi - lo > 1 {
         let mid = lo + (hi - lo) / 2;
-        if fill.is_over(&probe(working, tables, fill, mid)) {
+        if fill.slack(&probe(working, tables, fill, mid)) < 0 {
             hi = mid;
         } else {
             lo = mid;
@@ -129,7 +123,7 @@ fn fill_year(
 }
 
 /// Projects `working` plus one candidate conversion and reports the year's
-/// ordinary taxable income and total conversions.
+/// fill-relevant figures.
 fn probe(working: &mut Plan, tables: &TaxTables, fill: &FillYear<'_>, amount: Dollars) -> YearFill {
     working.conversions.push(ladder_conversion(
         fill.source,

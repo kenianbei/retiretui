@@ -61,7 +61,7 @@ pub struct OptimizeOptions {
 }
 
 /// The long-term gains rate a ladder may not push realized gains past.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub enum GainsRate {
     /// Gains stay untaxed.

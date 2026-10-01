@@ -39,9 +39,9 @@ fn default_end_year(plan: &Plan, options: &OptimizeOptions) -> i16 {
 pub(super) struct YearCeilings {
     /// The bracket top less headroom, in ordinary taxable income.
     pub target: Dollars,
-    /// The strictest MAGI ceiling, if any.
+    /// The strictest MAGI ceiling.
     pub magi: Option<Dollars>,
-    /// The top no realized gain may be stacked past, if any.
+    /// The top no realized gain may be stacked past.
     pub gains: Option<Dollars>,
 }
 
@@ -60,19 +60,14 @@ pub(super) fn year_ceilings(
     Some(YearCeilings {
         target,
         magi: magi_ceiling(plan, &params, year, options),
-        gains: options
-            .gains_rate
-            .map(|rate| gains_top(&params, filing, rate)),
+        gains: options.gains_rate.map(|rate| {
+            match rate {
+                GainsRate::Zero => params.ltcg.zero_until,
+                GainsRate::Fifteen => params.ltcg.fifteen_until,
+            }
+            .get(filing)
+        }),
     })
-}
-
-/// The top of the income the gains stack may reach while taxed at `rate`.
-fn gains_top(params: &TaxParams, filing: FilingStatus, rate: GainsRate) -> Dollars {
-    let until = match rate {
-        GainsRate::Zero => &params.ltcg.zero_until,
-        GainsRate::Fifteen => &params.ltcg.fifteen_until,
-    };
-    until.get(filing)
 }
 
 /// The strictest MAGI ceiling for one year: the requested IRMAA tier
