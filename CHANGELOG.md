@@ -193,6 +193,30 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - A year's taxes report `gains`, the long-term gains realized that year and the
   amount its gains tax is figured on, in `project --format json`, the MCP
   server's projection and the JavaScript bindings.
+- A withdrawal-order search, a third optimizer beside the conversion ladder and
+  the claim ages. Every order the classes the plan's `withdrawal_order` lists
+  can be drained in is projected and ranked by what the household ends with -
+  the least left unfunded, then the most at the end in today's dollars. A class
+  the plan leaves out stays out, accounts with a `drain_priority` still drain
+  first, and orders that project alike are one row, said as the plan says it
+  where the plan's own is among them. A plan with fewer than two classes to
+  order is refused, and says so.
+  - `optimize order` prints the plan's own order and every other, best first, as
+    a table or JSON, and writes the best as a scenario with `--write`.
+  - The MCP server's `optimize_order` replies the same, with the best as a
+    scenario document that `write_to` stores through the validated write gate.
+  - The terminal and the web each gain a Withdrawal Order page among the tools:
+    the orders ranked under the plan as it stands, the highlighted one taken
+    into the draft after asking, as one step of history, or written as a
+    scenario and compared at once. The web keeps the highlighted order in the
+    address.
+  - The Overview's Could do better says the best order and what it gains where
+    it beats the plan's own, and that the order as planned is best where none
+    does, leading to the page.
+- The engine gains `optimize_order`, `apply_order`, `order_overlay`,
+  `OrderSearch` and `OrderCandidate`. The JavaScript bindings gain `orders`,
+  `orderWords`, and the document's `takeOrder` and `orderScenario`, with the
+  types `OrderOptions`, `OrderOption`, `OrderWords` and `TreatmentClass`.
 
 ### Changed
 
@@ -292,6 +316,14 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   outside the engine must add them.
 - The engine's `OptimizeOptions` gains `gains_rate`, an `Option<GainsRate>`, so
   a struct literal of it written outside the engine must add it.
+- The Overview's Could do better searches the withdrawal order too, so the line
+  it shows where there is nothing to search now reads "No conversion, claim or
+  withdrawal order to search", and shows only where none of the three can be.
+- The MCP schema reference says that a class left out of `withdrawal_order` is
+  never drained.
+- The terminal's `Page` gains `WithdrawalOrder`, so a match over it written
+  outside the crate must cover it, and the client's `searches::overview::Found`
+  gains `order`, so a struct literal of it must add it.
 
 ### Fixed
 
