@@ -53,14 +53,15 @@ fn earning(wages: Dollars) -> PersonIncome {
 fn a_state_taxes_income_less_its_deduction_through_its_own_brackets() {
     let params = params_2026();
     let oregon = &params.states["or"];
-    // Publication OR-ESTIMATE's own example: 68,000 taxable, jointly.
-    let joint = [earning(68_000 + 5_800)];
+    // Publication OR-ESTIMATE's own example: 68,000 taxable, jointly, owes
+    // 5,312 before the credit of 263 for each of two.
+    let joint = [earning(68_000 + 5_820), earning(0)];
     assert_eq!(
         tax::state_tax(oregon, FilingStatus::MarriedJoint, &in_year(2026, &joint)),
-        5_312
+        5_312 - 526
     );
-    // Single, 50,000 taxable: 216 + 462 + 3,377.50.
-    assert_eq!(owed(oregon, 2026, earning(50_000 + 2_900)), 4_056);
+    // Single, 50,000 taxable: 216 + 462 + 3,377.50, less the credit.
+    assert_eq!(owed(oregon, 2026, earning(50_000 + 2_910)), 4_056 - 263);
     assert_eq!(owed(oregon, 2026, earning(1_000)), 0);
 }
 
@@ -110,7 +111,7 @@ fn a_state_with_no_income_tax_is_a_table_and_one_not_modeled_is_none() {
 fn state_tables_extend_with_inflation() {
     let later = TaxTables::embedded().params_for(2036, &Inflation::constant(INFLATION));
     let oregon = &later.states["or"];
-    assert_eq!(oregon.deduction.single, 3_535);
+    assert_eq!(oregon.deduction.single, 3_547);
     assert_eq!(oregon.brackets.single[1].over, 5_546);
     assert!((oregon.brackets.single[1].rate - 0.0675).abs() < f64::EPSILON);
     assert_eq!(oregon.brackets.single[3].over, 125_000, "set by statute");

@@ -127,6 +127,34 @@ pub fn living_in(state: &str, birth_year: i16, body: &str) -> String {
     born_in(birth_year, &home)
 }
 
+/// 50,000 moved in 2026 out of `owner`'s 401(k), whose table ends with
+/// `stated`, into a brokerage of theirs.
+pub fn cashing_out(owner: &str, stated: &str) -> String {
+    format!(
+        r#"
+[[accounts]]
+id = "k-{owner}"
+kind = "401k"
+owner = "{owner}"
+balance = 400000
+{stated}
+
+[[accounts]]
+id = "brokerage-{owner}"
+kind = "brokerage"
+owner = "{owner}"
+balance = 0
+
+[[transfers]]
+id = "cash-out-{owner}"
+from = "k-{owner}"
+to = "brokerage-{owner}"
+amount = 50000
+on = {{ date = 2026-01-01 }}
+"#
+    )
+}
+
 pub fn head(text: &str) -> String {
     format!(
         r#"

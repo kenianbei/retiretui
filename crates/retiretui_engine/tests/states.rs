@@ -5,7 +5,7 @@ mod common;
 
 use retiretui_engine::plan::Dollars;
 
-use common::{living_in, run};
+use common::{cashing_out, living_in, run};
 
 const SALARY: &str = r#"
 [[income]]
@@ -50,34 +50,6 @@ to = "roth"
 amount = 30000
 on = { date = 2026-01-01 }
 "#;
-
-/// 50,000 moved in 2026 out of `owner`'s 401(k), whose table ends with
-/// `stated`, into a brokerage of theirs.
-fn cashing_out(owner: &str, stated: &str) -> String {
-    format!(
-        r#"
-[[accounts]]
-id = "k-{owner}"
-kind = "401k"
-owner = "{owner}"
-balance = 400000
-{stated}
-
-[[accounts]]
-id = "brokerage-{owner}"
-kind = "brokerage"
-owner = "{owner}"
-balance = 0
-
-[[transfers]]
-id = "cash-out-{owner}"
-from = "k-{owner}"
-to = "brokerage-{owner}"
-amount = 50000
-on = {{ date = 2026-01-01 }}
-"#
-    )
-}
 
 /// What the state takes in 2026.
 fn state_tax(text: &str) -> Dollars {
@@ -172,18 +144,19 @@ fn mississippi_s_rate_steps_down_as_enacted_over_a_deduction_held_nominal() {
 
 #[test]
 fn iowa_taxes_retirement_income_until_the_year_its_owner_turns_55() {
-    // Born June 1972: 54 in 2026. 3.8% of 50,000 less 16,100.
+    // Born June 1972: 54 in 2026. 3.8% of 50,000 less 16,100, less the
+    // credit of 40.
     let early = cashing_out("me", "");
-    assert_eq!(state_tax(&living_in("ia", 1972, &early)), 1_288);
+    assert_eq!(state_tax(&living_in("ia", 1972, &early)), 1_248);
     assert_eq!(state_tax(&living_in("ia", 1971, &early)), 0);
-    // 3.8% of 100,000 less 16,100.
-    assert_eq!(state_tax(&living_in("ia", 1972, SALARY)), 3_188);
+    // 3.8% of 100,000 less 16,100, less the credit.
+    assert_eq!(state_tax(&living_in("ia", 1972, SALARY)), 3_148);
 }
 
 #[test]
 fn iowa_exempts_each_spouse_by_their_own_age() {
     // Born 1971 and 1975: 55 and 51 in 2026. The younger's 50,000 is taxed:
-    // 3.8% of it less 32,200.
+    // 3.8% of it less 32,200, less a credit of 40 each.
     let body = format!("{}{}", cashing_out("me", ""), cashing_out("you", ""));
     let couple = living_in("ia", 1971, &body)
         .replace("filing = \"single\"", "filing = \"married-joint\"")
@@ -191,5 +164,5 @@ fn iowa_exempts_each_spouse_by_their_own_age() {
             "birth = 1971-06-15",
             "birth = 1971-06-15\n\n[[household.people]]\nid = \"you\"\nbirth = 1975-06-15",
         );
-    assert_eq!(state_tax(&couple), 676);
+    assert_eq!(state_tax(&couple), 596);
 }

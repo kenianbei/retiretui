@@ -56,11 +56,12 @@ fn a_state_takes_its_tax_on_top_of_an_unchanged_federal_one() {
     let oregon = run(OREGON);
     assert!(state_taxes(&nowhere).iter().all(|&tax| tax == 0));
     for (bare, taxed) in nowhere.years.iter().zip(&oregon.years) {
-        // 100,000 less 2,900: 216 + 462 + 8.75% of 85,700.
-        assert_eq!(taxed.taxes.state, 8_177);
+        // 13,170 of federal tax, 8,750 of it subtracted with the 2,910:
+        // 216 + 462 + 8.75% of 76,940, less the credit of 263.
+        assert_eq!(taxed.taxes.state, 7_148);
         assert_eq!(taxed.taxes.ordinary, bare.taxes.ordinary);
-        assert_eq!(taxed.taxes.total, bare.taxes.total + 8_177);
-        assert_eq!(taxed.surplus, bare.surplus - 8_177);
+        assert_eq!(taxed.taxes.total, bare.taxes.total + 7_148);
+        assert_eq!(taxed.surplus, bare.surplus - 7_148);
     }
 }
 
@@ -69,10 +70,10 @@ fn a_move_is_taxed_by_the_new_state_for_its_whole_year() {
     let moved = format!(
         "{OREGON}\n[[residency]]\ncountry = \"us\"\nstate = \"tx\"\nfrom = {{ date = 2028-09-01 }}\n"
     );
-    assert_eq!(state_taxes(&run(&moved)), [8_177, 8_177, 0, 0, 0]);
+    assert_eq!(state_taxes(&run(&moved)), [7_148, 7_148, 0, 0, 0]);
     let abroad =
         format!("{OREGON}\n[[residency]]\ncountry = \"pt\"\nfrom = {{ date = 2029-01-01 }}\n");
-    assert_eq!(state_taxes(&run(&abroad)), [8_177, 8_177, 8_177, 0, 0]);
+    assert_eq!(state_taxes(&run(&abroad)), [7_148, 7_148, 7_148, 0, 0]);
 }
 
 #[test]
@@ -81,7 +82,7 @@ fn of_two_moves_in_a_year_the_one_listed_later_stands_whatever_the_order_of_the_
         [[residency]]\ncountry = \"us\"\nstate = \"fl\"\nfrom = { date = 2027-01-01 }\n\n\
         [[residency]]\ncountry = \"us\"\nstate = \"or\"\nfrom = { date = 2027-06-01 }\n\n\
         [[residency]]\ncountry = \"us\"\nstate = \"wa\"\n";
-    assert_eq!(state_taxes(&run(there_and_back)), [0, 8_177, 8_177, 0, 0]);
+    assert_eq!(state_taxes(&run(there_and_back)), [0, 7_148, 7_148, 0, 0]);
 }
 
 #[test]
@@ -123,7 +124,7 @@ fn a_later_year_s_table_that_restates_a_state_stands_from_that_year() {
     let text = std::fs::read_to_string("tax/2026.toml").unwrap();
     let restated = text
         .replace("year = 2026", "year = 2028")
-        .replace("single = 2900", "single = 3000");
+        .replace("single = 2910", "single = 3000");
     let mut tables = TaxTables::embedded();
     tables.add_source(&restated, "a later year").unwrap();
     let deduction = |year| {
@@ -132,7 +133,7 @@ fn a_later_year_s_table_that_restates_a_state_stands_from_that_year() {
     };
     assert_eq!(
         [deduction(2027), deduction(2028), deduction(2030)],
-        [2_900, 3_000, 3_000]
+        [2_910, 3_000, 3_000]
     );
 }
 
