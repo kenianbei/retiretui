@@ -148,13 +148,13 @@ impl Domain for Accounts {
             .help("The kind of account, which decides how it is taxed."),
         FieldSpec::flag("roth", "Roth")
             .shown_when(applies::supports_roth)
-            .help("Taxed going in, tax-free coming out."),
+            .help("Taxed going in. Tax-free coming out once you are 59 and a half and have held it five years; until then what it earned is taxed."),
         FieldSpec::refers("owner", "Owner", RefSource::Person)
             .help("Whose account it is."),
         FieldSpec::money("balance", "Balance").help("What it holds at the start of the plan."),
         FieldSpec::money("basis", "Basis")
             .shown_when(applies::keeps_basis)
-            .help("What was already taxed: what a brokerage's holdings cost, blank meaning all of them; after-tax money in a deferred account, blank meaning none."),
+            .help("Already taxed: what a brokerage's holdings cost or what was paid into a Roth account, blank meaning all; after-tax money in a deferred account, blank meaning none."),
         FieldSpec::choice(INVESTED, "Invested", Vocabulary::Holding)
             .derived(seed_invested, write_invested)
             .help("A fixed return every year, one mix of stocks, bonds and cash, or a mix that steps as you age. A mix's return follows the market."),

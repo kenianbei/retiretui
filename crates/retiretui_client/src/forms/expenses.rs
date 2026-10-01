@@ -22,6 +22,9 @@ impl Domain for Expenses {
         FieldSpec::ends(),
         FieldSpec::once(),
         FieldSpec::growth("cola", "Growth").help(GROWTH_HELP),
+        FieldSpec::flag("medical", "Medical").help(
+            "Health spending an HSA can pay without tax. HSA withdrawals beyond it are taxed, and cost 20% more before 65.",
+        ),
     ];
     const COLUMNS: &'static [Column] = &[
         Column::new("id").headed("Expense"),
