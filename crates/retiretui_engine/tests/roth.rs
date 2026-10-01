@@ -210,9 +210,10 @@ fn a_roth_opened_by_a_conversion_is_taxed_on_its_earnings_for_five_years() {
 
 #[test]
 fn a_roth_ira_is_five_years_old_once_its_owners_first_is() {
-    // Born June 1966, and holding a Roth IRA since before the plan.
+    // Born June 1966, and holding a Roth IRA, all of it earnings, since
+    // before the plan.
     let held = format!(
-        "{CONVERTED}\n[[accounts]]\nid = \"held\"\nkind = \"ira\"\nroth = true\nowner = \"me\"\nbalance = 1000\n"
+        "{CONVERTED}\n[[accounts]]\nid = \"held\"\nkind = \"ira\"\nroth = true\nowner = \"me\"\nbalance = 1000\nbasis = 0\n"
     );
     let projection = opened_in_2026(1966, &held, &[(2027, 10_500)]);
     assert_eq!(drawn(&projection, "roth", 2027), free(10_500));
