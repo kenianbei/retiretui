@@ -1,0 +1,44 @@
+# A retiree, penalty-free from the first year, whose cash earns nothing beside
+# a 401(k) and a Roth IRA that each earn 5%, drained Roth first.
+
+schema = 1
+
+[plan]
+start_year = 2026
+horizon_age = 75
+inflation = 0.0
+withdrawal_order = ["roth", "deferred", "taxable"]
+
+[household]
+filing = "single"
+
+[[household.people]]
+id = "me"
+birth = 1960-06-15
+
+[[accounts]]
+id = "cash"
+kind = "cash"
+owner = "me"
+balance = 200000
+expected_return = 0.0
+
+[[accounts]]
+id = "k"
+kind = "401k"
+owner = "me"
+balance = 200000
+expected_return = 0.05
+
+[[accounts]]
+id = "roth"
+kind = "ira"
+roth = true
+owner = "me"
+balance = 200000
+expected_return = 0.05
+
+[[expenses]]
+id = "living"
+amount = 30000
+cola = false

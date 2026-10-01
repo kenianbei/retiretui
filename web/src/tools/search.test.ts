@@ -24,6 +24,13 @@ describe("toolSearch", () => {
     expect(toolSearch({ claim: 70 })).toEqual({ claim: "70" });
   });
 
+  it("keeps an order by its classes", () => {
+    expect(toolSearch({ order: "taxable-roth-deferred" })).toEqual({
+      order: "taxable-roth-deferred",
+    });
+    expect(toolSearch({ order: "Taxable, Roth" })).toEqual({});
+  });
+
   it("keeps the year, and the status and state whose tax tables show", () => {
     expect(toolSearch({ year: "2031", status: "single", state: "or" })).toEqual(
       { year: 2031, status: "single", state: "or" },

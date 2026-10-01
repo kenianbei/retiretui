@@ -18,6 +18,8 @@ const {
   ladders,
   marketWords,
   monteCarlo,
+  orderWords,
+  orders,
   percentileLabel,
   rebased,
   setupSteps,
@@ -218,6 +220,23 @@ const removal = person.actions.find(({ action }) => action === "remove-benefit")
 assert.match(removal.question, /^Remove /);
 assert.match(claiming.act("remove-benefit", 0, person.id), /^removed /);
 assert.throws(() => claims(claiming.planText(), [person.id]));
+
+files.set("/plans/ordering.toml", starter.text);
+const ordering = Document.open("/plans/ordering.toml", read);
+const ranked = orders(ordering.planText());
+assert.equal(ranked.columns[1], orderWords().against_plan);
+assert.equal(ranked.better.today, "Withdrawal order as planned is best");
+const [, another] = ranked.options;
+assert.equal(another.key, another.order.join("-"));
+assert.match(another.question, /^Withdraw in this order\? /);
+assert.match(ordering.takeOrder(another.order), /^now withdrawing in the order /);
+assert.throws(() => ordering.orderScenario("/plans/ordered.toml", another.order), /save first/);
+ordering.save(() => {});
+assert.match(
+  ordering.orderScenario("/plans/ordered.toml", another.order),
+  /base = "ordering.toml"\n\n\[plan\]\nwithdrawal_order = \[/,
+);
+assert.throws(() => ordering.takeOrder(["cash"]));
 
 const scenario = files.get("/plans/claimed.toml") ?? 'schema = 1\nbase = "claiming.toml"\n';
 assert.equal(baseOf("/plans/claimed.toml", scenario), "/plans/claiming.toml");

@@ -9,10 +9,10 @@ expression: composed_frame(app)
 ╭ Tools ────────────╮╭ People ────────────────────────────────────────────────────────────────────────────────╮╭ Claim Options ────────────────────────────────────────────────────────────────────────╮
 │  Roth Conversions ││  Person  Earnings    Benefit 62 FRA 70                                                 ││No one's Social Security benefit is computed from a record, and no one without a       │
 │▏ SSA Benefits     ││▌ jordan No record     Stated  -   -  -                                                 ││benefit has an earnings record to compute one from.                                    │
-│  Monte Carlo      ││  alex   No record No benefit  -   -  -                                                 ││                                                                                       │
+│  Withdrawal Order ││  alex   No record No benefit  -   -  -                                                 ││                                                                                       │
+│  Monte Carlo      ││                                                                                        ││                                                                                       │
 │  Historical       ││                                                                                        ││                                                                                       │
 │  Tax Tables       ││                                                                                        ││                                                                                       │
-│                   ││                                                                                        ││                                                                                       │
 │                   ││                                                                                        ││                                                                                       │
 │                   ││                                                                                        ││                                                                                       │
 │                   ││                                                                                        ││                                                                                       │

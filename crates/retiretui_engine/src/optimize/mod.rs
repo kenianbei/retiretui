@@ -5,6 +5,7 @@
 mod claims;
 mod conversions;
 mod estimate;
+mod order;
 
 pub use claims::{
     Claim, ClaimCandidate, ClaimSearch, apply_claims, claims_overlay, optimize_claims,
@@ -14,6 +15,7 @@ pub use conversions::{
     SweptBracket, apply_ladder, is_ladder, ladder_overlay, optimize_conversions, sweep_brackets,
 };
 pub use estimate::{benefit_estimates, career_at_salary};
+pub use order::{OrderCandidate, OrderSearch, apply_order, optimize_order, order_overlay};
 
 use std::cmp::Reverse;
 

@@ -5,8 +5,10 @@
 use std::collections::BTreeMap;
 
 use retiretui_engine::market::{BAND_PERCENTILES, Band, MonteCarlo, Run, RunName, Runs};
-use retiretui_engine::optimize::{BracketSweep, Claim, ClaimSearch, LadderStep, OptimizedLadder};
-use retiretui_engine::plan::{Dollars, Plan};
+use retiretui_engine::optimize::{
+    BracketSweep, Claim, ClaimSearch, LadderStep, OptimizedLadder, OrderSearch,
+};
+use retiretui_engine::plan::{Dollars, Plan, TreatmentClass};
 use retiretui_engine::project::{Action, Projection, Summary, YearRow};
 use schemars::JsonSchema;
 use serde::Serialize;
@@ -80,6 +82,47 @@ impl ClaimsReply {
                 .iter()
                 .map(|candidate| ClaimEntry {
                     claims: candidate.claims.clone(),
+                    summary: candidate.projection.summary(deflated),
+                })
+                .collect(),
+        }
+    }
+}
+
+/// An order search, as `optimize order` and `optimize_order` reply.
+#[derive(Serialize, JsonSchema)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+pub struct OrderReply {
+    /// Headline figures under the plan's own order.
+    pub baseline: Summary,
+    /// One candidate for each distinct outcome, best first: least unfunded
+    /// spending, then the highest final net worth in today's dollars, then
+    /// the plan's own order, then the order they were tried in.
+    pub candidates: Vec<OrderEntry>,
+}
+
+/// One order the search tried.
+#[derive(Serialize, JsonSchema)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+pub struct OrderEntry {
+    /// The classes, first drained first; of the orders that project alike,
+    /// the plan's own, or else the first tried.
+    pub order: Vec<TreatmentClass>,
+    /// Headline figures under that order.
+    pub summary: Summary,
+}
+
+impl OrderReply {
+    /// The reply for what was found.
+    #[must_use]
+    pub fn new(search: &OrderSearch, deflated: bool) -> Self {
+        Self {
+            baseline: search.baseline.summary(deflated),
+            candidates: search
+                .candidates
+                .iter()
+                .map(|candidate| OrderEntry {
+                    order: candidate.order.clone(),
                     summary: candidate.projection.summary(deflated),
                 })
                 .collect(),

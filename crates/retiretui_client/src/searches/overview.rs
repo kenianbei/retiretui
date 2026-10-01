@@ -1,17 +1,21 @@
 //! What the Overview asks is better than the plan: each Roth owner's best
-//! ladder, the household's best claims, and the plan from every historical
-//! start, searched as the tools search them.
+//! ladder, the household's best claims and the best order to withdraw in,
+//! and the plan from every historical start, searched as the tools search
+//! them.
 
 use std::collections::BTreeSet;
 
 use retiretui_engine::market::{History, Progress, Runs, historical};
-use retiretui_engine::optimize::{ClaimSearch, optimize_claims, rank_key};
+use retiretui_engine::optimize::{
+    ClaimSearch, OrderSearch, optimize_claims, optimize_order, rank_key,
+};
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::{Plan, TreatmentClass};
 use retiretui_engine::project::Projection;
 
 use super::claims::said;
 use super::ladders::{Swept, rate_label};
+use super::orders::said_within;
 use crate::present::{compact_money, signed_money};
 
 /// The card's title.
@@ -26,8 +30,11 @@ pub const REFUSED: &str = "not searchable under the Roth Conversions answers";
 /// What the claims row says where no claims beat the plan's own.
 pub const CLAIMS_AS_PLANNED: &str = "Claims as planned are best";
 
+/// What the order row says where no order beats the plan's own.
+pub const ORDER_AS_PLANNED: &str = "Withdrawal order as planned is best";
+
 /// What the card says where there is nothing to search.
-pub const NOTHING_TO_SEARCH: &str = "No conversion or claim to search";
+pub const NOTHING_TO_SEARCH: &str = "No conversion, claim or withdrawal order to search";
 
 /// A plan, the people whose claims are held as it states them, and the
 /// conversion answers held but the destination.
@@ -39,6 +46,8 @@ pub struct Found {
     pub historical: Option<Runs>,
     /// The claim search, where anything computes a benefit.
     pub claims: Option<ClaimSearch>,
+    /// The order search, where the plan withdraws from two classes or more.
+    pub order: Option<OrderSearch>,
     /// Each Roth owner's best ladder.
     pub ladders: Vec<Ladder>,
 }
@@ -63,6 +72,7 @@ pub fn search(
     let historical = historical(plan, tables, history, progress).ok();
     let held: Vec<String> = held.iter().cloned().collect();
     let claims = optimize_claims(plan, tables, &[], &held, progress).ok();
+    let order = optimize_order(plan, tables, progress).ok();
     let mut ladders = Vec::new();
     for owner in roth_owners(plan) {
         if progress.is_cancelled() {
@@ -76,6 +86,7 @@ pub fn search(
     Some(Found {
         historical,
         claims,
+        order,
         ladders,
     })
 }
@@ -164,10 +175,44 @@ pub fn claims_said(
     format!("Claim {}: {gain}", said(plan, &best.claims))
 }
 
+/// What the order row says of `search`: the best order and its gain where
+/// it beats the plan's own.
+#[must_use]
+pub fn order_said(search: &OrderSearch, nominal: bool) -> String {
+    let best = search.best();
+    if !beats(&best.projection, &search.baseline) {
+        return ORDER_AS_PLANNED.to_owned();
+    }
+    let gain = gain(&best.projection, &search.baseline, nominal);
+    format!("Withdraw in the order {}: {gain}", said_within(&best.order))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::setup::EXAMPLES;
+    use crate::setup::examples::named;
+
+    #[test]
+    fn the_best_order_is_said_only_where_it_beats_the_plans_own() {
+        let searched = |file: &str| {
+            let (_, _, text) = named(file).expect("the example");
+            let plan = Plan::from_toml_str(text).expect("the plan parses");
+            optimize_order(&plan, &TaxTables::embedded(), &Progress::default()).expect("searched")
+        };
+        let better = searched("early-retiree.toml");
+        assert_eq!(
+            order_said(&better, false),
+            format!(
+                "Withdraw in the order deferred, taxable, Roth, HSA: {}",
+                gain(&better.best().projection, &better.baseline, false)
+            )
+        );
+        assert_eq!(
+            order_said(&searched("starter.toml"), false),
+            ORDER_AS_PLANNED
+        );
+    }
 
     /// A plan whose historical runs are refused without a look at the
     /// progress, so only the checks between the steps can stop it.

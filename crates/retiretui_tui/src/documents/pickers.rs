@@ -99,6 +99,7 @@ pub struct Pickers {
     /// Where a tool writes its highlighted result as a scenario.
     pub ladder: FilePick,
     pub claims: FilePick,
+    pub order: FilePick,
     new_plan: FilePick,
     /// The Social Security statement to record on a person.
     pub earnings: FilePick,
@@ -137,6 +138,12 @@ pub fn register(world: &mut World) {
             world,
             "Write overlay",
             tools::claims::write_overlay,
+            tools::OVERLAY_OVER,
+        ),
+        order: writing(
+            world,
+            "Write overlay",
+            tools::orders::write_overlay,
             tools::OVERLAY_OVER,
         ),
         new_plan: writing(world, "New plan as", setup::write_new, SAVE_OVER),

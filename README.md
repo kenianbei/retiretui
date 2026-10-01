@@ -86,7 +86,7 @@ python3 -m http.server -d crates/retiretui_web/dist
 | `project`         | Print the year-by-year ledger, as a table or JSON   |
 | `actions`         | List one year's to-dos: conversions, RMDs, and more |
 | `compare`         | Compare plans or scenarios side by side             |
-| `optimize`        | Search Roth conversions or Social Security claims   |
+| `optimize`        | Search conversions, claim ages, or withdrawal order |
 | `monte-carlo`     | Run the plan through many random markets            |
 | `historical`      | Run the plan from every historical start year       |
 | `import-earnings` | Record an ssa.gov earnings statement on a person    |

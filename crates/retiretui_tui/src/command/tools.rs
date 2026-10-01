@@ -14,6 +14,8 @@ pub const WRITE_LADDER: &str = "write-ladder";
 pub const TAKE_LADDER: &str = "take-ladder";
 pub const WRITE_CLAIMS: &str = "write-claims";
 pub const TAKE_CLAIMS: &str = "take-claims";
+pub const WRITE_ORDER: &str = "write-order";
+pub const TAKE_ORDER: &str = "take-order";
 
 /// Every row the Tools tab's pages add to the command table.
 pub(super) fn commands() -> Vec<CommandSpec> {
@@ -21,6 +23,7 @@ pub(super) fn commands() -> Vec<CommandSpec> {
         ladders(),
         claims(),
         people(),
+        orders(),
         market::<MonteCarlo>(),
         market::<Runs>(),
         tax(),
@@ -132,6 +135,27 @@ fn people() -> Vec<CommandSpec> {
             keys: vec![],
             hint: None,
             register: Box::new(|world| world.register_system(tools::claims::remove_benefit)),
+        },
+    ]
+}
+
+fn orders() -> Vec<CommandSpec> {
+    vec![
+        CommandSpec {
+            name: WRITE_ORDER,
+            scope: Scope::On(Page::WithdrawalOrder),
+            doc: "write the highlighted order as a scenario over the document",
+            keys: vec![character("w")],
+            hint: Some("write"),
+            register: Box::new(|world| world.register_system(tools::orders::write_picker)),
+        },
+        CommandSpec {
+            name: TAKE_ORDER,
+            scope: Scope::On(Page::WithdrawalOrder),
+            doc: "take the highlighted order into the plan as its withdrawal order",
+            keys: vec![character("t")],
+            hint: Some("take"),
+            register: Box::new(|world| world.register_system(tools::orders::adopt)),
         },
     ]
 }

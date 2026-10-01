@@ -3,9 +3,11 @@ import init, {
   historical,
   ladders,
   monteCarlo,
+  orders,
   type ClaimsOptions,
   type LaddersReply,
   type MarketRuns,
+  type OrderOptions,
 } from "@wasm/retiretui_wasm.js";
 
 /** What a search is asked, by the kind of search it is. */
@@ -13,7 +15,8 @@ export type Search =
   | { kind: "monteCarlo"; plan: string }
   | { kind: "historical"; plan: string }
   | { kind: "ladders"; plan: string; constraints: string; destination: string }
-  | { kind: "claims"; plan: string; held: string[] };
+  | { kind: "claims"; plan: string; held: string[] }
+  | { kind: "orders"; plan: string };
 
 /** What each kind of search replies. */
 export interface Replies {
@@ -21,6 +24,7 @@ export interface Replies {
   historical: MarketRuns;
   ladders: LaddersReply;
   claims: ClaimsOptions;
+  orders: OrderOptions;
 }
 
 /** A search's reply, off the page's thread, or why there is none. */
@@ -42,6 +46,8 @@ function answer(search: Search): Replies[Search["kind"]] {
       return ladders(search.plan, search.constraints, search.destination);
     case "claims":
       return claims(search.plan, search.held);
+    case "orders":
+      return orders(search.plan);
   }
 }
 

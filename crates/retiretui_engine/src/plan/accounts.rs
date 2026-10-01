@@ -139,6 +139,8 @@ impl AccountKind {
 
 /// Tax treatment classes, also the vocabulary of the withdrawal order.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[serde(rename_all = "kebab-case")]
 pub enum TreatmentClass {
     /// Taxed as it is realized: brokerage, cash.

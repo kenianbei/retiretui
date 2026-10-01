@@ -9,10 +9,10 @@ expression: composed_frame(app)
 ╭ Tools ────────────╮╭ Constraints ───────────────────────────────────╮╭ Ladder Options ───────────────────────────────────────╮
 │▏ Roth Conversions ││                                                ││  Bracket Vs. the plan Converted Unfunded Ends with    │
 │  SSA Benefits     ││▌ Convert from  Every deferred account          ││  Current                  $330k       $0    $2.09M    │
-│  Monte Carlo      ││  Convert to    roth-ira                        ││▏ 22%            +$56k     $988k       $0    $2.15M    │
-│  Historical       ││  Fill bracket  Every bracket                   ││  24%            +$39k     $962k       $0    $2.13M    │
-│  Tax Tables       ││  First year    The plan's start                ││  32%          -$2,382     $958k       $0    $2.09M    │
-│                   ││  Last year     The year before RMDs            ││  10%            -$32k     $388k       $0    $2.06M    │
+│  Withdrawal Order ││  Convert to    roth-ira                        ││▏ 22%            +$56k     $988k       $0    $2.15M    │
+│  Monte Carlo      ││  Fill bracket  Every bracket                   ││  24%            +$39k     $962k       $0    $2.13M    │
+│  Historical       ││  First year    The plan's start                ││  32%          -$2,382     $958k       $0    $2.09M    │
+│  Tax Tables       ││  Last year     The year before RMDs            ││  10%            -$32k     $388k       $0    $2.06M    │
 │                   ││  Annual cap    No cap                          ││  35%            -$34k     $956k       $0    $2.06M    │
 │                   ││  Total cap     No cap                          ││  12%            -$51k     $983k       $0    $2.04M    │
 │                   ││  Headroom      None                            │╰───────────────────────────────────────────────────────╯

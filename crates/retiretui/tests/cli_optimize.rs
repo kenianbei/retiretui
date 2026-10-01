@@ -148,6 +148,58 @@ fn optimize_claims_adds_the_benefit_a_record_lacks() {
 }
 
 #[test]
+fn optimize_order_ranks_the_orders_and_writes_the_best() {
+    let dir = scratch_dir(
+        "cli-order",
+        "base.toml",
+        &[("opt.toml", OPT_PLAN), ("claims.toml", CLAIMS_PLAN)],
+    );
+    let plan = dir.join("opt.toml");
+    let plan = plan.to_str().unwrap();
+    let ranked = retiretui(&["optimize", "order", plan]);
+    assert!(ranked.status.success(), "{ranked:?}");
+    let stdout = String::from_utf8(ranked.stdout).unwrap();
+    let mut lines = stdout.lines();
+    let header = lines.next().unwrap();
+    assert!(header.trim_start().starts_with("rank"), "{stdout}");
+    assert!(header.contains(" order "), "{stdout}");
+    let baseline = lines.next().unwrap();
+    assert!(
+        baseline.starts_with("baseline  taxable, deferred, roth, hsa"),
+        "{stdout}"
+    );
+    let best = lines.next().unwrap();
+    assert!(best.trim_start().starts_with("1  "), "{stdout}");
+    assert!(lines.count() >= 1, "more than one order: {stdout}");
+
+    let overlay = dir.join("best.toml");
+    let written = retiretui(&[
+        "optimize",
+        "order",
+        plan,
+        "--write",
+        overlay.to_str().unwrap(),
+    ]);
+    assert!(written.status.success(), "{written:?}");
+    let text = std::fs::read_to_string(&overlay).unwrap();
+    assert!(
+        text.starts_with("schema = 1\nbase = \"opt.toml\"\n\n[plan]\nwithdrawal_order = ["),
+        "{text}"
+    );
+    let overlay = overlay.to_str().unwrap();
+    let valid = retiretui(&["validate", overlay]);
+    assert!(valid.status.success(), "{valid:?}");
+    let compared = retiretui(&["compare", plan, overlay]);
+    assert!(compared.status.success(), "{compared:?}");
+
+    let cash_only = dir.join("claims.toml");
+    let refused = retiretui(&["optimize", "order", cash_only.to_str().unwrap()]);
+    assert!(!refused.status.success());
+    let stderr = String::from_utf8(refused.stderr).unwrap();
+    assert!(stderr.contains("nothing to order"), "{stderr}");
+}
+
+#[test]
 fn optimize_write_requires_a_bracket() {
     let dir = scratch_dir("cli-optimize-req", "base.toml", &[("opt.toml", OPT_PLAN)]);
     let plan = dir.join("opt.toml");
@@ -222,6 +274,28 @@ fn optimize_json_replies_name_their_fields() {
     assert_eq!(fields(candidate), ["claims", "summary"]);
     assert_eq!(fields(&candidate["claims"][0]), ["age", "income", "owner"]);
     assert_eq!(fields(&candidate["summary"]), summary);
+}
+
+#[test]
+fn optimize_order_json_names_its_fields() {
+    let dir = scratch_dir("cli-order-json", "base.toml", &[("opt.toml", OPT_PLAN)]);
+    let opt = dir.join("opt.toml");
+    let order = json_of(&retiretui(&[
+        "optimize",
+        "order",
+        opt.to_str().unwrap(),
+        "--format",
+        "json",
+    ]));
+    assert_eq!(fields(&order), ["baseline", "candidates"]);
+    let candidate = &order["candidates"][0];
+    assert_eq!(fields(candidate), ["order", "summary"]);
+    assert_eq!(
+        candidate["order"],
+        serde_json::json!(["taxable", "deferred", "roth", "hsa"])
+    );
+    assert_eq!(fields(&candidate["summary"]), fields(&order["baseline"]));
+    assert!(order["baseline"]["final_net_worth"].is_i64(), "{order}");
 }
 
 #[test]

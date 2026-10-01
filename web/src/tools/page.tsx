@@ -7,11 +7,13 @@ import {
   SSA_BENEFITS,
   TAX_TABLES,
   TOOLS,
+  WITHDRAWAL_ORDER,
   pageOf,
 } from "@/nav";
 import { ClaimsPage } from "@/tools/claims/page";
 import { ConversionsPage } from "@/tools/conversions/page";
 import { MarketsPage } from "@/tools/markets/page";
+import { OrdersPage } from "@/tools/orders/page";
 import { TaxTablesPage } from "@/tools/tax/page";
 
 /** The tool its route's `$page` named. */
@@ -20,6 +22,7 @@ export function ToolPage() {
   if (page === ROTH_CONVERSIONS) return <ConversionsPage />;
   if (page === SSA_BENEFITS) return <ClaimsPage />;
   const { title } = pageOf(TOOLS, page);
+  if (page === WITHDRAWAL_ORDER) return <OrdersPage title={title} />;
   if (page === MONTE_CARLO) {
     return <MarketsPage key={page} kind="monteCarlo" title={title} />;
   }
