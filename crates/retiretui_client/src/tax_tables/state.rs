@@ -67,24 +67,18 @@ fn income_rows(table: &StateParams, status: FilingStatus) -> Vec<Vec<String>> {
     };
     let of = |amounts: PerStatus<Dollars>| money(amounts.get(status));
     let mut rows = vec![labelled("Standard deduction", of(table.deduction))];
-    rows.extend(
-        table
-            .deduction_at_65
-            .map(|more| labelled(DEDUCTION_AT_65, of(more))),
-    );
-    rows.extend(
-        table
-            .deduction_until_agi
-            .map(|limit| labelled(DEDUCTION_UNTIL, of(limit))),
-    );
-    let subtraction = table.federal_tax_subtraction.as_ref();
-    rows.extend(subtraction.map(|subtraction| subtraction_row(subtraction, status)));
-    let credit = table.exemption_credit.as_ref();
-    rows.extend(
-        credit
-            .into_iter()
-            .flat_map(|credit| credit_rows(credit, status)),
-    );
+    if table.deduction_at_65.get(status) > 0 {
+        rows.push(labelled(DEDUCTION_AT_65, of(table.deduction_at_65)));
+    }
+    if let Some(limit) = table.deduction_until_agi {
+        rows.push(labelled(DEDUCTION_UNTIL, of(limit)));
+    }
+    if let Some(subtraction) = &table.federal_tax_subtraction {
+        rows.push(subtraction_row(subtraction, status));
+    }
+    if let Some(credit) = &table.exemption_credit {
+        rows.extend(credit_rows(credit, status));
+    }
     rows.push(labelled("Taxes Social Security", taxes_benefits.to_owned()));
     rows.extend(table.exclusions.iter().flat_map(untaxed_rows));
     if table.taxes_deferrals {
@@ -202,7 +196,6 @@ mod tests {
     #[test]
     fn a_state_s_table_says_what_it_adjusts_its_tax_by() {
         let oregon = rows("or", 2026);
-        let said = |rows: &[Vec<String>], label| said(rows, label);
         assert_eq!(said(&oregon, DEDUCTION_AT_65).as_deref(), Some("$1,200"));
         assert_eq!(
             said(&oregon, SUBTRACTION).as_deref(),

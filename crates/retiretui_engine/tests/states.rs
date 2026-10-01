@@ -5,15 +5,7 @@ mod common;
 
 use retiretui_engine::plan::Dollars;
 
-use common::{cashing_out, living_in, run};
-
-const SALARY: &str = r#"
-[[income]]
-id = "pay"
-kind = "salary"
-owner = "me"
-amount = 100000
-"#;
+use common::{cashing_out, living_in, run, salary};
 
 /// A pension of 20,000, a conversion of 30,000 out of an IRA, and 10,000
 /// of rent.
@@ -59,7 +51,7 @@ fn state_tax(text: &str) -> Dollars {
 #[test]
 fn illinois_taxes_wages_less_the_exemption_and_no_retirement_income() {
     // 4.95% of 100,000 less 2,925.
-    assert_eq!(state_tax(&living_in("il", 1976, SALARY)), 4_805);
+    assert_eq!(state_tax(&living_in("il", 1976, &salary(100_000))), 4_805);
     // Born June 1976: 50 in 2026. Only the rent is taxed: 4.95% of 10,000
     // less 2,925.
     let early = format!("{RETIRED}{}", cashing_out("me", ""));
@@ -69,7 +61,7 @@ fn illinois_taxes_wages_less_the_exemption_and_no_retirement_income() {
 #[test]
 fn pennsylvania_taxes_what_is_deferred_and_not_what_an_hsa_is_paid() {
     let paying_in = format!(
-        r#"{SALARY}
+        r#"{}
 [[accounts]]
 id = "k"
 kind = "401k"
@@ -91,7 +83,8 @@ amount = 10000
 id = "health"
 to = "hsa"
 amount = 4000
-"#
+"#,
+        salary(100_000)
     );
     // 3.07% of 100,000 less the 4,000.
     assert_eq!(state_tax(&living_in("pa", 1976, &paying_in)), 2_947);
@@ -133,7 +126,7 @@ fn mississippi_taxes_an_early_distribution_and_no_other() {
 fn mississippi_s_rate_steps_down_as_enacted_over_a_deduction_held_nominal() {
     // 58,300 a year in nominal dollars: 40,000 above the 8,300 and the
     // 10,000, whatever inflation does.
-    let nominal = SALARY.replace("amount = 100000", "amount = 58300\ncola = false");
+    let nominal = salary(58_300).replace("58300", "58300\ncola = false");
     let text = living_in("ms", 1980, &nominal).replace("inflation = 0.0", "inflation = 0.02");
     let projection = run(&text);
     let taken: Vec<Dollars> = (2026..=2032)
@@ -150,7 +143,7 @@ fn iowa_taxes_retirement_income_until_the_year_its_owner_turns_55() {
     assert_eq!(state_tax(&living_in("ia", 1972, &early)), 1_248);
     assert_eq!(state_tax(&living_in("ia", 1971, &early)), 0);
     // 3.8% of 100,000 less 16,100, less the credit.
-    assert_eq!(state_tax(&living_in("ia", 1972, SALARY)), 3_148);
+    assert_eq!(state_tax(&living_in("ia", 1972, &salary(100_000))), 3_148);
 }
 
 #[test]

@@ -165,10 +165,8 @@ pub(super) fn inflate_state(state: &mut StateParams, factor: f64) {
     if let Some(subtraction) = &mut state.federal_tax_subtraction {
         subtraction.cap = scale(subtraction.cap, factor);
     }
-    if let Some(credit) = state
-        .exemption_credit
-        .as_mut()
-        .filter(|credit| !credit.unindexed)
+    if let Some(credit) = &mut state.exemption_credit
+        && !credit.unindexed
     {
         credit.per_person = scale(credit.per_person, factor);
     }

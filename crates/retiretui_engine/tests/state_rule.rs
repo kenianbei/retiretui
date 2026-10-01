@@ -4,41 +4,12 @@
 mod common;
 
 use retiretui_engine::params::{Inflation, Source, StateParams, TaxParams, TaxTables};
-use retiretui_engine::plan::{Dollars, FilingStatus, PlanDate};
+use retiretui_engine::plan::{Dollars, FilingStatus};
 use retiretui_engine::tax::{self, PersonIncome, StateIncome};
 
-use common::{params_2026, tables_with};
+use common::{flat_tenth, in_year, params_2026, person, tables_with};
 
 const INFLATION: f64 = 0.02;
-
-/// A state taking a tenth of everything, with `rows` before its brackets.
-fn flat_tenth(rows: &str) -> StateParams {
-    let text = format!(
-        "{rows}\n[brackets]\nsingle = [{{ over = 0, rate = 0.1 }}]\nmarried-joint = [{{ over = 0, rate = 0.1 }}]\n"
-    );
-    toml::from_str(&text).unwrap()
-}
-
-/// Someone born on the 15th of `month` in `year`, with `income` by source.
-fn person(year: i16, month: i8, income: &[(Source, Dollars)]) -> PersonIncome {
-    let mut person = PersonIncome::new(PlanDate(jiff::civil::date(year, month, 15)));
-    for &(source, amount) in income {
-        person.add(source, amount);
-    }
-    person
-}
-
-fn in_year(year: i16, people: &[PersonIncome]) -> StateIncome<'_> {
-    StateIncome {
-        year,
-        people,
-        gains: 0,
-        taxable_social_security: 0,
-        deferred: 0,
-        federal_tax: 0,
-        agi: 0,
-    }
-}
 
 /// What one person owes `state` in `year`.
 fn owed(state: &StateParams, year: i16, person: PersonIncome) -> Dollars {

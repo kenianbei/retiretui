@@ -233,13 +233,14 @@ fn compute_taxes(
     let penalty =
         scale(acc.penalty_base, early.penalty) + scale(acc.hsa_penalty_base, early.hsa_penalty);
     let magi = (other_income + taxable_ss).max(0);
+    let federal_tax = ordinary + ltcg + penalty;
     let income = StateIncome {
         year: params.year,
         people: &acc.taxed,
         gains: acc.gains,
         taxable_social_security: taxable_ss,
         deferred: acc.deferred + deducted,
-        federal_tax: ordinary + ltcg + penalty,
+        federal_tax,
         agi: magi,
     };
     let state = state.map_or(0, |state| tax::state_tax(state, status, &income));
@@ -252,7 +253,7 @@ fn compute_taxes(
         ordinary_taxable: ordinary_taxable.max(0),
         gains: acc.gains,
         magi,
-        total: ordinary + ltcg + penalty + state,
+        total: federal_tax + state,
         ira_deducted: by_band,
     }
 }

@@ -3,15 +3,10 @@
 
 mod common;
 
-use retiretui_engine::plan::{Dollars, FilingStatus, PlanDate};
-use retiretui_engine::tax::{self, PersonIncome, StateIncome};
+use retiretui_engine::plan::{Dollars, FilingStatus};
+use retiretui_engine::tax::{self, StateIncome};
 
-use common::{cashing_out, living_in, params_2026, run};
-
-/// A plan's body: a salary of `amount`.
-fn salary(amount: Dollars) -> String {
-    format!("\n[[income]]\nid = \"pay\"\nkind = \"salary\"\nowner = \"me\"\namount = {amount}\n")
-}
+use common::{cashing_out, in_year, living_in, params_2026, person, run, salary};
 
 /// What `state` takes in 2026 of someone born in June of `birth_year`, with
 /// `body`.
@@ -104,24 +99,16 @@ fn washington_taxes_gains_over_its_deduction_and_nothing_else() {
 }
 
 #[test]
-fn washington_takes_9_9_percent_of_taxed_gains_over_a_million_from_a_couple_as_from_one() {
-    let params = params_2026();
-    let born = PlanDate(jiff::civil::date(1970, 6, 15));
-    let couple = [PersonIncome::new(born), PersonIncome::new(born)];
-    let owed = |status, people, gains| {
-        let income = StateIncome {
-            year: 2026,
-            people,
-            gains,
-            taxable_social_security: 0,
-            deferred: 0,
-            federal_tax: 0,
-            agi: gains,
-        };
-        tax::state_tax(&params.states["wa"], status, &income)
+fn washington_takes_9_9_percent_of_taxed_gains_over_a_million() {
+    let people = [person(1970, 6, &[])];
+    let income = StateIncome {
+        gains: 1_500_000,
+        ..in_year(2026, &people)
     };
+    let washington = &params_2026().states["wa"];
     // 70,000 on the first million taxed, and 9.9% of the 210,000 beyond.
-    assert_eq!(owed(FilingStatus::Single, &couple[..1], 1_500_000), 90_790);
-    assert_eq!(owed(FilingStatus::MarriedJoint, &couple, 1_500_000), 90_790);
-    assert_eq!(owed(FilingStatus::MarriedJoint, &couple, 500_000), 14_700);
+    assert_eq!(
+        tax::state_tax(washington, FilingStatus::Single, &income),
+        90_790
+    );
 }

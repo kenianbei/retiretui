@@ -1,5 +1,6 @@
-//! State income tax. The rule shape lives here; each state's values come
-//! from [`crate::params::StateParams`].
+//! What a state takes: its income tax and its excise on gains. The rule
+//! shape lives here; each state's values come from
+//! [`crate::params::StateParams`].
 
 use super::{is_age_reached, walk_brackets};
 use crate::params::{FederalTaxSubtraction, PerStatus, Source, StateParams};
@@ -59,18 +60,9 @@ pub struct StateIncome<'a> {
     /// Federal income tax: on ordinary income and on gains, and the
     /// additional taxes on early withdrawals.
     pub federal_tax: Dollars,
-    /// Federal adjusted gross income.
+    /// Federal adjusted gross income: the figure
+    /// [`Taxes::magi`](crate::project::Taxes::magi) reports.
     pub agi: Dollars,
-}
-
-impl StateIncome<'_> {
-    /// How many of the household have reached the age a table's additions
-    /// begin at.
-    fn aged(&self) -> Dollars {
-        let people = self.people.iter();
-        let aged = people.filter(|person| is_age_reached(person.birth, ADDITION_AGE, self.year));
-        aged.count() as Dollars
-    }
 }
 
 /// What a state takes in a year. Its income tax is on what each person's
@@ -108,8 +100,17 @@ fn deduction_of(state: &StateParams, status: FilingStatus, income: &StateIncome)
     if is_over(state.deduction_until_agi, status, income.agi) {
         return 0;
     }
-    let added = state.deduction_at_65.map_or(0, |each| each.get(status));
-    state.deduction.get(status) + added * income.aged()
+    state.deduction.get(status) + added_at_65(state.deduction_at_65.get(status), income)
+}
+
+/// What the people old enough add between them, at `each`.
+fn added_at_65(each: Dollars, income: &StateIncome) -> Dollars {
+    if each == 0 {
+        return 0;
+    }
+    let people = income.people.iter();
+    let aged = people.filter(|person| is_age_reached(person.birth, ADDITION_AGE, income.year));
+    each * aged.count() as Dollars
 }
 
 fn is_over(until_agi: Option<PerStatus<Dollars>>, status: FilingStatus, agi: Dollars) -> bool {
@@ -149,7 +150,7 @@ fn credit_of(state: &StateParams, status: FilingStatus, income: &StateIncome) ->
     if is_over(credit.until_agi, status, income.agi) {
         return 0;
     }
-    credit.per_person * income.people.len() as Dollars + credit.at_65 * income.aged()
+    credit.per_person * income.people.len() as Dollars + added_at_65(credit.at_65, income)
 }
 
 /// The state's excise on the gains its deduction leaves.

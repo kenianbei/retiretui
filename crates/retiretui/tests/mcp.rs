@@ -5,7 +5,7 @@ mod common;
 
 use retiretui_engine::params::{Inflation, Source, TaxTables};
 use retiretui_engine::plan::{AccountKind, Draw, FilingStatus, IncomeKind, Payer, TriggerBasis};
-use serde_json::json;
+use serde_json::{Value, json};
 
 use common::mcp::McpClient;
 use common::{FULL_PLAN, STATEMENT, scratch_dir};
@@ -371,15 +371,20 @@ fn schema_reference_documents_the_market() {
     assert_quotes_every(text, "draw", Draw::ALL.iter().map(|draw| draw.as_str()));
 }
 
+/// The shape tool `name` states its output in.
+fn output_schema(client: &mut McpClient, name: &str) -> Value {
+    let tools = client.request("tools/list", json!({}));
+    let tools = tools["tools"].as_array().unwrap();
+    let tool = tools.iter().find(|tool| tool["name"] == name).unwrap();
+    tool["outputSchema"].clone()
+}
+
 #[test]
 fn schema_reference_names_every_key_of_a_state_s_table() {
     let text = include_str!("../../retiretui_mcp/src/schema.md");
     let root = scratch_dir("mcp-state-keys", "plan.toml", &[]);
-    let mut client = McpClient::spawn(&root);
-    let tools = client.request("tools/list", json!({}));
-    let tools = tools["tools"].as_array().unwrap();
-    let parameters = tools.iter().find(|tool| tool["name"] == "tax_parameters");
-    let shapes = &parameters.unwrap()["outputSchema"]["$defs"];
+    let parameters = output_schema(&mut McpClient::spawn(&root), "tax_parameters");
+    let shapes = &parameters["$defs"];
     for shape in [
         "StateParams",
         "Exclusion",
@@ -399,12 +404,7 @@ fn schema_reference_names_every_key_of_a_state_s_table() {
 fn projection_and_tax_parameters_state_their_output_shapes() {
     let root = scratch_dir("mcp-output-schemas", "plan.toml", &[]);
     let mut client = McpClient::spawn(&root);
-    let tools = client.request("tools/list", json!({}));
-    let schema_of = |name: &str| {
-        let tools = tools["tools"].as_array().unwrap();
-        let tool = tools.iter().find(|tool| tool["name"] == name).unwrap();
-        tool["outputSchema"].clone()
-    };
+    let mut schema_of = |name: &str| output_schema(&mut client, name);
     let projection = schema_of("project_plan");
     let years = &projection["$defs"]["Years"];
     let shapes = years["anyOf"].as_array().expect("summary or full rows");

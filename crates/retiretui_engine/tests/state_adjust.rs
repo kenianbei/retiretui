@@ -4,50 +4,38 @@
 
 mod common;
 
-use retiretui_engine::params::{Inflation, StateParams};
-use retiretui_engine::plan::{Dollars, FilingStatus, PlanDate};
+use std::collections::BTreeMap;
+
+use retiretui_engine::params::{Inflation, Source, StateParams};
+use retiretui_engine::plan::{Dollars, FilingStatus};
 use retiretui_engine::tax::{self, PersonIncome, StateIncome};
 
-use common::tables_with;
+use common::{TENTH, flat_tenth, in_year, person, tables_with};
 
 const INFLATION: f64 = 0.02;
-const TENTH: &str =
-    "[brackets]\nsingle = [{ over = 0, rate = 0.1 }]\nmarried-joint = [{ over = 0, rate = 0.1 }]\n";
-
-/// A state taking a tenth of everything, with `keys` after its brackets.
-fn flat_tenth(keys: &str) -> StateParams {
-    toml::from_str(&format!("{TENTH}\n{keys}")).unwrap()
-}
 
 /// Someone born in June of `year`.
 fn born(year: i16) -> PersonIncome {
-    PersonIncome::new(PlanDate(jiff::civil::date(year, 6, 15)))
+    person(year, 6, &[])
 }
 
 /// 2026 for `people`, the first of them with `wages`, which is the AGI.
 fn earning(people: &mut [PersonIncome], wages: Dollars) -> StateIncome<'_> {
-    people[0].add(retiretui_engine::params::Source::Wages, wages);
+    people[0].add(Source::Wages, wages);
     StateIncome {
-        year: 2026,
-        people,
-        gains: 0,
-        taxable_social_security: 0,
-        deferred: 0,
-        federal_tax: 0,
         agi: wages,
+        ..in_year(2026, people)
     }
 }
 
-fn status_of(income: &StateIncome) -> FilingStatus {
-    if income.people.len() == 2 {
+/// What `state` takes of `income`, from one person alone or two jointly.
+fn owed(state: &StateParams, income: &StateIncome) -> Dollars {
+    let status = if income.people.len() == 2 {
         FilingStatus::MarriedJoint
     } else {
         FilingStatus::Single
-    }
-}
-
-fn owed(state: &StateParams, income: &StateIncome) -> Dollars {
-    tax::state_tax(state, status_of(income), income)
+    };
+    tax::state_tax(state, status, income)
 }
 
 /// What one person born in 1980 owes on `wages` and nothing else.
@@ -55,11 +43,13 @@ fn owed_on(state: &StateParams, wages: Dollars) -> Dollars {
     owed(state, &earning(&mut [born(1980)], wages))
 }
 
-const CLIFF: &str = "
+const DEDUCTION: &str = "
 [deduction]
 single = 3000
 married-joint = 6000
+";
 
+const CLIFF: &str = "
 [deduction-until-agi]
 single = 250000
 married-joint = 500000
@@ -67,7 +57,7 @@ married-joint = 500000
 
 #[test]
 fn a_deduction_is_lost_whole_above_the_agi_its_table_names() {
-    let state = flat_tenth(CLIFF);
+    let state = flat_tenth(&format!("{DEDUCTION}{CLIFF}"));
     assert_eq!(owed_on(&state, 250_000), 24_700);
     assert_eq!(owed_on(&state, 250_001), 25_000);
     let couple = |wages| owed(&state, &earning(&mut [born(1980), born(1982)], wages));
@@ -76,10 +66,6 @@ fn a_deduction_is_lost_whole_above_the_agi_its_table_names() {
 }
 
 const AT_65: &str = "
-[deduction]
-single = 3000
-married-joint = 6000
-
 [deduction-at-65]
 single = 1200
 married-joint = 1000
@@ -87,7 +73,7 @@ married-joint = 1000
 
 #[test]
 fn each_person_adds_to_the_deduction_from_the_year_they_reach_65() {
-    let state = flat_tenth(AT_65);
+    let state = flat_tenth(&format!("{DEDUCTION}{AT_65}"));
     let alone = |birth_year| owed(&state, &earning(&mut [born(birth_year)], 50_000));
     // Born June 1962: 64 in 2026. Born June 1961: 65 in 2026.
     assert_eq!(alone(1962), 4_700);
@@ -100,7 +86,9 @@ fn each_person_adds_to_the_deduction_from_the_year_they_reach_65() {
 
 #[test]
 fn an_addition_at_65_goes_with_the_deduction_it_adds_to() {
-    let keys = format!("{AT_65}\n[deduction-until-agi]\nsingle = 100000\nmarried-joint = 200000");
+    let keys = format!(
+        "{DEDUCTION}{AT_65}\n[deduction-until-agi]\nsingle = 100000\nmarried-joint = 200000"
+    );
     let state = flat_tenth(&keys);
     let owed = |wages| owed(&state, &earning(&mut [born(1950)], wages));
     assert_eq!(owed(100_000), 9_580);
@@ -117,9 +105,13 @@ single = { from = 125000, to = 145000 }
 married-joint = { from = 250000, to = 290000 }
 ";
 
-/// What is owed on `agi` of wages with `federal_tax` paid.
-fn owed_after(state: &StateParams, people: &mut [PersonIncome], pair: [Dollars; 2]) -> Dollars {
-    let [agi, federal_tax] = pair;
+/// What `people` owe on `agi` of wages with `federal_tax` paid.
+fn owed_after(
+    state: &StateParams,
+    people: &mut [PersonIncome],
+    agi: Dollars,
+    federal_tax: Dollars,
+) -> Dollars {
     let income = StateIncome {
         federal_tax,
         ..earning(people, agi)
@@ -130,7 +122,7 @@ fn owed_after(state: &StateParams, people: &mut [PersonIncome], pair: [Dollars; 
 #[test]
 fn federal_tax_is_subtracted_up_to_the_cap() {
     let state = flat_tenth(SUBTRACTION);
-    let owed = |federal_tax| owed_after(&state, &mut [born(1980)], [80_000, federal_tax]);
+    let owed = |federal_tax| owed_after(&state, &mut [born(1980)], 80_000, federal_tax);
     assert_eq!(owed(0), 8_000);
     assert_eq!(owed(5_020), 7_498);
     assert_eq!(owed(8_750), 7_125);
@@ -144,7 +136,7 @@ fn the_cap_falls_a_step_at_the_foot_of_its_band_and_at_each_step_to_its_top() {
     let taking_all = format!("{}{SUBTRACTION}", TENTH.replace("0.1", "1.0"));
     let state: StateParams = toml::from_str(&taking_all).unwrap();
     let subtracted =
-        |people: &mut [PersonIncome], agi: Dollars| agi - owed_after(&state, people, [agi, 50_000]);
+        |people: &mut [PersonIncome], agi: Dollars| agi - owed_after(&state, people, agi, 50_000);
     let alone = |agi| subtracted(&mut [born(1980)], agi);
     let stepped = [
         (124_999, 8_750),
@@ -252,26 +244,20 @@ fn an_excise_is_added_after_a_credit_has_taken_the_income_tax_to_nothing() {
     assert_eq!(owed(&state, &income), 700);
 }
 
-/// The table `keys` make of a state the embedded tables lack, in `year`.
-fn in_year(keys: &str, year: i16) -> StateParams {
-    let keys = keys.replace("\n[", "\n[states.ca.");
-    let brackets = TENTH
-        .replace('[', "[states.ca.")
-        .replace("[states.ca.{", "[{");
-    let tables = tables_with(&format!("{brackets}{keys}"));
-    let params = tables.params_for(year, &Inflation::constant(INFLATION));
+/// The table `keys` make of a state the embedded tables lack, as `year`
+/// reads it.
+fn table_in(keys: &str, year: i16) -> StateParams {
+    let states = BTreeMap::from([("ca", flat_tenth(keys))]);
+    let text = toml::to_string(&BTreeMap::from([("states", states)])).unwrap();
+    let params = tables_with(&text).params_for(year, &Inflation::constant(INFLATION));
     params.states["ca"].clone()
 }
 
 #[test]
 fn what_the_law_indexes_grows_and_what_it_fixes_does_not() {
-    let keys = format!("{AT_65}{CLIFF}{SUBTRACTION}{CREDIT}{EXCISE}").replacen(
-        "\n[deduction]\nsingle = 3000\nmarried-joint = 6000\n",
-        "",
-        1,
-    );
-    assert_eq!(flat_tenth(&keys), in_year(&keys, 2026));
-    let later = in_year(&keys, 2036);
+    let keys = format!("{AT_65}{CLIFF}{SUBTRACTION}{CREDIT}{EXCISE}");
+    assert_eq!(table_in(&keys, 2026), flat_tenth(&keys));
+    let later = table_in(&keys, 2036);
     let subtraction = later.federal_tax_subtraction.unwrap();
     assert_eq!(subtraction.cap, 10_666);
     assert_eq!(subtraction.phase_out.single.from, 125_000);
@@ -282,16 +268,16 @@ fn what_the_law_indexes_grows_and_what_it_fixes_does_not() {
     let excise = later.gains_excise.unwrap();
     assert_eq!(excise.deduction, 353_508);
     assert_eq!(excise.brackets[1].over, 1_000_000);
-    assert_eq!(later.deduction_at_65.unwrap().single, 1_200);
+    assert_eq!(later.deduction_at_65.single, 1_200);
     assert_eq!(later.deduction_until_agi.unwrap().single, 250_000);
 }
 
 #[test]
 fn a_credit_the_law_fixes_is_not_inflated() {
     let keys = "\n[exemption-credit]\nper-person = 40\nat-65 = 20\nunindexed = true\n";
-    let credit = in_year(keys, 2036).exemption_credit.unwrap();
+    let credit = table_in(keys, 2036).exemption_credit.unwrap();
     assert_eq!((credit.per_person, credit.at_65), (40, 20));
-    let indexed = in_year(&keys.replace("unindexed = true", ""), 2036);
+    let indexed = table_in(&keys.replace("unindexed = true", ""), 2036);
     let credit = indexed.exemption_credit.unwrap();
     assert_eq!((credit.per_person, credit.at_65), (49, 20));
 }
@@ -302,7 +288,7 @@ fn an_excise_bracket_takes_the_rate_the_law_sets_for_a_later_year() {
         "{ over = 0, rate = 0.07 }",
         "{ over = 0, rate = 0.07, later = [{ from = 2028, rate = 0.08 }] }",
     );
-    let rate_in = |year| in_year(&keys, year).gains_excise.unwrap().brackets[0].rate;
+    let rate_in = |year| table_in(&keys, year).gains_excise.unwrap().brackets[0].rate;
     assert!((rate_in(2027) - 0.07).abs() < f64::EPSILON);
     assert!((rate_in(2028) - 0.08).abs() < f64::EPSILON);
 }
