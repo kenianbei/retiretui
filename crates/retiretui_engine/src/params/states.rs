@@ -64,9 +64,6 @@ pub enum Source {
     /// Rental, annuity and other income, and what an HSA pays beyond
     /// medical spending.
     Other,
-    /// What a person paid into a tax-deferred account and deducted whatever
-    /// the year's income; never above nothing.
-    Deferral,
 }
 
 impl Source {
@@ -78,11 +75,7 @@ impl Source {
         Self::EarlyDistribution,
         Self::Conversion,
         Self::Other,
-        Self::Deferral,
     ];
-
-    /// How many sources there are.
-    pub const COUNT: usize = Self::ALL.len();
 
     /// The source as a parameter file spells it.
     #[must_use]
@@ -94,7 +87,6 @@ impl Source {
             Self::EarlyDistribution => "early-distribution",
             Self::Conversion => "conversion",
             Self::Other => "other",
-            Self::Deferral => "deferral",
         }
     }
 }

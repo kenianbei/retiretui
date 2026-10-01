@@ -344,24 +344,16 @@ brackets over ordinary income and capital gains alike, less its standard
 deduction, with Social Security taxed only where the state taxes it, and with
 what the state leaves untaxed taken out of each person's income first.
 
-Only states with a table validate:
+Only states with a table validate: the states without an income tax (`ak`, `fl`,
+`nv`, `nh`, `sd`, `tn`, `tx`, `wa`, `wy`), and `or`, `il`, `pa`, `ms` and `ia`.
+What each leaves untaxed, from what age, and the rates its law has set for later
+years are its table's `exclusions` and `later`, which the `tax_parameters` tool
+shows for any year. Illinois's deduction is its exemption allowance, one a
+person; Iowa's is the federal standard deduction, since Iowa starts from federal
+taxable income.
 
-- The states without an income tax: `ak`, `fl`, `nv`, `nh`, `sd`, `tn`, `tx`,
-  `wa`, `wy`.
-- `or`: no retirement income is left untaxed.
-- `il`: pensions, retirement-account withdrawals at any age and Roth conversions
-  are untaxed. Its deduction is the exemption allowance, one a person.
-- `pa`: pensions and Roth conversions are untaxed, and retirement-account
-  withdrawals from the year the owner turns 59 and a half. What is paid into a
-  401(k) or deducted for an IRA is taxed in the year it is paid.
-- `ms`: pensions, Roth conversions and retirement-account withdrawals are
-  untaxed, save a withdrawal the federal early-withdrawal penalty reaches. Its
-  rate falls each year to 3% in 2030, as enacted.
-- `ia`: pensions, retirement-account withdrawals and Roth conversions are
-  untaxed from the year the person turns 55.
-
-A commercial annuity, entered as an `annuity` income, is taxed by all of them; a
-plan-paid annuity is entered as a `pension`.
+A commercial annuity, entered as an `annuity` income, is taxed by every state
+that taxes income; a plan-paid annuity is entered as a `pension`.
 
 Not modeled:
 

@@ -59,14 +59,10 @@ pub const IRMAA_LOOKBACK_YEARS: i16 = 2;
 
 /// Whether someone born on `birth` reaches `age`, in years and a fraction of
 /// one, by the end of `year`.
-#[must_use]
-pub fn is_age_reached(birth: PlanDate, age: f64, year: i16) -> bool {
-    let months = (age * f64::from(MONTHS_PER_YEAR)).round() as i64;
-    let past_january = i64::from(birth.0.month()) - 1;
-    let reached_in = months
-        .saturating_add(past_january)
-        .div_euclid(i64::from(MONTHS_PER_YEAR));
-    i64::from(birth.year()) + reached_in <= i64::from(year)
+pub(crate) fn is_age_reached(birth: PlanDate, age: f64, year: i16) -> bool {
+    let months_per_year = f64::from(MONTHS_PER_YEAR);
+    let months = (age * months_per_year).round() + f64::from(birth.0.month() - 1);
+    f64::from(birth.year()) + (months / months_per_year).floor() <= f64::from(year)
 }
 
 /// Whether a person is Medicare-covered in `year`.

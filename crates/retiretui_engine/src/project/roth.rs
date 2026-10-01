@@ -9,11 +9,13 @@ use super::year::Simulation;
 /// untaxed, and a conversion before it comes out unpenalized.
 const SEASONING_YEARS: i16 = 5;
 
-/// The parts of a Roth draw that are taxed and that pay the penalty.
+/// The parts of a Roth draw that are taxed and that pay the penalty, and
+/// whether the penalty reaches the account.
 #[derive(Default)]
 pub(super) struct RothDraw {
     pub(super) taxed: Dollars,
     pub(super) penalized: Dollars,
+    pub(super) is_early: bool,
 }
 
 impl<'a> Simulation<'a> {
@@ -98,6 +100,7 @@ impl<'a> Simulation<'a> {
             return RothDraw {
                 taxed: earnings,
                 penalized: if is_penalized { earnings } else { 0 },
+                is_early: is_penalized,
             };
         }
         let paid_in = take.min(self.pooled_basis(index));
@@ -119,6 +122,7 @@ impl<'a> Simulation<'a> {
         RothDraw {
             taxed: earnings,
             penalized,
+            is_early: is_penalized,
         }
     }
 

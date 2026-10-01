@@ -3,11 +3,9 @@
 
 mod common;
 
-use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::Dollars;
-use retiretui_engine::project::{Projection, project, validate_plan};
 
-use common::{born_in, plan_from};
+use common::{living_in, run};
 
 const SALARY: &str = r#"
 [[income]]
@@ -81,26 +79,9 @@ on = {{ date = 2026-01-01 }}
     )
 }
 
-/// Someone born in June of `birth_year` living in `state` with cash enough
-/// for every tax, and `body`.
-fn living_in(state: &str, birth_year: i16, body: &str) -> String {
-    let home = format!(
-        "[[residency]]\ncountry = \"us\"\nstate = \"{state}\"\n\n[[accounts]]\nid = \"cash\"\nkind = \"cash\"\nowner = \"me\"\nbalance = 500000\n{body}"
-    );
-    born_in(birth_year, &home)
-}
-
-fn projected(text: &str) -> Projection {
-    let plan = plan_from(text);
-    let tables = TaxTables::embedded();
-    let issues = validate_plan(&plan, &tables);
-    assert!(issues.is_empty(), "{issues:?}");
-    project(&plan, &tables)
-}
-
 /// What the state takes in 2026.
 fn state_tax(text: &str) -> Dollars {
-    projected(text).years[0].taxes.state
+    run(text).years[0].taxes.state
 }
 
 #[test]
@@ -182,7 +163,7 @@ fn mississippi_s_rate_steps_down_as_enacted_over_a_deduction_held_nominal() {
     // 10,000, whatever inflation does.
     let nominal = SALARY.replace("amount = 100000", "amount = 58300\ncola = false");
     let text = living_in("ms", 1980, &nominal).replace("inflation = 0.0", "inflation = 0.02");
-    let projection = projected(&text);
+    let projection = run(&text);
     let taken: Vec<Dollars> = (2026..=2032)
         .map(|year| projection.row(year).unwrap().taxes.state)
         .collect();

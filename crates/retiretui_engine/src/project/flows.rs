@@ -60,13 +60,15 @@ impl Simulation<'_> {
         acc: &mut YearAcc,
     ) {
         let account = &self.plan.accounts[index];
-        let source = if self.pays_penalty(account, year) {
+        let is_early = self.pays_penalty(account, year);
+        if is_early {
             acc.penalty_base += taxed;
-            Source::EarlyDistribution
-        } else {
-            Source::Distribution
-        };
-        acc.tax(self.person_at(&account.owner), source, taxed);
+        }
+        acc.tax(
+            self.person_at(&account.owner),
+            distribution(is_early),
+            taxed,
+        );
     }
 
     /// Moves `take` and answers the part of it taxed as a distribution.
@@ -165,11 +167,7 @@ impl Simulation<'_> {
             let untaxed = self.remove_basis(i, amount);
             self.balances[i] -= amount;
             acc.rmds += amount;
-            acc.tax(
-                self.person_at(&account.owner),
-                Source::Distribution,
-                amount - untaxed,
-            );
+            self.tax_distribution(i, amount - untaxed, year, acc);
             acc.cash += amount;
             *acc.withdrawals.entry(account.id.clone()).or_default() += amount;
             acc.actions.push(Action::Rmd {
@@ -226,5 +224,15 @@ impl Simulation<'_> {
                 amount: take,
             });
         }
+    }
+}
+
+/// What a retirement account pays out is recorded as: early where the
+/// federal penalty reaches the account.
+pub(super) const fn distribution(is_early: bool) -> Source {
+    if is_early {
+        Source::EarlyDistribution
+    } else {
+        Source::Distribution
     }
 }

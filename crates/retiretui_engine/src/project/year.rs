@@ -8,6 +8,7 @@ use super::benefit::{Derived, first_paid_months};
 use super::collect::{default_cliff_end, seed_magi_lookback};
 use super::invest::Holding;
 use super::ira::IraBand;
+use super::residence;
 use super::resolve::Resolver;
 use super::{Action, ClassTotals, MarketPath, Projection, Taxes, YearRow, horizon_year};
 
@@ -56,6 +57,9 @@ pub(super) struct YearAcc {
     pub(super) cash: Dollars,
     /// Each person's taxable ordinary income, in the household's order.
     pub(super) taxed: Vec<PersonIncome>,
+    /// What was paid into tax-deferred accounts and is deducted whatever
+    /// the year's income.
+    pub(super) deferred: Dollars,
     pub(super) ss_gross: Dollars,
     pub(super) gains: Dollars,
     pub(super) penalty_base: Dollars,
@@ -91,7 +95,8 @@ impl YearAcc {
     }
 
     pub(super) fn ordinary(&self) -> Dollars {
-        self.taxed.iter().map(PersonIncome::total).sum()
+        let received: Dollars = self.taxed.iter().map(PersonIncome::total).sum();
+        received - self.deferred
     }
 }
 
@@ -157,7 +162,8 @@ impl<'a> Simulation<'a> {
 
     fn step(&mut self, year: i16) -> YearRow {
         let factor = self.path.deflator(year);
-        let params = self.tables.params_for(year, self.path.inflation());
+        let lived_in = residence::state_in(self.plan, &self.resolver, year);
+        let params = self.tables.params_in(year, self.path.inflation(), lived_in);
         let people = &self.plan.household.people;
         let mut acc = YearAcc {
             pending: vec![0; self.plan.accounts.len()],

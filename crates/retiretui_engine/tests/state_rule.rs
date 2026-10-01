@@ -34,7 +34,7 @@ fn in_year(year: i16, people: &[PersonIncome]) -> StateIncome<'_> {
         people,
         gains: 0,
         taxable_social_security: 0,
-        ira_deducted: 0,
+        deferred: 0,
     }
 }
 
@@ -174,14 +174,11 @@ fn each_spouse_is_exempt_by_their_own_age() {
 
 #[test]
 fn a_state_that_taxes_deferrals_taxes_what_is_paid_into_a_plan_or_an_ira() {
-    // 100,000 of salary less 4,000 paid into an HSA, and 10,000 deferred.
-    let worker = [person(
-        1980,
-        6,
-        &[(Source::Wages, 96_000), (Source::Deferral, -10_000)],
-    )];
+    // 100,000 of salary less 4,000 paid into an HSA, with 10,000 deferred
+    // and a 7,000 IRA contribution deducted.
+    let worker = [earning(96_000)];
     let income = StateIncome {
-        ira_deducted: 7_000,
+        deferred: 17_000,
         ..in_year(2026, &worker)
     };
     let following = tax::state_tax(&flat_tenth(""), FilingStatus::Single, &income);
@@ -195,21 +192,13 @@ fn a_state_that_taxes_deferrals_taxes_what_is_paid_into_a_plan_or_an_ira() {
 
 #[test]
 fn a_row_exempts_what_a_source_holds_and_no_more() {
-    let state = flat_tenth("[[exclusions]]\nsources = [\"deferral\", \"wages\"]");
+    let state = flat_tenth("[[exclusions]]\nsources = [\"wages\"]");
     let pension = (Source::Pension, 50_000);
     // An HSA contribution with no salary under it still reduces income.
-    let retired = [
-        (Source::Wages, -4_000),
-        (Source::Deferral, -10_000),
-        pension,
-    ];
-    assert_eq!(owed(&state, 2026, person(1980, 6, &retired)), 3_600);
-    let working = [
-        (Source::Wages, 96_000),
-        (Source::Deferral, -10_000),
-        pension,
-    ];
-    assert_eq!(owed(&state, 2026, person(1980, 6, &working)), 4_000);
+    let retired = [(Source::Wages, -4_000), pension];
+    assert_eq!(owed(&state, 2026, person(1980, 6, &retired)), 4_600);
+    let working = [(Source::Wages, 96_000), pension];
+    assert_eq!(owed(&state, 2026, person(1980, 6, &working)), 5_000);
 }
 
 const FIXED: &str = r"
@@ -266,6 +255,14 @@ fn a_bracket_takes_the_rate_the_law_has_set_by_the_year() {
     assert_rates(&tables, |params| {
         params.states["ca"].brackets.single[0].rate
     });
+    let left = |year| {
+        let params = tables.params_for(year, &Inflation::constant(INFLATION));
+        let later = &params.states["ca"].brackets.single[0].later;
+        later.iter().map(|step| step.from).collect::<Vec<_>>()
+    };
+    assert_eq!(left(2026), [2029, 2027, 2030]);
+    assert_eq!(left(2028), [2029, 2030]);
+    assert!(left(2030).is_empty());
     let unstepped = tables.params_for(2040, &Inflation::constant(INFLATION));
     let joint = &unstepped.states["ca"].brackets.married_joint[0];
     assert!((joint.rate - 0.04).abs() < f64::EPSILON);

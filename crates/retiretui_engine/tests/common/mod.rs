@@ -118,6 +118,15 @@ birth = {birth_year}-06-15
     )
 }
 
+/// Someone born in June of `birth_year` living in `state` with cash enough
+/// for every tax, and `body`.
+pub fn living_in(state: &str, birth_year: i16, body: &str) -> String {
+    let home = format!(
+        "[[residency]]\ncountry = \"us\"\nstate = \"{state}\"\n\n[[accounts]]\nid = \"cash\"\nkind = \"cash\"\nowner = \"me\"\nbalance = 500000\n{body}"
+    );
+    born_in(birth_year, &home)
+}
+
 pub fn head(text: &str) -> String {
     format!(
         r#"

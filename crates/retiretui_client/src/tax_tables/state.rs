@@ -13,6 +13,7 @@ use crate::table::money;
 pub(super) const NO_INCOME_TAX: &str = "This state has no income tax.";
 pub(super) const STATE_TITLE: &str = "State income tax";
 const UNTAXED: &str = "Untaxed";
+const DEFERRALS: &str = "Retirement contributions";
 const HALF_A_YEAR: f64 = 0.5;
 
 pub(super) fn state_sections(
@@ -56,8 +57,7 @@ fn income_rows(table: &StateParams, status: FilingStatus) -> Vec<Vec<String>> {
     ];
     rows.extend(table.exclusions.iter().flat_map(untaxed_rows));
     if table.taxes_deferrals {
-        let deferral = source_name(Source::Deferral);
-        rows.push(labelled(deferral, "Taxed when paid in".to_owned()));
+        rows.push(labelled(DEFERRALS, "Taxed when paid in".to_owned()));
     }
     rows
 }
@@ -91,7 +91,6 @@ const fn source_name(source: Source) -> &'static str {
         Source::EarlyDistribution => "Retirement withdrawals, early",
         Source::Conversion => "Roth conversions",
         Source::Other => "Other income",
-        Source::Deferral => "Retirement contributions",
     }
 }
 
@@ -124,15 +123,12 @@ mod tests {
             Some("Untaxed from 59 and a half")
         );
         assert_eq!(untaxed(early), None);
-        assert_eq!(
-            untaxed("Retirement contributions").as_deref(),
-            Some("Taxed when paid in")
-        );
+        assert_eq!(untaxed(DEFERRALS).as_deref(), Some("Taxed when paid in"));
         let iowa = rows("ia", 2026);
         assert_eq!(said(&iowa, early).as_deref(), Some("Untaxed from 55"));
         let oregon = rows("or", 2026);
         assert_eq!(said(&oregon, "Pensions"), None);
-        assert_eq!(said(&oregon, "Retirement contributions"), None);
+        assert_eq!(said(&oregon, DEFERRALS), None);
     }
 
     #[test]

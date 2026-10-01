@@ -3,6 +3,7 @@
 
 mod common;
 
+use retiretui_engine::params::{Inflation, Source, TaxTables};
 use retiretui_engine::plan::{AccountKind, Draw, FilingStatus, IncomeKind, Payer, TriggerBasis};
 use serde_json::json;
 
@@ -222,6 +223,13 @@ fn schema_reference_names_the_full_vocabulary() {
     }
     for marker in ["base =", "remove = true", "replace = true"] {
         assert!(text.contains(marker), "missing scenario marker {marker}");
+    }
+    let tables = TaxTables::embedded().params_for(2026, &Inflation::constant(0.0));
+    for word in tables.states.keys().map(String::as_str) {
+        assert!(text.contains(&format!("`{word}`")), "missing state {word}");
+    }
+    for word in Source::ALL.iter().map(|source| source.as_str()) {
+        assert!(text.contains(&format!("`{word}`")), "missing source {word}");
     }
     for marker in ["[medicare]", "[[cliffs]]", "`magi_over`", "`prior_magi`"] {
         assert!(text.contains(marker), "missing cliff marker {marker}");

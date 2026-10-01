@@ -3,6 +3,7 @@ use crate::plan::{Account, Dollars, FilingStatus, Person, TreatmentClass};
 use crate::tax::{self, StateIncome};
 
 use super::Taxes;
+use super::flows::distribution;
 use super::ira::ira_deducted;
 use super::residence;
 use super::scale;
@@ -174,12 +175,8 @@ impl Simulation<'_> {
                 acc.gains += take - self.remove_basis(index, take);
             }
             TreatmentClass::Roth => {
-                let source = if self.pays_penalty(account, year) {
-                    Source::EarlyDistribution
-                } else {
-                    Source::Distribution
-                };
                 let draw = self.draw_roth(index, take, year);
+                let source = distribution(draw.is_early);
                 acc.tax(self.person_at(&account.owner), source, draw.taxed);
                 acc.penalty_base += draw.penalized;
             }
@@ -240,7 +237,7 @@ fn compute_taxes(
         people: &acc.taxed,
         gains: acc.gains,
         taxable_social_security: taxable_ss,
-        ira_deducted: deducted,
+        deferred: acc.deferred + deducted,
     };
     let state = state.map_or(0, |state| tax::state_tax(state, status, &income));
     Taxes {

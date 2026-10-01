@@ -403,7 +403,8 @@ married-joint = [
 sources = ["pension", "distribution", "conversion"]
 
 # Iowa: Iowa Code 422.5(1)(a), 422.7(8) and (19); IA 1040ES, 2026. Iowa starts
-# from federal taxable income, so the deduction is the federal standard one.
+# from federal taxable income, so the deduction is the federal standard one,
+# and a later year's table restates it beside its own.
 [states.ia.deduction]
 single = 16100
 married-joint = 32200

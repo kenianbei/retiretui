@@ -7,19 +7,7 @@ use retiretui_engine::params::Source;
 use retiretui_engine::plan::Dollars;
 use retiretui_engine::project::{YearRow, project};
 
-use common::{born_in, plan_from, tables_with};
-
-const CASH: &str = r#"
-[[residency]]
-country = "us"
-state = "ca"
-
-[[accounts]]
-id = "cash"
-kind = "cash"
-owner = "me"
-balance = 500000
-"#;
+use common::{living_in, plan_from, tables_with};
 
 /// 2026 of `plan` in a state taking a tenth of everything but `exempt`,
 /// with `keys` in its table.
@@ -59,7 +47,7 @@ fn receiving(kinds: &[&str]) -> String {
             "\n[[income]]\nid = \"{kind}\"\nkind = \"{kind}\"\nowner = \"me\"\namount = 30000\n"
         )
     });
-    born_in(1976, &format!("{CASH}{}", incomes.collect::<String>()))
+    living_in("ca", 1976, &incomes.collect::<String>())
 }
 
 #[test]
@@ -75,9 +63,15 @@ fn a_salary_is_wages_a_pension_a_pension_and_every_other_income_other() {
 /// `rest` beside it.
 fn holding(birth_year: i16, account: &str, rest: &str) -> String {
     let body = format!(
-        "{CASH}\n[[accounts]]\nid = \"k\"\nowner = \"me\"\nbalance = 400000\n{account}\n{rest}"
+        "
+[[accounts]]
+id = \"k\"
+owner = \"me\"
+balance = 400000
+{account}
+{rest}"
     );
-    born_in(birth_year, &body)
+    living_in("ca", birth_year, &body)
 }
 
 const TO_A_BROKERAGE: &str = r#"
@@ -176,7 +170,7 @@ fn what_an_hsa_pays_beyond_medical_spending_is_other_income() {
 /// into `account`.
 fn paying_into(account: &str) -> String {
     let body = format!(
-        r#"{CASH}
+        r#"
 [[income]]
 id = "pay"
 kind = "salary"
@@ -201,7 +195,7 @@ to = "k"
 amount = 4000
 "#
     );
-    born_in(1976, &body)
+    living_in("ca", 1976, &body)
 }
 
 #[test]

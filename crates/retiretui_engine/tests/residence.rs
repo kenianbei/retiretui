@@ -113,6 +113,9 @@ fn an_override_year_without_states_inherits_them_inflated() {
     let inherited = tables.params_for(2030, &inflation);
     assert_eq!(inherited.states["or"], carried.states["or"]);
     assert!(!inherited.states.contains_key("ca"));
+    let projected = state_taxes(&project(&plan(OREGON), &tables));
+    assert_eq!(projected, state_taxes(&run(OREGON)));
+    assert!(projected.iter().all(|&tax| tax > 0));
 }
 
 #[test]

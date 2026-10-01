@@ -250,7 +250,7 @@ impl<'a> Simulation<'a> {
             TreatmentClass::Deferred => {
                 match Self::ira_band(account, covered) {
                     Some(band) => acc.ira_to_settle.push((index, band, paid.employee)),
-                    None => acc.tax(owner, Source::Deferral, -paid.employee),
+                    None => acc.deferred += paid.employee,
                 }
                 self.bases[index] += paid.after_tax;
             }

@@ -5,28 +5,28 @@ use super::{is_age_reached, walk_brackets};
 use crate::params::{Source, StateParams};
 use crate::plan::{Dollars, FilingStatus, PlanDate};
 
+const SOURCES: usize = Source::ALL.len();
+
 /// One person's taxable ordinary income in a year, by where it came from.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct PersonIncome {
-    /// The person's birth date, which an age a state's table names is
-    /// counted from.
-    pub birth: PlanDate,
-    /// The year's income by [`Source`], in the order of [`Source::ALL`].
-    pub by_source: [Dollars; Source::COUNT],
+    birth: PlanDate,
+    by_source: [Dollars; SOURCES],
 }
 
 impl PersonIncome {
-    /// Someone born on `birth` who has received nothing yet.
+    /// Someone born on `birth`, which an age a state's table names is
+    /// counted from, who has received nothing yet.
     #[must_use]
-    pub const fn new(birth: PlanDate) -> Self {
+    pub fn new(birth: PlanDate) -> Self {
         Self {
             birth,
-            by_source: [0; Source::COUNT],
+            by_source: [0; SOURCES],
         }
     }
 
     /// Adds `amount`, which may be negative, to what came from `source`.
-    pub const fn add(&mut self, source: Source, amount: Dollars) {
+    pub fn add(&mut self, source: Source, amount: Dollars) {
         self.by_source[source as usize] += amount;
     }
 
@@ -38,7 +38,7 @@ impl PersonIncome {
 }
 
 /// What a year's state income tax is figured from.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug)]
 pub struct StateIncome<'a> {
     /// The calendar year, which the ages a state's table names are read in.
     pub year: i16,
@@ -48,30 +48,33 @@ pub struct StateIncome<'a> {
     pub gains: Dollars,
     /// The federally taxable share of Social Security.
     pub taxable_social_security: Dollars,
-    /// Traditional IRA contributions the year's MAGI let be deducted.
-    pub ira_deducted: Dollars,
+    /// What was paid into tax-deferred accounts and deducted: pre-tax
+    /// deferrals, and the traditional IRA contributions the year's MAGI let
+    /// be deducted.
+    pub deferred: Dollars,
 }
 
 /// A state's income tax: what each person's ordinary income leaves once the
 /// state's exclusions are taken out of it, gains, and the taxable share of
-/// Social Security where the state taxes it, less its deduction.
+/// Social Security where the state taxes it, less what was deferred where
+/// the state follows that, and less its deduction.
 #[must_use]
 pub fn state_tax(state: &StateParams, status: FilingStatus, income: &StateIncome) -> Dollars {
     let people = income.people.iter();
     let ordinary: Dollars = people
         .map(|person| taxed_of(state, person, income.year))
         .sum();
-    let ira_deducted = if state.taxes_deferrals {
+    let deferred = if state.taxes_deferrals {
         0
     } else {
-        income.ira_deducted
+        income.deferred
     };
     let benefits = if state.taxes_social_security {
         income.taxable_social_security
     } else {
         0
     };
-    let taxable = ordinary + income.gains - ira_deducted + benefits - state.deduction.get(status);
+    let taxable = ordinary + income.gains - deferred + benefits - state.deduction.get(status);
     walk_brackets(state.brackets.for_status(status), taxable)
 }
 
@@ -80,13 +83,10 @@ pub fn state_tax(state: &StateParams, status: FilingStatus, income: &StateIncome
 /// left as it is.
 fn taxed_of(state: &StateParams, person: &PersonIncome, year: i16) -> Dollars {
     let mut by_source = person.by_source;
-    if state.taxes_deferrals {
-        by_source[Source::Deferral as usize] = 0;
-    }
     for row in &state.exclusions {
-        if row
+        if !row
             .from_age
-            .is_some_and(|age| !is_age_reached(person.birth, age, year))
+            .is_none_or(|age| is_age_reached(person.birth, age, year))
         {
             continue;
         }
