@@ -266,8 +266,7 @@ impl<'a> Checker<'a> {
     }
 
     fn check_separation(&mut self, path: &str, account: &super::Account) {
-        let can_be_freed = account.kind.frees_on_separation(account.roth);
-        if account.separated.is_some() && !can_be_freed {
+        if account.separated.is_some() && !account.kind.frees_on_separation(account.roth) {
             self.push(
                 format!("{path}.separated"),
                 "only a tax-deferred 401(k), 403(b) or 414(k) is freed by leaving a job",

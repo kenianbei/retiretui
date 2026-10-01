@@ -62,7 +62,7 @@ impl Simulation<'_> {
                 if self.is_penalized(index, year) != penalized_pass {
                     continue;
                 }
-                remaining -= self.withdraw(index, remaining, year, acc);
+                remaining -= self.withdraw(index, remaining, penalized_pass, acc);
             }
         }
         want - remaining
@@ -124,13 +124,18 @@ impl Simulation<'_> {
             .is_some_and(|left| left <= year && owner.age_in_year(left) >= freeing_age)
     }
 
-    fn withdraw(&mut self, index: usize, want: Dollars, year: i16, acc: &mut YearAcc) -> Dollars {
+    fn withdraw(
+        &mut self,
+        index: usize,
+        want: Dollars,
+        is_penalized: bool,
+        acc: &mut YearAcc,
+    ) -> Dollars {
         let take = want.min(self.balances[index]);
         if take <= 0 {
             return 0;
         }
         let account = &self.plan.accounts[index];
-        let penalized = self.is_penalized(index, year);
         let untaxed = if account.keeps_basis() {
             self.remove_basis(index, take)
         } else {
@@ -150,7 +155,7 @@ impl Simulation<'_> {
         match account.treatment() {
             TreatmentClass::Deferred => {
                 acc.ordinary += take - untaxed;
-                if penalized {
+                if is_penalized {
                     acc.penalty_base += take - untaxed;
                 }
             }
