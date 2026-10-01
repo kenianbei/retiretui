@@ -189,6 +189,13 @@ impl Domain for Accounts {
         share("allocation.5.stocks", "  Stocks", step_shown::<5>),
         share("allocation.5.bonds", "  Bonds", step_shown::<5>),
         cash("allocation.5.cash", "  Cash", step_shown::<5>),
+        FieldSpec::trigger("separated", "Job left")
+            .blank("Not stated")
+            .shown_when(applies::frees_on_separation)
+            .help("When you leave the job this plan is with. Leaving it in or after the year you turn 55 lets you withdraw from the plan without the 10% penalty."),
+        FieldSpec::flag("public_safety", "Public safety")
+            .shown_when(applies::states_separation)
+            .help("You are a police officer, firefighter or other public-safety employee of this employer: the age is 50, not 55."),
         FieldSpec::trigger("locked_until", "Locked until")
             .blank("Never")
             .help("Until then, nothing can be withdrawn or transferred out."),

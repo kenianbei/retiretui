@@ -242,6 +242,7 @@ impl<'a> Checker<'a> {
                 self.push(format!("{path}.balance"), "must not be negative");
             }
             self.check_basis(&path, account);
+            self.check_separation(&path, account);
             super::allocation::check_returns(&path, account, &mut self.issues);
         }
     }
@@ -261,6 +262,21 @@ impl<'a> Checker<'a> {
         }
         if basis > account.balance {
             self.push(format!("{path}.basis"), "must not exceed the balance");
+        }
+    }
+
+    fn check_separation(&mut self, path: &str, account: &super::Account) {
+        if account.separated.is_some() && !account.kind.frees_on_separation(account.roth) {
+            self.push(
+                format!("{path}.separated"),
+                "only a tax-deferred 401(k), 403(b) or 414(k) is freed by leaving a job",
+            );
+        }
+        if account.public_safety && account.separated.is_none() {
+            self.push(
+                format!("{path}.public_safety"),
+                "lowers the age `separated` is checked against; state when the job is left",
+            );
         }
     }
 

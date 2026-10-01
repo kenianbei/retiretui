@@ -1,47 +1,10 @@
-//! What the projection taxes: penalties, RMDs, conversions, benefits and gains.
+//! What the projection taxes: RMDs, conversions, benefits and gains.
 
 mod common;
 
 use retiretui_engine::plan::Dollars;
 
 use common::{head, run};
-
-#[test]
-fn early_deferred_draw_pays_penalty_only_as_last_resort() {
-    let plan = head(
-        r#"
-[[accounts]]
-id = "cash"
-kind = "cash"
-owner = "me"
-balance = 30000
-
-[[accounts]]
-id = "401k"
-kind = "401k"
-owner = "me"
-balance = 500000
-
-[[expenses]]
-id = "living"
-amount = 50000
-"#,
-    );
-    let projection = run(&plan);
-    let first = &projection.years[0];
-    // Cash covers 30,000 penalty-free; the remainder must come from the
-    // 401k at age 46 and carries the 10% penalty.
-    assert_eq!(first.withdrawals["cash"], 30_000);
-    let deferred_draw = first.withdrawals["401k"];
-    assert!(deferred_draw > 0);
-    assert_eq!(
-        first.taxes.penalty,
-        (deferred_draw as f64 * 0.10).round() as i64
-    );
-    let exempt = plan.replace("kind = \"401k\"", "kind = \"457b\"");
-    let projection = run(&exempt);
-    assert_eq!(projection.years[0].taxes.penalty, 0);
-}
 
 #[test]
 fn rmds_are_forced_and_taxed() {

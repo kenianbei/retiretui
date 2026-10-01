@@ -163,6 +163,7 @@ function PickField({
   id,
   offers,
   value,
+  named,
   described,
   isInvalid,
   pick,
@@ -170,6 +171,8 @@ function PickField({
   id: string;
   offers: Offer[];
   value: string;
+  /** Its accessible name, where no label names it. */
+  named?: string;
   described?: string;
   isInvalid?: boolean;
   pick: (value: string) => void;
@@ -189,6 +192,7 @@ function PickField({
           id={id}
           className={INPUT}
           list={listId}
+          aria-label={named}
           aria-describedby={described}
           aria-invalid={isInvalid || undefined}
           {...typing}
@@ -205,6 +209,7 @@ function PickField({
     <select
       id={id}
       className={INPUT}
+      aria-label={named}
       aria-describedby={described}
       aria-invalid={isInvalid || undefined}
       value={value}
@@ -279,6 +284,7 @@ function TriggerField({
               id={`${fieldId(view)}-${operand.key}`}
               offers={operand.offers}
               value={operand.text}
+              named={operand.help}
               pick={(value) => {
                 set(operand.key, value);
               }}

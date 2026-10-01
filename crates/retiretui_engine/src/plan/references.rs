@@ -124,6 +124,9 @@ fn collect_triggers(plan: &Plan) -> Vec<(String, &Trigger)> {
 
 fn collect_account_triggers<'a>(plan: &'a Plan, all: &mut Vec<(String, &'a Trigger)>) {
     for (i, account) in plan.accounts.iter().enumerate() {
+        if let Some(trigger) = &account.separated {
+            all.push((format!("accounts[{i}].separated"), trigger));
+        }
         if let Some(trigger) = &account.locked_until {
             all.push((format!("accounts[{i}].locked_until"), trigger));
         }

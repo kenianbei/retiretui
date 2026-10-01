@@ -4,7 +4,7 @@ mod common;
 
 use std::path::Path;
 
-use common::{FULL_PLAN, STATEMENT, json_of, retiretui, scratch_dir};
+use common::{FULL_PLAN, OPT_PLAN, STATEMENT, json_of, retiretui, scratch_dir};
 
 #[test]
 fn validate_accepts_the_fixture_and_rejects_garbage() {
@@ -201,6 +201,37 @@ fn project_honors_tax_dir_overrides() {
     let dir = Path::new("../retiretui_engine/tests/fixtures/tax-override");
     let output = retiretui(&["project", FULL_PLAN, "--tax-dir", dir.to_str().unwrap()]);
     assert!(output.status.success(), "{output:?}");
+}
+
+/// 100,000 moved from the 401(k) to a brokerage, at 46.
+const EARLY_TRANSFER: &str = r#"
+[[accounts]]
+id = "brokerage"
+kind = "brokerage"
+owner = "me"
+balance = 0
+
+[[transfers]]
+id = "cash-out"
+from = "k"
+to = "brokerage"
+amount = 100000
+on = { date = 2026-01-01 }
+"#;
+
+#[test]
+fn actions_says_the_penalty_an_early_transfer_pays() {
+    let early = format!("{OPT_PLAN}{EARLY_TRANSFER}");
+    let dir = scratch_dir("cli-penalty", "base.toml", &[("early.toml", &early)]);
+    let plan = dir.join("early.toml");
+    let plan = plan.to_str().unwrap();
+    let paid = "Early-withdrawal penalty paid this year: $10,000";
+    let said = retiretui(&["actions", plan, "--year", "2026"]);
+    assert!(said.status.success(), "{said:?}");
+    let text = String::from_utf8_lossy(&said.stdout).into_owned();
+    assert!(text.contains(paid), "{text}");
+    let json = retiretui(&["actions", plan, "--year", "2026", "--format", "json"]);
+    assert_eq!(json_of(&json)["warnings"], serde_json::json!([paid]));
 }
 
 #[test]

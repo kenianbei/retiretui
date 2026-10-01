@@ -25,6 +25,7 @@ pub const ON_KEY: &str = "on";
 const KIND_KEY: &str = "kind";
 const COUNTRY_KEY: &str = "country";
 const ROTH_KEY: &str = "roth";
+const SEPARATED_KEY: &str = "separated";
 
 /// An item's timing, read from whether it states when it happens once.
 #[must_use]
@@ -126,6 +127,19 @@ pub(crate) fn supports_roth(item: &Table) -> bool {
     account_is(item, AccountKind::supports_roth)
 }
 
+/// Whether leaving the job the account is with can free it from the
+/// early-withdrawal penalty.
+pub(crate) fn frees_on_separation(item: &Table) -> bool {
+    let is_roth = item.get(ROTH_KEY).and_then(Value::as_bool) == Some(true);
+    account_is(item, |kind| kind.frees_on_separation(is_roth))
+}
+
+/// Whether the account says when its job is left, and so has an age to
+/// lower.
+pub(crate) fn states_separation(item: &Table) -> bool {
+    frees_on_separation(item) && item.contains_key(SEPARATED_KEY)
+}
+
 /// Whether the residency is in the United States.
 #[must_use]
 pub(crate) fn is_in_the_us(item: &Table) -> bool {
@@ -214,5 +228,25 @@ mod tests {
         assert!(!keeps_basis(&item("kind = \"cash\"")));
         assert!(supports_roth(&item("kind = \"ira\"")));
         assert!(!keeps_basis(&Table::new()), "no kind holds nothing");
+    }
+
+    #[test]
+    fn only_a_tax_deferred_workplace_plan_is_asked_when_its_job_is_left() {
+        use super::super::Domain;
+        use super::super::accounts::Accounts;
+        let field = |key: &str| Accounts::FIELDS.iter().find(|field| field.key == key);
+        let left = field("separated").expect("the Account form asks it");
+        for kind in ["401k", "403b", "414k"] {
+            assert!(left.is_shown_for(&item(&format!("kind = \"{kind}\""))));
+        }
+        for kind in ["457b", "ira", "brokerage"] {
+            assert!(!left.is_shown_for(&item(&format!("kind = \"{kind}\""))));
+        }
+        assert!(!left.is_shown_for(&item("kind = \"401k\"\nroth = true")));
+        assert!(!left.is_shown_for(&Table::new()));
+        let flag = field("public_safety").expect("the Account form asks it");
+        assert!(!flag.is_shown_for(&item("kind = \"401k\"")));
+        assert!(flag.is_shown_for(&item("kind = \"401k\"\nseparated = { age = 56 }")));
+        assert!(!flag.is_shown_for(&item("kind = \"ira\"\nseparated = { age = 56 }")));
     }
 }

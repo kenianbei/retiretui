@@ -150,3 +150,35 @@ test("an empty domain says what it holds before Add, and a form leads with the n
     page.getByRole("dialog").getByRole("textbox").first(),
   ).toHaveAccessibleName("Name");
 });
+
+test("a workplace plan asks when its job is left, and only then whether it is public safety's", async ({
+  page,
+}) => {
+  await seed(
+    page,
+    { "/starter.toml": example("starter.toml") },
+    "/starter.toml",
+    "#/plan/accounts?edit=0",
+  );
+  const sheet = page.getByRole("dialog");
+  const left = sheet.getByLabel("Job left", { exact: true });
+  const safety = sheet.getByRole("checkbox", { name: /^Public safety/ });
+  await expect(sheet.getByLabel("ID", { exact: true })).toHaveValue("checking");
+  await expect(left).toHaveCount(0);
+
+  await page.goto("#/plan/accounts?edit=1");
+  await expect(sheet.getByLabel("ID", { exact: true })).toHaveValue("401k-sam");
+  await expect(left).toBeVisible();
+  await expect(safety).toHaveCount(0);
+  await left.selectOption({ label: "Event" });
+  await expect(safety).toHaveCount(0);
+  await sheet
+    .getByLabel(/^The event it follows/)
+    .selectOption({ label: "Sam retires" });
+  await expect(safety).toBeVisible();
+  await safety.check();
+  await expectAccessible(page);
+  await sheet.getByRole("button", { name: "Apply" }).click();
+  await expect(sheet).toHaveCount(0);
+  await expect(page.locator("main")).toContainText("Public safety");
+});

@@ -124,6 +124,13 @@ impl AccountKind {
         matches!(self, Self::Ira | Self::SepIra | Self::SimpleIra)
     }
 
+    /// Whether leaving the job a plan of this kind is with can free it from
+    /// the early-withdrawal penalty: a tax-deferred 401(k), 403(b) or 414(k).
+    #[must_use]
+    pub fn frees_on_separation(self, is_roth: bool) -> bool {
+        !is_roth && matches!(self, Self::K401k | Self::K403b | Self::K414k)
+    }
+
     /// Whether employee contributions are valid here.
     #[must_use]
     pub fn accepts_employee(self) -> bool {
@@ -199,6 +206,15 @@ pub struct Account {
     /// What the account is invested in, which its return follows.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub allocation: Option<Allocation>,
+    /// When the owner leaves the job this workplace plan is with; leaving it
+    /// in or after the year they turn 55 frees the plan from the
+    /// early-withdrawal penalty from that year on.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub separated: Option<Trigger>,
+    /// The owner is a public-safety employee of the plan's employer, which
+    /// lowers the age `separated` is checked against to 50.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub public_safety: bool,
     /// Until this fires, the account cannot be drained or transferred from.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub locked_until: Option<Trigger>,

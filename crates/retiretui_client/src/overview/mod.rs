@@ -7,7 +7,7 @@ mod attention;
 mod milestones;
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;
 
 use crate::forms::DomainId;
 
