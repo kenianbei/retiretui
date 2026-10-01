@@ -3,7 +3,7 @@
 
 use retiretui_engine::optimize::{OptimizeOptions, SweptBracket, optimize_conversions};
 use retiretui_engine::params::{BenefitParams, Inflation, TaxParams, TaxTables};
-use retiretui_engine::plan::{Issue, Plan};
+use retiretui_engine::plan::{Dollars, Issue, Plan};
 use retiretui_engine::project::{Action, ContributionNote, Projection, project};
 
 pub const FULL: &str = include_str!("../fixtures/full.toml");
@@ -56,6 +56,24 @@ pub fn issues(text: &str) -> Vec<Issue> {
 
 pub fn run(text: &str) -> Projection {
     project(&plan_from(text), &TaxTables::embedded())
+}
+
+/// The embedded tax tables under the override fixture's 2027.
+pub fn with_override() -> TaxTables {
+    let mut tables = TaxTables::embedded();
+    tables
+        .add_dir(std::path::Path::new("tests/fixtures/tax-override"))
+        .unwrap();
+    tables
+}
+
+/// What `year` drew on `account`, what the year taxed, and the penalty it
+/// paid.
+#[track_caller]
+pub fn drawn(projection: &Projection, account: &str, year: i16) -> [Dollars; 3] {
+    let row = projection.row(year).unwrap();
+    let amount = row.withdrawals.get(account).copied().unwrap_or(0);
+    [amount, row.taxes.magi, row.taxes.penalty]
 }
 
 #[track_caller]

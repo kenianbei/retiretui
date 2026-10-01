@@ -391,6 +391,8 @@ mod tests {
         assert_eq!(tables.state.as_deref(), Some("or"));
         let deductions = "Deductions and penalties";
         assert_eq!(row(&tables, deductions, "Standard deduction"), "$32,200");
+        let hsa_penalty = "HSA non-medical penalty before 65";
+        assert_eq!(row(&tables, deductions, hsa_penalty), "20%");
         assert_eq!(
             row(&tables, "Oregon income tax", "Standard deduction"),
             "$5,800"

@@ -42,7 +42,7 @@ impl Simulation<'_> {
             }
             let distributed = self.move_between_accounts(from, to, take, year);
             acc.ordinary += distributed;
-            if self.is_penalized(from, year) {
+            if self.pays_penalty(&self.plan.accounts[from], year) {
                 acc.penalty_base += distributed;
             }
             acc.actions.push(Action::Transfer {

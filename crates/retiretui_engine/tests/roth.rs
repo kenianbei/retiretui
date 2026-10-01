@@ -6,35 +6,12 @@ mod common;
 use retiretui_engine::plan::Dollars;
 use retiretui_engine::project::Projection;
 
-use common::{born_in, run};
+use common::{born_in, drawn, run};
 
 const ROTH_FIRST: &str = "inflation = 0.0\nwithdrawal_order = [\"roth\", \"taxable\"]";
 
-/// What a year drew on an account, what the year taxed, and the penalty it
-/// paid.
-#[derive(Debug, PartialEq)]
-struct Drawn {
-    amount: Dollars,
-    taxed: Dollars,
-    penalty: Dollars,
-}
-
-#[track_caller]
-fn drawn(projection: &Projection, account: &str, year: i16) -> Drawn {
-    let row = projection.row(year).unwrap();
-    Drawn {
-        amount: row.withdrawals.get(account).copied().unwrap_or(0),
-        taxed: row.taxes.magi,
-        penalty: row.taxes.penalty,
-    }
-}
-
-fn free(amount: Dollars) -> Drawn {
-    Drawn {
-        amount,
-        taxed: 0,
-        penalty: 0,
-    }
+fn free(amount: Dollars) -> [Dollars; 3] {
+    [amount, 0, 0]
 }
 
 /// A plan for `me`, born in June of `birth_year`, holding `cash` and the
@@ -96,26 +73,18 @@ fn a_roth_ira_gives_up_what_was_paid_in_then_conversions_then_earnings() {
     // earnings: 5,000 of spending and the penalty itself, 6,667, a tenth of
     // 16,667.
     let early = converted_then_spent(1980, 0, 2029);
-    let expected = Drawn {
-        amount: 46_667,
-        taxed: 6_667,
-        penalty: 1_667,
-    };
+    let expected = [46_667, 6_667, 1_667];
     assert_eq!(drawn(&early, "roth", 2029), expected);
 }
 
 #[test]
 fn a_conversion_is_penalized_inside_its_five_years_and_free_from_the_sixth() {
     let fourth_year = converted_then_spent(1980, 0, 2030);
-    assert_eq!(drawn(&fourth_year, "roth", 2030).penalty, 1_667);
+    assert_eq!(drawn(&fourth_year, "roth", 2030)[2], 1_667);
     // From 2031 only the earnings pay: 5,556 of them, a tenth of which is
     // the penalty.
     let sixth_year = converted_then_spent(1980, 0, 2031);
-    let expected = Drawn {
-        amount: 45_556,
-        taxed: 5_556,
-        penalty: 556,
-    };
+    let expected = [45_556, 5_556, 556];
     assert_eq!(drawn(&sixth_year, "roth", 2031), expected);
 }
 
@@ -130,10 +99,13 @@ fn a_roth_held_five_years_is_free_from_59_and_a_half() {
 fn the_first_pass_takes_from_a_roth_ira_only_what_leaves_it_free() {
     let inside = converted_then_spent(1980, 100_000, 2029);
     assert_eq!(drawn(&inside, "roth", 2029), free(30_000));
-    assert_eq!(drawn(&inside, "cash", 2029).amount, 15_000);
+    assert_eq!(drawn(&inside, "cash", 2029)[0], 15_000);
     let seasoned = converted_then_spent(1980, 100_000, 2031);
     assert_eq!(drawn(&seasoned, "roth", 2031), free(40_000));
-    assert_eq!(drawn(&seasoned, "cash", 2031).amount, 5_000);
+    assert_eq!(drawn(&seasoned, "cash", 2031)[0], 5_000);
+    // Born June 1966: no penalty holds a Roth back past 59 and a half.
+    let qualified = converted_then_spent(1966, 100_000, 2029);
+    assert_eq!(drawn(&qualified, "roth", 2029), free(45_000));
 }
 
 #[test]
@@ -164,13 +136,9 @@ balance = 20000
     assert_eq!(drawn(&projection, "earned", 2026), free(15_000));
     // 5,000 of what was paid in is left, and the first account holds
     // 5,000: the other 5,000, and the penalty on it, are earnings.
-    let rest = Drawn {
-        amount: 5_000,
-        taxed: 5_556,
-        penalty: 556,
-    };
+    let rest = [5_000, 5_556, 556];
     assert_eq!(drawn(&projection, "earned", 2027), rest);
-    assert_eq!(drawn(&projection, "paid-in", 2027).amount, 5_556);
+    assert_eq!(drawn(&projection, "paid-in", 2027)[0], 5_556);
 }
 
 #[test]
@@ -235,14 +203,19 @@ fn a_roth_opened_by_a_conversion_is_taxed_on_its_earnings_for_five_years() {
     // by 2030.
     let spent = [(2027, 10_500), (2030, 100), (2031, 100)];
     let projection = opened_in_2026(1966, CONVERTED, &spent);
-    let taxed = |amount, taxed| Drawn {
-        amount,
-        taxed,
-        penalty: 0,
-    };
-    assert_eq!(drawn(&projection, "roth", 2027), taxed(10_500, 500));
-    assert_eq!(drawn(&projection, "roth", 2030), taxed(100, 100));
+    assert_eq!(drawn(&projection, "roth", 2027), [10_500, 500, 0]);
+    assert_eq!(drawn(&projection, "roth", 2030), [100, 100, 0]);
     assert_eq!(drawn(&projection, "roth", 2031), free(100));
+}
+
+#[test]
+fn a_roth_ira_is_five_years_old_once_its_owners_first_is() {
+    // Born June 1966, and holding a Roth IRA since before the plan.
+    let held = format!(
+        "{CONVERTED}\n[[accounts]]\nid = \"held\"\nkind = \"ira\"\nroth = true\nowner = \"me\"\nbalance = 1000\n"
+    );
+    let projection = opened_in_2026(1966, &held, &[(2027, 10_500)]);
+    assert_eq!(drawn(&projection, "roth", 2027), free(10_500));
 }
 
 #[test]
@@ -253,11 +226,7 @@ fn what_a_conversion_carried_untaxed_is_paid_in() {
     assert_eq!(drawn(&projection, "roth", 2027), free(4_000));
     // The next 1,000, and the penalty on it, are the conversion's taxed
     // part: 1,111, a tenth of which is the penalty.
-    let converted = Drawn {
-        amount: 1_111,
-        taxed: 0,
-        penalty: 111,
-    };
+    let converted = [1_111, 0, 111];
     assert_eq!(drawn(&projection, "roth", 2028), converted);
 }
 
@@ -280,26 +249,53 @@ end = { date = 2026-12-31 }
 "#;
     let spent = [(2028, 7_500), (2031, 500)];
     let projection = opened_in_2026(1966, contributed, &spent);
-    let earnings = Drawn {
-        amount: 7_500,
-        taxed: 500,
-        penalty: 0,
-    };
+    let earnings = [7_500, 500, 0];
     assert_eq!(drawn(&projection, "roth", 2028), earnings);
     assert_eq!(drawn(&projection, "roth", 2031), free(500));
+}
+
+#[test]
+fn a_conversion_into_a_roth_workplace_plan_is_paid_in_whole() {
+    // Born June 1980. Nothing of the 10,000 converted is earnings.
+    let body = format!(
+        r#"
+[[accounts]]
+id = "ira"
+kind = "ira"
+owner = "me"
+balance = 10000
+
+[[accounts]]
+id = "k"
+kind = "401k"
+roth = true
+owner = "me"
+balance = 0
+
+[[conversions]]
+id = "converted"
+from = "ira"
+to = "k"
+amount = 10000
+on = {{ date = 2026-01-01 }}
+{}"#,
+        spending(2027, 8_000)
+    );
+    let projection = run(&holding(1980, 0, &body));
+    assert_eq!(drawn(&projection, "k", 2027), free(8_000));
 }
 
 const K401: &str = "\"401k\"";
 const K457: &str = "\"457b\"";
 
-/// A Roth account whose `kind` may state more of it, half of its 100,000
-/// paid in, earning nothing, with 10,000 spent in 2026.
-fn workplace(birth_year: i16, cash: Dollars, kind: &str) -> Projection {
+/// A Roth account whose table opens with `stated`, its kind, half of its
+/// 100,000 paid in, earning nothing, with 10,000 spent in 2026.
+fn workplace(birth_year: i16, cash: Dollars, stated: &str) -> Projection {
     let body = format!(
         r#"
 [[accounts]]
 id = "k"
-kind = {kind}
+kind = {stated}
 roth = true
 owner = "me"
 balance = 100000
@@ -314,17 +310,9 @@ basis = 50000
 fn a_roth_workplace_plan_gives_up_what_was_paid_in_pro_rata() {
     // Born June 1976: 50 in 2026. Half of every dollar drawn is earnings,
     // and a tenth of those the penalty: 10,526 drawn to spend 10,000.
-    let penalized = Drawn {
-        amount: 10_526,
-        taxed: 5_263,
-        penalty: 526,
-    };
+    let penalized = [10_526, 5_263, 526];
     assert_eq!(drawn(&workplace(1976, 0, K401), "k", 2026), penalized);
-    let taxed = Drawn {
-        amount: 10_000,
-        taxed: 5_000,
-        penalty: 0,
-    };
+    let taxed = [10_000, 5_000, 0];
     assert_eq!(drawn(&workplace(1976, 0, K457), "k", 2026), taxed);
     // Born June 1970: 56 in 2026, the year the job is left.
     let left = "\"401k\"\nseparated = { date = 2026-03-01 }";
@@ -336,10 +324,10 @@ fn a_roth_workplace_plan_gives_up_what_was_paid_in_pro_rata() {
 #[test]
 fn a_roth_workplace_plan_that_pays_the_penalty_drains_last() {
     let penalized = workplace(1976, 100_000, K401);
-    assert_eq!(drawn(&penalized, "k", 2026).amount, 0);
+    assert_eq!(drawn(&penalized, "k", 2026)[0], 0);
     assert_eq!(drawn(&penalized, "cash", 2026), free(10_000));
     let exempt = workplace(1976, 100_000, K457);
-    assert_eq!(drawn(&exempt, "k", 2026).amount, 10_000);
+    assert_eq!(drawn(&exempt, "k", 2026)[0], 10_000);
 }
 
 /// A Roth 401(k) of 20,000, half of it paid in, rolled whole in 2026 into
@@ -368,13 +356,8 @@ fn a_qualified_rollover_is_paid_in_and_starts_the_five_years_of_what_it_opens() 
     // Born June 1966. The 20,000 is 22,000 in 2027, and the 1,000 left is
     // 1,331 by 2030.
     let projection = rolled_over(1966, &[(2027, 21_000), (2030, 1_000), (2031, 300)]);
-    let taxed = |amount, taxed| Drawn {
-        amount,
-        taxed,
-        penalty: 0,
-    };
-    assert_eq!(drawn(&projection, "roth", 2027), taxed(21_000, 1_000));
-    assert_eq!(drawn(&projection, "roth", 2030), taxed(1_000, 1_000));
+    assert_eq!(drawn(&projection, "roth", 2027), [21_000, 1_000, 0]);
+    assert_eq!(drawn(&projection, "roth", 2030), [1_000, 1_000, 0]);
     assert_eq!(drawn(&projection, "roth", 2031), free(300));
 }
 

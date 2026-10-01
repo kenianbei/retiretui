@@ -3,13 +3,10 @@
 
 mod common;
 
-use std::path::Path;
-
-use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::{Dollars, Plan};
 use retiretui_engine::project::{Projection, project};
 
-use common::{born_in, plan_from, run};
+use common::{born_in, plan_from, run, with_override};
 
 const HSA_FIRST: &str = "inflation = 0.0\nwithdrawal_order = [\"hsa\", \"taxable\"]";
 
@@ -48,9 +45,7 @@ on = {{ date = 2026-01-01 }}
 /// What 2026 drew on the HSA, what the year taxed, and the penalty it paid.
 #[track_caller]
 fn drawn(projection: &Projection) -> [Dollars; 3] {
-    let row = projection.row(2026).unwrap();
-    let hsa = row.withdrawals.get("hsa").copied().unwrap_or(0);
-    [hsa, row.taxes.magi, row.taxes.penalty]
+    common::drawn(projection, "hsa", 2026)
 }
 
 #[test]
@@ -91,15 +86,11 @@ fn the_first_pass_takes_from_an_hsa_only_what_medical_spending_frees() {
 
 #[test]
 fn a_tax_table_that_states_no_hsa_penalty_charges_the_statutory_fifth() {
-    let mut tables = TaxTables::embedded();
-    tables
-        .add_dir(Path::new("tests/fixtures/tax-override"))
-        .unwrap();
     // Born June 1967: 60 in 2027, the year the override table is for.
     let plan = spending_from_an_hsa(1967, 0, 5_000)
         .replace("start_year = 2026", "start_year = 2027")
         .replace("2026-01-01", "2027-01-01");
-    let projection = project(&plan_from(&plan), &tables);
+    let projection = project(&plan_from(&plan), &with_override());
     assert_eq!(projection.years[0].taxes.penalty, 1_250);
 }
 
