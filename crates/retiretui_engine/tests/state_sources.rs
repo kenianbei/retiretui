@@ -213,7 +213,7 @@ fn what_is_paid_into_an_hsa_comes_off_wages() {
 }
 
 #[test]
-fn what_is_deferred_is_a_source_of_its_own_that_a_state_may_tax() {
+fn what_is_deferred_comes_off_income_unless_the_state_taxes_it() {
     for account in ["kind = \"401k\"", "kind = \"ira\""] {
         let paying = paying_into(account);
         // Wages exempt, the deferral still comes off the pension.
