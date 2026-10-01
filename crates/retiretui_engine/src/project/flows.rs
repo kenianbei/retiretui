@@ -40,7 +40,10 @@ impl Simulation<'_> {
             if take <= 0 {
                 continue;
             }
-            self.move_between_accounts(from, to, take, acc);
+            let distributed = self.move_between_accounts(from, to, take, acc);
+            if self.is_penalized(from, year) {
+                acc.penalty_base += distributed;
+            }
             acc.actions.push(Action::Transfer {
                 from: transfer.from.clone(),
                 to: transfer.to.clone(),
@@ -49,7 +52,14 @@ impl Simulation<'_> {
         }
     }
 
-    fn move_between_accounts(&mut self, from: usize, to: usize, take: Dollars, acc: &mut YearAcc) {
+    /// Moves `take` and answers the part of it taxed as a distribution.
+    fn move_between_accounts(
+        &mut self,
+        from: usize,
+        to: usize,
+        take: Dollars,
+        acc: &mut YearAcc,
+    ) -> Dollars {
         let from_account = &self.plan.accounts[from];
         let to_account = &self.plan.accounts[to];
         let basis_out = if from_account.keeps_basis() {
@@ -61,12 +71,12 @@ impl Simulation<'_> {
         self.balances[to] += take;
         let is_distribution = from_account.treatment() == TreatmentClass::Deferred
             && to_account.treatment() == TreatmentClass::Taxable;
-        if is_distribution {
-            acc.ordinary += take - basis_out;
-        }
+        let distributed = if is_distribution { take - basis_out } else { 0 };
+        acc.ordinary += distributed;
         if to_account.keeps_basis() {
             self.bases[to] += if is_distribution { take } else { basis_out };
         }
+        distributed
     }
 
     /// The untaxed part of `take` from an account: pro rata over the

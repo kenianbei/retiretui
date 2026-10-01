@@ -109,6 +109,12 @@ On income, expenses, conversions, and contributions:
   held from its trigger until a later step fires, the first held until any does.
   The account then earns its mix: in the ledger, each class's `mean` from
   `[market]`, blended.
+- `separated` (trigger, optional) - when the owner leaves the job the plan is
+  with; valid on a tax-deferred `401k`, `403b` or `414k`. A date in the past
+  states a job already left.
+- `public_safety` (bool, default false) - the owner is a public-safety employee
+  of the plan's employer, which lowers the age `separated` is checked against
+  from 55 to 50; refused without `separated`.
 - `locked_until` (trigger, optional) - until it fires, the account cannot be
   drained or transferred from.
 - `drain_priority` (integer, optional) - drains before every treatment class;
@@ -116,6 +122,15 @@ On income, expenses, conversions, and contributions:
 
 Tax treatment by kind: `brokerage`/`cash` are taxable, `hsa` is HSA, everything
 else is deferred unless `roth = true`.
+
+The early-withdrawal penalty is paid on the taxable part of what leaves a
+deferred account, whether drawn to cover spending or moved by a transfer to a
+taxable account, until the year its owner turns 59 and a half. A `457b` never
+pays it. A plan stating `separated` stops paying it from the year the job is
+left, when the owner turned 55 in or before that year (the rule of 55), or 50
+with `public_safety`; money rolled out of it into an IRA pays it again. A
+penalized account is drained after every other. Not modeled: 25 years of service
+in place of the public-safety age, and a 72(t) series of equal payments.
 
 ## [[income]]
 

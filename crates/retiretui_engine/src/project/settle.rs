@@ -1,5 +1,5 @@
 use crate::params::{StateParams, TaxParams};
-use crate::plan::{Dollars, FilingStatus, Person, TreatmentClass};
+use crate::plan::{Account, Dollars, FilingStatus, Person, TreatmentClass};
 use crate::tax;
 
 use super::Taxes;
@@ -11,6 +11,10 @@ use super::year::{Simulation, YearAcc};
 const MAX_TAX_ITERATIONS: usize = 30;
 const PENALTY_FREE_YEARS: i64 = 59;
 const PENALTY_FREE_MONTHS: i64 = 6;
+/// IRC §72(t)(2)(A)(v).
+const SEPARATION_AGE: i16 = 55;
+/// IRC §72(t)(10).
+const PUBLIC_SAFETY_SEPARATION_AGE: i16 = 50;
 
 impl Simulation<'_> {
     pub(super) fn settle_cash(
@@ -94,14 +98,30 @@ impl Simulation<'_> {
         }
     }
 
-    fn is_penalized(&self, index: usize, year: i16) -> bool {
+    pub(super) fn is_penalized(&self, index: usize, year: i16) -> bool {
         let account = &self.plan.accounts[index];
         if account.treatment() != TreatmentClass::Deferred || tax::is_penalty_exempt(account.kind) {
             return false;
         }
-        self.plan
-            .person(&account.owner)
-            .is_none_or(|owner| !is_penalty_free_age(owner, year))
+        self.plan.person(&account.owner).is_none_or(|owner| {
+            !is_penalty_free_age(owner, year) && !self.is_freed_by_separation(account, owner, year)
+        })
+    }
+
+    /// Whether the owner has left the job the plan is with by `year`, in or
+    /// after the year they reached the age that frees it.
+    fn is_freed_by_separation(&self, account: &Account, owner: &Person, year: i16) -> bool {
+        let Some(trigger) = &account.separated else {
+            return false;
+        };
+        let freeing_age = if account.public_safety {
+            PUBLIC_SAFETY_SEPARATION_AGE
+        } else {
+            SEPARATION_AGE
+        };
+        self.resolver
+            .trigger_year(self.plan, trigger)
+            .is_some_and(|left| left <= year && owner.age_in_year(left) >= freeing_age)
     }
 
     fn withdraw(&mut self, index: usize, want: Dollars, year: i16, acc: &mut YearAcc) -> Dollars {
