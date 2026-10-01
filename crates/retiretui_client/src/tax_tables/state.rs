@@ -87,8 +87,6 @@ fn income_rows(table: &StateParams, status: FilingStatus) -> Vec<Vec<String>> {
     rows
 }
 
-/// The most federal tax the state lets be subtracted, and the AGI it is
-/// lost across.
 fn subtraction_row(subtraction: &FederalTaxSubtraction, status: FilingStatus) -> Vec<String> {
     let band = subtraction.phase_out.get(status);
     let said = format!(
@@ -100,7 +98,6 @@ fn subtraction_row(subtraction: &FederalTaxSubtraction, status: FilingStatus) ->
     labelled(SUBTRACTION, said)
 }
 
-/// The credit for each person, with the AGI it ends over, and what 65 adds.
 fn credit_rows(credit: &ExemptionCredit, status: FilingStatus) -> Vec<Vec<String>> {
     let each = money(credit.per_person);
     let said = credit.until_agi.map_or_else(
@@ -114,7 +111,6 @@ fn credit_rows(credit: &ExemptionCredit, status: FilingStatus) -> Vec<Vec<String
     rows
 }
 
-/// What the excise leaves untaxed, and the rate over each of its floors.
 fn excise_rows(excise: &GainsExcise) -> Vec<Vec<String>> {
     let floors = excise.brackets.iter().map(|bracket| {
         let label = format!("Rate on taxed gains over {}", money(bracket.over));

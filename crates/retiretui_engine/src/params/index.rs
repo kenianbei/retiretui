@@ -130,8 +130,6 @@ fn each_bracket(brackets: &mut PerStatus<Vec<Bracket>>) -> impl Iterator<Item = 
         .chain(&mut brackets.married_joint)
 }
 
-/// Every bracket a state's table holds: its income tax's, then its gains
-/// excise's.
 fn each_state_bracket(state: &mut StateParams) -> impl Iterator<Item = &mut Bracket> {
     let excise = state.gains_excise.iter_mut();
     each_bracket(&mut state.brackets).chain(excise.flat_map(|excise| &mut excise.brackets))

@@ -94,8 +94,6 @@ pub fn state_tax(state: &StateParams, status: FilingStatus, income: &StateIncome
     (walked - credit_of(state, status, income)).max(0) + excise_of(state, income.gains)
 }
 
-/// The state's deduction: the status's and what each person old enough adds
-/// to it, or nothing above the AGI the table stops it at.
 fn deduction_of(state: &StateParams, status: FilingStatus, income: &StateIncome) -> Dollars {
     if is_over(state.deduction_until_agi, status, income.agi) {
         return 0;
@@ -117,8 +115,6 @@ fn is_over(until_agi: Option<PerStatus<Dollars>>, status: FilingStatus, agi: Dol
     until_agi.is_some_and(|limit| agi > limit.get(status))
 }
 
-/// The federal tax the state lets be subtracted: all of it, up to the cap
-/// the AGI leaves.
 fn subtracted_of(state: &StateParams, status: FilingStatus, income: &StateIncome) -> Dollars {
     let subtraction = state.federal_tax_subtraction.as_ref();
     subtraction.map_or(0, |subtraction| {
@@ -141,8 +137,6 @@ fn cap_at(subtraction: &FederalTaxSubtraction, status: FilingStatus, agi: Dollar
     subtraction.cap * (steps - lost) / steps
 }
 
-/// The state's credit for each person, with what each old enough adds to
-/// it, or nothing above the AGI the table stops it at.
 fn credit_of(state: &StateParams, status: FilingStatus, income: &StateIncome) -> Dollars {
     let Some(credit) = &state.exemption_credit else {
         return 0;
@@ -153,7 +147,6 @@ fn credit_of(state: &StateParams, status: FilingStatus, income: &StateIncome) ->
     credit.per_person * income.people.len() as Dollars + added_at_65(credit.at_65, income)
 }
 
-/// The state's excise on the gains its deduction leaves.
 fn excise_of(state: &StateParams, gains: Dollars) -> Dollars {
     let excise = state.gains_excise.as_ref();
     excise.map_or(0, |excise| {
