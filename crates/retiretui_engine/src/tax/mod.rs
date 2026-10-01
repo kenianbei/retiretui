@@ -4,8 +4,12 @@
 use std::collections::BTreeMap;
 use std::ops::RangeInclusive;
 
-use crate::params::{BenefitParams, Bracket, StateParams, TaxParams};
+use crate::params::{BenefitParams, Bracket, TaxParams};
 use crate::plan::{AccountKind, Dollars, FilingStatus, Person, PlanDate};
+
+mod state;
+
+pub use state::state_tax;
 
 /// The age Medicare coverage (and IRMAA exposure) begins.
 pub const MEDICARE_AGE: u8 = 65;
@@ -70,25 +74,7 @@ pub fn ordinary_tax(params: &TaxParams, status: FilingStatus, taxable: Dollars) 
     walk_brackets(params.brackets.for_status(status), taxable)
 }
 
-/// A state's income tax: ordinary income and gains alike, with the taxable
-/// share of Social Security where the state taxes it, less its deduction.
-#[must_use]
-pub fn state_tax(
-    state: &StateParams,
-    status: FilingStatus,
-    income: Dollars,
-    taxable_social_security: Dollars,
-) -> Dollars {
-    let benefits = if state.taxes_social_security {
-        taxable_social_security
-    } else {
-        0
-    };
-    let taxable = income + benefits - state.deduction.get(status);
-    walk_brackets(state.brackets.for_status(status), taxable)
-}
-
-fn walk_brackets(brackets: &[Bracket], taxable: Dollars) -> Dollars {
+pub(super) fn walk_brackets(brackets: &[Bracket], taxable: Dollars) -> Dollars {
     let mut tax = 0.0;
     for (i, bracket) in brackets.iter().enumerate() {
         if taxable <= bracket.over {

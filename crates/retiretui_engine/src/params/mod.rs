@@ -11,11 +11,13 @@ use crate::plan::{Dollars, FilingStatus};
 
 mod index;
 mod limits;
+mod states;
 
 pub use index::Inflation;
 pub(crate) use index::scale;
 use index::{inflate, inflate_state};
 pub use limits::{ContributionLimits, EarlyWithdrawal, IrmaaTier, PhaseOut, RmdDivisor, RmdTable};
+pub use states::StateParams;
 
 /// The tax parameter file schema version this build reads.
 const PARAMS_SCHEMA_VERSION: u32 = 1;
@@ -245,20 +247,6 @@ pub struct TaxParams {
     /// is not modeled.
     #[serde(default)]
     pub states: BTreeMap<String, StateParams>,
-}
-
-/// One state's income tax. A state with no income tax is an empty table,
-/// which is not the same as a state with none: that one is not modeled.
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-#[serde(default, deny_unknown_fields, rename_all = "kebab-case")]
-pub struct StateParams {
-    /// Standard deduction by filing status.
-    pub deduction: PerStatus<Dollars>,
-    /// Brackets by filing status, walked as the federal ones are.
-    pub brackets: PerStatus<Vec<Bracket>>,
-    /// Whether the federally taxable share of Social Security is taxed.
-    pub taxes_social_security: bool,
 }
 
 /// All known tax years, ready to answer any projection year.
