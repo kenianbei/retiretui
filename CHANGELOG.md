@@ -217,6 +217,22 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `OrderSearch` and `OrderCandidate`. The JavaScript bindings gain `orders`,
   `orderWords`, and the document's `takeOrder` and `orderScenario`, with the
   types `OrderOptions`, `OrderOption`, `OrderWords` and `TreatmentClass`.
+- The rule of 55. A tax-deferred 401(k), 403(b) or 414(k) states `separated`,
+  when its owner leaves the job the plan is with: a date, an age, or the event
+  the salary ends on, and a date in the past for a job already left. Left in or
+  after the year the owner turns 55, the plan pays no early-withdrawal penalty
+  from that year on, and is drawn on in its place in the withdrawal order rather
+  than last. `public_safety = true` beside it lowers the age to 50, for a
+  public-safety employee of the plan's employer. Money rolled out of the plan
+  into an IRA pays the penalty again until 59 and a half. Any other kind of
+  account, and a Roth one, is refused the field, and the flag is refused alone.
+  The Accounts form of the terminal and the web asks "Job left" of such a plan,
+  and "Public safety" once it is answered. Not modeled: 25 years of service in
+  place of the public-safety age, and a 72(t) series of equal payments.
+- A year that pays the early-withdrawal penalty says so among its warnings,
+  `Early-withdrawal penalty paid this year: $10,000`, in the dollars shown: on
+  the Overview and the Ledger of the terminal and the web, and from `actions`
+  and the MCP server's actions tool.
 
 ### Changed
 
@@ -324,12 +340,20 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The terminal's `Page` gains `WithdrawalOrder`, so a match over it written
   outside the crate must cover it, and the client's `searches::overview::Found`
   gains `order`, so a struct literal of it must add it.
+- The engine's `Account` gains `separated` and `public_safety`, so a struct
+  literal of it written outside the engine must add them.
+- The MCP schema reference says who pays the early-withdrawal penalty, until
+  when, and what frees an account from it.
 
 ### Fixed
 
 - The terminal no longer saves a scenario as a plan over its own file, which
   replaced the overlay with the plan it resolved to; it says to save it under a
   name of its own, as the web does.
+- A scheduled transfer from a tax-deferred account to a taxable one pays the
+  early-withdrawal penalty on its taxable part where a withdrawal would. It was
+  taxed as income and never penalized, at any age. A 457(b), an owner past 59
+  and a half, and a plan freed by the rule of 55 still pay none.
 
 ## [0.2.0] - 2026-09-27
 
