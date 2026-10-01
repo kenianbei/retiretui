@@ -188,6 +188,17 @@ disability exceptions.
 - `name` (string, optional) - what the expense is shown as; defaults to the id.
 - `amount` (dollars, required), `start`/`end` or `on` (triggers), `cola` - same
   window semantics as income.
+- `medical` (bool, default false) - health spending, which an HSA pays without
+  tax.
+
+An HSA is drawn untaxed up to the year's `medical` spending, across the
+household. What it pays beyond that is ordinary income, and pays a 20% penalty
+besides until the year its owner turns 65, so a plan that marks nothing
+`medical` is taxed on everything its HSA pays. The HSA keeps its place in
+`withdrawal_order`: under 65 it gives up what the year's medical spending leaves
+untaxed there, and the rest after every other account. Listing `hsa` first has
+it pay the medical spending before anything else is drawn. Not modeled: medical
+bills of earlier years reimbursed later.
 
 ## [medicare]
 
@@ -390,6 +401,11 @@ cola = 0.024
 [[expenses]]
 id = "living"
 amount = 48000
+
+[[expenses]]
+id = "health"
+amount = 6000
+medical = true        # an HSA pays this without tax
 
 [[conversions]]
 id = "roth-ladder"

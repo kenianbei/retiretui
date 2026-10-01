@@ -186,6 +186,7 @@ wage-growth = 0.036
 
 [early-withdrawal]
 penalty = 0.10
+hsa-penalty = 0.20
 
 [limits]
 employer-plan = 24500

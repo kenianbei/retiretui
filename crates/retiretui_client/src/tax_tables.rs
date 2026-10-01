@@ -202,6 +202,10 @@ fn federal(params: &TaxParams, status: FilingStatus) -> Vec<TaxSection> {
             "Early-withdrawal penalty",
             rate(params.early_withdrawal.penalty),
         ),
+        labelled(
+            "HSA non-medical penalty before 65",
+            rate(params.early_withdrawal.hsa_penalty),
+        ),
     ];
     let irmaa = if params.irmaa.is_empty() {
         noted("Medicare surcharges (IRMAA)", NO_SURCHARGES.to_owned())

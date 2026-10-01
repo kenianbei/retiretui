@@ -162,7 +162,8 @@ pub enum TreatmentClass {
     /// Roth: what was paid in comes back untaxed, and what it earned does
     /// once the owner is 59½ and the account five years old.
     Roth,
-    /// HSA: withdrawals assumed qualified and tax-free.
+    /// HSA: withdrawals untaxed up to the year's medical spending, and
+    /// taxed beyond it.
     Hsa,
 }
 

@@ -61,7 +61,10 @@ pub(super) struct YearAcc {
     pub(super) ss_gross: Dollars,
     pub(super) gains: Dollars,
     pub(super) penalty_base: Dollars,
+    pub(super) hsa_penalty_base: Dollars,
     pub(super) expenses: Dollars,
+    /// The year's medical spending no HSA draw has yet paid.
+    pub(super) medical: Dollars,
     pub(super) medicare: Dollars,
     pub(super) employee: Dollars,
     pub(super) employer: Dollars,

@@ -6,15 +6,15 @@ expression: composed_frame(app)
 ╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                                                                                                      
 │1 Overview││2 Ledger││3 Compare││4 Tools││5 Plan│                                                                                                                                          full.toml ● 
 ┴──────────┴┴────────┴┴─────────┴╯       ╰┴──────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-╭ Tools ────────────╮╭ Assumptions ───────────────────────────────────╮╭ Markets · Money lasts in 99.7% of 1,000 markets ──────────────────────────────────────────────────────────────────────────────╮
+╭ Tools ────────────╮╭ Assumptions ───────────────────────────────────╮╭ Markets · Money lasts in 99.6% of 1,000 markets ──────────────────────────────────────────────────────────────────────────────╮
 │  Roth Conversions ││                                                ││  Markets         Ends with  Short in                                                                                          │
-│  SSA Benefits     ││▌ Money lasts          99.7% of 1,000 markets   ││  As planned         $2.09M     never                                                                                          │
+│  SSA Benefits     ││▌ Money lasts          99.6% of 1,000 markets   ││  As planned         $2.09M     never                                                                                          │
 │  Withdrawal Order ││  Counts as a success  Never running short      ││▏ 90th percentile    $3.41M     never                                                                                          │
 │▏ Monte Carlo      ││  Markets drawn from   Your return assumptions  ││  75th percentile    $2.74M     never                                                                                          │
 │  Historical       ││  Trials               1,000 · seed 42          ││  50th percentile    $2.06M     never                                                                                          │
 │  Tax Tables       ││  Stocks               6% ± 16%                 ││  25th percentile    $1.41M     never                                                                                          │
 │                   ││  Bonds                4% ± 6%                  ││  10th percentile     $860k     never                                                                                          │
-│                   ││  Cash                 2.5% ± 1%                ││  Worst                  $0 2063 (88)                                                                                          │
+│                   ││  Cash                 2.5% ± 1%                ││  Worst                  $0 2062 (87)                                                                                          │
 │                   ││  Inflation            2.5% ± 1.5%              │╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 │                   ││  Fixed return         cash, brokerage, fid-401 │╭ By Year · today's dollars ────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │                   ││                                                ││  Year     10th    25th    50th    75th    90th  Funded                                                                       ▲│
@@ -54,7 +54,7 @@ expression: composed_frame(app)
 │                   ││                                                ││  2059   $1.08M  $1.44M  $1.90M  $2.42M  $2.92M    100%                                                                       ║│
 │                   ││                                                ││  2060   $1.06M  $1.43M  $1.91M  $2.46M  $2.98M    100%                                                                       ║│
 │                   ││                                                ││  2061   $1.04M  $1.42M  $1.92M  $2.49M  $3.05M    100%                                                                       ║│
-│                   ││                                                ││  2062   $1.02M  $1.43M  $1.94M  $2.51M  $3.08M    100%                                                                       ▼│
+│                   ││                                                ││  2062   $1.02M  $1.43M  $1.94M  $2.51M  $3.08M   99.9%                                                                       ▼│
 │                   │╰────────────────────────────────────────────────╯╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╰───────────────────╯The plan through many random markets; the share in which its money lasts says how surely it does.                                                                                  
  ↑↓ assumption  ⏎ edit  ⇥ pane  v view  ctrl-s save  r reload  q quit  ctrl-↓ tab  n dollars                                                                                         : commands  ? help

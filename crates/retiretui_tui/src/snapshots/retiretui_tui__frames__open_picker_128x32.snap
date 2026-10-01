@@ -9,7 +9,7 @@ expression: composed_frame(app)
  Money lasts                     Success                         Ends with                       Lifetime taxes                 
  Never short                     100% of 20 markets              $2.09M                          $697k                          
 ╭ Milestones ──────────────────────────────────────────────────╮╭ Needs attention ─────────────────────────────────────────────╮
-│▏ 2032 inheritance arrives                                   ▲││▏ Fails from a 1968 start · 23 of 155 fail                    │
+│▏ 2032 inheritance arrives                                   ▲││▏ Fails from a 1968 start · 24 of 155 fail                    │
 │  2037 retire                                                █││                                                              │
 │  2037 db-pension starts                                     ║││                                                              │
 │  2037 401k-deferral ends                                    ▼││                                                              │
@@ -31,7 +31,7 @@ expression: composed_frame(app)
 ╰──────────────────────────────────────────────────────────────────────────╯╰──────────────────────────────────────────────────╯
 ╭ Could do better ─────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │▏ jordan: convert to 22%, ends +$56k                                                                                          │
-│  Withdraw in the order taxable, HSA, deferred, Roth: ends +$394                                                              │
+│  Withdrawal order as planned is best                                                                                         │
 │                                                                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
  ↑↓ move  ⏎ pick  ⇥ complete  ← parent  esc close

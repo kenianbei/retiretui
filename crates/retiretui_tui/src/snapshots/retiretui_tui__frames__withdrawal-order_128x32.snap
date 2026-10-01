@@ -9,27 +9,27 @@ expression: composed_frame(app)
 ╭ Tools ────────────╮╭ Orders ─────────────────────────────────────────────────────────────────────────────────────────────────╮
 │  Roth Conversions ││  Order                        Vs. the plan Unfunded Ends with Taxes Medicare                            │
 │  SSA Benefits     ││  Current                                         $0    $2.09M $697k       $0                            │
-│▏ Withdrawal Order ││▌ Taxable, HSA, deferred, Roth        +$394       $0    $2.09M $716k       $0                            │
-│  Monte Carlo      ││  Taxable, deferred, Roth, HSA           $0       $0    $2.09M $697k       $0                            │
-│  Historical       ││  HSA, taxable, deferred, Roth        -$35k       $0    $2.06M $716k       $0                            │
-│  Tax Tables       ││  Taxable, HSA, Roth, deferred        -$62k       $0    $2.03M $724k       $0                            │
-│                   ││  HSA, taxable, Roth, deferred       -$110k       $0    $1.98M $727k       $0                            │
+│▏ Withdrawal Order ││▌ Taxable, deferred, Roth, HSA           $0       $0    $2.09M $697k       $0                            │
+│  Monte Carlo      ││  Taxable, HSA, deferred, Roth        -$80k       $0    $2.01M $754k       $0                            │
+│  Historical       ││  HSA, taxable, deferred, Roth        -$82k       $0    $2.01M $754k       $0                            │
+│  Tax Tables       ││  Taxable, HSA, Roth, deferred       -$167k       $0    $1.93M $765k       $0                            │
 │                   ││  Taxable, Roth, deferred, HSA       -$168k       $0    $1.93M $724k       $0                            │
+│                   ││  HSA, taxable, Roth, deferred       -$170k       $0    $1.92M $766k       $0                            │
 │                   ││  Roth, taxable, deferred, HSA       -$450k       $0    $1.64M $719k       $0                            │
-│                   ││  HSA, Roth, taxable, deferred       -$496k       $0    $1.60M $709k       $0                            │
-│                   ││  Roth, HSA, taxable, deferred       -$503k       $0    $1.59M $709k       $0                            │
-│                   ││  Deferred, taxable, HSA, Roth       -$634k       $0    $1.46M $617k       $0                            │
+│                   ││  Roth, HSA, taxable, deferred       -$503k       $0    $1.59M $746k       $0                            │
+│                   ││  HSA, Roth, taxable, deferred       -$507k       $0    $1.59M $748k       $0                            │
 │                   ││  Deferred, taxable, Roth, HSA       -$646k       $0    $1.45M $617k       $0                            │
-│                   ││  HSA, deferred, taxable, Roth       -$648k       $0    $1.45M $654k       $0                            │
-│                   ││  Deferred, HSA, taxable, Roth       -$680k       $0    $1.41M $627k       $0                            │
-│                   ││  HSA, Roth, deferred, taxable       -$729k       $0    $1.37M $663k       $0                            │
-│                   ││  Roth, HSA, deferred, taxable       -$741k       $0    $1.35M $663k       $0                            │
-│                   ││  HSA, deferred, Roth, taxable       -$810k       $0    $1.28M $573k       $0                            │
-│                   ││  Deferred, HSA, Roth, taxable       -$853k       $0    $1.24M $548k       $0                            │
+│                   ││  Deferred, taxable, HSA, Roth       -$711k       $0    $1.38M $686k       $0                            │
+│                   ││  HSA, deferred, taxable, Roth       -$743k       $0    $1.35M $672k       $0                            │
+│                   ││  Deferred, HSA, taxable, Roth       -$752k       $0    $1.34M $670k       $0                            │
+│                   ││  Roth, HSA, deferred, taxable       -$894k       $0    $1.20M $703k       $0                            │
+│                   ││  HSA, Roth, deferred, taxable       -$899k       $0    $1.19M $706k       $0                            │
 │                   ││  Roth, deferred, taxable, HSA       -$915k       $0    $1.18M $652k       $0                            │
-│                   ││  Roth, deferred, HSA, taxable       -$918k       $0    $1.18M $636k       $0                            │
 │                   ││  Deferred, Roth, taxable, HSA       -$930k       $0    $1.16M $565k       $0                            │
-│                   ││  Deferred, Roth, HSA, taxable       -$934k       $0    $1.16M $548k       $0                            │
+│                   ││  HSA, deferred, Roth, taxable       -$942k       $0    $1.15M $595k       $0                            │
+│                   ││  Deferred, HSA, Roth, taxable       -$953k       $0    $1.14M $593k       $0                            │
+│                   ││  Roth, deferred, HSA, taxable       -$989k       $0    $1.10M $703k       $0                            │
+│                   ││  Deferred, Roth, HSA, taxable      -$1.01M       $0    $1.08M $619k       $0                            │
 │                   ││                                                                                                         │
 │                   ││                                                                                                         │
 │                   │╰─────────────────────────────────────────────────────────────────────────────────────────────────────────╯

@@ -41,8 +41,13 @@ impl Simulation<'_> {
 
     pub(super) fn collect_expenses(&mut self, year: i16, acc: &mut YearAcc) {
         for expense in &self.plan.expenses {
-            if self.item_active(year, expense.span()) {
-                acc.expenses += scale(expense.amount, self.cola_factor(expense.cola, year));
+            if !self.item_active(year, expense.span()) {
+                continue;
+            }
+            let spent = scale(expense.amount, self.cola_factor(expense.cola, year));
+            acc.expenses += spent;
+            if expense.medical {
+                acc.medical += spent;
             }
         }
     }
