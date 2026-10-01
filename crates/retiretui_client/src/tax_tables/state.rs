@@ -1,19 +1,28 @@
-//! A state's income tax as sections of a year's tables: its deduction, what
-//! it leaves untaxed, and its brackets.
+//! A state's tax as sections of a year's tables: its deduction and what it
+//! adjusts it by, what it leaves untaxed, its brackets, and its excise on
+//! gains.
 
-use retiretui_engine::params::{Exclusion, Source, StateParams, TaxParams};
-use retiretui_engine::plan::FilingStatus;
+use retiretui_engine::params::PerStatus;
+use retiretui_engine::params::{
+    Exclusion, ExemptionCredit, FederalTaxSubtraction, GainsExcise, Source, StateParams, TaxParams,
+};
+use retiretui_engine::plan::{Dollars, FilingStatus};
 
 use super::{
     ABROAD, BRACKET_COLUMNS, LABELLED_COLUMNS, TaxSection, brackets, labelled, noted, section,
     state_name,
 };
-use crate::table::money;
+use crate::table::{money, rate};
 
 pub(super) const NO_INCOME_TAX: &str = "This state has no income tax.";
 pub(super) const STATE_TITLE: &str = "State income tax";
 const UNTAXED: &str = "Untaxed";
 const DEFERRALS: &str = "Retirement contributions";
+const DEDUCTION_AT_65: &str = "More deduction for each person from 65";
+const DEDUCTION_UNTIL: &str = "No deduction over AGI of";
+const SUBTRACTION: &str = "Federal tax subtracted, up to";
+const CREDIT: &str = "Credit for each person";
+const CREDIT_AT_65: &str = "More credit for each person from 65";
 const HALF_A_YEAR: f64 = 0.5;
 
 pub(super) fn state_sections(
@@ -42,7 +51,12 @@ pub(super) fn state_sections(
         section(&bracket_title, &BRACKET_COLUMNS, brackets(state_brackets))
     };
     let rows = income_rows(table, status);
-    vec![section(&title, &LABELLED_COLUMNS, rows), bracketed]
+    let mut sections = vec![section(&title, &LABELLED_COLUMNS, rows), bracketed];
+    if let Some(excise) = &table.gains_excise {
+        let title = format!("{name} excise on long-term gains");
+        sections.push(section(&title, &LABELLED_COLUMNS, excise_rows(excise)));
+    }
+    sections
 }
 
 fn income_rows(table: &StateParams, status: FilingStatus) -> Vec<Vec<String>> {
@@ -51,15 +65,69 @@ fn income_rows(table: &StateParams, status: FilingStatus) -> Vec<Vec<String>> {
     } else {
         "No"
     };
-    let mut rows = vec![
-        labelled("Standard deduction", money(table.deduction.get(status))),
-        labelled("Taxes Social Security", taxes_benefits.to_owned()),
-    ];
+    let of = |amounts: PerStatus<Dollars>| money(amounts.get(status));
+    let mut rows = vec![labelled("Standard deduction", of(table.deduction))];
+    rows.extend(
+        table
+            .deduction_at_65
+            .map(|more| labelled(DEDUCTION_AT_65, of(more))),
+    );
+    rows.extend(
+        table
+            .deduction_until_agi
+            .map(|limit| labelled(DEDUCTION_UNTIL, of(limit))),
+    );
+    let subtraction = table.federal_tax_subtraction.as_ref();
+    rows.extend(subtraction.map(|subtraction| subtraction_row(subtraction, status)));
+    let credit = table.exemption_credit.as_ref();
+    rows.extend(
+        credit
+            .into_iter()
+            .flat_map(|credit| credit_rows(credit, status)),
+    );
+    rows.push(labelled("Taxes Social Security", taxes_benefits.to_owned()));
     rows.extend(table.exclusions.iter().flat_map(untaxed_rows));
     if table.taxes_deferrals {
         rows.push(labelled(DEFERRALS, "Taxed when paid in".to_owned()));
     }
     rows
+}
+
+/// The most federal tax the state lets be subtracted, and the AGI it is
+/// lost across.
+fn subtraction_row(subtraction: &FederalTaxSubtraction, status: FilingStatus) -> Vec<String> {
+    let band = subtraction.phase_out.get(status);
+    let said = format!(
+        "{}, less from {} of AGI, none from {}",
+        money(subtraction.cap),
+        money(band.from),
+        money(band.to)
+    );
+    labelled(SUBTRACTION, said)
+}
+
+/// The credit for each person, with the AGI it ends over, and what 65 adds.
+fn credit_rows(credit: &ExemptionCredit, status: FilingStatus) -> Vec<Vec<String>> {
+    let each = money(credit.per_person);
+    let said = credit.until_agi.map_or_else(
+        || each.clone(),
+        |limit| format!("{each}, none over {} of AGI", money(limit.get(status))),
+    );
+    let mut rows = vec![labelled(CREDIT, said)];
+    if credit.at_65 > 0 {
+        rows.push(labelled(CREDIT_AT_65, money(credit.at_65)));
+    }
+    rows
+}
+
+/// What the excise leaves untaxed, and the rate over each of its floors.
+fn excise_rows(excise: &GainsExcise) -> Vec<Vec<String>> {
+    let floors = excise.brackets.iter().map(|bracket| {
+        let label = format!("Rate on taxed gains over {}", money(bracket.over));
+        labelled(&label, rate(bracket.rate))
+    });
+    let untaxed = labelled("Gains left untaxed", money(excise.deduction));
+    std::iter::once(untaxed).chain(floors).collect()
 }
 
 /// A row for each source the exclusion leaves untaxed, saying from what age.
@@ -129,6 +197,51 @@ mod tests {
         let oregon = rows("or", 2026);
         assert_eq!(said(&oregon, "Pensions"), None);
         assert_eq!(said(&oregon, DEFERRALS), None);
+    }
+
+    #[test]
+    fn a_state_s_table_says_what_it_adjusts_its_tax_by() {
+        let oregon = rows("or", 2026);
+        let said = |rows: &[Vec<String>], label| said(rows, label);
+        assert_eq!(said(&oregon, DEDUCTION_AT_65).as_deref(), Some("$1,200"));
+        assert_eq!(
+            said(&oregon, SUBTRACTION).as_deref(),
+            Some("$8,750, less from $125,000 of AGI, none from $145,000")
+        );
+        assert_eq!(
+            said(&oregon, CREDIT).as_deref(),
+            Some("$263, none over $100,000 of AGI")
+        );
+        assert_eq!(said(&oregon, CREDIT_AT_65), None);
+        assert_eq!(said(&oregon, DEDUCTION_UNTIL), None);
+        let illinois = rows("il", 2026);
+        assert_eq!(
+            said(&illinois, DEDUCTION_UNTIL).as_deref(),
+            Some("$250,000")
+        );
+        assert_eq!(said(&illinois, SUBTRACTION), None);
+        let iowa = rows("ia", 2026);
+        assert_eq!(said(&iowa, CREDIT).as_deref(), Some("$40"));
+        assert_eq!(said(&iowa, CREDIT_AT_65).as_deref(), Some("$20"));
+    }
+
+    #[test]
+    fn washington_s_excise_is_a_section_beside_its_lack_of_an_income_tax() {
+        let params = TaxTables::embedded().params_for(2026, &Inflation::constant(0.0));
+        let sections = state_sections(&params, FilingStatus::MarriedJoint, Some("wa"), 2026);
+        let [_, brackets, excise] = sections.as_slice() else {
+            panic!("{sections:?}");
+        };
+        assert_eq!(brackets.note.as_deref(), Some(NO_INCOME_TAX));
+        assert_eq!(excise.title, "Washington excise on long-term gains");
+        let expected = [
+            ["Gains left untaxed", "$290,000"],
+            ["Rate on taxed gains over $0", "7%"],
+            ["Rate on taxed gains over $1,000,000", "9.9%"],
+        ];
+        assert_eq!(excise.rows, expected);
+        let oregon = state_sections(&params, FilingStatus::Single, Some("or"), 2026);
+        assert_eq!(oregon.len(), 2);
     }
 
     #[test]

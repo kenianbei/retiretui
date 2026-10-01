@@ -372,6 +372,30 @@ fn schema_reference_documents_the_market() {
 }
 
 #[test]
+fn schema_reference_names_every_key_of_a_state_s_table() {
+    let text = include_str!("../../retiretui_mcp/src/schema.md");
+    let root = scratch_dir("mcp-state-keys", "plan.toml", &[]);
+    let mut client = McpClient::spawn(&root);
+    let tools = client.request("tools/list", json!({}));
+    let tools = tools["tools"].as_array().unwrap();
+    let parameters = tools.iter().find(|tool| tool["name"] == "tax_parameters");
+    let shapes = &parameters.unwrap()["outputSchema"]["$defs"];
+    for shape in [
+        "StateParams",
+        "Exclusion",
+        "FederalTaxSubtraction",
+        "ExemptionCredit",
+        "GainsExcise",
+    ] {
+        let keys = shapes[shape]["properties"].as_object();
+        for key in keys.expect("a typed table").keys() {
+            let is_named = text.contains(&format!("`{key}`")) || text.contains(&format!(".{key}]"));
+            assert!(is_named, "missing {shape} key {key}");
+        }
+    }
+}
+
+#[test]
 fn projection_and_tax_parameters_state_their_output_shapes() {
     let root = scratch_dir("mcp-output-schemas", "plan.toml", &[]);
     let mut client = McpClient::spawn(&root);

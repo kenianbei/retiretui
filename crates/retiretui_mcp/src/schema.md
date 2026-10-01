@@ -342,35 +342,48 @@ A move is taxed by the new state for the whole year its `from` resolves to; of
 two moves in one year, the one listed later stands. State tax is the state's
 brackets over ordinary income and capital gains alike, less its standard
 deduction, with Social Security taxed only where the state taxes it, and with
-what the state leaves untaxed taken out of each person's income first.
+what the state leaves untaxed taken out of each person's income first. A state's
+table may also subtract federal income tax, credit each person, end its
+deduction or its credit above a federal AGI, add to either for each person from
+the year they reach 65, and levy an excise on long-term gains, which
+`taxes.state` includes.
 
 Only states with a table validate: the states without an income tax (`ak`, `fl`,
 `nv`, `nh`, `sd`, `tn`, `tx`, `wa`, `wy`), and `or`, `il`, `pa`, `ms` and `ia`.
-What each leaves untaxed, from what age, and the rates its law has set for later
-years are its table's `exclusions` and `later`, which the `tax_parameters` tool
-shows for any year. Illinois's deduction is its exemption allowance, one a
-person; Iowa's is the federal standard deduction, since Iowa starts from federal
-taxable income.
+What each leaves untaxed, from what age, what it adjusts its tax by, and the
+rates its law has set for later years are its table's keys, listed below, which
+the `tax_parameters` tool shows for any year. Illinois's deduction is its
+exemption allowance, one a person; Iowa's is the federal standard deduction,
+since Iowa starts from federal taxable income. Washington has no income tax and
+an excise on long-term gains over a deduction a couple shares; a withdrawal from
+a retirement account is never such a gain. Its 2026 deduction is derived by the
+statute's index until the department publishes it.
 
 A commercial annuity, entered as an `annuity` income, is taxed by every state
 that taxes income; a plan-paid annuity is entered as a `pension`.
 
 Not modeled:
 
-- Credits, local taxes, dollar caps and income tests on what a state leaves
-  untaxed.
-- Oregon's federal tax subtraction, so Oregon reads somewhat high, and
-  Washington's excise on long-term gains.
-- Illinois's loss of the exemption above a federal AGI of 250,000 (500,000
-  jointly), and its 1,000 more at 65.
+- Credits other than a state's credit for each person, local taxes, dollar caps
+  and income tests on what a state leaves untaxed, and what a state adds for the
+  blind. Someone born on January 1 reaches 65 in their birthday's year, where
+  the laws count the year before.
+- Oregon's retirement income credit, the 100-dollar bands of its tax table under
+  50,000 of taxable income, and its kicker. The early-withdrawal penalties count
+  as federal tax in its subtraction.
+- Illinois's exemption after 2028, where the statute as written drops it to
+  1,000: it stays indexed.
 - Pennsylvania's cost recovery - a withdrawal it taxes is taxed whole, where
   Pennsylvania taxes only what exceeds the contributions it already taxed - a
   workplace plan's own retirement age, which 59 and a half stands in for, and
   Tax Forgiveness.
-- Mississippi's second untaxed 10,000 where both spouses have income, its 1,500
-  more exemption at 65, and rate cuts after 2030.
-- Iowa's exemption from tax and alternate tax for a low income, its exemption
-  credit, and the federal deductions at 65 its base takes in.
+- Mississippi's second untaxed 10,000 where both spouses have income, and rate
+  cuts after 2030.
+- Iowa's exemption from tax and alternate tax for a low income, its deduction of
+  health insurance premiums at 65, and the federal deductions at 65 its base
+  takes in.
+- Washington's deductions from its excise for charitable gifts and the sale of a
+  family business, and its income tax over 1,000,000 a year from 2028.
 
 Any other U.S. state is refused at `residency[i].state` until a parameter file
 supplies `[states.xx]` - and a parameter file overriding a year must carry the
@@ -388,6 +401,19 @@ states lived in that year, each with what is left of any rates it schedules; the
   penalty does not reach), `early-distribution` (one it does), `conversion`,
   `other` - and optionally `from-age`, such as `59.5`: the sources are untaxed
   for a person from the year they reach it, or at any age without it.
+- `deduction-at-65`, by filing status: what each person adds to the deduction
+  from the year they reach 65. `deduction-until-agi`, by filing status: the
+  federal AGI above which there is no deduction. Neither is inflated.
+- `[states.xx.federal-tax-subtraction]`: `cap`, the most federal income tax
+  subtracted from income; `phase-out`, by filing status, the `from` and `to` of
+  the federal AGI band the cap is lost across; and `steps`, the equal parts it
+  is lost in, one at `from` and one more at each even step up to `to`.
+- `[states.xx.exemption-credit]`: `per-person`, taken off the tax and never
+  refunded; `at-65`, what each person adds from the year they reach 65;
+  `until-agi`, by filing status, the federal AGI above which there is no credit;
+  and `unindexed` where the law fixes `per-person`.
+- `[states.xx.gains-excise]`: `deduction`, the long-term gains left untaxed
+  whatever the filing status, and `brackets` over the gains beyond it.
 
 ## Worked example
 

@@ -51,7 +51,8 @@ pub struct Taxes {
     pub ltcg: Dollars,
     /// Early-withdrawal penalties.
     pub penalty: Dollars,
-    /// Income tax of the state lived in that year.
+    /// What the state lived in that year takes: its income tax and, where
+    /// it levies one, its excise on gains.
     pub state: Dollars,
     /// The taxable portion of Social Security benefits (informational).
     pub taxable_social_security: Dollars,

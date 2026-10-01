@@ -21,6 +21,12 @@ test("a year's tax tables, the plan's by default and any other picked", async ({
   await expect(
     page.getByRole("rowheader", { name: "Standard deduction" }).first(),
   ).toBeVisible();
+  await expect(
+    page.getByRole("rowheader", { name: "Federal tax subtracted, up to" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("rowheader", { name: "Credit for each person" }),
+  ).toBeVisible();
   await expectAccessible(page);
   await page.getByLabel("Filing status").selectOption("single");
   await page.waitForURL(/status=single/);
@@ -50,4 +56,11 @@ test("a year's tax tables, the plan's by default and any other picked", async ({
     page.getByRole("heading", { name: "Washington brackets" }),
   ).toBeVisible();
   await expect(page.getByText("This state has no income tax.")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Washington excise on long-term gains" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("row", { name: "Rate on taxed gains over $1,000,000 9.9%" }),
+  ).toBeVisible();
+  await expectAccessible(page);
 });

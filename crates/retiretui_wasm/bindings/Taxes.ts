@@ -17,7 +17,8 @@ ltcg: number,
  */
 penalty: number, 
 /**
- * Income tax of the state lived in that year.
+ * What the state lived in that year takes: its income tax and, where
+ * it levies one, its excise on gains.
  */
 state: number, 
 /**
