@@ -1,7 +1,8 @@
 use std::collections::BTreeMap;
 
-use crate::params::TaxTables;
+use crate::params::{Source, TaxTables};
 use crate::plan::{Account, ColaSpec, Dollars, Plan, Span, TreatmentClass};
+use crate::tax::PersonIncome;
 
 use super::benefit::{Derived, first_paid_months};
 use super::collect::{default_cliff_end, seed_magi_lookback};
@@ -53,7 +54,8 @@ pub(crate) struct Simulation<'a> {
 pub(super) struct YearAcc {
     pub(super) income: BTreeMap<String, Dollars>,
     pub(super) cash: Dollars,
-    pub(super) ordinary: Dollars,
+    /// Each person's taxable ordinary income, in the household's order.
+    pub(super) taxed: Vec<PersonIncome>,
     pub(super) ss_gross: Dollars,
     pub(super) gains: Dollars,
     pub(super) penalty_base: Dollars,
@@ -79,6 +81,18 @@ pub(super) struct YearAcc {
     pub(super) actions: Vec<Action>,
     /// Settle-loop drains per account index, in first-drain order.
     pub(super) funding: Vec<(usize, Dollars)>,
+}
+
+impl YearAcc {
+    /// Records `amount` of taxable ordinary income, negative where it is a
+    /// reduction, as the `person`th of the household's from `source`.
+    pub(super) fn tax(&mut self, person: usize, source: Source, amount: Dollars) {
+        self.taxed[person].add(source, amount);
+    }
+
+    pub(super) fn ordinary(&self) -> Dollars {
+        self.taxed.iter().map(PersonIncome::total).sum()
+    }
 }
 
 impl<'a> Simulation<'a> {
@@ -144,8 +158,13 @@ impl<'a> Simulation<'a> {
     fn step(&mut self, year: i16) -> YearRow {
         let factor = self.path.deflator(year);
         let params = self.tables.params_for(year, self.path.inflation());
+        let people = &self.plan.household.people;
         let mut acc = YearAcc {
             pending: vec![0; self.plan.accounts.len()],
+            taxed: people
+                .iter()
+                .map(|person| PersonIncome::new(person.birth))
+                .collect(),
             ..YearAcc::default()
         };
         let snapshot = self.balances.clone();
@@ -163,6 +182,15 @@ impl<'a> Simulation<'a> {
         self.sweep_surplus(&mut acc);
         self.land(&acc);
         self.build_row(year, factor, taxes, acc)
+    }
+
+    /// Where the person with id `owner` stands in the household.
+    pub(super) fn person_at(&self, owner: &str) -> usize {
+        let people = &self.plan.household.people;
+        people
+            .iter()
+            .position(|person| person.id == owner)
+            .unwrap_or_default()
     }
 
     pub(super) fn cola_factor(&self, cola: ColaSpec, year: i16) -> f64 {

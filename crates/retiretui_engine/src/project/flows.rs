@@ -1,7 +1,7 @@
 //! What moves money between accounts in a year - transfers, RMDs, Roth
 //! conversions - and the basis each move carries with it.
 
-use crate::params::TaxParams;
+use crate::params::{Source, TaxParams};
 use crate::plan::{Account, Dollars, TreatmentClass};
 use crate::tax;
 
@@ -41,16 +41,32 @@ impl Simulation<'_> {
                 continue;
             }
             let distributed = self.move_between_accounts(from, to, take, year);
-            acc.ordinary += distributed;
-            if self.pays_penalty(&self.plan.accounts[from], year) {
-                acc.penalty_base += distributed;
-            }
+            self.tax_distribution(from, distributed, year, acc);
             acc.actions.push(Action::Transfer {
                 from: transfer.from.clone(),
                 to: transfer.to.clone(),
                 amount: take,
             });
         }
+    }
+
+    /// Records `taxed` as paid out of the account at `index`, early and
+    /// penalized where the federal penalty reaches the account in `year`.
+    pub(super) fn tax_distribution(
+        &self,
+        index: usize,
+        taxed: Dollars,
+        year: i16,
+        acc: &mut YearAcc,
+    ) {
+        let account = &self.plan.accounts[index];
+        let source = if self.pays_penalty(account, year) {
+            acc.penalty_base += taxed;
+            Source::EarlyDistribution
+        } else {
+            Source::Distribution
+        };
+        acc.tax(self.person_at(&account.owner), source, taxed);
     }
 
     /// Moves `take` and answers the part of it taxed as a distribution.
@@ -149,7 +165,11 @@ impl Simulation<'_> {
             let untaxed = self.remove_basis(i, amount);
             self.balances[i] -= amount;
             acc.rmds += amount;
-            acc.ordinary += amount - untaxed;
+            acc.tax(
+                self.person_at(&account.owner),
+                Source::Distribution,
+                amount - untaxed,
+            );
             acc.cash += amount;
             *acc.withdrawals.entry(account.id.clone()).or_default() += amount;
             acc.actions.push(Action::Rmd {
@@ -197,7 +217,8 @@ impl Simulation<'_> {
             self.balances[from] -= take;
             self.balances[to] += take;
             self.land_conversion(to, year, take - untaxed, untaxed);
-            acc.ordinary += take - untaxed;
+            let owner = self.person_at(&self.plan.accounts[from].owner);
+            acc.tax(owner, Source::Conversion, take - untaxed);
             acc.conversions += take;
             acc.actions.push(Action::Conversion {
                 from: conversion.from.clone(),

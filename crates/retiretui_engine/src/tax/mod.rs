@@ -9,7 +9,7 @@ use crate::plan::{AccountKind, Dollars, FilingStatus, Person, PlanDate};
 
 mod state;
 
-pub use state::state_tax;
+pub use state::{PersonIncome, state_tax};
 
 /// The age Medicare coverage (and IRMAA exposure) begins.
 pub const MEDICARE_AGE: u8 = 65;
