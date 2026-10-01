@@ -130,8 +130,15 @@ fn each_bracket(brackets: &mut PerStatus<Vec<Bracket>>) -> impl Iterator<Item = 
         .chain(&mut brackets.married_joint)
 }
 
-fn scale_brackets(brackets: &mut PerStatus<Vec<Bracket>>, factor: f64) {
-    for bracket in each_bracket(brackets) {
+/// Every bracket a state's table holds: its income tax's, then its gains
+/// excise's.
+fn each_state_bracket(state: &mut StateParams) -> impl Iterator<Item = &mut Bracket> {
+    let excise = state.gains_excise.iter_mut();
+    each_bracket(&mut state.brackets).chain(excise.flat_map(|excise| &mut excise.brackets))
+}
+
+fn scale_brackets<'a>(brackets: impl Iterator<Item = &'a mut Bracket>, factor: f64) {
+    for bracket in brackets {
         if !bracket.unindexed {
             bracket.over = scale(bracket.over, factor);
         }
@@ -141,9 +148,8 @@ fn scale_brackets(brackets: &mut PerStatus<Vec<Bracket>>, factor: f64) {
 /// Sets every bracket to the rate its table says the law has set by `year`,
 /// leaving it the rates still to come.
 pub(super) fn step_rates(params: &mut TaxParams, year: i16) {
-    let states = params.states.values_mut().map(|state| &mut state.brackets);
-    let tables = std::iter::once(&mut params.brackets).chain(states);
-    for bracket in tables.flat_map(each_bracket) {
+    let states = params.states.values_mut().flat_map(each_state_bracket);
+    for bracket in each_bracket(&mut params.brackets).chain(states) {
         let begun = bracket.later.iter().filter(|step| step.from <= year);
         if let Some(step) = begun.max_by_key(|step| step.from) {
             bracket.rate = step.rate;
@@ -156,14 +162,27 @@ pub(super) fn inflate_state(state: &mut StateParams, factor: f64) {
     if !state.deduction_unindexed {
         state.deduction = scale_status(state.deduction, factor);
     }
-    scale_brackets(&mut state.brackets, factor);
+    if let Some(subtraction) = &mut state.federal_tax_subtraction {
+        subtraction.cap = scale(subtraction.cap, factor);
+    }
+    if let Some(credit) = state
+        .exemption_credit
+        .as_mut()
+        .filter(|credit| !credit.unindexed)
+    {
+        credit.per_person = scale(credit.per_person, factor);
+    }
+    if let Some(excise) = &mut state.gains_excise {
+        excise.deduction = scale(excise.deduction, factor);
+    }
+    scale_brackets(each_state_bracket(state), factor);
 }
 
 pub(super) fn inflate(base: &TaxParams, year: i16, factor: f64) -> TaxParams {
     let mut params = base.clone();
     params.year = year;
     params.deductions.standard = scale_status(base.deductions.standard, factor);
-    scale_brackets(&mut params.brackets, factor);
+    scale_brackets(each_bracket(&mut params.brackets), factor);
     params.ltcg.zero_until = scale_status(base.ltcg.zero_until, factor);
     params.ltcg.fifteen_until = scale_status(base.ltcg.fifteen_until, factor);
     params.limits = ContributionLimits {

@@ -29,6 +29,7 @@ mod triggers;
 mod validate;
 
 pub use accounts::{Account, AccountKind, TreatmentClass};
+pub(crate) use allocation::is_zero;
 pub use allocation::{Allocation, AssetClass, ClassReturns, Mix, MixPhase};
 pub use cliffs::Cliff;
 pub use codec::{from_table, to_table};

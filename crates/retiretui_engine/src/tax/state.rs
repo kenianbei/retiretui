@@ -2,10 +2,14 @@
 //! from [`crate::params::StateParams`].
 
 use super::{is_age_reached, walk_brackets};
-use crate::params::{Source, StateParams};
+use crate::params::{FederalTaxSubtraction, PerStatus, Source, StateParams};
 use crate::plan::{Dollars, FilingStatus, PlanDate};
 
 const SOURCES: usize = Source::ALL.len();
+
+/// The age from which a state's table adds to a person's deduction or
+/// credit, as the federal standard deduction does.
+const ADDITION_AGE: f64 = 65.0;
 
 /// One person's taxable ordinary income in a year, by where it came from.
 #[derive(Debug, Clone, PartialEq)]
@@ -52,12 +56,29 @@ pub struct StateIncome<'a> {
     /// deferrals, and the traditional IRA contributions the year's MAGI let
     /// be deducted.
     pub deferred: Dollars,
+    /// Federal income tax: on ordinary income and on gains, and the
+    /// additional taxes on early withdrawals.
+    pub federal_tax: Dollars,
+    /// Federal adjusted gross income.
+    pub agi: Dollars,
 }
 
-/// A state's income tax: what each person's ordinary income leaves once the
-/// state's exclusions are taken out of it, gains, and the taxable share of
-/// Social Security where the state taxes it, less what was deferred where
-/// the state follows that, and less its deduction.
+impl StateIncome<'_> {
+    /// How many of the household have reached the age a table's additions
+    /// begin at.
+    fn aged(&self) -> Dollars {
+        let people = self.people.iter();
+        let aged = people.filter(|person| is_age_reached(person.birth, ADDITION_AGE, self.year));
+        aged.count() as Dollars
+    }
+}
+
+/// What a state takes in a year. Its income tax is on what each person's
+/// ordinary income leaves once the state's exclusions are taken out of it,
+/// gains, and the taxable share of Social Security where the state taxes it,
+/// less what was deferred where the state follows that, its deduction, and
+/// the federal tax it lets be subtracted; its credit for each person comes
+/// off that tax and is never refunded. Its excise on gains is added.
 #[must_use]
 pub fn state_tax(state: &StateParams, status: FilingStatus, income: &StateIncome) -> Dollars {
     let people = income.people.iter();
@@ -74,8 +95,69 @@ pub fn state_tax(state: &StateParams, status: FilingStatus, income: &StateIncome
     } else {
         0
     };
-    let taxable = ordinary + income.gains - deferred + benefits - state.deduction.get(status);
-    walk_brackets(state.brackets.for_status(status), taxable)
+    let taxable = ordinary + income.gains - deferred + benefits
+        - deduction_of(state, status, income)
+        - subtracted_of(state, status, income);
+    let walked = walk_brackets(state.brackets.for_status(status), taxable);
+    (walked - credit_of(state, status, income)).max(0) + excise_of(state, income.gains)
+}
+
+/// The state's deduction: the status's and what each person old enough adds
+/// to it, or nothing above the AGI the table stops it at.
+fn deduction_of(state: &StateParams, status: FilingStatus, income: &StateIncome) -> Dollars {
+    if is_over(state.deduction_until_agi, status, income.agi) {
+        return 0;
+    }
+    let added = state.deduction_at_65.map_or(0, |each| each.get(status));
+    state.deduction.get(status) + added * income.aged()
+}
+
+fn is_over(until_agi: Option<PerStatus<Dollars>>, status: FilingStatus, agi: Dollars) -> bool {
+    until_agi.is_some_and(|limit| agi > limit.get(status))
+}
+
+/// The federal tax the state lets be subtracted: all of it, up to the cap
+/// the AGI leaves.
+fn subtracted_of(state: &StateParams, status: FilingStatus, income: &StateIncome) -> Dollars {
+    let subtraction = state.federal_tax_subtraction.as_ref();
+    subtraction.map_or(0, |subtraction| {
+        income
+            .federal_tax
+            .min(cap_at(subtraction, status, income.agi))
+    })
+}
+
+/// The cap an AGI leaves: whole under the band, and less by one part in
+/// `steps` at its foot and at each even step up to its top.
+fn cap_at(subtraction: &FederalTaxSubtraction, status: FilingStatus, agi: Dollars) -> Dollars {
+    let band = subtraction.phase_out.get(status);
+    if agi < band.from {
+        return subtraction.cap;
+    }
+    let steps = Dollars::from(subtraction.steps.get());
+    let width = (band.to - band.from).max(1);
+    let lost = (1 + (agi - band.from) * (steps - 1) / width).min(steps);
+    subtraction.cap * (steps - lost) / steps
+}
+
+/// The state's credit for each person, with what each old enough adds to
+/// it, or nothing above the AGI the table stops it at.
+fn credit_of(state: &StateParams, status: FilingStatus, income: &StateIncome) -> Dollars {
+    let Some(credit) = &state.exemption_credit else {
+        return 0;
+    };
+    if is_over(credit.until_agi, status, income.agi) {
+        return 0;
+    }
+    credit.per_person * income.people.len() as Dollars + credit.at_65 * income.aged()
+}
+
+/// The state's excise on the gains its deduction leaves.
+fn excise_of(state: &StateParams, gains: Dollars) -> Dollars {
+    let excise = state.gains_excise.as_ref();
+    excise.map_or(0, |excise| {
+        walk_brackets(&excise.brackets, gains - excise.deduction)
+    })
 }
 
 /// What of a person's ordinary income the state taxes in `year`. A row

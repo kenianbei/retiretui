@@ -35,6 +35,8 @@ fn in_year(year: i16, people: &[PersonIncome]) -> StateIncome<'_> {
         gains: 0,
         taxable_social_security: 0,
         deferred: 0,
+        federal_tax: 0,
+        agi: 0,
     }
 }
 
