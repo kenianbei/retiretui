@@ -123,20 +123,39 @@ fn scale_status(values: PerStatus<Dollars>, factor: f64) -> PerStatus<Dollars> {
     }
 }
 
-fn scale_brackets(brackets: &mut PerStatus<Vec<Bracket>>, factor: f64) {
-    for bracket in brackets
+fn each_bracket(brackets: &mut PerStatus<Vec<Bracket>>) -> impl Iterator<Item = &mut Bracket> {
+    brackets
         .single
         .iter_mut()
         .chain(&mut brackets.married_joint)
-    {
+}
+
+fn scale_brackets(brackets: &mut PerStatus<Vec<Bracket>>, factor: f64) {
+    for bracket in each_bracket(brackets) {
         if !bracket.unindexed {
             bracket.over = scale(bracket.over, factor);
         }
     }
 }
 
+/// Sets every bracket to the rate its table says the law has set by `year`,
+/// leaving it the rates still to come.
+pub(super) fn step_rates(params: &mut TaxParams, year: i16) {
+    let states = params.states.values_mut().map(|state| &mut state.brackets);
+    let tables = std::iter::once(&mut params.brackets).chain(states);
+    for bracket in tables.flat_map(each_bracket) {
+        let begun = bracket.later.iter().filter(|step| step.from <= year);
+        if let Some(step) = begun.max_by_key(|step| step.from) {
+            bracket.rate = step.rate;
+        }
+        bracket.later.retain(|step| step.from > year);
+    }
+}
+
 pub(super) fn inflate_state(state: &mut StateParams, factor: f64) {
-    state.deduction = scale_status(state.deduction, factor);
+    if !state.deduction_unindexed {
+        state.deduction = scale_status(state.deduction, factor);
+    }
     scale_brackets(&mut state.brackets, factor);
 }
 
@@ -145,9 +164,6 @@ pub(super) fn inflate(base: &TaxParams, year: i16, factor: f64) -> TaxParams {
     params.year = year;
     params.deductions.standard = scale_status(base.deductions.standard, factor);
     scale_brackets(&mut params.brackets, factor);
-    for state in params.states.values_mut() {
-        inflate_state(state, factor);
-    }
     params.ltcg.zero_until = scale_status(base.ltcg.zero_until, factor);
     params.ltcg.fifteen_until = scale_status(base.ltcg.fifteen_until, factor);
     params.limits = ContributionLimits {

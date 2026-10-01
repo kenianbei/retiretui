@@ -28,6 +28,21 @@ test("a year's tax tables, the plan's by default and any other picked", async ({
   await expect(
     page.getByRole("heading", { name: "Texas income tax" }),
   ).toBeVisible();
+  await page.getByLabel("State").selectOption("pa");
+  await expect(
+    page.getByRole("heading", { name: "Pennsylvania income tax" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("row", {
+      name: "Retirement withdrawals, not early Untaxed from 59 and a half",
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("row", {
+      name: "Retirement contributions Taxed when paid in",
+    }),
+  ).toBeVisible();
+  await expectAccessible(page);
   await page.getByLabel("State").selectOption("");
   await expect.poll(() => page.url()).not.toContain("state=");
   await page.goto("#/tools/tax-tables?year=2060");

@@ -67,6 +67,15 @@ pub fn with_override() -> TaxTables {
     tables
 }
 
+/// The embedded tables with `state` - a `[states.xx]` table and whatever
+/// hangs off it - added to 2026's.
+pub fn tables_with(state: &str) -> TaxTables {
+    let text = format!("{}\n{state}", include_str!("../../tax/2026.toml"));
+    let mut tables = TaxTables::embedded();
+    tables.add_source(&text, "test").unwrap();
+    tables
+}
+
 /// What `year` drew on `account`, what the year taxed, and the penalty it
 /// paid.
 #[track_caller]
@@ -107,6 +116,15 @@ birth = {birth_year}-06-15
 {body}
 "#
     )
+}
+
+/// Someone born in June of `birth_year` living in `state` with cash enough
+/// for every tax, and `body`.
+pub fn living_in(state: &str, birth_year: i16, body: &str) -> String {
+    let home = format!(
+        "[[residency]]\ncountry = \"us\"\nstate = \"{state}\"\n\n[[accounts]]\nid = \"cash\"\nkind = \"cash\"\nowner = \"me\"\nbalance = 500000\n{body}"
+    );
+    born_in(birth_year, &home)
 }
 
 pub fn head(text: &str) -> String {

@@ -4,8 +4,12 @@
 use std::collections::BTreeMap;
 use std::ops::RangeInclusive;
 
-use crate::params::{BenefitParams, Bracket, StateParams, TaxParams};
+use crate::params::{BenefitParams, Bracket, TaxParams};
 use crate::plan::{AccountKind, Dollars, FilingStatus, Person, PlanDate};
+
+mod state;
+
+pub use state::{PersonIncome, StateIncome, state_tax};
 
 /// The age Medicare coverage (and IRMAA exposure) begins.
 pub const MEDICARE_AGE: u8 = 65;
@@ -53,6 +57,14 @@ const FRA_STEP_MONTHS: i32 = 2;
 /// Years between the MAGI that is measured and the premiums it prices.
 pub const IRMAA_LOOKBACK_YEARS: i16 = 2;
 
+/// Whether someone born on `birth` reaches `age`, in years and a fraction of
+/// one, by the end of `year`.
+pub(crate) fn is_age_reached(birth: PlanDate, age: f64, year: i16) -> bool {
+    let months_per_year = f64::from(MONTHS_PER_YEAR);
+    let months = (age * months_per_year).round() + f64::from(birth.0.month() - 1);
+    f64::from(birth.year()) + (months / months_per_year).floor() <= f64::from(year)
+}
+
 /// Whether a person is Medicare-covered in `year`.
 #[must_use]
 pub fn is_medicare_covered(person: &Person, year: i16) -> bool {
@@ -70,25 +82,7 @@ pub fn ordinary_tax(params: &TaxParams, status: FilingStatus, taxable: Dollars) 
     walk_brackets(params.brackets.for_status(status), taxable)
 }
 
-/// A state's income tax: ordinary income and gains alike, with the taxable
-/// share of Social Security where the state taxes it, less its deduction.
-#[must_use]
-pub fn state_tax(
-    state: &StateParams,
-    status: FilingStatus,
-    income: Dollars,
-    taxable_social_security: Dollars,
-) -> Dollars {
-    let benefits = if state.taxes_social_security {
-        taxable_social_security
-    } else {
-        0
-    };
-    let taxable = income + benefits - state.deduction.get(status);
-    walk_brackets(state.brackets.for_status(status), taxable)
-}
-
-fn walk_brackets(brackets: &[Bracket], taxable: Dollars) -> Dollars {
+pub(super) fn walk_brackets(brackets: &[Bracket], taxable: Dollars) -> Dollars {
     let mut tax = 0.0;
     for (i, bracket) in brackets.iter().enumerate() {
         if taxable <= bracket.over {

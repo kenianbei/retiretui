@@ -1,16 +1,17 @@
-use crate::params::{StateParams, TaxParams};
+use crate::params::{Source, StateParams, TaxParams};
 use crate::plan::{Account, Dollars, FilingStatus, Person, TreatmentClass};
-use crate::tax;
+use crate::tax::{self, StateIncome};
 
 use super::Taxes;
+use super::flows::distribution;
 use super::ira::ira_deducted;
 use super::residence;
 use super::scale;
 use super::year::{Simulation, YearAcc};
 
 const MAX_TAX_ITERATIONS: usize = 30;
-const PENALTY_FREE_YEARS: i64 = 59;
-const PENALTY_FREE_MONTHS: i64 = 6;
+/// IRC §72(t)(2)(A)(i).
+const PENALTY_FREE_AGE: f64 = 59.5;
 /// IRC §72(t)(2)(A)(v).
 const SEPARATION_AGE: i16 = 55;
 /// IRC §72(t)(10).
@@ -168,23 +169,25 @@ impl Simulation<'_> {
         match account.treatment() {
             TreatmentClass::Deferred => {
                 let taxed = take - self.remove_basis(index, take);
-                acc.ordinary += taxed;
-                if self.pays_penalty(account, year) {
-                    acc.penalty_base += taxed;
-                }
+                self.tax_distribution(index, taxed, year, acc);
             }
             TreatmentClass::Taxable if account.kind.tracks_basis() => {
                 acc.gains += take - self.remove_basis(index, take);
             }
             TreatmentClass::Roth => {
                 let draw = self.draw_roth(index, take, year);
-                acc.ordinary += draw.taxed;
+                let source = distribution(draw.is_early);
+                acc.tax(self.person_at(&account.owner), source, draw.taxed);
                 acc.penalty_base += draw.penalized;
             }
             TreatmentClass::Hsa => {
                 let medical = take.min(acc.medical);
                 acc.medical -= medical;
-                acc.ordinary += take - medical;
+                acc.tax(
+                    self.person_at(&account.owner),
+                    Source::Other,
+                    take - medical,
+                );
                 if self.is_under_medicare_age(account, year) {
                     acc.hsa_penalty_base += take - medical;
                 }
@@ -215,22 +218,28 @@ fn compute_taxes(
     status: FilingStatus,
     acc: &YearAcc,
 ) -> Taxes {
-    let before = acc.ordinary + acc.gains;
+    let ordinary_income = acc.ordinary();
+    let before = ordinary_income + acc.gains;
     let ss_before = tax::taxable_social_security(params, status, before, acc.ss_gross);
     let by_band = ira_deducted(params, status, &acc.ira_to_settle, before + ss_before);
     let deducted: Dollars = by_band.iter().sum();
     let other_income = before - deducted;
     let taxable_ss = tax::taxable_social_security(params, status, other_income, acc.ss_gross);
     let deduction = params.deductions.standard.get(status);
-    let ordinary_taxable = acc.ordinary - deducted + taxable_ss - deduction;
+    let ordinary_taxable = ordinary_income - deducted + taxable_ss - deduction;
     let ordinary = tax::ordinary_tax(params, status, ordinary_taxable);
     let ltcg = tax::ltcg_tax(params, status, ordinary_taxable, acc.gains);
     let early = params.early_withdrawal;
     let penalty =
         scale(acc.penalty_base, early.penalty) + scale(acc.hsa_penalty_base, early.hsa_penalty);
-    let state = state.map_or(0, |state| {
-        tax::state_tax(state, status, other_income, taxable_ss)
-    });
+    let income = StateIncome {
+        year: params.year,
+        people: &acc.taxed,
+        gains: acc.gains,
+        taxable_social_security: taxable_ss,
+        deferred: acc.deferred + deducted,
+    };
+    let state = state.map_or(0, |state| tax::state_tax(state, status, &income));
     Taxes {
         ordinary,
         ltcg,
@@ -246,12 +255,5 @@ fn compute_taxes(
 }
 
 fn is_penalty_free_age(person: &Person, year: i16) -> bool {
-    let span = jiff::Span::new()
-        .years(PENALTY_FREE_YEARS)
-        .months(PENALTY_FREE_MONTHS);
-    person
-        .birth
-        .0
-        .checked_add(span)
-        .is_ok_and(|date| date.year() <= year)
+    tax::is_age_reached(person.birth, PENALTY_FREE_AGE, year)
 }

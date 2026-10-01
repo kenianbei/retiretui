@@ -2,7 +2,7 @@
 //! past the last known year by inflating indexed values. Values are data;
 //! rule shapes live in [`crate::tax`].
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
@@ -11,11 +11,13 @@ use crate::plan::{Dollars, FilingStatus};
 
 mod index;
 mod limits;
+mod states;
 
 pub use index::Inflation;
 pub(crate) use index::scale;
-use index::{inflate, inflate_state};
+use index::{inflate, inflate_state, step_rates};
 pub use limits::{ContributionLimits, EarlyWithdrawal, IrmaaTier, PhaseOut, RmdDivisor, RmdTable};
+pub use states::{Exclusion, Source, StateParams};
 
 /// The tax parameter file schema version this build reads.
 const PARAMS_SCHEMA_VERSION: u32 = 1;
@@ -84,7 +86,7 @@ impl<T: Copy> PerStatus<T> {
 }
 
 /// One ordinary-income bracket: `rate` applies above `over`.
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields)]
 pub struct Bracket {
@@ -96,6 +98,21 @@ pub struct Bracket {
     /// inflated past the last known year.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub unindexed: bool,
+    /// Rates the law has already set for years after the table's own; the
+    /// latest that has begun is the year's `rate`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub later: Vec<RateStep>,
+}
+
+/// A bracket's rate from a year on.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[serde(deny_unknown_fields)]
+pub struct RateStep {
+    /// The first year the rate applies.
+    pub from: i16,
+    /// Marginal rate.
+    pub rate: f64,
 }
 
 /// Standard deductions.
@@ -247,24 +264,12 @@ pub struct TaxParams {
     pub states: BTreeMap<String, StateParams>,
 }
 
-/// One state's income tax. A state with no income tax is an empty table,
-/// which is not the same as a state with none: that one is not modeled.
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-#[serde(default, deny_unknown_fields, rename_all = "kebab-case")]
-pub struct StateParams {
-    /// Standard deduction by filing status.
-    pub deduction: PerStatus<Dollars>,
-    /// Brackets by filing status, walked as the federal ones are.
-    pub brackets: PerStatus<Vec<Bracket>>,
-    /// Whether the federally taxable share of Social Security is taxed.
-    pub taxes_social_security: bool,
-}
-
 /// All known tax years, ready to answer any projection year.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TaxTables {
+    /// Each year's table, its states taken out into `states`.
     years: BTreeMap<i16, TaxParams>,
+    states: BTreeMap<i16, BTreeMap<String, StateParams>>,
 }
 
 impl TaxTables {
@@ -278,6 +283,7 @@ impl TaxTables {
     pub fn embedded() -> Self {
         let mut tables = Self {
             years: BTreeMap::new(),
+            states: BTreeMap::new(),
         };
         for text in EMBEDDED {
             tables
@@ -295,7 +301,7 @@ impl TaxTables {
     /// Returns [`ParamsError::Parse`] or [`ParamsError::Schema`]; `label`
     /// names the source in the error.
     pub fn add_source(&mut self, text: &str, label: &str) -> Result<(), ParamsError> {
-        let params: TaxParams = toml::from_str(text).map_err(|source| ParamsError::Parse {
+        let mut params: TaxParams = toml::from_str(text).map_err(|source| ParamsError::Parse {
             path: label.to_owned(),
             source: Box::new(source),
         })?;
@@ -305,6 +311,8 @@ impl TaxTables {
                 found: params.schema,
             });
         }
+        let states = std::mem::take(&mut params.states);
+        self.states.insert(params.year, states);
         self.years.insert(params.year, params);
         Ok(())
     }
@@ -362,6 +370,30 @@ impl TaxTables {
     /// at least one.
     #[must_use]
     pub fn params_for(&self, year: i16, inflation: &Inflation) -> TaxParams {
+        let tables = self.states.values();
+        let codes: BTreeSet<&str> = tables
+            .flat_map(|states| states.keys().map(String::as_str))
+            .collect();
+        self.params_with(year, inflation, codes)
+    }
+
+    /// [`TaxTables::params_for`], holding of the states only `state`: what
+    /// a projected year reads, which lives in one state at most.
+    pub(crate) fn params_in(
+        &self,
+        year: i16,
+        inflation: &Inflation,
+        state: Option<&str>,
+    ) -> TaxParams {
+        self.params_with(year, inflation, state)
+    }
+
+    fn params_with<'a>(
+        &self,
+        year: i16,
+        inflation: &Inflation,
+        codes: impl IntoIterator<Item = &'a str>,
+    ) -> TaxParams {
         let (&base_year, base) = self
             .years
             .range(..=year)
@@ -375,17 +407,31 @@ impl TaxTables {
         } else {
             inflate(base, year, inflation.factor(base_year, year))
         };
-        for (&earlier_year, earlier) in self.years.range(..base_year).rev() {
-            let factor = inflation.factor(earlier_year, year);
-            for (code, state) in &earlier.states {
-                if params.states.contains_key(code) {
-                    continue;
-                }
-                let mut state = state.clone();
-                inflate_state(&mut state, factor);
-                params.states.insert(code.clone(), state);
+        for code in codes {
+            if let Some(state) = self.state(code, base_year, year, inflation) {
+                params.states.insert(code.to_owned(), state);
             }
         }
+        step_rates(&mut params, year);
         params
+    }
+
+    /// `code`'s table as `year` reads it: from the latest table up to
+    /// `base_year`'s that holds it, carried from that table's year.
+    fn state(
+        &self,
+        code: &str,
+        base_year: i16,
+        year: i16,
+        inflation: &Inflation,
+    ) -> Option<StateParams> {
+        let mut tables = self.states.range(..=base_year).rev();
+        let (&held_in, state) =
+            tables.find_map(|(held_in, states)| Some((held_in, states.get(code)?)))?;
+        let mut state = state.clone();
+        if year > held_in {
+            inflate_state(&mut state, inflation.factor(held_in, year));
+        }
+        Some(state)
     }
 }

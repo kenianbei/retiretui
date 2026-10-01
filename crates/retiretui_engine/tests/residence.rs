@@ -113,6 +113,27 @@ fn an_override_year_without_states_inherits_them_inflated() {
     let inherited = tables.params_for(2030, &inflation);
     assert_eq!(inherited.states["or"], carried.states["or"]);
     assert!(!inherited.states.contains_key("ca"));
+    let projected = state_taxes(&project(&plan(OREGON), &tables));
+    assert_eq!(projected, state_taxes(&run(OREGON)));
+    assert!(projected.iter().all(|&tax| tax > 0));
+}
+
+#[test]
+fn a_later_year_s_table_that_restates_a_state_stands_from_that_year() {
+    let text = std::fs::read_to_string("tax/2026.toml").unwrap();
+    let restated = text
+        .replace("year = 2026", "year = 2028")
+        .replace("single = 2900", "single = 3000");
+    let mut tables = TaxTables::embedded();
+    tables.add_source(&restated, "a later year").unwrap();
+    let deduction = |year| {
+        let params = tables.params_for(year, &Inflation::constant(0.0));
+        params.states["or"].deduction.single
+    };
+    assert_eq!(
+        [deduction(2027), deduction(2028), deduction(2030)],
+        [2_900, 3_000, 3_000]
+    );
 }
 
 #[test]

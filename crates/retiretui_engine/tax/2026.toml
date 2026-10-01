@@ -338,3 +338,81 @@ married-joint = [
   { over = 22800, rate = 0.0875 },
   { over = 250000, rate = 0.099, unindexed = true },
 ]
+
+# Illinois: 35 ILCS 5/201(b)(5.4), 5/203(a)(2)(F) and (L); Informational
+# Bulletin FY 2026-15; Booklet IL-700-T, 2026; Publication 120. The deduction
+# is the exemption allowance, one a person.
+[states.il.deduction]
+single = 2925
+married-joint = 5850
+
+[states.il.brackets]
+single = [{ over = 0, rate = 0.0495 }]
+married-joint = [{ over = 0, rate = 0.0495 }]
+
+[[states.il.exclusions]]
+sources = ["pension", "distribution", "early-distribution", "conversion"]
+
+# Pennsylvania: 72 P.S. 7302, 7303(a)(1)(ii); 61 Pa. Code 101.6; REV-413 (I),
+# 2026; PA-40 instructions, 2025. 59 and a half is the age an IRA is paid
+# untaxed from, and stands in for a workplace plan's own retirement age.
+[states.pa]
+taxes-deferrals = true
+
+[states.pa.brackets]
+single = [{ over = 0, rate = 0.0307 }]
+married-joint = [{ over = 0, rate = 0.0307 }]
+
+[[states.pa.exclusions]]
+sources = ["pension", "conversion"]
+
+[[states.pa.exclusions]]
+sources = ["distribution"]
+from-age = 59.5
+
+# Mississippi: Miss. Code 27-7-5 as 2025 HB 1 amended it, 27-7-15(4), 27-7-17,
+# 27-7-21; Form 80-100 instructions, 2025; withholding tables 89-700, 2026.
+# The deduction is the personal exemption and the standard deduction together,
+# and with the bracket's floor is fixed by statute.
+[states.ms]
+deduction-unindexed = true
+
+[states.ms.deduction]
+single = 8300
+married-joint = 16600
+
+[states.ms.brackets]
+single = [
+  { over = 10000, rate = 0.04, unindexed = true, later = [
+    { from = 2027, rate = 0.0375 },
+    { from = 2028, rate = 0.035 },
+    { from = 2029, rate = 0.0325 },
+    { from = 2030, rate = 0.03 },
+  ] },
+]
+married-joint = [
+  { over = 10000, rate = 0.04, unindexed = true, later = [
+    { from = 2027, rate = 0.0375 },
+    { from = 2028, rate = 0.035 },
+    { from = 2029, rate = 0.0325 },
+    { from = 2030, rate = 0.03 },
+  ] },
+]
+
+[[states.ms.exclusions]]
+sources = ["pension", "distribution", "conversion"]
+
+# Iowa: Iowa Code 422.5(1)(a), 422.7(8) and (19); IA 1040ES, 2026. Iowa starts
+# from federal taxable income, so the deduction is the federal standard one,
+# and a later year's table restates it beside its own.
+[states.ia.deduction]
+single = 16100
+married-joint = 32200
+
+[states.ia.brackets]
+single = [{ over = 0, rate = 0.038 }]
+married-joint = [{ over = 0, rate = 0.038 }]
+
+[[states.ia.exclusions]]
+sources = ["pension", "distribution", "early-distribution", "conversion"]
+from-age = 55

@@ -1,7 +1,7 @@
 //! What the year reads from the plan into its accumulator - income,
 //! expenses, Medicare surcharges, cliff costs - touching no balance.
 
-use crate::params::TaxParams;
+use crate::params::{Source, TaxParams};
 use crate::plan::{Cliff, Dollars, IncomeKind, Plan};
 use crate::tax;
 
@@ -27,15 +27,20 @@ impl Simulation<'_> {
             }
             *acc.income.entry(income.id.clone()).or_default() += nominal;
             acc.cash += nominal;
-            match income.kind {
-                IncomeKind::SocialSecurity => acc.ss_gross += nominal,
-                IncomeKind::Windfall => {}
+            let source = match income.kind {
+                IncomeKind::SocialSecurity => {
+                    acc.ss_gross += nominal;
+                    continue;
+                }
+                IncomeKind::Windfall => continue,
                 IncomeKind::Salary => {
                     self.record_covered(&income.owner, year, nominal);
-                    acc.ordinary += nominal;
+                    Source::Wages
                 }
-                _ => acc.ordinary += nominal,
-            }
+                IncomeKind::Pension => Source::Pension,
+                IncomeKind::Annuity | IncomeKind::Rental | IncomeKind::Other => Source::Other,
+            };
+            acc.tax(self.person_at(&income.owner), source, nominal);
         }
     }
 

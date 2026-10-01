@@ -4,7 +4,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::params::TaxParams;
+use crate::params::{Source, TaxParams};
 use crate::plan::{Account, AccountKind, Contribution, Dollars, Payer, TreatmentClass};
 use crate::tax::{self, LimitPool};
 
@@ -245,15 +245,16 @@ impl<'a> Simulation<'a> {
             employer: paid.employer,
             notes: paid.notes,
         });
+        let owner = self.person_at(&account.owner);
         match account.treatment() {
             TreatmentClass::Deferred => {
                 match Self::ira_band(account, covered) {
                     Some(band) => acc.ira_to_settle.push((index, band, paid.employee)),
-                    None => acc.ordinary -= paid.employee,
+                    None => acc.deferred += paid.employee,
                 }
                 self.bases[index] += paid.after_tax;
             }
-            TreatmentClass::Hsa => acc.ordinary -= paid.employee,
+            TreatmentClass::Hsa => acc.tax(owner, Source::Wages, -paid.employee),
             TreatmentClass::Taxable if account.kind.tracks_basis() => self.bases[index] += total,
             TreatmentClass::Roth => self.bases[index] += paid.employee + paid.after_tax,
             TreatmentClass::Taxable => {}

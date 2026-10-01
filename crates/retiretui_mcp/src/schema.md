@@ -341,16 +341,53 @@ Codes are read in any case and stored lowercase.
 A move is taxed by the new state for the whole year its `from` resolves to; of
 two moves in one year, the one listed later stands. State tax is the state's
 brackets over ordinary income and capital gains alike, less its standard
-deduction, with Social Security taxed only where the state taxes it. Not
-modeled: retirement-income exclusions, credits, local taxes, Oregon's federal
-tax subtraction (so Oregon reads somewhat high), and Washington's excise on
-long-term gains.
+deduction, with Social Security taxed only where the state taxes it, and with
+what the state leaves untaxed taken out of each person's income first.
 
 Only states with a table validate: the states without an income tax (`ak`, `fl`,
-`nv`, `nh`, `sd`, `tn`, `tx`, `wa`, `wy`) and `or`. Any other U.S. state is
-refused at `residency[i].state` until a parameter file supplies `[states.xx]` -
-and a parameter file overriding a year must carry the states lived in that year;
-the `tax_parameters` tool shows each year's tables.
+`nv`, `nh`, `sd`, `tn`, `tx`, `wa`, `wy`), and `or`, `il`, `pa`, `ms` and `ia`.
+What each leaves untaxed, from what age, and the rates its law has set for later
+years are its table's `exclusions` and `later`, which the `tax_parameters` tool
+shows for any year. Illinois's deduction is its exemption allowance, one a
+person; Iowa's is the federal standard deduction, since Iowa starts from federal
+taxable income.
+
+A commercial annuity, entered as an `annuity` income, is taxed by every state
+that taxes income; a plan-paid annuity is entered as a `pension`.
+
+Not modeled:
+
+- Credits, local taxes, dollar caps and income tests on what a state leaves
+  untaxed.
+- Oregon's federal tax subtraction, so Oregon reads somewhat high, and
+  Washington's excise on long-term gains.
+- Illinois's loss of the exemption above a federal AGI of 250,000 (500,000
+  jointly), and its 1,000 more at 65.
+- Pennsylvania's cost recovery - a withdrawal it taxes is taxed whole, where
+  Pennsylvania taxes only what exceeds the contributions it already taxed - a
+  workplace plan's own retirement age, which 59 and a half stands in for, and
+  Tax Forgiveness.
+- Mississippi's second untaxed 10,000 where both spouses have income, its 1,500
+  more exemption at 65, and rate cuts after 2030.
+- Iowa's exemption from tax and alternate tax for a low income, its exemption
+  credit, and the federal deductions at 65 its base takes in.
+
+Any other U.S. state is refused at `residency[i].state` until a parameter file
+supplies `[states.xx]` - and a parameter file overriding a year must carry the
+states lived in that year, each with what is left of any rates it schedules; the
+`tax_parameters` tool shows each year's tables. A state's table holds:
+
+- `deduction` and `brackets`, each by filing status; a bracket may be
+  `unindexed`, and may list `later = [{ from = 2027, rate = 0.0375 }]`, the
+  rates the law has set for later years.
+- `taxes-social-security`, `taxes-deferrals` (what is paid into a tax-deferred
+  account is taxed that year) and `deduction-unindexed` (the deduction is fixed
+  in nominal dollars), each `false` unless stated.
+- `[[states.xx.exclusions]]`, each with `sources` - any of `wages`, `pension`,
+  `distribution` (a retirement-account withdrawal the federal early-withdrawal
+  penalty does not reach), `early-distribution` (one it does), `conversion`,
+  `other` - and optionally `from-age`, such as `59.5`: the sources are untaxed
+  for a person from the year they reach it, or at any age without it.
 
 ## Worked example
 

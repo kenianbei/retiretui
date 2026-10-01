@@ -257,6 +257,33 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   tax table states the rate as `hsa-penalty` under `[early-withdrawal]`, and the
   Tax Tables list it. Not modeled: medical bills of earlier years reimbursed
   later.
+- A state's income tax leaves retirement income untaxed where its table says so,
+  and Illinois, Pennsylvania, Mississippi and Iowa are modeled states. A year's
+  taxable income is kept by person and by source - wages, pensions,
+  retirement-account withdrawals the federal early-withdrawal penalty does not
+  reach and those it does, Roth conversions, and other income - and a state's
+  table lists `exclusions`: sources left untaxed whole for each person, at any
+  age or `from-age`, read as the whole calendar year the age is reached. A table
+  also says whether the state taxes what is paid into a tax-deferred account in
+  the year it is paid (`taxes-deferrals`) and whether its deduction is fixed in
+  nominal dollars (`deduction-unindexed`), and a bracket lists the rates the law
+  has already set for later years (`later`), which a year's table takes as they
+  begin. Illinois leaves pensions, withdrawals at any age and conversions
+  untaxed; Pennsylvania pensions and conversions, withdrawals from the year the
+  owner turns 59 and a half, and taxes deferrals; Mississippi pensions,
+  conversions and withdrawals that are not early, at a rate that falls each year
+  to 3% in 2030 as enacted; Iowa all of them from the year a person turns 55.
+  Each state's figures are taken from its statute and its revenue department's
+  publications, named in the table. The Tax Tables read out what a state leaves
+  untaxed and from what age. An `annuity` income is taxed by all four, as a
+  commercial annuity is; an annuity a retirement plan pays is entered as a
+  `pension`. The MCP schema reference lists the modeled states and the keys a
+  state's table holds. Not modeled: dollar caps and income tests on an
+  exclusion, which most other states need; Illinois's loss of its exemption
+  above an income; Pennsylvania's cost recovery on a withdrawal it taxes, a
+  workplace plan's own retirement age, and Tax Forgiveness; Mississippi's second
+  untaxed 10,000 where both spouses have income; Iowa's rules for a low income
+  and its exemption credit.
 
 ### Changed
 
@@ -384,6 +411,16 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `EarlyWithdrawal` gains `hsa_penalty`, so a struct literal of either written
   outside the engine must add it. A tax table that leaves `hsa-penalty` out
   charges 20%.
+- The engine's `tax::state_tax` takes the year's income as a `StateIncome` -
+  each person's `PersonIncome` by `Source`, gains, the taxable Social Security
+  and what was deferred - in place of two totals. `Bracket` gains `later`, a
+  list of `RateStep`, and is no longer `Copy`; `StateParams` gains `exclusions`,
+  `taxes_deferrals` and `deduction_unindexed`, so a struct literal of either
+  written outside the engine must add them. A parameter file written for 0.2.0
+  reads as it did, and no plan in a state modeled before projects differently.
+- A year's resolved tax table, as `TaxTables::params_for` and the MCP
+  `tax_parameters` tool give it, lists under a bracket's `later` only the rates
+  still to come.
 
 ### Fixed
 
