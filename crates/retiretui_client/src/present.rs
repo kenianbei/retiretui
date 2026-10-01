@@ -50,7 +50,6 @@ pub const fn draw(draw: Draw) -> &'static str {
     }
 }
 
-/// A long-term gains rate, as a person says it.
 #[must_use]
 pub(crate) const fn gains_rate(rate: GainsRate) -> &'static str {
     match rate {

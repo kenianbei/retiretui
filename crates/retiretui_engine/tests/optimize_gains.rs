@@ -65,7 +65,6 @@ fn searched(text: &str, gains_rate: Option<GainsRate>, rate: f64) -> SweptBracke
     searched_ladder(&plan_from(text), &options, rate)
 }
 
-/// Where the year's gains stack ends: ordinary taxable income plus gains.
 fn stack_end(row: &YearRow) -> i64 {
     row.taxes.ordinary_taxable + row.taxes.gains
 }

@@ -93,8 +93,9 @@ impl FillYear<'_> {
 
 /// The most to convert from one source in one year that passes none of
 /// the year's ceilings, to the dollar - or everything the source can give
-/// under the cap, when that passes none either. `current` must be `working`'s projection; candidate
-/// conversions are pushed and popped on `working` per probe.
+/// under the cap, when that passes none either. `current` must be
+/// `working`'s projection; candidate conversions are pushed and popped on
+/// `working` per probe.
 fn fill_year(
     working: &mut Plan,
     tables: &TaxTables,

@@ -34,7 +34,6 @@ fn default_end_year(plan: &Plan, options: &OptimizeOptions) -> i16 {
         })
 }
 
-/// What one window year's fill is held to.
 #[derive(Clone, Copy)]
 pub(super) struct YearCeilings {
     /// The bracket top less headroom, in ordinary taxable income.
