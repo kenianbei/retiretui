@@ -81,8 +81,8 @@ pub struct Household {
     pub people: Vec<Person>,
 }
 
-/// Where the household lives from `from` until the next residency begins.
-/// Validated but not yet priced: the engine models federal tax only.
+/// Where the household lives from `from` until the next residency begins,
+/// which decides the state whose income tax each year pays.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Residency {

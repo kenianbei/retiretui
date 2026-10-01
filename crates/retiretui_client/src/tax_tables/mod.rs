@@ -15,6 +15,10 @@ use crate::forms::offers::{Offer, Vocabulary};
 use crate::present::filing_status;
 use crate::table::{money, rate};
 
+mod state;
+
+use state::state_sections;
+
 /// Which tables are asked for: a year, and a status and state other than
 /// the plan's where one is named.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Deserialize)]
@@ -95,9 +99,7 @@ const IRMAA_COLUMNS: [&str; 3] = ["MAGI over", "Part B a year", "Part D a year"]
 const RMD_COLUMNS: [&str; 2] = ["Age", "Divisor"];
 const NOT_PUBLISHED: &str = "not yet published";
 const NO_SURCHARGES: &str = "No surcharges in this year's table.";
-const NO_INCOME_TAX: &str = "This state has no income tax.";
 const SPOUSE_BAND: &str = "IRA deduction phase-out, spouse covered (MAGI)";
-const STATE_TITLE: &str = "State income tax";
 /// Where a plan living in no U.S. state lives, as the state pick says it.
 const ABROAD: &str = "no U.S. state";
 
@@ -320,43 +322,6 @@ fn social_security(
     section("Social Security", &LABELLED_COLUMNS, rows)
 }
 
-fn state_sections(
-    params: &TaxParams,
-    status: FilingStatus,
-    state: Option<&str>,
-    year: i16,
-) -> Vec<TaxSection> {
-    let Some(code) = state else {
-        let note = format!("The plan lives in {ABROAD} in {year}, so it owes no state tax.");
-        return vec![noted(STATE_TITLE, note)];
-    };
-    let name = state_name(code);
-    let Some(table) = params.states.get(code) else {
-        return vec![noted(
-            STATE_TITLE,
-            format!("{name}'s income tax is not modeled."),
-        )];
-    };
-    let taxes_benefits = if table.taxes_social_security {
-        "Yes"
-    } else {
-        "No"
-    };
-    let rows = vec![
-        labelled("Standard deduction", money(table.deduction.get(status))),
-        labelled("Taxes Social Security", taxes_benefits.to_owned()),
-    ];
-    let title = format!("{name} income tax");
-    let state_brackets = table.brackets.for_status(status);
-    let bracket_title = format!("{name} brackets");
-    let bracketed = if state_brackets.is_empty() {
-        noted(&bracket_title, NO_INCOME_TAX.to_owned())
-    } else {
-        section(&bracket_title, &BRACKET_COLUMNS, brackets(state_brackets))
-    };
-    vec![section(&title, &LABELLED_COLUMNS, rows), bracketed]
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -412,7 +377,10 @@ mod tests {
             .sections
             .iter()
             .find(|each| each.title == "Washington brackets");
-        assert_eq!(washington.unwrap().note.as_deref(), Some(NO_INCOME_TAX));
+        assert_eq!(
+            washington.unwrap().note.as_deref(),
+            Some(state::NO_INCOME_TAX)
+        );
         assert!(tables.states.iter().any(|state| state.label == "Oregon"));
     }
 
@@ -457,7 +425,7 @@ mod tests {
         assert_eq!(tables.state, None);
         assert_eq!(tables.own_state, "Where the plan lives (no U.S. state)");
         let state = tables.sections.last().unwrap();
-        assert_eq!(state.title, STATE_TITLE);
+        assert_eq!(state.title, state::STATE_TITLE);
         assert!(state.note.as_deref().unwrap().contains("no U.S. state"));
     }
 }
