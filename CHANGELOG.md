@@ -181,6 +181,18 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   tables state it as `ira-deduction-phase-out-spouse`, grown past the last table
   like the other bands; a user's table that leaves it out deducts the spouse in
   full. The terminal's Tax Tables list it on a joint return.
+- A Roth conversion ladder can be held to a long-term gains rate, beside the
+  IRMAA tier and the MAGI cap: `optimize conversions --gains-rate 0`, the MCP
+  conversion tools' `gains_rate`, and "Gains rate" in the Roth Conversions
+  constraints of the terminal and the web. At 0% a year converts only while its
+  realized gains stay untaxed, and at 15% only while they stay out of the 20%
+  rate - a year is held where its ordinary taxable income and its realized gains
+  together reach the rate's top. A year that realizes no gain is not held, so a
+  ladder with no brokerage drawn on fills as it did, and a year whose gains
+  already pass the top converts nothing. Left blank, nothing is held, as before.
+- A year's taxes report `gains`, the long-term gains realized that year and the
+  amount its gains tax is figured on, in `project --format json`, the MCP
+  server's projection and the JavaScript bindings.
 
 ### Changed
 
@@ -278,6 +290,8 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The engine's `Income` gains `covered` and `ContributionLimits` gains
   `ira_deduction_phase_out_spouse`, so a struct literal of either written
   outside the engine must add them.
+- The engine's `OptimizeOptions` gains `gains_rate`, an `Option<GainsRate>`, so
+  a struct literal of it written outside the engine must add it.
 
 ### Fixed
 

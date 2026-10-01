@@ -85,9 +85,10 @@ depends on UI.
   pro rata whenever it is drawn. Every year's row says how each contribution
   came to be what it is. `optimize` searches by re-projecting candidate plans -
   no closed-form tax approximations: fill-bracket Roth conversion ladders, each
-  in place of any ladder the plan already holds, against a two-sided target, the
-  bracket top in taxable-income space and optional MAGI ceilings (an IRMAA tier,
-  an explicit cap, active cliffs), and Social Security claim ages, every
+  in place of any ladder the plan already holds, filled to the bracket top in
+  taxable-income space and held, where asked, under MAGI ceilings (an IRMAA
+  tier, an explicit cap, active cliffs) and a long-term gains rate the year's
+  realized gains may not be pushed past, and Social Security claim ages, every
   computed benefit - and one made up for anyone with an earnings record and
   none, save the people whose claims are held as the plan states them - tried at
   each whole age it can still reach, jointly for the household - each search
