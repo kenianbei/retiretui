@@ -30,6 +30,11 @@ taxable_social_security: number,
  */
 ordinary_taxable: number, 
 /**
+ * Realized long-term gains (informational; what the gains stack was
+ * fed).
+ */
+gains: number, 
+/**
  * MAGI proxy - ordinary income plus gains plus taxable Social
  * Security (informational; drives IRMAA lookback and cliffs).
  */

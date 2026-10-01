@@ -4,7 +4,7 @@ use crate::project::{Projection, project};
 use crate::search::Progress;
 
 use super::ladder::ladder_conversion;
-use super::targets::{conversion_window, year_targets};
+use super::targets::{YearCeilings, conversion_window, year_ceilings};
 use super::{LadderStep, OptimizeOptions, UNBOUNDED};
 
 /// Settles the window years front to back against `baseline`, returning the
@@ -22,8 +22,7 @@ pub(super) fn search_ladder(
     let mut steps: Vec<LadderStep> = Vec::new();
     let mut total = 0;
     for year in conversion_window(plan, options) {
-        let Some((target, magi_ceiling)) = year_targets(plan, tables, year, bracket_rate, options)
-        else {
+        let Some(ceilings) = year_ceilings(plan, tables, year, bracket_rate, options) else {
             continue;
         };
         let mut annual_left = options.annual_max.unwrap_or(UNBOUNDED);
@@ -40,8 +39,7 @@ pub(super) fn search_ladder(
                 year,
                 source,
                 destination: &options.destination,
-                target,
-                magi_ceiling,
+                ceilings,
                 cap,
             };
             let amount = fill_year(&mut working, tables, &fill, &current);
@@ -71,9 +69,31 @@ struct FillYear<'a> {
     year: i16,
     source: &'a str,
     destination: &'a str,
-    target: Dollars,
-    magi_ceiling: Option<Dollars>,
+    ceilings: YearCeilings,
     cap: Dollars,
+}
+
+impl FillYear<'_> {
+    /// Whether a probed year has passed one of its ceilings. A gain is past
+    /// its top when the stack it sits on ends above it.
+    fn is_over(&self, metrics: &YearFill) -> bool {
+        let ceilings = self.ceilings;
+        metrics.taxable > ceilings.target
+            || ceilings.magi.is_some_and(|ceiling| metrics.magi > ceiling)
+            || ceilings
+                .gains
+                .is_some_and(|top| metrics.gains > 0 && metrics.taxable + metrics.gains > top)
+    }
+
+    /// Whether a year has no room left under one of its ceilings.
+    fn is_at_limit(&self, metrics: &YearFill) -> bool {
+        let ceilings = self.ceilings;
+        metrics.taxable >= ceilings.target
+            || ceilings.magi.is_some_and(|ceiling| metrics.magi >= ceiling)
+            || ceilings
+                .gains
+                .is_some_and(|top| metrics.gains > 0 && metrics.taxable + metrics.gains >= top)
+    }
 }
 
 /// The stated amount converting from one source in one year so that the
@@ -87,31 +107,19 @@ fn fill_year(
     fill: &FillYear<'_>,
     current: &Projection,
 ) -> Dollars {
-    let over = |metrics: &YearFill| {
-        metrics.taxable > fill.target
-            || fill
-                .magi_ceiling
-                .is_some_and(|ceiling| metrics.magi > ceiling)
-    };
-    let at_limit = |metrics: &YearFill| {
-        metrics.taxable >= fill.target
-            || fill
-                .magi_ceiling
-                .is_some_and(|ceiling| metrics.magi >= ceiling)
-    };
     let base = year_metrics(current, fill.year);
-    if at_limit(&base) {
+    if fill.is_at_limit(&base) {
         return 0;
     }
     let poured = probe(working, tables, fill, fill.cap);
     let achievable = (poured.converted - base.converted).min(fill.cap);
-    if !over(&poured) {
+    if !fill.is_over(&poured) {
         return achievable;
     }
     let (mut lo, mut hi) = (0, achievable);
     while hi - lo > 1 {
         let mid = lo + (hi - lo) / 2;
-        if over(&probe(working, tables, fill, mid)) {
+        if fill.is_over(&probe(working, tables, fill, mid)) {
             hi = mid;
         } else {
             lo = mid;
@@ -139,6 +147,7 @@ fn probe(working: &mut Plan, tables: &TaxTables, fill: &FillYear<'_>, amount: Do
 struct YearFill {
     taxable: Dollars,
     magi: Dollars,
+    gains: Dollars,
     converted: Dollars,
 }
 
@@ -148,6 +157,7 @@ fn year_metrics(projection: &Projection, year: i16) -> YearFill {
         .map(|row| YearFill {
             taxable: row.taxes.ordinary_taxable,
             magi: row.taxes.magi,
+            gains: row.taxes.gains,
             converted: row.conversions,
         })
         .unwrap_or_default()
@@ -173,6 +183,7 @@ mod tests {
                 headroom: 0,
                 irmaa_tier: None,
                 max_magi: None,
+                gains_rate: None,
             },
         );
         let baseline = project(&plan, &tables);

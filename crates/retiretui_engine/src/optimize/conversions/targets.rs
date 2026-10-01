@@ -6,7 +6,7 @@ use crate::project::{
 };
 use crate::tax;
 
-use super::{OptimizeOptions, RATE_EPSILON};
+use super::{GainsRate, OptimizeOptions, RATE_EPSILON};
 
 pub(super) fn conversion_window(
     plan: &Plan,
@@ -34,23 +34,45 @@ fn default_end_year(plan: &Plan, options: &OptimizeOptions) -> i16 {
         })
 }
 
-/// One window year's bracket target and MAGI ceiling under one params
-/// resolution; `None` when the year's params carry no such bracket rate.
-pub(super) fn year_targets(
+/// What one window year's fill is held to.
+#[derive(Clone, Copy)]
+pub(super) struct YearCeilings {
+    /// The bracket top less headroom, in ordinary taxable income.
+    pub target: Dollars,
+    /// The strictest MAGI ceiling, if any.
+    pub magi: Option<Dollars>,
+    /// The top no realized gain may be stacked past, if any.
+    pub gains: Option<Dollars>,
+}
+
+/// One window year's ceilings under one params resolution; `None` when the
+/// year's params carry no such bracket rate.
+pub(super) fn year_ceilings(
     plan: &Plan,
     tables: &TaxTables,
     year: i16,
     bracket_rate: f64,
     options: &OptimizeOptions,
-) -> Option<(Dollars, Option<Dollars>)> {
+) -> Option<YearCeilings> {
     let params = tables.params_for(year, &plan_inflation(plan));
-    let target = bracket_target(
-        &params,
-        plan.household.filing,
-        bracket_rate,
-        options.headroom,
-    )?;
-    Some((target, magi_ceiling(plan, &params, year, options)))
+    let filing = plan.household.filing;
+    let target = bracket_target(&params, filing, bracket_rate, options.headroom)?;
+    Some(YearCeilings {
+        target,
+        magi: magi_ceiling(plan, &params, year, options),
+        gains: options
+            .gains_rate
+            .map(|rate| gains_top(&params, filing, rate)),
+    })
+}
+
+/// The top of the income the gains stack may reach while taxed at `rate`.
+fn gains_top(params: &TaxParams, filing: FilingStatus, rate: GainsRate) -> Dollars {
+    let until = match rate {
+        GainsRate::Zero => &params.ltcg.zero_until,
+        GainsRate::Fifteen => &params.ltcg.fifteen_until,
+    };
+    until.get(filing)
 }
 
 /// The strictest MAGI ceiling for one year: the requested IRMAA tier

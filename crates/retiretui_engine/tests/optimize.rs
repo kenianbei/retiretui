@@ -91,6 +91,7 @@ fn options() -> OptimizeOptions {
         headroom: 0,
         irmaa_tier: None,
         max_magi: None,
+        gains_rate: None,
     }
 }
 

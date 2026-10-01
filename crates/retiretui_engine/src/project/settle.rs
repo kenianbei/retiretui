@@ -173,6 +173,7 @@ fn compute_taxes(
         state,
         taxable_social_security: taxable_ss,
         ordinary_taxable: ordinary_taxable.max(0),
+        gains: acc.gains,
         magi: (other_income + taxable_ss).max(0),
         total: ordinary + ltcg + penalty + state,
         ira_deducted: by_band,
