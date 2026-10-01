@@ -111,10 +111,15 @@ impl AccountKind {
     }
 
     /// Whether the kind keeps an untaxed part of its balance: cost basis
-    /// where gains are taxed, after-tax basis where withdrawals are.
+    /// where gains are taxed, after-tax basis where withdrawals are, and
+    /// what was paid in where only an early withdrawal's earnings are.
     #[must_use]
     pub fn keeps_basis(self, is_roth: bool) -> bool {
-        self.tracks_basis() || self.treatment(is_roth) == TreatmentClass::Deferred
+        self.tracks_basis()
+            || matches!(
+                self.treatment(is_roth),
+                TreatmentClass::Deferred | TreatmentClass::Roth
+            )
     }
 
     /// Whether the kind is an IRA, whose after-tax basis the law pools per
@@ -125,10 +130,10 @@ impl AccountKind {
     }
 
     /// Whether leaving the job a plan of this kind is with can free it from
-    /// the early-withdrawal penalty: a tax-deferred 401(k), 403(b) or 414(k).
+    /// the early-withdrawal penalty: a 401(k), 403(b) or 414(k).
     #[must_use]
-    pub fn frees_on_separation(self, is_roth: bool) -> bool {
-        !is_roth && matches!(self, Self::K401k | Self::K403b | Self::K414k)
+    pub fn frees_on_separation(self) -> bool {
+        matches!(self, Self::K401k | Self::K403b | Self::K414k)
     }
 
     /// Whether employee contributions are valid here.
@@ -154,7 +159,8 @@ pub enum TreatmentClass {
     Taxable,
     /// Tax-deferred: taxed as ordinary income on withdrawal.
     Deferred,
-    /// Roth: withdrawals tax-free.
+    /// Roth: what was paid in comes back untaxed, and what it earned does
+    /// once the owner is 59½ and the account five years old.
     Roth,
     /// HSA: withdrawals assumed qualified and tax-free.
     Hsa,
@@ -195,8 +201,9 @@ pub struct Account {
     /// Balance at plan start, in dollars.
     pub balance: Dollars,
     /// The untaxed part of the balance at plan start: cost basis on a
-    /// brokerage, defaulting to the balance; after-tax basis on a
-    /// tax-deferred account, defaulting to nothing.
+    /// brokerage and what was paid into a Roth account, each defaulting to
+    /// the balance; after-tax basis on a tax-deferred account, defaulting
+    /// to nothing.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub basis: Option<Dollars>,
     /// A fixed annual return, never varying; none earns nothing. Refused
@@ -239,11 +246,8 @@ impl Account {
     /// The untaxed part of the balance at plan start.
     #[must_use]
     pub fn starting_basis(&self) -> Dollars {
-        let whole = if self.kind.tracks_basis() {
-            self.balance
-        } else {
-            0
-        };
+        let is_whole = self.kind.tracks_basis() || self.treatment() == TreatmentClass::Roth;
+        let whole = if is_whole { self.balance } else { 0 };
         self.basis.unwrap_or(whole)
     }
 }

@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use crate::params::TaxTables;
-use crate::plan::{Account, ColaSpec, Dollars, Plan, Span};
+use crate::plan::{Account, ColaSpec, Dollars, Plan, Span, TreatmentClass};
 
 use super::benefit::{Derived, first_paid_months};
 use super::collect::{default_cliff_end, seed_magi_lookback};
@@ -9,6 +9,12 @@ use super::invest::Holding;
 use super::ira::IraBand;
 use super::resolve::Resolver;
 use super::{Action, ClassTotals, MarketPath, Projection, Taxes, YearRow, horizon_year};
+
+/// A Roth account the plan opens with money in, which is taken to have been
+/// held five years already.
+fn is_held_roth(account: &Account) -> bool {
+    account.treatment() == TreatmentClass::Roth && account.balance > 0
+}
 
 pub(crate) struct Simulation<'a> {
     pub(super) plan: &'a Plan,
@@ -22,6 +28,12 @@ pub(crate) struct Simulation<'a> {
     pub(super) end_year: i16,
     pub(super) balances: Vec<Dollars>,
     pub(super) bases: Vec<Dollars>,
+    /// What each owner's Roth IRAs still hold of each conversion into them
+    /// that was taxed, by the year it was made, oldest first.
+    pub(super) layers: BTreeMap<&'a str, Vec<(i16, Dollars)>>,
+    /// The first year each Roth account has been held five years, by
+    /// account index; none while it has held nothing.
+    pub(super) seasoned_from: Vec<Option<i16>>,
     pub(super) transfer_done: Vec<bool>,
     pub(super) conversion_done: Vec<bool>,
     pub(super) surplus_index: Option<usize>,
@@ -102,6 +114,12 @@ impl<'a> Simulation<'a> {
                 .map(|account| account.balance)
                 .collect(),
             bases: plan.accounts.iter().map(Account::starting_basis).collect(),
+            layers: BTreeMap::new(),
+            seasoned_from: plan
+                .accounts
+                .iter()
+                .map(|account| is_held_roth(account).then_some(plan.plan.start_year))
+                .collect(),
             transfer_done: vec![false; plan.transfers.len()],
             conversion_done: vec![false; plan.conversions.len()],
             surplus_index,

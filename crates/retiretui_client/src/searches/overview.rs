@@ -204,7 +204,7 @@ mod tests {
         assert_eq!(
             order_said(&better, false),
             format!(
-                "Withdraw in the order deferred, taxable, Roth, HSA: {}",
+                "Withdraw in the order Roth, deferred, taxable, HSA: {}",
                 gain(&better.best().projection, &better.baseline, false)
             )
         );

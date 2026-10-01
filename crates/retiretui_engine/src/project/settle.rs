@@ -16,6 +16,14 @@ const SEPARATION_AGE: i16 = 55;
 /// IRC §72(t)(10).
 const PUBLIC_SAFETY_SEPARATION_AGE: i16 = 50;
 
+/// One pass of the drain over its candidates.
+#[derive(Clone, Copy)]
+struct Pass {
+    year: i16,
+    /// Whether what a tax-deferred account gives up in it pays the penalty.
+    is_penalized: bool,
+}
+
 impl Simulation<'_> {
     pub(super) fn settle_cash(
         &mut self,
@@ -52,20 +60,39 @@ impl Simulation<'_> {
         taxes
     }
 
+    /// Takes `want` from the candidates in two passes: from each, in order,
+    /// what leaves it without penalty, then the rest from those that have
+    /// more to give at the penalty's cost.
     fn drain(&mut self, order: &[usize], year: i16, want: Dollars, acc: &mut YearAcc) -> Dollars {
         let mut remaining = want;
-        for penalized_pass in [false, true] {
+        for is_penalized in [false, true] {
+            let pass = Pass { year, is_penalized };
             for &index in order {
                 if remaining <= 0 {
                     break;
                 }
-                if self.is_penalized(index, year) != penalized_pass {
-                    continue;
-                }
-                remaining -= self.withdraw(index, remaining, penalized_pass, acc);
+                let room = self.penalty_free_room(index, year);
+                let limit = match (is_penalized, room) {
+                    (true, Dollars::MAX) => continue,
+                    (true, _) => remaining,
+                    (false, _) => remaining.min(room),
+                };
+                remaining -= self.withdraw(index, limit, pass, acc);
             }
         }
         want - remaining
+    }
+
+    /// What can leave the account in `year` without paying a penalty:
+    /// without limit where none can reach it.
+    fn penalty_free_room(&self, index: usize, year: i16) -> Dollars {
+        match self.plan.accounts[index].treatment() {
+            TreatmentClass::Roth => self.roth_room(index, year),
+            TreatmentClass::Deferred if self.is_penalized(index, year) => 0,
+            TreatmentClass::Deferred | TreatmentClass::Taxable | TreatmentClass::Hsa => {
+                Dollars::MAX
+            }
+        }
     }
 
     fn drain_candidates(&self, year: i16) -> Vec<usize> {
@@ -98,14 +125,28 @@ impl Simulation<'_> {
         }
     }
 
+    /// Whether everything taxed that leaves the account in `year` pays the
+    /// penalty, as a tax-deferred account's does.
     pub(super) fn is_penalized(&self, index: usize, year: i16) -> bool {
         let account = &self.plan.accounts[index];
-        if account.treatment() != TreatmentClass::Deferred || tax::is_penalty_exempt(account.kind) {
+        account.treatment() == TreatmentClass::Deferred && self.pays_penalty(account, year)
+    }
+
+    /// Whether the penalty reaches the account in `year`: its owner under
+    /// 59½, its kind not exempt, its job not left at the age that frees it.
+    pub(super) fn pays_penalty(&self, account: &Account, year: i16) -> bool {
+        if tax::is_penalty_exempt(account.kind) {
             return false;
         }
         self.plan.person(&account.owner).is_none_or(|owner| {
             !is_penalty_free_age(owner, year) && !self.is_freed_by_separation(account, owner, year)
         })
+    }
+
+    pub(super) fn is_under_penalty_age(&self, account: &Account, year: i16) -> bool {
+        self.plan
+            .person(&account.owner)
+            .is_none_or(|owner| !is_penalty_free_age(owner, year))
     }
 
     /// Whether the owner has left the job the plan is with by `year`, in or
@@ -124,23 +165,30 @@ impl Simulation<'_> {
             .is_some_and(|left| left <= year && owner.age_in_year(left) >= freeing_age)
     }
 
-    fn withdraw(
-        &mut self,
-        index: usize,
-        want: Dollars,
-        is_penalized: bool,
-        acc: &mut YearAcc,
-    ) -> Dollars {
+    fn withdraw(&mut self, index: usize, want: Dollars, pass: Pass, acc: &mut YearAcc) -> Dollars {
         let take = want.min(self.balances[index]);
         if take <= 0 {
             return 0;
         }
         let account = &self.plan.accounts[index];
-        let untaxed = if account.keeps_basis() {
-            self.remove_basis(index, take)
-        } else {
-            0
-        };
+        match account.treatment() {
+            TreatmentClass::Deferred => {
+                let taxed = take - self.remove_basis(index, take);
+                acc.ordinary += taxed;
+                if pass.is_penalized {
+                    acc.penalty_base += taxed;
+                }
+            }
+            TreatmentClass::Taxable if account.kind.tracks_basis() => {
+                acc.gains += take - self.remove_basis(index, take);
+            }
+            TreatmentClass::Roth => {
+                let draw = self.draw_roth(index, take, pass.year);
+                acc.ordinary += draw.taxed;
+                acc.penalty_base += draw.penalized;
+            }
+            TreatmentClass::Taxable | TreatmentClass::Hsa => {}
+        }
         self.balances[index] -= take;
         acc.drained_cash += take;
         *acc.withdrawals.entry(account.id.clone()).or_default() += take;
@@ -151,18 +199,6 @@ impl Simulation<'_> {
         {
             Some((_, total)) => *total += take,
             None => acc.funding.push((index, take)),
-        }
-        match account.treatment() {
-            TreatmentClass::Deferred => {
-                acc.ordinary += take - untaxed;
-                if is_penalized {
-                    acc.penalty_base += take - untaxed;
-                }
-            }
-            TreatmentClass::Taxable if account.kind.tracks_basis() => {
-                acc.gains += take - untaxed;
-            }
-            TreatmentClass::Taxable | TreatmentClass::Roth | TreatmentClass::Hsa => {}
         }
         take
     }

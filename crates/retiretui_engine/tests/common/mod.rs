@@ -68,6 +68,29 @@ pub fn assert_issue(found: &[Issue], path: &str, message: &str) {
     );
 }
 
+/// A plan from 2026 without inflation, for someone born in June of
+/// `birth_year`.
+pub fn born_in(birth_year: i16, body: &str) -> String {
+    format!(
+        r#"
+schema = 1
+
+[plan]
+start_year = 2026
+horizon_age = 70
+inflation = 0.0
+
+[household]
+filing = "single"
+
+[[household.people]]
+id = "me"
+birth = {birth_year}-06-15
+{body}
+"#
+    )
+}
+
 pub fn head(text: &str) -> String {
     format!(
         r#"

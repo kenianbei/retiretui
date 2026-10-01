@@ -254,7 +254,7 @@ impl<'a> Checker<'a> {
         if !account.keeps_basis() {
             self.push(
                 format!("{path}.basis"),
-                "basis is tracked on brokerage and tax-deferred accounts",
+                "basis is tracked on brokerage, tax-deferred and Roth accounts",
             );
         }
         if basis < 0 {
@@ -266,10 +266,10 @@ impl<'a> Checker<'a> {
     }
 
     fn check_separation(&mut self, path: &str, account: &super::Account) {
-        if account.separated.is_some() && !account.kind.frees_on_separation(account.roth) {
+        if account.separated.is_some() && !account.kind.frees_on_separation() {
             self.push(
                 format!("{path}.separated"),
-                "only a tax-deferred 401(k), 403(b) or 414(k) is freed by leaving a job",
+                "only a 401(k), 403(b) or 414(k) is freed by leaving a job",
             );
         }
         if account.public_safety && account.separated.is_none() {

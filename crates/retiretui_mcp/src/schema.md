@@ -99,7 +99,9 @@ On income, expenses, conversions, and contributions:
   cost basis on a brokerage, defaulting to the balance; after-tax money on a
   tax-deferred account, defaulting to nothing, which comes back untaxed pro rata
   on every withdrawal, distribution and conversion - per person across their
-  IRAs, per account for a workplace plan.
+  IRAs, per account for a workplace plan; what was paid into a Roth account,
+  conversions made before the plan among it, defaulting to the balance. Refused
+  on `cash` and `hsa`.
 - `expected_return` (float, optional) - a fixed annual return that never varies;
   absent earns nothing. Refused beside `allocation`.
 - `allocation` (optional) - what the account is invested in: a mix
@@ -110,7 +112,7 @@ On income, expenses, conversions, and contributions:
   The account then earns its mix: in the ledger, each class's `mean` from
   `[market]`, blended.
 - `separated` (trigger, optional) - when the owner leaves the job the plan is
-  with; valid on a tax-deferred `401k`, `403b` or `414k`. A date in the past
+  with; valid on a `401k`, `403b` or `414k`, Roth or not. A date in the past
   states a job already left.
 - `public_safety` (bool, default false) - the owner is a public-safety employee
   of the plan's employer, which lowers the age `separated` is checked against
@@ -131,6 +133,23 @@ left, when the owner turned 55 in or before that year (the rule of 55), or 50
 with `public_safety`; money rolled out of it into an IRA pays it again. A
 penalized account is drained after every other. Not modeled: 25 years of service
 in place of the public-safety age, and a 72(t) series of equal payments.
+
+A Roth account is drawn untaxed once its owner is 59 and a half and it has been
+held five years. One holding a balance at plan start has been; one that opens
+empty counts from the year of its first contribution, conversion or transfer in.
+Before that a person's Roth IRAs give up, as one, what was paid in first,
+untaxed; then each conversion the plan makes, oldest first, which pays the
+penalty inside five years of it while the owner is under 59 and a half; then
+earnings, taxed as ordinary income and, under 59 and a half, penalized. A Roth
+`401k`, `403b` or `457b` gives up what was paid in pro rata, its earnings taxed
+and penalized the same way - never penalized in a `457b` or a plan `separated`
+frees. What a Roth account can give up without the penalty is drained in its
+place in `withdrawal_order`, and the rest after every other account. A transfer
+out of a Roth account that is drawn untaxed arrives as money paid in. Not
+modeled: earnings made before the plan where `basis` is left blank, conversions
+made in the five years before the plan, a Roth opened in the four years before
+it, the five years of a conversion into a workplace plan, and the first-home and
+disability exceptions.
 
 ## [[income]]
 

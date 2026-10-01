@@ -14,6 +14,7 @@ mod ira;
 mod path;
 mod residence;
 mod resolve;
+mod roth;
 mod settle;
 mod year;
 

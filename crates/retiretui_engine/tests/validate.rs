@@ -142,7 +142,14 @@ fn negative_balance_and_bad_basis() {
     let text = with(
         "[[accounts]]\nid = \"r\"\nkind = \"ira\"\nroth = true\nowner = \"me\"\nbalance = 100\nbasis = 50\n",
     );
-    assert_issue(&issues(&text), "accounts[1].basis", "tax-deferred");
+    assert!(
+        issues(&text).is_empty(),
+        "what was paid into a Roth account"
+    );
+    let text = with(
+        "[[accounts]]\nid = \"h\"\nkind = \"hsa\"\nowner = \"me\"\nbalance = 100\nbasis = 50\n",
+    );
+    assert_issue(&issues(&text), "accounts[1].basis", "Roth accounts");
 }
 
 #[test]

@@ -215,8 +215,8 @@ mod tests {
         assert_eq!(reply.columns.len(), 2 + FIGURES.len());
         assert_eq!(reply.baseline.today.len(), 1 + FIGURES.len());
         let best = reply.options.first().expect("an option");
-        assert_eq!(best.order, [Deferred, Taxable, Roth, Hsa]);
-        assert_eq!(best.key, "deferred-taxable-roth-hsa");
+        assert_eq!(best.order, [Roth, Deferred, Taxable, Hsa]);
+        assert_eq!(best.key, "roth-deferred-taxable-hsa");
         assert_eq!(best.said, said(&best.order));
         assert_eq!(best.figures.today.len(), 1 + FIGURES.len());
         assert_eq!(best.question, take_question(&best.order));
