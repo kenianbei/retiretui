@@ -187,3 +187,18 @@ export function useClaims(
     retry: false,
   });
 }
+
+/**
+ * Every order `plan`'s listed classes can be withdrawn in, searched only
+ * where `isSearchable`; the last found stays in view while the next is.
+ */
+export function useOrders(plan: string, isSearchable: boolean) {
+  return useQuery({
+    queryKey: ["orders", plan],
+    queryFn: ({ signal }) => runSearch({ kind: "orders", plan }, signal),
+    enabled: isSearchable,
+    placeholderData: keepPreviousData,
+    staleTime: Infinity,
+    retry: false,
+  });
+}

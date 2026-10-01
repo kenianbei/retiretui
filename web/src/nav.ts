@@ -22,6 +22,9 @@ export const ROTH_CONVERSIONS = "roth-conversions";
 /** The SSA Benefits tool's page. */
 export const SSA_BENEFITS = "ssa-benefits";
 
+/** The Withdrawal Order tool's page. */
+export const WITHDRAWAL_ORDER = "withdrawal-order";
+
 /** The Monte Carlo tool's page. */
 export const MONTE_CARLO = "monte-carlo";
 
@@ -42,6 +45,11 @@ export const TOOLS: readonly Page[] = [
     slug: SSA_BENEFITS,
     title: "SSA Benefits",
     holds: "Social Security claim ages ranked for the household.",
+  },
+  {
+    slug: WITHDRAWAL_ORDER,
+    title: "Withdrawal Order",
+    holds: "The orders the accounts can be withdrawn from, ranked.",
   },
   {
     slug: MONTE_CARLO,

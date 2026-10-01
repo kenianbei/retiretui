@@ -6,6 +6,8 @@ export interface ToolSearch extends YearSearch {
   bracket?: number;
   /** The highlighted claims, their ages joined: `70-67`; the best where none. */
   claim?: string;
+  /** The highlighted order, its classes joined: `taxable-roth-deferred`; the best where none. */
+  order?: string;
   /** The highlighted person, by place in the household; the first where none. */
   person?: number;
   /** The highlighted market run: `planned`, `p90`, `worst`, a start year; the plan's own where none. */
@@ -19,12 +21,14 @@ export interface ToolSearch extends YearSearch {
 }
 
 const CLAIM_KEY = /^\d+(-\d+)*$/;
+const ORDER_KEY = /^[a-z]+(-[a-z]+)*$/;
 
 /** A tool's search params from whatever the address holds. */
 export function toolSearch(search: Record<string, unknown>): ToolSearch {
   const bracket = wholeOf(search.bracket);
   const person = wholeOf(search.person);
   const claim = textOf(search.claim);
+  const order = textOf(search.order);
   const run = textOf(search.run);
   const status = textOf(search.status);
   const state = textOf(search.state);
@@ -32,6 +36,7 @@ export function toolSearch(search: Record<string, unknown>): ToolSearch {
     ...keptSearch(search, ["year", "basis", "held"]),
     ...(bracket !== undefined && { bracket }),
     ...(claim !== undefined && CLAIM_KEY.test(claim) && { claim }),
+    ...(order !== undefined && ORDER_KEY.test(order) && { order }),
     ...(person !== undefined && person >= 0 && { person }),
     ...(run !== undefined && { run }),
     ...((search.edit === true || search.edit === "true") && { edit: true }),

@@ -10,6 +10,7 @@ mod edits;
 mod ladders;
 mod ledger;
 mod markets;
+mod orders;
 mod overview;
 mod searches;
 mod setup;
@@ -97,10 +98,11 @@ const TYPES: &str = r#"import type {
   ActionsReply, ChartSeries, Claim, ClaimWords, ClaimsOptions, CompareView, CompareWords,
   Domain, DomainTable,
   Example, FieldView, Issue, LadderWords, LadderYear, LaddersReply,
-  Ledger, MarketRuns, MarketWords, Metric, OverviewView, PersonAction, PersonRow, PlacedIssue,
+  Ledger, MarketRuns, MarketWords, Metric, OrderOptions, OrderWords, OverviewView, PersonAction,
+  PersonRow, PlacedIssue,
   NewPlanMade, OpenFailure,
-  Projection, ReadRow, RothOwner, SaidYear, Searched, Sort, Step, Summary, TablesView, ViewWords,
-  YearDetail, YearFigure, YearTables,
+  Projection, ReadRow, RothOwner, SaidYear, Searched, Sort, Step, Summary, TablesView,
+  TreatmentClass, ViewWords, YearDetail, YearFigure, YearTables,
 } from "../bindings/index";
 export type * from "../bindings/index";"#;
 
@@ -317,6 +319,7 @@ mod bindings {
     use crate::ladders::{LadderWords, LaddersReply};
     use crate::ledger::{ChartSeries, Ledger, ViewWords, YearDetail};
     use crate::markets::{MarketRuns, MarketWords};
+    use crate::orders::{OrderOptions, OrderWords};
     use crate::overview::OverviewView;
     use crate::searches::Example;
     use crate::setup::NewPlanMade;
@@ -342,6 +345,8 @@ mod bindings {
         ClaimWords::export_all,
         PersonRow::export_all,
         RothOwner::export_all,
+        OrderOptions::export_all,
+        OrderWords::export_all,
         MarketRuns::export_all,
         MarketWords::export_all,
         CompareView::export_all,
