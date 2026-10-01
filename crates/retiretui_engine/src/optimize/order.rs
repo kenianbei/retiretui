@@ -9,14 +9,13 @@ use crate::plan::{Issue, Plan, PlanError, SCHEMA_VERSION, TreatmentClass};
 use crate::project::{Projection, project};
 use crate::search::{Progress, RunError, run_all};
 
-/// The fewest classes there is an order of.
 const FEWEST_ORDERED: usize = 2;
 
 /// One order and the plan projected under it.
 #[derive(Debug, Clone)]
 pub struct OrderCandidate {
     /// Of the orders that project alike, the plan's own, or else the first
-    /// tried: the one that keeps the most of the plan's order from its front.
+    /// tried: orders are tried class by class in the plan's own order.
     pub order: Vec<TreatmentClass>,
     /// The plan projected draining in that order.
     pub projection: Projection,
@@ -29,7 +28,7 @@ pub struct OrderSearch {
     pub baseline: Projection,
     /// One candidate for each distinct projection, best first: least
     /// unfunded spending, then the highest final net worth in today's
-    /// dollars, then the plan's own order, then the nearest to it.
+    /// dollars, then the plan's own order, then the order they were tried in.
     pub candidates: Vec<OrderCandidate>,
 }
 
@@ -113,8 +112,8 @@ fn orders_of(plan: &Plan) -> Option<Vec<Vec<TreatmentClass>>> {
     Some(orders)
 }
 
-/// Every arrangement of `classes`, the one given first and each after it
-/// keeping as much of the given order from its front as is left to keep.
+/// Every arrangement of `classes`, the one given first and the rest as a
+/// dictionary would order them, were `classes` its alphabet.
 fn permutations(classes: &[TreatmentClass]) -> Vec<Vec<TreatmentClass>> {
     if classes.len() <= 1 {
         return vec![classes.to_vec()];

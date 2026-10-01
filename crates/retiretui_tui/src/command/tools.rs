@@ -139,7 +139,6 @@ fn people() -> Vec<CommandSpec> {
     ]
 }
 
-/// The Withdrawal Order page's rows.
 fn orders() -> Vec<CommandSpec> {
     vec![
         CommandSpec {

@@ -56,9 +56,6 @@ fn spelled(order: &[TreatmentClass]) -> String {
     classes.join(", ")
 }
 
-/// The headings `rank` and `order`, then the baseline under the plan's own
-/// order and a row per candidate with its rank, ahead of the summary
-/// figures.
 fn order_table(plan: &Plan, search: &OrderSearch, deflated: bool) -> String {
     let baseline = vec!["baseline".to_owned(), spelled(&plan.plan.withdrawal_order)];
     let mut rows = vec![(baseline, search.baseline.summary(deflated))];

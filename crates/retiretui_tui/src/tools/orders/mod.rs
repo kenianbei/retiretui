@@ -61,8 +61,6 @@ const PAGE: ToolPage = ToolPage {
     panes: spawn_pane,
 };
 
-/// The page's one pane: every order the search tried, as the shared
-/// options table lists them.
 fn spawn_pane(commands: &mut Commands, row: Entity) {
     let framed = Pane::new(TITLE).sharing(1.0).spawn(commands, row);
     let hints = Hints(&[("↑↓", "order"), ("⏎", "take")]);
@@ -142,8 +140,6 @@ fn search_by_itself(
     });
 }
 
-/// The line under the page: what ⏎ does while the keyboard is on the
-/// orders, and what the tool is while it is not.
 fn say_help(
     (focus, shown, theme): (Res<InputFocus>, ShownSurface, Res<Theme>),
     options: Query<(), With<OptionsTable<OrderSearch>>>,
@@ -182,7 +178,6 @@ pub fn adopt(orders: Res<Orders>, draft: Res<Draft>, mut confirm: ResMut<Confirm
     Outcome::Done
 }
 
-/// Takes `order` into the draft, as one step of history.
 fn take(In(order): In<Vec<TreatmentClass>>, mut editor: DraftEditor) {
     apply_order(&mut editor.draft.plan, &order);
     editor.commit();

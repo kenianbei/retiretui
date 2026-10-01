@@ -97,7 +97,7 @@ pub struct OrderReply {
     pub baseline: Summary,
     /// One candidate for each distinct outcome, best first: least unfunded
     /// spending, then the highest final net worth in today's dollars, then
-    /// the plan's own order, then the nearest to it.
+    /// the plan's own order, then the order they were tried in.
     pub candidates: Vec<OrderEntry>,
 }
 
@@ -106,7 +106,7 @@ pub struct OrderReply {
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct OrderEntry {
     /// The classes, first drained first; of the orders that project alike,
-    /// the plan's own, or else the nearest to it.
+    /// the plan's own, or else the first tried.
     pub order: Vec<TreatmentClass>,
     /// Headline figures under that order.
     pub summary: Summary,
