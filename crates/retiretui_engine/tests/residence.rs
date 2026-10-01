@@ -119,6 +119,24 @@ fn an_override_year_without_states_inherits_them_inflated() {
 }
 
 #[test]
+fn a_later_year_s_table_that_restates_a_state_stands_from_that_year() {
+    let text = std::fs::read_to_string("tax/2026.toml").unwrap();
+    let restated = text
+        .replace("year = 2026", "year = 2028")
+        .replace("single = 2900", "single = 3000");
+    let mut tables = TaxTables::embedded();
+    tables.add_source(&restated, "a later year").unwrap();
+    let deduction = |year| {
+        let params = tables.params_for(year, &Inflation::constant(0.0));
+        params.states["or"].deduction.single
+    };
+    assert_eq!(
+        [deduction(2027), deduction(2028), deduction(2030)],
+        [2_900, 3_000, 3_000]
+    );
+}
+
+#[test]
 fn the_state_lived_in_follows_a_move_and_is_none_abroad() {
     let moving = plan(&format!(
         "{OREGON}\n[[residency]]\ncountry = \"us\"\nstate = \"tx\"\nfrom = {{ date = 2028-09-01 }}\n\n\
