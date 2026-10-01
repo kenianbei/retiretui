@@ -279,11 +279,38 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   commercial annuity is; an annuity a retirement plan pays is entered as a
   `pension`. The MCP schema reference lists the modeled states and the keys a
   state's table holds. Not modeled: dollar caps and income tests on an
-  exclusion, which most other states need; Illinois's loss of its exemption
-  above an income; Pennsylvania's cost recovery on a withdrawal it taxes, a
-  workplace plan's own retirement age, and Tax Forgiveness; Mississippi's second
-  untaxed 10,000 where both spouses have income; Iowa's rules for a low income
-  and its exemption credit.
+  exclusion, which most other states need; Pennsylvania's cost recovery on a
+  withdrawal it taxes, a workplace plan's own retirement age, and Tax
+  Forgiveness; Mississippi's second untaxed 10,000 where both spouses have
+  income; Iowa's rules for a low income.
+- A state's table says what it adjusts its tax by, and Oregon, Illinois,
+  Mississippi, Iowa and Washington are modeled with theirs. A table's
+  `federal-tax-subtraction` takes federal income tax off income up to a `cap`,
+  lost in equal `steps` across a band of federal AGI; its `exemption-credit`
+  comes off the tax for each person and is never refunded; `deduction-until-agi`
+  and the credit's `until-agi` end each above a federal AGI; `deduction-at-65`
+  and the credit's `at-65` add for each person from the year they reach 65; and
+  `gains-excise` taxes the household's long-term gains beyond a deduction
+  through brackets of its own, inside `taxes.state`. Oregon subtracts up to
+  8,750 of federal tax, the early-withdrawal penalties counted in it, stepped
+  down in fifths from 125,000 of AGI (250,000 jointly) to nothing at 145,000
+  (290,000); credits 263 a person, none over 100,000 (200,000); and deducts
+  1,200 more at 65 (1,000 each, jointly). Illinois gives no exemption over
+  250,000 of AGI (500,000 jointly), and 1,000 more a person at 65. Mississippi
+  exempts 1,500 more a person at 65. Iowa credits 40 a person and 20 more at 65.
+  Washington takes 7% of long-term gains over 290,000 and 9.9% of taxed gains
+  over 1,000,000, one deduction to a couple; a withdrawal from a retirement
+  account is never such a gain. The 290,000 is Washington's 2025 deduction
+  carried by the statute's index, since its department publishes 2026's by
+  October 31, 2026. The Tax Tables read each adjustment out, Washington's excise
+  as a section of its own, and the MCP schema reference documents the keys. Not
+  modeled: Oregon's retirement income credit, the 100-dollar bands of its tax
+  table and its kicker; Illinois's exemption after 2028, where the statute as
+  written drops it to 1,000; Iowa's deduction of health insurance premiums at
+  65; Washington's deductions for charitable gifts and the sale of a family
+  business, and its income tax over 1,000,000 a year from 2028; what a state
+  adds for the blind; and the federal deductions at 65, which these states now
+  lead.
 
 ### Changed
 
@@ -412,12 +439,22 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   outside the engine must add it. A tax table that leaves `hsa-penalty` out
   charges 20%.
 - The engine's `tax::state_tax` takes the year's income as a `StateIncome` -
-  each person's `PersonIncome` by `Source`, gains, the taxable Social Security
-  and what was deferred - in place of two totals. `Bracket` gains `later`, a
-  list of `RateStep`, and is no longer `Copy`; `StateParams` gains `exclusions`,
-  `taxes_deferrals` and `deduction_unindexed`, so a struct literal of either
-  written outside the engine must add them. A parameter file written for 0.2.0
-  reads as it did, and no plan in a state modeled before projects differently.
+  each person's `PersonIncome` by `Source`, gains, the taxable Social Security,
+  what was deferred, the federal tax and the federal AGI - in place of two
+  totals. `Bracket` gains `later`, a list of `RateStep`, and is no longer
+  `Copy`; `StateParams` gains `exclusions`, `taxes_deferrals`,
+  `deduction_unindexed`, `deduction_at_65`, `deduction_until_agi`,
+  `federal_tax_subtraction`, `exemption_credit` and `gains_excise`, the last
+  three the new `FederalTaxSubtraction`, `ExemptionCredit` and `GainsExcise`, so
+  a struct literal of either written outside the engine must add them. A
+  parameter file written for 0.2.0 reads as it did.
+- A plan living in Oregon projects a lower state tax, by its federal tax
+  subtraction and its exemption credit, and Oregon's standard deduction is the
+  2,910 and 5,820 its department's withholding formulas give for 2026, where the
+  table held an earlier estimate of 2,900 and 5,800. A plan living in Washington
+  pays its excise in a year it realizes more than 290,000 of long-term gains.
+  `taxes.state` is what the state takes, an excise with its income tax. No plan
+  in another state modeled before projects differently.
 - A year's resolved tax table, as `TaxTables::params_for` and the MCP
   `tax_parameters` tool give it, lists under a bracket's `later` only the rates
   still to come.

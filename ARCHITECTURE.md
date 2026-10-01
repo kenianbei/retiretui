@@ -7,9 +7,9 @@ been imported, accounts with tax treatments and what each is invested in,
 contributions into them, income sources, expenses, named milestones, opt-in
 Medicare surcharge modeling and MAGI-cliff declarations, and what it assumes of
 the market - and the program answers with a deterministic year-by-year
-projection of that household's finances under U.S. federal tax law and the
-income tax of the state it lives in, year by year, and with how that projection
-fares across many markets. All amounts are entered as annual today's dollars and
+projection of that household's finances under U.S. federal tax law and the tax
+of the state it lives in, year by year, and with how that projection fares
+across many markets. All amounts are entered as annual today's dollars and
 escalate per item - at plan inflation by default, frozen nominal, or at a fixed
 rate of their own; the engine computes in nominal dollars and carries a per-year
 deflator so results read in either basis. A projection walks through a market -
@@ -40,8 +40,10 @@ depends on UI.
   data, embedded as TOML tables for known years, overridable from user
   directories - a year's table leaving out a state takes it from the latest
   earlier table that has it, and a state's table says what income it leaves
-  untaxed, by where it came from and its owner's age - and extended past the
-  last known year by inflating indexed values by the inflation of the market
+  untaxed, by where it came from and its owner's age, and what it adjusts its
+  tax by: federal tax subtracted, a credit for each person, a deduction ended by
+  income or added to by age, an excise on gains - and extended past the last
+  known year by inflating indexed values by the inflation of the market
   projected through, a rate the law has already set for a later year taken from
   that year - and the national average wage index, grown past its last published
   year at an assumed rate a plan may override, from which the benefit formula's
@@ -74,21 +76,22 @@ depends on UI.
   benefit pays its first year from the month it starts), contributions, Roth
   conversions, a tax-aware withdrawal fixed point - the year's taxable income
   kept by person and by where it came from, which the state's tax is figured
-  from - that also settles the year's MAGI-driven costs (IRMAA surcharges priced
-  from the household MAGI two years earlier, declared cliffs crossed by the
-  current year's MAGI) and the MAGI-driven deduction of a traditional IRA
-  contribution by a person a workplace plan covers - through a salary that says
-  so, or what they pay into one - or by their spouse, surplus sweeping - emits
-  one row per year, and aggregates a projection into headline summary figures in
-  either dollar basis. A contribution is an item of its own that names the
-  account it pays into, who pays, and one amount - dollars, a share of a named
-  income, the year's legal maximum, or an employer's match on what the employee
-  paid - and the law's limits are applied rather than refused: employee amounts
-  are held to each person's pooled limit in the order the plan lists them, each
-  plan to its yearly cap, and what an account holds after tax comes back untaxed
-  whenever it is drawn - pro rata, save from a person's Roth IRAs before they
-  are drawn untaxed whole, which give it up first, then what was converted into
-  them, oldest first, then what they earned. Every year's row says how each
+  from with the year's federal tax and income - that also settles the year's
+  MAGI-driven costs (IRMAA surcharges priced from the household MAGI two years
+  earlier, declared cliffs crossed by the current year's MAGI) and the
+  MAGI-driven deduction of a traditional IRA contribution by a person a
+  workplace plan covers - through a salary that says so, or what they pay into
+  one - or by their spouse, surplus sweeping - emits one row per year, and
+  aggregates a projection into headline summary figures in either dollar basis.
+  A contribution is an item of its own that names the account it pays into, who
+  pays, and one amount - dollars, a share of a named income, the year's legal
+  maximum, or an employer's match on what the employee paid - and the law's
+  limits are applied rather than refused: employee amounts are held to each
+  person's pooled limit in the order the plan lists them, each plan to its
+  yearly cap, and what an account holds after tax comes back untaxed whenever it
+  is drawn - pro rata, save from a person's Roth IRAs before they are drawn
+  untaxed whole, which give it up first, then what was converted into them,
+  oldest first, then what they earned. Every year's row says how each
   contribution came to be what it is. `optimize` searches by re-projecting
   candidate plans - no closed-form tax approximations: fill-bracket Roth
   conversion ladders, each in place of any ladder the plan already holds, filled
