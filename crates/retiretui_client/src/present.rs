@@ -2,6 +2,7 @@
 //! spells as keys and kebab-case, each a whole phrase rather than a part
 //! of one.
 
+use retiretui_engine::optimize::GainsRate;
 use retiretui_engine::plan::{
     AccountKind, COUNTRIES, Dollars, Draw, FilingStatus, IncomeKind, Payer, Plan, PlanDate,
     Residency, TreatmentClass, Trigger, TriggerBasis, TriggerForm, US_STATES, place_name,
@@ -46,6 +47,15 @@ pub const fn draw(draw: Draw) -> &'static str {
     match draw {
         Draw::Assumptions => "Your return assumptions",
         Draw::History => "Historical years",
+    }
+}
+
+/// A long-term gains rate, as a person says it.
+#[must_use]
+pub const fn gains_rate(rate: GainsRate) -> &'static str {
+    match rate {
+        GainsRate::Zero => "0%",
+        GainsRate::Fifteen => "15%",
     }
 }
 

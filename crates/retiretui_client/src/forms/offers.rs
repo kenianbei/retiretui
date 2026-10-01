@@ -1,6 +1,7 @@
 //! What a select offers: each value the file keeps under the words shown
 //! for it, from the schema's closed sets and from the plan's own items.
 
+use retiretui_engine::optimize::GainsRate;
 use retiretui_engine::plan::{
     AccountKind, COUNTRIES, Draw, FilingStatus, IncomeKind, Item, Payer, Plan, TreatmentClass,
     TriggerBasis, US_STATES,
@@ -49,6 +50,8 @@ pub enum Vocabulary {
     Holding,
     /// How a market is drawn.
     Draw,
+    /// A long-term gains rate a conversion ladder is held to.
+    GainsRate,
 }
 
 const TIMINGS: &[(&str, &str)] = &[(applies::EVERY_YEAR, "Every year"), (applies::ONCE, "Once")];
@@ -131,6 +134,7 @@ impl Vocabulary {
             Self::AmountForm => offers(AMOUNT_FORMS, |form| form.0, |form| form.1),
             Self::Holding => offers(HOLDINGS, |form| form.0, |form| form.1),
             Self::Draw => offers(Draw::ALL, Draw::as_str, present::draw),
+            Self::GainsRate => offers(GainsRate::ALL, GainsRate::as_str, present::gains_rate),
         }
     }
 }
