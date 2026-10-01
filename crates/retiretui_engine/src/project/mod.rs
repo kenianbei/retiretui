@@ -57,6 +57,9 @@ pub struct Taxes {
     /// Ordinary taxable income after the standard deduction, floored at
     /// zero (informational; what the bracket walk was fed).
     pub ordinary_taxable: Dollars,
+    /// Realized long-term gains (informational; what the gains stack was
+    /// fed).
+    pub gains: Dollars,
     /// MAGI proxy - ordinary income plus gains plus taxable Social
     /// Security (informational; drives IRMAA lookback and cliffs).
     pub magi: Dollars,

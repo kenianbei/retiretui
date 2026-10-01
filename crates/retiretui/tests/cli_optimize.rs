@@ -60,6 +60,19 @@ fn optimize_sweeps_and_writes_a_comparable_ladder() {
 }
 
 #[test]
+fn optimize_holds_a_ladder_to_a_gains_rate_of_0_or_15() {
+    let dir = scratch_dir("cli-gains-rate", "base.toml", &[("opt.toml", OPT_PLAN)]);
+    let plan = dir.join("opt.toml");
+    let plan = plan.to_str().unwrap();
+    let held = conversions(plan, &["--bracket", "12", "--gains-rate", "0"]);
+    assert!(held.status.success(), "{held:?}");
+    let refused = conversions(plan, &["--bracket", "12", "--gains-rate", "5"]);
+    assert!(!refused.status.success(), "{refused:?}");
+    let stderr = String::from_utf8(refused.stderr).unwrap();
+    assert!(stderr.contains("expected `0` or `15`"), "{stderr}");
+}
+
+#[test]
 fn optimize_claims_ranks_the_grid_and_writes_the_best() {
     let dir = scratch_dir("cli-claims", "base.toml", &[("claims.toml", CLAIMS_PLAN)]);
     let plan = dir.join("claims.toml");

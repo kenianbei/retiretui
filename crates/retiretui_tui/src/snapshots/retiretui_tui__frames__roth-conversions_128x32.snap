@@ -18,7 +18,7 @@ expression: composed_frame(app)
 │                   ││  Headroom      None                            │╰───────────────────────────────────────────────────────╯
 │                   ││  IRMAA tier    Not held to one                 │╭ Conversions ──────────────────────────────────────────╮
 │                   ││  MAGI cap      No cap                          ││  Year           From  Amount Taxable                  │
-│                   ││                                                ││▏ 2026       fid-401k   $126k   $211k                  │
+│                   ││  Gains rate    Not held                        ││▏ 2026       fid-401k   $126k   $211k                  │
 │                   ││                                                ││  2027       fid-401k   $126k   $211k                  │
 │                   ││                                                ││  2028       fid-401k   $126k   $211k                  │
 │                   ││                                                ││  2029       fid-401k   $126k   $211k                  │

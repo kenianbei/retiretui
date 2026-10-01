@@ -28,6 +28,7 @@ fn optimizer_tools_sweep_emit_and_store() {
             "to": "r",
             "bracket": 12,
             "max_magi": 500_000,
+            "gains_rate": "15",
             "write_to": "nested/ladder.toml",
         }),
     );

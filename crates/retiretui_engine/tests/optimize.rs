@@ -8,11 +8,11 @@ use retiretui_engine::optimize::{
     BracketSweep, OptimizeOptions, OptimizedLadder, SweptBracket, apply_ladder, is_ladder,
     ladder_overlay, optimize_conversions, rank_key, sweep_brackets,
 };
-use retiretui_engine::params::{Inflation, TaxTables};
+use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::{Plan, Scenario};
 use retiretui_engine::project::{Projection, project};
 
-use common::plan_from;
+use common::{ladder_options, params_2026, plan_from, searched_ladder};
 
 const BASE: &str = r#"
 schema = 1
@@ -74,35 +74,15 @@ fn a_cancelled_sweep_answers_cancelled() {
     let answer = sweep_brackets(
         &plan_from(BASE),
         &TaxTables::embedded(),
-        &options(),
+        &ladder_options(),
         &progress,
     );
     assert_eq!(answer.unwrap_err(), RunError::Cancelled);
 }
 
-fn options() -> OptimizeOptions {
-    OptimizeOptions {
-        sources: vec!["k".to_owned()],
-        destination: "r".to_owned(),
-        start_year: None,
-        end_year: None,
-        annual_max: None,
-        total_max: None,
-        headroom: 0,
-        irmaa_tier: None,
-        max_magi: None,
-    }
-}
-
-fn searched(plan: &Plan, options: &OptimizeOptions, rate: f64) -> SweptBracket {
-    optimize_conversions(plan, &TaxTables::embedded(), options, rate)
-        .unwrap()
-        .ladder
-}
-
 /// The 12% bracket's top for a single filer at zero inflation.
 fn twelve_top() -> i64 {
-    let params = TaxTables::embedded().params_for(2026, &Inflation::constant(0.0));
+    let params = params_2026();
     let brackets = params
         .brackets
         .for_status(retiretui_engine::plan::FilingStatus::Single);
@@ -119,8 +99,13 @@ fn taxable_in(projection: &Projection, year: i16) -> i64 {
 
 #[test]
 fn fills_to_the_bracket_top() {
-    let ladder =
-        optimize_conversions(&plan_from(BASE), &TaxTables::embedded(), &options(), 0.12).unwrap();
+    let ladder = optimize_conversions(
+        &plan_from(BASE),
+        &TaxTables::embedded(),
+        &ladder_options(),
+        0.12,
+    )
+    .unwrap();
     let top = twelve_top();
     assert!(!ladder.ladder.steps.is_empty());
     for year in 2026..=2030 {
@@ -143,22 +128,22 @@ fn fills_to_the_bracket_top() {
 
 #[test]
 fn headroom_and_annual_and_total_caps_bind() {
-    let mut cushioned = options();
+    let mut cushioned = ladder_options();
     cushioned.headroom = 1000;
-    let ladder = searched(&plan_from(BASE), &cushioned, 0.12);
+    let ladder = searched_ladder(&plan_from(BASE), &cushioned, 0.12);
     assert_eq!(taxable_in(&ladder.optimized, 2026), twelve_top() - 1000);
 
-    let mut capped = options();
+    let mut capped = ladder_options();
     capped.annual_max = Some(5000);
-    let ladder = searched(&plan_from(BASE), &capped, 0.12);
+    let ladder = searched_ladder(&plan_from(BASE), &capped, 0.12);
     for step in &ladder.steps {
         assert!(step.amount <= 5000, "{step:?}");
     }
     assert_eq!(ladder.steps[0].amount, 5000, "cap binds below the target");
 
-    let mut limited = options();
+    let mut limited = ladder_options();
     limited.total_max = Some(20000);
-    let ladder = searched(&plan_from(BASE), &limited, 0.12);
+    let ladder = searched_ladder(&plan_from(BASE), &limited, 0.12);
     assert_eq!(ladder.converted(false), 20000);
 }
 
@@ -169,7 +154,7 @@ fn locked_sources_wait_for_their_unlock() {
         "id = \"k\"\nkind = \"401k\"\nlocked_until = { date = 2030-01-01 }",
     );
     let plan = plan_from(&locked);
-    let ladder = searched(&plan, &options(), 0.12);
+    let ladder = searched_ladder(&plan, &ladder_options(), 0.12);
     assert!(
         ladder.steps.iter().all(|step| step.year >= 2030),
         "{:?}",
@@ -189,9 +174,9 @@ fn sources_drain_in_the_given_order() {
         "id = \"k\"\nkind = \"401k\"\nowner = \"me\"\nbalance = 10000",
     );
     let plan = plan_from(&small);
-    let mut ordered = options();
+    let mut ordered = ladder_options();
     ordered.sources = vec!["k".to_owned(), "k2".to_owned()];
-    let ladder = searched(&plan, &ordered, 0.12);
+    let ladder = searched_ladder(&plan, &ordered, 0.12);
     let first_year: Vec<_> = ladder
         .steps
         .iter()
@@ -215,8 +200,8 @@ fn existing_conversions_layer_underneath() {
         "[[conversions]]\nid = \"conversion-1\"\nfrom = \"k\"\nto = \"r\"\namount = 5000\ncola = false\n\n[[expenses]]",
     );
     let plan = plan_from(&layered);
-    let bare = searched(&plan_from(BASE), &options(), 0.12);
-    let ladder = searched(&plan, &options(), 0.12);
+    let bare = searched_ladder(&plan_from(BASE), &ladder_options(), 0.12);
+    let ladder = searched_ladder(&plan, &ladder_options(), 0.12);
     assert_eq!(
         ladder.steps[0].amount,
         bare.steps[0].amount - 5000,
@@ -228,8 +213,14 @@ fn existing_conversions_layer_underneath() {
 #[test]
 fn overlay_round_trips_into_the_optimized_projection() {
     let base_plan = plan_from(BASE);
-    let ladder = searched(&base_plan, &options(), 0.12);
-    let text = ladder_overlay("base.toml", &plan_from(BASE), &options(), &ladder.steps).unwrap();
+    let ladder = searched_ladder(&base_plan, &ladder_options(), 0.12);
+    let text = ladder_overlay(
+        "base.toml",
+        &plan_from(BASE),
+        &ladder_options(),
+        &ladder.steps,
+    )
+    .unwrap();
     assert!(
         text.starts_with("schema = 1\nbase = \"base.toml\"\n"),
         "{text}"
@@ -256,17 +247,18 @@ fn overlay_round_trips_into_the_optimized_projection() {
 
 /// The plan with the 12% ladder taken into it, as the TUI takes one.
 fn with_ladder_taken() -> Plan {
-    let taken = searched(&plan_from(BASE), &options(), 0.12);
+    let taken = searched_ladder(&plan_from(BASE), &ladder_options(), 0.12);
     let mut plan = plan_from(BASE);
-    apply_ladder(&mut plan, &options(), &taken.steps);
+    apply_ladder(&mut plan, &ladder_options(), &taken.steps);
     plan
 }
 
 #[test]
 fn a_new_ladder_replaces_the_one_taken() {
     let laddered = with_ladder_taken();
-    let bare = searched(&plan_from(BASE), &options(), 0.22);
-    let again = optimize_conversions(&laddered, &TaxTables::embedded(), &options(), 0.22).unwrap();
+    let bare = searched_ladder(&plan_from(BASE), &ladder_options(), 0.22);
+    let again =
+        optimize_conversions(&laddered, &TaxTables::embedded(), &ladder_options(), 0.22).unwrap();
     assert_eq!(
         again.ladder.steps, bare.steps,
         "searched as if no ladder were taken"
@@ -277,8 +269,8 @@ fn a_new_ladder_replaces_the_one_taken() {
         project(&laddered, &TaxTables::embedded()),
         "the plan as given"
     );
-    let swept = sweep(&laddered, &options());
-    let fresh = sweep(&plan_from(BASE), &options());
+    let swept = sweep(&laddered, &ladder_options());
+    let fresh = sweep(&plan_from(BASE), &ladder_options());
     let steps = |sweep: &BracketSweep| {
         sweep
             .brackets
@@ -295,9 +287,9 @@ fn a_ladder_leaves_the_users_own_opt_conversions() {
         "[[expenses]]",
         "[[conversions]]\nid = \"opt-mine\"\nfrom = \"k\"\nto = \"r\"\namount = 5000\ncola = false\n\n[[expenses]]",
     );
-    let taken = searched(&plan_from(BASE), &options(), 0.12);
+    let taken = searched_ladder(&plan_from(BASE), &ladder_options(), 0.12);
     let mut plan = plan_from(&own);
-    apply_ladder(&mut plan, &options(), &taken.steps);
+    apply_ladder(&mut plan, &ladder_options(), &taken.steps);
     assert!(
         plan.conversions
             .iter()
@@ -310,9 +302,9 @@ fn a_ladder_leaves_the_users_own_opt_conversions() {
 #[test]
 fn an_overlay_removes_the_ladder_years_it_does_not_restate() {
     let laddered = with_ladder_taken();
-    let mut shorter = options();
+    let mut shorter = ladder_options();
     shorter.end_year = Some(2027);
-    let ladder = searched(&laddered, &shorter, 0.12);
+    let ladder = searched_ladder(&laddered, &shorter, 0.12);
     let text = ladder_overlay("base.toml", &laddered, &shorter, &ladder.steps).unwrap();
     assert!(text.contains("remove = true"), "{text}");
     let scenario = Scenario::from_toml_str(&text).unwrap().expect("a scenario");
@@ -330,32 +322,34 @@ fn an_overlay_removes_the_ladder_years_it_does_not_restate() {
 fn converted_follows_the_basis() {
     let inflating = BASE.replace("inflation = 0.0", "inflation = 0.025");
     let plan = plan_from(&inflating);
-    let ladder = searched(&plan, &options(), 0.12);
+    let ladder = searched_ladder(&plan, &ladder_options(), 0.12);
     assert!(
         ladder.converted(true) < ladder.converted(false),
         "later years deflate below their stated amounts"
     );
     // Zero inflation keeps the bases equal.
-    let flat = searched(&plan_from(BASE), &options(), 0.12);
+    let flat = searched_ladder(&plan_from(BASE), &ladder_options(), 0.12);
     assert_eq!(flat.converted(true), flat.converted(false));
 }
 
 #[test]
 fn optimizer_is_deterministic() {
     let plan = plan_from(BASE);
-    let first = optimize_conversions(&plan, &TaxTables::embedded(), &options(), 0.12).unwrap();
-    let second = optimize_conversions(&plan, &TaxTables::embedded(), &options(), 0.12).unwrap();
+    let first =
+        optimize_conversions(&plan, &TaxTables::embedded(), &ladder_options(), 0.12).unwrap();
+    let second =
+        optimize_conversions(&plan, &TaxTables::embedded(), &ladder_options(), 0.12).unwrap();
     assert_eq!(first.ladder.steps, second.ladder.steps);
     let overlay = |ladder: &OptimizedLadder| {
-        ladder_overlay("base.toml", &plan, &options(), &ladder.ladder.steps).unwrap()
+        ladder_overlay("base.toml", &plan, &ladder_options(), &ladder.ladder.steps).unwrap()
     };
     assert_eq!(overlay(&first), overlay(&second));
 }
 
 #[test]
 fn sweep_covers_every_fillable_bracket_best_first() {
-    let sweep = sweep(&plan_from(BASE), &options());
-    let params = TaxTables::embedded().params_for(2026, &Inflation::constant(0.0));
+    let sweep = sweep(&plan_from(BASE), &ladder_options());
+    let params = params_2026();
     let brackets = params
         .brackets
         .for_status(retiretui_engine::plan::FilingStatus::Single);
@@ -380,11 +374,11 @@ fn sweep_covers_every_fillable_bracket_best_first() {
 #[test]
 fn bad_options_are_refused() {
     let refuse = |mutate: fn(&mut OptimizeOptions)| {
-        let mut bad = options();
+        let mut bad = ladder_options();
         mutate(&mut bad);
         optimize_conversions(&plan_from(BASE), &TaxTables::embedded(), &bad, 0.12).unwrap_err()
     };
-    let params = TaxTables::embedded().params_for(2026, &Inflation::constant(0.0));
+    let params = params_2026();
     let top_rate = params
         .brackets
         .for_status(retiretui_engine::plan::FilingStatus::Single)
@@ -392,14 +386,15 @@ fn bad_options_are_refused() {
         .unwrap()
         .rate;
     let plan = plan_from(BASE);
-    let issues = optimize_conversions(&plan, &TaxTables::embedded(), &options(), 0.99).unwrap_err();
+    let issues =
+        optimize_conversions(&plan, &TaxTables::embedded(), &ladder_options(), 0.99).unwrap_err();
     assert!(
         issues
             .iter()
             .any(|issue| issue.message.contains("have no 99% bracket"))
     );
-    let issues =
-        optimize_conversions(&plan, &TaxTables::embedded(), &options(), top_rate).unwrap_err();
+    let issues = optimize_conversions(&plan, &TaxTables::embedded(), &ladder_options(), top_rate)
+        .unwrap_err();
     assert!(
         issues
             .iter()
@@ -430,9 +425,9 @@ fn blank_sources_are_every_deferred_account_of_the_destination_s_owner() {
         "[[accounts]]\nid = \"r\"",
         "[[accounts]]\nid = \"k2\"\nkind = \"ira\"\nowner = \"me\"\nbalance = 50000\n\n[[accounts]]\nid = \"r\"",
     ));
-    let mut blank = options();
+    let mut blank = ladder_options();
     blank.sources = Vec::new();
-    let mut stated = options();
+    let mut stated = ladder_options();
     stated.sources = vec!["k".to_owned(), "k2".to_owned()];
     let tables = TaxTables::embedded();
     let ladder = |options| optimize_conversions(&plan, &tables, options, 0.12).unwrap();
@@ -451,16 +446,12 @@ fn blank_sources_are_every_deferred_account_of_the_destination_s_owner() {
 fn irmaa_tier_zero_holds_magi_at_the_first_threshold() {
     let with_medicare = BASE.replace("[household]", "[medicare]\n\n[household]");
     let plan = plan_from(&with_medicare);
-    let mut capped = options();
+    let mut capped = ladder_options();
     capped.start_year = Some(2043);
     capped.irmaa_tier = Some(0);
     // Fill a high bracket so only the IRMAA ceiling binds.
-    let ladder = searched(&plan, &capped, 0.24);
-    let first_threshold = TaxTables::embedded()
-        .params_for(2026, &Inflation::constant(0.0))
-        .irmaa[0]
-        .magi_over
-        .single;
+    let ladder = searched_ladder(&plan, &capped, 0.24);
+    let first_threshold = params_2026().irmaa[0].magi_over.single;
     let year_2043 = ladder.optimized.row(2043).unwrap();
     assert_eq!(
         year_2043.taxes.magi, first_threshold,
@@ -476,7 +467,7 @@ fn irmaa_tier_zero_holds_magi_at_the_first_threshold() {
 
 #[test]
 fn max_magi_and_cliffs_cap_the_fill() {
-    let mut explicit = options();
+    let mut explicit = ladder_options();
     explicit.start_year = Some(2041);
     explicit.max_magi = Some(30_000);
     let ladder =
@@ -489,7 +480,7 @@ fn max_magi_and_cliffs_cap_the_fill() {
         "[[cliffs]]\nid = \"aca\"\nmagi_over = 30000\ncost = 12000\ncola = false\n\n[[expenses]]",
     );
     let plan = plan_from(&cliffed);
-    let mut windowed = options();
+    let mut windowed = ladder_options();
     windowed.start_year = Some(2041);
     let ladder = optimize_conversions(&plan, &TaxTables::embedded(), &windowed, 0.12).unwrap();
     let magi_in = |year: i16| ladder.ladder.optimized.row(year).unwrap().taxes.magi;
@@ -506,7 +497,7 @@ fn max_magi_and_cliffs_cap_the_fill() {
 
 #[test]
 fn ceiling_options_are_validated() {
-    let mut no_medicare = options();
+    let mut no_medicare = ladder_options();
     no_medicare.irmaa_tier = Some(0);
     let issues = optimize_conversions(&plan_from(BASE), &TaxTables::embedded(), &no_medicare, 0.12)
         .unwrap_err();
@@ -518,7 +509,7 @@ fn ceiling_options_are_validated() {
 
     let with_medicare = BASE.replace("[household]", "[medicare]\n\n[household]");
     let plan = Plan::from_toml_str(&with_medicare).unwrap();
-    let mut big_tier = options();
+    let mut big_tier = ladder_options();
     big_tier.irmaa_tier = Some(9);
     let issues = optimize_conversions(&plan, &TaxTables::embedded(), &big_tier, 0.12).unwrap_err();
     assert!(
@@ -530,7 +521,7 @@ fn ceiling_options_are_validated() {
 
 #[test]
 fn a_sweep_is_ranked_by_what_the_household_ends_with_not_by_rate() {
-    let mut into_roth = options();
+    let mut into_roth = ladder_options();
     into_roth.sources = Vec::new();
     into_roth.destination = "roth-ira".to_owned();
     let plan = plan_from(common::FULL);

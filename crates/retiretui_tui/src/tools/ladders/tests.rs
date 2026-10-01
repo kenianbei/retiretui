@@ -94,6 +94,7 @@ fn applying_the_form_stores_the_constraints_and_leaves_the_draft_clean() {
         "Convert from",
         "Fill bracket",
         "MAGI cap",
+        "Gains rate",
         "Ladder Options",
         "Ranked here once",
         "Conversions",

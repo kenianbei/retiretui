@@ -53,6 +53,7 @@
         "state": 9180,
         "taxable_social_security": 0,
         "ordinary_taxable": 85800,
+        "gains": 0,
         "magi": 118000,
         "total": 18980
       },
@@ -128,6 +129,7 @@
         "state": 9409,
         "taxable_social_security": 0,
         "ordinary_taxable": 87945,
+        "gains": 0,
         "magi": 120950,
         "total": 19454
       },
@@ -203,6 +205,7 @@
         "state": 9644,
         "taxable_social_security": 0,
         "ordinary_taxable": 90144,
+        "gains": 0,
         "magi": 123974,
         "total": 19940
       },
@@ -278,6 +281,7 @@
         "state": 9885,
         "taxable_social_security": 0,
         "ordinary_taxable": 92398,
+        "gains": 0,
         "magi": 127074,
         "total": 20439
       },
@@ -353,6 +357,7 @@
         "state": 10132,
         "taxable_social_security": 0,
         "ordinary_taxable": 94706,
+        "gains": 0,
         "magi": 130249,
         "total": 20949
       },
@@ -428,6 +433,7 @@
         "state": 10386,
         "taxable_social_security": 0,
         "ordinary_taxable": 97075,
+        "gains": 0,
         "magi": 133506,
         "total": 21474
       },
@@ -504,6 +510,7 @@
         "state": 10645,
         "taxable_social_security": 0,
         "ordinary_taxable": 99501,
+        "gains": 0,
         "magi": 136843,
         "total": 22010
       },
@@ -579,6 +586,7 @@
         "state": 10912,
         "taxable_social_security": 0,
         "ordinary_taxable": 101990,
+        "gains": 0,
         "magi": 140266,
         "total": 22561
       },
@@ -654,6 +662,7 @@
         "state": 11184,
         "taxable_social_security": 0,
         "ordinary_taxable": 104538,
+        "gains": 0,
         "magi": 143771,
         "total": 23124
       },
@@ -729,6 +738,7 @@
         "state": 11464,
         "taxable_social_security": 0,
         "ordinary_taxable": 107152,
+        "gains": 0,
         "magi": 147365,
         "total": 23703
       },
@@ -804,6 +814,7 @@
         "state": 11751,
         "taxable_social_security": 0,
         "ordinary_taxable": 109831,
+        "gains": 0,
         "magi": 151050,
         "total": 24296
       },
@@ -893,6 +904,7 @@
         "state": 1095,
         "taxable_social_security": 0,
         "ordinary_taxable": 0,
+        "gains": 0,
         "magi": 27376,
         "total": 1095
       },
@@ -962,6 +974,7 @@
         "state": 4615,
         "taxable_social_security": 0,
         "ordinary_taxable": 27042,
+        "gains": 0,
         "magi": 70347,
         "total": 7319
       },
@@ -1037,6 +1050,7 @@
         "state": 10683,
         "taxable_social_security": 0,
         "ordinary_taxable": 26967,
+        "gains": 68787,
         "magi": 140142,
         "total": 13380
       },
@@ -1106,6 +1120,7 @@
         "state": 12266,
         "taxable_social_security": 0,
         "ordinary_taxable": 26891,
+        "gains": 86289,
         "magi": 158678,
         "total": 14955
       },
@@ -1175,6 +1190,7 @@
         "state": 12758,
         "taxable_social_security": 0,
         "ordinary_taxable": 26814,
+        "gains": 91314,
         "magi": 164763,
         "total": 15439
       },
@@ -1245,6 +1261,7 @@
         "state": 11279,
         "taxable_social_security": 29442,
         "ordinary_taxable": 56176,
+        "gains": 73798,
         "magi": 177775,
         "total": 17284
       },
@@ -1315,6 +1332,7 @@
         "state": 10216,
         "taxable_social_security": 51735,
         "ordinary_taxable": 78388,
+        "gains": 61028,
         "magi": 188412,
         "total": 18868
       },
@@ -1391,6 +1409,7 @@
         "state": 10779,
         "taxable_social_security": 53028,
         "ordinary_taxable": 85647,
+        "gains": 60767,
         "magi": 196635,
         "total": 20283
       },
@@ -1460,6 +1479,7 @@
         "state": 15071,
         "taxable_social_security": 54354,
         "ordinary_taxable": 196043,
+        "gains": 0,
         "magi": 247520,
         "total": 41293
       },
@@ -1529,6 +1549,7 @@
         "state": 15447,
         "taxable_social_security": 55713,
         "ordinary_taxable": 200941,
+        "gains": 0,
         "magi": 253704,
         "total": 42324
       },
@@ -1598,6 +1619,7 @@
         "state": 15833,
         "taxable_social_security": 57106,
         "ordinary_taxable": 205965,
+        "gains": 0,
         "magi": 260048,
         "total": 43382
       },
@@ -1661,6 +1683,7 @@
         "state": 10112,
         "taxable_social_security": 58534,
         "ordinary_taxable": 141203,
+        "gains": 0,
         "magi": 196638,
         "total": 26202
       },
@@ -1724,6 +1747,7 @@
         "state": 10365,
         "taxable_social_security": 59996,
         "ordinary_taxable": 144734,
+        "gains": 0,
         "magi": 201554,
         "total": 26858
       },
@@ -1798,6 +1822,7 @@
         "state": 10624,
         "taxable_social_security": 61497,
         "ordinary_taxable": 148352,
+        "gains": 0,
         "magi": 206593,
         "total": 27529
       },
@@ -1872,6 +1897,7 @@
         "state": 10890,
         "taxable_social_security": 63034,
         "ordinary_taxable": 152061,
+        "gains": 0,
         "magi": 211758,
         "total": 28218
       },
@@ -1946,6 +1972,7 @@
         "state": 11162,
         "taxable_social_security": 64610,
         "ordinary_taxable": 155862,
+        "gains": 0,
         "magi": 217051,
         "total": 28923
       },
@@ -2020,6 +2047,7 @@
         "state": 11441,
         "taxable_social_security": 66225,
         "ordinary_taxable": 159759,
+        "gains": 0,
         "magi": 222478,
         "total": 29646
       },
@@ -2094,6 +2122,7 @@
         "state": 11727,
         "taxable_social_security": 67881,
         "ordinary_taxable": 163753,
+        "gains": 0,
         "magi": 228040,
         "total": 30387
       },
@@ -2168,6 +2197,7 @@
         "state": 12020,
         "taxable_social_security": 69578,
         "ordinary_taxable": 167848,
+        "gains": 0,
         "magi": 233742,
         "total": 31147
       },
@@ -2242,6 +2272,7 @@
         "state": 8847,
         "taxable_social_security": 71318,
         "ordinary_taxable": 132342,
+        "gains": 0,
         "magi": 199884,
         "total": 23688
       },
@@ -2316,6 +2347,7 @@
         "state": 9068,
         "taxable_social_security": 73100,
         "ordinary_taxable": 135651,
+        "gains": 0,
         "magi": 204881,
         "total": 24280
       },
@@ -2390,6 +2422,7 @@
         "state": 9295,
         "taxable_social_security": 74928,
         "ordinary_taxable": 139042,
+        "gains": 0,
         "magi": 210003,
         "total": 24887
       },
@@ -2464,6 +2497,7 @@
         "state": 9527,
         "taxable_social_security": 76801,
         "ordinary_taxable": 142518,
+        "gains": 0,
         "magi": 215253,
         "total": 25509
       },
@@ -2538,6 +2572,7 @@
         "state": 9765,
         "taxable_social_security": 78721,
         "ordinary_taxable": 146080,
+        "gains": 0,
         "magi": 220633,
         "total": 26146
       },
@@ -2612,6 +2647,7 @@
         "state": 10009,
         "taxable_social_security": 80689,
         "ordinary_taxable": 149732,
+        "gains": 0,
         "magi": 226149,
         "total": 26800
       },
@@ -2686,6 +2722,7 @@
         "state": 10259,
         "taxable_social_security": 82706,
         "ordinary_taxable": 153474,
+        "gains": 0,
         "magi": 231802,
         "total": 27469
       },
@@ -2760,6 +2797,7 @@
         "state": 10570,
         "taxable_social_security": 84774,
         "ordinary_taxable": 157928,
+        "gains": 0,
         "magi": 238214,
         "total": 28285
       },
@@ -2834,6 +2872,7 @@
         "state": 11007,
         "taxable_social_security": 86893,
         "ordinary_taxable": 163847,
+        "gains": 0,
         "magi": 246140,
         "total": 29401
       },
@@ -2908,6 +2947,7 @@
         "state": 11360,
         "taxable_social_security": 89066,
         "ordinary_taxable": 168835,
+        "gains": 0,
         "magi": 253185,
         "total": 30321
       },
@@ -2982,6 +3022,7 @@
         "state": 11712,
         "taxable_social_security": 91293,
         "ordinary_taxable": 173838,
+        "gains": 0,
         "magi": 260297,
         "total": 31241
       },
@@ -3056,6 +3097,7 @@
         "state": 12061,
         "taxable_social_security": 93575,
         "ordinary_taxable": 178819,
+        "gains": 0,
         "magi": 267440,
         "total": 32154
       },
@@ -3130,6 +3172,7 @@
         "state": 12401,
         "taxable_social_security": 95914,
         "ordinary_taxable": 183737,
+        "gains": 0,
         "magi": 274573,
         "total": 33050
       },
@@ -3204,6 +3247,7 @@
         "state": 12588,
         "taxable_social_security": 98312,
         "ordinary_taxable": 186922,
+        "gains": 0,
         "magi": 280029,
         "total": 33584
       },
@@ -3278,6 +3322,7 @@
         "state": 12744,
         "taxable_social_security": 100769,
         "ordinary_taxable": 189780,
+        "gains": 0,
         "magi": 285215,
         "total": 34048
       },
@@ -3353,6 +3398,7 @@
         "state": 12699,
         "taxable_social_security": 103289,
         "ordinary_taxable": 190371,
+        "gains": 0,
         "magi": 288191,
         "total": 34037
       },
@@ -3428,6 +3474,7 @@
         "state": 12778,
         "taxable_social_security": 105871,
         "ordinary_taxable": 192402,
+        "gains": 0,
         "magi": 292668,
         "total": 34322
       },
@@ -3503,6 +3550,7 @@
         "state": 12614,
         "taxable_social_security": 108518,
         "ordinary_taxable": 191685,
+        "gains": 0,
         "magi": 294458,
         "total": 34033
       },
@@ -3583,6 +3631,7 @@
         "state": 12541,
         "taxable_social_security": 111231,
         "ordinary_taxable": 192049,
+        "gains": 0,
         "magi": 297391,
         "total": 33964
       },

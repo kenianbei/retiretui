@@ -1,6 +1,6 @@
 //! What a Roth conversion ladder is held to.
 
-use retiretui_engine::optimize::OptimizeOptions;
+use retiretui_engine::optimize::{GainsRate, OptimizeOptions};
 use retiretui_engine::plan::Dollars;
 use schemars::JsonSchema;
 use serde::Deserialize;
@@ -33,6 +33,10 @@ pub struct LadderConstraints {
     /// Explicit MAGI ceiling in today's dollars.
     #[cfg_attr(feature = "clap", arg(long))]
     pub max_magi: Option<Dollars>,
+    /// The rate realized long-term gains may not be pushed past: 0 keeps
+    /// them untaxed, 15 keeps them out of 20%.
+    #[cfg_attr(feature = "clap", arg(long))]
+    pub gains_rate: Option<GainsRate>,
 }
 
 impl LadderConstraints {
@@ -50,6 +54,7 @@ impl LadderConstraints {
             headroom: self.headroom,
             irmaa_tier: self.irmaa_tier,
             max_magi: self.max_magi,
+            gains_rate: self.gains_rate,
         }
     }
 }

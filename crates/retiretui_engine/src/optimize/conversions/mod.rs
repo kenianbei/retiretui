@@ -16,7 +16,8 @@ mod targets;
 
 pub use ladder::{LADDER_ID_PREFIX, apply_ladder, is_ladder, ladder_overlay};
 
-use serde::Serialize;
+use serde::de::IntoDeserializer;
+use serde::{Deserialize, Serialize};
 
 use super::rank_key;
 use crate::params::TaxTables;
@@ -54,6 +55,43 @@ pub struct OptimizeOptions {
     pub irmaa_tier: Option<u8>,
     /// Explicit MAGI ceiling in today's dollars, scaled by plan inflation.
     pub max_magi: Option<Dollars>,
+    /// Realized long-term gains may not be pushed past this rate; a year
+    /// that realizes none is not held.
+    pub gains_rate: Option<GainsRate>,
+}
+
+/// The long-term gains rate a ladder may not push realized gains past.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+pub enum GainsRate {
+    /// Gains stay untaxed.
+    #[serde(rename = "0")]
+    Zero,
+    /// Gains stay out of the top rate.
+    #[serde(rename = "15")]
+    Fifteen,
+}
+
+impl GainsRate {
+    /// Every rate, lowest first.
+    pub const ALL: &'static [Self] = &[Self::Zero, Self::Fifteen];
+
+    /// The rate as an option spells it: its percent.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Zero => "0",
+            Self::Fifteen => "15",
+        }
+    }
+}
+
+impl std::str::FromStr for GainsRate {
+    type Err = serde::de::value::Error;
+
+    fn from_str(text: &str) -> Result<Self, Self::Err> {
+        Self::deserialize(text.into_deserializer())
+    }
 }
 
 /// One emitted conversion: `amount` nominal dollars in `year` from `source`.

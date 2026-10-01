@@ -13,7 +13,7 @@ use serde::Deserialize;
 
 use crate::codec::from_table;
 use crate::draft::Draft;
-use crate::forms::offers::{RefSource, ref_offers};
+use crate::forms::offers::{RefSource, Vocabulary, ref_offers};
 use crate::forms::{FieldSpec, ToolAnswers};
 use crate::ladder::LadderConstraints;
 use crate::present::{self, MoneyForm};
@@ -60,6 +60,9 @@ pub const FIELDS: &[FieldSpec] = &[
     FieldSpec::money("max_magi", "MAGI cap")
         .blank("No cap")
         .help("Keep every year's MAGI (modified adjusted gross income) under this."),
+    FieldSpec::choice("gains_rate", "Gains rate", Vocabulary::GainsRate)
+        .blank("Not held")
+        .help("Keep realized capital gains at this rate or under: 0% keeps them untaxed, 15% out of 20%. A year that realizes none is not held."),
 ];
 
 impl ToolAnswers for Constraints {
@@ -282,6 +285,7 @@ pub fn search(
 mod tests {
     use super::*;
     use crate::setup::examples::named;
+    use retiretui_engine::optimize::GainsRate;
 
     fn early_retiree() -> Plan {
         let (_, _, text) = named("early-retiree.toml").expect("the example");
@@ -321,6 +325,21 @@ mod tests {
             &cancelled,
         );
         assert!(swept.is_none(), "a cancelled sweep answers nothing");
+    }
+
+    #[test]
+    fn every_gains_rate_the_form_offers_holds_the_search_to_it() {
+        let offers = Vocabulary::GainsRate.offers();
+        let labels: Vec<&str> = offers.iter().map(|offer| offer.label.as_str()).collect();
+        assert_eq!(labels, ["0%", "15%"]);
+        for (offer, rate) in offers.iter().zip(GainsRate::ALL) {
+            let mut held = toml::Table::new();
+            held.insert("gains_rate".to_owned(), offer.value.clone().into());
+            let (options, _) = options_into(&held, "roth-ira-morgan").expect("the pick reads");
+            assert_eq!(options.gains_rate, Some(*rate));
+        }
+        let (options, _) = options_into(&toml::Table::new(), "roth-ira-morgan").expect("blank");
+        assert_eq!(options.gains_rate, None);
     }
 
     #[test]

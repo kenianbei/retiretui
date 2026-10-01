@@ -10,8 +10,8 @@ pub use claims::{
     Claim, ClaimCandidate, ClaimSearch, apply_claims, claims_overlay, optimize_claims,
 };
 pub use conversions::{
-    BracketSweep, LADDER_ID_PREFIX, LadderStep, OptimizeOptions, OptimizedLadder, SweptBracket,
-    apply_ladder, is_ladder, ladder_overlay, optimize_conversions, sweep_brackets,
+    BracketSweep, GainsRate, LADDER_ID_PREFIX, LadderStep, OptimizeOptions, OptimizedLadder,
+    SweptBracket, apply_ladder, is_ladder, ladder_overlay, optimize_conversions, sweep_brackets,
 };
 pub use estimate::{benefit_estimates, career_at_salary};
 
