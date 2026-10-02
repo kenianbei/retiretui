@@ -24,9 +24,120 @@
     <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <title>RetireTui</title>
+    <!-- Styled here, so that it reads where the app's stylesheet does not load. -->
+    <style>
+      .startup {
+        max-width: 40rem;
+        padding: 2rem 1rem;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        line-height: 1.5;
+      }
+      .startup h1 {
+        margin: 0 0 0.5rem;
+        font-size: 1.5rem;
+        font-weight: 600;
+      }
+      .startup p {
+        margin: 0 0 0.75rem;
+      }
+      .startup a {
+        text-decoration: underline;
+      }
+      /* Unseen on a load quick enough not to need it. */
+      #root > .startup {
+        margin: 0;
+        opacity: 0;
+        animation: startup-shown 0s 0.5s forwards;
+      }
+      @keyframes startup-shown {
+        to {
+          opacity: 1;
+        }
+      }
+    </style>
+    <noscript>
+      <style>
+        #root {
+          display: none;
+        }
+      </style>
+    </noscript>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><p class="startup">Loading RetireTui…</p></div>
+    <div id="failure" class="startup" role="alert" hidden>
+      <h1>RetireTui did not start</h1>
+      <p id="failure-reason"></p>
+      <p>
+        Reloading the page may help, or a current version of your browser. If
+        neither does,
+        <a
+          href="https://github.com/kenianbei/retiretui/issues/new"
+          target="_blank"
+          rel="noreferrer"
+          >report an issue</a
+        >.
+      </p>
+    </div>
+    <noscript>
+      <div class="startup">
+        <h1>RetireTui needs JavaScript</h1>
+        <p>
+          It runs wholly in your browser, and JavaScript is what runs it. Turn
+          it on for this page, then reload.
+        </p>
+      </div>
+    </noscript>
+    <!-- A classic script in old syntax, so that it runs where the app's module does not. -->
+    <script>
+      {
+        let isSaid = false;
+        const fail = (reason) => {
+          if (isSaid) return;
+          isSaid = true;
+          document.getElementById("root").hidden = true;
+          document.getElementById("failure-reason").textContent = reason;
+          document.getElementById("failure").hidden = false;
+        };
+        const threw = (thrown) => {
+          fail(`The browser says: ${String(thrown)}`);
+        };
+        // A file that does not load says so at its element, with no error.
+        const onError = (event) => {
+          const { target } = event;
+          if (target === window) threw(event.error || event.message);
+          else
+            fail(
+              `A file the app is made of did not load: ${target.src || target.href}`,
+            );
+        };
+        const onRejection = (event) => {
+          threw(event.reason);
+        };
+        addEventListener("error", onError, true);
+        addEventListener("unhandledrejection", onRejection);
+        window.startup = {
+          threw,
+          done() {
+            removeEventListener("error", onError, true);
+            removeEventListener("unhandledrejection", onRejection);
+          },
+        };
+
+        if (typeof WebAssembly === "undefined") {
+          fail(
+            "This browser does not offer WebAssembly, which RetireTui computes with. A security setting such as Lockdown Mode turns it off.",
+          );
+        }
+        try {
+          void window.localStorage;
+        } catch (blocked) {
+          fail(
+            "This browser keeps this page from storing anything, and RetireTui keeps your plans in the page's own storage. Allow cookies and site data for this site, then reload.",
+          );
+        }
+      }
+    </script>
     <script type="module" src="./src/main.tsx"></script>
   </body>
 </html>

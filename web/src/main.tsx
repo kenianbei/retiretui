@@ -15,3 +15,4 @@ const { mount } = await import("@/app");
 const container = document.getElementById("root");
 if (!container) throw new Error("index.html has no #root");
 mount(container);
+window.startup.done();
