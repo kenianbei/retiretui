@@ -110,8 +110,8 @@ test("a page that throws is said inside the shell, which goes on working", async
     page.getByRole("heading", { name: "This page stopped working" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("link", { name: "Report an issue" }),
-  ).toHaveAttribute("href", /\/retiretui\/issues\/new$/);
+    page.getByRole("main").getByRole("link", { name: "Report an issue" }),
+  ).toHaveAttribute("href", /\/retiretui\/issues\/new\?body=/);
   await expect(page.locator("header").getByText("starter.toml")).toBeVisible();
   await page.getByRole("link", { name: "Ledger" }).click();
   await expect(page.getByRole("heading", { name: "Ledger" })).toBeVisible();

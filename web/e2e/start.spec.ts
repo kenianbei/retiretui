@@ -3,9 +3,12 @@ import {
   example,
   expect,
   expectAccessible,
+  isPhone,
   seed,
   test,
 } from "./support";
+
+const REPO = "https://github.com/kenianbei/retiretui";
 
 test("the Start page starts a plan from an example or an upload", async ({
   page,
@@ -25,6 +28,43 @@ test("the Start page starts a plan from an example or an upload", async ({
     buffer: Buffer.from(example("early-retiree.toml")),
   });
   await expect(page.locator("header").getByText("early.toml")).toBeVisible();
+});
+
+test("the app says what it is, and every page ends in the ways out of it", async ({
+  page,
+}, testInfo) => {
+  await page.goto("./");
+  await expect(
+    page.getByText(/^RetireTui projects a household's finances/),
+  ).toBeVisible();
+
+  const footer = page.getByRole("contentinfo");
+  await expect(footer).toContainText("not financial advice");
+  await expect(footer).toContainText(/Version \d+\.\d+\.\d+/);
+  await expect(
+    footer.getByRole("link", { name: "Source on GitHub" }),
+  ).toHaveAttribute("href", REPO);
+  const report = await footer
+    .getByRole("link", { name: "Report an issue" })
+    .getAttribute("href");
+  const [address, body] = (report ?? "").split("?body=");
+  expect(address).toBe(`${REPO}/issues/new`);
+  expect(decodeURIComponent(body ?? "")).toMatch(
+    /\nRetireTui \d+\.\d+\.\d+, the web app\nMozilla\/.+$/,
+  );
+
+  const mark = page.getByRole("link", { name: "RetireTui on GitHub" });
+  if (isPhone(testInfo)) {
+    await expect(mark).toBeHidden();
+  } else {
+    await expect(mark).toHaveAttribute("href", REPO);
+    await expect(mark).toHaveAttribute("target", "_blank");
+  }
+
+  await page.getByRole("button", { name: /^Starter/ }).click();
+  await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
+  await expect(footer).toContainText("not financial advice");
+  await expectAccessible(page);
 });
 
 test("an address that names no page says so", async ({ page }) => {

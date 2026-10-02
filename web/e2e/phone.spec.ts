@@ -36,6 +36,22 @@ async function pagesOf(
 
 test.skip(({ isMobile }) => !isMobile, "the widths it holds to are a phone's");
 
+test("the footer ends above the tab bar", async ({ page }) => {
+  await page.goto("./");
+  const footer = page.getByRole("contentinfo");
+  await expect(footer).toContainText("Version");
+  await page.evaluate(() => {
+    window.scrollTo(0, document.documentElement.scrollHeight);
+  });
+  const end = await footer.boundingBox();
+  const bar = await page
+    .getByRole("navigation", { name: "Main" })
+    .boundingBox();
+  if (!end || !bar)
+    throw new Error("the footer and the tab bar are both drawn");
+  expect(end.y + end.height).toBeLessThanOrEqual(bar.y);
+});
+
 test("every page fits a phone's width", async ({ page }) => {
   test.setTimeout(300_000);
   await seed(

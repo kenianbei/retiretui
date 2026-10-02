@@ -3,7 +3,7 @@ import { RotateCw } from "lucide-react";
 
 import { MarginNote } from "@/components/margin-note";
 import { Button } from "@/components/ui/button";
-import { ISSUES_URL } from "@/links";
+import { reportUrl } from "@/links";
 
 /** What stands in for a page that threw while it was drawn. */
 export function Failed({ error }: ErrorComponentProps) {
@@ -31,7 +31,7 @@ export function Failed({ error }: ErrorComponentProps) {
           Reload
         </Button>
         <a
-          href={ISSUES_URL}
+          href={reportUrl()}
           target="_blank"
           rel="noreferrer"
           className="text-primary underline underline-offset-4"
