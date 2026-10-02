@@ -194,6 +194,9 @@ fn tui_refuses_bad_plans_before_touching_the_terminal() {
     let bad = retiretui(&["tui", scratch.to_str().unwrap()]);
     assert!(!bad.status.success());
     assert!(bad.stdout.is_empty(), "no TUI output on a refused plan");
+    let refusal = String::from_utf8_lossy(&bad.stderr);
+    assert!(!refusal.contains("panicked"), "{refusal}");
+    assert!(refusal.contains("missing field"), "{refusal}");
 }
 
 #[test]

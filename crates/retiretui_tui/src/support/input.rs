@@ -12,8 +12,8 @@ use plurimus::term::{
 
 use crate::command::Registry;
 
-/// Queues a key press, then ticks the app twice so resource changes made by
-/// key handlers reach the layout and render systems.
+/// Presses and releases a key, ticking after each so resource changes made
+/// by key handlers reach the layout and render systems.
 pub fn press_key(app: &mut App, code: KeyCode) {
     press_with(app, code, KeyModifiers::default());
 }
@@ -27,11 +27,14 @@ pub fn press_shift(app: &mut App, code: KeyCode) {
     press_with(app, code, KeyModifiers::default().with_shift(true));
 }
 
+/// A key left held is released by plurimus on the real clock, in whatever
+/// later frame that falls.
 fn press_with(app: &mut App, code: KeyCode, modifiers: KeyModifiers) {
-    app.world_mut()
-        .write_message(KeyMessage::new(code, modifiers, KeyKind::Press));
-    app.update();
-    app.update();
+    for kind in [KeyKind::Press, KeyKind::Release] {
+        app.world_mut()
+            .write_message(KeyMessage::new(code, modifiers, kind));
+        app.update();
+    }
 }
 
 fn point(app: &mut App, kind: MouseKind, column: u16, row: u16) {
