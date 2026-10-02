@@ -15,7 +15,7 @@ struct Cli {
 enum Command {
     #[command(flatten)]
     Cli(retiretui_cli::Command),
-    /// Open the interactive dashboard for a plan or scenario.
+    /// Open the interactive planner for a plan or scenario.
     Tui(TuiArgs),
     /// Serve plans to AI agents over the Model Context Protocol on stdio.
     Mcp(McpArgs),

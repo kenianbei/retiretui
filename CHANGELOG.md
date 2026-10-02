@@ -6,143 +6,184 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-02
+
 ### Added
 
-- A web app for phones and desktop browsers, published to GitHub Pages at the
-  site's root with each release. It keeps its plans in the browser's own
-  storage, apart from the canvas page's, and never sends them anywhere. A first
-  plan is made from a few questions asked a step at a time - the household, then
-  each person - which read every answer back to be changed before the plan is
-  named, made and opened on the Overview; a blank age, start of work or Social
-  Security benefit reads as what the plan will assume - `Blank is 65` while
-  answered, `65, the default` read back - and the answers survive a reload until
-  the plan is made. The example plans and an upload are offered beside them. It
-  reopens the plan last open, and downloads the open plan; a plan that does not
-  open is said on the Start page by the file that failed, the line and why, with
-  that file to download or replace by an upload, and its text as written
-  beneath, the failing line marked. Its Overview reads as the ledger's first
-  page. It leads with how long the money lasts, the share of a thousand random
-  markets it survives - run off the page's thread, and leading to the Monte
-  Carlo tool - what it ends with and what it pays in tax, in today's or future
-  dollars and in the terminal's words, as rows of a label and a figure on a
-  phone; a plan that runs short is noted above them with the year it first does
-  and what it leaves uncovered, leading to that year in the Ledger and to
-  Expenses, and how long the money lasts then reads the last year it covers.
-  Beneath is what to do in the year shown, in the dollars shown and said as the
-  terminal says it: today's by default, stepped by button or the arrow keys, or
-  chosen with a click on a chart, and leading to that year in the Ledger. Then
-  what needs attention - the worst historical start the plan does not survive
-  and how many fail, as the terminal says it, leading to the Historical tool on
-  that start; the years the plan pays Medicare's surcharges, contributions held
-  back, a benefit estimated without its earnings record, an amount too large to
-  be likely - and what could do better, each row leading to its year in the
-  Ledger, its item or its tool. What to do, the milestones, what needs attention
-  and what could do better sit four across on a wide page, two on a narrower
-  one. Beneath them, all shown at once and two across on a wide page, the plan's
-  balances by tax treatment under its net worth, its net worth, its income
-  against its taxes, and its net worth through the random markets as percentile
-  bands, each salary's end marked and listed under its chart, each chart read as
-  one image with the Ledger as its table. The Ledger shows the plan year by
-  year, the year column staying in view as the table scrolls sideways, and the
-  chosen year's flows through each account - where each came from or went, with
-  the year's warnings - and its income and what it paid, beneath the table on a
-  wide screen and above it on a phone, where no page scrolls sideways but its
-  tables. The year and the dollars are in the page's address, kept between the
-  Overview, the Ledger, Compare and the tools and across a reload. The Plan
-  pages edit the plan: each domain's items are a table sortable by its columns,
-  or rows with a Sort by on a phone, beside the highlighted item read out in the
-  form's words - a field left blank read as what it stands for, muted, such as
-  `Earns nothing` or `6%, the default`, and the Market's fields under headings -
-  and a domain there is one of is that read-out alone. Edit, Add and Delete work
-  one item at a time; the form is a sheet, full screen on a phone, whose fields
-  are entered by their kind - picks from the schema's sets and the plan's own
-  ids, a searched list for a country or U.S. state, a slider beside a rate, a
-  trigger as its kind and sentence - and applying stores the whole item or says
-  why not. Every applied item or deletion is a step Undo and Redo walk, by
-  button or Ctrl/Cmd+Z, and Save or Ctrl/Cmd+S writes the plan back through the
-  same validation as every other surface; Save as… writes it under another name,
-  the one way to keep a scenario's edits. Unsaved edits are asked about before a
-  form closes, another plan opens, or the page is left, and a file changed in
-  another tab under them is reported rather than overwritten. A plan with issues
-  counts them in the header and lists each by the page, item and field it is
-  about, each a link to that field in its form, while the figures keep the last
-  ones it had without issues. A Social Security statement downloaded from
-  ssa.gov is imported onto a person from the People page as one step of history.
-  The Roth Conversions tool searches every fillable bracket's conversion ladder,
-  ranks them under the plan as it stands, each saying what it ends with against
-  the plan, and shows the highlighted one's conversions year by year beside them
-  on a wide page, in either dollar basis, over the constraints it searched
-  under, read out and edited in a sheet; it searches again whenever the plan or
-  the constraints change, and takes the plan's one Roth account as the
-  destination where there is only one. The highlighted ladder is taken into the
-  plan after asking, as one step of history in place of any ladder taken before,
-  or written as a scenario beside the saved plan, compared with it at once and
-  offered to open. The SSA Benefits tool ranks every claim age for the
-  household's computed Social Security benefits under the plan as it stands,
-  each against the plan as a ladder is, beside each person's earnings record,
-  how their benefit is set and the benefit estimated at 62, full retirement age
-  and 70, with what can be done for the highlighted person: import a statement,
-  estimate a record from their salary, compute a stated benefit from their
-  record, clear the record or remove the benefit - the last two asked first -
-  each one step of history, or hold their claim as the plan states it while the
-  others are searched. The highlighted claims are taken into the plan after
-  asking or written as a scenario, as a ladder is; the claims highlighted, the
-  person and who is held are kept in the address. The Overview's Could do better
-  gives each Roth owner's best ladder and the household's best claims against
-  the plan as it stands, each leading to its tool, a ladder's aimed at that
-  owner's account; what it finds is what the tools then show without searching
-  again. The Monte Carlo and Historical tools run the plan through a thousand
-  random markets, or from every historical start year worst first, and say how
-  it fared in one sentence - `Money lasts in 87% of 1,000 markets` - in the
-  colour of its zone - as the Overview's figure is coloured - beside what the
-  runs were made under, each a link to the Market field it is edited at; beneath
-  the runs singled out, all shown at once, are the spread of net worth -
-  percentile bands in a neutral - under the highlighted run's line, the share
-  still funded, what the runs end with, and net worth by year at each percentile
-  (Monte Carlo only). The highlighted run opens in the Ledger, replayed through
-  its market and named by it - a random market's number, or the year retired
-  into - kept in the address through the year, the dollars and edits, with a
-  link back to the plan's own. Compare sets the plan beside the workspace plans
-  chosen for it: each plan's figures and its success through random markets -
-  each plan searched in a worker of its own - or its differences from the one
-  chosen as the baseline, what the highlighted plan changes of the baseline, and
-  one of eight metrics year by year, charted beside its table. A plan alone is
-  offered another from the workspace, or, where there is none, an example
-  written beside it and compared at once. The plans compared, the baseline and
-  the metric are kept in the address, the plans compared carried by every link;
-  opening a compared plan puts it in the document's place with the document
-  joining the compared, and opening any other plan leaves nothing compared. The
-  Tax Tables tool reads out the tables the plan's projection applies in the year
-  shown - brackets, deductions, long-term gains, Social Security's thresholds
-  and benefit formula, the contribution limits, Medicare surcharges, the RMD
-  divisors and the state's income tax - in columns as many as the page holds -
-  for the plan's filing status and the state it lives in that year, grown past
-  the last published table at the plan's inflation, or for any status or modeled
-  state picked. The header names the open plan, marked with a dot while it has
-  unsaved edits, and the name opens the File menu. Manage plans, in that menu,
-  renames, downloads and deletes the workspace's plans, each action named on
-  hover and keyboard focus: a rename rewrites the scenarios built on the plan
-  and keeps an open plan's unsaved edits, a delete names the scenarios it
-  breaks, and both are followed by the plans compared and by other tabs. The
-  page says that clearing the browser's site data deletes the plans, and asks
-  the browser to keep them on a button. A palette opened with Ctrl/Cmd+K, or
-  from the header's search button on any screen, finds any page, plan or action
-  by part of its name; the digits 1-5 go to the tabs and ? lists every key. The
-  app installs, and works offline once it has been visited: each page loads the
-  first time it is shown and the rest once the app is idle. A skip link leads to
-  the page, focus moves to a new page's heading, and every page is checked
-  against WCAG 2.1 A and AA in Chromium, Firefox and WebKit. Light or dark
-  follows the system, and navigation is a bottom bar on a phone - a grouped
-  tab's pages a row of chips above the page, faded at an edge with more beyond
-  it - and a sidebar on a wider screen that stays in view with the header as the
-  page scrolls. Pages fill the width beside it, their tables and read-outs
-  filling their columns and their sections two or four across where there is
-  room; on a phone every button, tab and chip is touched across 44px whatever
-  size it is drawn. Money is written in full wherever a table has room for it -
-  a ladder's years, a monthly benefit, the tools' options and runs, and the
-  years compared - and compact only where it has not, as in the Overview's
-  figures and Compare's plans; a phone's row of options shows what each ends
-  with against the plan.
+- A web app for phones and desktop browsers, at
+  <https://kenianbei.github.io/retiretui/>, published to GitHub Pages at the
+  site's root with each release: a page over the engine's JavaScript bindings,
+  the unpublished `retiretui_wasm` crate, and over `retiretui_client`, the crate
+  of what every interface shares, new with this release. It keeps its plans in
+  the browser's own storage and never sends them anywhere. The canvas page - the
+  terminal planner drawn in a browser, which 0.2.0 published at the root - is
+  beside it at `/ratzilla/` and keeps its plans apart from the app's: a plan
+  made in the 0.2.0 page is still there, and reaches the app by a download from
+  that page and an upload to the app.
+  - **Start.** The Start page opens with a sentence on what RetireTui does. A
+    first plan is made from a few questions asked a step at a time - the
+    household, then each person - which read every answer back to be changed
+    before the plan is named, made and opened on the Overview; a blank age,
+    start of work or Social Security benefit reads as what the plan will
+    assume - `Blank is 65` while answered, `65, the default` read back - and the
+    answers survive a reload until the plan is made. The example plans and an
+    upload are offered beside them. The app reopens the plan last open, and
+    downloads the open plan; a plan that does not open is said on the Start page
+    by the file that failed, the line and why, with that file to download or
+    replace by an upload, and its text as written beneath, the failing line
+    marked.
+  - **Overview.** It reads as the ledger's first page. It leads with how long
+    the money lasts, the share of a thousand random markets it survives - run
+    off the page's thread, and leading to the Monte Carlo tool - what it ends
+    with and what it pays in tax, in today's or future dollars and in the
+    terminal's words, as rows of a label and a figure on a phone; a plan that
+    runs short is noted above them with the year it first does and what it
+    leaves uncovered, leading to that year in the Ledger and to Expenses, and
+    how long the money lasts then reads the last year it covers. Beneath is what
+    to do in the year shown, in the dollars shown and said as the terminal says
+    it: today's by default, stepped by button or the arrow keys, or chosen with
+    a click on a chart, and leading to that year in the Ledger. Then what needs
+    attention - the worst historical start the plan does not survive and how
+    many fail, as the terminal says it, leading to the Historical tool on that
+    start; the years the plan pays Medicare's surcharges, contributions held
+    back, a benefit estimated without its earnings record, an amount too large
+    to be likely - and what could do better, each row leading to its year in the
+    Ledger, its item or its tool. Could do better gives each Roth owner's best
+    ladder, the household's best claims and the best withdrawal order against
+    the plan as it stands, each leading to its tool, a ladder's aimed at that
+    owner's account; what it finds is what the tools then show without searching
+    again. What to do, the milestones, what needs attention and what could do
+    better sit four across on a wide page, two on a narrower one. Beneath them,
+    all shown at once and two across on a wide page, the plan's balances by tax
+    treatment under its net worth, its net worth, its income against its taxes,
+    and its net worth through the random markets as percentile bands, each
+    salary's end marked and listed under its chart, each chart read as one image
+    with the Ledger as its table.
+  - **Ledger.** It shows the plan year by year, the year column staying in view
+    as the table scrolls sideways, and the chosen year's flows through each
+    account - where each came from or went, with the year's warnings - and its
+    income and what it paid, beneath the table on a wide screen and above it on
+    a phone, where no page scrolls sideways but its tables. The year and the
+    dollars are in the page's address, kept between the Overview, the Ledger,
+    Compare and the tools and across a reload.
+  - **Plan pages.** They edit the plan: each domain's items are a table sortable
+    by its columns, or rows with a Sort by on a phone, beside the highlighted
+    item read out in the form's words - a field left blank read as what it
+    stands for, muted, such as `Earns nothing` or `6%, the default`, and the
+    Market's fields under headings - and a domain there is one of is that
+    read-out alone. Edit, Add and Delete work one item at a time; the form is a
+    sheet, full screen on a phone, whose fields are entered by their kind -
+    picks from the schema's sets and the plan's own ids, a searched list for a
+    country or U.S. state, a slider beside a rate, a trigger as its kind and
+    sentence - and applying stores the whole item or says why not. Every applied
+    item or deletion is a step Undo and Redo walk, by button or Ctrl/Cmd+Z, and
+    Save or Ctrl/Cmd+S writes the plan back through the same validation as every
+    other surface; Save as… writes it under another name. A scenario opens
+    read-only. Unsaved edits are asked about before a form closes, another plan
+    opens, or the page is left, and a file changed in another tab under them is
+    reported rather than overwritten. A plan with issues counts them in the
+    header and lists each by the page, item and field it is about, each a link
+    to that field in its form, while the figures keep the last ones it had
+    without issues. A Social Security statement downloaded from ssa.gov is
+    imported onto a person from the People page as one step of history.
+  - **Roth Conversions.** The tool searches every fillable bracket's conversion
+    ladder, ranks them under the plan as it stands, each saying what it ends
+    with against the plan, and shows the highlighted one's conversions year by
+    year beside them on a wide page, in either dollar basis, over the
+    constraints it searched under, read out and edited in a sheet; it searches
+    again whenever the plan or the constraints change, and takes the plan's one
+    Roth account as the destination where there is only one. The highlighted
+    ladder is taken into the plan after asking, as one step of history in place
+    of any ladder taken before, or written as a scenario beside the saved plan,
+    compared with it at once and offered to open.
+  - **SSA Benefits.** The tool ranks every claim age for the household's
+    computed Social Security benefits under the plan as it stands, each against
+    the plan as a ladder is, beside each person's earnings record, how their
+    benefit is set and the benefit estimated at 62, full retirement age and 70,
+    with what can be done for the highlighted person: import a statement,
+    estimate a record from their salary, compute a stated benefit from their
+    record, clear the record or remove the benefit - the last two asked first -
+    each one step of history, or hold their claim as the plan states it while
+    the others are searched. The highlighted claims are taken into the plan
+    after asking or written as a scenario, as a ladder is; the claims
+    highlighted, the person and who is held are kept in the address.
+  - **Withdrawal Order.** The tool ranks the orders the plan can withdraw in, by
+    the search said further down, under the plan as it stands, the highlighted
+    one taken into the plan after asking, as one step of history, or written as
+    a scenario and compared at once. The highlighted order is kept in the
+    address.
+  - **Monte Carlo and Historical.** The tools run the plan through a thousand
+    random markets, or from every historical start year worst first, and say how
+    it fared in one sentence - `Money lasts in 87% of 1,000 markets` - in the
+    colour of its zone - as the Overview's figure is coloured - beside what the
+    runs were made under, each a link to the Market field it is edited at;
+    beneath the runs singled out, all shown at once, are the spread of net
+    worth - percentile bands in a neutral - under the highlighted run's line,
+    the share still funded, what the runs end with, and net worth by year at
+    each percentile (Monte Carlo only). The highlighted run opens in the Ledger,
+    replayed through its market and named by it - a random market's number, or
+    the year retired into - kept in the address through the year, the dollars
+    and edits, with a link back to the plan's own.
+  - **Compare.** It sets the plan beside the plans chosen for it from the
+    workspace, the plan files the app keeps. It shows each plan's figures and
+    its success through random markets - each plan searched in a worker of its
+    own - or its differences from the one chosen as the baseline, what the
+    highlighted plan changes of the baseline, and one of eight metrics year by
+    year, charted beside its table. A plan alone is offered another from the
+    workspace, or, where there is none, an example written beside it and
+    compared at once. The plans compared, the baseline and the metric are kept
+    in the address, the plans compared carried by every link; opening a compared
+    plan puts it in the open plan's place with that plan joining the compared,
+    and opening any other plan leaves nothing compared.
+  - **Tax Tables.** The tool reads out the tables the plan's projection applies
+    in the year shown - brackets, deductions, long-term gains, Social Security's
+    thresholds and benefit formula, the contribution limits, Medicare
+    surcharges, the RMD divisors and the state's income tax - in columns as many
+    as the page holds - for the plan's filing status and the state it lives in
+    that year, grown past the last published table at the plan's inflation, or
+    for any status or modeled state picked.
+  - **Plans and files.** The header names the open plan, marked with a dot while
+    it has unsaved edits, and the name opens the File menu. Manage plans, in
+    that menu, renames, downloads and deletes the workspace's plans, each action
+    named on hover and keyboard focus: a rename rewrites the scenarios built on
+    the plan and keeps an open plan's unsaved edits, a delete names the
+    scenarios it breaks, and both are followed by the plans compared and by
+    other tabs. The page says that clearing the browser's site data deletes the
+    plans, and asks the browser to keep them on a button.
+  - **Palette and keys.** A palette opened with Ctrl/Cmd+K, or from the header's
+    search button on any screen, finds any page, plan or action by part of its
+    name; the digits 1-5 go to the tabs and ? lists every key.
+  - **Offline.** The app installs, and works offline once it has been visited:
+    each page loads the first time it is shown and the rest once the app is
+    idle.
+  - **Accessibility.** A skip link leads to the page, focus moves to a new
+    page's heading, and every page is checked against WCAG 2.1 A and AA in
+    Chromium, Firefox and WebKit.
+  - **Layout.** Light or dark follows the system, and navigation is a bottom bar
+    on a phone - a grouped tab's pages a row of chips above the page, faded at
+    an edge with more beyond it - and a sidebar on a wider screen that stays in
+    view with the header as the page scrolls. Pages fill the width beside it,
+    their tables and read-outs filling their columns and their sections two or
+    four across where there is room; on a phone every button, tab and chip is
+    touched across 44px whatever size it is drawn.
+  - **Money.** It is written in full wherever a table has room for it - a
+    ladder's years, a monthly benefit, the tools' options and runs, and the
+    years compared - and compact only where it has not, as in the Overview's
+    figures and Compare's plans; a phone's row of options shows what each ends
+    with against the plan.
+  - **Footer and links.** Under every page a footer says that RetireTui is a
+    model and not financial advice, links to the source and to where an issue is
+    reported - the report opening with the running version and the browser's
+    user agent written in, and nothing of a plan - and shows that version, which
+    the bindings export as `version`; from a tablet's width up the header ends
+    in a GitHub mark.
+  - **When it cannot start.** A page that cannot start says why in place of a
+    blank screen: that it needs JavaScript, that the browser offers no
+    WebAssembly, that the page's storage is blocked, or what the browser said of
+    a file that did not load or run, each but the first with a link to report
+    it; until it has started it says that it is loading. A page that throws
+    while it is drawn is replaced by what went wrong, a button that reloads and
+    the link to report it.
 - The engine exposes `Scenario::set_base`, which makes an overlay name another
   base, and `project::benefit_params` and `project::state_lived_in`, the benefit
   formula's parameters and the state taxing a year as a plan's projection takes
@@ -151,25 +192,23 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   projection applies in the year shown, for its filing status and the state it
   lives in: its sections listed beside the highlighted one's table. `[` and `]`
   step the year the Overview and the Ledger share; `f` and `t` pick another
-  filing status or modeled state, the plan's own first, each tried on as the
-  cursor reaches it and put back by Esc.
-- The client's `YearTables` says what its status and state are picked under, the
-  plan's own of each as a pick offers it - `The plan's (Single)`,
-  `Where the plan lives (Oregon)` - and the status and state shown by name; the
-  web's Tax Tables tool reads its pickers' words from it.
-- The terminal edits a scenario. It opens editable, and saving writes its edits
-  back into its own file, still naming its base and stating only what differs
-  from the base as the save reads it, beside whatever it stated before that
-  still holds, so a value it pinned stays pinned while the base agrees. The file
-  is rewritten canonically, as a plan is. An edit no scenario can state -
-  clearing what the base states outside an item, such as the plan's name - is
-  refused in the form's words, naming the file to clear it in. Save As still
-  writes the resolved plan as a plan of its own, and the web keeps a scenario
-  read-only.
+  filing status or modeled state, the plan's own first and said as such -
+  `The plan's (Single)`, `Where the plan lives (Oregon)` - each tried on as the
+  cursor reaches it and put back by Esc. The web app's pickers say the same
+  words, both from `retiretui_client`'s `YearTables`, which also names the
+  status and state shown.
+- The terminal edits a scenario. It opens editable, where it opened read-only,
+  and saving writes its edits back into its own file, still naming its base and
+  stating only what differs from the base as the save reads it, beside whatever
+  it stated before that still holds, so a value it pinned stays pinned while the
+  base agrees. The file is rewritten canonically, as a plan is. An edit no
+  scenario can state - clearing what the base states outside an item, such as
+  the plan's name - is refused in the form's words, naming the file to clear it
+  in. Save As still writes the resolved plan as a plan of its own.
 - The engine's `Scenario::over` states one plan as an overlay over another, the
   inverse of `Scenario::apply`, restating what an earlier overlay stated that
-  still holds; the client's `Draft::over` and `save_draft` save a scenario's
-  draft through it.
+  still holds; `retiretui_client`'s `Draft::over` and `save_draft` save a
+  scenario's draft through it.
 - A salary may say that its job's workplace plan covers its owner - a pension
   plan, say - with `covered = true`, which the Income form asks as "Workplace
   plan" on a salary alone. While that salary pays, its owner's traditional IRA
@@ -205,18 +244,21 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     a table or JSON, and writes the best as a scenario with `--write`.
   - The MCP server's `optimize_order` replies the same, with the best as a
     scenario document that `write_to` stores through the validated write gate.
-  - The terminal and the web each gain a Withdrawal Order page among the tools:
-    the orders ranked under the plan as it stands, the highlighted one taken
-    into the draft after asking, as one step of history, or written as a
-    scenario and compared at once. The web keeps the highlighted order in the
-    address.
-  - The Overview's Could do better says the best order and what it gains where
-    it beats the plan's own, and that the order as planned is best where none
-    does, leading to the page.
-- The engine gains `optimize_order`, `apply_order`, `order_overlay`,
-  `OrderSearch` and `OrderCandidate`. The JavaScript bindings gain `orders`,
-  `orderWords`, and the document's `takeOrder` and `orderScenario`, with the
-  types `OrderOptions`, `OrderOption`, `OrderWords` and `TreatmentClass`.
+  - The terminal gains a Withdrawal Order page among its tools, as the web app
+    has: the orders ranked under the plan as it stands, the highlighted one
+    taken into the draft after asking, as one step of history, or written as a
+    scenario and compared at once.
+  - In the terminal and the web app, the Overview's Could do better says the
+    best order and what it gains where it beats the plan's own, and that the
+    order as planned is best where none does, leading to the page. The line it
+    shows where there is nothing to search reads "No conversion, claim or
+    withdrawal order to search", and shows only where none of the three can be.
+  - The engine gains `optimize_order`, `apply_order`, `order_overlay`,
+    `OrderSearch` and `OrderCandidate`. The JavaScript bindings carry the search
+    as `orders`, `orderWords`, and the document's `takeOrder` and
+    `orderScenario`, with the types `OrderOptions`, `OrderOption`, `OrderWords`
+    and `TreatmentClass`. What the Overview found of it is `order` in
+    `retiretui_client`'s `searches::overview::Found`.
 - The rule of 55. A 401(k), 403(b) or 414(k), Roth or not, states `separated`,
   when its owner leaves the job the plan is with: a date, an age, or the event
   the salary ends on, and a date in the past for a job already left. Left in or
@@ -254,9 +296,12 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   states `medical = true`, "Medical" in the Expenses form, and the household's
   HSAs pay the year's marked total untaxed. What they pay beyond it is ordinary
   income, and until the year its owner turns 65 pays a 20% penalty besides. A
-  tax table states the rate as `hsa-penalty` under `[early-withdrawal]`, and the
-  Tax Tables list it. Not modeled: medical bills of earlier years reimbursed
-  later.
+  tax table states the rate as `hsa-penalty` under `[early-withdrawal]`, and one
+  that leaves it out charges 20%. The Tax Tables list it. Not modeled: medical
+  bills of earlier years reimbursed later.
+- The MCP schema reference says who pays the early-withdrawal penalty, until
+  when, and what frees an account from it, and how a Roth and an HSA withdrawal
+  are taxed.
 - A state's income tax leaves retirement income untaxed where its table says so,
   and Illinois, Pennsylvania, Mississippi and Iowa are modeled states. A year's
   taxable income is kept by person and by source - wages, pensions,
@@ -268,7 +313,9 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the year it is paid (`taxes-deferrals`) and whether its deduction is fixed in
   nominal dollars (`deduction-unindexed`), and a bracket lists the rates the law
   has already set for later years (`later`), which a year's table takes as they
-  begin. Illinois leaves pensions, withdrawals at any age and conversions
+  begin; a year's resolved table, as `TaxTables::params_for` and the MCP
+  `tax_parameters` tool give it, lists under `later` only the rates still to
+  come. Illinois leaves pensions, withdrawals at any age and conversions
   untaxed; Pennsylvania pensions and conversions, withdrawals from the year the
   owner turns 59 and a half, and taxes deferrals; Mississippi pensions,
   conversions and withdrawals that are not early, at a rate that falls each year
@@ -283,8 +330,9 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   withdrawal it taxes, a workplace plan's own retirement age, and Tax
   Forgiveness; Mississippi's second untaxed 10,000 where both spouses have
   income; Iowa's rules for a low income.
-- A state's table says what it adjusts its tax by, and Oregon, Illinois,
-  Mississippi, Iowa and Washington are modeled with theirs. A table's
+- A state's table says what it adjusts its tax by, and the tables of Oregon,
+  Illinois, Mississippi, Iowa and Washington each say theirs. Oregon and
+  Washington were modeled in 0.2.0, with no adjustment. A table's
   `federal-tax-subtraction` takes federal income tax off income up to a `cap`,
   lost in equal `steps` across a band of federal AGI; its `exemption-credit`
   comes off the tax for each person and is never refunded; `deduction-until-agi`
@@ -311,36 +359,70 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   business, and its income tax over 1,000,000 a year from 2028; what a state
   adds for the blind; and the federal deductions at 65, which these states now
   lead.
-- The planner copies and pastes. `ctrl+c` copies the row under the cursor of a
-  table, a sidebar or a page's list, a table's cells separated by tabs, and what
-  is selected in a form's text field or the file picker's path, which select
-  with shift and the arrows or with `ctrl+a`, cut with `ctrl+x` and paste with
-  `ctrl+v`. In a terminal a copy is written to the system clipboard through OSC
-  52, which a terminal may ignore. A paste from the terminal goes into the file
-  picker's path and into the query of every fuzzy picker, where it did nothing.
+- The terminal planner copies and pastes. `ctrl+c` copies the row under the
+  cursor of a table, a sidebar or a page's list, a table's cells separated by
+  tabs, and what is selected in a form's text field or the file picker's path,
+  which select with shift and the arrows or with `ctrl+a`, cut with `ctrl+x`,
+  and paste what the planner last copied with `ctrl+v`. In a terminal a copy is
+  written to the system clipboard through OSC 52, which a terminal may ignore,
+  and the system clipboard's text arrives by the terminal's own paste, which now
+  goes into the file picker's path and the query of every fuzzy picker too,
+  where it did nothing.
 
 ### Changed
 
-- **Breaking:** the planner quits on `q` or `ctrl+q`. `ctrl+c` copies and no
-  longer quits.
-- The canvas page, the terminal planner drawn in a browser, moves from the Pages
-  site's root to `/ratzilla/`.
+- **Breaking.** No plan key is removed or renamed, and 0.2.0's example plans
+  validate as written; no command or flag is removed; and a tax parameter file
+  written for 0.2.0 reads as it did. What a plan written for 0.2.0 may project
+  differently is said in a bullet of its own: the spouse's IRA deduction
+  phase-out, early Roth and HSA withdrawals, the walk of the withdrawal order,
+  Oregon and Washington, and a transfer that pays the early-withdrawal penalty.
+  What breaks:
+  - The terminal planner quits on `q` or `ctrl+q`. `ctrl+c` copies and no longer
+    quits.
+  - The engine is 0.3.0. Structs gain fields, so a struct literal of one written
+    outside the engine must add them: `Income` gains `covered`;
+    `ContributionLimits` gains `ira_deduction_phase_out_spouse`;
+    `OptimizeOptions` gains `gains_rate`, an `Option<GainsRate>`; `Account`
+    gains `separated` and `public_safety`; `Expense` gains `medical`;
+    `EarlyWithdrawal` gains `hsa_penalty`; `Bracket` gains `later`, a list of
+    `RateStep`, and is no longer `Copy`; and `StateParams` gains `exclusions`,
+    `taxes_deferrals`, `deduction_unindexed`, `deduction_at_65`,
+    `deduction_until_agi`, `federal_tax_subtraction`, `exemption_credit` and
+    `gains_excise`, the last three the new `FederalTaxSubtraction`,
+    `ExemptionCredit` and `GainsExcise`. `tax::state_tax` takes the year's
+    income as a `StateIncome` - each person's `PersonIncome` by `Source`, gains,
+    the taxable Social Security, what was deferred, the federal tax and the
+    federal AGI - in place of two totals. `AccountKind::keeps_basis` answers
+    true for a Roth account, and validation accepts `basis` on one.
+  - `retiretui_tui` is 0.3.0. Its `actions`, `files`, `ladder`, `metric`,
+    `resolve`, `store` and `table` modules are gone from its API, `resolve` now
+    the engine's `plan::resolve` and the rest `retiretui_client`'s, so
+    `Launch.store` is an `Arc<dyn retiretui_client::store::Store>`. Its `clap`
+    feature is gone: the terminal launcher and its arguments are behind the
+    `terminal` feature, off by default. It is built on plurimus 0.8.0 and
+    plurimus_filepicker 0.2.0, so an app that embeds it moves to them with it.
+- The canvas page moves from the Pages site's root to `/ratzilla/`.
 - The terminal's Overview says the year's to-dos in the dollars shown, following
   `n` as every other pane does, and lists each of the plan's issues in Needs
   attention at its item rather than their count and the first. Its attention and
-  milestone rows are the client's, so the web app says them in the same words.
-
-- What every interface shares over the engine is a crate of its own,
-  `retiretui_client`: the words a plan is said in, the form model with its
-  editing domains named by ids of their own, issues read back as the domain,
+  milestone rows are `retiretui_client`'s.
+- RetireTui is six published crates where it was three. What every interface
+  shares over the engine is a crate of its own, `retiretui_client`, which
+  `retiretui_tui` builds on: the words a plan is said in, the form model with
+  its editing domains named by ids of their own, issues read back as the domain,
   item and field they are about, the load-and-validate gate and the store every
   plan file goes through, the open document and the draft with its history, the
   new-plan answers, the statement import, the searches the tools share, and the
-  shapes the CLI's JSON and the MCP tools reply in. `retiretui_tui` builds on
-  it, and its `actions`, `files`, `ladder`, `metric`, `resolve`, `store` and
-  `table` modules are gone from its API. The engine resolves scenario base
-  chains itself, as `plan::resolve`, whose error names the file in the chain
-  that failed and why.
+  shapes the CLI's JSON and the MCP tools reply in. It loads the tax tables, the
+  market history and the user's directories behind a `native` feature. The
+  command line and the MCP server are library crates of their own,
+  `retiretui_cli` and `retiretui_mcp`, the server reaching its sandboxed plan
+  files through the client's store, and `retiretui` composes them with
+  `retiretui_tui`'s terminal launcher into the one command it always was. The
+  engine resolves scenario base chains itself, as `plan::resolve`, whose error
+  names the file in the chain that failed and why. Each published crate carries
+  both licence files.
 - The terminal's new-plan form asks about a partner only once the household
   files jointly.
 - The terminal's SSA Benefits tool names claims by person rather than by income
@@ -381,17 +463,19 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     plan without a claim reads `No claim`.
   - The options tables are headed `Converted`, `Unfunded`, `Ends with`, `Taxes`
     and `Medicare`, Compare's words, and Historical's runs `Start years`.
-  - Monte Carlo and Historical say how the plan fared the same way, the command
-    line too: `Money lasts in 87% of 1,000 markets`,
-    `Money lasts in 85.2% of 155 start years`; the Overview's Success figure
-    reads `87% of 1,000 markets`. What the runs were made under reads
+  - The terminal's Monte Carlo and Historical say how the plan fared the same
+    way: `Money lasts in 87% of 1,000 markets`,
+    `Money lasts in 85.2% of 155 start years`, where Historical said `Survived`.
+    The command line's `historical` begins `Money lasts in` too, and its
+    `monte-carlo` line is as it was. The Overview's Success figure reads
+    `87% of 1,000 markets`. What the runs were made under reads
     `Counts as a success` (`Never running short`,
     `Ending with at least $500,000`), `Markets drawn from`
     (`Your return assumptions`, `Historical years`) and `Fixed return` for the
     accounts no market moves.
   - A field left blank says what it stands for wherever it is read: the value it
     is made as, `6%, the default`, or what absence means, `Earns nothing`,
-    `Usual order`, `The ID`, dimmed in the terminal and muted on the web.
+    `Usual order`, `The ID`, dimmed in the terminal.
   - An age reads by the person's name, `Priya at 62`, where it read
     `age 62 (priya)` by id, and a form and a read-out lead with an item's Name,
     then its ID.
@@ -405,58 +489,19 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - A terminal form scrolls all the way back to a field above the screen.
 - A terminal Delete whose item moved under the question says so -
   `Cash is no longer where it was in the plan` - where it did nothing without a
-  word. Both interfaces check the item by its ID, so of two accounts with one
-  name only the one asked about is deleted.
-- The command line and the MCP server are library crates of their own,
-  `retiretui_cli` and `retiretui_mcp`, and the terminal launcher is
-  `retiretui_tui`'s `terminal` feature, off by default; `retiretui` composes the
-  three into the one command it always was, with the same commands, output and
-  help. The client loads the tax tables, the market history and the user's
-  directories behind a `native` feature, and the MCP server reaches its
-  sandboxed plan files through the client's store.
-- The engine's `Income` gains `covered` and `ContributionLimits` gains
-  `ira_deduction_phase_out_spouse`, so a struct literal of either written
-  outside the engine must add them.
-- The engine's `OptimizeOptions` gains `gains_rate`, an `Option<GainsRate>`, so
-  a struct literal of it written outside the engine must add it.
-- The Overview's Could do better searches the withdrawal order too, so the line
-  it shows where there is nothing to search now reads "No conversion, claim or
-  withdrawal order to search", and shows only where none of the three can be.
+  word. The item is checked by its ID, so of two accounts with one name only the
+  one asked about is deleted.
 - The MCP schema reference says that a class left out of `withdrawal_order` is
   never drained.
-- The terminal's `Page` gains `WithdrawalOrder`, so a match over it written
-  outside the crate must cover it, and the client's `searches::overview::Found`
-  gains `order`, so a struct literal of it must add it.
-- The engine's `Account` gains `separated` and `public_safety`, so a struct
-  literal of it written outside the engine must add them.
-- The MCP schema reference says who pays the early-withdrawal penalty, until
-  when, and what frees an account from it, and how a Roth and an HSA withdrawal
-  are taxed.
 - Every Roth and HSA withdrawal was untaxed at any age. A plan that draws a Roth
   account before 59 and a half beyond what was paid in, or draws an HSA and
   marks no expense `medical`, now pays tax and penalty on it. Its ledger, its
-  market runs and what its searches rank best can move: the withdrawal-order
-  search no longer finds an order better for emptying a Roth IRA at 50.
+  market runs and what its searches rank best can move.
 - The withdrawal order is walked for what each account gives up without a
   penalty before anything pays one. In its place in the order, a Roth IRA under
   59 and a half gives up what was paid in and the conversions past their five
   years, and an HSA under 65 the year's medical spending. The rest of each comes
   after every other account, as a penalized tax-deferred account does.
-- The engine's `AccountKind::keeps_basis` answers true for a Roth account, and
-  validation accepts `basis` on one. `Expense` gains `medical` and
-  `EarlyWithdrawal` gains `hsa_penalty`, so a struct literal of either written
-  outside the engine must add it. A tax table that leaves `hsa-penalty` out
-  charges 20%.
-- The engine's `tax::state_tax` takes the year's income as a `StateIncome` -
-  each person's `PersonIncome` by `Source`, gains, the taxable Social Security,
-  what was deferred, the federal tax and the federal AGI - in place of two
-  totals. `Bracket` gains `later`, a list of `RateStep`, and is no longer
-  `Copy`; `StateParams` gains `exclusions`, `taxes_deferrals`,
-  `deduction_unindexed`, `deduction_at_65`, `deduction_until_agi`,
-  `federal_tax_subtraction`, `exemption_credit` and `gains_excise`, the last
-  three the new `FederalTaxSubtraction`, `ExemptionCredit` and `GainsExcise`, so
-  a struct literal of either written outside the engine must add them. A
-  parameter file written for 0.2.0 reads as it did.
 - A plan living in Oregon projects a lower state tax, by its federal tax
   subtraction and its exemption credit, and Oregon's standard deduction is the
   2,910 and 5,820 its department's withholding formulas give for 2026, where the
@@ -465,26 +510,22 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `taxes.state` is what the state takes, an excise with its income tax. Of the
   states 0.2.0 modeled, no other projects differently: each of the rest has no
   income tax.
-- A year's resolved tax table, as `TaxTables::params_for` and the MCP
-  `tax_parameters` tool give it, lists under a bracket's `later` only the rates
-  still to come.
-- The planner is built on plurimus 0.8.0 and plurimus_filepicker 0.2.0. The
-  terminal's own cursor now sits on the text field being typed in, beside the
-  caret drawn there.
+- The terminal's own cursor now sits on the text field being typed in, beside
+  the caret drawn there.
 
 ### Fixed
 
-- The terminal no longer saves a scenario as a plan over its own file, which
-  replaced the overlay with the plan it resolved to; it says to save it under a
-  name of its own, as the web does.
+- The terminal refuses a Save As onto a scenario's own file, and says to save it
+  under a name of its own. It wrote the plan the scenario resolved to over the
+  overlay.
 - A scheduled transfer from a tax-deferred account to a taxable one pays the
   early-withdrawal penalty on its taxable part where a withdrawal would. It was
   taxed as income and never penalized, at any age. A 457(b), an owner past 59
   and a half, and a plan freed by the rule of 55 still pay none.
 - The file picker opens at the top of its listing with its cursor showing.
-  Opened as the planner launched, on a directory of ten entries or more, it was
-  scrolled past its first rows with no row marked, and a listing that replaced a
-  scrolled one could open with `../` out of view.
+  Opened as the terminal planner launched, on a directory of ten entries or
+  more, it was scrolled past its first rows with no row marked, and a listing
+  that replaced a scrolled one could open with `../` out of view.
 - `retiretui tui` refuses a plan it cannot open before it takes the terminal. It
   switched to the alternate screen and back before printing the refusal.
 
