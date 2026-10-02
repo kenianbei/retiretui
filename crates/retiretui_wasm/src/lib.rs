@@ -288,6 +288,13 @@ pub fn issue_count(count: usize) -> String {
     retiretui_client::present::issue_count(count)
 }
 
+/// The version of the planner the bindings were built from.
+#[wasm_bindgen]
+#[must_use]
+pub fn version() -> String {
+    env!("CARGO_PKG_VERSION").to_owned()
+}
+
 /// What the full gate finds wrong with `plan`, a plan's TOML.
 ///
 /// # Errors

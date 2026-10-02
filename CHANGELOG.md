@@ -142,7 +142,18 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   a ladder's years, a monthly benefit, the tools' options and runs, and the
   years compared - and compact only where it has not, as in the Overview's
   figures and Compare's plans; a phone's row of options shows what each ends
-  with against the plan.
+  with against the plan. The Start page opens with a sentence on what RetireTui
+  does. Under every page a footer says that RetireTui is a model and not
+  financial advice, links to the source and to where an issue is reported - the
+  report opening with the running version and the browser's name written in, and
+  nothing of a plan - and shows that version, which the JavaScript bindings
+  export as `version`; from a tablet's width up the header ends in a GitHub
+  mark. A page that cannot start says why in place of a blank screen: that it
+  needs JavaScript, that the browser offers no WebAssembly, that the page's
+  storage is blocked, or what the browser said of a file that did not load or
+  run, each but the first with a link to report it; until it has started it says
+  that it is loading. A page that throws while it is drawn is replaced by what
+  went wrong, a button that reloads and the link to report it.
 - The engine exposes `Scenario::set_base`, which makes an overlay name another
   base, and `project::benefit_params` and `project::state_lived_in`, the benefit
   formula's parameters and the state taxing a year as a plan's projection takes
