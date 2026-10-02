@@ -47,6 +47,8 @@ mod cursor_tests;
 #[cfg(test)]
 mod frames;
 #[cfg(test)]
+mod keys_tests;
+#[cfg(test)]
 mod messages_tests;
 #[cfg(test)]
 mod picker_tests;

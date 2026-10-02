@@ -50,12 +50,10 @@ pub fn run(args: &TuiArgs) -> anyhow::Result<()> {
         exchange: None,
     };
     let mut app = App::new();
-    app.add_plugins((
-        ScheduleRunnerPlugin::run_loop(FRAME_INTERVAL),
-        CorePlugin,
-        CrosstermPlugin::default(),
-    ));
+    app.add_plugins((ScheduleRunnerPlugin::run_loop(FRAME_INTERVAL), CorePlugin));
+    // The terminal is taken by adding its plugin, so a refused plan comes first.
     crate::build(&mut app, launch).map_err(anyhow::Error::msg)?;
+    app.add_plugins(CrosstermPlugin::default().clipboard(true));
     crate::install_log(&app, state_dir().map(|dir| dir.join(LOG_FILE)))?;
     match app.run() {
         AppExit::Success => Ok(()),

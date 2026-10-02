@@ -3,12 +3,13 @@
 use bevy_app::{App, Update};
 use bevy_ecs::change_detection::DetectChangesMut;
 use bevy_ecs::hierarchy::{ChildOf, Children};
-use bevy_ecs::prelude::{Added, Entity, IntoScheduleConfigs, Query, ResMut, Resource};
+use bevy_ecs::prelude::{Added, Entity, IntoScheduleConfigs, Or, Query, ResMut, Resource};
 use bevy_ecs::system::SystemParam;
 use bevy_input::keyboard::Key;
 use bevy_input_focus::InputFocus;
 use bevy_input_focus::directional_navigation::DirectionalNavigationMap;
 use bevy_math::CompassOctant;
+use plurimus::widgets::{ListBoxKeys, SliderKeys, TableKeys};
 
 use super::command::{self, Outcome};
 use super::nav::{FocusStop, Page, PageSystems, ShownSurface, SurfaceRoot};
@@ -19,7 +20,11 @@ pub fn plugin(app: &mut App) {
     app.init_resource::<SidebarLed>();
     app.add_systems(
         Update,
-        (settle_focus.in_set(PageSystems::Show), block_bound_arrows),
+        (
+            settle_focus.in_set(PageSystems::Show),
+            block_bound_arrows,
+            block_widget_ends,
+        ),
     );
 }
 
@@ -205,6 +210,23 @@ fn block_bound_arrows(
         for direction in bound.filter_map(octant) {
             map.block_edge(stop, direction);
         }
+    }
+}
+
+/// An arrow a widget binds passes it once it can move nothing, and does
+/// not then walk the keyboard off the widget.
+fn block_widget_ends(
+    lists: Query<Entity, Or<(Added<ListBoxKeys>, Added<TableKeys>)>>,
+    sliders: Query<Entity, Added<SliderKeys>>,
+    mut map: ResMut<DirectionalNavigationMap>,
+) {
+    for list in &lists {
+        map.block_edge(list, CompassOctant::North);
+        map.block_edge(list, CompassOctant::South);
+    }
+    for slider in &sliders {
+        map.block_edge(slider, CompassOctant::East);
+        map.block_edge(slider, CompassOctant::West);
     }
 }
 

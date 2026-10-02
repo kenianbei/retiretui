@@ -2,14 +2,14 @@
 //! closing it, the tab ring, and its buttons.
 
 use bevy_ecs::prelude::Entity;
-use plurimus::term::KeyCode;
+use plurimus::term::{KeyCode, LastCopied};
 
 use super::{cursor, draft_plan, fixture_app, focused, is_editing, open, retype_balance};
 use crate::edit::Draft;
 use crate::edit::build::FormButton;
 use crate::edit::table::Row;
 use crate::nav::Page;
-use crate::support::{composed_frame, press_key, press_shift, show};
+use crate::support::{composed_frame, press_ctrl, press_key, press_shift, show};
 
 #[test]
 fn enter_opens_the_row_and_esc_closes_it() {
@@ -208,4 +208,17 @@ fn an_open_item_is_named_in_its_own_title() {
         "an unnamed item: {frame}"
     );
     press_key(&mut app, KeyCode::Esc);
+}
+
+#[test]
+fn a_field_s_text_is_selected_cut_and_pasted_back() {
+    let mut app = fixture_app();
+    open_and_retype_balance(&mut app);
+    press_ctrl(&mut app, KeyCode::Char('a'));
+    press_ctrl(&mut app, KeyCode::Char('x'));
+    let copied = app.world().resource::<LastCopied>();
+    assert_eq!(copied.0.as_deref(), Some("123456"));
+    assert!(!composed_frame(&app).contains("123456"), "cut");
+    press_ctrl(&mut app, KeyCode::Char('v'));
+    assert!(composed_frame(&app).contains("123456"), "pasted back");
 }

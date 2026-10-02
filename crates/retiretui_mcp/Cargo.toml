@@ -16,7 +16,7 @@ anyhow = "1.0.104"
 clap = { version = "4.6.7", features = ["derive"] }
 retiretui_client = { workspace = true, features = ["native"] }
 retiretui_engine = { workspace = true, features = ["schemars"] }
-rmcp = { version = "3.4.1", features = ["server", "macros", "transport-io", "schemars"] }
+rmcp = { version = "3.5.0", features = ["server", "macros", "transport-io", "schemars"] }
 schemars.workspace = true
 serde.workspace = true
 tokio = { version = "1.53.1", features = ["rt"] }
