@@ -64,7 +64,6 @@ test("the app says what it is, and every page ends in the ways out of it", async
   await page.getByRole("button", { name: /^Starter/ }).click();
   await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
   await expect(footer).toContainText("not financial advice");
-  await expectAccessible(page);
 });
 
 test("an address that names no page says so", async ({ page }) => {

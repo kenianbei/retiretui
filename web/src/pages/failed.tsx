@@ -3,6 +3,7 @@ import { RotateCw } from "lucide-react";
 
 import { MarginNote } from "@/components/margin-note";
 import { Button } from "@/components/ui/button";
+import { messageOf } from "@/lib/utils";
 import { reportUrl } from "@/links";
 
 /** What stands in for a page that threw while it was drawn. */
@@ -13,9 +14,7 @@ export function Failed({ error }: ErrorComponentProps) {
         This page stopped working
       </h1>
       <MarginNote zone="shortfall" role="alert">
-        <p className="text-sm break-words">
-          {error instanceof Error ? error.message : String(error)}
-        </p>
+        <p className="text-sm break-words">{messageOf(error)}</p>
       </MarginNote>
       <p className="text-muted-foreground">
         The plans you have saved are still in this browser. Reloading starts the

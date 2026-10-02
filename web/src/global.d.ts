@@ -1,9 +1,9 @@
 interface Window {
   /** Set by `index.html`, so that a failure is said where no module runs. */
   startup: {
-    /** Says what was thrown in place of the app; the first failure said stands. */
+    /** Says what was thrown in place of the app, unless a cause is already named. */
     threw: (thrown: unknown) => void;
-    /** The app has mounted: what goes wrong from here is no longer a failure to start. */
-    done: () => void;
+    /** The app's script has run: an error seen on the way was not its own. */
+    started: () => void;
   };
 }

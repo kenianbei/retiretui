@@ -6,15 +6,21 @@ test.use({ serviceWorkers: "block" });
 
 const failure = (page: Page) => page.getByRole("alert");
 
-async function expectNotStarted(page: Page, reason: string | RegExp) {
-  await expect(
-    page.getByRole("heading", { name: "RetireTui did not start" }),
-  ).toBeVisible();
+/** The page says `heading` and `reason` in the app's place, and a report opens with the browser's name. */
+async function expectFailed(
+  page: Page,
+  reason: string | RegExp,
+  heading = "RetireTui did not start",
+) {
+  await expect(page.getByRole("heading", { name: heading })).toBeVisible();
   await expect(failure(page)).toContainText(reason);
   await expect(page.getByText("Loading RetireTui…")).toBeHidden();
-  await expect(
-    failure(page).getByRole("link", { name: "report an issue" }),
-  ).toHaveAttribute("href", /\/retiretui\/issues\/new$/);
+  const report = await failure(page)
+    .getByRole("link", { name: "report an issue" })
+    .getAttribute("href");
+  expect(decodeURIComponent(report ?? "")).toMatch(
+    /\/retiretui\/issues\/new\?body=[^]+\nMozilla\//,
+  );
 }
 
 test.describe("with JavaScript off", () => {
@@ -44,12 +50,35 @@ test("the loading line gives way to the app, which nothing later replaces", asyn
   await expect(failure(page)).toBeHidden();
 });
 
+test("an error that is not the app's does not keep the app from showing", async ({
+  page,
+}) => {
+  // Thrown once the page listens, and before the app's script has run.
+  await page.addInitScript(() => {
+    let startup: Window["startup"];
+    Object.defineProperty(window, "startup", {
+      get: () => startup,
+      set(value: Window["startup"]) {
+        startup = value;
+        setTimeout(() => {
+          throw new Error("an extension's own");
+        });
+      },
+    });
+  });
+  await page.goto("./");
+  await expect(
+    page.getByRole("heading", { name: "Start with a plan" }),
+  ).toBeVisible();
+  await expect(failure(page)).toBeHidden();
+});
+
 test("a browser without WebAssembly is told so", async ({ page }) => {
   await page.addInitScript(() => {
     Reflect.deleteProperty(globalThis, "WebAssembly");
   });
   await page.goto("./");
-  await expectNotStarted(page, "does not offer WebAssembly");
+  await expectFailed(page, "does not offer WebAssembly");
 });
 
 test("a browser that blocks the page's storage is told so", async ({
@@ -63,7 +92,7 @@ test("a browser that blocks the page's storage is told so", async ({
     });
   });
   await page.goto("./");
-  await expectNotStarted(page, "Allow cookies and site data");
+  await expectFailed(page, "Allow cookies and site data");
 });
 
 test("the bindings refused are said as the browser says it", async ({
@@ -71,7 +100,7 @@ test("the bindings refused are said as the browser says it", async ({
 }) => {
   await page.route("**/*.wasm", (route) => route.abort());
   await page.goto("./");
-  await expectNotStarted(page, "The browser says: TypeError");
+  await expectFailed(page, "The browser says: TypeError");
 });
 
 test("a script the browser cannot parse is said, not left blank", async ({
@@ -81,13 +110,13 @@ test("a script the browser cannot parse is said, not left blank", async ({
     route.fulfill({ contentType: "text/javascript", body: "await = ;" }),
   );
   await page.goto("./");
-  await expectNotStarted(page, "The browser says: SyntaxError");
+  await expectFailed(page, "The browser says: SyntaxError");
 });
 
 test("a script that does not load is named", async ({ page }) => {
   await page.route("**/assets/index-*.js", (route) => route.abort());
   await page.goto("./");
-  await expectNotStarted(page, /did not load: .*assets\/index-.*\.js/);
+  await expectFailed(page, /did not load: .*assets\/index-.*\.js/);
 });
 
 test("storage that fails once the app is drawing is said", async ({ page }) => {
@@ -97,7 +126,11 @@ test("storage that fails once the app is drawing is said", async ({ page }) => {
     };
   });
   await page.goto("./");
-  await expectNotStarted(page, "The browser says: SecurityError: denied");
+  await expectFailed(
+    page,
+    "The browser says: SecurityError: denied",
+    "RetireTui stopped working",
+  );
 });
 
 test("a page that throws is said inside the shell, which goes on working", async ({

@@ -45,7 +45,6 @@
       }
       /* Unseen on a load quick enough not to need it. */
       #root > .startup {
-        margin: 0;
         opacity: 0;
         animation: startup-shown 0s 0.5s forwards;
       }
@@ -64,7 +63,7 @@
     </noscript>
   </head>
   <body>
-    <div id="root"><p class="startup">Loading RetireTui…</p></div>
+    <div id="root"><div class="startup">Loading RetireTui…</div></div>
     <div id="failure" class="startup" role="alert" hidden>
       <h1>RetireTui did not start</h1>
       <p id="failure-reason"></p>
@@ -88,28 +87,29 @@
         </p>
       </div>
     </noscript>
-    <!-- A classic script in old syntax, so that it runs where the app's module does not. -->
+    <!-- A classic script, in syntax as old as modules, so that it runs where the app's does not. -->
     <script>
       {
-        let isSaid = false;
-        const fail = (reason) => {
-          if (isSaid) return;
-          isSaid = true;
-          document.getElementById("root").hidden = true;
+        const root = document.getElementById("root");
+        const failure = document.getElementById("failure");
+        // A cause named here stands over the errors that follow from it.
+        let isNamed = false;
+        const say = (reason) => {
+          if (isNamed) return;
+          root.hidden = true;
+          failure.hidden = false;
           document.getElementById("failure-reason").textContent = reason;
-          document.getElementById("failure").hidden = false;
+          failure.querySelector("a").search =
+            "body=" + encodeURIComponent(`${reason}\n${navigator.userAgent}`);
         };
         const threw = (thrown) => {
-          fail(`The browser says: ${String(thrown)}`);
+          say(`The browser says: ${String(thrown)}`);
         };
         // A file that does not load says so at its element, with no error.
         const onError = (event) => {
           const { target } = event;
           if (target === window) threw(event.error || event.message);
-          else
-            fail(
-              `A file the app is made of did not load: ${target.src || target.href}`,
-            );
+          else say(`A file did not load: ${target.src || target.href}`);
         };
         const onRejection = (event) => {
           threw(event.reason);
@@ -118,23 +118,31 @@
         addEventListener("unhandledrejection", onRejection);
         window.startup = {
           threw,
-          done() {
+          started() {
             removeEventListener("error", onError, true);
             removeEventListener("unhandledrejection", onRejection);
+            if (isNamed) return;
+            // An error seen on the way was not the app's, which has run.
+            failure.hidden = true;
+            root.hidden = false;
+            failure.querySelector("h1").textContent =
+              "RetireTui stopped working";
           },
         };
 
         if (typeof WebAssembly === "undefined") {
-          fail(
+          say(
             "This browser does not offer WebAssembly, which RetireTui computes with. A security setting such as Lockdown Mode turns it off.",
           );
+          isNamed = true;
         }
         try {
           void window.localStorage;
         } catch (blocked) {
-          fail(
+          say(
             "This browser keeps this page from storing anything, and RetireTui keeps your plans in the page's own storage. Allow cookies and site data for this site, then reload.",
           );
+          isNamed = true;
         }
       }
     </script>
