@@ -97,7 +97,7 @@ pub static COMMANDS: LazyLock<Vec<CommandSpec>> = LazyLock::new(|| {
             name: "quit",
             scope: Scope::Shell,
             doc: "leave the dashboard",
-            keys: vec![character("q"), character("c").with_ctrl()],
+            keys: vec![character("q"), character("q").with_ctrl()],
             hint: Some("quit"),
             register: Box::new(|world| world.register_system(quit)),
         },

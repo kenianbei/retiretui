@@ -10,8 +10,8 @@ use bevy_app::{App, Update};
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::{ChildOf, Children};
 use bevy_ecs::prelude::{
-    Changed, Commands, Component, Entity, In, IntoScheduleConfigs, IntoSystem, Local, On, Query,
-    Res, ResMut, Resource, With, World,
+    Changed, Commands, Component, Entity, In, IntoScheduleConfigs, IntoSystem, Local,
+    MessageReader, On, Query, Res, ResMut, Resource, With, World,
 };
 use bevy_ecs::system::SystemId;
 use bevy_input::keyboard::{Key, KeyboardInput};
@@ -19,12 +19,13 @@ use bevy_input_focus::FocusedInput;
 use plurimus::core::UiWidget;
 use plurimus::core::ratatui_core::layout::Size;
 use plurimus::core::ratatui_core::text::{Line, Span};
+use plurimus::term::PasteMessage;
 use plurimus::term::bevy_compat::HeldModifiers;
 use plurimus::ui::{ModalDismiss, ModalOpen, ScrollArea, UiStyle, first_bound};
 use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
 use plurimus::widgets::{
-    ActiveDescendant, ListBoxAction, ListBoxKeys, ListItemTrailing, TextInput, TextInputKeys,
-    ValueChange, list_item, listbox,
+    ActiveDescendant, ListBoxAction, ListBoxKeys, ListItemTrailing, TextInput, TextInputAction,
+    TextInputKeys, ValueChange, list_item, listbox,
 };
 
 pub use matching::ranked;
@@ -39,7 +40,12 @@ pub fn plugin(app: &mut App) {
     app.init_resource::<Picking>();
     app.add_systems(
         Update,
-        (sync_picker, relist.run_if(is_relist_due), try_on)
+        (
+            sync_picker,
+            paste_query,
+            relist.run_if(is_relist_due),
+            try_on,
+        )
             .chain()
             .in_set(overlay::Settles),
     );
@@ -222,7 +228,7 @@ fn sync_picker(
     commands.spawn((
         Field,
         TextInput::new(""),
-        TextInputKeys::default(),
+        query_keys(),
         fixed(1.0),
         UiWidget::default(),
         placed(),
@@ -242,6 +248,28 @@ fn sync_picker(
         .observe(handle_chosen)
         .id();
     standing.focus(results);
+}
+
+/// The query's keys without the selecting ones and what acts on a
+/// selection, which the query row does not draw.
+fn query_keys() -> TextInputKeys {
+    let mut keys = TextInputKeys::default();
+    keys.0.retain(|(_, action)| {
+        !matches!(
+            action,
+            TextInputAction::SelectLeft
+                | TextInputAction::SelectRight
+                | TextInputAction::SelectWordLeft
+                | TextInputAction::SelectWordRight
+                | TextInputAction::SelectHome
+                | TextInputAction::SelectEnd
+                | TextInputAction::SelectAll
+                | TextInputAction::Copy
+                | TextInputAction::Cut
+                | TextInputAction::Paste
+        )
+    });
+    keys
 }
 
 /// The list's keys without space, which belongs to the query.
@@ -380,9 +408,32 @@ fn handle_key(
         return;
     }
     input.propagate(false);
+    follow(&mut picking, &field);
+}
+
+/// Takes the field's text as the query where it differs, leaving the
+/// picker unchanged where it does not.
+fn follow(picking: &mut ResMut<Picking>, field: &TextInput) {
     if field.value() != picking.query {
         field.value().clone_into(&mut picking.query);
         picking.is_stale = true;
+    }
+}
+
+/// A paste from the terminal goes into the query, whose field no widget
+/// takes it for: it never holds the keyboard.
+fn paste_query(
+    mut pastes: MessageReader<PasteMessage>,
+    mut fields: Query<&mut TextInput, With<Field>>,
+    mut picking: ResMut<Picking>,
+) {
+    let Ok(mut field) = fields.single_mut() else {
+        pastes.clear();
+        return;
+    };
+    for paste in pastes.read() {
+        field.paste(&paste.0);
+        follow(&mut picking, &field);
     }
 }
 

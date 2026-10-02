@@ -81,6 +81,10 @@ pub fn table_keys() -> TableKeys {
         (Key::End.into(), TableAction::RowLast),
         (Key::PageUp.into(), TableAction::PageUp),
         (Key::PageDown.into(), TableAction::PageDown),
+        (
+            KeyBinding::new(Key::Character("c".into())).with_ctrl(),
+            TableAction::Copy,
+        ),
     ])
 }
 

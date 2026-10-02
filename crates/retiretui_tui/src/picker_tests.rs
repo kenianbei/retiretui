@@ -3,13 +3,13 @@
 
 use bevy_app::App;
 use bevy_input_focus::InputFocus;
-use plurimus::term::KeyCode;
+use plurimus::term::{KeyCode, PasteMessage};
 
 use super::nav::{self, Page};
 use super::picker::Picking;
 use super::support::{
     SIZE, active_page as active, commit_edit, composed_frame, headless_app, press_ctrl, press_key,
-    said, show, type_text,
+    press_shift, said, show, type_text,
 };
 
 pub(super) fn is_palette_open(app: &App) -> bool {
@@ -142,4 +142,41 @@ fn a_page_shown_from_the_palette_gets_the_keyboard() {
             .get::<super::ledger::LedgerTable>(held)
             .is_some()
     );
+}
+
+#[test]
+fn a_paste_goes_into_the_query_without_its_control_characters() {
+    let mut app = headless_app(SIZE);
+    press_key(&mut app, KeyCode::Char(':'));
+    app.world_mut()
+        .write_message(PasteMessage("qu\nit".to_owned()));
+    app.update();
+    app.update();
+    let frame = composed_frame(&app);
+    assert!(frame.contains("> quit"), "{frame}");
+    assert!(frame.contains("leave the dashboard"), "{frame}");
+    assert!(!frame.contains("re-read the plan"), "rows follow: {frame}");
+}
+
+#[test]
+fn the_query_selects_nothing_its_row_cannot_show() {
+    let mut app = headless_app(SIZE);
+    press_key(&mut app, KeyCode::Char(':'));
+    type_text(&mut app, "ta");
+    press_shift(&mut app, KeyCode::Left);
+    type_text(&mut app, "x");
+    let frame = composed_frame(&app);
+    assert!(frame.contains("> tax"), "nothing was replaced: {frame}");
+}
+
+#[test]
+fn an_arrow_at_the_end_of_the_rows_stays_in_the_picker() {
+    let mut app = headless_app(SIZE);
+    press_key(&mut app, KeyCode::Char(':'));
+    let list = app.world().resource::<InputFocus>().get();
+    press_key(&mut app, KeyCode::Up);
+    type_text(&mut app, "quit");
+    press_key(&mut app, KeyCode::Down);
+    assert!(is_palette_open(&app));
+    assert_eq!(app.world().resource::<InputFocus>().get(), list);
 }

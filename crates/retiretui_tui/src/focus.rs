@@ -3,12 +3,13 @@
 use bevy_app::{App, Update};
 use bevy_ecs::change_detection::DetectChangesMut;
 use bevy_ecs::hierarchy::{ChildOf, Children};
-use bevy_ecs::prelude::{Added, Entity, IntoScheduleConfigs, Query, ResMut, Resource};
+use bevy_ecs::prelude::{Added, Entity, IntoScheduleConfigs, Or, Query, ResMut, Resource};
 use bevy_ecs::system::SystemParam;
 use bevy_input::keyboard::Key;
 use bevy_input_focus::InputFocus;
 use bevy_input_focus::directional_navigation::DirectionalNavigationMap;
 use bevy_math::CompassOctant;
+use plurimus::widgets::{ListBoxKeys, SliderKeys, TableKeys};
 
 use super::command::{self, Outcome};
 use super::nav::{FocusStop, Page, PageSystems, ShownSurface, SurfaceRoot};
@@ -19,7 +20,11 @@ pub fn plugin(app: &mut App) {
     app.init_resource::<SidebarLed>();
     app.add_systems(
         Update,
-        (settle_focus.in_set(PageSystems::Show), block_bound_arrows),
+        (
+            settle_focus.in_set(PageSystems::Show),
+            block_bound_arrows,
+            block_widget_ends,
+        ),
     );
 }
 
@@ -204,6 +209,25 @@ fn block_bound_arrows(
         let bound = page.into_iter().flat_map(command::arrows_bound_on);
         for direction in bound.filter_map(octant) {
             map.block_edge(stop, direction);
+        }
+    }
+}
+
+/// An arrow a widget binds passes it where it can move nothing - a list's
+/// or a table's cursor at an end, a slider at a bound - and does not then
+/// walk the keyboard off the widget.
+fn block_widget_ends(
+    lists: Query<Entity, Or<(Added<ListBoxKeys>, Added<TableKeys>)>>,
+    sliders: Query<Entity, Added<SliderKeys>>,
+    mut map: ResMut<DirectionalNavigationMap>,
+) {
+    let vertical = [CompassOctant::North, CompassOctant::South];
+    let horizontal = [CompassOctant::East, CompassOctant::West];
+    let lists = lists.iter().map(|list| (list, vertical));
+    let sliders = sliders.iter().map(|slider| (slider, horizontal));
+    for (widget, edges) in lists.chain(sliders) {
+        for edge in edges {
+            map.block_edge(widget, edge);
         }
     }
 }

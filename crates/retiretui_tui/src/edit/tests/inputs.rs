@@ -2,7 +2,7 @@
 //! picks, flags and sliders.
 
 use plurimus::term::KeyCode;
-use plurimus::widgets::SliderValue;
+use plurimus::widgets::{SliderRange, SliderValue};
 use retiretui_engine::plan::AccountKind;
 
 use super::{
@@ -236,4 +236,21 @@ fn a_field_reads_plainly_while_typed_in_and_dressed_once_left() {
         form_row(&app, "│Expected return").contains("7%"),
         "a bare rate is a percent"
     );
+}
+
+#[test]
+fn a_slider_at_its_ceiling_keeps_the_keyboard() {
+    let mut app = fixture_app();
+    show(&mut app, Page::Accounts);
+    app.update();
+    press_key(&mut app, KeyCode::Down);
+    press_key(&mut app, KeyCode::Enter);
+    tab_to_field(&mut app, RATE_FIELD);
+    let slider = focused(&app);
+    let ceiling = app.world().get::<SliderRange>(slider).unwrap().end();
+    app.world_mut()
+        .entity_mut(slider)
+        .insert(SliderValue(ceiling));
+    press_key(&mut app, KeyCode::Right);
+    assert_eq!(focused(&app), slider);
 }
