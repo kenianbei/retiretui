@@ -18,7 +18,9 @@ const IDLE_MS = 2000;
 /** Draws the app into `container`, once the bindings have loaded. */
 export function mount(container: HTMLElement) {
   whenIdle(preloadPages);
-  createRoot(container).render(
+  createRoot(container, {
+    onUncaughtError: window.startup.threw,
+  }).render(
     <StrictMode>
       <QueryClientProvider client={new QueryClient()}>
         <SessionProvider>

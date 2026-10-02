@@ -1,6 +1,5 @@
 //! The retirement planner's interface: a plurimus app over a projected plan, above
-//! whatever backend draws it - a terminal, or a browser page - and the
-//! words every surface says a projection in.
+//! whatever backend draws it - a terminal, or a browser page.
 
 pub mod exchange;
 

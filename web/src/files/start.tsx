@@ -20,7 +20,14 @@ export function Start() {
         <Unopened path={session.path} failure={session.failure} />
       )}
       <div className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <p>
+          RetireTui projects a household&apos;s finances year by year under U.S.
+          federal and state income tax, runs the same plan through many random
+          or historical markets to show how surely the money lasts, and searches
+          for a better Roth conversion ladder, Social Security claim ages or
+          withdrawal order.
+        </p>
+        <h1 className="pt-4 text-2xl font-semibold tracking-tight">
           Start with a plan
         </h1>
         <p className="text-muted-foreground">

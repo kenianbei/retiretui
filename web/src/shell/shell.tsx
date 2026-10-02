@@ -22,8 +22,11 @@ import { FileActionsProvider } from "@/files/actions";
 import { FileMenu } from "@/files/menu";
 import { Start } from "@/files/start";
 import { Button } from "@/components/ui/button";
+import { GitHubMark } from "@/components/github-mark";
+import { REPO_URL } from "@/links";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/session";
+import { Footer } from "@/shell/footer";
 import { useTabTarget } from "@/shell/go";
 import { KeysSheet } from "@/shell/keys";
 import { useShellKeys } from "@/shell/use-keys";
@@ -314,6 +317,22 @@ export function Shell() {
               </kbd>
             </Button>
             <DraftToolbar />
+            <Button
+              asChild
+              variant="ghost"
+              size="icon"
+              className="max-md:hidden"
+            >
+              <a
+                href={REPO_URL}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="RetireTui on GitHub"
+                title="RetireTui on GitHub"
+              >
+                <GitHubMark />
+              </a>
+            </Button>
           </header>
           <main
             id="main"
@@ -333,6 +352,7 @@ export function Shell() {
               <Start />
             )}
           </main>
+          <Footer />
         </div>
         <BottomBar />
       </div>

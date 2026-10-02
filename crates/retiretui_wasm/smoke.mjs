@@ -26,6 +26,7 @@ const {
   statementPage,
   sortPressed,
   validate,
+  version,
   viewWords,
   yearAmong,
 } = wasm;
@@ -255,4 +256,5 @@ assert.equal(claiming.taxTables({ year: first.year, status: "single" }).status, 
 const said = viewWords();
 assert.equal(said.basis.nominal, "future dollars");
 assert.deepEqual(said.flow_headers[1], ["Open", true]);
+assert.match(version(), /^\d+\.\d+\.\d+$/);
 console.log("smoke: ok");
