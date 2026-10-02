@@ -12,6 +12,7 @@ import { compareSearch, withSearch } from "@/compare/search";
 import { DOMAINS, TOOLS, pageOf } from "@/nav";
 import { newPlanSearch } from "@/onboarding/steps";
 import { planSearch } from "@/plan/search";
+import { Failed } from "@/pages/failed";
 import { NotFound } from "@/pages/not-found";
 import { Shell } from "@/shell/shell";
 import { toolSearch } from "@/tools/search";
@@ -42,6 +43,12 @@ export function preloadPages() {
 
 const root = createRootRoute({
   component: Shell,
+  // The shell itself has gone, and with it the page's own margins.
+  errorComponent: (props) => (
+    <main className="px-4 py-6 md:px-8">
+      <Failed {...props} />
+    </main>
+  ),
   notFoundComponent: NotFound,
   validateSearch: withSearch,
   search: { middlewares: [retainSearchParams(["with"])] },
@@ -116,6 +123,7 @@ export const router = createRouter({
     newPlan,
   ]),
   history: createHashHistory(),
+  defaultErrorComponent: Failed,
 });
 
 declare module "@tanstack/react-router" {
