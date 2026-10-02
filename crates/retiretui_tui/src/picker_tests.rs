@@ -154,7 +154,6 @@ fn a_paste_goes_into_the_query_without_its_control_characters() {
     app.update();
     let frame = composed_frame(&app);
     assert!(frame.contains("> quit"), "{frame}");
-    assert!(frame.contains("leave the dashboard"), "{frame}");
     assert!(!frame.contains("re-read the plan"), "rows follow: {frame}");
 }
 

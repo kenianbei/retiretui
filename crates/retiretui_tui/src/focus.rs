@@ -213,22 +213,20 @@ fn block_bound_arrows(
     }
 }
 
-/// An arrow a widget binds passes it where it can move nothing - a list's
-/// or a table's cursor at an end, a slider at a bound - and does not then
-/// walk the keyboard off the widget.
+/// An arrow a widget binds passes it once it can move nothing, and does
+/// not then walk the keyboard off the widget.
 fn block_widget_ends(
     lists: Query<Entity, Or<(Added<ListBoxKeys>, Added<TableKeys>)>>,
     sliders: Query<Entity, Added<SliderKeys>>,
     mut map: ResMut<DirectionalNavigationMap>,
 ) {
-    let vertical = [CompassOctant::North, CompassOctant::South];
-    let horizontal = [CompassOctant::East, CompassOctant::West];
-    let lists = lists.iter().map(|list| (list, vertical));
-    let sliders = sliders.iter().map(|slider| (slider, horizontal));
-    for (widget, edges) in lists.chain(sliders) {
-        for edge in edges {
-            map.block_edge(widget, edge);
-        }
+    for list in &lists {
+        map.block_edge(list, CompassOctant::North);
+        map.block_edge(list, CompassOctant::South);
+    }
+    for slider in &sliders {
+        map.block_edge(slider, CompassOctant::East);
+        map.block_edge(slider, CompassOctant::West);
     }
 }
 

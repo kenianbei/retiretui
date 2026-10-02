@@ -10,8 +10,8 @@ use bevy_app::{App, Update};
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::{ChildOf, Children};
 use bevy_ecs::prelude::{
-    Changed, Commands, Component, Entity, In, IntoScheduleConfigs, IntoSystem, Local,
-    MessageReader, On, Query, Res, ResMut, Resource, With, World,
+    Changed, Commands, Component, Entity, In, IntoScheduleConfigs, IntoSystem, Local, On, Query,
+    Res, ResMut, Resource, With, World,
 };
 use bevy_ecs::system::SystemId;
 use bevy_input::keyboard::{Key, KeyboardInput};
@@ -40,12 +40,7 @@ pub fn plugin(app: &mut App) {
     app.init_resource::<Picking>();
     app.add_systems(
         Update,
-        (
-            sync_picker,
-            paste_query,
-            relist.run_if(is_relist_due),
-            try_on,
-        )
+        (sync_picker, relist.run_if(is_relist_due), try_on)
             .chain()
             .in_set(overlay::Settles),
     );
@@ -224,6 +219,7 @@ fn sync_picker(
             Hints(&[("↑↓", "move"), ("⏎", "pick"), ("esc", "close")]),
         ))
         .observe(handle_key)
+        .observe(handle_paste)
         .observe(handle_dismiss);
     commands.spawn((
         Field,
@@ -250,8 +246,8 @@ fn sync_picker(
     standing.focus(results);
 }
 
-/// The query's keys without the selecting ones and what acts on a
-/// selection, which the query row does not draw.
+/// The query's keys without the selecting ones: the query row draws no
+/// selection.
 fn query_keys() -> TextInputKeys {
     let mut keys = TextInputKeys::default();
     keys.0.retain(|(_, action)| {
@@ -264,9 +260,6 @@ fn query_keys() -> TextInputKeys {
                 | TextInputAction::SelectHome
                 | TextInputAction::SelectEnd
                 | TextInputAction::SelectAll
-                | TextInputAction::Copy
-                | TextInputAction::Cut
-                | TextInputAction::Paste
         )
     });
     keys
@@ -420,21 +413,18 @@ fn follow(picking: &mut ResMut<Picking>, field: &TextInput) {
     }
 }
 
-/// A paste from the terminal goes into the query, whose field no widget
-/// takes it for: it never holds the keyboard.
-fn paste_query(
-    mut pastes: MessageReader<PasteMessage>,
+/// A paste goes into the query, whose field never holds the keyboard.
+fn handle_paste(
+    mut paste: On<FocusedInput<PasteMessage>>,
     mut fields: Query<&mut TextInput, With<Field>>,
     mut picking: ResMut<Picking>,
 ) {
     let Ok(mut field) = fields.single_mut() else {
-        pastes.clear();
         return;
     };
-    for paste in pastes.read() {
-        field.paste(&paste.0);
-        follow(&mut picking, &field);
-    }
+    paste.propagate(false);
+    field.paste(&paste.input.0);
+    follow(&mut picking, &field);
 }
 
 fn handle_chosen(

@@ -74,18 +74,14 @@ pub(super) const OPEN_KEYS: &[(KeyBinding, ())] = &[(KeyBinding::new(Key::Enter)
 /// use for, and without Enter: a press selects a row as Enter would, and
 /// the two are told apart by keeping Enter for [`handle_table_key`].
 pub fn table_keys() -> TableKeys {
-    TableKeys(vec![
-        (Key::ArrowUp.into(), TableAction::RowPrev),
-        (Key::ArrowDown.into(), TableAction::RowNext),
-        (Key::Home.into(), TableAction::RowFirst),
-        (Key::End.into(), TableAction::RowLast),
-        (Key::PageUp.into(), TableAction::PageUp),
-        (Key::PageDown.into(), TableAction::PageDown),
-        (
-            KeyBinding::new(Key::Character("c".into())).with_ctrl(),
-            TableAction::Copy,
-        ),
-    ])
+    let mut keys = TableKeys::default();
+    keys.0.retain(|(_, action)| {
+        !matches!(
+            action,
+            TableAction::ColumnPrev | TableAction::ColumnNext | TableAction::Select
+        )
+    });
+    keys
 }
 
 /// A domain's table. The columns are left unshared until the first

@@ -33,23 +33,22 @@ fn ctrl_c_copies_the_row_under_the_cursor_and_ctrl_q_quits() {
     assert!(app.should_exit().is_some());
 }
 
+fn assert_ends_keep_the_keyboard(app: &mut App, list: &str) {
+    let pane = holder(app);
+    for (end, past) in [(KeyCode::Home, KeyCode::Up), (KeyCode::End, KeyCode::Down)] {
+        press_key(app, end);
+        press_key(app, past);
+        assert_eq!(holder(app), pane, "{list} {past:?}");
+    }
+}
+
 #[test]
 fn an_arrow_at_the_end_of_a_list_keeps_the_keyboard() {
     let mut app = headless_app(SIZE);
     for page in [Page::Accounts, Page::Ledger, Page::TaxTables] {
         show(&mut app, page);
-        let pane = holder(&app);
-        for (end, past) in [(KeyCode::Home, KeyCode::Up), (KeyCode::End, KeyCode::Down)] {
-            press_key(&mut app, end);
-            press_key(&mut app, past);
-            assert_eq!(holder(&app), pane, "{page:?} {past:?}");
-        }
+        assert_ends_keep_the_keyboard(&mut app, &format!("{page:?}"));
     }
     press_key(&mut app, KeyCode::Esc);
-    let sidebar = holder(&app);
-    for (end, past) in [(KeyCode::Home, KeyCode::Up), (KeyCode::End, KeyCode::Down)] {
-        press_key(&mut app, end);
-        press_key(&mut app, past);
-        assert_eq!(holder(&app), sidebar, "the sidebar {past:?}");
-    }
+    assert_ends_keep_the_keyboard(&mut app, "the sidebar");
 }
