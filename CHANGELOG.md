@@ -311,19 +311,18 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   business, and its income tax over 1,000,000 a year from 2028; what a state
   adds for the blind; and the federal deductions at 65, which these states now
   lead.
-- The planner copies and pastes. `ctrl+c` copies the row under the cursor of any
-  table or list, a table's cells separated by tabs, and what is selected in a
-  form's text field or the file picker's path, which select with shift and the
-  arrows or with `ctrl+a`, cut with `ctrl+x` and paste with `ctrl+v`. In a
-  terminal a copy is written to the system clipboard through OSC 52, which a
-  terminal may ignore. A paste from the terminal goes into the file picker's
-  path and into the query of every fuzzy picker, where it did nothing.
+- The planner copies and pastes. `ctrl+c` copies the row under the cursor of a
+  table, a sidebar or a page's list, a table's cells separated by tabs, and what
+  is selected in a form's text field or the file picker's path, which select
+  with shift and the arrows or with `ctrl+a`, cut with `ctrl+x` and paste with
+  `ctrl+v`. In a terminal a copy is written to the system clipboard through OSC
+  52, which a terminal may ignore. A paste from the terminal goes into the file
+  picker's path and into the query of every fuzzy picker, where it did nothing.
 
 ### Changed
 
 - **Breaking:** the planner quits on `q` or `ctrl+q`. `ctrl+c` copies and no
   longer quits.
-
 - The canvas page, the terminal planner drawn in a browser, moves from the Pages
   site's root to `/ratzilla/`.
 - The terminal's Overview says the year's to-dos in the dollars shown, following
