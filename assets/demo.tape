@@ -36,7 +36,7 @@ Sleep 2s
 
 Type "4"
 Sleep 1s
-Down@600ms 2
+Down@600ms 3
 Sleep 6s
 
 Type "5"
