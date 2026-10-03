@@ -1,3 +1,5 @@
+import { readdirSync } from "node:fs";
+
 import type { Page } from "@playwright/test";
 
 import { SEARCH, example, expect, seed, test } from "./support";
@@ -5,11 +7,14 @@ import { SEARCH, example, expect, seed, test } from "./support";
 /** How many built files the page has cached. */
 function cachedBuilt(page: Page): Promise<number> {
   return page.evaluate(async () => {
-    const cache = await caches.open("retiretui-app");
+    const cache = await caches.open("retiretui-build");
     const kept = await cache.keys();
     return kept.filter((request) => request.url.includes("/assets/")).length;
   });
 }
+
+/** The files the build wrote, as the suite's server serves them. */
+const BUILT = readdirSync(new URL("../dist/assets", import.meta.url));
 
 test("after one visit every page opens offline, searches and all", async ({
   page,
@@ -36,22 +41,7 @@ test("after one visit every page opens offline, searches and all", async ({
       }>,
   );
   expect(manifest.display).toBe("standalone");
-  await page.reload();
-  await expect(
-    page.getByRole("heading", { name: "Overview", level: 1 }),
-  ).toBeVisible();
-  let last = -1;
-  await expect
-    .poll(
-      async () => {
-        const now = await cachedBuilt(page);
-        const isSettled = now === last;
-        last = now;
-        return isSettled;
-      },
-      { intervals: [1_000] },
-    )
-    .toBe(true);
+  expect(await cachedBuilt(page)).toBe(BUILT.length);
 
   await context.setOffline(true);
   await page.reload();

@@ -18,7 +18,7 @@ export default defineConfig({
     },
   },
   server: { fs: { allow: [".", wasm] } },
-  build: { target: "es2022" },
+  build: { target: "es2022", manifest: "manifest.json" },
   worker: { format: "es" },
   test: { include: ["src/**/*.test.ts"] },
 });

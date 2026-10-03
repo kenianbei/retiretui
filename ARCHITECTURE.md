@@ -496,17 +496,19 @@ depends on UI.
   heading when another page is shown, unless the page has placed it. Each page
   loads the first time it is shown, and all of them once the app is idle; a
   service worker serves the page from the network while there is one and from
-  its cache when there is not, and each built file from its cache once fetched,
-  a new build dropping the old one's, so that after one visit every page works
-  offline, and the app installs. Its colours are the terminal theme's roles,
-  light or dark as the system is, each held to a readable contrast by a test,
-  and every page is checked against WCAG 2.1 A and AA in Chromium, Firefox and
-  WebKit by a browser suite CI runs. Under every page it says that it is a model
-  and not advice, and leads to its source and to where an issue is reported.
-  Where it cannot start, with scripts off, no WebAssembly, the page's storage
-  blocked or a file that does not load or run, the page says why from markup and
-  a script of its own, which need nothing of the app; a page that throws while
-  it is drawn is said in its place, with a way to reload.
+  its cache when there is not, and keeps a build whole - every file the build
+  lists as its own, then the page that needs them, the old build's files dropped
+  only after - so that after one visit every page works offline, a build that
+  does not arrive whole leaves the one before it to open, and the app installs.
+  Its colours are the terminal theme's roles, light or dark as the system is,
+  each held to a readable contrast by a test, and every page is checked against
+  WCAG 2.1 A and AA in Chromium, Firefox and WebKit by a browser suite CI runs.
+  Under every page it says that it is a model and not advice, and leads to its
+  source and to where an issue is reported. Where it cannot start, with scripts
+  off, no WebAssembly, the page's storage blocked or a file that does not load
+  or run, the page says why from markup and a script of its own, which need
+  nothing of the app; a page that throws while it is drawn is said in its place,
+  with a way to reload.
 
 Plans express timing through a closed trigger vocabulary - a fixed date, a
 person's age, or a reference to a named event or income source with a whole year

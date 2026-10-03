@@ -1,0 +1,236 @@
+import { beforeEach, expect, test, vi } from "vitest";
+
+import "../public/sw.js";
+
+interface WorkerEvent {
+  request?: { method: string; mode: string; url: string };
+  respondWith: (response: Promise<Response>) => void;
+  waitUntil: (work: Promise<unknown>) => void;
+}
+
+const { handlers, SCOPE } = vi.hoisted(() => {
+  const SCOPE = "https://example.test/retiretui/";
+  const handlers = new Map<string, (event: WorkerEvent) => void>();
+  vi.stubGlobal("self", {
+    registration: { scope: SCOPE },
+    skipWaiting: () => Promise.resolve(),
+    clients: { claim: () => Promise.resolve() },
+    addEventListener: (type: string, handler: (event: WorkerEvent) => void) =>
+      handlers.set(type, handler),
+  });
+  return { handlers, SCOPE };
+});
+
+const MANIFEST = `${SCOPE}manifest.json`;
+const CACHE = "retiretui-build";
+/** The cache of the worker before this one. */
+const BEFORE = "retiretui-app";
+
+/** What the network answers with, by address; anything else is not found. */
+let network = new Map<string, string>();
+let isOffline = false;
+/** The browser's own copies, which answer offline any request that takes one. */
+let browserKept = new Map<string, string>();
+let fetched: string[] = [];
+/** Every cache by its name, in the order made, each a response by address. */
+let stores = new Map<string, Map<string, Response>>();
+
+const urlOf = (request: string | URL | { url: string }) =>
+  typeof request === "string" || request instanceof URL
+    ? String(request)
+    : request.url;
+
+function answer(
+  request: string | URL | { url: string },
+  init?: { cache?: string },
+) {
+  const url = urlOf(request);
+  const isRefused = isOffline && init?.cache === "no-store";
+  const body = isOffline ? browserKept.get(url) : network.get(url);
+  if (isRefused || (isOffline && body === undefined)) {
+    return Promise.reject(new TypeError("offline"));
+  }
+  fetched.push(url);
+  if (body === undefined) {
+    return Promise.resolve(new Response(null, { status: 404 }));
+  }
+  browserKept.set(url, body);
+  return Promise.resolve(new Response(body));
+}
+
+function cacheOver(kept: Map<string, Response>) {
+  return {
+    match: (request: string | { url: string }) =>
+      Promise.resolve(kept.get(urlOf(request))?.clone()),
+    put: (request: string | { url: string }, response: Response) => {
+      kept.set(urlOf(request), response);
+      return Promise.resolve();
+    },
+    keys: () => Promise.resolve([...kept.keys()].map((url) => ({ url }))),
+    delete: (request: { url: string }) =>
+      Promise.resolve(kept.delete(request.url)),
+    // All or nothing, as a browser's is.
+    addAll: async (urls: string[]) => {
+      const responses = await Promise.all(urls.map((url) => answer(url)));
+      if (!responses.every((response) => response.ok)) {
+        throw new TypeError("a file did not arrive");
+      }
+      urls.forEach((url, at) => kept.set(url, responses[at] as Response));
+    },
+  };
+}
+
+function storeOf(name: string) {
+  const store = stores.get(name) ?? new Map<string, Response>();
+  stores.set(name, store);
+  return store;
+}
+
+const cacheStorage = {
+  open: (name: string) => Promise.resolve(cacheOver(storeOf(name))),
+  match: (request: string | { url: string }) => {
+    const holding = [...stores.values()].find((kept) =>
+      kept.has(urlOf(request)),
+    );
+    return Promise.resolve(holding?.get(urlOf(request))?.clone());
+  },
+  delete: (name: string) => Promise.resolve(stores.delete(name)),
+};
+
+/** A build's files: `shared` is in every build. */
+const builtOf = (build: string) =>
+  [
+    `assets/index-${build}.css`,
+    `assets/index-${build}.js`,
+    "assets/shared.wasm",
+  ] as const;
+
+/** Puts a build on the network, as its page and Vite's list say it. */
+function deploy(build: string) {
+  const [css, file, shared] = builtOf(build);
+  network = new Map([
+    [SCOPE, `<link href="./${css}" /><script src="./${file}"></script>`],
+    [
+      MANIFEST,
+      JSON.stringify({
+        "index.html": { file, css: [css], assets: [shared] },
+      }),
+    ],
+    ...builtOf(build).map((name) => [SCOPE + name, name] as const),
+  ]);
+}
+
+async function run(type: string, request?: WorkerEvent["request"]) {
+  const waited: Promise<unknown>[] = [];
+  let response: Promise<Response> | undefined;
+  handlers.get(type)?.({
+    request,
+    respondWith: (answered) => {
+      response = answered;
+    },
+    waitUntil: (work) => waited.push(work),
+  });
+  const answered = await response;
+  await Promise.allSettled(waited);
+  return answered;
+}
+
+const install = () => run("install");
+
+/** A page asked for through the worker; its text. */
+async function visit() {
+  const page = await run("fetch", {
+    method: "GET",
+    mode: "navigate",
+    url: SCOPE,
+  });
+  return page?.text();
+}
+
+const keptBuilt = () =>
+  [...storeOf(CACHE).keys()]
+    .filter((url) => url.includes("/assets/"))
+    .map((url) => url.slice(SCOPE.length))
+    .sort();
+
+beforeEach(async () => {
+  vi.stubGlobal("fetch", answer);
+  vi.stubGlobal("caches", cacheStorage);
+  stores = new Map();
+  browserKept = new Map();
+  isOffline = false;
+  deploy("one");
+  await install();
+  fetched = [];
+});
+
+test("installing keeps the page and every file the build lists", async () => {
+  expect(keptBuilt()).toEqual(builtOf("one"));
+  isOffline = true;
+  expect(await visit()).toContain("index-one.js");
+});
+
+test("a page that has not changed asks for no list", async () => {
+  await visit();
+  expect(fetched).toEqual([SCOPE]);
+});
+
+test("a new build takes the old one's place once its files are kept", async () => {
+  deploy("two");
+  expect(await visit()).toContain("index-two.js");
+  expect(keptBuilt()).toEqual(builtOf("two"));
+  expect(fetched).not.toContain(`${SCOPE}assets/shared.wasm`);
+  isOffline = true;
+  expect(await visit()).toContain("index-two.js");
+});
+
+test("a new build whose list does not arrive leaves the old one whole", async () => {
+  deploy("two");
+  network.delete(MANIFEST);
+  expect(await visit()).toContain("index-two.js");
+  expect(keptBuilt()).toEqual(builtOf("one"));
+  isOffline = true;
+  expect(await visit()).toContain("index-one.js");
+});
+
+test("a new build missing a file leaves the old one whole", async () => {
+  deploy("two");
+  network.delete(`${SCOPE}assets/index-two.css`);
+  await visit();
+  expect(keptBuilt()).toEqual(builtOf("one"));
+  isOffline = true;
+  expect(await visit()).toContain("index-one.js");
+});
+
+test("a list from another build than the page's is not kept under it", async () => {
+  const stale = network.get(MANIFEST) ?? "";
+  deploy("two");
+  network.set(MANIFEST, stale);
+  await visit();
+  expect(keptBuilt()).toEqual(builtOf("one"));
+  isOffline = true;
+  expect(await visit()).toContain("index-one.js");
+});
+
+test("a worker that installs offline keeps the build on the next page fetched", async () => {
+  stores = new Map();
+  isOffline = true;
+  await install();
+  expect(keptBuilt()).toEqual([]);
+  isOffline = false;
+  await visit();
+  expect(keptBuilt()).toEqual(builtOf("one"));
+});
+
+test("a page an earlier worker kept ahead of its files is not taken for its build", async () => {
+  deploy("two");
+  const page = network.get(SCOPE) ?? "";
+  stores = new Map([[BEFORE, new Map([[SCOPE, new Response(page)]])]]);
+  isOffline = true;
+  await install();
+  expect(await visit()).toBe(page);
+  isOffline = false;
+  await visit();
+  expect(keptBuilt()).toEqual(builtOf("two"));
+  expect(stores.has(BEFORE)).toBe(false);
+});

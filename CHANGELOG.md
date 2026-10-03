@@ -6,6 +6,21 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- The web app stays usable offline across a new release. Its service worker kept
+  a newly released page before any of the files that page needs and dropped the
+  old release's, so a visitor who opened the app as a release landed and lost
+  the network before those files arrived was told "RetireTui did not start" on
+  every visit until they were back online. A release's files are now kept whole,
+  from the list of them the build writes beside the page, before its page is,
+  and the old release's are dropped only then; a release that does not arrive
+  whole leaves the old one to open offline, and is asked for again on the next
+  visit online. The whole app is kept on the first visit rather than the second,
+  and the page is asked of the network on every visit, so a new release shows at
+  once rather than up to ten minutes late. The load that replaces 0.3.0's worker
+  is still 0.3.0's to handle, and can fail this way once more.
+
 ## [0.3.0] - 2026-10-02
 
 ### Added

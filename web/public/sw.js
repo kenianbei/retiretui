@@ -1,14 +1,21 @@
 // The app offline: the page from the network when there is one and from
-// the cache when there is not; each built file, named by its content, kept.
+// the cache when there is not; a build's files kept before its page is.
 
-const CACHE = "retiretui-app";
+const CACHE = "retiretui-build";
+/** The cache of the worker before this one, which kept a page ahead of its files. */
+const BEFORE = "retiretui-app";
 const SCOPE = new URL(self.registration.scope);
 /** The canvas demo beside the app, which keeps to the network. */
 const APART = "ratzilla/";
 const BUILT = "assets/";
+/** The build's own list of its files, written beside the page. */
+const MANIFEST = "manifest.json";
+/** The page in that list, by the source it is built from. */
+const PAGE = "index.html";
 
-self.addEventListener("install", () => {
+self.addEventListener("install", (event) => {
   void self.skipWaiting();
+  event.waitUntil(keepNetwork().catch(() => undefined));
 });
 
 self.addEventListener("activate", (event) => {
@@ -30,29 +37,80 @@ self.addEventListener("fetch", (event) => {
   }
 });
 
-/** The page, fetched and kept under the scope once it is sent; the cache's offline. */
+/**
+ * The page, fetched and its build kept once it is sent; the cache's offline.
+ * Asked of the network each time: a copy the browser kept may be of a build
+ * whose files are not yet here.
+ */
 async function page(event) {
   try {
-    const response = await fetch(event.request);
-    if (response.ok) event.waitUntil(keepPage(response.clone()));
+    const response = await fetch(event.request, { cache: "no-store" });
+    if (response.ok) event.waitUntil(keepChanged(response.clone()));
     return response;
   } catch {
     return (await caches.match(SCOPE.href)) ?? Response.error();
   }
 }
 
-/** Keeps a page fetched; one unlike the page kept drops the old build's files. */
-async function keepPage(response) {
+/** The build on the network, kept before a page fetched through here asks. */
+async function keepNetwork() {
+  const response = await fetch(SCOPE.href, { cache: "no-store" });
+  if (response.ok) await keepChanged(response);
+}
+
+async function keepChanged(response) {
   const cache = await caches.open(CACHE);
   const kept = await cache.match(SCOPE.href);
   const text = await response.clone().text();
-  if (kept && (await kept.text()) !== text) await dropBuilt(cache);
-  await cache.put(SCOPE.href, response);
+  if (kept && (await kept.text()) === text) return;
+  await keepBuild(response);
 }
 
-/** A built file: the cache's, or fetched as anything else is. */
+/**
+ * Keeps a page only once every file of its build is kept, then drops any
+ * other build's: a file that does not arrive leaves the cache as it was.
+ */
+async function keepBuild(response) {
+  const chunks = await listed();
+  const text = await response.clone().text();
+  const { file, css = [] } = chunks[PAGE];
+  // A list from another build than the page's would keep a page without its files.
+  if (![file, ...css].every((name) => text.includes(name))) return;
+  const files = new Set(
+    Object.values(chunks)
+      .flatMap((chunk) => [
+        chunk.file,
+        ...(chunk.css ?? []),
+        ...(chunk.assets ?? []),
+      ])
+      .map((name) => new URL(name, SCOPE).href),
+  );
+  const cache = await caches.open(CACHE);
+  const requests = await cache.keys();
+  const kept = new Set(requests.map((request) => request.url));
+  await cache.addAll([...files].filter((url) => !kept.has(url)));
+  await cache.put(SCOPE.href, response);
+  const old = requests.filter(
+    ({ url }) => url.startsWith(SCOPE.href + BUILT) && !files.has(url),
+  );
+  await Promise.all(old.map((request) => cache.delete(request)));
+  await caches.delete(BEFORE);
+}
+
+/** The build on the network as it lists itself: each chunk's files, by its source. */
+async function listed() {
+  const response = await fetch(new URL(MANIFEST, SCOPE), { cache: "no-store" });
+  if (!response.ok) throw new Error(`${MANIFEST}: ${response.status}`);
+  return response.json();
+}
+
+/**
+ * A built file: the cache's, or fetched as anything else is. Its name is its
+ * content, so one kept ahead of the page answers whatever headers ask for it.
+ */
 async function built(event) {
-  return (await caches.match(event.request)) ?? fresh(event);
+  const kept = await caches.match(event.request, { ignoreVary: true });
+  return kept ?? fresh(event);
 }
 
 /** Anything else: fetched and kept once it is sent, or the cache's offline. */
@@ -69,12 +127,4 @@ async function fresh(event) {
   } catch {
     return (await caches.match(event.request)) ?? Response.error();
   }
-}
-
-async function dropBuilt(cache) {
-  const requests = await cache.keys();
-  const old = requests.filter((kept) =>
-    new URL(kept.url).pathname.startsWith(SCOPE.pathname + BUILT),
-  );
-  await Promise.all(old.map((kept) => cache.delete(kept)));
 }
