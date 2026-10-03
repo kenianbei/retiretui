@@ -21,6 +21,18 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   once rather than up to ten minutes late. The load that replaces 0.3.0's worker
   is still 0.3.0's to handle, and can fail this way once more.
 
+### Security
+
+- The web app's page carries a Content-Security-Policy, written into it when it
+  is built. The page runs only the app's own script files and the one script
+  written into it, named by its hash, and loads scripts, workers, images and
+  data from the site alone, so a script that found its way into the page is
+  refused rather than run. Styles a script writes are still let through, since
+  the menus and dialogs write one to hold the page still beneath them. A browser
+  too old to know the policy's word for compiling WebAssembly - Chrome before
+  97, Safari before 16 - is told that the app did not start, with the browser's
+  reason. The canvas page at `/ratzilla/` carries no policy.
+
 ## [0.3.0] - 2026-10-02
 
 ### Added
