@@ -22,6 +22,9 @@ const { handlers, SCOPE } = vi.hoisted(() => {
 });
 
 const MANIFEST = `${SCOPE}manifest.json`;
+const CACHE = "retiretui-build";
+/** The cache of the worker before this one. */
+const BEFORE = "retiretui-app";
 
 /** What the network answers with, by address; anything else is not found. */
 let network = new Map<string, string>();
@@ -29,7 +32,8 @@ let isOffline = false;
 /** The browser's own copies, which answer offline any request that takes one. */
 let browserKept = new Map<string, string>();
 let fetched: string[] = [];
-let kept = new Map<string, Response>();
+/** Every cache by its name, in the order made, each a response by address. */
+let stores = new Map<string, Map<string, Response>>();
 
 const urlOf = (request: string | URL | { url: string }) =>
   typeof request === "string" || request instanceof URL
@@ -54,24 +58,43 @@ function answer(
   return Promise.resolve(new Response(body));
 }
 
-const cache = {
-  match: (request: string | { url: string }) =>
-    Promise.resolve(kept.get(urlOf(request))?.clone()),
-  put: (request: string | { url: string }, response: Response) => {
-    kept.set(urlOf(request), response);
-    return Promise.resolve();
+function cacheOver(kept: Map<string, Response>) {
+  return {
+    match: (request: string | { url: string }) =>
+      Promise.resolve(kept.get(urlOf(request))?.clone()),
+    put: (request: string | { url: string }, response: Response) => {
+      kept.set(urlOf(request), response);
+      return Promise.resolve();
+    },
+    keys: () => Promise.resolve([...kept.keys()].map((url) => ({ url }))),
+    delete: (request: { url: string }) =>
+      Promise.resolve(kept.delete(request.url)),
+    // All or nothing, as a browser's is.
+    addAll: async (urls: string[]) => {
+      const responses = await Promise.all(urls.map((url) => answer(url)));
+      if (!responses.every((response) => response.ok)) {
+        throw new TypeError("a file did not arrive");
+      }
+      urls.forEach((url, at) => kept.set(url, responses[at] as Response));
+    },
+  };
+}
+
+function storeOf(name: string) {
+  const store = stores.get(name) ?? new Map<string, Response>();
+  stores.set(name, store);
+  return store;
+}
+
+const cacheStorage = {
+  open: (name: string) => Promise.resolve(cacheOver(storeOf(name))),
+  match: (request: string | { url: string }) => {
+    const holding = [...stores.values()].find((kept) =>
+      kept.has(urlOf(request)),
+    );
+    return Promise.resolve(holding?.get(urlOf(request))?.clone());
   },
-  keys: () => Promise.resolve([...kept.keys()].map((url) => ({ url }))),
-  delete: (request: { url: string }) =>
-    Promise.resolve(kept.delete(request.url)),
-  // All or nothing, as a browser's is.
-  addAll: async (urls: string[]) => {
-    const responses = await Promise.all(urls.map((url) => answer(url)));
-    if (!responses.every((response) => response.ok)) {
-      throw new TypeError("a file did not arrive");
-    }
-    urls.forEach((url, at) => kept.set(url, responses[at] as Response));
-  },
+  delete: (name: string) => Promise.resolve(stores.delete(name)),
 };
 
 /** A build's files: `shared` is in every build. */
@@ -125,18 +148,15 @@ async function visit() {
 }
 
 const keptBuilt = () =>
-  [...kept.keys()]
+  [...storeOf(CACHE).keys()]
     .filter((url) => url.includes("/assets/"))
     .map((url) => url.slice(SCOPE.length))
     .sort();
 
 beforeEach(async () => {
   vi.stubGlobal("fetch", answer);
-  vi.stubGlobal("caches", {
-    open: () => Promise.resolve(cache),
-    match: cache.match,
-  });
-  kept = new Map();
+  vi.stubGlobal("caches", cacheStorage);
+  stores = new Map();
   browserKept = new Map();
   isOffline = false;
   deploy("one");
@@ -193,11 +213,24 @@ test("a list from another build than the page's is not kept under it", async () 
 });
 
 test("a worker that installs offline keeps the build on the next page fetched", async () => {
-  kept = new Map();
+  stores = new Map();
   isOffline = true;
   await install();
   expect(keptBuilt()).toEqual([]);
   isOffline = false;
   await visit();
   expect(keptBuilt()).toEqual(builtOf("one"));
+});
+
+test("a page an earlier worker kept ahead of its files is not taken for its build", async () => {
+  deploy("two");
+  const page = network.get(SCOPE) ?? "";
+  stores = new Map([[BEFORE, new Map([[SCOPE, new Response(page)]])]]);
+  isOffline = true;
+  await install();
+  expect(await visit()).toBe(page);
+  isOffline = false;
+  await visit();
+  expect(keptBuilt()).toEqual(builtOf("two"));
+  expect(stores.has(BEFORE)).toBe(false);
 });

@@ -1,7 +1,9 @@
 // The app offline: the page from the network when there is one and from
 // the cache when there is not; a build's files kept before its page is.
 
-const CACHE = "retiretui-app";
+const CACHE = "retiretui-build";
+/** The cache of the worker before this one, which kept a page ahead of its files. */
+const BEFORE = "retiretui-app";
 const SCOPE = new URL(self.registration.scope);
 /** The canvas demo beside the app, which keeps to the network. */
 const APART = "ratzilla/";
@@ -50,17 +52,15 @@ async function page(event) {
   }
 }
 
-/**
- * The build on the network, kept before a page fetched through here asks, and
- * whatever page is kept: a worker before this one kept a page ahead of its files.
- */
+/** The build on the network, kept before a page fetched through here asks. */
 async function keepNetwork() {
   const response = await fetch(SCOPE.href, { cache: "no-store" });
-  if (response.ok) await keepBuild(response);
+  if (response.ok) await keepChanged(response);
 }
 
 async function keepChanged(response) {
-  const kept = await caches.match(SCOPE.href);
+  const cache = await caches.open(CACHE);
+  const kept = await cache.match(SCOPE.href);
   const text = await response.clone().text();
   if (kept && (await kept.text()) === text) return;
   await keepBuild(response);
@@ -94,6 +94,7 @@ async function keepBuild(response) {
     ({ url }) => url.startsWith(SCOPE.href + BUILT) && !files.has(url),
   );
   await Promise.all(old.map((request) => cache.delete(request)));
+  await caches.delete(BEFORE);
 }
 
 /** The build on the network as it lists itself: each chunk's files, by its source. */

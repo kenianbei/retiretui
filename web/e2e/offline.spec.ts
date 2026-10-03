@@ -7,7 +7,7 @@ import { SEARCH, example, expect, seed, test } from "./support";
 /** How many built files the page has cached. */
 function cachedBuilt(page: Page): Promise<number> {
   return page.evaluate(async () => {
-    const cache = await caches.open("retiretui-app");
+    const cache = await caches.open("retiretui-build");
     const kept = await cache.keys();
     return kept.filter((request) => request.url.includes("/assets/")).length;
   });
