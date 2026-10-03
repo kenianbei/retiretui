@@ -11,11 +11,12 @@ projection of that household's finances under U.S. federal tax law and the tax
 of the state it lives in, year by year, and with how that projection fares
 across many markets. All amounts are entered as annual today's dollars and
 escalate per item - at plan inflation by default, frozen nominal, or at a fixed
-rate of their own; the engine computes in nominal dollars and carries a per-year
-deflator so results read in either basis. A projection walks through a market -
-each year's return on each asset class and that year's inflation - and the
-ledger is the one market the plan states: each class's mean return and the
-plan's inflation, every year.
+rate of their own - save an income stated as what it pays in its first year,
+which escalates from that year; the engine computes in nominal dollars and
+carries a per-year deflator so results read in either basis. A projection walks
+through a market - each year's return on each asset class and that year's
+inflation - and the ledger is the one market the plan states: each class's mean
+return and the plan's inflation, every year.
 
 A plan variant is a scenario: a TOML file naming a `base` document and stating
 only deltas. Items are addressed by identity - the `id` every listed item

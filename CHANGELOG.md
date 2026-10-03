@@ -6,6 +6,37 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- An income may say that its amount is what it pays in its first year, with
+  `cola_from = "start"`, and its `cola` then runs from that year rather than
+  from the plan's start. A pension estimate or an annuity contract states a
+  benefit that way - a sum payable from a date, with a cost-of-living rate after
+  it - and until now a fixed-rate `cola` also compounded over the years before
+  the income began, so a pension of 20,000 at 2% starting five years into the
+  plan paid 22,082 in its first year and stayed that far ahead for life. With
+  `cola_from = "start"` it pays 20,000, then 20,400. The first year follows the
+  income's `start` or `on` wherever a scenario moves it, and an income already
+  being paid when the plan starts escalates from the plan's start as before.
+  `cola_from` is `"plan"` unless stated, is left out of a saved file while it
+  is, and no plan that does not state it projects differently. A Social Security
+  income is refused it: a benefit is stated in today's dollars and takes its
+  cost-of-living adjustments whether or not it is claimed. Expenses, conversions
+  and contributions escalate from the plan's start as they did.
+  - The Income form, in the terminal and in the web app, asks it as "Grows from"
+    under Growth - "Plan start" or "Its first year" - and does not ask it of a
+    Social Security income.
+  - The MCP server's schema reference says it under Escalation.
+  - The `public-pension` example states Dana's pension this way, so it pays
+    42,000 in its first year rather than 45,462.
+
+### Changed
+
+- **Breaking.** No plan key is removed or renamed, and a plan written for 0.3.0
+  projects as it did. What breaks is the engine's Rust API, which is 0.4.0:
+  `Income` gains `cola_from`, a `ColaAnchor`, so a struct literal of one written
+  outside the engine must add it.
+
 ### Fixed
 
 - The web app stays usable offline across a new release. Its service worker kept
