@@ -35,10 +35,14 @@ self.addEventListener("fetch", (event) => {
   }
 });
 
-/** The page, fetched and its build kept once it is sent; the cache's offline. */
+/**
+ * The page, fetched and its build kept once it is sent; the cache's offline.
+ * Asked of the network each time: a copy the browser kept may be of a build
+ * whose files are not yet here.
+ */
 async function page(event) {
   try {
-    const response = await fetch(event.request);
+    const response = await fetch(event.request, { cache: "no-store" });
     if (response.ok) event.waitUntil(keepChanged(response.clone()));
     return response;
   } catch {
@@ -55,7 +59,6 @@ async function keepNetwork() {
   if (response.ok) await keepBuild(response);
 }
 
-/** Keeps the build of a page fetched, where it is unlike the page kept. */
 async function keepChanged(response) {
   const kept = await caches.match(SCOPE.href);
   const text = await response.clone().text();

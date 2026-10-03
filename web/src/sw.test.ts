@@ -26,6 +26,8 @@ const MANIFEST = `${SCOPE}manifest.json`;
 /** What the network answers with, by address; anything else is not found. */
 let network = new Map<string, string>();
 let isOffline = false;
+/** The browser's own copies, which answer offline any request that takes one. */
+let browserKept = new Map<string, string>();
 let fetched: string[] = [];
 let kept = new Map<string, Response>();
 
@@ -34,16 +36,22 @@ const urlOf = (request: string | URL | { url: string }) =>
     ? String(request)
     : request.url;
 
-function answer(request: string | URL | { url: string }) {
-  if (isOffline) return Promise.reject(new TypeError("offline"));
+function answer(
+  request: string | URL | { url: string },
+  init?: { cache?: string },
+) {
   const url = urlOf(request);
+  const isRefused = isOffline && init?.cache === "no-store";
+  const body = isOffline ? browserKept.get(url) : network.get(url);
+  if (isRefused || (isOffline && body === undefined)) {
+    return Promise.reject(new TypeError("offline"));
+  }
   fetched.push(url);
-  const body = network.get(url);
-  return Promise.resolve(
-    body === undefined
-      ? new Response(null, { status: 404 })
-      : new Response(body),
-  );
+  if (body === undefined) {
+    return Promise.resolve(new Response(null, { status: 404 }));
+  }
+  browserKept.set(url, body);
+  return Promise.resolve(new Response(body));
 }
 
 const cache = {
@@ -58,7 +66,7 @@ const cache = {
     Promise.resolve(kept.delete(request.url)),
   // All or nothing, as a browser's is.
   addAll: async (urls: string[]) => {
-    const responses = await Promise.all(urls.map(answer));
+    const responses = await Promise.all(urls.map((url) => answer(url)));
     if (!responses.every((response) => response.ok)) {
       throw new TypeError("a file did not arrive");
     }
@@ -129,6 +137,7 @@ beforeEach(async () => {
     match: cache.match,
   });
   kept = new Map();
+  browserKept = new Map();
   isOffline = false;
   deploy("one");
   await install();
