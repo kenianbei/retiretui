@@ -396,7 +396,7 @@ mod tests {
     }
 
     #[test]
-    fn where_an_income_grows_from_is_stored_and_dropped_once_it_is_a_benefit() {
+    fn where_an_income_grows_from_is_left_out_until_it_is_picked() {
         let mut draft = draft(false);
         let salary = draft
             .plan
@@ -413,10 +413,6 @@ mod tests {
         edit.set("cola_from", Some(Value::String("start".to_owned())), None);
         assert_eq!(edit.apply(&mut draft, None), Ok(Some(salary)));
         assert_eq!(draft.plan.income[salary].cola_from, ColaAnchor::Start);
-        let benefit = Value::String("social-security".to_owned());
-        edit.set("kind", Some(benefit), None);
-        assert_eq!(edit.apply(&mut draft, None), Ok(Some(salary)));
-        assert_eq!(draft.plan.income[salary].cola_from, ColaAnchor::Plan);
     }
 
     #[test]

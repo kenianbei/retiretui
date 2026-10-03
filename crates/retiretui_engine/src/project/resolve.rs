@@ -39,7 +39,7 @@ impl Resolver {
     pub(crate) fn trigger_year(&self, plan: &Plan, trigger: &Trigger) -> Option<i16> {
         resolve_form(plan, trigger.form().ok()?, |node| match node {
             Node::Event(id) => self.event_year.get(id).copied().flatten(),
-            Node::Income(id) => self.income_year.get(id).copied().flatten(),
+            Node::Income(id) => self.first_year(id),
         })
     }
 

@@ -87,11 +87,11 @@ On income, expenses, conversions, and contributions:
 
 An income may also state `cola_from`, where its `cola` runs from:
 
-- `"plan"` (default) - plan start: the amount is today's dollars, and a rate
-  compounds over the years before the income starts too.
+- `"plan"` (default) - plan start.
 - `"start"` - the income's first year, or plan start where that is later: the
   amount is what it pays that year, as a pension estimate or an annuity contract
-  states it, and `cola` applies from the year after. Not for `social-security`.
+  states it, and `cola` applies from the year after. Refused on
+  `social-security`, whose amount is always today's dollars.
 
 ## [[accounts]]
 
@@ -168,14 +168,14 @@ disability exceptions.
   `"social-security"`, `"windfall"` (untaxed one-time), `"other"`. The kind
   decides tax treatment; social security uses the provisional-income rules.
 - `owner` (person id, required).
-- `amount` (dollars) - annual today's dollars, or with `cola_from = "start"`
-  what the first year pays; required for every kind but `social-security`, where
-  it is the annual benefit at the claim age and may be left out: the benefit is
-  then computed at the claim from the owner's `earnings` record, extended with
-  the owner's `salary` incomes through the year before, reduced or credited for
-  each month the claim falls before or after full retirement age, so the claim
-  must be in or after the month 62 is attained. Credits earned in the claim year
-  are paid from the next January, except at 70.
+- `amount` (dollars) - annual today's dollars unless `cola_from` says its first
+  year's; required for every kind but `social-security`, where it is the annual
+  benefit at the claim age and may be left out: the benefit is then computed at
+  the claim from the owner's `earnings` record, extended with the owner's
+  `salary` incomes through the year before, reduced or credited for each month
+  the claim falls before or after full retirement age, so the claim must be in
+  or after the month 62 is attained. Credits earned in the claim year are paid
+  from the next January, except at 70.
 - `start` / `end` (triggers, optional) - the receiving window; absent means plan
   start / horizon. A `social-security` income with a `start` is paid, in its
   first year, for the months from the one the start falls in, as SSA pays it: a
@@ -187,8 +187,7 @@ disability exceptions.
 - `cola` (see escalation). On a computed `social-security` benefit it is also
   the COLA SSA adds each year from the owner's age-62 year, before and after the
   claim, for every year SSA has not yet published a COLA for.
-- `cola_from` (`"plan"` default, or `"start"`; see escalation) - refused on
-  `social-security`, whose amount is always today's dollars.
+- `cola_from` (see escalation).
 - `covered` (bool, default false, `salary` only) - the job's workplace plan
   covers the owner in every year the salary pays, contributing or not: a pension
   plan, say. It decides whether a traditional IRA contribution is deductible.

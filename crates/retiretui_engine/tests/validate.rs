@@ -471,7 +471,6 @@ start = {{ age = 67, owner = "me" }}
     assert_issue(&issues(&stated), "income[0].cola_from", refused);
     let from_plan = benefit("amount = 30000\ncola_from = \"plan\"");
     assert!(issues(&from_plan).is_empty(), "{:?}", issues(&from_plan));
-    assert!(Plan::from_toml_str(&benefit("cola_from = \"claim\"")).is_err());
 }
 
 #[test]

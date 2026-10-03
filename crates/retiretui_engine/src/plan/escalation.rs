@@ -1,8 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 /// How an amount escalates from its value at its anchor, the plan's start
-/// unless an income says otherwise: following plan inflation (`true`, the default), frozen in nominal dollars
-/// (`false`), or at a fixed annual rate of its own (`cola = 0.0125`).
+/// unless an income says otherwise: following plan inflation (`true`, the
+/// default), frozen in nominal dollars (`false`), or at a fixed annual rate
+/// of its own (`cola = 0.0125`).
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum ColaSpec {

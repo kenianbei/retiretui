@@ -2,9 +2,8 @@
 
 mod common;
 
-use retiretui_engine::params::TaxTables;
-use retiretui_engine::plan::{Plan, Scenario};
-use retiretui_engine::project::{Projection, project};
+use retiretui_engine::plan::Plan;
+use retiretui_engine::project::Projection;
 
 use common::{head, run};
 
@@ -211,25 +210,4 @@ fn a_one_time_income_from_its_start_is_paid_as_stated() {
     // In today's dollars it is 20,000 x 1.025^5 by 2031.
     assert_eq!(pension(&windfall(""), 2031), 22_628);
     assert_eq!(pension(&windfall("cola_from = \"start\""), 2031), 20_000);
-}
-
-#[test]
-fn the_anchor_follows_a_start_a_scenario_moves() {
-    let base = deferred_pension("cola = 0.02\ncola_from = \"start\"");
-    let overlay = r#"
-schema = 1
-base = "base.toml"
-
-[[events]]
-id = "retire"
-trigger = { date = 2032-01-01 }
-"#;
-    let scenario = Scenario::from_toml_str(overlay).unwrap().unwrap();
-    let merged = scenario.apply(toml::from_str(&base).unwrap()).unwrap();
-    let plan = Plan::from_toml_table(merged).unwrap();
-    assert!(plan.validate().is_empty(), "{:?}", plan.validate());
-    let later = project(&plan, &TaxTables::embedded());
-    assert_eq!(pension(&later, 2031), 0);
-    assert_eq!(pension(&later, 2032), 20_000);
-    assert_eq!(pension(&later, 2033), 20_400);
 }

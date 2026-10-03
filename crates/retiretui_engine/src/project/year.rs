@@ -200,7 +200,7 @@ impl<'a> Simulation<'a> {
     }
 
     pub(super) fn cola_factor(&self, cola: ColaSpec, year: i16) -> f64 {
-        cola.factor(self.path.deflator(year), i32::from(year - self.start_year))
+        self.factor_from(cola, self.start_year, year)
     }
 
     /// What `income`'s amount is escalated by in `year`: from the plan's
@@ -210,11 +210,13 @@ impl<'a> Simulation<'a> {
             ColaAnchor::Plan => None,
             ColaAnchor::Start => self.resolver.first_year(&income.id),
         };
-        let Some(first) = first.filter(|&first| first > self.start_year) else {
-            return self.cola_factor(income.cola, year);
-        };
-        let prices = self.path.deflator(year) / self.path.deflator(first);
-        income.cola.factor(prices, i32::from(year - first))
+        let anchor = first.map_or(self.start_year, |first| first.max(self.start_year));
+        self.factor_from(income.cola, anchor, year)
+    }
+
+    fn factor_from(&self, cola: ColaSpec, anchor: i16, year: i16) -> f64 {
+        let prices = self.path.deflator(year) / self.path.deflator(anchor);
+        cola.factor(prices, i32::from(year - anchor))
     }
 
     fn sweep_surplus(&mut self, acc: &mut YearAcc) {
