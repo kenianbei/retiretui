@@ -57,6 +57,14 @@ impl IncomeKind {
     pub const fn can_be_covered(self) -> bool {
         matches!(self, Self::Salary)
     }
+
+    /// Whether an income of this kind may state its amount as its first
+    /// year's: any but a Social Security benefit, which SSA states in
+    /// today's dollars and adjusts whether or not it is claimed.
+    #[must_use]
+    pub const fn can_escalate_from_start(self) -> bool {
+        !matches!(self, Self::SocialSecurity)
+    }
 }
 
 /// An income source, in annual today's dollars unless its `cola_from` says

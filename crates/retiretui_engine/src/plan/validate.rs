@@ -295,7 +295,7 @@ impl<'a> Checker<'a> {
                     "only a salary makes its owner covered",
                 );
             }
-            if income.kind == IncomeKind::SocialSecurity && income.cola_from == ColaAnchor::Start {
+            if income.cola_from == ColaAnchor::Start && !income.kind.can_escalate_from_start() {
                 self.push(
                     format!("{path}.cola_from"),
                     "a social security amount is today's dollars; it escalates from plan start",

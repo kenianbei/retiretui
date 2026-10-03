@@ -3,8 +3,8 @@
 
 use retiretui_engine::optimize::GainsRate;
 use retiretui_engine::plan::{
-    AccountKind, COUNTRIES, Draw, FilingStatus, IncomeKind, Item, Payer, Plan, TreatmentClass,
-    TriggerBasis, US_STATES,
+    AccountKind, COUNTRIES, ColaAnchor, Draw, FilingStatus, IncomeKind, Item, Payer, Plan,
+    TreatmentClass, TriggerBasis, US_STATES,
 };
 use serde::Serialize;
 use toml::{Table, Value};
@@ -44,6 +44,8 @@ pub enum Vocabulary {
     Timing,
     /// Who pays a contribution.
     Payer,
+    /// Where an income's growth runs from.
+    ColaAnchor,
     /// The form's own: which way a contribution states its amount.
     AmountForm,
     /// The form's own: how an account says what it earns.
@@ -131,6 +133,7 @@ impl Vocabulary {
             Self::UsState => offers(US_STATES, |place| place.0, |place| place.1),
             Self::Timing => offers(TIMINGS, |timing| timing.0, |timing| timing.1),
             Self::Payer => offers(Payer::ALL, Payer::as_str, present::payer),
+            Self::ColaAnchor => offers(ColaAnchor::ALL, ColaAnchor::as_str, present::cola_anchor),
             Self::AmountForm => offers(AMOUNT_FORMS, |form| form.0, |form| form.1),
             Self::Holding => offers(HOLDINGS, |form| form.0, |form| form.1),
             Self::Draw => offers(Draw::ALL, Draw::as_str, present::draw),

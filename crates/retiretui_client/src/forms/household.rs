@@ -6,6 +6,7 @@ use super::applies;
 use super::cells::{Column, field_text};
 use super::offers::Vocabulary;
 use super::{Domain, DomainId, FieldKind, FieldSpec, Single};
+use crate::present;
 
 /// The household's people, edited as a table.
 pub struct People;
@@ -88,7 +89,7 @@ impl Domain for Residencies {
             .blank("None")
             .help("The state you live in. Its income tax is part of each year's taxes."),
         FieldSpec::trigger("from", "From")
-            .blank("Plan start")
+            .blank(present::PLAN_START)
             .help("When you move there. Blank means the start of the plan."),
     ];
     const COLUMNS: &'static [Column] = &[

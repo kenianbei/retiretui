@@ -18,7 +18,7 @@ expression: composed_frame(app)
 │  People         2 ││                                                                    │ │  Starts          Plan start      │
 │  Residency      1 ││                                                                    │ │  Ends            1 yr before ret │
 │  Household        ││                                                                    │ │  Growth          Inflation       │
-│  Settings         ││                                                                    │ │                                  │
+│  Settings         ││                                                                    │ │  Grows from      Plan start      │
 │  Market           ││                                                                    │ │                                  │
 │                   ││                                                                    │ │                                  │
 │                   ││                                                                    │ │                                  │

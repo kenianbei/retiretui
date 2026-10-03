@@ -4,8 +4,8 @@
 
 use retiretui_engine::optimize::GainsRate;
 use retiretui_engine::plan::{
-    AccountKind, COUNTRIES, Dollars, Draw, FilingStatus, IncomeKind, Payer, Plan, PlanDate,
-    Residency, TreatmentClass, Trigger, TriggerBasis, TriggerForm, US_STATES, place_name,
+    AccountKind, COUNTRIES, ColaAnchor, Dollars, Draw, FilingStatus, IncomeKind, Payer, Plan,
+    PlanDate, Residency, TreatmentClass, Trigger, TriggerBasis, TriggerForm, US_STATES, place_name,
 };
 use retiretui_engine::project::Summary;
 use toml::Value;
@@ -65,6 +65,18 @@ pub(crate) const fn payer(payer: Payer) -> &'static str {
         Payer::Employee => "Employee",
         Payer::Employer => "Employer",
         Payer::AfterTax => "After tax",
+    }
+}
+
+/// The plan's first year, as what a start or an anchor left out reads as.
+pub(crate) const PLAN_START: &str = "Plan start";
+
+/// Where an income's growth runs from, as a person says it.
+#[must_use]
+pub(crate) const fn cola_anchor(anchor: ColaAnchor) -> &'static str {
+    match anchor {
+        ColaAnchor::Plan => PLAN_START,
+        ColaAnchor::Start => "Its first year",
     }
 }
 

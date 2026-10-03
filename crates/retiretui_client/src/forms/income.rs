@@ -1,8 +1,9 @@
-use retiretui_engine::plan::{Income, Plan};
+use retiretui_engine::plan::{ColaAnchor, Income, Plan};
 
 use super::cells::Column;
 use super::offers::{RefSource, Vocabulary};
 use super::{Domain, DomainId, FieldSpec, GROWTH_HELP, applies};
+use crate::present;
 
 /// The plan's incomes, edited as a table.
 pub struct Incomes;
@@ -25,13 +26,17 @@ impl Domain for Incomes {
             .shown_when(applies::can_be_covered)
             .help("A workplace plan at this job covers its owner, contributing or not - a pension plan, say. Decides whether a traditional IRA contribution is deductible."),
         FieldSpec::money("amount", "Annual amount")
-            .help("Per year, in today's dollars. Blank on Social Security computes it from the earnings record."),
+            .help("Per year, in today's dollars unless it grows from its first year. Blank on Social Security computes it from the earnings record."),
         FieldSpec::timing(),
         FieldSpec::starts(),
         FieldSpec::ends(),
         FieldSpec::once(),
         FieldSpec::growth("cola", "Growth")
             .help(GROWTH_HELP),
+        FieldSpec::choice("cola_from", "Grows from", Vocabulary::ColaAnchor)
+            .blank(present::cola_anchor(ColaAnchor::Plan))
+            .shown_when(applies::can_grow_from_its_start)
+            .help("Its first year takes the amount as what it pays that year, as a pension estimate states it."),
     ];
     const COLUMNS: &'static [Column] = &[
         Column::new("id").headed("Income"),

@@ -2,6 +2,7 @@ use retiretui_engine::plan::{Cliff, Expense, Plan};
 
 use super::cells::Column;
 use super::{Domain, DomainId, FieldSpec, GROWTH_HELP};
+use crate::present;
 
 /// The plan's expenses, edited as a table.
 pub struct Expenses;
@@ -66,7 +67,7 @@ impl Domain for Cliffs {
         FieldSpec::money("cost", "Annual cost")
             .help("What the year costs once the threshold is crossed."),
         FieldSpec::trigger("start", "Starts")
-            .blank("Plan start")
+            .blank(present::PLAN_START)
             .help("When it begins. Blank means the start of the plan."),
         FieldSpec::trigger("end", "Ends").blank("Age 65").help(
             "The last year it applies. Blank means the year before the youngest person turns 65.",
