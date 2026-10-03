@@ -10,14 +10,8 @@ const wasm = fileURLToPath(
   new URL("../crates/retiretui_wasm/pkg", import.meta.url),
 );
 
-/** A script written into the page, which the policy admits by the hash of its text. */
 const INLINE_SCRIPT = /<script(?![^>]*\ssrc=)[^>]*>([\s\S]*?)<\/script>/g;
 
-/**
- * What the built page may do: load its own files, compile wasm, and run the
- * scripts written into it. Styles a script writes are let through, since the
- * menus and dialogs lock the page's scroll with one.
- */
 function policyOf(html: string): string {
   const hashes = Array.from(html.matchAll(INLINE_SCRIPT), ([, text = ""]) => {
     const hash = createHash("sha256").update(text).digest("base64");
@@ -26,6 +20,7 @@ function policyOf(html: string): string {
   return [
     "default-src 'none'",
     `script-src 'self' 'wasm-unsafe-eval' ${hashes.join(" ")}`,
+    // A menu or dialog locks the page's scroll with a style it writes, which no hash can name.
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self'",
     "connect-src 'self'",
@@ -36,7 +31,7 @@ function policyOf(html: string): string {
   ].join("; ");
 }
 
-/** The policy, first in the built page's head; the dev server's page, which Vite writes scripts into, has none. */
+/** Left out of the dev server's page, which Vite writes scripts of its own into. */
 const csp: Plugin = {
   name: "csp",
   apply: "build",
