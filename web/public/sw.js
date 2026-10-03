@@ -8,8 +8,8 @@ const APART = "ratzilla/";
 const BUILT = "assets/";
 /** The build's own list of its files, written beside the page. */
 const MANIFEST = "manifest.json";
-/** A built file as a page names it. */
-const NAMED = /assets\/[\w.-]+/g;
+/** The page in that list, by the source it is built from. */
+const PAGE = "index.html";
 
 self.addEventListener("install", (event) => {
   void self.skipWaiting();
@@ -46,55 +46,58 @@ async function page(event) {
   }
 }
 
-/** The build on the network, kept before a page fetched through here asks. */
+/**
+ * The build on the network, kept before a page fetched through here asks, and
+ * whatever page is kept: a worker before this one kept a page ahead of its files.
+ */
 async function keepNetwork() {
-  const response = await fetch(SCOPE.href);
-  if (!response.ok) return;
-  const text = await response.clone().text();
-  await keepBuild(await caches.open(CACHE), response, text);
+  const response = await fetch(SCOPE.href, { cache: "no-store" });
+  if (response.ok) await keepBuild(response);
 }
 
 /** Keeps the build of a page fetched, where it is unlike the page kept. */
 async function keepChanged(response) {
-  const cache = await caches.open(CACHE);
-  const kept = await cache.match(SCOPE.href);
+  const kept = await caches.match(SCOPE.href);
   const text = await response.clone().text();
   if (kept && (await kept.text()) === text) return;
-  await keepBuild(cache, response, text);
+  await keepBuild(response);
 }
 
 /**
  * Keeps a page only once every file of its build is kept, then drops any
  * other build's: a file that does not arrive leaves the cache as it was.
  */
-async function keepBuild(cache, response, text) {
-  const files = await listed();
-  const names = text.match(NAMED) ?? [];
+async function keepBuild(response) {
+  const chunks = await listed();
+  const text = await response.clone().text();
+  const { file, css = [] } = chunks[PAGE];
   // A list from another build than the page's would keep a page without its files.
-  if (!names.every((name) => files.has(new URL(name, SCOPE).href))) return;
+  if (![file, ...css].every((name) => text.includes(name))) return;
+  const files = new Set(
+    Object.values(chunks)
+      .flatMap((chunk) => [
+        chunk.file,
+        ...(chunk.css ?? []),
+        ...(chunk.assets ?? []),
+      ])
+      .map((name) => new URL(name, SCOPE).href),
+  );
+  const cache = await caches.open(CACHE);
   const requests = await cache.keys();
   const kept = new Set(requests.map((request) => request.url));
-  await cache.addAll([...files].filter((file) => !kept.has(file)));
+  await cache.addAll([...files].filter((url) => !kept.has(url)));
   await cache.put(SCOPE.href, response);
   const old = requests.filter(
-    (request) =>
-      new URL(request.url).pathname.startsWith(SCOPE.pathname + BUILT) &&
-      !files.has(request.url),
+    ({ url }) => url.startsWith(SCOPE.href + BUILT) && !files.has(url),
   );
   await Promise.all(old.map((request) => cache.delete(request)));
 }
 
-/** Every file of the build on the network, by its address. */
+/** The build on the network as it lists itself: each chunk's files, by its source. */
 async function listed() {
   const response = await fetch(new URL(MANIFEST, SCOPE), { cache: "no-store" });
   if (!response.ok) throw new Error(`${MANIFEST}: ${response.status}`);
-  const chunks = Object.values(await response.json());
-  const files = chunks.flatMap((chunk) => [
-    chunk.file,
-    ...(chunk.css ?? []),
-    ...(chunk.assets ?? []),
-  ]);
-  return new Set(files.map((file) => new URL(file, SCOPE).href));
+  return response.json();
 }
 
 /**

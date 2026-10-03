@@ -1,3 +1,5 @@
+import { readdirSync } from "node:fs";
+
 import type { Page } from "@playwright/test";
 
 import { SEARCH, example, expect, seed, test } from "./support";
@@ -11,24 +13,8 @@ function cachedBuilt(page: Page): Promise<number> {
   });
 }
 
-/** How many files the build lists as its own. */
-function listedBuilt(page: Page): Promise<number> {
-  return page.evaluate(async () => {
-    const response = await fetch("./manifest.json");
-    const chunks = Object.values(
-      (await response.json()) as Record<
-        string,
-        { file: string; css?: string[]; assets?: string[] }
-      >,
-    );
-    const files = chunks.flatMap((chunk) => [
-      chunk.file,
-      ...(chunk.css ?? []),
-      ...(chunk.assets ?? []),
-    ]);
-    return new Set(files).size;
-  });
-}
+/** The files the build wrote, as the suite's server serves them. */
+const BUILT = readdirSync(new URL("../dist/assets", import.meta.url));
 
 test("after one visit every page opens offline, searches and all", async ({
   page,
@@ -55,7 +41,7 @@ test("after one visit every page opens offline, searches and all", async ({
       }>,
   );
   expect(manifest.display).toBe("standalone");
-  expect(await cachedBuilt(page)).toBe(await listedBuilt(page));
+  expect(await cachedBuilt(page)).toBe(BUILT.length);
 
   await context.setOffline(true);
   await page.reload();

@@ -2,26 +2,26 @@ import { beforeEach, expect, test, vi } from "vitest";
 
 import "../public/sw.js";
 
-const SCOPE = "https://example.test/retiretui/";
-const MANIFEST = `${SCOPE}manifest.json`;
-
 interface WorkerEvent {
   request?: { method: string; mode: string; url: string };
-  respondWith?: (response: Promise<Response>) => void;
+  respondWith: (response: Promise<Response>) => void;
   waitUntil: (work: Promise<unknown>) => void;
 }
 
-const handlers = vi.hoisted(() => {
+const { handlers, SCOPE } = vi.hoisted(() => {
+  const SCOPE = "https://example.test/retiretui/";
   const handlers = new Map<string, (event: WorkerEvent) => void>();
   vi.stubGlobal("self", {
-    registration: { scope: "https://example.test/retiretui/" },
+    registration: { scope: SCOPE },
     skipWaiting: () => Promise.resolve(),
     clients: { claim: () => Promise.resolve() },
     addEventListener: (type: string, handler: (event: WorkerEvent) => void) =>
       handlers.set(type, handler),
   });
-  return handlers;
+  return { handlers, SCOPE };
 });
+
+const MANIFEST = `${SCOPE}manifest.json`;
 
 /** What the network answers with, by address; anything else is not found. */
 let network = new Map<string, string>();
@@ -34,15 +34,16 @@ const urlOf = (request: string | URL | { url: string }) =>
     ? String(request)
     : request.url;
 
-async function answer(request: string | URL | { url: string }) {
-  await Promise.resolve();
-  if (isOffline) throw new TypeError("offline");
+function answer(request: string | URL | { url: string }) {
+  if (isOffline) return Promise.reject(new TypeError("offline"));
   const url = urlOf(request);
   fetched.push(url);
   const body = network.get(url);
-  return body === undefined
-    ? new Response(null, { status: 404 })
-    : new Response(body);
+  return Promise.resolve(
+    body === undefined
+      ? new Response(null, { status: 404 })
+      : new Response(body),
+  );
 }
 
 const cache = {
@@ -65,32 +66,34 @@ const cache = {
   },
 };
 
-/** A build as its page and Vite's list say it: `shared` is in every build. */
+/** A build's files: `shared` is in every build. */
+const builtOf = (build: string) =>
+  [
+    `assets/index-${build}.css`,
+    `assets/index-${build}.js`,
+    "assets/shared.wasm",
+  ] as const;
+
+/** Puts a build on the network, as its page and Vite's list say it. */
 function deploy(build: string) {
-  const files = [`assets/index-${build}.js`, `assets/index-${build}.css`];
+  const [css, file, shared] = builtOf(build);
   network = new Map([
-    [SCOPE, `<script src="./assets/index-${build}.js"></script>`],
+    [SCOPE, `<link href="./${css}" /><script src="./${file}"></script>`],
     [
       MANIFEST,
       JSON.stringify({
-        "index.html": {
-          file: files[0],
-          css: [files[1]],
-          assets: ["assets/shared.wasm"],
-        },
+        "index.html": { file, css: [css], assets: [shared] },
       }),
     ],
-    ...[...files, "assets/shared.wasm"].map(
-      (file) => [SCOPE + file, file] as const,
-    ),
+    ...builtOf(build).map((name) => [SCOPE + name, name] as const),
   ]);
 }
 
-async function run(type: string, event: Partial<WorkerEvent>) {
+async function run(type: string, request?: WorkerEvent["request"]) {
   const waited: Promise<unknown>[] = [];
   let response: Promise<Response> | undefined;
   handlers.get(type)?.({
-    ...event,
+    request,
     respondWith: (answered) => {
       response = answered;
     },
@@ -101,12 +104,16 @@ async function run(type: string, event: Partial<WorkerEvent>) {
   return answered;
 }
 
-const install = () => run("install", {});
+const install = () => run("install");
 
 /** A page asked for through the worker; its text. */
 async function visit() {
-  const request = { method: "GET", mode: "navigate", url: SCOPE };
-  return (await run("fetch", { request }))?.text();
+  const page = await run("fetch", {
+    method: "GET",
+    mode: "navigate",
+    url: SCOPE,
+  });
+  return page?.text();
 }
 
 const keptBuilt = () =>
@@ -128,19 +135,8 @@ beforeEach(async () => {
   fetched = [];
 });
 
-const ONE = [
-  "assets/index-one.css",
-  "assets/index-one.js",
-  "assets/shared.wasm",
-];
-const TWO = [
-  "assets/index-two.css",
-  "assets/index-two.js",
-  "assets/shared.wasm",
-];
-
 test("installing keeps the page and every file the build lists", async () => {
-  expect(keptBuilt()).toEqual(ONE);
+  expect(keptBuilt()).toEqual(builtOf("one"));
   isOffline = true;
   expect(await visit()).toContain("index-one.js");
 });
@@ -153,7 +149,7 @@ test("a page that has not changed asks for no list", async () => {
 test("a new build takes the old one's place once its files are kept", async () => {
   deploy("two");
   expect(await visit()).toContain("index-two.js");
-  expect(keptBuilt()).toEqual(TWO);
+  expect(keptBuilt()).toEqual(builtOf("two"));
   expect(fetched).not.toContain(`${SCOPE}assets/shared.wasm`);
   isOffline = true;
   expect(await visit()).toContain("index-two.js");
@@ -163,7 +159,7 @@ test("a new build whose list does not arrive leaves the old one whole", async ()
   deploy("two");
   network.delete(MANIFEST);
   expect(await visit()).toContain("index-two.js");
-  expect(keptBuilt()).toEqual(ONE);
+  expect(keptBuilt()).toEqual(builtOf("one"));
   isOffline = true;
   expect(await visit()).toContain("index-one.js");
 });
@@ -172,7 +168,7 @@ test("a new build missing a file leaves the old one whole", async () => {
   deploy("two");
   network.delete(`${SCOPE}assets/index-two.css`);
   await visit();
-  expect(keptBuilt()).toEqual(ONE);
+  expect(keptBuilt()).toEqual(builtOf("one"));
   isOffline = true;
   expect(await visit()).toContain("index-one.js");
 });
@@ -182,7 +178,7 @@ test("a list from another build than the page's is not kept under it", async () 
   deploy("two");
   network.set(MANIFEST, stale);
   await visit();
-  expect(keptBuilt()).toEqual(ONE);
+  expect(keptBuilt()).toEqual(builtOf("one"));
   isOffline = true;
   expect(await visit()).toContain("index-one.js");
 });
@@ -194,5 +190,5 @@ test("a worker that installs offline keeps the build on the next page fetched", 
   expect(keptBuilt()).toEqual([]);
   isOffline = false;
   await visit();
-  expect(keptBuilt()).toEqual(ONE);
+  expect(keptBuilt()).toEqual(builtOf("one"));
 });
