@@ -400,9 +400,8 @@ fn a_computed_benefit_under_a_rate_of_its_own_grows_at_it_from_the_age_62_year()
     );
     let projection = run(&plan);
     let paid = |year| projection.row(year).unwrap().income["ss"];
-    // 45,108 in 2042 dollars, at 3% for the six and seven years from 2042
-    // rather than the plan's 2.5%, and June on in 2047; kept as 28,110
-    // whole 2026 dollars, which puts 2048 and 2049 a dollar over.
+    // 45,108 in 2042 dollars at 3% from 2042, not the plan's 2.5%, June on in
+    // 2047; kept as 28,110 whole 2026 dollars, so 2048 and 2049 are $1 over.
     assert_eq!(paid(2047), 30_504);
     assert_eq!(paid(2048), 53_862);
     assert_eq!(paid(2049), 55_478);

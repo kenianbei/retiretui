@@ -33,7 +33,6 @@ start = {{ event = "retire" }}
     ))
 }
 
-/// What the pension pays in `year`: nothing where the year has no row for it.
 fn pension(projection: &Projection, year: i16) -> i64 {
     let row = projection.row(year).unwrap();
     row.income.get("pension").copied().unwrap_or(0)
