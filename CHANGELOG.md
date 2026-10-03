@@ -33,9 +33,11 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 
 - **Breaking.** No plan key is removed or renamed, and a plan written for 0.3.0
-  projects as it did. What breaks is the engine's Rust API, which is 0.4.0:
-  `Income` gains `cola_from`, a `ColaAnchor`, so a struct literal of one written
-  outside the engine must add it.
+  projects as it did. What breaks is the Rust API, and the workspace is 0.4.0:
+  - The engine's `Income` gains `cola_from`, a `ColaAnchor`, so a struct literal
+    of one written outside the engine must add it.
+  - The client's `Vocabulary` gains `ColaAnchor`, so a `match` over it written
+    outside the client must cover it.
 
 ### Fixed
 
