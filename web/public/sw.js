@@ -97,9 +97,13 @@ async function listed() {
   return new Set(files.map((file) => new URL(file, SCOPE).href));
 }
 
-/** A built file: the cache's, or fetched as anything else is. */
+/**
+ * A built file: the cache's, or fetched as anything else is. Its name is its
+ * content, so one kept ahead of the page answers whatever headers ask for it.
+ */
 async function built(event) {
-  return (await caches.match(event.request)) ?? fresh(event);
+  const kept = await caches.match(event.request, { ignoreVary: true });
+  return kept ?? fresh(event);
 }
 
 /** Anything else: fetched and kept once it is sent, or the cache's offline. */

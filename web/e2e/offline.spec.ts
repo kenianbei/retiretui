@@ -11,6 +11,25 @@ function cachedBuilt(page: Page): Promise<number> {
   });
 }
 
+/** How many files the build lists as its own. */
+function listedBuilt(page: Page): Promise<number> {
+  return page.evaluate(async () => {
+    const response = await fetch("./manifest.json");
+    const chunks = Object.values(
+      (await response.json()) as Record<
+        string,
+        { file: string; css?: string[]; assets?: string[] }
+      >,
+    );
+    const files = chunks.flatMap((chunk) => [
+      chunk.file,
+      ...(chunk.css ?? []),
+      ...(chunk.assets ?? []),
+    ]);
+    return new Set(files).size;
+  });
+}
+
 test("after one visit every page opens offline, searches and all", async ({
   page,
   context,
@@ -36,22 +55,7 @@ test("after one visit every page opens offline, searches and all", async ({
       }>,
   );
   expect(manifest.display).toBe("standalone");
-  await page.reload();
-  await expect(
-    page.getByRole("heading", { name: "Overview", level: 1 }),
-  ).toBeVisible();
-  let last = -1;
-  await expect
-    .poll(
-      async () => {
-        const now = await cachedBuilt(page);
-        const isSettled = now === last;
-        last = now;
-        return isSettled;
-      },
-      { intervals: [1_000] },
-    )
-    .toBe(true);
+  expect(await cachedBuilt(page)).toBe(await listedBuilt(page));
 
   await context.setOffline(true);
   await page.reload();
