@@ -3,7 +3,7 @@ use std::fmt;
 
 use serde::Serialize;
 
-use super::escalation::ColaSpec;
+use super::escalation::{ColaAnchor, ColaSpec};
 use super::incomes::IncomeKind;
 use super::{AccountKind, TreatmentClass};
 use super::{FilingStatus, Plan, SCHEMA_VERSION, Span};
@@ -293,6 +293,12 @@ impl<'a> Checker<'a> {
                 self.push(
                     format!("{path}.covered"),
                     "only a salary makes its owner covered",
+                );
+            }
+            if income.kind == IncomeKind::SocialSecurity && income.cola_from == ColaAnchor::Start {
+                self.push(
+                    format!("{path}.cola_from"),
+                    "a social security amount is today's dollars; it escalates from plan start",
                 );
             }
             match income.amount {

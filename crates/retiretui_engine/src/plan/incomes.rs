@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use super::Dollars;
-use super::escalation::ColaSpec;
+use super::escalation::{ColaAnchor, ColaSpec};
+use super::is_default;
 use super::triggers::Trigger;
 
 /// What kind of income a source is; the kind decides its tax treatment.
@@ -58,7 +59,8 @@ impl IncomeKind {
     }
 }
 
-/// An income source, in annual today's dollars.
+/// An income source, in annual today's dollars unless its `cola_from` says
+/// its first year's.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Income {
@@ -73,10 +75,11 @@ pub struct Income {
     pub kind: IncomeKind,
     /// Owning person id.
     pub owner: String,
-    /// Annual amount in today's dollars (for `windfall`, the one-time
-    /// amount). A `social-security` income may leave it out, and its annual
-    /// benefit at the claim is then computed from the owner's earnings
-    /// record and the salary the plan projects; stated, it is used as is.
+    /// Annual amount (for `windfall`, the one-time amount): in today's
+    /// dollars, or under `cola_from = "start"` what its first year pays. A
+    /// `social-security` income may leave it out, and its annual benefit at
+    /// the claim is then computed from the owner's earnings record and the
+    /// salary the plan projects; stated, it is used as is.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub amount: Option<Dollars>,
     /// First year received; absent means from plan start.
@@ -92,6 +95,11 @@ pub struct Income {
     /// nominal (`false`), or a fixed annual rate of its own.
     #[serde(default)]
     pub cola: ColaSpec,
+    /// Where `cola` runs from: the plan's start (default), or the income's
+    /// first year, which the amount is then stated for. Not for
+    /// `social-security`, whose amount is always today's dollars.
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub cola_from: ColaAnchor,
     /// For a `salary`: the job's workplace plan covers the owner while it
     /// pays, contributing or not, which decides whether a traditional IRA
     /// contribution is deductible.

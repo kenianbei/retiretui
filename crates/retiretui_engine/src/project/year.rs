@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use crate::params::{Source, TaxTables};
-use crate::plan::{Account, ColaSpec, Dollars, Plan, Span, TreatmentClass};
+use crate::plan::{Account, ColaAnchor, ColaSpec, Dollars, Income, Plan, Span, TreatmentClass};
 use crate::tax::PersonIncome;
 
 use super::benefit::{Derived, first_paid_months};
@@ -201,6 +201,20 @@ impl<'a> Simulation<'a> {
 
     pub(super) fn cola_factor(&self, cola: ColaSpec, year: i16) -> f64 {
         cola.factor(self.path.deflator(year), i32::from(year - self.start_year))
+    }
+
+    /// What `income`'s amount is escalated by in `year`: from the plan's
+    /// start, or, where it says so, from its first year if that is later.
+    pub(super) fn income_factor(&self, income: &Income, year: i16) -> f64 {
+        let first = match income.cola_from {
+            ColaAnchor::Plan => None,
+            ColaAnchor::Start => self.resolver.first_year(&income.id),
+        };
+        let Some(first) = first.filter(|&first| first > self.start_year) else {
+            return self.cola_factor(income.cola, year);
+        };
+        let prices = self.path.deflator(year) / self.path.deflator(first);
+        income.cola.factor(prices, i32::from(year - first))
     }
 
     fn sweep_surplus(&mut self, acc: &mut YearAcc) {

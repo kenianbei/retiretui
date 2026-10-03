@@ -37,6 +37,21 @@ fn round_trips_through_canonical_toml() {
 }
 
 #[test]
+fn an_income_writes_where_it_escalates_from_only_when_that_is_its_start() {
+    let plan = Plan::from_toml_str(FULL).unwrap();
+    let from_plan = plan.to_toml_string().unwrap();
+    assert!(!from_plan.contains("cola_from"), "{from_plan}");
+    let text = FULL.replace(
+        "kind = \"pension\"",
+        "kind = \"pension\"\ncola_from = \"start\"",
+    );
+    let plan = Plan::from_toml_str(&text).unwrap();
+    let from_start = plan.to_toml_string().unwrap();
+    assert!(from_start.contains("cola_from = \"start\""), "{from_start}");
+    assert_eq!(Plan::from_toml_str(&from_start).unwrap(), plan);
+}
+
+#[test]
 fn account_kinds_map_to_treatments() {
     let plan = Plan::from_toml_str(FULL).unwrap();
     let treatment = |id: &str| plan.account(id).unwrap().treatment();

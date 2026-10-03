@@ -7,8 +7,8 @@ use std::fmt::Debug;
 use retiretui_engine::optimize::GainsRate;
 use retiretui_engine::params::Source;
 use retiretui_engine::plan::{
-    AccountKind, AssetClass, Draw, FilingStatus, IncomeKind, Operand, PlanDate, TreatmentClass,
-    Trigger, TriggerBasis,
+    AccountKind, AssetClass, ColaAnchor, Draw, FilingStatus, IncomeKind, Operand, PlanDate,
+    TreatmentClass, Trigger, TriggerBasis,
 };
 use serde::Serialize;
 use serde::de::DeserializeOwned;
@@ -45,6 +45,7 @@ fn variants_serde_knows<T: DeserializeOwned + Debug>() -> BTreeSet<String> {
 fn every_closed_enum_is_spelt_as_serde_spells_it() {
     assert_spelt_as_serde_spells(AccountKind::ALL, AccountKind::as_str);
     assert_spelt_as_serde_spells(IncomeKind::ALL, IncomeKind::as_str);
+    assert_spelt_as_serde_spells(ColaAnchor::ALL, ColaAnchor::as_str);
     assert_spelt_as_serde_spells(FilingStatus::ALL, FilingStatus::as_str);
     assert_spelt_as_serde_spells(TreatmentClass::ALL, TreatmentClass::as_str);
     assert_spelt_as_serde_spells(AssetClass::ALL, AssetClass::as_str);

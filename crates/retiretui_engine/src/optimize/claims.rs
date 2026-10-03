@@ -6,7 +6,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::params::TaxTables;
 use crate::plan::{
-    ColaSpec, Income, IncomeKind, Issue, Item, Plan, PlanError, SCHEMA_VERSION, Trigger, push_issue,
+    ColaAnchor, ColaSpec, Income, IncomeKind, Issue, Item, Plan, PlanError, SCHEMA_VERSION,
+    Trigger, push_issue,
 };
 use crate::project::{Projection, horizon_year, project};
 use crate::search::{Progress, RunError};
@@ -278,6 +279,7 @@ pub(super) fn computed_income(owner: &str) -> Income {
         end: None,
         on: None,
         cola: ColaSpec::default(),
+        cola_from: ColaAnchor::default(),
         covered: false,
     }
 }

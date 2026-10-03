@@ -3189,7 +3189,7 @@ checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
 
 [[package]]
 name = "retiretui"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -3202,7 +3202,7 @@ dependencies = [
 
 [[package]]
 name = "retiretui_cli"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -3214,7 +3214,7 @@ dependencies = [
 
 [[package]]
 name = "retiretui_client"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "bevy_ecs",
@@ -3230,7 +3230,7 @@ dependencies = [
 
 [[package]]
 name = "retiretui_engine"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "jiff",
  "schemars",
@@ -3243,7 +3243,7 @@ dependencies = [
 
 [[package]]
 name = "retiretui_mcp"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -3258,7 +3258,7 @@ dependencies = [
 
 [[package]]
 name = "retiretui_tui"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "bevy_app",
@@ -3289,7 +3289,7 @@ dependencies = [
 
 [[package]]
 name = "retiretui_wasm"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "js-sys",
  "retiretui_client",
@@ -3303,7 +3303,7 @@ dependencies = [
 
 [[package]]
 name = "retiretui_web"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "bevy_app",
  "js-sys",
