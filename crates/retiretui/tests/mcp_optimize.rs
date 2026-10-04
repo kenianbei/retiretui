@@ -163,6 +163,10 @@ fn optimize_spending_finds_both_ceilings_and_stores_the_one_at_the_target() {
         at_default["at_target"]["success"].as_f64().unwrap() >= 0.9,
         "{at_default}"
     );
+    assert!(
+        at_default["at_target"]["flexible"].as_i64() < at_target["flexible"].as_i64(),
+        "nine markets in ten leave less to spend than eight: {at_default}"
+    );
     assert_eq!(at_default["written"], false, "{at_default}");
 
     let refused = client.call_expecting_error("optimize_spending", json!({"path": "fixed.toml"}));

@@ -292,18 +292,41 @@ fn the_pane_keys_are_the_forms_own_where_no_page_is_shown() {
     assert_eq!(said(&app), heard);
 }
 
-#[test]
-fn enter_in_a_text_field_creates_as_the_button_does() {
-    let (_, mut app) = empty_shell();
-    answer(&mut app, FilingStatus::Single, SAM);
+/// Tabs to the form's first text field.
+fn to_a_text_field(app: &mut App) {
     let is_typed_in = |app: &mut App| {
         let world = app.world_mut();
         let held = world.resource::<bevy_input_focus::InputFocus>().get();
         held.is_some_and(|held| world.get::<plurimus::widgets::TextInput>(held).is_some())
     };
-    while !is_typed_in(&mut app) {
-        press_key(&mut app, KeyCode::Tab);
+    while !is_typed_in(app) {
+        press_key(app, KeyCode::Tab);
     }
+}
+
+#[test]
+fn applying_from_the_question_a_press_outside_asks_creates_as_the_button_does() {
+    let mut app = headless_app_at(support::scratch_plan(), SIZE);
+    run_command(&mut app, "new");
+    settle(&mut app);
+    to_a_text_field(&mut app);
+    type_text(&mut app, "Sam");
+    click(&mut app, 0, 0);
+    assert!(is_asking(&app), "{}", composed_frame(&app));
+    support::answer_back(&mut app, 0);
+    settle(&mut app);
+    assert!(
+        composed_frame(&app).contains("New plan as"),
+        "the picker that names the plan: {}",
+        composed_frame(&app)
+    );
+}
+
+#[test]
+fn enter_in_a_text_field_creates_as_the_button_does() {
+    let (_, mut app) = empty_shell();
+    answer(&mut app, FilingStatus::Single, SAM);
+    to_a_text_field(&mut app);
     press_key(&mut app, KeyCode::Enter);
     settle(&mut app);
     assert!(
