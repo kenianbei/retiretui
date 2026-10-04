@@ -2,7 +2,7 @@
 
 use clap::{CommandFactory as _, FromArgMatches as _, Parser, Subcommand};
 use retiretui_mcp::McpArgs;
-use retiretui_tui::terminal::TuiArgs;
+use retiretui_tui::terminal::{ThemeArgs, TuiArgs};
 
 #[derive(Parser)]
 #[command(version, about, arg_required_else_help = true)]
@@ -17,18 +17,21 @@ enum Command {
     Cli(retiretui_cli::Command),
     /// Open the interactive planner for a plan or scenario.
     Tui(TuiArgs),
+    /// List the planner's themes, or print one to start your own from.
+    Theme(ThemeArgs),
     /// Serve plans to AI agents over the Model Context Protocol on stdio.
     Mcp(McpArgs),
 }
 
 /// The order `--help` lists the commands in, which the crates they come from
 /// do not decide.
-const HELP_ORDER: [&str; 10] = [
+const HELP_ORDER: [&str; 11] = [
     "validate",
     "project",
     "actions",
     "compare",
     "tui",
+    "theme",
     "optimize",
     "monte-carlo",
     "historical",
@@ -51,6 +54,7 @@ fn main() -> anyhow::Result<()> {
     match cli.command {
         Command::Cli(command) => retiretui_cli::run(&command),
         Command::Tui(args) => retiretui_tui::terminal::run(&args),
+        Command::Theme(args) => retiretui_tui::terminal::run_theme(&args),
         Command::Mcp(args) => retiretui_mcp::run(&args),
     }
 }

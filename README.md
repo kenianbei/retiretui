@@ -56,6 +56,39 @@ form builds a first one from the household's basics. The [example
 plans][Examples] are invented households, from a first job to a retired couple,
 to try it on from a clone of the repository.
 
+### Settings
+
+The planner keeps its settings in `config.toml`, in `~/.config/retiretui/` or
+under `$XDG_CONFIG_HOME` where that is set. It writes the file itself when
+`theme` or `motion` is run from the `:` command palette, and all of it can be
+written by hand:
+
+```toml
+[tui]
+motion = "reduced" # or "full", or "off"
+
+[tui.theme]
+name = "gruvbox" # a theme, or a family that follows a light or dark terminal
+transparent = true # keep the terminal's own background
+accent = "#fabd2f" # any role of a theme, painted over it
+
+[tui.keys]
+save = "ctrl-w" # a command as the palette lists it, and the keys it answers to
+```
+
+A theme of your own is a file in `themes/` beside `config.toml`, named by its
+file name and chosen like any other. `retiretui theme list` names every theme
+there is, and `retiretui theme dump` prints one to start from:
+
+```sh
+mkdir -p ~/.config/retiretui/themes
+retiretui theme dump nord > ~/.config/retiretui/themes/mine.toml
+```
+
+The theme picker reads that directory again each time it opens, so a theme being
+written is tried on without leaving the planner. The [changelog][Changelog] says
+how a key is spelled and what a `[tui.keys]` entry may state.
+
 ### In a browser
 
 The web app at <https://kenianbei.github.io/retiretui/>, published with each
@@ -97,6 +130,7 @@ python3 -m http.server -d crates/retiretui_web/dist
 | `historical`      | Run the plan from every historical start year       |
 | `import-earnings` | Record an ssa.gov earnings statement on a person    |
 | `tui`             | Open the interactive planner                        |
+| `theme`           | List the planner's themes, or print one to copy     |
 | `mcp`             | Serve plans to AI agents over stdio                 |
 
 `retiretui <command> --help` lists each command's options. From a clone of the

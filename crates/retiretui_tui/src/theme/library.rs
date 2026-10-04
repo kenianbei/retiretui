@@ -12,10 +12,11 @@ use crate::settings::Settings;
 use crate::store::Store;
 
 /// The directory beside the settings file that the user's themes are in.
-const DIRECTORY: &str = "themes";
-const EXTENSION: &str = ".toml";
+pub const DIRECTORY: &str = "themes";
+pub const EXTENSION: &str = ".toml";
 
-const EMBEDDED: &[(&str, &str)] = &[
+/// Each embedded theme's name and its document.
+pub const EMBEDDED: &[(&str, &str)] = &[
     (
         "catppuccin-latte",
         include_str!("themes/catppuccin-latte.toml"),
@@ -154,9 +155,14 @@ impl Themes {
             .map_err(Clone::clone)
     }
 
-    /// A theme that does not read is no member of a family, so that it
-    /// hides nothing but itself.
-    fn find(&self, name: &str, wanted: Variant) -> Result<&Listed, String> {
+    /// The theme `name` names, by itself or as its family. One that does
+    /// not read is no member of a family, so that it hides nothing but
+    /// itself.
+    ///
+    /// # Errors
+    ///
+    /// Where no theme or family has the name.
+    pub fn find(&self, name: &str, wanted: Variant) -> Result<&Listed, String> {
         let mut of_family = None;
         for listed in &self.0 {
             if listed.slug == name {

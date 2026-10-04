@@ -2,7 +2,8 @@
 
 mod common;
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::process::{Command, Output};
 
 use common::{FULL_PLAN, OPT_PLAN, STATEMENT, json_of, retiretui, scratch_dir};
 
@@ -292,4 +293,131 @@ fn import_earnings_records_the_statement_on_the_person() {
     assert!(written.contains("2024 = 168600"), "{written}");
     let valid = retiretui(&["validate", plan]);
     assert!(valid.status.success(), "{valid:?}");
+}
+
+const DUSK: &str = "# mine\nfamily = \"mine\"\nvariant = \"dark\"\naccent = \"#010203\"\n";
+const LIGHT_GROUND: &str = "0;15";
+const DARK_GROUND: &str = "15;0";
+const EMBEDDED_THEMES: usize = 13;
+
+/// A config home of this test's own, its `themes` directory holding
+/// `themes`.
+fn config_home(name: &str, themes: &[(&str, &str)]) -> PathBuf {
+    let home = std::env::temp_dir().join(format!("retiretui-theme-{name}"));
+    let _ = std::fs::remove_dir_all(&home);
+    let directory = home.join("retiretui/themes");
+    std::fs::create_dir_all(&directory).unwrap();
+    for (file, text) in themes {
+        std::fs::write(directory.join(file), text).unwrap();
+    }
+    home
+}
+
+/// `retiretui theme` under the config home `home`, on a terminal whose
+/// `COLORFGBG` is `ground`.
+fn theme(home: &Path, ground: &str, args: &[&str]) -> Output {
+    Command::new(env!("CARGO_BIN_EXE_retiretui"))
+        .arg("theme")
+        .args(args)
+        .env("XDG_CONFIG_HOME", home)
+        .env("COLORFGBG", ground)
+        .output()
+        .unwrap()
+}
+
+fn text_of(output: &[u8]) -> String {
+    String::from_utf8(output.to_vec()).unwrap()
+}
+
+fn embedded_theme(slug: &str) -> String {
+    let themes = Path::new("../retiretui_tui/src/theme/themes");
+    std::fs::read_to_string(themes.join(format!("{slug}.toml"))).unwrap()
+}
+
+#[test]
+fn theme_list_names_the_built_in_themes_and_the_users_beside_them() {
+    let files = [
+        ("dusk.toml", DUSK),
+        ("nord.toml", DUSK),
+        ("bad.toml", "family = 3"),
+        ("terminal.toml", DUSK),
+        ("notes.md", DUSK),
+    ];
+    let home = config_home("list", &files);
+    let listed = theme(&home, DARK_GROUND, &["list"]);
+    assert!(listed.status.success(), "{listed:?}");
+    let stdout = text_of(&listed.stdout);
+    let rows: Vec<Vec<&str>> = stdout
+        .lines()
+        .map(|line| line.split_whitespace().collect())
+        .collect();
+    assert_eq!(rows[0], ["theme", "variant", "family", "from"]);
+    assert_eq!(rows[1][0], "terminal");
+    let row = |slug: &str| rows.iter().find(|row| row[0] == slug).unwrap()[1..].join(" ");
+    assert_eq!(row("dusk"), "dark mine user");
+    assert_eq!(row("nord"), "dark mine user, over built in");
+    assert_eq!(row("bad"), "does not read");
+    assert_eq!(row("gruvbox-light"), "light gruvbox built in");
+    let built_in = stdout.lines().filter(|line| line.ends_with("  built in"));
+    assert_eq!(built_in.count(), EMBEDDED_THEMES - 1);
+    assert_eq!(rows.len(), EMBEDDED_THEMES + 4, "{stdout}");
+    let stderr = text_of(&listed.stderr);
+    assert!(stderr.contains("terminal.toml: terminal is"), "{stderr}");
+    assert!(stderr.contains("theme bad: "), "{stderr}");
+    assert_eq!(stderr.lines().count(), 2, "{stderr}");
+}
+
+#[test]
+fn theme_list_with_no_themes_of_the_users_is_the_built_in_ones_and_says_nothing() {
+    let home = std::env::temp_dir().join("retiretui-theme-none");
+    let _ = std::fs::remove_dir_all(&home);
+    let listed = theme(&home, DARK_GROUND, &["list"]);
+    assert!(listed.status.success(), "{listed:?}");
+    assert_eq!(text_of(&listed.stdout).lines().count(), EMBEDDED_THEMES + 2);
+    assert_eq!(text_of(&listed.stderr), "");
+}
+
+#[test]
+fn theme_dump_prints_the_file_a_session_would_take_the_name_as() {
+    let home = config_home("dump", &[("dusk.toml", DUSK), ("nord.toml", DUSK)]);
+    let dumped = |ground, name| {
+        let output = theme(&home, ground, &["dump", name]);
+        assert!(output.status.success(), "{output:?}");
+        text_of(&output.stdout)
+    };
+    assert_eq!(dumped(DARK_GROUND, "dracula"), embedded_theme("dracula"));
+    let light = embedded_theme("gruvbox-light");
+    assert_eq!(dumped(LIGHT_GROUND, "gruvbox"), light, "a family");
+    assert_eq!(
+        dumped(DARK_GROUND, "gruvbox"),
+        embedded_theme("gruvbox-dark")
+    );
+    assert_eq!(dumped(DARK_GROUND, "dusk"), DUSK, "the user's, as written");
+    assert_eq!(
+        dumped(DARK_GROUND, "nord"),
+        DUSK,
+        "theirs over the built in"
+    );
+    assert_eq!(dumped(LIGHT_GROUND, "mine"), DUSK);
+
+    let copy = home.join("retiretui/themes/copy.toml");
+    std::fs::write(&copy, dumped(DARK_GROUND, "tokyo-night")).unwrap();
+    let listed = text_of(&theme(&home, DARK_GROUND, &["list"]).stdout);
+    let copied = listed.lines().find(|line| line.starts_with("copy "));
+    assert!(
+        copied.is_some_and(|row| row.ends_with("  user")),
+        "{listed}"
+    );
+}
+
+#[test]
+fn theme_dump_refuses_the_terminals_own_and_a_name_that_is_no_theme() {
+    let home = config_home("refused", &[]);
+    for (name, said) in [("terminal", "have no file"), ("nrod", "\"nrod\"")] {
+        let refused = theme(&home, DARK_GROUND, &["dump", name]);
+        assert!(!refused.status.success(), "{name}");
+        assert_eq!(text_of(&refused.stdout), "");
+        let stderr = text_of(&refused.stderr);
+        assert!(stderr.contains(said), "{stderr}");
+    }
 }
