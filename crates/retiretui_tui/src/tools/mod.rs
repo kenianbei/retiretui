@@ -140,9 +140,8 @@ pub(crate) fn show_help(
     }
 }
 
-/// How a help line ends where the highlighted option can be written as a
-/// scenario: by the key of the `write` command, or by its full stop alone
-/// where that has none.
+/// How a help line ends where its option can be written as a scenario: by
+/// the `write` command's key, or its full stop alone where that has none.
 pub(crate) fn writes_it(keymap: &Keymap, write: &str) -> String {
     match keymap.label_named(write, 0) {
         "" => ".".to_owned(),

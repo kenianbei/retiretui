@@ -10,11 +10,8 @@ use plurimus::ui::KeyBinding;
 use super::{COMMANDS, CommandId, PALETTE, Scope, all, keys, named};
 use crate::nav::Page;
 
-/// The table of the settings file a user's keys are stated in, as what is
-/// said of them names it.
 const TABLE: &str = "[tui.keys]";
 
-/// Why the palette's entry may not be empty.
 const PALETTE_KEEPS_A_KEY: &str = "the palette keeps a key, so that every command stays in reach";
 
 /// Whether one key may run a command in each scope: a page's row may take
@@ -70,7 +67,6 @@ impl Rebinding {
         })
     }
 
-    /// Gives `command` the `keys` the user states for it.
     fn admit(&mut self, command: CommandId, keys: Vec<KeyBinding>) -> Result<(), String> {
         let kept = keys
             .iter()
@@ -113,18 +109,14 @@ pub struct Keymap {
 }
 
 impl Keymap {
-    /// The keys the command table states.
     #[cfg(test)]
     pub fn defaults() -> Self {
         Self::with(&toml::Table::new()).0
     }
 
-    /// The command table's keys under the entries of `user`, each naming a
-    /// command and stating every key it answers to. An entry that does not
-    /// read, or that states a key kept for another command - one an earlier
-    /// entry stated, or the palette's - is left out and the command keeps
-    /// the keys it had; a key another command holds unstated is taken from
-    /// it.
+    /// The command table's keys under the entries of `user`. One that does
+    /// not read, or states a key kept for another command, is left out; a
+    /// key a command holds unstated is taken from it.
     pub fn with(user: &toml::Table) -> (Self, Remarks) {
         let palette = named(PALETTE);
         let mut rebinding = Rebinding {
@@ -176,9 +168,8 @@ impl Keymap {
         self.labels[command.0].first().copied().unwrap_or_default()
     }
 
-    /// How a key of the command named `name` is shown: its `preferred`,
-    /// counted from the first, where it has that many, and its first
-    /// otherwise; empty where it has none, or nothing has the name.
+    /// How the `preferred` key of the command named `name` is shown, or its
+    /// first where it has fewer; empty where it has none.
     pub fn label_named(&self, name: &str, preferred: usize) -> &'static str {
         let Some(command) = named(name) else {
             return "";

@@ -44,8 +44,8 @@ pub struct Settings {
     pub keys: toml::Table,
 }
 
-/// `key` of `tui` read into `setting`, which keeps what it held where the
-/// value does not read, and why it did not.
+/// `key` of `tui` read into `setting`. Where the value does not read,
+/// `setting` keeps what it held and the answer is why.
 fn take<T: DeserializeOwned>(tui: &mut toml::Table, key: &str, setting: &mut T) -> Option<String> {
     match tui.remove(key)?.try_into() {
         Ok(read) => {
@@ -68,9 +68,8 @@ impl Settings {
     }
 
     /// The settings the file at `path` in `store` holds, and a complaint
-    /// for each that does not read. A file that is absent is the defaults,
-    /// as is one that is not TOML; a setting that does not read is its
-    /// default beside the rest. The file is left as it is.
+    /// for each that does not read and so keeps its default. An absent
+    /// file is the defaults, as is one that is not TOML; it is left as it is.
     pub fn at(store: Arc<dyn Store>, path: PathBuf) -> (Self, Vec<String>) {
         let mut settings = Self::default();
         let unread = store

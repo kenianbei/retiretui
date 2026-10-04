@@ -45,8 +45,8 @@ pub struct CommandHint {
     pub word: &'static str,
 }
 
-/// The commands a widget, or everything inside a container, is where the
-/// keys of are worth saying, after its [`Hints`].
+/// The command keys a widget, or everything inside a container, answers
+/// to, said after its [`Hints`].
 #[derive(Component, Clone, Copy, Debug)]
 pub struct CommandHints(pub &'static [CommandHint]);
 
@@ -62,7 +62,7 @@ impl CommandHint {
     /// The hint under `keymap`; none where no command of it has a key.
     fn shown(&self, keymap: &Keymap) -> Option<Shown> {
         // ponytail: a scan of the table by name for each command, every
-        // frame; resolve on `Add` if a widget ever hints more than a pair.
+        // frame; resolve once, on `Add`, if a widget hints more than a pair.
         let labels = self.commands.iter();
         let mut keys = labels
             .map(|name| keymap.label_named(name, self.key))

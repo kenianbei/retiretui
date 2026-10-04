@@ -16,7 +16,6 @@ fn bound(keys: &str) -> (Keymap, Remarks) {
     Keymap::with(&toml::from_str(keys).unwrap())
 }
 
-/// The command `key` runs with `page` on show.
 fn run_by(keymap: &Keymap, page: Page, key: &str) -> Option<&'static str> {
     let KeyBinding { key, modifiers } = keys::parse(key).unwrap();
     let pressed = KeyboardInput {
@@ -197,7 +196,6 @@ fn app_bound(keys: &str) -> Headless {
     headless_app_bound(scratch_plan(), SIZE, keys)
 }
 
-/// The key row with `page` on show, under `keys`.
 fn key_row(keys: &str, page: Page) -> String {
     let mut app = app_bound(keys);
     show(&mut app, page);
