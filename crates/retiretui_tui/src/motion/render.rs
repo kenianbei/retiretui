@@ -53,10 +53,8 @@ impl Playing {
             self.kept = None;
             return;
         };
-        let kept = self.kept.get_or_insert_with(|| Buffer::empty(area));
-        if kept.area != area {
-            kept.resize(area);
-        }
+        let kept = self.kept.get_or_insert_default();
+        kept.resize(area);
         for position in area.positions() {
             kept[position].clone_from(&frame[position]);
         }
@@ -100,7 +98,11 @@ fn play(
     }
     // After the cues, which start an exit from what was kept of an overlay
     // this frame no longer holds, and before the effects draw over it.
-    playing.keep(&frame.0);
+    if extracted.motion == Motion::Full {
+        playing.keep(&frame.0);
+    } else {
+        playing.kept = None;
+    }
     let tick = tachyonfx::Duration::from(extracted.delta);
     playing.effects.retain(|_, running| {
         // An effect's first frame is its start, not a step along it: the
@@ -175,9 +177,9 @@ fn effect(
         }
         Play::Receipt(colour) => fx::fade_from_fg(colour, timer).with_area(area),
         Play::Coalesce => fx::coalesce(timer).with_area(area),
-        Play::Exit { leaves, within } => {
+        Play::Exit(leaves) => {
             let kept = kept.take_if(|kept| kept.area == area)?;
-            exit::effect(leaves, kept, within, timer)
+            exit::effect(leaves, kept, timer)
         }
     })
 }
@@ -191,10 +193,7 @@ mod tests {
     const BENEATH: Rect = Rect::new(0, 0, 20, 8);
 
     fn leaving(area: Rect, kept: &mut Option<Buffer>) -> Option<Effect> {
-        let play = Play::Exit {
-            leaves: Leaves::Dissolve,
-            within: BENEATH,
-        };
+        let play = Play::Exit(Leaves::Dissolve);
         let timer = EffectTimer::from_ms(150, EASING);
         effect(play, area, Rect::ZERO, timer, kept)
     }

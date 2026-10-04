@@ -75,7 +75,7 @@ impl Motion {
     #[must_use]
     pub const fn length(self, play: Play) -> Duration {
         match (self, play) {
-            (Self::Off, _) | (Self::Reduced, Play::Coalesce | Play::Exit { .. }) => Duration::ZERO,
+            (Self::Off, _) | (Self::Reduced, Play::Coalesce | Play::Exit(_)) => Duration::ZERO,
             (Self::Full | Self::Reduced, _) => play.length(),
         }
     }
@@ -110,9 +110,8 @@ pub enum Play {
     Receipt(Color),
     /// The area's cells settle into place.
     Coalesce,
-    /// What stood in the area leaves it, over the page already live there
-    /// and never outside `within`.
-    Exit { leaves: Leaves, within: Rect },
+    /// What stood in the area leaves it, over the page already live there.
+    Exit(Leaves),
 }
 
 impl Play {
@@ -122,7 +121,7 @@ impl Play {
             Self::Dim(_) => Key::Backdrop,
             Self::Receipt(_) => Key::Receipt,
             Self::Coalesce => Key::Arrival,
-            Self::Exit { .. } => Key::Departure,
+            Self::Exit(_) => Key::Departure,
         }
     }
 
@@ -130,11 +129,8 @@ impl Play {
         Duration::from_millis(match self {
             Self::Dim(_) => 120,
             Self::Receipt(_) => 400,
-            Self::Coalesce => 150,
-            Self::Exit { leaves, .. } => match leaves {
-                Leaves::Dissolve => 150,
-                Leaves::Slide => 180,
-            },
+            Self::Coalesce | Self::Exit(Leaves::Dissolve) => 150,
+            Self::Exit(Leaves::Slide) => 180,
         })
     }
 

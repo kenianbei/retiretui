@@ -7,8 +7,6 @@ use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Component, Entity, Query, ResMut, With};
 use bevy_ecs::system::SystemParam;
 use bevy_input_focus::{FocusCause, InputFocus};
-use plurimus::bui::ComputedNodeRect;
-use plurimus::core::ratatui_core::layout::Rect;
 use plurimus::ui::ComputedWidgetArea;
 
 use super::Focus;
@@ -34,7 +32,7 @@ pub struct Standing<'w, 's, Marker: Component + Default> {
         ),
         With<Marker>,
     >,
-    body: Query<'w, 's, (Entity, Option<&'static ComputedNodeRect>), With<Body>>,
+    body: Query<'w, 's, Entity, With<Body>>,
     cues: ResMut<'w, Cues>,
     focus: ResMut<'w, InputFocus>,
     taken: ResMut<'w, Focus>,
@@ -47,7 +45,7 @@ impl<Marker: Component + Default> Standing<'_, '_, Marker> {
     /// it is painted in. `None` is a shell with no body to hang one under.
     pub fn open(&mut self, commands: &mut Commands) -> Option<Entity> {
         self.take_down(commands);
-        let Ok((body, _)) = self.body.single() else {
+        let Ok(body) = self.body.single() else {
             self.take_back();
             return None;
         };
@@ -71,12 +69,10 @@ impl<Marker: Component + Default> Standing<'_, '_, Marker> {
     /// Takes down what stands, which leaves as its kind does, and gives the
     /// keyboard back.
     pub fn close(&mut self, commands: &mut Commands) {
-        let within = self.body.single().ok().and_then(|(_, rect)| rect);
-        let within = within.map_or(Rect::ZERO, |rect| rect.visible);
         for (_, area, leaves) in &self.open {
             if let Some(area) = area {
                 let leaves = leaves.copied().unwrap_or_default();
-                self.cues.play(Play::Exit { leaves, within }, area.0);
+                self.cues.play(Play::Exit(leaves), area.0);
             }
         }
         self.take_down(commands);

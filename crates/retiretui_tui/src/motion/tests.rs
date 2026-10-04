@@ -14,15 +14,8 @@ use crate::support::{
 };
 
 const DIM: Play = Play::Dim(Color::Gray);
-const BODY: Rect = Rect::new(0, 2, 60, 20);
-const SLIDE: Play = Play::Exit {
-    leaves: Leaves::Slide,
-    within: BODY,
-};
-const DISSOLVE: Play = Play::Exit {
-    leaves: Leaves::Dissolve,
-    within: BODY,
-};
+const SLIDE: Play = Play::Exit(Leaves::Slide);
+const DISSOLVE: Play = Play::Exit(Leaves::Dissolve);
 const DIALOG: &str = "╭ Confirm";
 const DRAWER: &str = "╭ Messages";
 
@@ -291,7 +284,6 @@ mod standing {
     use bevy_ecs::prelude::{Commands, Component, World};
     use bevy_ecs::system::RunSystemOnce;
     use bevy_input_focus::InputFocus;
-    use plurimus::bui::ComputedNodeRect;
 
     use super::*;
     use crate::layout::Body;
@@ -315,31 +307,25 @@ mod standing {
         world.init_resource::<Cues>();
         world.init_resource::<Focus>();
         world.init_resource::<InputFocus>();
-        let mut laid_out = ComputedNodeRect::default();
-        laid_out.visible = BODY;
-        world.spawn((Body, laid_out));
+        world.spawn(Body);
         world.spawn((Panel, panel));
         world
     }
 
     #[test]
     fn what_closes_is_cued_to_leave_as_its_kind_does() {
-        let mut world = world_with((ComputedWidgetArea(PANEL), Leaves::Slide));
-        world.run_system_once(close).unwrap();
-        let slide = Cue::Play {
-            play: SLIDE,
+        let cued = |play| Cue::Play {
+            play,
             area: PANEL,
             spared: Rect::ZERO,
         };
-        assert_eq!(world.resource::<Cues>().0, [slide]);
+        let mut world = world_with((ComputedWidgetArea(PANEL), Leaves::Slide));
+        world.run_system_once(close).unwrap();
+        assert_eq!(world.resource::<Cues>().0, [cued(SLIDE)]);
 
         let mut world = world_with(ComputedWidgetArea(PANEL));
         world.run_system_once(close).unwrap();
-        let cued = &world.resource::<Cues>().0;
-        assert!(
-            matches!(cued.as_slice(), [Cue::Play { play, .. }] if *play == DISSOLVE),
-            "a box breaks up: {cued:?}"
-        );
+        assert_eq!(world.resource::<Cues>().0, [cued(DISSOLVE)], "a box");
     }
 
     #[test]
