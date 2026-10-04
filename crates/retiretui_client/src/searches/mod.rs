@@ -5,6 +5,7 @@ pub mod ladders;
 pub mod markets;
 pub mod orders;
 pub mod overview;
+pub mod spending;
 
 use retiretui_engine::market::RunError;
 use retiretui_engine::project::Summary;

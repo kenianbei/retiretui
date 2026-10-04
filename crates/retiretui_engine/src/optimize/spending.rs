@@ -77,9 +77,13 @@ impl Search<'_> {
         if !baseline.is_met {
             let nothing = self.judge_at(0.0)?;
             if !nothing.is_met {
-                return Err(refused(
-                    "the plan runs short even with no flexible spending",
-                ));
+                return Err(refused(match self.measure {
+                    Measure::Planned => "the plan runs short even with no flexible spending",
+                    Measure::Success(_) => {
+                        "the plan lasts in fewer markets than the target even with no flexible \
+                         spending"
+                    }
+                }));
             }
             return Ok(((0.0, nothing), Some(1.0)));
         }
