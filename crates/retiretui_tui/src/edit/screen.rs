@@ -18,7 +18,8 @@ use super::table::{
     DomainTable, cue_receipt, handle_row_select, handle_table_key, rebuild_rows, table_bundle,
 };
 use super::trigger;
-use crate::hints::Hints;
+use crate::command;
+use crate::hints::{CommandHint, CommandHints, Hints};
 use crate::layout::{self, CURSOR_COLS, button_node, filling, placed};
 use crate::nav::{self, FocusStop};
 use crate::pane::Pane;
@@ -49,7 +50,20 @@ pub fn spawn_screen(commands: &mut Commands, body: Entity, ops: Ops) -> Entity {
     root
 }
 
-const SINGLE_HINTS: Hints = Hints(&[("⏎", "edit"), ("esc", "domains")]);
+const EDIT_HINTS: Hints = Hints(&[("⏎", "edit")]);
+
+/// The key that hands the keyboard back to the sidebar: a lone form names
+/// the command's first, and a table its second, the arrow towards it.
+const fn to_domains(key: usize) -> CommandHint {
+    CommandHint {
+        commands: &[command::DOMAINS],
+        key,
+        word: "domains",
+    }
+}
+
+const FROM_FORM: CommandHints = CommandHints(&[to_domains(0)]);
+const FROM_TABLE: CommandHints = CommandHints(&[to_domains(1)]);
 
 /// The cell kept clear between the table's pane and the details'.
 const PANE_GAP: f32 = 1.0;
@@ -81,7 +95,7 @@ fn spawn_table(commands: &mut Commands, root: Entity, ops: Ops, list: ListOps) {
             },
             FocusStop,
             layout::Rests,
-            Hints(&[("⏎", "edit"), ("←", "domains")]),
+            (EDIT_HINTS, FROM_TABLE),
             filling(),
             placed(),
             ChildOf(pane),
@@ -152,5 +166,5 @@ fn dress_add_buttons(draft: Res<Draft>, mut buttons: Query<&mut Node, With<AddBu
 /// A single-item domain's page: its details, which ⏎ opens the form over.
 fn spawn_single_details(commands: &mut Commands, root: Entity, ops: Ops) {
     let pane = Pane::new(ops.title).spawn(commands, root);
-    details::spawn_into(commands, pane, ops, None, SINGLE_HINTS);
+    details::spawn_into(commands, pane, ops, None, (EDIT_HINTS, FROM_FORM));
 }

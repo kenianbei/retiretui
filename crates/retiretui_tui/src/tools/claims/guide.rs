@@ -78,8 +78,7 @@ fn list_actions(
         .enumerate()
         .filter(|(_, action)| action.is_offered(&draft.plan, person, is_held))
         .map(|(at, action)| {
-            let key =
-                command::named(command_of(action)).map_or("", |command| keymap.label(command));
+            let key = keymap.label_named(command_of(action), 0);
             Offered::new(at, action.label()).badged(key)
         });
     ranked(&query, offered)
@@ -197,7 +196,7 @@ pub(super) fn help_line(
         );
     }
     if !is_claimed(plan, person) {
-        let walk = command::named(command::FOCUS_NEXT).map_or("", |walk| keymap.label(walk));
+        let walk = keymap.label_named(command::FOCUS_NEXT, 0);
         return if walk.is_empty() {
             format!("⏎ on a claim option to set when each benefit starts.{keys}")
         } else {
@@ -214,8 +213,7 @@ pub(super) fn help_line(
 fn keys_phrase(keymap: &Keymap) -> String {
     let keys: Vec<&str> = PersonAction::ALL[..KEYED_ACTIONS]
         .iter()
-        .filter_map(|&action| command::named(command_of(action)))
-        .map(|command| keymap.label(command))
+        .map(|&action| keymap.label_named(command_of(action), 0))
         .filter(|key| !key.is_empty())
         .collect();
     match keys.split_last() {

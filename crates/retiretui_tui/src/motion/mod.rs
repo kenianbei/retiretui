@@ -28,7 +28,7 @@ use super::command::Outcome;
 use super::journal;
 use super::layout::HintRow;
 use super::overlay::Band;
-use super::settings::Settings;
+use super::settings::{self, Settings};
 use super::theme::Theme;
 
 pub fn plugin(app: &mut App) {
@@ -39,8 +39,6 @@ pub fn plugin(app: &mut App) {
     );
     render::install(app);
 }
-
-const MOTION_KEY: [&str; 1] = ["motion"];
 
 /// How much the shell moves. Every effect's length passes through it.
 #[derive(Deserialize, Clone, Copy, PartialEq, Eq, Debug, Default)]
@@ -173,7 +171,7 @@ pub struct Arriving;
 pub fn cycle(mut settings: ResMut<Settings>) -> Outcome {
     let motion = settings.motion.next();
     settings.motion = motion;
-    match settings.keep(&MOTION_KEY, motion.name()) {
+    match settings.keep(&[settings::MOTION_KEY], motion.name()) {
         Ok(()) => journal::say(format!("motion {}", motion.name())),
         Err(error) => journal::warn(format!(
             "motion {}, for this session only: {error}",

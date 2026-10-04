@@ -28,7 +28,8 @@ use rows::List;
 pub(crate) use rows::edit_row;
 pub(crate) use todo::WARNING_MARK;
 
-use super::hints::Hints;
+use super::command;
+use super::hints::{CommandHint, CommandHints, Hints};
 use super::layout::{self, Body};
 use super::nav::{self, Page};
 use super::pane::Pane;
@@ -49,7 +50,11 @@ pub fn plugin(app: &mut App) {
 }
 
 /// Walking the year is the page's, from whichever pane holds the keys.
-const YEAR_HINTS: Hints = Hints(&[("←→", "year")]);
+const YEAR_HINTS: CommandHints = CommandHints(&[CommandHint {
+    commands: &command::OVERVIEW_YEARS,
+    key: 0,
+    word: "year",
+}]);
 const SCROLL_HINTS: Hints = Hints(&[("↑↓", "scroll")]);
 /// What a pane says before anything fills it.
 const PENDING: &str = "…";

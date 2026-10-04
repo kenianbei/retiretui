@@ -8,8 +8,8 @@ use retiretui_engine::plan::TreatmentClass::{Deferred, Roth, Taxable};
 use super::*;
 use crate::compare::Compared;
 use crate::support::{
-    Headless, SIZE, answer_back, composed_frame, headless_app_at, is_asking, press_ctrl, press_key,
-    redrawn, said, scratch_workspace, show, type_text,
+    Headless, SIZE, answer_back, composed_frame, headless_app_at, headless_app_bound, is_asking,
+    press_ctrl, press_key, redrawn, said, scratch_workspace, show, type_text,
 };
 
 /// A retiree drained Roth first, who ends with more drained taxable, Roth,
@@ -165,4 +165,22 @@ fn t_and_enter_ask_then_take_the_chosen_order_as_one_step() {
     let found = app.world().resource::<Orders>().found().unwrap();
     assert_eq!(found.candidates.len(), 6, "the same six outcomes");
     assert_eq!(found.best().order, [Taxable, Roth, Deferred]);
+}
+
+#[test]
+fn the_help_names_the_key_the_user_gave_writing() {
+    let dir = scratch_workspace(RETIREE);
+    let help = |keys: &str| {
+        let mut app = headless_app_bound(dir.join("plan.toml"), SIZE, keys);
+        show(&mut app, Page::WithdrawalOrder);
+        settle(&mut app);
+        redrawn(&mut app)
+    };
+    let rebound = help("write-order = \"W\"");
+    assert!(
+        rebound.contains("after asking; W writes it as a scenario."),
+        "{rebound}"
+    );
+    let unbound = help("write-order = []");
+    assert!(unbound.contains("after asking. "), "{unbound}");
 }

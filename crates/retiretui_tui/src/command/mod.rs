@@ -29,7 +29,7 @@ pub use table::COMMANDS;
 
 use super::documents;
 use super::journal;
-use super::nav::{self, Page, PageSystems, ShownSurface};
+use super::nav::{Page, PageSystems, ShownSurface};
 use super::overlay;
 use super::scope::{KeyScope, Scoped};
 use super::session::NO_DOCUMENT;
@@ -40,6 +40,14 @@ use super::settings::Settings;
 pub const FOCUS_NEXT: &str = "focus-next";
 pub const PALETTE: &str = "palette";
 pub const HELP: &str = "help";
+
+/// The commands a page says the key of, in a hint or in its help.
+pub const DOMAINS: &str = "domains";
+pub const LEDGER_PLAN: &str = "ledger-plan";
+pub const COMPARE_WITH: &str = "compare-with";
+pub const COMPARE_OPEN: &str = "compare-open";
+pub const COMPARE_METRICS: [&str; 2] = ["compare-metric-previous", "compare-metric-next"];
+pub const OVERVIEW_YEARS: [&str; 2] = ["overview-year-previous", "overview-year-next"];
 
 pub struct CommandSpec {
     /// The stable kebab-case handle the command picker lists it under.
@@ -116,11 +124,6 @@ pub fn all() -> impl Iterator<Item = CommandId> {
 /// The command named `name`, for what runs one without a key.
 pub fn named(name: &str) -> Option<CommandId> {
     all().find(|command| command.spec().name == name)
-}
-
-/// The command that shows tab `tab`: a page's own, or its group's.
-pub fn of_tab(tab: usize) -> Option<CommandId> {
-    named(nav::tab_command(tab))
 }
 
 /// Runs the command named `name` once the keyboard is back, as its key

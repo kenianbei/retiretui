@@ -18,7 +18,7 @@ use plurimus::ui::{Checked, InteractionDisabled, PressFocusDisabled, UiLabel, Va
 use plurimus::widgets::ratatui_widgets::borders::BorderType;
 use plurimus::widgets::{TabBarActiveStyle, TabBarLook, tab_bar, tab_item};
 
-use super::command::{self, Keymap};
+use super::command::Keymap;
 use super::layout::{self, TabRow, cells_of, placed};
 use super::nav::{self, LastShown, Page, ShownSurface, TAB_COUNT, Turn};
 use super::session::Session;
@@ -39,19 +39,19 @@ const TAB_DECORATION: u16 = 2;
 
 /// Cells the label spends on the key that selects the tab: one for the
 /// key and one after it.
-const DIGIT_COLS: u16 = 2;
+const KEY_COLS: u16 = 2;
 
 /// Columns the tabs take together, which is what the row reserves for
 /// them before the status gets any.
 pub const TABS_COLS: u16 = tabs_cols();
 
-const _: () = assert!(TAB_COUNT < 10, "a tab is labelled by one digit");
+const _: () = assert!(TAB_COUNT < 10, "a tab is selected by one digit");
 
 const fn tabs_cols() -> u16 {
     let mut cols = 0;
     let mut tab = 0;
     while tab < TAB_COUNT {
-        cols += TAB_DECORATION + DIGIT_COLS + nav::tab_title(tab).len() as u16;
+        cols += TAB_DECORATION + KEY_COLS + nav::tab_title(tab).len() as u16;
         tab += 1;
     }
     cols
@@ -115,7 +115,7 @@ fn active_style(theme: &Theme) -> plurimus::core::ratatui_core::style::Style {
 /// width is fixed, so a tab with no key, or one spelled in more than a
 /// cell, keeps the cell and says nothing in it.
 fn tab_label(tab: usize, keymap: &Keymap, theme: &Theme) -> Line<'static> {
-    let key = command::of_tab(tab).map_or("", |command| keymap.label(command));
+    let key = keymap.label_named(nav::tab_command(tab), 0);
     let key = if cells_of(key) == 1 { key } else { " " };
     Line::from(vec![
         Span::styled(format!("{key} "), theme.dimmed()),

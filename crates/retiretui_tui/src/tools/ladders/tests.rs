@@ -5,6 +5,7 @@ use retiretui_engine::optimize::{is_ladder, optimize_conversions, sweep_brackets
 use toml::Value;
 
 use super::*;
+use crate::command::Keymap;
 use crate::compare::Compared;
 use crate::confirm::Confirm;
 use crate::edit::tests::{open, tab_to_field};
@@ -487,4 +488,19 @@ fn write_overlay_refuses_until_searched_on_a_saved_draft() {
     assert!(composed_frame(&app).contains("Overwrite ladder.toml?"));
     press_key(&mut app, KeyCode::Esc);
     assert!(!is_asking(&app));
+}
+
+#[test]
+fn the_help_names_the_keys_the_user_gave_taking_and_writing() {
+    let under = |keys: &str| Keymap::with(&toml::from_str(keys).unwrap()).0;
+    assert_eq!(
+        guide::on_conversions(&Keymap::defaults()),
+        "t takes this ladder into the plan, after asking; w writes it as a scenario."
+    );
+    assert_eq!(
+        guide::on_conversions(&under("take-ladder = \"T\"\nwrite-ladder = []")),
+        "T takes this ladder into the plan, after asking."
+    );
+    let untaken = guide::on_conversions(&under("take-ladder = []"));
+    assert_eq!(untaken, retiretui_client::searches::ladders::ABOUT);
 }

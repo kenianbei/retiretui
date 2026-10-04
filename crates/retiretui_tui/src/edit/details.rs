@@ -5,7 +5,7 @@
 
 use bevy_ecs::change_detection::{DetectChanges, Ref};
 use bevy_ecs::hierarchy::ChildOf;
-use bevy_ecs::prelude::{Commands, Component, Entity, On, Query, Res, With};
+use bevy_ecs::prelude::{Bundle, Commands, Component, Entity, On, Query, Res, With};
 use bevy_input::keyboard::KeyboardInput;
 use bevy_input_focus::FocusedInput;
 use plurimus::core::ratatui_core::style::{Modifier, Style};
@@ -65,7 +65,7 @@ pub fn spawn_into(
     pane: Entity,
     ops: Ops,
     table: Option<Entity>,
-    hints: Hints,
+    hints: impl Bundle,
 ) {
     commands
         .spawn((

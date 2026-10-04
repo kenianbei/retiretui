@@ -1,7 +1,6 @@
 //! What the user has set: read from the `[tui]` table of `config.toml`,
 //! and written back a key at a time so the file stays the user's own.
 
-use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -17,8 +16,9 @@ use crate::session::Session;
 use crate::store::Store;
 
 const TUI_TABLE: &str = "tui";
-const THEME_KEY: &str = "theme";
-const MOTION_KEY: &str = "motion";
+/// The keys of `[tui]` that others write back.
+pub const THEME_KEY: &str = "theme";
+pub const MOTION_KEY: &str = "motion";
 const DOCUMENT_KEY: &str = "document";
 const KEYS_KEY: &str = "keys";
 
@@ -41,7 +41,7 @@ pub struct Settings {
     pub document: Option<PathBuf>,
     /// The keys each command named answers to, as the file states them:
     /// the command table judges each entry.
-    pub keys: BTreeMap<String, toml::Value>,
+    pub keys: toml::Table,
 }
 
 /// `key` of `tui` read into `setting`, which keeps what it held where the

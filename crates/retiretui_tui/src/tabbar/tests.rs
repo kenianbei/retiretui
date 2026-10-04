@@ -3,14 +3,13 @@ use bevy_ecs::prelude::With;
 use plurimus::core::TerminalSize;
 use plurimus::term::KeyCode;
 
-use super::{DIGIT_COLS, TAB_DECORATION, TABS_COLS, look};
+use super::{KEY_COLS, TAB_DECORATION, TABS_COLS, look};
 use crate::edit::Draft;
 use crate::layout::TAB_ROW_ROWS;
 use crate::nav::{self, Group, Page, TAB_COUNT, tab_digit, tab_title};
-use crate::settings::Settings;
 use crate::support::{
     ROOMY, SIZE, active_page, cell_style, click, commit_edit, headless_app, headless_app_at,
-    headless_app_set, lit_tab, press_key, redrawn, run_command, scratch_dir, scratch_plan,
+    headless_app_bound, lit_tab, press_key, redrawn, run_command, scratch_dir, scratch_plan,
 };
 
 #[test]
@@ -42,9 +41,8 @@ fn the_bar_names_every_tab_with_the_digit_that_selects_it() {
 
 #[test]
 fn a_tab_names_the_key_the_user_gave_it_where_one_cell_holds_it() {
-    let mut settings = Settings::still();
-    settings.keys = toml::from_str("ledger = \"L\"\ncompare = []\ntools = \"alt-4\"").unwrap();
-    let mut app = headless_app_set(scratch_plan(), SIZE, settings);
+    let keys = "ledger = \"L\"\ncompare = []\ntools = \"alt-4\"";
+    let mut app = headless_app_bound(scratch_plan(), SIZE, keys);
     let frame = redrawn(&mut app);
     let bar = frame.lines().nth(1).expect("the bar's labels");
     for named in ["1 Overview", "L Ledger", "│  Compare", "│  Tools", "5 Plan"] {
@@ -186,7 +184,7 @@ fn status_row(frame: &str) -> &str {
 
 /// A column inside the `tab`th box, counted off the labels before it.
 fn tab_column(tab: usize) -> u16 {
-    let boxed = |at: usize| tab_title(at).chars().count() as u16 + DIGIT_COLS + TAB_DECORATION;
+    let boxed = |at: usize| tab_title(at).chars().count() as u16 + KEY_COLS + TAB_DECORATION;
     (0..tab).map(boxed).sum::<u16>() + 1
 }
 

@@ -49,13 +49,13 @@ const NAMED: [Key; 27] = [
 ];
 
 /// What a key shown as a glyph may be typed as instead.
-const TYPED: [(&str, &str); 6] = [
-    ("up", "↑"),
-    ("down", "↓"),
-    ("left", "←"),
-    ("right", "→"),
-    ("tab", "⇥"),
-    ("enter", "⏎"),
+const TYPED: [(&str, Key); 6] = [
+    ("up", Key::ArrowUp),
+    ("down", Key::ArrowDown),
+    ("left", Key::ArrowLeft),
+    ("right", Key::ArrowRight),
+    ("tab", Key::Tab),
+    ("enter", Key::Enter),
 ];
 
 fn name(key: &Key) -> String {
@@ -92,19 +92,7 @@ pub fn label(binding: &KeyBinding) -> String {
 /// The keystroke `text` spells, as [`label`] shows it or as [`TYPED`]
 /// lets it be typed.
 pub fn parse(text: &str) -> Result<KeyBinding, String> {
-    let mut spelled = text;
-    let mut holds = Vec::new();
-    while let Some((rest, hold)) = HELD
-        .iter()
-        .find_map(|(prefix, hold)| Some((spelled.strip_prefix(prefix)?, hold)))
-    {
-        spelled = rest;
-        holds.push(hold);
-    }
-    let binding = KeyBinding::new(key(spelled).ok_or_else(|| format!("\"{text}\" is not a key"))?);
-    let binding = holds
-        .into_iter()
-        .fold(binding, |binding, hold| hold(binding));
+    let binding = spelled(text).ok_or_else(|| format!("\"{text}\" is not a key"))?;
     if binding.modifiers.shift && matches!(binding.key, Key::Character(_)) {
         return Err(format!(
             "\"{text}\": a shifted character is written as itself, as G is"
@@ -113,16 +101,26 @@ pub fn parse(text: &str) -> Result<KeyBinding, String> {
     Ok(binding)
 }
 
-/// The key `spelled` names, or the one character it is.
-fn key(spelled: &str) -> Option<Key> {
-    let glyph = TYPED.iter().find(|(typed, _)| *typed == spelled);
-    let shown = glyph.map_or(spelled, |(_, glyph)| glyph);
-    if let Some(named) = NAMED.into_iter().find(|key| name(key) == shown) {
-        return Some(named);
+fn spelled(text: &str) -> Option<KeyBinding> {
+    let prefixed = HELD
+        .iter()
+        .find_map(|(prefix, hold)| Some((text.strip_prefix(prefix)?, hold)));
+    match prefixed {
+        Some((rest, hold)) => spelled(rest).map(hold),
+        None => key(text).map(KeyBinding::new),
     }
-    let mut characters = spelled.chars();
+}
+
+/// The key `text` names, or the one character it is.
+fn key(text: &str) -> Option<Key> {
+    let typed = TYPED.into_iter().find(|(typed, _)| *typed == text);
+    let named = NAMED.into_iter().find(|key| name(key) == text);
+    let mut characters = text.chars();
     let is_one = characters.next().is_some() && characters.next().is_none();
-    is_one.then(|| Key::Character(spelled.into()))
+    typed
+        .map(|(_, key)| key)
+        .or(named)
+        .or_else(|| is_one.then(|| Key::Character(text.into())))
 }
 
 #[cfg(test)]

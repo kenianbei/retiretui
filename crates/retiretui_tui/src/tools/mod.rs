@@ -43,7 +43,7 @@ pub(crate) use worker::Keyed;
 pub use worker::Searches;
 pub use write::OVERLAY_OVER;
 
-use super::command;
+use super::command::{self, Keymap};
 use super::edit::Draft;
 use super::layout::{self, Body, fixed, growing, placed};
 use super::nav::{self, Page};
@@ -139,6 +139,17 @@ pub(crate) fn show_help(
         *widget = UiWidget::new(Paragraph::new(text.to_owned()).style(theme.dimmed()));
     }
 }
+
+/// How a help line ends where the highlighted option can be written as a
+/// scenario: by the key of the `write` command, or by its full stop alone
+/// where that has none.
+pub(crate) fn writes_it(keymap: &Keymap, write: &str) -> String {
+    match keymap.label_named(write, 0) {
+        "" => ".".to_owned(),
+        key => format!("; {key} writes it as a scenario."),
+    }
+}
+
 const ENTER_KEYS: &[(KeyBinding, ())] = &[(KeyBinding::new(Key::Enter), ())];
 
 struct Running<R> {

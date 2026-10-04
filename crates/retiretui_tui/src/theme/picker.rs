@@ -9,14 +9,14 @@ use super::{Theme, WantedVariant};
 use crate::command::Outcome;
 use crate::journal;
 use crate::picker::{Offered, Picker, Picking, ranked};
-use crate::settings::Settings;
+use crate::settings::{self, Settings};
 
 pub fn plugin(app: &mut App) {
     app.init_resource::<Worn>();
     app.add_systems(Startup, register);
 }
 
-const THEME_KEY: [&str; 2] = ["theme", "name"];
+const THEME_NAME: [&str; 2] = [settings::THEME_KEY, "name"];
 
 #[derive(Resource, Clone, Copy)]
 pub struct ThemePicker(Picker);
@@ -96,7 +96,7 @@ fn keep(
     }
     let name = choice.name.clone().unwrap_or_default();
     settings.theme = choice;
-    match settings.keep(&THEME_KEY, name.as_str()) {
+    match settings.keep(&THEME_NAME, name.as_str()) {
         Ok(()) => journal::say(format!("theme {name}")),
         Err(error) => journal::warn(format!("theme {name}, for this session only: {error}")),
     }
