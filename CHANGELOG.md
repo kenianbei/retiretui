@@ -29,6 +29,16 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   - The MCP server's schema reference says it under Escalation.
   - The `public-pension` example states Dana's pension this way, so it pays
     42,000 in its first year rather than 45,462.
+- In the terminal planner, and the canvas page that shares its shell, what
+  stands over the page no longer vanishes on the frame it closes. A dialog, a
+  picker, an item's form and the file picker break up into the page beneath over
+  150 ms, and the Messages drawer and the Issues panel slide out through the
+  bottom of the body over 180 ms. The page is live again at once: the keyboard
+  and the pointer come back on the frame the overlay closes, the dim lifts with
+  them, and only what the overlay last drew lingers. Nothing leaves this way
+  when `motion` is `reduced` or `off`, when an overlay is replaced by another of
+  its kind, or when one closes beneath another that still stands. Menus and
+  toasts are as they were.
 
 ### Changed
 

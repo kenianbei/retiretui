@@ -7,11 +7,12 @@ use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Component, Entity, Query, ResMut, With};
 use bevy_ecs::system::SystemParam;
 use bevy_input_focus::{FocusCause, InputFocus};
+use plurimus::ui::ComputedWidgetArea;
 
 use super::Focus;
 use super::band::Band;
 use crate::layout::Body;
-use crate::motion::Arriving;
+use crate::motion::{Arriving, Cues, Leaves, Play};
 use crate::scope::KeyScope;
 
 /// One kind of overlay, spawned as it opens and despawned as it closes.
@@ -21,8 +22,18 @@ use crate::scope::KeyScope;
 /// path that takes without drawing.
 #[derive(SystemParam)]
 pub struct Standing<'w, 's, Marker: Component + Default> {
-    open: Query<'w, 's, Entity, With<Marker>>,
+    open: Query<
+        'w,
+        's,
+        (
+            Entity,
+            Option<&'static ComputedWidgetArea>,
+            Option<&'static Leaves>,
+        ),
+        With<Marker>,
+    >,
     body: Query<'w, 's, Entity, With<Body>>,
+    cues: ResMut<'w, Cues>,
     focus: ResMut<'w, InputFocus>,
     taken: ResMut<'w, Focus>,
     entities: &'w Entities,
@@ -55,8 +66,15 @@ impl<Marker: Component + Default> Standing<'_, '_, Marker> {
         !self.open.is_empty()
     }
 
-    /// Takes down what stands and gives the keyboard back.
+    /// Takes down what stands, which leaves as its kind does, and gives the
+    /// keyboard back.
     pub fn close(&mut self, commands: &mut Commands) {
+        for (_, area, leaves) in &self.open {
+            if let Some(area) = area {
+                let leaves = leaves.copied().unwrap_or_default();
+                self.cues.play(Play::Exit(leaves), area.0);
+            }
+        }
         self.take_down(commands);
         self.take_back();
     }
@@ -67,7 +85,7 @@ impl<Marker: Component + Default> Standing<'_, '_, Marker> {
     }
 
     fn take_down(&mut self, commands: &mut Commands) {
-        for open in &self.open {
+        for (open, ..) in &self.open {
             commands.entity(open).despawn();
         }
     }

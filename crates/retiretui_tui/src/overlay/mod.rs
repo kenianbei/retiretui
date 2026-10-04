@@ -16,6 +16,7 @@ use plurimus::widgets::listbox;
 
 use super::hints::Hints;
 use super::layout::{filling, list_cursor, placed};
+use super::motion::Leaves;
 use super::pane::Framed;
 use super::theme::Repainted;
 use bevy_ecs::change_detection::{DetectChanges, Ref};
@@ -101,6 +102,7 @@ pub fn bottom_panel(commands: &mut Commands, root: Entity, title: &str, hints: H
         },
         Framed::over(title),
         ModalOpen,
+        Leaves::Slide,
         hints,
     ));
     commands

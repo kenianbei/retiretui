@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use bevy_time::TimeUpdateStrategy;
 use plurimus::core::ratatui_core::style::Color;
 use plurimus::term::KeyCode;
 
@@ -8,17 +9,28 @@ use crate::layout;
 use crate::nav::Page;
 use crate::sidebar::SIDEBAR_COLS;
 use crate::support::{
-    Headless, SIZE, cell_fg, composed_frame, headless_app, headless_app_set, let_pass, press_key,
-    said, scratch_plan, show, type_text,
+    Headless, SIZE, cell_fg, cell_of, composed_frame, headless_app, headless_app_set, let_pass,
+    press_key, said, scratch_plan, show, type_text,
 };
 
 const DIM: Play = Play::Dim(Color::Gray);
+const SLIDE: Play = Play::Exit(Leaves::Slide);
+const DISSOLVE: Play = Play::Exit(Leaves::Dissolve);
+const DIALOG: &str = "╭ Confirm";
+const DRAWER: &str = "╭ Messages";
 
 /// Where the accounts table's first item is drawn, outside any dialog:
 /// the end of its balance, which no box centred on the body reaches.
 /// A cell of the accounts table's first row, in from the sidebar.
 const FIRST_ROW: (u16, u16) = (SIDEBAR_COLS + 6, layout::BODY_TOP + 2);
 const WELL_PAST_ANY_EFFECT: Duration = Duration::from_secs(1);
+
+/// One frame in which `by` passes, and every later frame at that pace: the
+/// real clock would decide how far an exit had got.
+fn tick(app: &mut Headless, by: Duration) {
+    app.insert_resource(TimeUpdateStrategy::ManualDuration(by));
+    app.update();
+}
 
 fn moving_app(motion: Motion) -> Headless {
     let mut settings = Settings::default();
@@ -39,6 +51,8 @@ fn full_motion_gives_every_effect_its_own_length() {
         Motion::Full.length(Play::Receipt(Color::Gray)),
         Duration::from_millis(400)
     );
+    assert_eq!(Motion::Full.length(DISSOLVE), Duration::from_millis(150));
+    assert_eq!(Motion::Full.length(SLIDE), Duration::from_millis(180));
 }
 
 #[test]
@@ -46,11 +60,19 @@ fn reduced_motion_keeps_what_informs_and_cuts_what_transitions() {
     assert_eq!(Motion::Reduced.length(DIM), Motion::Full.length(DIM));
     assert!(!Motion::Reduced.length(Play::Receipt(Color::Gray)).is_zero());
     assert!(Motion::Reduced.length(Play::Coalesce).is_zero());
+    assert!(Motion::Reduced.length(DISSOLVE).is_zero());
+    assert!(Motion::Reduced.length(SLIDE).is_zero());
 }
 
 #[test]
 fn no_motion_gives_every_effect_no_time_at_all() {
-    for play in [DIM, Play::Receipt(Color::Gray), Play::Coalesce] {
+    for play in [
+        DIM,
+        Play::Receipt(Color::Gray),
+        Play::Coalesce,
+        DISSOLVE,
+        SLIDE,
+    ] {
         assert!(Motion::Off.length(play).is_zero(), "{play:?}");
     }
 }
@@ -165,4 +187,160 @@ fn the_backdrop_spares_the_overlay_standing_deepest() {
         matches!(cued.as_slice(), [Cue::Play { area, .. }] if *area == upper),
         "{cued:?}"
     );
+}
+
+#[test]
+fn a_closed_dialog_breaks_up_over_a_page_already_back() {
+    let mut app = moving_app(Motion::Full);
+    press_key(&mut app, KeyCode::Down);
+    let resting = cell_fg(&app, FIRST_ROW.0, FIRST_ROW.1);
+    press_key(&mut app, KeyCode::Char('d'));
+    let_pass(&mut app, WELL_PAST_ANY_EFFECT);
+    let stood = cell_of(&app, DIALOG);
+
+    tick(&mut app, Duration::ZERO);
+    press_key(&mut app, KeyCode::Esc);
+    let whole = composed_frame(&app);
+    assert_eq!(cell_of(&app, DIALOG), stood, "still drawn where it stood");
+    assert_eq!(
+        cell_fg(&app, FIRST_ROW.0, FIRST_ROW.1),
+        resting,
+        "over a page no longer dimmed: {whole}"
+    );
+
+    tick(&mut app, Duration::from_millis(75));
+    let breaking = composed_frame(&app);
+    tick(&mut app, WELL_PAST_ANY_EFFECT);
+    let gone = composed_frame(&app);
+    assert!(!gone.contains("Confirm"), "{gone}");
+    assert_ne!(breaking, whole, "some of it has given way");
+    assert_ne!(breaking, gone, "and some has not");
+}
+
+#[test]
+fn a_closed_panel_slides_out_through_the_bottom_of_the_body() {
+    let mut app = moving_app(Motion::Full);
+    press_key(&mut app, KeyCode::Char('m'));
+    let_pass(&mut app, WELL_PAST_ANY_EFFECT);
+    let stood = cell_of(&app, DRAWER);
+
+    tick(&mut app, Duration::ZERO);
+    press_key(&mut app, KeyCode::Esc);
+    assert_eq!(cell_of(&app, DRAWER), stood, "still drawn where it stood");
+
+    tick(&mut app, Duration::from_millis(60));
+    let sliding = composed_frame(&app);
+    assert!(
+        cell_of(&app, DRAWER).1 > stood.1,
+        "it has dropped: {sliding}"
+    );
+    tick(&mut app, WELL_PAST_ANY_EFFECT);
+    let gone = composed_frame(&app);
+    assert!(!gone.contains("Messages"), "{gone}");
+    assert_eq!(
+        sliding.lines().last(),
+        gone.lines().last(),
+        "the hint row beneath the body is never drawn over"
+    );
+}
+
+#[test]
+fn a_dialog_over_an_open_item_leaves_and_the_item_stays() {
+    let mut app = moving_app(Motion::Full);
+    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, KeyCode::Tab);
+    type_text(&mut app, "x");
+    press_key(&mut app, KeyCode::Esc);
+    let_pass(&mut app, WELL_PAST_ANY_EFFECT);
+    let stood = cell_of(&app, DIALOG);
+
+    tick(&mut app, Duration::ZERO);
+    press_key(&mut app, KeyCode::Esc);
+    assert_eq!(cell_of(&app, DIALOG), stood, "still drawn where it stood");
+    tick(&mut app, WELL_PAST_ANY_EFFECT);
+    let gone = composed_frame(&app);
+    assert!(!gone.contains("Confirm"), "{gone}");
+    assert!(gone.contains("╭ Edit"), "{gone}");
+}
+
+#[test]
+fn with_motion_reduced_or_off_what_closes_is_gone_at_once() {
+    for motion in [Motion::Reduced, Motion::Off] {
+        let mut app = moving_app(motion);
+        press_key(&mut app, KeyCode::Down);
+        press_key(&mut app, KeyCode::Char('d'));
+        let_pass(&mut app, WELL_PAST_ANY_EFFECT);
+        assert!(composed_frame(&app).contains(DIALOG));
+
+        tick(&mut app, Duration::ZERO);
+        press_key(&mut app, KeyCode::Esc);
+        let closed = composed_frame(&app);
+        assert!(!closed.contains("Confirm"), "{motion:?}: {closed}");
+    }
+}
+
+mod standing {
+    use bevy_ecs::prelude::{Commands, Component, World};
+    use bevy_ecs::system::RunSystemOnce;
+    use bevy_input_focus::InputFocus;
+
+    use super::*;
+    use crate::layout::Body;
+    use crate::overlay::{Focus, Standing};
+
+    #[derive(Component, Default)]
+    struct Panel;
+
+    const PANEL: Rect = Rect::new(0, 14, 60, 8);
+
+    fn close(mut standing: Standing<Panel>, mut commands: Commands) {
+        standing.close(&mut commands);
+    }
+
+    fn reopen(mut standing: Standing<Panel>, mut commands: Commands) {
+        standing.open(&mut commands);
+    }
+
+    fn world_with(panel: impl bevy_ecs::bundle::Bundle) -> World {
+        let mut world = World::new();
+        world.init_resource::<Cues>();
+        world.init_resource::<Focus>();
+        world.init_resource::<InputFocus>();
+        world.spawn(Body);
+        world.spawn((Panel, panel));
+        world
+    }
+
+    #[test]
+    fn what_closes_is_cued_to_leave_as_its_kind_does() {
+        let cued = |play| Cue::Play {
+            play,
+            area: PANEL,
+            spared: Rect::ZERO,
+        };
+        let mut world = world_with((ComputedWidgetArea(PANEL), Leaves::Slide));
+        world.run_system_once(close).unwrap();
+        assert_eq!(world.resource::<Cues>().0, [cued(SLIDE)]);
+
+        let mut world = world_with(ComputedWidgetArea(PANEL));
+        world.run_system_once(close).unwrap();
+        assert_eq!(world.resource::<Cues>().0, [cued(DISSOLVE)], "a box");
+    }
+
+    #[test]
+    fn what_is_replaced_by_another_of_its_kind_does_not_leave_under_it() {
+        let mut world = world_with((ComputedWidgetArea(PANEL), Leaves::Slide));
+        world.run_system_once(reopen).unwrap();
+        assert!(world.resource::<Cues>().0.is_empty());
+        let standing = world.query::<&Panel>().iter(&world).count();
+        assert_eq!(standing, 1, "the one it took down is gone");
+    }
+
+    #[test]
+    fn what_closes_before_it_was_laid_out_has_nothing_to_leave_from() {
+        let mut world = world_with(());
+        world.run_system_once(close).unwrap();
+        assert!(world.resource::<Cues>().0.is_empty());
+        assert_eq!(world.query::<&Panel>().iter(&world).count(), 0);
+    }
 }
