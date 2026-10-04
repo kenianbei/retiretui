@@ -104,6 +104,13 @@ impl Settings {
         unread.into_iter().flatten().collect()
     }
 
+    /// The store the settings file is in and `name` beside that file;
+    /// nothing for a session that keeps nothing.
+    pub fn beside(&self, name: &str) -> Option<(&dyn Store, PathBuf)> {
+        let Kept { store, path } = self.kept.as_ref()?;
+        Some((store.as_ref(), path.parent()?.join(name)))
+    }
+
     /// Writes one key under `[tui]`, leaving every other key, comment, and
     /// blank line of the file as it was. `key` is the path beneath the
     /// table: `["theme", "name"]`.

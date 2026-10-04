@@ -21,7 +21,12 @@ use super::settings::Settings;
 pub fn plugin(app: &mut App) {
     app.add_plugins((picker::plugin, ground::plugin));
     app.insert_resource(Theme::terminal());
-    app.insert_resource(library::Themes::embedded());
+    let (themes, complaints) = library::Themes::beside(app.world().resource::<Settings>());
+    app.insert_resource(themes);
+    // Said once the journal listens.
+    app.add_systems(Startup, move || {
+        complaints.iter().for_each(journal::warn);
+    });
     app.init_resource::<WantedVariant>();
     app.add_systems(Startup, wear_the_theme_set);
     app.configure_sets(Update, Repainted.before(WidgetSystems::Style));
