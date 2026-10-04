@@ -314,45 +314,49 @@ depends on UI.
   shown for it wherever it is shown, and an issue's path is read back into the
   page, item and field it names - so a form, a table, a menu and an issue say
   the same thing in the same words. Every action the shell can take is a row in
-  one static command table, which the keys, the tabs' own digits, the key row,
-  and the fuzzy pickers that find a command or a page all read from; a key
-  particular to a page runs only while that page is on show, ahead of any
-  meaning the shell gives the same key, so two pages may bind one key each and a
-  page may take one of the shell's. The keyboard walks a page's panes in the
-  order they are drawn, the sidebar first beside a grouped page, and a page is
-  entered on its first pane. Whatever stands over the page - a menu, a picker, a
-  dialog, an open item - takes the keyboard on a stack and gives it back to what
-  held it, and a command chosen from one runs once it has, since what holds the
-  keyboard is what a command acts on. Whether a key is a command at all is asked
-  of the widget it was typed at and everything that widget sits in: what stands
-  over the page keeps every key, and a form's fields and buttons keep the plain
-  ones, a text field the chords it edits with besides. Everything the shell says
-  is a `tracing` event with two readers: a journal the shell toasts from and
-  lists in a drawer, and, in a terminal, a log file. Colour is named by role,
-  never by value: a theme is a table of roles, the terminal's own colours by
-  default, and a cell no widget coloured is drawn in the theme's own ground.
-  What the user sets - theme, motion - lives in one user config file the shell
-  reads at launch and writes back a key at a time, leaving the rest of the file
-  as the user wrote it. Each applied item re-validates the draft: a valid draft
-  is re-projected at once so the views follow it, and an invalid one holds the
-  last good view, reports its first issue, counts them beside the file name, and
-  lists every one in a panel whose rows turn to the item. Saving writes the
-  draft as canonical TOML through the same validation gate as every other write;
-  a scenario session saves into its own overlay, still naming its base and
-  stating what differs from it beside whatever it stated that still holds; an
-  edit no overlay can state - clearing what the base states outside an item - is
-  refused in the form's words, and saving one under a new name writes the
-  resolved plan as a plan of its own. The resolved chain's files are watched so
-  edits made outside the session - on disk, or from another tab of the page -
-  re-project in place, except under an unsaved draft or an item being edited,
-  which is reported rather than overwritten, and so are each compared file's,
-  which have no draft to protect; `mcp` serves the same contract to AI agents
-  over stdio - list, read, validate, write, project, actions, compare,
-  earnings-import, optimizer and market tools over plan files sandboxed to a
-  served directory, plus tax-parameter lookup and an embedded schema reference.
-  Writes are gated on full validation - scenarios validated fully resolved - and
-  stored in canonical TOML; the schema reference's worked example is kept valid
-  by the test suite.
+  one static command table, which the fuzzy pickers that find a command or a
+  page read from. The keys a row answers to are the table's until the user's
+  config file states others for it, and the keys in force are what a keystroke
+  is matched against and what everything that names a key reads: the tabs, the
+  key row, a pane's hints, a page's help, the pickers; a key particular to a
+  page runs only while that page is on show, ahead of any meaning the shell
+  gives the same key, so two pages may bind one key each and a page may take one
+  of the shell's. The keyboard walks a page's panes in the order they are drawn,
+  the sidebar first beside a grouped page, and a page is entered on its first
+  pane. Whatever stands over the page - a menu, a picker, a dialog, an open
+  item - takes the keyboard on a stack and gives it back to what held it, and a
+  command chosen from one runs once it has, since what holds the keyboard is
+  what a command acts on. Whether a key is a command at all is asked of the
+  widget it was typed at and everything that widget sits in: what stands over
+  the page keeps every key, and a form's fields and buttons keep the plain ones,
+  a text field the chords it edits with besides. Everything the shell says is a
+  `tracing` event with two readers: a journal the shell toasts from and lists in
+  a drawer, and, in a terminal, a log file. Colour is named by role, never by
+  value: a theme is a table of roles, the terminal's own colours by default, and
+  a cell no widget coloured is drawn in the theme's own ground. What the user
+  sets - theme, motion, the keys a command answers to - lives in one user config
+  file the shell reads at launch, a setting at a time so that one it cannot read
+  costs only itself, and writes a theme or motion it changes back into a key at
+  a time, leaving the rest of the file as the user wrote it. Each applied item
+  re-validates the draft: a valid draft is re-projected at once so the views
+  follow it, and an invalid one holds the last good view, reports its first
+  issue, counts them beside the file name, and lists every one in a panel whose
+  rows turn to the item. Saving writes the draft as canonical TOML through the
+  same validation gate as every other write; a scenario session saves into its
+  own overlay, still naming its base and stating what differs from it beside
+  whatever it stated that still holds; an edit no overlay can state - clearing
+  what the base states outside an item - is refused in the form's words, and
+  saving one under a new name writes the resolved plan as a plan of its own. The
+  resolved chain's files are watched so edits made outside the session - on
+  disk, or from another tab of the page - re-project in place, except under an
+  unsaved draft or an item being edited, which is reported rather than
+  overwritten, and so are each compared file's, which have no draft to protect;
+  `mcp` serves the same contract to AI agents over stdio - list, read, validate,
+  write, project, actions, compare, earnings-import, optimizer and market tools
+  over plan files sandboxed to a served directory, plus tax-parameter lookup and
+  an embedded schema reference. Writes are gated on full validation - scenarios
+  validated fully resolved - and stored in canonical TOML; the schema
+  reference's worked example is kept valid by the test suite.
 - `retiretui_web` - the planner in a browser page, built for wasm alone and
   published to GitHub Pages under `/ratzilla` with each release, apart from the
   web app it sits beside: plurimus's WebGL canvas, the workspace kept in the
