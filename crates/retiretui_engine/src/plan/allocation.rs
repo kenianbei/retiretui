@@ -47,8 +47,8 @@ impl AssetClass {
 pub type ClassReturns = [f64; 3];
 
 /// Generic because serde's `skip_serializing_if` passes a reference.
-pub(crate) fn is_zero<T: Default + PartialEq>(share: &T) -> bool {
-    *share == T::default()
+pub(crate) fn is_default<T: Default + PartialEq>(value: &T) -> bool {
+    *value == T::default()
 }
 
 /// An account's share of each class, rebalanced every year; an unstated
@@ -57,13 +57,13 @@ pub(crate) fn is_zero<T: Default + PartialEq>(share: &T) -> bool {
 #[serde(deny_unknown_fields)]
 pub struct Mix {
     /// The share in stocks.
-    #[serde(default, skip_serializing_if = "is_zero")]
+    #[serde(default, skip_serializing_if = "is_default")]
     pub stocks: f64,
     /// The share in bonds.
-    #[serde(default, skip_serializing_if = "is_zero")]
+    #[serde(default, skip_serializing_if = "is_default")]
     pub bonds: f64,
     /// The share in cash.
-    #[serde(default, skip_serializing_if = "is_zero")]
+    #[serde(default, skip_serializing_if = "is_default")]
     pub cash: f64,
 }
 
@@ -110,13 +110,13 @@ pub struct MixPhase {
     /// When this mix takes over.
     pub from: Trigger,
     /// The share in stocks.
-    #[serde(default, skip_serializing_if = "is_zero")]
+    #[serde(default, skip_serializing_if = "is_default")]
     pub stocks: f64,
     /// The share in bonds.
-    #[serde(default, skip_serializing_if = "is_zero")]
+    #[serde(default, skip_serializing_if = "is_default")]
     pub bonds: f64,
     /// The share in cash.
-    #[serde(default, skip_serializing_if = "is_zero")]
+    #[serde(default, skip_serializing_if = "is_default")]
     pub cash: f64,
 }
 

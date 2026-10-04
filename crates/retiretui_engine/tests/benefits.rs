@@ -391,3 +391,46 @@ fn a_benefit_claimed_before_the_plan_is_priced_at_the_age_it_was_claimed() {
     );
     assert_near(paid_by(&text)(2026), expected as f64);
 }
+
+#[test]
+fn a_computed_benefit_under_a_rate_of_its_own_grows_at_it_from_the_age_62_year() {
+    let plan = head(&format!("{NOTHING_BEFORE}\n{SALARIED_CLAIM}")).replace(
+        "kind = \"social-security\"",
+        "kind = \"social-security\"\ncola = 0.03",
+    );
+    let projection = run(&plan);
+    let paid = |year| projection.row(year).unwrap().income["ss"];
+    // 45,108 in 2042 dollars at 3% from 2042, not the plan's 2.5%, June on in
+    // 2047; kept as 28,110 whole 2026 dollars, so 2048 and 2049 are $1 over.
+    assert_eq!(paid(2047), 30_504);
+    assert_eq!(paid(2048), 53_862);
+    assert_eq!(paid(2049), 55_478);
+}
+
+#[test]
+fn a_stated_benefit_under_a_rate_of_its_own_grows_at_it_from_the_plan_start() {
+    let plan = head(
+        r#"
+[[accounts]]
+id = "cash"
+kind = "cash"
+owner = "me"
+balance = 0
+
+[[income]]
+id = "ss"
+kind = "social-security"
+owner = "me"
+amount = 12000
+cola = 0.03
+start = { age = 67, owner = "me" }
+"#,
+    );
+    let projection = run(&plan);
+    let paid = |year| projection.row(year).unwrap().income["ss"];
+    // A statement's figure is today's dollars: 12,000 at 3% for the 22 and
+    // 23 years from 2026, not frozen until the claim; June on in 2047.
+    assert_eq!(paid(2047), 13_022);
+    assert_eq!(paid(2048), 22_993);
+    assert_eq!(paid(2049), 23_683);
+}

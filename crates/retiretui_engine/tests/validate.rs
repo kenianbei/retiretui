@@ -451,6 +451,29 @@ start = { age = 67, owner = "me" }
 }
 
 #[test]
+fn social_security_cannot_escalate_from_its_start() {
+    let benefit = |rest: &str| {
+        with(&format!(
+            r#"
+[[income]]
+id = "ss"
+kind = "social-security"
+owner = "me"
+start = {{ age = 67, owner = "me" }}
+{rest}
+"#
+        ))
+    };
+    let refused = "today's dollars";
+    let computed = benefit("cola_from = \"start\"");
+    assert_issue(&issues(&computed), "income[0].cola_from", refused);
+    let stated = benefit("amount = 30000\ncola_from = \"start\"");
+    assert_issue(&issues(&stated), "income[0].cola_from", refused);
+    let from_plan = benefit("amount = 30000\ncola_from = \"plan\"");
+    assert!(issues(&from_plan).is_empty(), "{:?}", issues(&from_plan));
+}
+
+#[test]
 fn earnings_must_not_be_negative() {
     let text = BASE.replace(
         "birth = 1980-01-01",

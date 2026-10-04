@@ -96,7 +96,8 @@ amount = 85000
 covered = true
 end = { event = "retire-dana", offset = -1 }
 
-# Grows 2% a year of its own, not with inflation.
+# The plan's estimate of what it pays in its first year, growing 2% a year of
+# its own from then, not with inflation.
 [[income]]
 id = "pension-dana"
 name = "Dana's pension"
@@ -104,6 +105,7 @@ kind = "pension"
 owner = "dana"
 amount = 42000
 cola = 0.02
+cola_from = "start"
 start = { event = "retire-dana" }
 
 [[income]]

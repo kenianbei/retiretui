@@ -345,9 +345,7 @@ impl ItemEdit {
 
 #[cfg(test)]
 mod tests {
-    use retiretui_engine::plan::Plan;
-
-    use retiretui_engine::plan::Item;
+    use retiretui_engine::plan::{ColaAnchor, Item, Plan};
 
     use super::*;
     use crate::forms::DomainId;
@@ -395,6 +393,26 @@ mod tests {
         assert_eq!(edit.apply(&mut draft, None), Ok(Some(0)));
         assert_eq!(draft.plan.accounts[0].name.as_deref(), Some("Renamed"));
         assert!(!edit.is_dirty(), "applied is the new pristine");
+    }
+
+    #[test]
+    fn where_an_income_grows_from_is_left_out_until_it_is_picked() {
+        let mut draft = draft(false);
+        let salary = draft
+            .plan
+            .income
+            .iter()
+            .position(|income| income.amount.is_some());
+        let salary = salary.expect("the example has a stated income");
+        let mut edit = ItemEdit::open(form_of(DomainId::Income), &draft, salary);
+        assert_eq!(
+            edit.snapshot().get("cola_from"),
+            None,
+            "left out while the plan's start"
+        );
+        edit.set("cola_from", Some(Value::String("start".to_owned())), None);
+        assert_eq!(edit.apply(&mut draft, None), Ok(Some(salary)));
+        assert_eq!(draft.plan.income[salary].cola_from, ColaAnchor::Start);
     }
 
     #[test]

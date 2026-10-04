@@ -29,14 +29,14 @@ mod triggers;
 mod validate;
 
 pub use accounts::{Account, AccountKind, TreatmentClass};
-pub(crate) use allocation::is_zero;
+pub(crate) use allocation::is_default;
 pub use allocation::{Allocation, AssetClass, ClassReturns, Mix, MixPhase};
 pub use cliffs::Cliff;
 pub use codec::{from_table, to_table};
 pub use contributions::{Contribution, Match, Payer, Step};
 pub use dates::PlanDate;
 pub use diff::{Change, ChangeKind, diff};
-pub use escalation::ColaSpec;
+pub use escalation::{ColaAnchor, ColaSpec};
 pub use events::Event;
 pub use expenses::Expense;
 pub use flows::{Conversion, Transfer};

@@ -29,11 +29,17 @@ impl Resolver {
         resolver
     }
 
+    /// The first year the income with this id is received, if its trigger
+    /// resolves: the plan's start where it states none.
+    pub(crate) fn first_year(&self, income: &str) -> Option<i16> {
+        self.income_year.get(income).copied().flatten()
+    }
+
     /// The calendar year a trigger fires, if it resolves.
     pub(crate) fn trigger_year(&self, plan: &Plan, trigger: &Trigger) -> Option<i16> {
         resolve_form(plan, trigger.form().ok()?, |node| match node {
             Node::Event(id) => self.event_year.get(id).copied().flatten(),
-            Node::Income(id) => self.income_year.get(id).copied().flatten(),
+            Node::Income(id) => self.first_year(id),
         })
     }
 

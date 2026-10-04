@@ -5,11 +5,13 @@
 //! has no use for is left out.
 
 use retiretui_engine::plan::{AccountKind, IncomeKind, US};
+use serde::Deserialize;
 use toml::{Table, Value};
 
 use super::offers::Vocabulary;
 use super::{FieldSpec, Form};
 use crate::codec::{get_path, set_path};
+use crate::present;
 
 /// The key of the pick that says whether an item recurs. No file holds it:
 /// it is read from whether the item states when it happens once, and it is
@@ -51,12 +53,21 @@ pub(crate) fn chooses_timing(item: &Table) -> bool {
     word(item, KIND_KEY) != Some(IncomeKind::Windfall.as_str())
 }
 
+/// The item's kind, where it states one the schema knows.
+fn kind_of<'de, Kind: Deserialize<'de>>(item: &Table) -> Option<Kind> {
+    item.get(KIND_KEY)?.clone().try_into().ok()
+}
+
 /// Whether the income's job can have a workplace plan that covers its owner.
 #[must_use]
 pub(crate) fn can_be_covered(item: &Table) -> bool {
-    let kind = item.get(KIND_KEY).cloned();
-    let kind = kind.and_then(|kind| kind.try_into::<IncomeKind>().ok());
-    kind.is_some_and(IncomeKind::can_be_covered)
+    kind_of(item).is_some_and(IncomeKind::can_be_covered)
+}
+
+/// Whether the income may state its amount as its first year's.
+#[must_use]
+pub(crate) fn can_grow_from_its_start(item: &Table) -> bool {
+    kind_of(item).is_some_and(IncomeKind::can_escalate_from_start)
 }
 
 /// Whether the item happens once: picked so, or a windfall.
@@ -90,7 +101,7 @@ impl FieldSpec {
     pub const fn starts() -> Self {
         Self::trigger("start", "Starts")
             .shown_when(recurs)
-            .blank("Plan start")
+            .blank(present::PLAN_START)
             .help("When it begins. Blank means the start of the plan.")
     }
 
@@ -111,9 +122,7 @@ impl FieldSpec {
 }
 
 fn account_is(item: &Table, asked: impl Fn(AccountKind) -> bool) -> bool {
-    let kind = item.get(KIND_KEY).cloned();
-    let kind = kind.and_then(|kind| kind.try_into::<AccountKind>().ok());
-    kind.is_some_and(asked)
+    kind_of(item).is_some_and(asked)
 }
 
 /// Whether the account keeps a cost basis.
@@ -217,6 +226,18 @@ mod tests {
         assert!(covered.is_shown_for(&item("kind = \"salary\"")));
         assert!(!covered.is_shown_for(&item("kind = \"pension\"")));
         assert!(!covered.is_shown_for(&Table::new()));
+    }
+
+    #[test]
+    fn any_income_but_social_security_is_asked_where_it_grows_from() {
+        use super::super::Domain;
+        use super::super::cells::field_of;
+        use super::super::income::Incomes;
+        let anchor = field_of(Incomes::FIELDS, "cola_from").expect("the Income form asks it");
+        assert!(anchor.is_shown_for(&item("kind = \"pension\"")));
+        assert!(anchor.is_shown_for(&item("kind = \"windfall\"")));
+        assert!(!anchor.is_shown_for(&item("kind = \"social-security\"")));
+        assert!(!anchor.is_shown_for(&Table::new()));
     }
 
     #[test]

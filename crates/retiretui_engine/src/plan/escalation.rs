@@ -1,8 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-/// How an amount escalates from its today's-dollar value at plan start:
-/// following plan inflation (`true`, the default), frozen in nominal dollars
-/// (`false`), or at a fixed annual rate of its own (`cola = 0.0125`).
+/// How an amount escalates from its value at its anchor, the plan's start
+/// unless an income says otherwise: following plan inflation (`true`, the
+/// default), frozen in nominal dollars (`false`), or at a fixed annual rate
+/// of its own (`cola = 0.0125`).
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum ColaSpec {
@@ -10,6 +11,34 @@ pub enum ColaSpec {
     Follows(bool),
     /// A fixed annual rate independent of plan inflation.
     Rate(f64),
+}
+
+/// Where an income's escalation runs from, which is also what its amount
+/// states: today's dollars, escalated from the plan's start (the default),
+/// or what the income pays in its first year, escalated from that year.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ColaAnchor {
+    /// From the plan's start.
+    #[default]
+    Plan,
+    /// From the income's first year, or the plan's start where that is
+    /// later.
+    Start,
+}
+
+impl ColaAnchor {
+    /// Every anchor, in the order the schema declares them.
+    pub const ALL: &'static [Self] = &[Self::Plan, Self::Start];
+
+    /// The anchor as a plan file spells it.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Plan => "plan",
+            Self::Start => "start",
+        }
+    }
 }
 
 impl Default for ColaSpec {

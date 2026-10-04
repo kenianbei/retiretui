@@ -20,7 +20,7 @@ impl Simulation<'_> {
                 Some(amount) => amount,
                 None => self.derived_benefit(i, year),
             };
-            let escalated = scale(amount, self.cola_factor(income.cola, year));
+            let escalated = scale(amount, self.income_factor(income, year));
             let nominal = self.social_security_paid(i, year, escalated);
             if nominal <= 0 {
                 continue;

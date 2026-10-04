@@ -32,7 +32,7 @@ pub struct StateParams {
     pub deduction_unindexed: bool,
     /// What each person adds to the deduction from the year they reach 65,
     /// in nominal dollars.
-    #[serde(skip_serializing_if = "crate::plan::is_zero")]
+    #[serde(skip_serializing_if = "crate::plan::is_default")]
     pub deduction_at_65: PerStatus<Dollars>,
     /// The federal AGI above which there is no deduction, in nominal
     /// dollars.
@@ -74,7 +74,7 @@ pub struct ExemptionCredit {
     pub per_person: Dollars,
     /// What each person adds to it from the year they reach 65, in nominal
     /// dollars.
-    #[serde(default, skip_serializing_if = "crate::plan::is_zero")]
+    #[serde(default, skip_serializing_if = "crate::plan::is_default")]
     pub at_65: Dollars,
     /// The federal AGI above which there is no credit, in nominal dollars.
     #[serde(default, skip_serializing_if = "Option::is_none")]
