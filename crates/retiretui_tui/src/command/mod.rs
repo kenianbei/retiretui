@@ -2,23 +2,23 @@
 //! so that a key, the hint row, and the pickers all read from the same
 //! row.
 
+mod keymap;
 mod keys;
 mod pickers;
 mod table;
 mod tools;
 
+pub use keymap::Keymap;
 pub use tools::{TAKE_CLAIMS, TAKE_LADDER, TAKE_ORDER, WRITE_CLAIMS, WRITE_LADDER, WRITE_ORDER};
 
 use std::path::PathBuf;
-use std::sync::LazyLock;
 
 use bevy_app::{App, PostStartup, Startup, Update};
 use bevy_ecs::prelude::{
     Commands, Entity, IntoScheduleConfigs, On, Res, ResMut, Resource, Single, With, World,
 };
 use bevy_ecs::system::{SystemId, SystemParam};
-use bevy_input::ButtonState;
-use bevy_input::keyboard::{Key, KeyboardInput};
+use bevy_input::keyboard::KeyboardInput;
 use bevy_input_focus::FocusedInput;
 use bevy_window::PrimaryWindow;
 use plurimus::term::KeyModifiers;
@@ -33,6 +33,21 @@ use super::nav::{Page, PageSystems, ShownSurface};
 use super::overlay;
 use super::scope::{KeyScope, Scoped};
 use super::session::NO_DOCUMENT;
+use super::settings::Settings;
+
+/// The commands the shell names by itself: the one that walks a page's
+/// panes, and the two that find every other.
+pub const FOCUS_NEXT: &str = "focus-next";
+pub const PALETTE: &str = "palette";
+pub const HELP: &str = "help";
+
+/// The commands a page says the key of, in a hint or in its help.
+pub const DOMAINS: &str = "domains";
+pub const LEDGER_PLAN: &str = "ledger-plan";
+pub const COMPARE_WITH: &str = "compare-with";
+pub const COMPARE_OPEN: &str = "compare-open";
+pub const COMPARE_METRICS: [&str; 2] = ["compare-metric-previous", "compare-metric-next"];
+pub const OVERVIEW_YEARS: [&str; 2] = ["overview-year-previous", "overview-year-next"];
 
 pub struct CommandSpec {
     /// The stable kebab-case handle the command picker lists it under.
@@ -95,22 +110,9 @@ pub enum Outcome {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct CommandId(usize);
 
-/// How each command's first key is shown, indexed as [`COMMANDS`] is;
-/// empty for one bound to no key.
-static KEY_LABELS: LazyLock<Vec<String>> = LazyLock::new(|| {
-    COMMANDS
-        .iter()
-        .map(|spec| spec.keys.first().map(keys::label).unwrap_or_default())
-        .collect()
-});
-
 impl CommandId {
     pub fn spec(self) -> &'static CommandSpec {
         &COMMANDS[self.0]
-    }
-
-    pub fn key_label(self) -> &'static str {
-        &KEY_LABELS[self.0]
     }
 }
 
@@ -134,31 +136,11 @@ pub fn defer_named(commands: &mut Commands, name: &'static str) {
     });
 }
 
-/// The plain arrow keys a command particular to `page` binds, which the
-/// keyboard then cannot also walk the page's panes by.
-pub fn arrows_bound_on(page: Page) -> impl Iterator<Item = &'static Key> {
-    let is_plain = |binding: &KeyBinding| {
-        let held = binding.modifiers;
-        !(held.ctrl || held.alt || held.shift)
-    };
-    table::BINDINGS
-        .iter()
-        .filter(move |(binding, command)| {
-            command.spec().scope == Scope::On(page) && is_plain(binding)
-        })
-        .map(|(binding, _)| &binding.key)
-        .filter(|key| {
-            matches!(
-                key,
-                Key::ArrowUp | Key::ArrowDown | Key::ArrowLeft | Key::ArrowRight
-            )
-        })
-}
-
-/// The hinted commands that act on `shown` and are not `idle`, each with
-/// its first key: the ones particular to the page first, since a narrow
-/// row drops hints from the end, then table order.
+/// The hinted commands that act on `shown`, are not `idle` and have a
+/// key, each with its first: the ones particular to the page first, since
+/// a narrow row drops hints from the end, then table order.
 pub fn page_hints(
+    keymap: &Keymap,
     shown: Option<Page>,
     idle: impl Fn(&str) -> bool,
 ) -> impl Iterator<Item = (&'static str, &'static str)> {
@@ -173,7 +155,8 @@ pub fn page_hints(
     particular
         .chain(general)
         .filter(live)
-        .filter_map(|command| Some((command.key_label(), command.spec().hint?)))
+        .filter_map(|command| Some((keymap.label(command), command.spec().hint?)))
+        .filter(|(key, _)| !key.is_empty())
 }
 
 /// What was chosen from something that holds the keyboard - the picker, a
@@ -235,6 +218,13 @@ impl Registry {
 }
 
 pub fn plugin(app: &mut App) {
+    let (keymap, remarks) = Keymap::with(&app.world().resource::<Settings>().keys);
+    app.insert_resource(keymap);
+    // Said once the journal listens.
+    app.add_systems(Startup, move || {
+        remarks.refused.iter().for_each(journal::warn);
+        remarks.taken.iter().for_each(journal::say);
+    });
     app.init_resource::<Pending>();
     app.add_systems(Startup, register);
     app.add_systems(
@@ -265,11 +255,12 @@ fn yields(scope: Option<KeyScope>, held: KeyModifiers) -> bool {
     }
 }
 
-/// What a key is dispatched against: the surface on show and the systems
-/// the commands were registered as.
+/// What a key is dispatched against: the surface on show, the keys in
+/// force, and the systems the commands were registered as.
 #[derive(SystemParam)]
 struct Dispatch<'w> {
     shown: ShownSurface<'w>,
+    keymap: Res<'w, Keymap>,
     registry: Res<'w, Registry>,
 }
 
@@ -284,30 +275,12 @@ fn handle_shell_key(
     if !yields(scoped.of(input.original_event_target()), held) {
         return;
     }
-    let Some(command) = bound_on(dispatch.shown.surface(), &input.input, held) else {
+    let shown = dispatch.shown.surface();
+    let Some(command) = dispatch.keymap.bound_on(shown, &input.input, held) else {
         return;
     };
     input.propagate(false);
     dispatch.registry.run(&mut commands, command);
-}
-
-/// The command a key runs: the one particular to the page on show where
-/// it binds the key, else the first bound to it everywhere. So two pages
-/// may bind one key each, and a page may take a key the shell binds.
-fn bound_on(shown: Option<Page>, input: &KeyboardInput, held: KeyModifiers) -> Option<CommandId> {
-    if input.state != ButtonState::Pressed {
-        return None;
-    }
-    let bound = || {
-        table::BINDINGS
-            .iter()
-            .filter(|(binding, _)| binding.matches(input, held))
-            .map(|(_, command)| *command)
-    };
-    let is_own = |command: &CommandId| matches!(command.spec().scope, Scope::On(_));
-    bound()
-        .find(|command| is_own(command) && command.spec().scope.covers(shown))
-        .or_else(|| bound().find(|command| !is_own(command)))
 }
 
 fn register(world: &mut World) {
@@ -318,8 +291,6 @@ fn register(world: &mut World) {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeSet;
-
     use super::*;
 
     #[test]
@@ -330,68 +301,6 @@ mod tests {
         assert!(!yields(Some(KeyScope::Plain), plain));
         assert!(yields(Some(KeyScope::Plain), chord));
         assert!(!yields(Some(KeyScope::All), chord));
-    }
-
-    #[test]
-    fn names_are_unique_and_keys_are_unique_on_any_one_page() {
-        let names: BTreeSet<&str> = COMMANDS.iter().map(|spec| spec.name).collect();
-        assert_eq!(names.len(), COMMANDS.len());
-        let keys: Vec<(&KeyBinding, Scope)> = COMMANDS
-            .iter()
-            .flat_map(|spec| spec.keys.iter().map(|key| (key, spec.scope)))
-            .collect();
-        // A page's row may take a key the shell binds; two rows of the
-        // shell's, or two of one page's, may not share one.
-        let are_apart = |a: Scope, b: Scope| match (a, b) {
-            (Scope::On(x), Scope::On(y)) => x != y,
-            (Scope::On(_), _) | (_, Scope::On(_)) => true,
-            _ => false,
-        };
-        for (index, (key, scope)) in keys.iter().enumerate() {
-            let twice = keys[..index]
-                .iter()
-                .any(|(earlier, held)| earlier == key && !are_apart(*scope, *held));
-            assert!(!twice, "{} is bound twice", keys::label(key));
-        }
-    }
-
-    #[test]
-    fn a_pages_row_takes_a_key_the_shell_binds_while_the_page_is_shown() {
-        use bevy_input::keyboard::{Key, KeyCode};
-        let esc = KeyboardInput {
-            key_code: KeyCode::Escape,
-            logical_key: Key::Escape,
-            state: ButtonState::Pressed,
-            text: None,
-            repeat: false,
-            window: Entity::PLACEHOLDER,
-        };
-        let on = |page: Page| {
-            let command = bound_on(Some(page), &esc, KeyModifiers::default());
-            command.map(|command| command.spec().name)
-        };
-        assert_eq!(on(Page::Ledger), Some("ledger-plan"));
-        assert_eq!(on(Page::Accounts), Some("domains"));
-    }
-
-    #[test]
-    fn a_key_two_pages_bind_runs_the_command_of_the_page_on_show() {
-        use bevy_input::keyboard::{Key, KeyCode};
-        let w = KeyboardInput {
-            key_code: KeyCode::KeyW,
-            logical_key: Key::Character("w".into()),
-            state: ButtonState::Pressed,
-            text: None,
-            repeat: false,
-            window: Entity::PLACEHOLDER,
-        };
-        let on = |page: Page| {
-            let command = bound_on(Some(page), &w, KeyModifiers::default());
-            command.map(|command| command.spec().name)
-        };
-        assert_eq!(on(Page::RothConversions), Some("write-ladder"));
-        assert_eq!(on(Page::SsaBenefits), Some("write-claims"));
-        assert_eq!(on(Page::Overview), None, "a page's key is its own");
     }
 
     #[test]
@@ -431,14 +340,12 @@ mod tests {
 
     #[test]
     fn a_page_is_hinted_the_commands_that_act_on_it() {
-        let words = |page: Page| -> Vec<&str> {
-            page_hints(Some(page), |_| false)
-                .map(|(_, word)| word)
-                .collect()
-        };
+        let keymap = Keymap::defaults();
+        let hints = |shown: Option<Page>| page_hints(&keymap, shown, |_| false);
+        let words = |page: Page| -> Vec<&str> { hints(Some(page)).map(|(_, word)| word).collect() };
         let viewing = words(Page::Overview);
         assert!(viewing.contains(&"save"), "{viewing:?}");
-        let composing: Vec<&str> = page_hints(None, |_| false).map(|(_, word)| word).collect();
+        let composing: Vec<&str> = hints(None).map(|(_, word)| word).collect();
         assert_eq!(composing, ["quit"], "nothing to save without a document");
         assert!(!viewing.contains(&"add"), "nothing to add to: {viewing:?}");
         assert!(words(Page::Accounts).contains(&"add"));
@@ -446,7 +353,5 @@ mod tests {
             !words(Page::Settings).contains(&"add"),
             "a form, not a list"
         );
-        let keyed = page_hints(Some(Page::Accounts), |_| false).all(|(key, _)| !key.is_empty());
-        assert!(keyed, "a hinted command names its key");
     }
 }

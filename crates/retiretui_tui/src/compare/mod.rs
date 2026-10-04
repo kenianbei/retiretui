@@ -30,8 +30,8 @@ use retiretui_client::compare::{amounts, figure, less};
 use crate::metric::Metric;
 
 use super::chart::{Mark, Series, SeriesChart};
-use super::command::Outcome;
-use super::hints::Hints;
+use super::command::{self, Keymap, Outcome};
+use super::hints::{CommandHint, CommandHints};
 use super::journal;
 use super::layout::{self, Body};
 use super::nav::{self, Page};
@@ -74,8 +74,12 @@ pub fn plugin(app: &mut App) {
 }
 
 /// Walking the metrics is the page's, from whichever pane holds the keys.
-const METRIC_HINTS: Hints = Hints(&[("←→", "metric")]);
-const HELP: &str = "Compare this plan with others in its folder: c adds one.";
+const METRIC_HINTS: CommandHints = CommandHints(&[CommandHint {
+    commands: &command::COMPARE_METRICS,
+    key: 0,
+    word: "metric",
+}]);
+const HELP: &str = "Compare this plan with others in its folder";
 
 /// The files compared with the document, projected as they were read,
 /// and what the page measures them against.
@@ -298,10 +302,17 @@ impl Plans<'_> {
     }
 }
 
-fn show_help(theme: Res<Theme>, mut lines: Query<(&mut UiWidget, &HelpLine)>) {
-    if theme.is_changed() {
-        tools::show_help(&mut lines, Page::Compare, HELP, &theme);
+fn show_help(theme: Res<Theme>, keymap: Res<Keymap>, mut lines: Query<(&mut UiWidget, &HelpLine)>) {
+    if !theme.is_changed() {
+        return;
     }
+    let adds = keymap.label_named(command::COMPARE_WITH, 0);
+    let help = if adds.is_empty() {
+        format!("{HELP}.")
+    } else {
+        format!("{HELP}: {adds} adds one.")
+    };
+    tools::show_help(&mut lines, Page::Compare, &help, &theme);
 }
 
 /// Stops comparing the highlighted plan; the document is not one.

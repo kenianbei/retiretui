@@ -13,8 +13,9 @@ use plurimus::widgets::ActiveDescendant;
 use retiretui_client::compare::{self, Figured};
 
 use super::Plans;
+use crate::command;
 use crate::edit::table_bundle;
-use crate::hints::Hints;
+use crate::hints::{CommandHint, CommandHints, Hints};
 use crate::layout::{self, filling, fixed, placed};
 use crate::nav::FocusStop;
 use crate::pane::{Framed, Pane};
@@ -54,7 +55,12 @@ pub(super) fn spawn(commands: &mut Commands, view: Entity) {
     commands.spawn((
         table_bundle(),
         PlansTable,
-        Hints(&[("↑↓", "plan"), ("⏎", "open")]),
+        Hints(&[("↑↓", "plan")]),
+        CommandHints(&[CommandHint {
+            commands: &[command::COMPARE_OPEN],
+            key: 0,
+            word: "open",
+        }]),
         layout::Rests,
         FocusStop,
         filling(),

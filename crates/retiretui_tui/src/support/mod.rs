@@ -142,6 +142,13 @@ pub fn headless_app_set(path: PathBuf, size: TerminalSize, settings: Settings) -
     headless_app_on(path, size, settings, TODAY)
 }
 
+/// The shell at `path` under the `[tui.keys]` entries `keys` states.
+pub fn headless_app_bound(path: PathBuf, size: TerminalSize, keys: &str) -> Headless {
+    let mut settings = Settings::still();
+    settings.keys = toml::from_str(keys).unwrap();
+    headless_app_set(path, size, settings)
+}
+
 /// The shell over the plan at `path` in the calendar year `today`.
 pub fn headless_app_in(path: PathBuf, size: TerminalSize, today: Today) -> Headless {
     headless_app_on(path, size, Settings::still(), today)

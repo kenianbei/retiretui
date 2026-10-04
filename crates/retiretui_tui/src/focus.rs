@@ -3,7 +3,7 @@
 use bevy_app::{App, Update};
 use bevy_ecs::change_detection::DetectChangesMut;
 use bevy_ecs::hierarchy::{ChildOf, Children};
-use bevy_ecs::prelude::{Added, Entity, IntoScheduleConfigs, Or, Query, ResMut, Resource};
+use bevy_ecs::prelude::{Added, Entity, IntoScheduleConfigs, Or, Query, Res, ResMut, Resource};
 use bevy_ecs::system::SystemParam;
 use bevy_input::keyboard::Key;
 use bevy_input_focus::InputFocus;
@@ -11,7 +11,7 @@ use bevy_input_focus::directional_navigation::DirectionalNavigationMap;
 use bevy_math::CompassOctant;
 use plurimus::widgets::{ListBoxKeys, SliderKeys, TableKeys};
 
-use super::command::{self, Outcome};
+use super::command::{Keymap, Outcome};
 use super::nav::{FocusStop, Page, PageSystems, ShownSurface, SurfaceRoot};
 use super::overlay;
 use super::sidebar::SidebarCursor;
@@ -199,6 +199,7 @@ fn block_bound_arrows(
     stops: Query<Entity, Added<FocusStop>>,
     parents: Query<&ChildOf>,
     roots: Query<&SurfaceRoot>,
+    keymap: Res<Keymap>,
     mut map: ResMut<DirectionalNavigationMap>,
 ) {
     for stop in &stops {
@@ -206,7 +207,9 @@ fn block_bound_arrows(
             .iter_ancestors(stop)
             .find_map(|ancestor| roots.get(ancestor).ok())
             .and_then(|root| root.0);
-        let bound = page.into_iter().flat_map(command::arrows_bound_on);
+        let bound = page
+            .into_iter()
+            .flat_map(|page| keymap.arrows_bound_on(page));
         for direction in bound.filter_map(octant) {
             map.block_edge(stop, direction);
         }

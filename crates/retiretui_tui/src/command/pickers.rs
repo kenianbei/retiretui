@@ -3,7 +3,7 @@
 
 use bevy_ecs::prelude::{In, Res, ResMut, Resource, World};
 
-use super::{CommandId, Outcome, Pending};
+use super::{CommandId, Keymap, Outcome, Pending};
 use crate::nav::{Page, Turn};
 use crate::picker::{Offered, Picker, Picking, ranked};
 
@@ -49,9 +49,9 @@ fn list_names(In(query): In<String>) -> Vec<Offered> {
 }
 
 /// Commands by what they do, each naming its key.
-fn list_docs(In(query): In<String>) -> Vec<Offered> {
+fn list_docs(In(query): In<String>, keymap: Res<Keymap>) -> Vec<Offered> {
     let offered = super::all()
-        .map(|command| Offered::new(command.0, command.spec().doc).badged(command.key_label()));
+        .map(|command| Offered::new(command.0, command.spec().doc).badged(keymap.label(command)));
     ranked(&query, offered)
 }
 

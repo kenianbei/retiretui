@@ -20,6 +20,7 @@ use retiretui_client::ledger::ledger_headers;
 
 use crate::table::{Column, ages_text, basis_amount, present_classes, year_figures};
 
+use super::command::{self, Keymap};
 use super::layout::{self, Body, filling, placed};
 use super::nav::{self, ActivePage, FocusStop, Page};
 use super::pane::{self, Framed, Pane};
@@ -60,20 +61,28 @@ pub struct LedgerTable;
 struct LedgerHeaderRow;
 
 const TITLE: &str = "Ledger";
-const RETURN: &str = "esc returns to the plan";
+const RETURN: &str = "returns to the plan";
 
 /// The pane the years are listed in, whose title names a run it shows.
 #[derive(Component)]
 struct LedgerPane;
 
 /// Names the run the Ledger shows in its title.
-fn title_ledger(run: Res<LedgerRun>, mut panes: Query<&mut Framed, With<LedgerPane>>) {
+fn title_ledger(
+    run: Res<LedgerRun>,
+    keymap: Res<Keymap>,
+    mut panes: Query<&mut Framed, With<LedgerPane>>,
+) {
     if !run.is_changed() {
         return;
     }
+    let back = keymap.label_named(command::LEDGER_PLAN, 0);
     let title = run.0.as_ref().map_or_else(
         || TITLE.to_owned(),
-        |(label, _)| format!("{TITLE} · {label} · {RETURN}"),
+        |(label, _)| match back {
+            "" => format!("{TITLE} · {label}"),
+            back => format!("{TITLE} · {label} · {back} {RETURN}"),
+        },
     );
     for mut pane in &mut panes {
         Framed::retitle(&mut pane, &title);

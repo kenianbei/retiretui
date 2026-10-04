@@ -17,7 +17,7 @@ use retiretui_engine::plan::{Item, Person};
 use super::super::options::OptionsTable;
 use super::super::{HelpLine, show_help};
 use super::people::{HeldClaims, PeopleTable, PersonCursor};
-use crate::command::{self, Outcome};
+use crate::command::{self, Keymap, Outcome};
 use crate::edit::Draft;
 use crate::nav::{self, Page, ShownSurface};
 use crate::picker::{Offered, Picker, Picking, ranked};
@@ -67,6 +67,7 @@ fn list_actions(
     draft: Res<Draft>,
     cursor: Res<PersonCursor>,
     held: Res<HeldClaims>,
+    keymap: Res<Keymap>,
 ) -> Vec<Offered> {
     let Some(person) = cursor.person(&draft.plan) else {
         return Vec::new();
@@ -77,7 +78,7 @@ fn list_actions(
         .enumerate()
         .filter(|(_, action)| action.is_offered(&draft.plan, person, is_held))
         .map(|(at, action)| {
-            let key = command::named(command_of(action)).map_or("", command::CommandId::key_label);
+            let key = keymap.label_named(command_of(action), 0);
             Offered::new(at, action.label()).badged(key)
         });
     ranked(&query, offered)
@@ -133,19 +134,24 @@ impl Keyboard<'_, '_> {
 }
 
 fn say_help(
-    state: (Res<Draft>, Res<PersonCursor>, ShownSurface),
+    state: (Res<Draft>, Res<PersonCursor>, Res<Keymap>, ShownSurface),
     keyboard: Keyboard,
     theme: Res<Theme>,
     mut said: Local<String>,
     mut lines: Query<(&mut UiWidget, &HelpLine)>,
 ) {
-    let (draft, cursor, shown) = state;
+    let (draft, cursor, keymap, shown) = state;
     let is_moved = draft.is_changed() || cursor.is_changed() || keyboard.focus.is_changed();
     let is_restyled = theme.is_changed();
     if !(is_moved || is_restyled || shown.is_changed()) {
         return;
     }
-    let text = help_line(&draft, cursor.person(&draft.plan), keyboard.place());
+    let text = help_line(
+        &draft,
+        cursor.person(&draft.plan),
+        keyboard.place(),
+        &keymap,
+    );
     if *said == text && !is_restyled {
         return;
     }
@@ -155,7 +161,12 @@ fn say_help(
 
 /// What to do next, for whom: a record missing comes first, then what ⏎
 /// does where the keyboard is, and where nothing waits, what the tool is.
-pub(super) fn help_line(draft: &Draft, person: Option<&Person>, place: Place) -> String {
+pub(super) fn help_line(
+    draft: &Draft,
+    person: Option<&Person>,
+    place: Place,
+    keymap: &Keymap,
+) -> String {
     let plan = &draft.plan;
     let Some(person) = person else {
         return String::new();
@@ -168,9 +179,14 @@ pub(super) fn help_line(draft: &Draft, person: Option<&Person>, place: Place) ->
             "{id} has no earnings record: ⏎ on {id} to import a statement or estimate one from their salary."
         );
     }
-    let keys = format!("{} act on {}.", keys_phrase(), person.display_name());
+    let keys = keys_phrase(keymap);
+    let keys = if keys.is_empty() {
+        keys
+    } else {
+        format!(" {keys} act on {}.", person.display_name())
+    };
     if place == Place::Strategies {
-        return format!("⏎ takes the highlighted option into the plan, after asking. {keys}");
+        return format!("⏎ takes the highlighted option into the plan, after asking.{keys}");
     }
     if let Some(monthly) = typed_monthly(plan, person) {
         return format!(
@@ -180,20 +196,24 @@ pub(super) fn help_line(draft: &Draft, person: Option<&Person>, place: Place) ->
         );
     }
     if !is_claimed(plan, person) {
-        return format!(
-            "⇥ to the claim options and ⏎ on one to set when each benefit starts. {keys}"
-        );
+        let walk = keymap.label_named(command::FOCUS_NEXT, 0);
+        return if walk.is_empty() {
+            format!("⏎ on a claim option to set when each benefit starts.{keys}")
+        } else {
+            format!(
+                "{walk} to the claim options and ⏎ on one to set when each benefit starts.{keys}"
+            )
+        };
     }
     ABOUT.to_owned()
 }
 
-/// The keys that act on a person, as the command table binds them: `e, c
-/// and k`.
-fn keys_phrase() -> String {
+/// The keys that act on a person, as the keymap binds them: `e, c and
+/// k`.
+fn keys_phrase(keymap: &Keymap) -> String {
     let keys: Vec<&str> = PersonAction::ALL[..KEYED_ACTIONS]
         .iter()
-        .filter_map(|&action| command::named(command_of(action)))
-        .map(command::CommandId::key_label)
+        .map(|&action| keymap.label_named(command_of(action), 0))
         .filter(|key| !key.is_empty())
         .collect();
     match keys.split_last() {

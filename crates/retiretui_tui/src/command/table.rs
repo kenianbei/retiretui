@@ -8,7 +8,10 @@ use plurimus::ui::KeyBinding;
 
 use super::keys::character;
 use super::pickers;
-use super::{CommandId, CommandSpec, Outcome, Scope};
+use super::{
+    COMPARE_METRICS, COMPARE_OPEN, COMPARE_WITH, CommandSpec, DOMAINS, FOCUS_NEXT, HELP,
+    LEDGER_PLAN, OVERVIEW_YEARS, Outcome, PALETTE, Scope,
+};
 use crate::compare::{self, Compared};
 use crate::confirm::Confirm;
 use crate::documents;
@@ -27,20 +30,6 @@ use crate::setup;
 use crate::sidebar;
 use crate::theme;
 use crate::watch::Watch;
-
-/// Every keystroke bound to a command, in table order, which is the order
-/// a key is matched in.
-pub static BINDINGS: LazyLock<Vec<(KeyBinding, CommandId)>> = LazyLock::new(|| {
-    super::all()
-        .flat_map(|command| {
-            command
-                .spec()
-                .keys
-                .iter()
-                .map(move |binding| (binding.clone(), command))
-        })
-        .collect()
-});
 
 /// Every command, in the order the pickers list them.
 ///
@@ -102,7 +91,7 @@ pub static COMMANDS: LazyLock<Vec<CommandSpec>> = LazyLock::new(|| {
             register: Box::new(|world| world.register_system(quit)),
         },
         CommandSpec {
-            name: "focus-next",
+            name: FOCUS_NEXT,
             scope: Scope::Shell,
             doc: "move to the page's next pane",
             keys: vec![KeyBinding::new(Key::Tab)],
@@ -182,7 +171,7 @@ pub static COMMANDS: LazyLock<Vec<CommandSpec>> = LazyLock::new(|| {
             register: Box::new(|world| world.register_system(edit::delete)),
         },
         CommandSpec {
-            name: "palette",
+            name: PALETTE,
             scope: Scope::Shell,
             doc: "run a command by name",
             keys: vec![character(":")],
@@ -190,7 +179,7 @@ pub static COMMANDS: LazyLock<Vec<CommandSpec>> = LazyLock::new(|| {
             register: Box::new(|world| world.register_system(pickers::open_commands)),
         },
         CommandSpec {
-            name: "help",
+            name: HELP,
             scope: Scope::Shell,
             doc: "find a command by what it does",
             keys: vec![character("?")],
@@ -239,7 +228,7 @@ pub static COMMANDS: LazyLock<Vec<CommandSpec>> = LazyLock::new(|| {
         register: Box::new(move |world| register_show(world, page)),
     }));
     commands.push(CommandSpec {
-        name: "tools",
+        name: Group::Tools.label(),
         scope: Scope::Anywhere,
         doc: "show the tools",
         keys: vec![character(&nav::tab_digit(Group::Tools.tab()).to_string())],
@@ -249,7 +238,7 @@ pub static COMMANDS: LazyLock<Vec<CommandSpec>> = LazyLock::new(|| {
         }),
     });
     commands.push(CommandSpec {
-        name: "plan",
+        name: Group::Plan.label(),
         scope: Scope::Anywhere,
         doc: "show the plan's editing domains",
         keys: vec![character(&nav::tab_digit(Group::Plan.tab()).to_string())],
@@ -259,7 +248,7 @@ pub static COMMANDS: LazyLock<Vec<CommandSpec>> = LazyLock::new(|| {
         }),
     });
     commands.push(CommandSpec {
-        name: "domains",
+        name: DOMAINS,
         scope: Scope::Anywhere,
         doc: "hand the keyboard back to the tab's sidebar",
         keys: vec![
@@ -270,7 +259,7 @@ pub static COMMANDS: LazyLock<Vec<CommandSpec>> = LazyLock::new(|| {
         register: Box::new(|world| world.register_system(focus::enter_sidebar)),
     });
     commands.push(CommandSpec {
-        name: "ledger-plan",
+        name: LEDGER_PLAN,
         scope: Scope::On(Page::Ledger),
         doc: "return the ledger from a market run to the plan",
         keys: vec![KeyBinding::new(Key::Escape)],
@@ -286,7 +275,7 @@ pub static COMMANDS: LazyLock<Vec<CommandSpec>> = LazyLock::new(|| {
         register: Box::new(|world| world.register_system(issues::toggle)),
     });
     commands.push(CommandSpec {
-        name: "compare-with",
+        name: COMPARE_WITH,
         scope: Scope::On(Page::Compare),
         doc: "compare the document with a workspace file, or stop",
         keys: vec![character("c")],
@@ -294,7 +283,7 @@ pub static COMMANDS: LazyLock<Vec<CommandSpec>> = LazyLock::new(|| {
         register: Box::new(|world| world.register_system(documents::compare_with)),
     });
     commands.push(CommandSpec {
-        name: "compare-open",
+        name: COMPARE_OPEN,
         scope: Scope::On(Page::Compare),
         doc: "open the highlighted plan, the document joining the compared",
         keys: vec![KeyBinding::new(Key::Enter)],
@@ -334,7 +323,7 @@ pub static COMMANDS: LazyLock<Vec<CommandSpec>> = LazyLock::new(|| {
         register: Box::new(|world| world.register_system(compare::cycle_view)),
     });
     commands.push(CommandSpec {
-        name: "compare-metric-next",
+        name: COMPARE_METRICS[1],
         scope: Scope::On(Page::Compare),
         doc: "chart the next metric, or the other set of four",
         keys: vec![KeyBinding::new(Key::ArrowRight)],
@@ -342,7 +331,7 @@ pub static COMMANDS: LazyLock<Vec<CommandSpec>> = LazyLock::new(|| {
         register: Box::new(|world| world.register_system(compare::next_metric)),
     });
     commands.push(CommandSpec {
-        name: "compare-metric-previous",
+        name: COMPARE_METRICS[0],
         scope: Scope::On(Page::Compare),
         doc: "chart the previous metric, or the other set of four",
         keys: vec![KeyBinding::new(Key::ArrowLeft)],
@@ -350,7 +339,7 @@ pub static COMMANDS: LazyLock<Vec<CommandSpec>> = LazyLock::new(|| {
         register: Box::new(|world| world.register_system(compare::previous_metric)),
     });
     commands.push(CommandSpec {
-        name: "overview-year-next",
+        name: OVERVIEW_YEARS[1],
         scope: Scope::On(Page::Overview),
         doc: "move the year a year on",
         keys: vec![KeyBinding::new(Key::ArrowRight)],
@@ -358,7 +347,7 @@ pub static COMMANDS: LazyLock<Vec<CommandSpec>> = LazyLock::new(|| {
         register: Box::new(|world| world.register_system(session::next_year)),
     });
     commands.push(CommandSpec {
-        name: "overview-year-previous",
+        name: OVERVIEW_YEARS[0],
         scope: Scope::On(Page::Overview),
         doc: "move the year a year back",
         keys: vec![KeyBinding::new(Key::ArrowLeft)],

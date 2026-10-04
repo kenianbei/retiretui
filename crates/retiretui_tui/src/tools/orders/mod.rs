@@ -22,8 +22,8 @@ use retiretui_engine::optimize::{
 use retiretui_engine::plan::{Plan, TreatmentClass};
 
 use super::options::{CURRENT_PLAN, Laid, OptionsTable, spawn_table};
-use super::{Found, HelpLine, NOTHING_SEARCHED_YET, Tool, ToolPage, show_help, write};
-use crate::command::{Outcome, TAKE_ORDER};
+use super::{Found, HelpLine, NOTHING_SEARCHED_YET, Tool, ToolPage, show_help, write, writes_it};
+use crate::command::{Keymap, Outcome, TAKE_ORDER, WRITE_ORDER};
 use crate::confirm::{Answer, Confirm};
 use crate::documents::{Browsing, Pickers};
 use crate::edit::{Draft, DraftEditor};
@@ -40,8 +40,7 @@ pub type Orders = Tool<OrderSearch>;
 
 pub const TITLE: &str = "Orders";
 
-const ON_OPTIONS: &str =
-    "⏎ takes the highlighted order into the plan, after asking; w writes it as a scenario.";
+const ON_OPTIONS: &str = "⏎ takes the highlighted order into the plan, after asking";
 
 pub fn plugin(app: &mut App) {
     super::install::<OrderSearch>(app, &PAGE);
@@ -142,6 +141,7 @@ fn search_by_itself(
 
 fn say_help(
     (focus, shown, theme): (Res<InputFocus>, ShownSurface, Res<Theme>),
+    keymap: Res<Keymap>,
     options: Query<(), With<OptionsTable<OrderSearch>>>,
     mut lines: Query<(&mut UiWidget, &HelpLine)>,
 ) {
@@ -149,10 +149,12 @@ fn say_help(
         return;
     }
     let text = match focus.get() {
-        Some(holder) if options.contains(holder) => ON_OPTIONS,
-        _ => orders::ABOUT,
+        Some(holder) if options.contains(holder) => {
+            format!("{ON_OPTIONS}{}", writes_it(&keymap, WRITE_ORDER))
+        }
+        _ => orders::ABOUT.to_owned(),
     };
-    show_help(&mut lines, Page::WithdrawalOrder, text, &theme);
+    show_help(&mut lines, Page::WithdrawalOrder, &text, &theme);
 }
 
 /// The `take-order` command: asks before restating the plan's withdrawal

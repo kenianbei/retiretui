@@ -39,6 +39,46 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   when `motion` is `reduced` or `off`, when an overlay is replaced by another of
   its kind, or when one closes beneath another that still stands. Menus and
   toasts are as they were.
+- The terminal planner's keys can be rebound. A `[tui.keys]` table in
+  `config.toml`, beside `theme` and `motion` in the user's config directory,
+  names a command as the palette lists it and states every key it answers to:
+
+  ```toml
+  [tui.keys]
+  save = "ctrl-w"
+  quit = ["q", "alt-q"]
+  sort = []
+  ledger = "L"
+  ```
+
+  - An entry replaces the command's keys whole, and an empty list leaves it with
+    none; the command is still run from the palette. The first key stated is the
+    one shown.
+  - A key is spelled as the key row shows it: `ctrl-`, `alt-` and `shift-` ahead
+    of a character or a name - `esc`, `space`, `backspace`, `delete`, `insert`,
+    `home`, `end`, `pageup`, `pagedown`, `f1` to `f12` - with `tab`, `enter`,
+    `up`, `down`, `left` and `right` typed for the keys shown as `⇥`, `⏎` and
+    the arrows. A shifted character is written as itself, `G` or `?`, and
+    `shift-g` is refused saying so.
+  - A key another command holds by default is taken from it, which keeps its
+    others, and the shell says so once at launch: "q now runs save, not quit". A
+    key two entries state goes to the command the palette lists first, and the
+    other entry is left out. A command particular to a page may share a key with
+    one of the shell's, as the defaults do, and runs in its place while that
+    page is shown.
+  - The palette always keeps a key: an entry that empties it, or states the key
+    it holds, is left out.
+  - An entry that names no command, or states anything that does not read as a
+    key, is left out whole, the command keeps its keys, and the shell says which
+    and why.
+  - Everything that names a key names the one in force: the key row, the help
+    picker, the tab bar, a tool's help line, the Ledger's title while it shows a
+    run. A command left with no key is not hinted. A tab names its key only
+    where one cell holds it, so a tab bound to `alt-1` shows none.
+  - The keys a form, a list or a dialog answers to by itself - ⏎, esc and ⇥
+    inside them, the arrows in a list - are not commands and are not rebound.
+    The canvas page reads the same table from the page's storage, which nothing
+    on the page writes.
 
 ### Changed
 
@@ -48,9 +88,17 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     of one written outside the engine must add it.
   - The client's `Vocabulary` gains `ColaAnchor`, so a `match` over it written
     outside the client must cover it.
+- The help picker names Tab and Enter by the glyphs the key row uses, `⇥` and
+  `⏎`, where it said `tab`, `shift-tab` and `enter`.
 
 ### Fixed
 
+- One setting in `config.toml` that does not read no longer resets every other.
+  A misspelt `motion`, say, lost the theme and the document to reopen with it,
+  under one complaint about the whole file. Each of `theme`, `motion`,
+  `document` and `keys` is now read by itself: one that does not read keeps its
+  default, the rest stand, and the shell names the one at fault. A file that is
+  not TOML at all is still the defaults and one complaint.
 - The web app stays usable offline across a new release. Its service worker kept
   a newly released page before any of the files that page needs and dropped the
   old release's, so a visitor who opened the app as a release landed and lost
