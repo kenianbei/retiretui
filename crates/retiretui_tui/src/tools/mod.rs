@@ -103,7 +103,7 @@ pub trait Found: Send + Sync + 'static {
     /// itself with no time beside it.
     const IS_COUNTED: bool = false;
     /// Whether the cursor may rest on the plan's own row, as a row of its
-    /// own to open, rather than going on to the best option.
+    /// own to open, rather than going on to the first option.
     const IS_PLAN_ROW_CHOSEN: bool = false;
 
     /// The option the cursor starts on, by its place among them.

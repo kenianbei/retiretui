@@ -12,7 +12,6 @@ import type { ToolSearch } from "@/tools/search";
 
 /** A tool's own settings, held beside the draft: how they are read, opened and held. */
 export interface Settings {
-  /** What the section is headed. */
   heading: string;
   read: (document: Document) => ReadRow[];
   open: (document: Document) => Editor;

@@ -86,7 +86,6 @@ const PAGE: ToolPage = ToolPage {
     panes: spawn_panes,
 };
 
-/// The table the highlighted ceiling's expenses are rows of.
 #[derive(Component)]
 struct ExpensesTable;
 
@@ -135,9 +134,6 @@ impl Found for Ceilings {
     const IS_COUNTED: bool = true;
     const LEADING: usize = LEADING;
 
-    /// The plan's own row, then a row per ceiling: what it was held to,
-    /// its flexible spending against the plan's, its success and the
-    /// figures.
     fn laid(&self, plan: &Plan, is_nominal: bool) -> Laid {
         let deflated = !is_nominal;
         let header = spending::option_columns();
@@ -165,9 +161,8 @@ impl Tool<Ceilings> {
     }
 }
 
-/// Searches again whenever the page is on show over a valid draft whose
-/// plan or target differs from the last it searched, stopping a search
-/// under way.
+/// Searches whenever the page shows a valid draft whose plan or target
+/// differs from the last searched, stopping a search under way.
 fn search_by_itself(
     (draft, session, history): (Res<Draft>, Res<Session>, Res<MarketHistory>),
     shown: ShownSurface,
@@ -192,9 +187,8 @@ fn search_by_itself(
     });
 }
 
-/// Respawns the expenses of the ceiling the cursor rests on, whenever it
-/// moves or what they were drawn from changes. A search under way leaves
-/// the last in view.
+/// Respawns the expenses of the ceiling the cursor rests on as it or what
+/// they were drawn from moves; a search under way leaves the last in view.
 fn refresh_expenses(
     (tool, draft): (Res<Spending>, Res<Draft>),
     mut drawn: Local<Option<usize>>,
@@ -223,9 +217,8 @@ fn refresh_expenses(
     }
 }
 
-/// What the line under the panes says with the keyboard on the ceilings:
-/// what ⏎ does, or, on the ceiling in the plan's own market, that it
-/// spends everything where the plan asks to leave nothing.
+/// What the help line says with the keyboard on the ceilings: what ⏎
+/// does, or the note on the ceiling in the plan's own market.
 fn on_options(tool: &Spending, plan: &Plan, keymap: &Keymap) -> String {
     let is_at_target = tool.chosen().is_none_or(|listed| listed.key == AT_TARGET);
     match spending::note(plan) {
