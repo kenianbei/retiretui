@@ -103,6 +103,50 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   - The README has a Settings section: where `config.toml` is, what `[tui]`
     holds, and how to start a theme.
 
+- A Spending Ceiling tool answers how much a plan could spend. It scales every
+  expense the household could cut alike and projects the plan whole at each
+  step, so tax, Medicare and every other interaction is priced in, and answers
+  twice: the most that lasts in the plan's own market, and the most that lasts
+  in a target share of its Monte Carlo markets, 90% unless another is set. A run
+  lasts as the Monte Carlo tool counts it: never short, and ending with at least
+  `[market] leave_at_least` where the plan states one. Every candidate is walked
+  through the same markets, so the answers differ by spending alone. A plan that
+  falls short as it stands is answered with less than it spends.
+  - An expense may say `essential = true`: spending the household could not cut,
+    which the tool leaves as stated. A one-time expense is left as stated either
+    way, and a plan that marks nothing has all its recurring spending scaled.
+    The key is left out of a saved file while false, and no plan projects
+    differently for it. The Expenses form, in the terminal and in the web app,
+    ticks it as "Essential".
+  - The search judges at most 16 plans for each answer, settles within $100 a
+    year of flexible spending, and stops at eight times what the plan spends,
+    which it says as "at least". It refuses a plan with no flexible spending,
+    and one that falls short even with none.
+  - `retiretui optimize spending <plan>` prints the plan and both ceilings - the
+    flexible spending, its change, the share of markets it lasts in and the
+    headline figures - over each expense now and at each ceiling. `--success`
+    sets the target as a fraction, and `--write` writes the ceiling at the
+    target as a scenario that restates each scaled expense's `amount`. It takes
+    `--nominal`, `--format json`, `--history` and `--tax-dir` as the other
+    searches do.
+  - The MCP server gains `optimize_spending`, which replies both ceilings with
+    the scenario and stores it with `write_to`, and its schema reference
+    documents `essential`.
+  - The terminal planner has a Spending Ceiling page among its tools, between
+    Historical and Tax Tables: both ceilings under the plan's own row, the
+    highlighted one's expenses now and at the ceiling, and the target, edited in
+    a form and held for the session rather than saved with the plan. The cursor
+    starts on the ceiling at the target. `t` or `⏎` takes the highlighted
+    ceiling into the plan after asking, as one step that undo takes back, and
+    `w` writes it as a scenario and compares it; the commands are
+    `take-spending` and `write-spending`. Where the plan asks to leave nothing,
+    the ceiling in its own market says that it spends everything by the plan's
+    end.
+  - The web app has the same page, the highlighted ceiling kept in the address,
+    with a link from that note to Leave at least on the Market page.
+  - The `mid-career-couple` example marks its mortgage essential and
+    `retired-couple` its Medicare premiums; both project as they did.
+
 ### Changed
 
 - **Breaking.** No plan key is removed or renamed, and a plan written for 0.3.0
@@ -111,6 +155,8 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     of one written outside the engine must add it.
   - The client's `Vocabulary` gains `ColaAnchor`, so a `match` over it written
     outside the client must cover it.
+  - The engine's `Expense` gains `essential`, so a struct literal of one written
+    outside the engine must add it.
 - The help picker names Tab and Enter by the glyphs the key row uses, `⇥` and
   `⏎`, where it said `tab`, `shift-tab` and `enter`.
 
@@ -134,6 +180,16 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   and the page is asked of the network on every visit, so a new release shows at
   once rather than up to ten minutes late. The load that replaces 0.3.0's worker
   is still 0.3.0's to handle, and can fail this way once more.
+
+- In the terminal planner, a form that holds a tool's own settings is applied
+  the same way however it is applied. `⏎` in a text field, and Apply on the
+  question asked when a press outside the form finds edits not yet applied, held
+  what was entered but did not do what the form's own button does. The Roth
+  Conversions tool was not searched again under the constraints just entered,
+  and the new plan's form stayed standing where its Create button would have
+  gone on to name the plan. The Constraints read-out beside the ladders also
+  kept showing what it held before an apply, by any of the three. Each now
+  searches, creates and reads out as the button does.
 
 ### Security
 
