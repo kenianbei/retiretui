@@ -4,6 +4,7 @@ import {
   HISTORICAL,
   MONTE_CARLO,
   ROTH_CONVERSIONS,
+  SPENDING_CEILING,
   SSA_BENEFITS,
   TAX_TABLES,
   TOOLS,
@@ -14,6 +15,7 @@ import { ClaimsPage } from "@/tools/claims/page";
 import { ConversionsPage } from "@/tools/conversions/page";
 import { MarketsPage } from "@/tools/markets/page";
 import { OrdersPage } from "@/tools/orders/page";
+import { SpendingPage } from "@/tools/spending/page";
 import { TaxTablesPage } from "@/tools/tax/page";
 
 /** The tool its route's `$page` named. */
@@ -29,6 +31,7 @@ export function ToolPage() {
   if (page === HISTORICAL) {
     return <MarketsPage key={page} kind="historical" title={title} />;
   }
+  if (page === SPENDING_CEILING) return <SpendingPage title={title} />;
   if (page === TAX_TABLES) return <TaxTablesPage title={title} />;
   return null;
 }

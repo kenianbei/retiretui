@@ -256,11 +256,18 @@ impl Listed<'_> {
     /// What is said once the ceiling is taken into the plan.
     #[must_use]
     pub fn taken(&self) -> String {
-        format!(
-            "flexible spending is now {} a year",
-            MoneyForm::Full.money(self.flexible())
-        )
+        taken(self.flexible())
     }
+}
+
+/// What is said once a ceiling of `flexible` spending a year is taken into
+/// the plan.
+#[must_use]
+pub fn taken(flexible: Dollars) -> String {
+    format!(
+        "flexible spending is now {} a year",
+        MoneyForm::Full.money(flexible)
+    )
 }
 
 fn capitalised(text: &str) -> String {

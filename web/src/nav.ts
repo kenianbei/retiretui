@@ -31,6 +31,9 @@ export const MONTE_CARLO = "monte-carlo";
 /** The Historical tool's page. */
 export const HISTORICAL = "historical";
 
+/** The Spending Ceiling tool's page. */
+export const SPENDING_CEILING = "spending-ceiling";
+
 /** The Tax Tables tool's page. */
 export const TAX_TABLES = "tax-tables";
 
@@ -60,6 +63,11 @@ export const TOOLS: readonly Page[] = [
     slug: HISTORICAL,
     title: "Historical",
     holds: "The plan from every historical start year.",
+  },
+  {
+    slug: SPENDING_CEILING,
+    title: "Spending Ceiling",
+    holds: "How much you could spend and still last.",
   },
   {
     slug: TAX_TABLES,

@@ -25,7 +25,7 @@ export function Start() {
           federal and state income tax, runs the same plan through many random
           or historical markets to show how surely the money lasts, and searches
           for a better Roth conversion ladder, Social Security claim ages or
-          withdrawal order.
+          withdrawal order, and for the most you could spend.
         </p>
         <h1 className="pt-4 text-2xl font-semibold tracking-tight">
           Start with a plan

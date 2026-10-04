@@ -10,10 +10,11 @@ import { MarginNote } from "@/components/margin-note";
 import { useLadders } from "@/searches";
 import { useSession } from "@/session";
 import { SearchActions, type Chosen } from "@/tools/act";
-import { Constraints, ConstraintsForm } from "@/tools/conversions/constraints";
+import { CONSTRAINTS } from "@/tools/conversions/constraints";
 import { Conversions } from "@/tools/conversions/ladder";
 import { Options, type OptionRow } from "@/tools/options";
 import { percentOf, type ToolSearch } from "@/tools/search";
+import { SettingsForm, SettingsRead } from "@/tools/settings";
 import type { Basis } from "@/overview/words";
 import { basisOf } from "@/year/search";
 import { BasisSwitch } from "@/year/year";
@@ -179,9 +180,9 @@ export function ConversionsPage() {
             />
           </section>
         )}
-        <Constraints />
+        <SettingsRead settings={CONSTRAINTS} />
       </div>
-      {search.edit && <ConstraintsForm />}
+      {search.edit && <SettingsForm settings={CONSTRAINTS} />}
     </div>
   );
 }
