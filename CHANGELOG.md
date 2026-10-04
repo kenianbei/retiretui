@@ -80,6 +80,29 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     The canvas page reads the same table from the page's storage, which nothing
     on the page writes.
 
+- The terminal planner wears themes of your own. A file in `themes/`, beside
+  `config.toml` in the user's config directory, is a theme named by its file
+  name - `themes/dusk.toml` is `dusk` - written as the built-in ones are: a
+  `family`, a `variant` of `"dark"` or `"light"`, and a colour for each role it
+  names, the rest left as the terminal's own. It is chosen from the theme picker
+  or by `[tui.theme] name` like any other, and by its family where it states
+  one, the variant following a light or dark terminal.
+  - `retiretui theme list` names every theme with its variant, its family and
+    where it comes from, and `retiretui theme dump <name>` prints one's file,
+    taking a name as `[tui.theme] name` does, to start another from:
+    `retiretui theme dump nord > ~/.config/retiretui/themes/mine.toml`.
+  - A file named as a built-in theme takes its place, `list` saying so. A file
+    named `terminal.toml` is left out and said, since `terminal` is the
+    terminal's own colours.
+  - The theme picker reads the directory again each time it opens, and puts what
+    is worn on afresh, so a theme being written shows without leaving the
+    planner. It marks a theme of the user's `yours`.
+  - A file that does not read is said with its path and the reason, at launch
+    and as the picker opens. It is listed dimly as `does not read`, is not kept
+    when chosen, and stands for no family, so it hides no other theme.
+  - The README has a Settings section: where `config.toml` is, what `[tui]`
+    holds, and how to start a theme.
+
 ### Changed
 
 - **Breaking.** No plan key is removed or renamed, and a plan written for 0.3.0
