@@ -115,8 +115,6 @@ pub fn run_theme(args: &ThemeArgs) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// A row for the header and one for each theme, every column as wide as
-/// its widest cell.
 fn listing(themes: &Themes) -> String {
     let listed = themes.listed().map(|(slug, listed)| {
         let [variant, family, from] = listed.map_or(["", "", TERMINALS_OWN], about);

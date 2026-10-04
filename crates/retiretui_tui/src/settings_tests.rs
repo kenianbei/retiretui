@@ -126,7 +126,6 @@ fn a_theme_that_cannot_be_kept_is_worn_for_the_session_and_said_so() {
     assert_eq!(std::fs::read_to_string(&path).unwrap(), "[tui\n");
 }
 
-/// Writes the user's theme `slug` beside the config at `path`.
 fn write_theme(path: &Path, slug: &str, text: &str) {
     let themes = path.with_file_name("themes");
     std::fs::create_dir_all(&themes).unwrap();

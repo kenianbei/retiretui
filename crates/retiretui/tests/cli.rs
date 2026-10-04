@@ -313,8 +313,6 @@ fn config_home(name: &str, themes: &[(&str, &str)]) -> PathBuf {
     home
 }
 
-/// `retiretui theme` under the config home `home`, on a terminal whose
-/// `COLORFGBG` is `ground`.
 fn theme(home: &Path, ground: &str, args: &[&str]) -> Output {
     Command::new(env!("CARGO_BIN_EXE_retiretui"))
         .arg("theme")

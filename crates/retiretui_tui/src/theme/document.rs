@@ -78,7 +78,7 @@ fn variant_of(ground: Option<&str>) -> Variant {
     }
 }
 
-/// A document that read: the family and variant it is of, and its theme.
+/// A theme document that read.
 #[derive(Debug)]
 pub struct Painted {
     pub family: String,

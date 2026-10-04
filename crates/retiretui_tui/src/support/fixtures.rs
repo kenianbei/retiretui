@@ -53,7 +53,6 @@ amount = 60000
 
 /// Appended to a plan, runs its Monte Carlo through few enough markets
 /// that a test waits on it briefly.
-/// A theme of the user's own, of the family `mine`.
 pub const USER_THEME: &str = "family = \"mine\"\nvariant = \"dark\"\naccent = \"#010203\"\n";
 pub const USER_THEME_ACCENT: Color = Color::Rgb(1, 2, 3);
 

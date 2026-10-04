@@ -43,9 +43,8 @@ pub struct Shelf<'w> {
 }
 
 impl Shelf<'_> {
-    /// The user's choice with the theme at `id` named in place of theirs,
-    /// so that what they paint over a theme is tried on with it, and the
-    /// theme that choice resolves to.
+    /// The user's choice naming the theme at `id`, so that what they paint
+    /// over a theme is tried on with it, and the theme that resolves to.
     fn tried(&self, id: usize) -> Option<(Choice, Result<Theme, String>)> {
         let (slug, _) = self.themes.listed().nth(id)?;
         let choice = Choice {

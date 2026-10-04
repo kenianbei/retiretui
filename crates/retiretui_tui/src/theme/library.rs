@@ -19,7 +19,6 @@ pub const SUFFIX: &str = ".toml";
 pub const UNREAD: &str = "does not read";
 const NOT_A_NAME: &str = "terminal is the terminal's own colours; name the file otherwise";
 
-/// Each embedded theme's name and its document.
 pub const EMBEDDED: &[(&str, &str)] = &[
     (
         "catppuccin-latte",
@@ -45,7 +44,6 @@ pub const EMBEDDED: &[(&str, &str)] = &[
     ("tokyo-night", include_str!("themes/tokyo-night.toml")),
 ];
 
-/// One theme of the set.
 #[derive(Debug)]
 pub struct Listed {
     pub slug: String,
@@ -54,7 +52,6 @@ pub struct Listed {
     pub read: Option<Painted>,
 }
 
-/// Where a theme comes from.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Origin {
     Embedded,
@@ -88,10 +85,8 @@ impl Themes {
         themes
     }
 
-    /// The embedded set with each theme file of `directory` added by its
-    /// stem, one named as an embedded theme taking its place, and what is
-    /// wrong with each file that does not read. A directory that is not
-    /// there adds nothing and is not complained of.
+    /// The embedded set and each theme file of `directory` by its stem, with
+    /// what is wrong with each that does not read. No directory, no complaint.
     pub fn load(store: &dyn Store, directory: &Path) -> (Self, Vec<String>) {
         let mut themes = Self::embedded();
         let entries = match store.list(directory) {
