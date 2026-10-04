@@ -9,7 +9,7 @@ use bevy_ecs::system::SystemParam;
 use bevy_input_focus::{FocusCause, InputFocus};
 use plurimus::ui::ModalOpen;
 
-use super::build;
+use super::build::{self, FormButton};
 use super::domain::{Ops, Target};
 use super::draft::{Draft, DraftEditor};
 use super::table::{DomainTable, Row};
@@ -178,13 +178,20 @@ pub fn sync_item_form(
     build::spawn_form(&mut commands, form, editing.ops, editing.is_alone);
 }
 
-/// Applies or discards the edits a question was asked about.
-fn resolve(In(applies): In<bool>, mut state: SessionFocus, mut editor: DraftEditor) {
-    if applies {
-        state.apply(None, &mut editor);
+/// Applies or discards the edits a question was asked about, as the
+/// form's own buttons would.
+fn resolve(
+    In(applies): In<bool>,
+    mut state: SessionFocus,
+    mut editor: DraftEditor,
+    mut commands: Commands,
+) {
+    let which = if applies {
+        FormButton::Apply
     } else {
-        state.discard();
-    }
+        FormButton::Discard
+    };
+    super::form::act(which, None, &mut state, &mut editor, &mut commands);
 }
 
 /// The session, and the table it leaves a cursor on.

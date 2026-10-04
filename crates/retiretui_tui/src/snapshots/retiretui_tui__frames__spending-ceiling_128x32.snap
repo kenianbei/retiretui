@@ -1,0 +1,37 @@
+---
+source: crates/retiretui_tui/src/frames.rs
+assertion_line: 45
+expression: composed_frame(app)
+---
+╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                              
+│1 Overview││2 Ledger││3 Compare││4 Tools││5 Plan│                                                                  full.toml ● 
+┴──────────┴┴────────┴┴─────────┴╯       ╰┴──────┴──────────────────────────────────────────────────────────────────────────────
+╭ Tools ────────────╮╭ Ceilings ───────────────────────────────────────────────────────────────────────────────────────────────╮
+│  Roth Conversions ││  Held to           Flexible Change Success Unfunded Ends with Taxes Medicare                            │
+│  SSA Benefits     ││  Current              $105k          99.7%       $0    $2.17M $661k       $0                            │
+│  Withdrawal Order ││  In its own market    $125k   +19%   51.1%       $0    $3,497 $675k       $0                            │
+│  Monte Carlo      ││▌ In 90% of markets    $115k    +9%     90%       $0    $1.16M $632k       $0                            │
+│  Historical       │╰─────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+│▏ Spending Ceiling │╭ Expenses ───────────────────────────────────────────────────────╮╭ Target ──────────────────────────────╮
+│  Tax Tables       ││  Expense       Now At the ceiling                               ││                                      │
+│                   ││▏ living    $90,000        $98,437                               ││▏ Target success  90%, the default    │
+│                   ││  travel    $15,000        $16,406                               ││                                      │
+│                   ││                                                                 ││                                      │
+│                   ││                                                                 ││                                      │
+│                   ││                                                                 ││                                      │
+│                   ││                                                                 ││                                      │
+│                   ││                                                                 ││                                      │
+│                   ││                                                                 ││                                      │
+│                   ││                                                                 ││                                      │
+│                   ││                                                                 ││                                      │
+│                   ││                                                                 ││                                      │
+│                   ││                                                                 ││                                      │
+│                   ││                                                                 ││                                      │
+│                   ││                                                                 ││                                      │
+│                   ││                                                                 ││                                      │
+│                   ││                                                                 ││                                      │
+│                   ││                                                                 ││                                      │
+│                   ││                                                                 ││                                      │
+│                   │╰─────────────────────────────────────────────────────────────────╯╰──────────────────────────────────────╯
+╰───────────────────╯⏎ takes the highlighted ceiling into the plan, after asking; w writes it as a scenario.                    
+ ↑↓ ceiling  ⏎ take  ⇥ pane  w write  t take  ctrl-s save  r reload  q quit  ctrl-↓ tab  n dollars           : commands  ? help

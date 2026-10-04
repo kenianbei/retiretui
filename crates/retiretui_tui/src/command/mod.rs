@@ -9,7 +9,10 @@ mod table;
 mod tools;
 
 pub use keymap::Keymap;
-pub use tools::{TAKE_CLAIMS, TAKE_LADDER, TAKE_ORDER, WRITE_CLAIMS, WRITE_LADDER, WRITE_ORDER};
+pub use tools::{
+    TAKE_CLAIMS, TAKE_LADDER, TAKE_ORDER, TAKE_SPENDING, WRITE_CLAIMS, WRITE_LADDER, WRITE_ORDER,
+    WRITE_SPENDING,
+};
 
 use std::path::PathBuf;
 

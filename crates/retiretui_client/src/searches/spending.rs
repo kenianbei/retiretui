@@ -23,14 +23,14 @@ pub const NOTHING_SEARCHED: &str =
     "The most you could spend is searched here as soon as the plan is valid.";
 
 /// What the tool is for, in a line.
-pub const ABOUT: &str = "The most your flexible spending can be and still last: in the plan's own market, and in a share of random markets you choose.";
+pub const ABOUT: &str = "The most your flexible spending can be and still last, in the plan's own market and in most random ones.";
 
 /// What is said where the plan asks to leave nothing: the ceiling in its
 /// own market spends it all.
-pub const SPENDS_IT_ALL: &str = "In its own market the ceiling spends everything by the plan's end. Leave at least, on the Market page, holds some back.";
+pub const SPENDS_IT_ALL: &str = "In its own market the plan spends it all by its end. Leave at least, on the Market page, holds some back.";
 
 /// What names an option's columns before its [`FIGURES`](super::FIGURES).
-pub const OPTION_COLUMNS: [&str; 4] = ["Held to", "Flexible spending", "Change", present::SUCCESS];
+pub const OPTION_COLUMNS: [&str; 4] = ["Held to", "Flexible", "Change", present::SUCCESS];
 /// The columns a ceiling's expenses are tabled under.
 pub const ITEM_COLUMNS: [&str; 3] = ["Expense", "Now", "At the ceiling"];
 

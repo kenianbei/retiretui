@@ -12,8 +12,8 @@ expression: composed_frame(app)
 │▏ Withdrawal Order ││▌ Taxable, deferred, Roth, HSA           $0       $0    $2.17M $661k       $0                                                                                                    │
 │  Monte Carlo      ││  HSA, taxable, deferred, Roth        -$90k       $0    $2.08M $719k       $0                                                                                                    │
 │  Historical       ││  Taxable, HSA, deferred, Roth        -$91k       $0    $2.07M $721k       $0                                                                                                    │
-│  Tax Tables       ││  Taxable, Roth, deferred, HSA       -$161k       $0    $2.00M $689k       $0                                                                                                    │
-│                   ││  Taxable, HSA, Roth, deferred       -$164k       $0    $2.00M $732k       $0                                                                                                    │
+│  Spending Ceiling ││  Taxable, Roth, deferred, HSA       -$161k       $0    $2.00M $689k       $0                                                                                                    │
+│  Tax Tables       ││  Taxable, HSA, Roth, deferred       -$164k       $0    $2.00M $732k       $0                                                                                                    │
 │                   ││  HSA, taxable, Roth, deferred       -$165k       $0    $2.00M $732k       $0                                                                                                    │
 │                   ││  Roth, taxable, deferred, HSA       -$461k       $0    $1.70M $682k       $0                                                                                                    │
 │                   ││  Roth, HSA, taxable, deferred       -$511k       $0    $1.65M $708k       $0                                                                                                    │

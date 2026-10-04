@@ -12,7 +12,9 @@ use super::{
 use crate::edit::Draft;
 use crate::nav::Page;
 use crate::present;
-use crate::support::{cell_fg, cell_of, composed_frame, press_key, redrawn, show, type_text};
+use crate::support::{
+    cell_fg, cell_of, composed_frame, press_key, press_shift, redrawn, show, type_text,
+};
 use crate::theme::Theme;
 
 /// Stops along a brokerage account's form to its rate's slider: a cash or
@@ -61,6 +63,26 @@ fn closed_sets_are_picked_and_flags_are_ticked() {
     let account = &draft_plan(&app).accounts[0];
     assert_eq!(account.kind, AccountKind::K401k);
     assert!(account.roth);
+}
+
+#[test]
+fn an_expense_is_ticked_essential_from_the_last_field_of_its_form() {
+    let mut app = fixture_app();
+    open(&mut app, Page::Expenses);
+    assert!(!draft_plan(&app).expenses[0].essential);
+    // Back from the first field, past the two buttons.
+    for _ in 0..3 {
+        press_shift(&mut app, KeyCode::Tab);
+    }
+    press_key(&mut app, KeyCode::Char(' '));
+    let frame = composed_frame(&app);
+    assert!(frame.contains("Essential       [x]"), "{frame}");
+    press_key(&mut app, KeyCode::Enter);
+    assert!(!is_editing(&app));
+    let expense = &draft_plan(&app).expenses[0];
+    assert!(expense.essential && !expense.medical);
+    let frame = redrawn(&mut app);
+    assert!(frame.contains("Essential      ✓"), "{frame}");
 }
 
 #[test]

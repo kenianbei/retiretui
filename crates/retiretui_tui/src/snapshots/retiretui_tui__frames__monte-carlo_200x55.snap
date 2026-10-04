@@ -12,8 +12,8 @@ expression: composed_frame(app)
 │  Withdrawal Order ││  Counts as a success  Never running short      ││▏ 90th percentile    $3.49M     never                                                                                          │
 │▏ Monte Carlo      ││  Markets drawn from   Your return assumptions  ││  75th percentile    $2.81M     never                                                                                          │
 │  Historical       ││  Trials               1,000 · seed 42          ││  50th percentile    $2.15M     never                                                                                          │
-│  Tax Tables       ││  Stocks               6% ± 16%                 ││  25th percentile    $1.49M     never                                                                                          │
-│                   ││  Bonds                4% ± 6%                  ││  10th percentile     $917k     never                                                                                          │
+│  Spending Ceiling ││  Stocks               6% ± 16%                 ││  25th percentile    $1.49M     never                                                                                          │
+│  Tax Tables       ││  Bonds                4% ± 6%                  ││  10th percentile     $917k     never                                                                                          │
 │                   ││  Cash                 2.5% ± 1%                ││  Worst                  $0 2063 (88)                                                                                          │
 │                   ││  Inflation            2.5% ± 1.5%              │╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 │                   ││  Fixed return         cash, brokerage, fid-401 │╭ Net Worth · 90th percentile ──────────────────────────────────────────────────────────────────────────────────────────────────╮

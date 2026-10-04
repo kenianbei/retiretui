@@ -12,8 +12,8 @@ expression: composed_frame(app)
 │  Withdrawal Order ││  Convert to    roth-ira                        ││▏ 22%            +$58k     $988k       $0    $2.22M    │
 │  Monte Carlo      ││  Fill bracket  Every bracket                   ││  24%            +$40k     $962k       $0    $2.21M    │
 │  Historical       ││  First year    The plan's start                ││  10%            +$17k     $388k       $0    $2.18M    │
-│  Tax Tables       ││  Last year     The year before RMDs            ││  32%          +$1,681     $958k       $0    $2.17M    │
-│                   ││  Annual cap    No cap                          ││  35%            -$30k     $956k       $0    $2.14M    │
+│  Spending Ceiling ││  Last year     The year before RMDs            ││  32%          +$1,681     $958k       $0    $2.17M    │
+│  Tax Tables       ││  Annual cap    No cap                          ││  35%            -$30k     $956k       $0    $2.14M    │
 │                   ││  Total cap     No cap                          ││  12%            -$44k     $951k       $0    $2.12M    │
 │                   ││  Headroom      None                            │╰───────────────────────────────────────────────────────╯
 │                   ││  IRMAA tier    Not held to one                 │╭ Conversions ──────────────────────────────────────────╮
