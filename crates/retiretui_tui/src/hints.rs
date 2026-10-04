@@ -4,7 +4,9 @@
 use bevy_app::{App, Update};
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::ChildOf;
-use bevy_ecs::prelude::{Component, Has, IntoScheduleConfigs, Local, Query, Res, With};
+use bevy_ecs::prelude::{
+    Component, FromWorld, Has, IntoScheduleConfigs, Local, Query, Res, Resource, With, World,
+};
 use bevy_ecs::system::SystemParam;
 use bevy_input_focus::InputFocus;
 use plurimus::core::ratatui_core::text::{Line, Span};
@@ -12,7 +14,7 @@ use plurimus::core::{TerminalSize, UiWidget};
 use plurimus::ui::ModalOpen;
 use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
 
-use super::command;
+use super::command::{self, Keymap};
 use super::focus::Ring;
 use super::layout::HintRow;
 use super::scope::{KeyScope, Scoped};
@@ -20,6 +22,7 @@ use super::theme::{Repainted, Theme};
 use super::tools::Idle;
 
 pub fn plugin(app: &mut App) {
+    app.init_resource::<ShellKeys>();
     app.add_systems(Update, refresh_hints.in_set(Repainted));
 }
 
@@ -30,8 +33,33 @@ pub type Hint = (&'static str, &'static str);
 #[derive(Component, Clone, Copy, Debug)]
 pub struct Hints(pub &'static [Hint]);
 
-/// Always shown, at the row's trailing end, while the shell has the keys.
-const FINDERS: [Hint; 2] = [(":", "commands"), ("?", "help")];
+/// The shell's own keys as the keymap binds them, which a session does not
+/// change.
+#[derive(Resource)]
+struct ShellKeys {
+    /// The key that walks the page's panes, hinted after the holder's own
+    /// keys wherever there is more than one to walk.
+    walk: Option<Hint>,
+    /// Always shown, at the row's trailing end, while the shell has the
+    /// keys.
+    finders: Vec<Hint>,
+}
+
+impl FromWorld for ShellKeys {
+    fn from_world(world: &mut World) -> Self {
+        let keymap = world.resource::<Keymap>();
+        let hint = |name: &str, word: &'static str| {
+            let key = keymap.label(command::named(name)?);
+            (!key.is_empty()).then_some((key, word))
+        };
+        let finders = [hint("palette", "commands"), hint("help", "help")];
+        Self {
+            walk: hint("focus-next", "pane"),
+            finders: finders.into_iter().flatten().collect(),
+        }
+    }
+}
+
 const HINT_GAP: usize = 2;
 const EDGE: usize = 1;
 
@@ -53,13 +81,16 @@ fn fitted(mut leading: Vec<Hint>, trailing: &[Hint], cols: usize) -> Vec<Hint> {
     leading
 }
 
-/// The widget holding the keyboard and what stands above it.
+/// The widget holding the keyboard and what stands above it, and the
+/// keys the shell answers to where that widget leaves them to it.
 #[derive(SystemParam)]
 struct Held<'w, 's> {
     focus: Res<'w, InputFocus>,
     parents: Query<'w, 's, &'static ChildOf>,
     hinted: Query<'w, 's, (Option<&'static Hints>, Has<ModalOpen>)>,
     scoped: Scoped<'w, 's>,
+    keymap: Res<'w, Keymap>,
+    own: Res<'w, ShellKeys>,
 }
 
 impl Held<'_, '_> {
@@ -93,10 +124,6 @@ struct Drawn {
     cols: u16,
 }
 
-/// The key that walks the page's panes, hinted after the holder's own
-/// keys wherever there is more than one to walk.
-const WALK: Hint = ("⇥", "pane");
-
 /// Worked out afresh each frame rather than when the keyboard moves: an
 /// overlay is given the keyboard on the frame it is queued, before it has
 /// the ancestors its hints are read from. The walk is a few entities. The
@@ -109,19 +136,19 @@ fn refresh_hints(
     mut has_many: Local<bool>,
 ) {
     let (ring, idle, size, theme) = shell;
+    let Held { keymap, own, .. } = &held;
     if ring.shown.is_changed() {
         *has_many = ring.has_many();
     }
     let (mut leading, owns_keys) = held.hints();
     if !owns_keys {
-        if *has_many {
-            leading.push(WALK);
-        }
-        leading.extend(command::page_hints(ring.shown.surface(), |name| {
+        leading.extend(own.walk.filter(|_| *has_many));
+        let shown = ring.shown.surface();
+        leading.extend(command::page_hints(keymap, shown, |name| {
             idle.is_idle(name)
         }));
     }
-    let trailing: &[Hint] = if owns_keys { &[] } else { &FINDERS };
+    let trailing: &[Hint] = if owns_keys { &[] } else { &own.finders };
     let cols = usize::from(size.cols);
     let wanted = Drawn {
         leading: fitted(leading, trailing, cols),
@@ -157,6 +184,7 @@ mod tests {
     use super::*;
 
     const LEADING: [Hint; 3] = [("⏎", "open"), ("a", "add"), ("ctrl-s", "save")];
+    const FINDERS: [Hint; 2] = [(":", "commands"), ("?", "help")];
 
     #[test]
     fn hints_that_fit_are_all_kept() {

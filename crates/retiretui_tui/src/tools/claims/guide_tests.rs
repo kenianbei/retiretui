@@ -4,6 +4,7 @@ use plurimus::term::KeyCode;
 use super::guide::{self, Place};
 use super::people_tests::{BENEFIT, SALARY, app_on, fixture, plan, run, without_record};
 use super::*;
+use crate::command::Keymap;
 use crate::support::{composed_frame, press_ctrl, press_key, redrawn, type_text};
 
 /// A salaried person with no record and no Social Security income: where
@@ -89,7 +90,7 @@ fn a_removal_asks_and_a_cancel_keeps_the_income() {
 fn said_on(app: &App, place: Place) -> String {
     let draft = app.world().resource::<Draft>();
     let person = draft.plan.household.people.first();
-    guide::help_line(draft, person, place)
+    guide::help_line(draft, person, place, app.world().resource::<Keymap>())
 }
 
 #[test]

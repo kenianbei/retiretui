@@ -18,7 +18,8 @@ use plurimus::ui::{Checked, InteractionDisabled, PressFocusDisabled, UiLabel, Va
 use plurimus::widgets::ratatui_widgets::borders::BorderType;
 use plurimus::widgets::{TabBarActiveStyle, TabBarLook, tab_bar, tab_item};
 
-use super::layout::{self, TabRow, placed};
+use super::command::{self, Keymap};
+use super::layout::{self, TabRow, cells_of, placed};
 use super::nav::{self, LastShown, Page, ShownSurface, TAB_COUNT, Turn};
 use super::session::Session;
 use super::theme::{Repainted, Theme};
@@ -36,7 +37,8 @@ pub fn plugin(app: &mut App) {
 /// share the smallest terminal the shell lays out in.
 const TAB_DECORATION: u16 = 2;
 
-/// Cells the label spends on the digit that selects the tab.
+/// Cells the label spends on the key that selects the tab: one for the
+/// key and one after it.
 const DIGIT_COLS: u16 = 2;
 
 /// Columns the tabs take together, which is what the row reserves for
@@ -73,7 +75,12 @@ fn look() -> TabBarLook {
         .with_padding(0)
 }
 
-fn spawn_tab_row(rows: Query<Entity, With<TabRow>>, theme: Res<Theme>, mut commands: Commands) {
+fn spawn_tab_row(
+    rows: Query<Entity, With<TabRow>>,
+    keymap: Res<Keymap>,
+    theme: Res<Theme>,
+    mut commands: Commands,
+) {
     let Ok(row) = rows.single() else {
         return;
     };
@@ -94,7 +101,8 @@ fn spawn_tab_row(rows: Query<Entity, With<TabRow>>, theme: Res<Theme>, mut comma
         ))
         .id();
     for tab in 0..TAB_COUNT {
-        commands.spawn((tab_item(tab_label(tab, &theme)), BarTab(tab), ChildOf(bar)));
+        let label = tab_label(tab, &keymap, &theme);
+        commands.spawn((tab_item(label), BarTab(tab), ChildOf(bar)));
     }
     status::spawn(&mut commands, row);
 }
@@ -103,16 +111,21 @@ fn active_style(theme: &Theme) -> plurimus::core::ratatui_core::style::Style {
     theme.accented().add_modifier(Modifier::BOLD)
 }
 
-/// The digit that selects the tab, dimmed ahead of its title.
-fn tab_label(tab: usize, theme: &Theme) -> Line<'static> {
+/// The key that selects the tab, dimmed ahead of its title. The row's
+/// width is fixed, so a tab with no key, or one spelled in more than a
+/// cell, keeps the cell and says nothing in it.
+fn tab_label(tab: usize, keymap: &Keymap, theme: &Theme) -> Line<'static> {
+    let key = command::of_tab(tab).map_or("", |command| keymap.label(command));
+    let key = if cells_of(key) == 1 { key } else { " " };
     Line::from(vec![
-        Span::styled(format!("{} ", nav::tab_digit(tab)), theme.dimmed()),
+        Span::styled(format!("{key} "), theme.dimmed()),
         Span::raw(nav::tab_title(tab)),
     ])
 }
 
 fn repaint_tabs(
     theme: Res<Theme>,
+    keymap: Res<Keymap>,
     mut bars: Query<&mut TabBarActiveStyle, With<ShellTabs>>,
     mut items: Query<(&BarTab, &mut UiLabel)>,
 ) {
@@ -123,7 +136,7 @@ fn repaint_tabs(
         style.0 = active_style(&theme);
     }
     for (tab, mut label) in &mut items {
-        label.0 = tab_label(tab.0, &theme);
+        label.0 = tab_label(tab.0, &keymap, &theme);
     }
 }
 

@@ -8,7 +8,7 @@ use plurimus::ui::KeyBinding;
 
 use super::keys::character;
 use super::pickers;
-use super::{CommandId, CommandSpec, Outcome, Scope};
+use super::{CommandSpec, Outcome, Scope};
 use crate::compare::{self, Compared};
 use crate::confirm::Confirm;
 use crate::documents;
@@ -27,20 +27,6 @@ use crate::setup;
 use crate::sidebar;
 use crate::theme;
 use crate::watch::Watch;
-
-/// Every keystroke bound to a command, in table order, which is the order
-/// a key is matched in.
-pub static BINDINGS: LazyLock<Vec<(KeyBinding, CommandId)>> = LazyLock::new(|| {
-    super::all()
-        .flat_map(|command| {
-            command
-                .spec()
-                .keys
-                .iter()
-                .map(move |binding| (binding.clone(), command))
-        })
-        .collect()
-});
 
 /// Every command, in the order the pickers list them.
 ///
@@ -239,7 +225,7 @@ pub static COMMANDS: LazyLock<Vec<CommandSpec>> = LazyLock::new(|| {
         register: Box::new(move |world| register_show(world, page)),
     }));
     commands.push(CommandSpec {
-        name: "tools",
+        name: Group::Tools.label(),
         scope: Scope::Anywhere,
         doc: "show the tools",
         keys: vec![character(&nav::tab_digit(Group::Tools.tab()).to_string())],
@@ -249,7 +235,7 @@ pub static COMMANDS: LazyLock<Vec<CommandSpec>> = LazyLock::new(|| {
         }),
     });
     commands.push(CommandSpec {
-        name: "plan",
+        name: Group::Plan.label(),
         scope: Scope::Anywhere,
         doc: "show the plan's editing domains",
         keys: vec![character(&nav::tab_digit(Group::Plan.tab()).to_string())],

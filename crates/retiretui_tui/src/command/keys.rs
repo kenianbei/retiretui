@@ -12,6 +12,8 @@ pub fn label(binding: &KeyBinding) -> String {
         Key::Character(character) => character.to_string(),
         Key::Space => "space".to_owned(),
         Key::Escape => "esc".to_owned(),
+        Key::Enter => "⏎".to_owned(),
+        Key::Tab => "⇥".to_owned(),
         Key::ArrowUp => "↑".to_owned(),
         Key::ArrowDown => "↓".to_owned(),
         Key::ArrowLeft => "←".to_owned(),
@@ -40,9 +42,10 @@ mod tests {
     fn labels_name_the_key_and_modifier() {
         assert_eq!(label(&character("q")), "q");
         assert_eq!(label(&character("s").with_ctrl()), "ctrl-s");
-        assert_eq!(label(&KeyBinding::new(Key::Tab).with_shift()), "shift-tab");
+        assert_eq!(label(&KeyBinding::new(Key::Tab).with_shift()), "shift-⇥");
         assert_eq!(label(&KeyBinding::new(Key::Escape)), "esc");
-        assert_eq!(label(&KeyBinding::new(Key::Enter)), "enter");
+        assert_eq!(label(&KeyBinding::new(Key::Enter)), "⏎");
+        assert_eq!(label(&KeyBinding::new(Key::Backspace)), "backspace");
         assert_eq!(
             label(&KeyBinding::new(Key::ArrowDown).with_ctrl()),
             "ctrl-↓"

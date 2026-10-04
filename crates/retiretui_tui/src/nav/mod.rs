@@ -92,6 +92,14 @@ impl Group {
         }
     }
 
+    /// The group's handle in the command table.
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::Tools => "tools",
+            Self::Plan => "plan",
+        }
+    }
+
     /// The page the tab shows until one of its own has been.
     pub const fn first(self) -> Page {
         match self {
@@ -347,8 +355,7 @@ pub fn neighbor_tab(tab: usize, step: isize) -> usize {
     (tab as isize + step).rem_euclid(count) as usize
 }
 
-/// The digit that selects a tab, which the command table binds and the
-/// bar's own label names.
+/// The digit that selects a tab until the user binds another key.
 ///
 /// # Panics
 ///
@@ -357,6 +364,14 @@ pub fn neighbor_tab(tab: usize, step: isize) -> usize {
 #[must_use]
 pub fn tab_digit(tab: usize) -> char {
     char::from_digit(tab as u32 + 1, 10).expect("a tab per digit")
+}
+
+/// The handle of the command that shows tab `tab`.
+pub const fn tab_command(tab: usize) -> &'static str {
+    match Page::own(tab) {
+        Some(page) => page.label(),
+        None => Group::at(tab).label(),
+    }
 }
 
 /// How tab `tab` is named on the bar.
