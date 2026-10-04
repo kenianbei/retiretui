@@ -5,6 +5,7 @@ use std::collections::BTreeMap;
 use bevy_app::App;
 use bevy_ecs::prelude::{IntoScheduleConfigs, NonSendMut, ResMut, Resource};
 use bevy_time::{Real, Time};
+use plurimus::core::ratatui_core::buffer::Buffer;
 use plurimus::core::ratatui_core::layout::Rect;
 use plurimus::core::{
     CompositeSystems, FrameBuffer, MainWorld, TerminalRenderApp, TerminalRenderAppExt,
@@ -12,7 +13,7 @@ use plurimus::core::{
 };
 use tachyonfx::{CellFilter, Effect, EffectTimer, Interpolation, fx};
 
-use super::{Cue, Cues, Key, Motion, Play};
+use super::{Cue, Cues, Key, Motion, Play, exit};
 use crate::settings::Settings;
 use crate::theme::ground;
 
@@ -28,6 +29,7 @@ struct Cued {
 
 struct Running {
     play: Play,
+    area: Rect,
     effect: Effect,
     is_arriving: bool,
 }
@@ -35,7 +37,31 @@ struct Running {
 /// The effects in play. An `Effect` is `Send` and not `Sync`, so they are
 /// held outside the ordinary resources.
 #[derive(Default)]
-struct Playing(BTreeMap<Key, Running>);
+struct Playing {
+    effects: BTreeMap<Key, Running>,
+    /// The cells the backdrop dims around - the topmost overlay - as last
+    /// composed, which is what it leaves from once it has closed.
+    kept: Option<Buffer>,
+}
+
+impl Playing {
+    /// Keeps the topmost overlay's cells out of `frame`, or nothing where
+    /// none stands.
+    fn keep(&mut self, frame: &Buffer) {
+        let backdrop = self.effects.get(&Key::Backdrop);
+        let Some(area) = backdrop.map(|running| running.area.intersection(frame.area)) else {
+            self.kept = None;
+            return;
+        };
+        let kept = self.kept.get_or_insert_with(|| Buffer::empty(area));
+        if kept.area != area {
+            kept.resize(area);
+        }
+        for position in area.positions() {
+            kept[position].clone_from(&frame[position]);
+        }
+    }
+}
 
 pub fn install(app: &mut App) {
     app.add_extract_systems(extract);
@@ -65,15 +91,18 @@ fn play(
 ) {
     let cues = std::mem::take(&mut extracted.cues);
     if extracted.motion == Motion::Off {
-        playing.0.clear();
+        *playing = Playing::default();
         return;
     }
-    for cue in cues {
-        start(&mut playing, cue, extracted.motion, *frame.0.area());
-    }
-    let tick = tachyonfx::Duration::from(extracted.delta);
     let whole = *frame.0.area();
-    playing.0.retain(|_, running| {
+    for cue in cues {
+        start(&mut playing, cue, extracted.motion, whole);
+    }
+    // After the cues, which start an exit from what was kept of an overlay
+    // this frame no longer holds, and before the effects draw over it.
+    playing.keep(&frame.0);
+    let tick = tachyonfx::Duration::from(extracted.delta);
+    playing.effects.retain(|_, running| {
         // An effect's first frame is its start, not a step along it: the
         // frame that cued it may have been a long one.
         let step = if std::mem::take(&mut running.is_arriving) {
@@ -89,7 +118,7 @@ fn play(
 fn start(playing: &mut Playing, cue: Cue, motion: Motion, frame: Rect) {
     let Cue::Play { play, area, spared } = cue else {
         if let Cue::Stop(gone) = cue {
-            playing.0.remove(&gone);
+            playing.effects.remove(&gone);
         }
         return;
     };
@@ -97,25 +126,30 @@ fn start(playing: &mut Playing, cue: Cue, motion: Motion, frame: Rect) {
     let area = area.intersection(frame);
     let length = motion.length(play);
     if area.is_empty() || length.is_zero() {
-        playing.0.remove(&key);
+        playing.effects.remove(&key);
         return;
     }
     // A held effect cued again where it stands is moved, not restarted: the
     // backdrop does not fade in a second time as a dialog is resized.
-    if let Some(running) = playing.0.get_mut(&key)
+    if let Some(running) = playing.effects.get_mut(&key)
         && running.play == play
         && play.is_held()
     {
+        running.area = area;
         running.effect.filter(outside(area, spared));
         return;
     }
     let millis = u32::try_from(length.as_millis()).unwrap_or(u32::MAX);
     let timer = EffectTimer::from_ms(millis, EASING);
-    playing.0.insert(
+    let Some(effect) = effect(play, area, spared, timer, &mut playing.kept) else {
+        return;
+    };
+    playing.effects.insert(
         key,
         Running {
             play,
-            effect: effect(play, area, spared, timer),
+            area,
+            effect,
             is_arriving: true,
         },
     );
@@ -125,12 +159,52 @@ fn outside(area: Rect, spared: Rect) -> CellFilter {
     CellFilter::NoneOf(vec![CellFilter::Area(area), CellFilter::Area(spared)])
 }
 
-fn effect(play: Play, area: Rect, spared: Rect, timer: EffectTimer) -> Effect {
-    match play {
+/// The effect `play` is over `area`. An exit is played out of `kept`, and
+/// is none where `area` is not what was kept: an overlay that closed
+/// beneath another had nothing of its own on show.
+fn effect(
+    play: Play,
+    area: Rect,
+    spared: Rect,
+    timer: EffectTimer,
+    kept: &mut Option<Buffer>,
+) -> Option<Effect> {
+    Some(match play {
         Play::Dim(colour) => {
             fx::never_complete(fx::fade_to_fg(colour, timer)).with_filter(outside(area, spared))
         }
         Play::Receipt(colour) => fx::fade_from_fg(colour, timer).with_area(area),
         Play::Coalesce => fx::coalesce(timer).with_area(area),
+        Play::Exit { leaves, within } => {
+            let kept = kept.take_if(|kept| kept.area == area)?;
+            exit::effect(leaves, kept, within, timer)
+        }
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::motion::Leaves;
+
+    const TOPMOST: Rect = Rect::new(4, 2, 10, 3);
+    const BENEATH: Rect = Rect::new(0, 0, 20, 8);
+
+    fn leaving(area: Rect, kept: &mut Option<Buffer>) -> Option<Effect> {
+        let play = Play::Exit {
+            leaves: Leaves::Dissolve,
+            within: BENEATH,
+        };
+        let timer = EffectTimer::from_ms(150, EASING);
+        effect(play, area, Rect::ZERO, timer, kept)
+    }
+
+    #[test]
+    fn only_the_overlay_whose_cells_were_kept_leaves() {
+        let mut kept = Some(Buffer::empty(TOPMOST));
+        assert!(leaving(BENEATH, &mut kept).is_none());
+        assert!(kept.is_some(), "what stands above keeps its cells");
+        assert!(leaving(TOPMOST, &mut kept).is_some());
+        assert!(kept.is_none(), "and gives them up as it leaves");
     }
 }

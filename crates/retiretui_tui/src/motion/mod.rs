@@ -1,11 +1,13 @@
 //! Motion that says what just happened: the backdrop dimming under an
 //! overlay, a flash on the row just applied, an overlay coalescing as it
-//! arrives. Nothing continuous, nothing per keystroke.
+//! arrives and breaking up or sliding away as it leaves. Nothing
+//! continuous, nothing per keystroke.
 //!
 //! The effects run over the composed frame, which exists in the render
 //! sub-app alone, so the main world queues a description of each - a
 //! [`Cue`] - and the render side plays it.
 
+mod exit;
 mod render;
 
 use std::time::Duration;
@@ -47,7 +49,7 @@ pub enum Motion {
     #[default]
     Full,
     /// What says something happened, without what only eases a change in:
-    /// the dim and the receipt, not the coalesce.
+    /// the dim and the receipt, not the coalesce or the exit.
     Reduced,
     Off,
 }
@@ -73,19 +75,30 @@ impl Motion {
     #[must_use]
     pub const fn length(self, play: Play) -> Duration {
         match (self, play) {
-            (Self::Off, _) | (Self::Reduced, Play::Coalesce) => Duration::ZERO,
+            (Self::Off, _) | (Self::Reduced, Play::Coalesce | Play::Exit { .. }) => Duration::ZERO,
             (Self::Full | Self::Reduced, _) => play.length(),
         }
     }
 }
 
 /// Which effect is running, so that cueing one again replaces it rather
-/// than stacking a second over it.
+/// than stacking a second over it. They play in this order, so what has
+/// left is drawn over the rest.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
 enum Key {
     Backdrop,
     Receipt,
     Arrival,
+    Departure,
+}
+
+/// How an overlay leaves once it has closed: a box breaks up into the page
+/// beneath, a panel drops out through the body's bottom edge.
+#[derive(Component, Clone, Copy, PartialEq, Eq, Debug, Default)]
+pub enum Leaves {
+    #[default]
+    Dissolve,
+    Slide,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -97,6 +110,9 @@ pub enum Play {
     Receipt(Color),
     /// The area's cells settle into place.
     Coalesce,
+    /// What stood in the area leaves it, over the page already live there
+    /// and never outside `within`.
+    Exit { leaves: Leaves, within: Rect },
 }
 
 impl Play {
@@ -106,6 +122,7 @@ impl Play {
             Self::Dim(_) => Key::Backdrop,
             Self::Receipt(_) => Key::Receipt,
             Self::Coalesce => Key::Arrival,
+            Self::Exit { .. } => Key::Departure,
         }
     }
 
@@ -114,6 +131,10 @@ impl Play {
             Self::Dim(_) => 120,
             Self::Receipt(_) => 400,
             Self::Coalesce => 150,
+            Self::Exit { leaves, .. } => match leaves {
+                Leaves::Dissolve => 150,
+                Leaves::Slide => 180,
+            },
         })
     }
 
