@@ -3,6 +3,7 @@
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use plurimus::core::ratatui_core::style::Color;
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::Plan;
 use retiretui_engine::project::project;
@@ -52,6 +53,9 @@ amount = 60000
 
 /// Appended to a plan, runs its Monte Carlo through few enough markets
 /// that a test waits on it briefly.
+pub const USER_THEME: &str = "family = \"mine\"\nvariant = \"dark\"\naccent = \"#010203\"\n";
+pub const USER_THEME_ACCENT: Color = Color::Rgb(1, 2, 3);
+
 pub const FEW_TRIALS: &str = "\n[market.monte_carlo]\ntrials = 20\n";
 
 /// [`TEST_PLAN`], its Monte Carlo cut to [`FEW_TRIALS`].

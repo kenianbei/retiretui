@@ -176,22 +176,22 @@ depends on UI.
   settings file, whether the screen it is drawn on is light, and, for a page,
   that the document last open is reopened, the directory no picker climbs above,
   and what hands files across the page's edge. Behind a feature, it holds the
-  launcher that runs it in a terminal.
+  launcher that runs it in a terminal and the command that lists its themes.
 - `retiretui` - the single user-facing binary, composing each interface's clap
   subcommands into one command: the command line's from `retiretui_cli`, `tui`
-  from `retiretui_tui`'s terminal launcher, and `mcp` from `retiretui_mcp`; each
-  is a library of its own over the client. The engine's resolver follows
-  scenario base chains - reading files and resolving paths is surface policy:
-  relative to the referring file on the CLI, contained in the served directory
-  under MCP. `validate` runs the engine's validation contract; `project` renders
-  the ledger as a text table or as JSON; `actions` prints one year's recorded
-  to-dos with warnings, defaulting to the current calendar year; `compare`
-  projects two or more plans side by side - a summary row per plan, one metric
-  year by year, or JSON; `optimize` sweeps or targets a tax bracket and writes
-  the searched conversion ladder as a scenario overlay, ranks every claim age
-  for the household's computed Social Security benefits and writes the best, or
-  ranks the orders the plan can withdraw in and writes the best; `monte-carlo`
-  and `historical` run the plan through random markets or every historical start
+  and `theme` from `retiretui_tui`, and `mcp` from `retiretui_mcp`; each is a
+  library of its own over the client. The engine's resolver follows scenario
+  base chains - reading files and resolving paths is surface policy: relative to
+  the referring file on the CLI, contained in the served directory under MCP.
+  `validate` runs the engine's validation contract; `project` renders the ledger
+  as a text table or as JSON; `actions` prints one year's recorded to-dos with
+  warnings, defaulting to the current calendar year; `compare` projects two or
+  more plans side by side - a summary row per plan, one metric year by year, or
+  JSON; `optimize` sweeps or targets a tax bracket and writes the searched
+  conversion ladder as a scenario overlay, ranks every claim age for the
+  household's computed Social Security benefits and writes the best, or ranks
+  the orders the plan can withdraw in and writes the best; `monte-carlo` and
+  `historical` run the plan through random markets or every historical start
   year and report the share it survives, their settings the plan's and
   overridable by flag; `import-earnings` records a statement's earnings on a
   person and writes the plan back canonically, the one CLI command that rewrites
@@ -332,26 +332,30 @@ depends on UI.
   a text field the chords it edits with besides. Everything the shell says is a
   `tracing` event with two readers: a journal the shell toasts from and lists in
   a drawer, and, in a terminal, a log file. Colour is named by role, never by
-  value: a theme is a table of roles, the terminal's own colours by default, and
-  a cell no widget coloured is drawn in the theme's own ground. What the user
-  sets - theme, motion, the keys a command answers to - lives in one user config
-  file the shell reads at launch, a setting at a time so that one it cannot read
-  costs only itself, and writes a theme or motion it changes back into a key at
-  a time, leaving the rest of the file as the user wrote it. Each applied item
-  re-validates the draft: a valid draft is re-projected at once so the views
-  follow it, and an invalid one holds the last good view, reports its first
-  issue, counts them beside the file name, and lists every one in a panel whose
-  rows turn to the item. Saving writes the draft as canonical TOML through the
-  same validation gate as every other write; a scenario session saves into its
-  own overlay, still naming its base and stating what differs from it beside
-  whatever it stated that still holds; an edit no overlay can state - clearing
-  what the base states outside an item - is refused in the form's words, and
-  saving one under a new name writes the resolved plan as a plan of its own. The
-  resolved chain's files are watched so edits made outside the session - on
-  disk, or from another tab of the page - re-project in place, except under an
-  unsaved draft or an item being edited, which is reported rather than
-  overwritten, and so are each compared file's, which have no draft to protect;
-  `mcp` serves the same contract to AI agents over stdio - list, read, validate,
+  value: a theme is a table of roles - the terminal's own colours by default,
+  or, by name, one of an embedded set or a file of the user's own in a directory
+  beside their config file, read at launch and again as the theme picker opens,
+  one that does not read costing only itself - and a cell no widget coloured is
+  drawn in the theme's own ground. What the user sets - theme, motion, the keys
+  a command answers to - lives in one user config file the shell reads at
+  launch, a setting at a time so that one it cannot read costs only itself, and
+  writes a theme or motion it changes back into a key at a time, leaving the
+  rest of the file as the user wrote it. Each applied item re-validates the
+  draft: a valid draft is re-projected at once so the views follow it, and an
+  invalid one holds the last good view, reports its first issue, counts them
+  beside the file name, and lists every one in a panel whose rows turn to the
+  item. Saving writes the draft as canonical TOML through the same validation
+  gate as every other write; a scenario session saves into its own overlay,
+  still naming its base and stating what differs from it beside whatever it
+  stated that still holds; an edit no overlay can state - clearing what the base
+  states outside an item - is refused in the form's words, and saving one under
+  a new name writes the resolved plan as a plan of its own. The resolved chain's
+  files are watched so edits made outside the session - on disk, or from another
+  tab of the page - re-project in place, except under an unsaved draft or an
+  item being edited, which is reported rather than overwritten, and so are each
+  compared file's, which have no draft to protect; `theme` lists the themes a
+  terminal session can wear and prints one's file to start another from; `mcp`
+  serves the same contract to AI agents over stdio - list, read, validate,
   write, project, actions, compare, earnings-import, optimizer and market tools
   over plan files sandboxed to a served directory, plus tax-parameter lookup and
   an embedded schema reference. Writes are gated on full validation - scenarios

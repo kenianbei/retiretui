@@ -3,11 +3,12 @@
 
 pub mod document;
 pub mod ground;
+pub mod library;
 pub mod picker;
 
 use bevy_app::{App, Startup, Update};
 use bevy_ecs::change_detection::DetectChanges;
-use bevy_ecs::prelude::{IntoScheduleConfigs, Query, Res, ResMut, Resource};
+use bevy_ecs::prelude::{Commands, IntoScheduleConfigs, Query, Res, ResMut, Resource};
 use bevy_ecs::schedule::SystemSet;
 use plurimus::core::ratatui_core::style::{Color, Modifier, Style};
 use plurimus::core::{Background, TerminalCamera};
@@ -161,17 +162,20 @@ impl Theme {
     }
 }
 
-/// Puts on the theme the settings name. One that does not resolve is said
-/// so, and the terminal's own worn instead.
+/// Reads the themes there are and puts on the one the settings name. One
+/// that does not resolve is said so, and the terminal's own worn instead.
 fn wear_the_theme_set(
     settings: Res<Settings>,
     wanted: Res<WantedVariant>,
     mut theme: ResMut<Theme>,
+    mut commands: Commands,
 ) {
-    match document::resolve(&settings.theme, wanted.0) {
+    let themes = library::Themes::beside(&settings);
+    match themes.resolve(&settings.theme, wanted.0) {
         Ok(set) => *theme = set,
         Err(error) => journal::warn(format!("config.toml: {error}")),
     }
+    commands.insert_resource(themes);
 }
 
 fn sync_look(
