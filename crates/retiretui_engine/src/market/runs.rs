@@ -49,7 +49,11 @@ pub struct Run {
 }
 
 impl Run {
-    fn of(name: RunName, projection: &Projection, leave_at_least: Option<Dollars>) -> Self {
+    pub(crate) fn of(
+        name: RunName,
+        projection: &Projection,
+        leave_at_least: Option<Dollars>,
+    ) -> Self {
         let summary = projection.summary(true);
         let first_short = summary.first_unfunded_year;
         let ending = summary.final_net_worth;

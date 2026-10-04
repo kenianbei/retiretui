@@ -33,4 +33,17 @@ pub struct Expense {
     /// Health spending, which an HSA pays without tax.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub medical: bool,
+    /// Spending the household cannot cut: a solver or a spending rule
+    /// leaves it as stated.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub essential: bool,
+}
+
+impl Expense {
+    /// Whether the household could spend more or less of it: recurring,
+    /// and not `essential`.
+    #[must_use]
+    pub const fn is_flexible(&self) -> bool {
+        !self.essential && self.on.is_none()
+    }
 }
