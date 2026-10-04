@@ -4,7 +4,7 @@ use retiretui_client::searches::run_refusal;
 use retiretui_engine::market::Progress;
 use retiretui_engine::optimize::{
     OptimizeOptions, claims_overlay, ladder_overlay, optimize_claims, optimize_conversions,
-    optimize_order, order_overlay, sweep_brackets,
+    optimize_order, order_overlay, spending_overlay, sweep_brackets,
 };
 use retiretui_engine::plan::PlanError;
 use rmcp::handler::server::wrapper::{Json, Parameters};
@@ -14,7 +14,8 @@ use serde::{Deserialize, Serialize};
 
 use super::PlanServer;
 use retiretui_client::ladder::LadderConstraints;
-use retiretui_client::replies::{ClaimsReply, LadderReply, OrderReply, SweepReply};
+use retiretui_client::replies::{ClaimsReply, LadderReply, OrderReply, SpendingReply, SweepReply};
+use retiretui_client::searches::spending;
 
 /// What the conversion tools take besides the ladder's constraints.
 #[derive(Deserialize, JsonSchema)]
@@ -81,6 +82,24 @@ pub struct OrderToolArgs {
     /// at `path`.
     pub write_to: Option<String>,
 }
+
+#[derive(Deserialize, JsonSchema)]
+pub struct SpendingToolArgs {
+    /// Plan or scenario path, relative to the served directory.
+    pub path: String,
+    /// The share of its Monte Carlo markets the spending must last in, as a
+    /// fraction; 0.9 where absent.
+    pub success: Option<f64>,
+    /// Report nominal dollars instead of today's dollars.
+    #[serde(default)]
+    pub nominal: bool,
+    /// Store the ceiling at that share as a scenario overlay at this path
+    /// (`.toml`, relative to the served directory); its `base` points back
+    /// at `path`.
+    pub write_to: Option<String>,
+}
+
+const DEFAULT_SUCCESS: f64 = 0.9;
 
 /// A search's reply with the overlay it emits.
 #[derive(Serialize, JsonSchema)]
@@ -188,6 +207,40 @@ impl PlanServer {
             })?;
         Ok(Json(WithOverlay {
             reply: OrderReply::new(&search, !args.nominal),
+            scenario_toml,
+            written,
+        }))
+    }
+
+    /// Find the most the plan's flexible spending can be and still last.
+    /// Every recurring expense not marked `essential` is scaled alike, and
+    /// the plan judged whole at each step: once in its own market, and once
+    /// in `success` of its Monte Carlo markets, a run succeeding as
+    /// `monte_carlo` counts it. A plan that falls short is answered with
+    /// less than it spends. The ceiling at `success` is returned as a
+    /// scenario overlay document restating each scaled expense's `amount`
+    /// and, with `write_to`, stored through the validated write gate.
+    #[tool]
+    fn optimize_spending(
+        &self,
+        Parameters(args): Parameters<SpendingToolArgs>,
+    ) -> Result<Json<WithOverlay<SpendingReply>>, String> {
+        let plan = self.load_valid_plan(&args.path)?;
+        let target = args.success.unwrap_or(DEFAULT_SUCCESS);
+        let found = spending::search(
+            &plan,
+            &self.tables,
+            &self.history,
+            target,
+            &Progress::default(),
+        )
+        .map_err(run_refusal)?;
+        let (scenario_toml, written) =
+            self.emit_overlay(&args.path, args.write_to.as_deref(), |base| {
+                spending_overlay(base, &found.at_target.expenses)
+            })?;
+        Ok(Json(WithOverlay {
+            reply: SpendingReply::new(&found, &plan, !args.nominal),
             scenario_toml,
             written,
         }))

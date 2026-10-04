@@ -42,7 +42,7 @@ pub enum Command {
     /// Compare two or more plans or scenarios side by side.
     Compare(CompareArgs),
     /// Search a plan: a Roth conversion ladder, Social Security claim ages,
-    /// or a withdrawal order.
+    /// a withdrawal order, or the most it could spend.
     #[command(subcommand)]
     Optimize(OptimizeCommand),
     /// Run a plan through many random markets, drawn from its assumptions

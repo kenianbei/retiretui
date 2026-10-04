@@ -10,9 +10,9 @@ hold, contributions, income, expenses, and the milestones that start and stop
 them - and RetireTui projects it year by year under U.S. federal and state
 income tax. The same plan runs through many random or historical markets to show
 how surely the money lasts, and searches for a better Roth conversion ladder,
-Social Security claim ages or withdrawal order. A scenario is a small file
-stating only what differs from a base plan, so alternatives compare side by
-side.
+Social Security claim ages or withdrawal order, and for the most you could
+spend. A scenario is a small file stating only what differs from a base plan, so
+alternatives compare side by side.
 
 Everything runs locally; no plan leaves your machine. RetireTui is a model under
 the assumptions you give it, not financial advice.
@@ -125,7 +125,7 @@ python3 -m http.server -d crates/retiretui_web/dist
 | `project`         | Print the year-by-year ledger, as a table or JSON   |
 | `actions`         | List one year's to-dos: conversions, RMDs, and more |
 | `compare`         | Compare plans or scenarios side by side             |
-| `optimize`        | Search conversions, claim ages, or withdrawal order |
+| `optimize`        | Search conversions, claims, withdrawals or spending |
 | `monte-carlo`     | Run the plan through many random markets            |
 | `historical`      | Run the plan from every historical start year       |
 | `import-earnings` | Record an ssa.gov earnings statement on a person    |

@@ -276,6 +276,136 @@ fn optimize_json_replies_name_their_fields() {
     assert_eq!(fields(&candidate["summary"]), summary);
 }
 
+/// The fixture run through fewer markets, which a search of them is
+/// quick over.
+fn few_markets() -> String {
+    format!("{OPT_PLAN}\n[market.monte_carlo]\ntrials = 100\n")
+}
+
+#[test]
+fn optimize_spending_finds_both_ceilings_and_writes_the_one_at_the_target() {
+    let dir = scratch_dir("cli-spending", "base.toml", &[("opt.toml", &few_markets())]);
+    let plan = dir.join("opt.toml");
+    let overlay = dir.join("ceiling.toml");
+    let (plan, overlay) = (plan.to_str().unwrap(), overlay.to_str().unwrap());
+    let found = retiretui(&[
+        "optimize",
+        "spending",
+        plan,
+        "--success",
+        "0.8",
+        "--write",
+        overlay,
+    ]);
+    assert!(found.status.success(), "{found:?}");
+    let stdout = String::from_utf8(found.stdout).unwrap();
+    let mut lines = stdout.lines();
+    let header = lines.next().unwrap().trim_start();
+    assert!(
+        header.starts_with("held to  flexible  change  success"),
+        "{stdout}"
+    );
+    let baseline: Vec<&str> = lines.next().unwrap().split_whitespace().collect();
+    assert_eq!(baseline[..2], ["baseline", "40000"], "{stdout}");
+    let planned = lines.next().unwrap();
+    assert!(planned.starts_with("in its own market  "), "{stdout}");
+    let at_target: Vec<&str> = lines.next().unwrap().split_whitespace().collect();
+    assert_eq!(at_target[..4], ["in", "80%", "of", "markets"], "{stdout}");
+    let flexible = at_target[4];
+    assert!(
+        flexible.parse::<i64>().unwrap() < 40_000,
+        "the plan runs short: {stdout}"
+    );
+    assert!(stdout.contains("living  40000"), "{stdout}");
+    assert!(
+        stdout.trim_end().ends_with(&format!("wrote {overlay}")),
+        "{stdout}"
+    );
+
+    let text = std::fs::read_to_string(overlay).unwrap();
+    let head = "schema = 1\nbase = \"opt.toml\"\n\n[[expenses]]\nid = \"living\"\n";
+    assert_eq!(text, format!("{head}amount = {flexible}\n"));
+    let valid = retiretui(&["validate", overlay]);
+    assert!(valid.status.success(), "{valid:?}");
+    let runs = json_of(&retiretui(&["monte-carlo", overlay, "--format", "json"]));
+    assert!(runs["success_rate"].as_f64().unwrap() >= 0.8, "{runs}");
+}
+
+#[test]
+fn optimize_spending_refuses_a_plan_with_nothing_to_scale_and_a_target_that_is_no_share() {
+    let essential = few_markets().replace("amount = 40000", "amount = 40000\nessential = true");
+    let dir = scratch_dir(
+        "cli-spending-refused",
+        "base.toml",
+        &[("opt.toml", &few_markets()), ("fixed.toml", &essential)],
+    );
+    let fixed = dir.join("fixed.toml");
+    let refused = retiretui(&["optimize", "spending", fixed.to_str().unwrap()]);
+    assert!(!refused.status.success());
+    let stderr = String::from_utf8(refused.stderr).unwrap();
+    assert!(stderr.contains("no flexible spending"), "{stderr}");
+    let plan = dir.join("opt.toml");
+    let no_share = retiretui(&[
+        "optimize",
+        "spending",
+        plan.to_str().unwrap(),
+        "--success",
+        "2",
+    ]);
+    assert!(!no_share.status.success());
+    let stderr = String::from_utf8(no_share.stderr).unwrap();
+    assert!(stderr.contains("success: must be a share"), "{stderr}");
+}
+
+#[test]
+fn optimize_spending_json_names_its_fields() {
+    let dir = scratch_dir(
+        "cli-spending-json",
+        "base.toml",
+        &[("opt.toml", &few_markets())],
+    );
+    let opt = dir.join("opt.toml");
+    let spending = json_of(&retiretui(&[
+        "optimize",
+        "spending",
+        opt.to_str().unwrap(),
+        "--format",
+        "json",
+    ]));
+    assert_eq!(
+        fields(&spending),
+        ["at_target", "baseline", "flexible", "planned", "success"]
+    );
+    assert_eq!(spending["flexible"], 40_000);
+    assert!(spending["success"].as_f64().unwrap() < 0.9, "{spending}");
+    for ceiling in [&spending["planned"], &spending["at_target"]] {
+        assert_eq!(
+            fields(ceiling),
+            [
+                "expenses",
+                "factor",
+                "flexible",
+                "is_capped",
+                "success",
+                "summary"
+            ]
+        );
+        assert_eq!(fields(&ceiling["summary"]), fields(&spending["baseline"]));
+        assert_eq!(fields(&ceiling["expenses"][0]), ["amount", "id"]);
+        assert_eq!(ceiling["expenses"][0]["amount"], ceiling["flexible"]);
+        assert_eq!(ceiling["is_capped"], false);
+        assert_eq!(ceiling["summary"]["lifetime_unfunded"], 0, "{spending}");
+    }
+    assert!(
+        spending["at_target"]["success"].as_f64().unwrap() >= 0.9,
+        "{spending}"
+    );
+    assert!(
+        spending["at_target"]["flexible"].as_i64() < spending["planned"]["flexible"].as_i64(),
+        "{spending}"
+    );
+}
+
 #[test]
 fn optimize_order_json_names_its_fields() {
     let dir = scratch_dir("cli-order-json", "base.toml", &[("opt.toml", OPT_PLAN)]);

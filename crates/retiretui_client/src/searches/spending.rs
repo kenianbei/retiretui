@@ -337,9 +337,13 @@ mod tests {
         assert!(at_target.flexible() < planned.flexible());
 
         let stated = flexible_spending(&plan);
-        assert_eq!(stated, 24_000 + 55_000 + 7_000 + 15_000 + 20_000);
+        assert_eq!(
+            stated,
+            24_000 + 55_000 + 15_000 + 20_000,
+            "the premiums are essential"
+        );
         let own = found.plan_cells(&plan, true, MoneyForm::Full);
-        assert_eq!(own[..2], ["$121,000".to_owned(), String::new()]);
+        assert_eq!(own[..2], ["$114,000".to_owned(), String::new()]);
         assert_eq!(own[2], share(found.plan_success()));
         assert_eq!(own.len(), option_columns().len() - 1);
 
@@ -353,7 +357,7 @@ mod tests {
         assert_eq!(cells[4], MoneyForm::Full.money(summary.final_net_worth));
 
         let items = at_target.items(&plan, MoneyForm::Full);
-        assert_eq!(items.len(), 5);
+        assert_eq!(items.len(), 4);
         assert_eq!(items[1][..2], ["Living expenses", "$55,000"]);
         let living = &at_target.ceiling.expenses[1];
         assert_eq!(items[1][2], MoneyForm::Full.money(living.amount));
@@ -394,6 +398,7 @@ mod tests {
         at_plan.planned.expenses = plan
             .expenses
             .iter()
+            .filter(|expense| expense.is_flexible())
             .map(|expense| retiretui_engine::optimize::ScaledExpense {
                 id: expense.id.clone(),
                 amount: expense.amount,

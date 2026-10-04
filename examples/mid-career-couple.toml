@@ -165,6 +165,7 @@ name = "Mortgage"
 amount = 30000
 cola = false
 end = { date = 2040-12-31 }
+essential = true
 
 [[expenses]]
 id = "housing"
