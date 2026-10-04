@@ -16,7 +16,6 @@ pub fn effect(leaves: Leaves, kept: Buffer, timer: EffectTimer) -> Effect {
     })
 }
 
-/// Draws each kept cell whose place has not yet given way to the page.
 fn dissolve(kept: &Buffer, alpha: f32, frame: &mut Buffer) {
     for position in kept.area.positions() {
         if grain(position) >= alpha
@@ -34,9 +33,8 @@ fn grain(position: Position) -> f32 {
     SimpleRng::new(place).gen_f32()
 }
 
-/// Draws the kept rows as far down as the panel has dropped, and none of
-/// them past the edge it stood on: a panel stands on the bottom of the
-/// body, and leaves through it.
+/// None of the kept rows is drawn past the edge the panel stood on: the
+/// bottom of the body, which it leaves through.
 fn slide(kept: &Buffer, alpha: f32, frame: &mut Buffer) {
     let dropped = (alpha * f32::from(kept.area.height)).round() as u16;
     for position in kept.area.positions() {

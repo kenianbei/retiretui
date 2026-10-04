@@ -25,9 +25,8 @@ const DRAWER: &str = "╭ Messages";
 const FIRST_ROW: (u16, u16) = (SIDEBAR_COLS + 6, layout::BODY_TOP + 2);
 const WELL_PAST_ANY_EFFECT: Duration = Duration::from_secs(1);
 
-/// One frame in which `by` passes, and every frame after it at that pace:
-/// the real clock would decide how far an exit had got by the frame a
-/// test looks at.
+/// One frame in which `by` passes, and every later frame at that pace: the
+/// real clock would decide how far an exit had got.
 fn tick(app: &mut Headless, by: Duration) {
     app.insert_resource(TimeUpdateStrategy::ManualDuration(by));
     app.update();

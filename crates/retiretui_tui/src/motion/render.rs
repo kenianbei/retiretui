@@ -45,8 +45,6 @@ struct Playing {
 }
 
 impl Playing {
-    /// Keeps the topmost overlay's cells out of `frame`, or nothing where
-    /// none stands.
     fn keep(&mut self, frame: &Buffer) {
         let backdrop = self.effects.get(&Key::Backdrop);
         let Some(area) = backdrop.map(|running| running.area.intersection(frame.area)) else {
@@ -161,9 +159,8 @@ fn outside(area: Rect, spared: Rect) -> CellFilter {
     CellFilter::NoneOf(vec![CellFilter::Area(area), CellFilter::Area(spared)])
 }
 
-/// The effect `play` is over `area`. An exit is played out of `kept`, and
-/// is none where `area` is not what was kept: an overlay that closed
-/// beneath another had nothing of its own on show.
+/// An exit is none where `area` is not what was kept: an overlay that
+/// closed beneath another had nothing of its own on show.
 fn effect(
     play: Play,
     area: Rect,
