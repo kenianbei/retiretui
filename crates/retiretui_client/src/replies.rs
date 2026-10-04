@@ -185,7 +185,7 @@ impl SpendingReply {
         let [planned, at_target] = found.listed();
         Self {
             baseline: found.planned.baseline.projection.summary(deflated),
-            flexible: spending::flexible_spending(plan),
+            flexible: plan.flexible_spending(),
             success: found.plan_success(),
             planned: entry(&planned),
             at_target: entry(&at_target),

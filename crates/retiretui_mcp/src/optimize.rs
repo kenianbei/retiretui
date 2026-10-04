@@ -99,8 +99,6 @@ pub struct SpendingToolArgs {
     pub write_to: Option<String>,
 }
 
-const DEFAULT_SUCCESS: f64 = 0.9;
-
 /// A search's reply with the overlay it emits.
 #[derive(Serialize, JsonSchema)]
 pub struct WithOverlay<T> {
@@ -226,7 +224,7 @@ impl PlanServer {
         Parameters(args): Parameters<SpendingToolArgs>,
     ) -> Result<Json<WithOverlay<SpendingReply>>, String> {
         let plan = self.load_valid_plan(&args.path)?;
-        let target = args.success.unwrap_or(DEFAULT_SUCCESS);
+        let target = args.success.unwrap_or(spending::DEFAULT_TARGET);
         let found = spending::search(
             &plan,
             &self.tables,

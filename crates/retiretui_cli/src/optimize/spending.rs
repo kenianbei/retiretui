@@ -4,7 +4,7 @@ use clap::Args;
 use retiretui_client::environment::{load_history, load_tables};
 use retiretui_client::replies::SpendingReply;
 use retiretui_client::searches::run_refusal;
-use retiretui_client::searches::spending::{Found, flexible_spending, search};
+use retiretui_client::searches::spending::{DEFAULT_TARGET, Found, search};
 use retiretui_client::store::DiskStore;
 use retiretui_client::table::{align, plain_dollars, rate, summary_table};
 use retiretui_engine::market::Progress;
@@ -13,8 +13,6 @@ use retiretui_engine::plan::{Item, Plan};
 
 use crate::project::OutputFormat;
 
-const DEFAULT_SUCCESS: f64 = 0.9;
-
 /// Arguments of `optimize spending`.
 #[derive(Args, Debug)]
 pub struct SpendingArgs {
@@ -22,7 +20,7 @@ pub struct SpendingArgs {
     pub plan: PathBuf,
     /// The share of random markets the spending must last in, as a
     /// fraction.
-    #[arg(long, default_value_t = DEFAULT_SUCCESS)]
+    #[arg(long, default_value_t = DEFAULT_TARGET)]
     pub success: f64,
     /// Write the ceiling at that share as a scenario overlay file.
     #[arg(long)]
@@ -68,7 +66,7 @@ fn spending_text(plan: &Plan, found: &Found, deflated: bool) -> String {
     let listed = found.listed();
     let baseline = vec![
         "baseline".to_owned(),
-        plain_dollars(flexible_spending(plan)),
+        plain_dollars(plan.flexible_spending()),
         String::new(),
         rate(found.plan_success()),
     ];
@@ -92,20 +90,19 @@ fn spending_text(plan: &Plan, found: &Found, deflated: bool) -> String {
         .map(str::to_owned)
         .chain(listed.iter().map(|listed| listed.held_to.to_lowercase()))
         .collect();
-    let flexible = plan.expenses.iter().filter(|expense| expense.is_flexible());
-    let expenses: Vec<Vec<String>> = flexible
-        .enumerate()
-        .map(|(at, expense)| {
-            let scaled = listed
-                .iter()
-                .map(|listed| listed.ceiling.expenses[at].amount);
-            [
-                expense.display_name().to_owned(),
-                plain_dollars(expense.amount),
-            ]
-            .into_iter()
-            .chain(scaled.map(plain_dollars))
-            .collect()
+    let planned = found.planned.expenses.iter();
+    let expenses: Vec<Vec<String>> = planned
+        .filter_map(|scaled| {
+            let stated = plan.expenses.iter().find(|it| it.id == scaled.id)?;
+            let mut at_target = found.at_target.expenses.iter();
+            let at_target = at_target.find(|it| it.id == scaled.id)?;
+            let amounts = [stated.amount, scaled.amount, at_target.amount];
+            let name = stated.display_name().to_owned();
+            Some(
+                std::iter::once(name)
+                    .chain(amounts.map(plain_dollars))
+                    .collect(),
+            )
         })
         .collect();
     format!("{ceilings}\n{}", align(&header, &expenses))

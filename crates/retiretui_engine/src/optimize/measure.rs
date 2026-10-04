@@ -3,7 +3,7 @@
 
 use crate::market::{History, Run, RunName, monte_carlo};
 use crate::params::TaxTables;
-use crate::plan::{Issue, Plan};
+use crate::plan::Plan;
 use crate::project::{Projection, project};
 use crate::search::{Progress, RunError};
 
@@ -14,6 +14,23 @@ pub enum Measure {
     Planned,
     /// Succeeds in at least this share of its Monte Carlo markets.
     Success(f64),
+}
+
+impl Measure {
+    /// Refuses a target that is no share.
+    ///
+    /// # Errors
+    ///
+    /// [`RunError::Refused`] for a target share outside 0 to 1.
+    pub(crate) fn check(self) -> Result<(), RunError> {
+        match self {
+            Self::Success(target) if !(target > 0.0 && target <= 1.0) => Err(RunError::refused(
+                "success",
+                "must be a share above 0%, and no more than 100%",
+            )),
+            _ => Ok(()),
+        }
+    }
 }
 
 /// A candidate plan judged against a [`Measure`].
@@ -28,11 +45,11 @@ pub struct Judged {
     pub success_rate: Option<f64>,
 }
 
-/// Judges `plan` against `measure`, by the success the market tools count.
+/// Judges `plan` against `measure`, [checked](Measure::check) by whoever
+/// asks, by the success the market tools count.
 ///
 /// # Errors
 ///
-/// [`RunError::Refused`] for a target share outside 0 to 1;
 /// [`RunError::Cancelled`] when `progress` was cancelled first.
 pub(crate) fn judge(
     plan: &Plan,
@@ -52,12 +69,6 @@ pub(crate) fn judge(
             (run.is_success, None)
         }
         Measure::Success(target) => {
-            if !(target > 0.0 && target <= 1.0) {
-                return Err(RunError::Refused(vec![Issue {
-                    path: "success".to_owned(),
-                    message: "must be a share above 0%, and no more than 100%".to_owned(),
-                }]));
-            }
             let rate = monte_carlo(plan, tables, history, progress)?
                 .runs
                 .success_rate();

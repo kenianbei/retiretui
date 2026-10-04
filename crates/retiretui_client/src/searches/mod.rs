@@ -30,15 +30,27 @@ pub fn option_cells(own: &Summary, plan: Option<&Summary>, form: MoneyForm) -> V
     let against = plan.map_or_else(String::new, |plan| {
         form.signed(own.final_net_worth - plan.final_net_worth)
     });
+    std::iter::once(against).chain(figures(own, form)).collect()
+}
+
+/// A summary's [`FIGURES`], in `form`.
+#[must_use]
+pub fn figures(own: &Summary, form: MoneyForm) -> [String; 4] {
     let figures = [
         own.lifetime_unfunded,
         own.final_net_worth,
         own.lifetime_taxes,
         own.lifetime_medicare,
     ];
-    std::iter::once(against)
-        .chain(figures.map(|amount| form.money(amount)))
-        .collect()
+    figures.map(|amount| form.money(amount))
+}
+
+/// `text`, its first letter a capital.
+pub(crate) fn capitalised(text: &str) -> String {
+    let mut letters = text.chars();
+    letters.next().map_or_else(String::new, |first| {
+        format!("{}{}", first.to_uppercase(), letters.as_str())
+    })
 }
 
 /// Why a search answered nothing, as the CLI and MCP say it.
@@ -57,12 +69,9 @@ pub fn page_refusal(error: RunError) -> String {
     let RunError::Refused(issues) = error else {
         return run_refusal(error);
     };
-    let sentences = issues.iter().map(|issue| {
-        let mut letters = issue.message.chars();
-        letters.next().map_or_else(String::new, |first| {
-            format!("{}{}.", first.to_uppercase(), letters.as_str())
-        })
-    });
+    let sentences = issues
+        .iter()
+        .map(|issue| format!("{}.", capitalised(&issue.message)));
     sentences.collect::<Vec<_>>().join("\n")
 }
 

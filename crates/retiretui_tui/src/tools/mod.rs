@@ -106,13 +106,11 @@ pub trait Found: Send + Sync + 'static {
     /// own to open, rather than going on to the best option.
     const IS_PLAN_ROW_CHOSEN: bool = false;
 
+    /// The option the cursor starts on, by its place among them.
+    const LEADING: usize = 0;
+
     /// The options pane's rows, over `plan` as it stands.
     fn laid(&self, plan: &Plan, nominal: bool) -> options::Laid;
-
-    /// The option the cursor starts on, by its place among them.
-    fn leading(&self) -> usize {
-        0
-    }
 }
 
 /// The page a tool is drawn as: its panes, spawned into a row, over a line

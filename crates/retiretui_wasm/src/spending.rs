@@ -8,8 +8,8 @@ use retiretui_client::forms::details::{self, ReadRow};
 use retiretui_client::forms::edit::Entry;
 use retiretui_client::present::MoneyForm;
 use retiretui_client::searches::spending::{
-    ABOUT, Answers, FIELDS, Found, ITEM_COLUMNS, Listed, NOTHING_SEARCHED, note, option_columns,
-    search, taken, target,
+    ABOUT, Answers, FIELDS, Found, ITEM_COLUMNS, LEADING, Listed, NOTHING_SEARCHED, PLANNED, note,
+    option_columns, search, taken, target_in,
 };
 use retiretui_client::searches::{CURRENT_PLAN, page_refusal};
 use retiretui_engine::market::{History, Progress};
@@ -44,6 +44,9 @@ pub struct CeilingOption {
     pub expenses: Vec<ScaledExpense>,
     /// What is asked before it is taken into the plan searched.
     pub question: String,
+    /// What is said under it: of the ceiling in the plan's own market,
+    /// where the plan asks to leave nothing.
+    pub note: Option<&'static str>,
 }
 
 /// Both ceilings, beside the plan as it stands.
@@ -59,9 +62,8 @@ pub struct SpendingOptions {
     pub baseline: Bases<Vec<String>>,
     /// The ceiling in the plan's own market, then the one at the target.
     pub options: Vec<CeilingOption>,
-    /// What is said under the ceiling in the plan's own market, where the
-    /// plan asks to leave nothing.
-    pub note: Option<&'static str>,
+    /// The key of the ceiling highlighted where the address names none.
+    pub leading: &'static str,
 }
 
 fn option_of(listed: &Listed, plan: &Plan) -> CeilingOption {
@@ -72,6 +74,7 @@ fn option_of(listed: &Listed, plan: &Plan) -> CeilingOption {
         items: listed.items(plan, MoneyForm::Full),
         expenses: listed.ceiling.expenses.clone(),
         question: listed.take_question(plan),
+        note: note(plan).filter(|_| listed.key == PLANNED),
     }
 }
 
@@ -83,7 +86,7 @@ impl SpendingOptions {
             current: CURRENT_PLAN,
             baseline: Bases::of(|nominal| found.plan_cells(plan, !nominal, MoneyForm::Full)),
             options: listed.iter().map(|each| option_of(each, plan)).collect(),
-            note: note(plan),
+            leading: listed[LEADING].key,
         }
     }
 }
@@ -134,7 +137,7 @@ impl Document {
     /// The target share a search is handed.
     #[must_use]
     pub fn target_share(&self) -> f64 {
-        target(self.draft())
+        target_in(self.draft().answers::<Answers>())
     }
 
     /// The target read out, its label beside what it holds.
@@ -273,7 +276,7 @@ pub fn js_spending(plan: &str, success: f64) -> Result<JsValue, JsError> {
 mod tests {
     use retiretui_client::files::OVERLAY_SAVE_FIRST;
     use retiretui_client::searches::FIGURES;
-    use retiretui_client::searches::spending::{AT_TARGET, OPTION_COLUMNS, PLANNED, SPENDS_IT_ALL};
+    use retiretui_client::searches::spending::{AT_TARGET, OPTION_COLUMNS, SPENDS_IT_ALL};
     use retiretui_client::setup::examples::named;
 
     use super::*;
@@ -296,11 +299,12 @@ mod tests {
         let width = OPTION_COLUMNS.len() + FIGURES.len();
         assert_eq!(reply.columns.len(), width);
         assert_eq!(reply.baseline.today.len(), width - 1);
-        assert_eq!(reply.note, Some(SPENDS_IT_ALL));
+        assert_eq!(reply.leading, AT_TARGET);
         let [planned, at_target] = &reply.options[..] else {
             panic!("two ceilings, {:?}", reply.options);
         };
         assert_eq!((planned.key, at_target.key), (PLANNED, AT_TARGET));
+        assert_eq!((planned.note, at_target.note), (Some(SPENDS_IT_ALL), None));
         assert_eq!(at_target.held_to, "In 80% of markets");
         assert_eq!(at_target.figures.today.len(), width - 1);
         assert_eq!(at_target.items.len(), at_target.expenses.len());

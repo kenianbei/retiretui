@@ -32,4 +32,9 @@ expenses: Array<ScaledExpense>,
 /**
  * What is asked before it is taken into the plan searched.
  */
-question: string, };
+question: string, 
+/**
+ * What is said under it: of the ceiling in the plan's own market,
+ * where the plan asks to leave nothing.
+ */
+note: string | null, };

@@ -10,11 +10,10 @@ import { MarginNote } from "@/components/margin-note";
 import { useLadders } from "@/searches";
 import { useSession } from "@/session";
 import { SearchActions, type Chosen } from "@/tools/act";
-import { CONSTRAINTS } from "@/tools/conversions/constraints";
 import { Conversions } from "@/tools/conversions/ladder";
 import { Options, type OptionRow } from "@/tools/options";
 import { percentOf, type ToolSearch } from "@/tools/search";
-import { SettingsForm, SettingsRead } from "@/tools/settings";
+import { SettingsForm, SettingsRead, type Settings } from "@/tools/settings";
 import type { Basis } from "@/overview/words";
 import { basisOf } from "@/year/search";
 import { BasisSwitch } from "@/year/year";
@@ -59,6 +58,16 @@ function chosenLadder(
       document.ladderScenario(out, destination, option.steps),
   };
 }
+
+/** The constraints the ladders are searched under. */
+const CONSTRAINTS: Settings = {
+  heading: "Constraints",
+  read: (document) => document.constraintsRead(),
+  open: (document) => document.constraints(),
+  apply: (document, editor) => {
+    document.applyConstraints(editor);
+  },
+};
 
 /** What the search is handed: the draft and its constraints, as text. */
 function useSearched() {

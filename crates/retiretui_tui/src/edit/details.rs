@@ -15,7 +15,7 @@ use plurimus::widgets::ActiveDescendant;
 
 use super::domain::Ops;
 use super::draft::Draft;
-use super::editing::{self, EditSession, Slot};
+use super::editing::{self, Slot};
 use super::table::{DomainTable, OPEN_KEYS, Row, cursor_row, table_bundle};
 use crate::hints::Hints;
 use crate::layout::{self, filling, placed};
@@ -83,10 +83,9 @@ pub fn spawn_into(
 
 /// Rewrites each shown details table from its item: one following a
 /// table, whenever its cursor moves, which a rebuilt table's does; the
-/// only item's, whenever the draft or the page moves, or a form opens or
-/// closes, since a tool's answers are held without marking the draft.
+/// only item's, whenever the draft or the page moves.
 pub fn refresh(
-    (draft, shown, session): (Res<Draft>, ShownSurface, Res<EditSession>),
+    (draft, shown): (Res<Draft>, ShownSurface),
     tables: Query<Ref<ActiveDescendant>, With<DomainTable>>,
     cursors: Query<&Row>,
     mut details: Query<(Entity, &DetailsTable, &mut ScrollArea)>,
@@ -97,7 +96,7 @@ pub fn refresh(
         let cursor = shown_of.table.and_then(|table| tables.get(table).ok());
         let is_moved = match &cursor {
             Some(cursor) => cursor.is_changed(),
-            None => draft.is_changed() || shown.is_changed() || session.is_changed(),
+            None => draft.is_changed() || shown.is_changed(),
         };
         if shown_of.ops.surface != surface || !is_moved {
             continue;

@@ -24,7 +24,6 @@ baseline: Bases<Array<string>>,
  */
 options: Array<CeilingOption>, 
 /**
- * What is said under the ceiling in the plan's own market, where the
- * plan asks to leave nothing.
+ * The key of the ceiling highlighted where the address names none.
  */
-note: string | null, };
+leading: string, };

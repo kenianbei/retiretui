@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use super::measure::{Judged, Measure, judge};
 use crate::market::History;
 use crate::params::TaxTables;
-use crate::plan::{Dollars, Issue, Plan, PlanError, SCHEMA_VERSION};
+use crate::plan::{Dollars, Plan, PlanError, SCHEMA_VERSION};
 use crate::search::{Progress, RunError};
 
 /// The most plans a search judges.
@@ -32,8 +32,6 @@ pub struct ScaledExpense {
 /// The most flexible spending a measure allows.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SpendingCeiling {
-    /// What the ceiling was held to.
-    pub measure: Measure,
     /// The plan as stated, judged.
     pub baseline: Judged,
     /// What every flexible amount is multiplied by; 1.0 is the plan.
@@ -124,10 +122,7 @@ impl Search<'_> {
 type Met = (f64, Judged);
 
 fn refused(message: &str) -> RunError {
-    RunError::Refused(vec![Issue {
-        path: "expenses".to_owned(),
-        message: message.to_owned(),
-    }])
+    RunError::refused("expenses", message)
 }
 
 /// Each flexible expense of `plan` at `factor` times its amount, floored to
@@ -160,7 +155,8 @@ pub fn spending_ceiling(
     measure: Measure,
     progress: &Progress,
 ) -> Result<SpendingCeiling, RunError> {
-    let flexible: Dollars = scaled(plan, 1.0).iter().map(|expense| expense.amount).sum();
+    measure.check()?;
+    let flexible = plan.flexible_spending();
     if flexible == 0 {
         return Err(refused(
             "there is no flexible spending to scale: every expense is essential, one-time or zero",
@@ -181,7 +177,6 @@ pub fn spending_ceiling(
         None => met,
     };
     Ok(SpendingCeiling {
-        measure,
         baseline,
         factor,
         is_capped: failed.is_none(),

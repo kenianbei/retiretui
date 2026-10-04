@@ -43,11 +43,7 @@ pub fn said_within(order: &[TreatmentClass]) -> String {
 /// An order as a row says it: `Deferred, taxable, Roth`.
 #[must_use]
 pub fn said(order: &[TreatmentClass]) -> String {
-    let mut text = said_within(order);
-    if let Some(first) = text.get_mut(..1) {
-        first.make_ascii_uppercase();
-    }
-    text
+    super::capitalised(&said_within(order))
 }
 
 /// What is asked before `order` is taken into the plan.

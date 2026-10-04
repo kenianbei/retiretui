@@ -8,7 +8,7 @@ export interface ToolSearch extends YearSearch {
   claim?: string;
   /** The highlighted order, its classes joined: `taxable-roth-deferred`; the best where none. */
   order?: string;
-  /** The highlighted spending ceiling: `planned` or `target`; the one at the target where none. */
+  /** The highlighted spending ceiling, by its key; the one the search leads with where none. */
   ceiling?: string;
   /** The highlighted person, by place in the household; the first where none. */
   person?: number;
@@ -24,7 +24,6 @@ export interface ToolSearch extends YearSearch {
 
 const CLAIM_KEY = /^\d+(-\d+)*$/;
 const ORDER_KEY = /^[a-z]+(-[a-z]+)*$/;
-const CEILINGS = ["planned", "target"];
 
 /** A tool's search params from whatever the address holds. */
 export function toolSearch(search: Record<string, unknown>): ToolSearch {
@@ -41,7 +40,7 @@ export function toolSearch(search: Record<string, unknown>): ToolSearch {
     ...(bracket !== undefined && { bracket }),
     ...(claim !== undefined && CLAIM_KEY.test(claim) && { claim }),
     ...(order !== undefined && ORDER_KEY.test(order) && { order }),
-    ...(ceiling !== undefined && CEILINGS.includes(ceiling) && { ceiling }),
+    ...(ceiling !== undefined && { ceiling }),
     ...(person !== undefined && person >= 0 && { person }),
     ...(run !== undefined && { run }),
     ...((search.edit === true || search.edit === "true") && { edit: true }),

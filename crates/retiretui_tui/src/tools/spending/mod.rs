@@ -8,7 +8,7 @@ mod tests;
 use std::path::PathBuf;
 
 use bevy_app::{App, Update};
-use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
+use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{
     Commands, Component, Entity, In, IntoScheduleConfigs, Local, Query, Res, ResMut, With, World,
@@ -18,7 +18,7 @@ use bevy_ui::{FlexDirection, Node, Val};
 use plurimus::core::UiWidget;
 use plurimus::ui::ScrollArea;
 use retiretui_client::searches::spending::{
-    self, ABOUT, AT_TARGET, Answers, FIELDS, ITEM_COLUMNS, Listed, search, total,
+    self, ABOUT, AT_TARGET, Answers, FIELDS, ITEM_COLUMNS, LEADING, Listed, search, taken, total,
 };
 use retiretui_engine::optimize::{ScaledExpense, apply_spending, spending_overlay};
 use retiretui_engine::plan::Plan;
@@ -29,7 +29,7 @@ use super::{Found, HelpLine, NOTHING_SEARCHED_YET, Tool, ToolPage, show_help, wr
 use crate::command::{Keymap, Outcome, TAKE_SPENDING, WRITE_SPENDING};
 use crate::confirm::{Answer, Confirm};
 use crate::documents::{Browsing, Pickers};
-use crate::edit::{self, Draft, DraftEditor, FormButton, Ops, table_bundle};
+use crate::edit::{self, Draft, DraftEditor, Ops, table_bundle};
 use crate::hints::Hints;
 use crate::journal;
 use crate::layout::{self, filling, placed};
@@ -76,8 +76,7 @@ pub fn plugin(app: &mut App) {
     );
 }
 
-const OPS: Ops = Ops::tool::<Answers>(Some(Page::SpendingCeiling), "Target", FIELDS)
-    .acting(["Discard", "Apply"], act);
+const OPS: Ops = Ops::tool::<Answers>(Some(Page::SpendingCeiling), "Target", FIELDS);
 const _: () = assert!(
     edit::help_fits(OPS.form.fields),
     "a field's help is missing or too long"
@@ -134,6 +133,7 @@ fn spawn_panes(commands: &mut Commands, row: Entity) {
 impl Found for Ceilings {
     const NOTHING_SEARCHED: &'static str = spending::NOTHING_SEARCHED;
     const IS_COUNTED: bool = true;
+    const LEADING: usize = LEADING;
 
     /// The plan's own row, then a row per ceiling: what it was held to,
     /// its flexible spending against the plan's, its success and the
@@ -153,13 +153,6 @@ impl Found for Ceilings {
             options: options.collect(),
         }
     }
-
-    /// The ceiling at the target, which is the one a person is after.
-    fn leading(&self) -> usize {
-        let listed = self.listed();
-        let at_target = listed.iter().position(|listed| listed.key == AT_TARGET);
-        at_target.unwrap_or_default()
-    }
 }
 
 impl Tool<Ceilings> {
@@ -167,21 +160,9 @@ impl Tool<Ceilings> {
     /// one at the target while the plan's own row is highlighted.
     fn chosen(&self) -> Option<Listed<'_>> {
         let found = self.found()?;
-        let at = self.highlighted().unwrap_or_else(|| found.leading());
+        let at = self.highlighted().unwrap_or(LEADING);
         found.listed().into_iter().nth(at)
     }
-}
-
-/// Applying holds the target beside the draft without marking it changed,
-/// so the tool is marked instead, for the page to search again.
-fn act(which: FormButton, commands: &mut Commands) {
-    if which == FormButton::Apply {
-        commands.run_system_cached(mark_applied);
-    }
-}
-
-fn mark_applied(mut spending: ResMut<Spending>) {
-    spending.set_changed();
 }
 
 /// Searches again whenever the page is on show over a valid draft whose
@@ -257,24 +238,20 @@ fn say_help(
     (tool, draft, focus): (Res<Spending>, Res<Draft>, Res<InputFocus>),
     (shown, theme, keymap): (ShownSurface, Res<Theme>, Res<Keymap>),
     options: Query<(), With<OptionsTable<Ceilings>>>,
-    mut said: Local<(usize, String)>,
+    mut said_of: Local<usize>,
     mut lines: Query<(&mut UiWidget, &HelpLine)>,
 ) {
     let is_moved = tool.is_changed() || draft.is_changed() || focus.is_changed();
     let is_redrawn = shown.is_changed() || theme.is_changed();
-    if !(is_moved || is_redrawn || said.0 != tool.highlighted) {
+    if !(is_moved || is_redrawn || *said_of != tool.highlighted) {
         return;
     }
-    said.0 = tool.highlighted;
+    *said_of = tool.highlighted;
     let text = match focus.get() {
         Some(holder) if options.contains(holder) => on_options(&tool, &draft.plan, &keymap),
         _ => ABOUT.to_owned(),
     };
-    if said.1 == text && !is_redrawn {
-        return;
-    }
     show_help(&mut lines, Page::SpendingCeiling, &text, &theme);
-    said.1 = text;
 }
 
 /// The `take-spending` command: asks before restating the plan's flexible
@@ -287,7 +264,7 @@ pub fn adopt(tool: Res<Spending>, draft: Res<Draft>, mut confirm: ResMut<Confirm
     let Some(listed) = tool.chosen() else {
         return Outcome::Refused(NOTHING_SEARCHED_YET.to_owned());
     };
-    let asked = (listed.ceiling.expenses.clone(), listed.taken());
+    let asked = (listed.ceiling.expenses.clone(), taken(listed.flexible()));
     let answers = vec![
         Answer::closing("Cancel"),
         Answer::running("Take", move |commands| {

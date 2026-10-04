@@ -291,3 +291,24 @@ fn the_pane_keys_are_the_forms_own_where_no_page_is_shown() {
     assert_ne!(field, pane, "tab goes into the fields");
     assert_eq!(said(&app), heard);
 }
+
+#[test]
+fn enter_in_a_text_field_creates_as_the_button_does() {
+    let (_, mut app) = empty_shell();
+    answer(&mut app, FilingStatus::Single, SAM);
+    let is_typed_in = |app: &mut App| {
+        let world = app.world_mut();
+        let held = world.resource::<bevy_input_focus::InputFocus>().get();
+        held.is_some_and(|held| world.get::<plurimus::widgets::TextInput>(held).is_some())
+    };
+    while !is_typed_in(&mut app) {
+        press_key(&mut app, KeyCode::Tab);
+    }
+    press_key(&mut app, KeyCode::Enter);
+    settle(&mut app);
+    assert!(
+        composed_frame(&app).contains("New plan as"),
+        "the picker that names the plan: {}",
+        composed_frame(&app)
+    );
+}

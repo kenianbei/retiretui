@@ -12,8 +12,8 @@ use retiretui_engine::plan::{Dollars, Item, Plan};
 use serde::Deserialize;
 
 use super::markets::{GOOD_ZONE, share};
+use super::{capitalised, figures};
 use crate::codec::from_table;
-use crate::draft::Draft;
 use crate::forms::{FieldSpec, ToolAnswers};
 use crate::present::{self, MoneyForm};
 use crate::table::rate;
@@ -42,6 +42,13 @@ const PERCENT: f64 = 100.0;
 pub const PLANNED: &str = "planned";
 /// The key the ceiling at the target share is highlighted by.
 pub const AT_TARGET: &str = "target";
+/// The place among the [listed](Found::listed) ceilings of the one a
+/// person is after, which a highlight starts on: the one at the target.
+pub const LEADING: usize = 1;
+
+/// The target share where none is stated: the one that reads as
+/// comfortable.
+pub const DEFAULT_TARGET: f64 = GOOD_ZONE;
 
 /// The tool's settings as its form holds them: the target share, blank
 /// taking the share that reads as comfortable.
@@ -59,18 +66,12 @@ impl ToolAnswers for Answers {
     const SLOT: &'static str = "spending";
 }
 
-/// The target share the draft holds.
-#[must_use]
-pub fn target(draft: &Draft) -> f64 {
-    target_in(draft.answers::<Answers>())
-}
-
 /// The target share `answers`, the form's table, holds.
 #[must_use]
 pub fn target_in(answers: toml::Table) -> f64 {
     let held = from_table::<Answers>(answers).ok();
     held.and_then(|answers| answers.success)
-        .unwrap_or(GOOD_ZONE)
+        .unwrap_or(DEFAULT_TARGET)
 }
 
 /// How many steps a search of `plan` counts at most: a Monte Carlo search
@@ -91,6 +92,8 @@ pub struct Found {
     pub planned_success: f64,
     /// The ceiling in the target share of random markets.
     pub at_target: SpendingCeiling,
+    /// That target.
+    pub target: f64,
 }
 
 /// Searches `plan`'s spending ceiling in its own market and in `target` of
@@ -115,6 +118,7 @@ pub fn search(
         planned,
         planned_success: runs.success_rate(),
         at_target,
+        target,
     })
 }
 
@@ -141,10 +145,6 @@ impl Found {
     /// The ceilings, in the table's order.
     #[must_use]
     pub fn listed(&self) -> [Listed<'_>; 2] {
-        let target = match self.at_target.measure {
-            Measure::Success(target) => target,
-            Measure::Planned => GOOD_ZONE,
-        };
         let at_target = &self.at_target;
         [
             Listed {
@@ -155,7 +155,7 @@ impl Found {
             },
             Listed {
                 key: AT_TARGET,
-                held_to: format!("In {} of markets", rate(target)),
+                held_to: format!("In {} of markets", rate(self.target)),
                 ceiling: at_target,
                 success: at_target.judged.success_rate.unwrap_or_default(),
             },
@@ -167,13 +167,9 @@ impl Found {
     #[must_use]
     pub fn plan_cells(&self, plan: &Plan, deflated: bool, form: MoneyForm) -> Vec<String> {
         let summary = self.planned.baseline.projection.summary(deflated);
-        let stated = form.money(flexible_spending(plan));
+        let stated = form.money(plan.flexible_spending());
         let leading = [stated, String::new(), share(self.plan_success())];
-        let figures = super::option_cells(&summary, None, form);
-        leading
-            .into_iter()
-            .chain(figures.into_iter().skip(1))
-            .collect()
+        leading.into_iter().chain(figures(&summary, form)).collect()
     }
 }
 
@@ -200,7 +196,7 @@ impl Listed<'_> {
     /// The ceiling's flexible spending against what `plan` states: `+18%`.
     #[must_use]
     pub fn change(&self, plan: &Plan) -> String {
-        let stated = flexible_spending(plan).max(1);
+        let stated = plan.flexible_spending().max(1);
         let percent = ((self.flexible() - stated) as f64 / stated as f64 * PERCENT).round();
         if percent == 0.0 {
             present::SAME.to_owned()
@@ -219,11 +215,7 @@ impl Listed<'_> {
             self.change(plan),
             share(self.success),
         ];
-        let figures = super::option_cells(&summary, None, form);
-        leading
-            .into_iter()
-            .chain(figures.into_iter().skip(1))
-            .collect()
+        leading.into_iter().chain(figures(&summary, form)).collect()
     }
 
     /// Each expense the ceiling scales under [`ITEM_COLUMNS`]: its name,
@@ -252,12 +244,6 @@ impl Listed<'_> {
             capitalised(&self.change(plan))
         )
     }
-
-    /// What is said once the ceiling is taken into the plan.
-    #[must_use]
-    pub fn taken(&self) -> String {
-        taken(self.flexible())
-    }
 }
 
 /// What is said once a ceiling of `flexible` spending a year is taken into
@@ -268,21 +254,6 @@ pub fn taken(flexible: Dollars) -> String {
         "flexible spending is now {} a year",
         MoneyForm::Full.money(flexible)
     )
-}
-
-fn capitalised(text: &str) -> String {
-    let mut text = text.to_owned();
-    if let Some(first) = text.get_mut(..1) {
-        first.make_ascii_uppercase();
-    }
-    text
-}
-
-/// What `plan` spends a year on what it could cut, in today's dollars.
-#[must_use]
-pub fn flexible_spending(plan: &Plan) -> Dollars {
-    let flexible = plan.expenses.iter().filter(|expense| expense.is_flexible());
-    flexible.map(|expense| expense.amount).sum()
 }
 
 /// The note under the options, where `plan` asks to leave nothing.
@@ -303,6 +274,7 @@ mod tests {
     use toml::Value;
 
     use super::*;
+    use crate::draft::Draft;
     use crate::setup::examples::named;
 
     fn retired() -> Plan {
@@ -320,7 +292,8 @@ mod tests {
     fn the_target_is_the_comfortable_share_until_the_form_holds_another() {
         assert_eq!(rate(target_in(toml::Table::new())), "90%");
         let mut draft = Draft::new(retired(), false);
-        assert!((target(&draft) - GOOD_ZONE).abs() < f64::EPSILON);
+        let target = |draft: &Draft| target_in(draft.answers::<Answers>());
+        assert!((target(&draft) - DEFAULT_TARGET).abs() < f64::EPSILON);
         let mut answers = toml::Table::new();
         answers.insert("success".to_owned(), Value::Float(0.8));
         draft.set_answers::<Answers>(answers);
@@ -343,7 +316,7 @@ mod tests {
         assert!(at_target.success >= 0.8 && planned.success < at_target.success);
         assert!(at_target.flexible() < planned.flexible());
 
-        let stated = flexible_spending(&plan);
+        let stated = plan.flexible_spending();
         assert_eq!(
             stated,
             24_000 + 55_000 + 15_000 + 20_000,
@@ -378,10 +351,11 @@ mod tests {
             )
         );
         assert_eq!(
-            at_target.taken(),
+            taken(at_target.flexible()),
             format!("flexible spending is now {money} a year")
         );
         assert_eq!(note(&plan), Some(SPENDS_IT_ALL));
+        assert_eq!(found.listed()[LEADING].key, AT_TARGET);
     }
 
     #[test]

@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use super::Dollars;
 use super::escalation::ColaSpec;
 use super::triggers::Trigger;
+use super::{Dollars, Plan};
 
 /// A spending item, in annual today's dollars.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -45,5 +45,15 @@ impl Expense {
     #[must_use]
     pub const fn is_flexible(&self) -> bool {
         !self.essential && self.on.is_none()
+    }
+}
+
+impl Plan {
+    /// What the plan spends a year on what it could cut, in today's
+    /// dollars: every [flexible](Expense::is_flexible) expense as stated.
+    #[must_use]
+    pub fn flexible_spending(&self) -> Dollars {
+        let flexible = self.expenses.iter().filter(|expense| expense.is_flexible());
+        flexible.map(|expense| expense.amount).sum()
     }
 }

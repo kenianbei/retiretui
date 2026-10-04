@@ -256,8 +256,15 @@ impl SessionFocus<'_, '_> {
         let Some(editing) = self.session.0.as_mut() else {
             return false;
         };
+        // A tool's answers are held beside the plan, where no commit says
+        // they moved.
+        let is_beside = editing.ops.target == Target::Tool;
         let draft = editor.draft.bypass_change_detection();
-        let index = match editing.apply(draft, label) {
+        let applied = editing.apply(draft, label);
+        if is_beside && applied.is_ok() {
+            editor.draft.set_changed();
+        }
+        let index = match applied {
             Ok(Some(index)) => index,
             Ok(None) => {
                 self.close();

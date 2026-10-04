@@ -14,56 +14,7 @@ use retiretui_engine::project::project;
 
 use common::{assert_issue, plan_from};
 
-const RETIREE: &str = r#"
-schema = 1
-
-[plan]
-start_year = 2026
-horizon_age = 95
-inflation = 0.025
-
-[household]
-filing = "single"
-
-[[household.people]]
-id = "me"
-birth = 1961-01-01
-
-[[accounts]]
-id = "cash"
-kind = "cash"
-owner = "me"
-balance = 0
-
-[[accounts]]
-id = "ira"
-kind = "ira"
-owner = "me"
-balance = 1200000
-allocation = { stocks = 0.6, bonds = 0.4 }
-
-[[expenses]]
-id = "living"
-amount = 30000
-
-[[expenses]]
-id = "mortgage"
-amount = 12000
-cola = false
-essential = true
-
-[[expenses]]
-id = "roof"
-amount = 25000
-on = { date = 2030-01-01 }
-
-[[expenses]]
-id = "travel"
-amount = 10000
-
-[market.monte_carlo]
-trials = 100
-"#;
+const RETIREE: &str = include_str!("fixtures/spending-plan.toml");
 
 const TARGET: f64 = 0.9;
 
@@ -187,7 +138,6 @@ fn a_ceiling_held_to_a_share_of_markets_meets_it_and_is_the_lower() {
     let (tables, history) = (TaxTables::embedded(), History::embedded());
     let planned = ceiling_of(&plan, Measure::Planned).unwrap();
     let found = ceiling_of(&plan, Measure::Success(TARGET)).unwrap();
-    assert_eq!(found.measure, Measure::Success(TARGET));
     assert!(found.factor < planned.factor);
 
     let rate = |plan: &Plan| {

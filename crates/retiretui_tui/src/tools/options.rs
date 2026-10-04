@@ -128,7 +128,7 @@ fn refresh_options<R: Found>(
         // that; the header, the plan's own row and the options are told.
         let rows = laid.options.len().saturating_add(2);
         scroll.content_size.height = u16::try_from(rows).unwrap_or(u16::MAX);
-        let chosen = tool.highlighted().unwrap_or_else(|| found.leading());
+        let chosen = tool.highlighted().unwrap_or(R::LEADING);
         let given = scroll.content_width(area.0.width);
         fill(&mut commands, table, (laid, given), chosen, &theme);
     }

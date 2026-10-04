@@ -12,57 +12,8 @@ use crate::support::{
 
 /// A retiree who spends on what they could cut, a mortgage they could
 /// not, and a roof once, run through a hundred markets.
-const RETIREE: &str = r#"
-schema = 1
-
-[plan]
-start_year = 2026
-horizon_age = 95
-inflation = 0.025
-
-[household]
-filing = "single"
-
-[[household.people]]
-id = "me"
-birth = 1961-01-01
-
-[[accounts]]
-id = "cash"
-kind = "cash"
-owner = "me"
-balance = 0
-
-[[accounts]]
-id = "ira"
-kind = "ira"
-owner = "me"
-balance = 1200000
-allocation = { stocks = 0.6, bonds = 0.4 }
-
-[[expenses]]
-id = "living"
-name = "Living expenses"
-amount = 30000
-
-[[expenses]]
-id = "mortgage"
-amount = 12000
-cola = false
-essential = true
-
-[[expenses]]
-id = "roof"
-amount = 25000
-on = { date = 2030-01-01 }
-
-[[expenses]]
-id = "travel"
-amount = 10000
-
-[market.monte_carlo]
-trials = 100
-"#;
+const RETIREE: &str =
+    include_str!("../../../../retiretui_engine/tests/fixtures/spending-plan.toml");
 
 /// A workspace holding `plan` as plan.toml, opened on the Spending Ceiling
 /// page with its search answered.

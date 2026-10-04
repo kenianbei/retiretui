@@ -24,10 +24,6 @@ import { BasisSwitch } from "@/year/year";
 
 const WORDS = spendingWords();
 
-/** The ceiling a person is after, highlighted where the address names none. */
-const AT_TARGET = "target";
-/** The ceiling the note is about. */
-const PLANNED = "planned";
 /** The column a phone's row shows beside what a ceiling was held to. */
 const FLEXIBLE = 1;
 /** Where what a plan must end with is edited. */
@@ -92,20 +88,6 @@ function chosenCeiling(path: string | null, option: CeilingOption): Chosen {
   };
 }
 
-/** What the search is handed: the draft as text, and the target it holds. */
-function useSearched() {
-  const { reading, issues } = useSession();
-  const isValid = issues.length === 0;
-  return useMemo(() => {
-    const document = reading.document;
-    return {
-      plan: document?.planText() ?? "",
-      success: document?.targetShare ?? 0,
-      isValid,
-    };
-  }, [reading, isValid]);
-}
-
 /**
  * The Spending Ceiling tool: the most the plan's flexible spending could be
  * in its own market and at the target, the highlighted ceiling's expenses,
@@ -115,12 +97,15 @@ export function SpendingPage({ title }: { title: string }) {
   const search: ToolSearch = useSearch({ from: "/tools/$page" });
   const navigate = useNavigate({ from: "/tools/$page" });
   const basis = basisOf(search);
-  const { path } = useSession();
-  const { plan, success, isValid } = useSearched();
+  const { reading, issues, path } = useSession();
+  const isValid = issues.length === 0;
+  const plan = useMemo(() => reading.document?.planText() ?? "", [reading]);
+  const success = reading.document?.targetShare ?? 0;
   const found = useSpending(plan, success, isValid);
   const reply = found.data;
-  const wanted = search.ceiling ?? AT_TARGET;
-  const highlighted = reply?.options.find((each) => each.key === wanted);
+  const keyed = (key: string | undefined) =>
+    reply?.options.find((each) => each.key === key);
+  const highlighted = keyed(search.ceiling) ?? keyed(reply?.leading);
   const isCurrent = !found.isFetching && !found.isPlaceholderData;
   const rows = useMemo(() => reply && rowsOf(reply, basis), [reply, basis]);
   const isShown = reply && highlighted && isValid && !found.error;
@@ -192,9 +177,9 @@ export function SpendingPage({ title }: { title: string }) {
               rows={highlighted.items}
               rowKey={(cells) => cells.join("|")}
             />
-            {reply.note && highlighted.key === PLANNED && (
+            {highlighted.note && (
               <p className="text-muted-foreground text-sm">
-                {reply.note}{" "}
+                {highlighted.note}{" "}
                 <Link
                   to="/plan/$page"
                   params={{ page: LEAVE_AT_LEAST.domain }}
