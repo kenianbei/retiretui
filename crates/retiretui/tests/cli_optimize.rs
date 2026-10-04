@@ -332,13 +332,22 @@ fn optimize_spending_finds_both_ceilings_and_writes_the_one_at_the_target() {
 }
 
 #[test]
-fn optimize_spending_refuses_a_plan_with_nothing_to_scale_and_a_target_that_is_no_share() {
+fn optimize_spending_says_at_least_when_capped_and_refuses_what_it_cannot_search() {
     let essential = few_markets().replace("amount = 40000", "amount = 40000\nessential = true");
+    let little = few_markets().replace("amount = 40000", "amount = 400");
     let dir = scratch_dir(
         "cli-spending-refused",
         "base.toml",
-        &[("opt.toml", &few_markets()), ("fixed.toml", &essential)],
+        &[
+            ("opt.toml", &few_markets()),
+            ("fixed.toml", &essential),
+            ("little.toml", &little),
+        ],
     );
+    let little = dir.join("little.toml");
+    let capped = retiretui(&["optimize", "spending", little.to_str().unwrap()]);
+    let stdout = String::from_utf8(capped.stdout).unwrap();
+    assert_eq!(stdout.matches("  at least 3200  ").count(), 2, "{stdout}");
     let fixed = dir.join("fixed.toml");
     let refused = retiretui(&["optimize", "spending", fixed.to_str().unwrap()]);
     assert!(!refused.status.success());

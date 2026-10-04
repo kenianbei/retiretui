@@ -181,11 +181,10 @@ impl Listed<'_> {
         scaled.map(|expense| expense.amount).sum()
     }
 
-    /// The flexible spending as a cell says it, `at least` where the
-    /// search was capped.
+    /// The flexible spending, written as `money`, as a cell says it: `at
+    /// least` where the search was capped.
     #[must_use]
-    pub fn flexible_said(&self, form: MoneyForm) -> String {
-        let money = form.money(self.flexible());
+    pub fn flexible_said(&self, money: String) -> String {
         if self.ceiling.is_capped {
             format!("{AT_LEAST} {money}")
         } else {
@@ -211,7 +210,7 @@ impl Listed<'_> {
     pub fn cells(&self, plan: &Plan, deflated: bool, form: MoneyForm) -> Vec<String> {
         let summary = self.ceiling.judged.projection.summary(deflated);
         let leading = [
-            self.flexible_said(form),
+            self.flexible_said(form.money(self.flexible())),
             self.change(plan),
             share(self.success),
         ];
@@ -368,11 +367,10 @@ mod tests {
         let found = found(&plan, 0.9);
         let [planned, _] = found.listed();
         assert!(planned.ceiling.is_capped);
-        let said = planned.flexible_said(MoneyForm::Full);
-        assert_eq!(
-            said,
-            format!("at least {}", MoneyForm::Full.money(planned.flexible()))
-        );
+        assert_eq!(planned.flexible_said("$8".to_owned()), "at least $8");
+        let money = MoneyForm::Full.money(planned.flexible());
+        let cells = planned.cells(&plan, true, MoneyForm::Full);
+        assert_eq!(cells[0], format!("at least {money}"));
         assert_eq!(planned.change(&plan), "+700%");
 
         let mut at_plan = found.clone();

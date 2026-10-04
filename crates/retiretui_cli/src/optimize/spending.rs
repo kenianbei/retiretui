@@ -77,7 +77,7 @@ fn spending_text(plan: &Plan, found: &Found, deflated: bool) -> String {
     rows.extend(listed.iter().map(|listed| {
         let cells = vec![
             listed.held_to.to_lowercase(),
-            plain_dollars(listed.flexible()),
+            listed.flexible_said(plain_dollars(listed.flexible())),
             listed.change(plan),
             rate(listed.success),
         ];
