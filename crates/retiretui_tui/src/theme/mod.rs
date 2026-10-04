@@ -8,7 +8,7 @@ pub mod picker;
 
 use bevy_app::{App, Startup, Update};
 use bevy_ecs::change_detection::DetectChanges;
-use bevy_ecs::prelude::{IntoScheduleConfigs, Query, Res, ResMut, Resource};
+use bevy_ecs::prelude::{Commands, IntoScheduleConfigs, Query, Res, ResMut, Resource};
 use bevy_ecs::schedule::SystemSet;
 use plurimus::core::ratatui_core::style::{Color, Modifier, Style};
 use plurimus::core::{Background, TerminalCamera};
@@ -21,12 +21,6 @@ use super::settings::Settings;
 pub fn plugin(app: &mut App) {
     app.add_plugins((picker::plugin, ground::plugin));
     app.insert_resource(Theme::terminal());
-    let (themes, complaints) = library::Themes::beside(app.world().resource::<Settings>());
-    app.insert_resource(themes);
-    // Said once the journal listens.
-    app.add_systems(Startup, move || {
-        complaints.iter().for_each(journal::warn);
-    });
     app.init_resource::<WantedVariant>();
     app.add_systems(Startup, wear_the_theme_set);
     app.configure_sets(Update, Repainted.before(WidgetSystems::Style));
@@ -168,18 +162,20 @@ impl Theme {
     }
 }
 
-/// Puts on the theme the settings name. One that does not resolve is said
-/// so, and the terminal's own worn instead.
+/// Reads the themes there are and puts on the one the settings name. One
+/// that does not resolve is said so, and the terminal's own worn instead.
 fn wear_the_theme_set(
     settings: Res<Settings>,
-    themes: Res<library::Themes>,
     wanted: Res<WantedVariant>,
     mut theme: ResMut<Theme>,
+    mut commands: Commands,
 ) {
+    let themes = library::Themes::beside(&settings);
     match themes.resolve(&settings.theme, wanted.0) {
         Ok(set) => *theme = set,
         Err(error) => journal::warn(format!("config.toml: {error}")),
     }
+    commands.insert_resource(themes);
 }
 
 fn sync_look(

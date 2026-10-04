@@ -298,7 +298,7 @@ fn import_earnings_records_the_statement_on_the_person() {
 const DUSK: &str = "# mine\nfamily = \"mine\"\nvariant = \"dark\"\naccent = \"#010203\"\n";
 const LIGHT_GROUND: &str = "0;15";
 const DARK_GROUND: &str = "15;0";
-const EMBEDDED_THEMES: usize = 13;
+const EMBEDDED_THEMES: &str = "../retiretui_tui/src/theme/themes";
 
 /// A config home of this test's own, its `themes` directory holding
 /// `themes`.
@@ -330,8 +330,12 @@ fn text_of(output: &[u8]) -> String {
 }
 
 fn embedded_theme(slug: &str) -> String {
-    let themes = Path::new("../retiretui_tui/src/theme/themes");
-    std::fs::read_to_string(themes.join(format!("{slug}.toml"))).unwrap()
+    let file = Path::new(EMBEDDED_THEMES).join(format!("{slug}.toml"));
+    std::fs::read_to_string(file).unwrap()
+}
+
+fn embedded_themes() -> usize {
+    std::fs::read_dir(EMBEDDED_THEMES).unwrap().count()
 }
 
 #[test]
@@ -359,11 +363,11 @@ fn theme_list_names_the_built_in_themes_and_the_users_beside_them() {
     assert_eq!(row("bad"), "does not read");
     assert_eq!(row("gruvbox-light"), "light gruvbox built in");
     let built_in = stdout.lines().filter(|line| line.ends_with("  built in"));
-    assert_eq!(built_in.count(), EMBEDDED_THEMES - 1);
-    assert_eq!(rows.len(), EMBEDDED_THEMES + 4, "{stdout}");
+    assert_eq!(built_in.count(), embedded_themes() - 1);
+    assert_eq!(rows.len(), embedded_themes() + 4, "{stdout}");
     let stderr = text_of(&listed.stderr);
     assert!(stderr.contains("terminal.toml: terminal is"), "{stderr}");
-    assert!(stderr.contains("theme bad: "), "{stderr}");
+    assert!(stderr.contains("bad.toml: "), "{stderr}");
     assert_eq!(stderr.lines().count(), 2, "{stderr}");
 }
 
@@ -373,7 +377,10 @@ fn theme_list_with_no_themes_of_the_users_is_the_built_in_ones_and_says_nothing(
     let _ = std::fs::remove_dir_all(&home);
     let listed = theme(&home, DARK_GROUND, &["list"]);
     assert!(listed.status.success(), "{listed:?}");
-    assert_eq!(text_of(&listed.stdout).lines().count(), EMBEDDED_THEMES + 2);
+    assert_eq!(
+        text_of(&listed.stdout).lines().count(),
+        embedded_themes() + 2
+    );
     assert_eq!(text_of(&listed.stderr), "");
 }
 

@@ -6,7 +6,7 @@ use bevy_ecs::prelude::{In, Res, ResMut, Resource, World};
 use bevy_ecs::system::SystemParam;
 
 use super::document::Choice;
-use super::library::{Listed, Origin, Themes};
+use super::library::{Listed, Origin, Themes, UNREAD};
 use super::{Theme, WantedVariant};
 use crate::command::Outcome;
 use crate::journal;
@@ -19,7 +19,6 @@ pub fn plugin(app: &mut App) {
 }
 
 const THEME_NAME: [&str; 2] = [settings::THEME_KEY, "name"];
-const UNREAD: &str = "does not read";
 const YOURS: &str = "yours";
 
 #[derive(Resource, Clone, Copy)]
@@ -58,18 +57,21 @@ impl Shelf<'_> {
     }
 }
 
-/// The `theme` command. The user's themes are read again as it opens, so
-/// that one being written is tried on without a restart.
+/// The `theme` command. The themes are read again as it opens and the one
+/// worn put on afresh, so that one being written shows without a restart.
 pub fn open(
     picker: Res<ThemePicker>,
-    theme: Res<Theme>,
+    mut theme: ResMut<Theme>,
     mut shelf: Shelf,
     mut worn: ResMut<Worn>,
     mut picking: ResMut<Picking>,
 ) -> Outcome {
-    let (themes, complaints) = Themes::beside(&shelf.settings);
-    *shelf.themes = themes;
-    complaints.iter().for_each(journal::warn);
+    *shelf.themes = Themes::beside(&shelf.settings);
+    if let Ok(reread) = shelf.themes.resolve(&shelf.settings.theme, shelf.wanted.0)
+        && *theme != reread
+    {
+        *theme = reread;
+    }
     worn.0 = Some(theme.clone());
     picking.open(picker.0);
     Outcome::Done
@@ -77,13 +79,17 @@ pub fn open(
 
 fn list(In(query): In<String>, themes: Res<Themes>) -> Vec<Offered> {
     let offered = themes.listed().enumerate().map(|(id, (slug, listed))| {
-        Offered::new(id, slug).badged(listed.map_or_else(String::new, badge))
+        let offered = Offered::new(id, slug).badged(listed.map_or_else(String::new, badge));
+        match listed {
+            Some(Listed { read: None, .. }) => offered.dimmed(),
+            _ => offered,
+        }
     });
     ranked(&query, offered)
 }
 
 fn badge(listed: &Listed) -> String {
-    let Ok(painted) = &listed.read else {
+    let Some(painted) = &listed.read else {
         return UNREAD.to_owned();
     };
     let variant = painted.variant.name();
@@ -109,13 +115,18 @@ fn restore(mut worn: ResMut<Worn>, mut theme: ResMut<Theme>) {
     }
 }
 
-fn keep(In(id): In<usize>, mut shelf: Shelf, mut theme: ResMut<Theme>) {
+/// A theme that does not resolve is not kept: a press and its release in
+/// one frame choose a row the cursor never came to rest on.
+fn keep(In(id): In<usize>, mut shelf: Shelf, worn: ResMut<Worn>, mut theme: ResMut<Theme>) {
     let Some((choice, tried)) = shelf.tried(id) else {
         return;
     };
     match tried {
         Ok(kept) => *theme = kept,
-        Err(error) => return journal::warn(error),
+        Err(error) => {
+            restore(worn, theme);
+            return journal::warn(error);
+        }
     }
     let name = choice.name.clone().unwrap_or_default();
     shelf.settings.theme = choice;

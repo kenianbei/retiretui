@@ -75,6 +75,20 @@ pub fn click(app: &mut App, column: u16, row: u16) {
     point(app, MouseKind::Up(MouseButton::Left), column, row);
 }
 
+/// A press and its release in one frame, as a tap sends them.
+pub fn tap(app: &mut App, column: u16, row: u16) {
+    let position = Position::new(column, row);
+    for kind in [
+        MouseKind::Down(MouseButton::Left),
+        MouseKind::Up(MouseButton::Left),
+    ] {
+        app.world_mut()
+            .write_message(MouseMessage::new(kind, position, KeyModifiers::default()));
+    }
+    app.update();
+    app.update();
+}
+
 /// Lets `by` pass in one frame, then ticks once more at the clock's own
 /// pace so what that frame moved is drawn.
 pub fn let_pass(app: &mut App, by: Duration) {

@@ -16,7 +16,7 @@ use retiretui_client::store::DiskStore;
 
 use crate::Launch;
 use crate::theme::document::{TERMINAL, Variant, terminal_variant};
-use crate::theme::library::{DIRECTORY, EMBEDDED, EXTENSION, Listed, Origin, Themes};
+use crate::theme::library::{DIRECTORY, EMBEDDED, Listed, Origin, SUFFIX, Themes, UNREAD};
 
 /// Arguments of the `tui` subcommand.
 #[derive(Args, Debug)]
@@ -88,7 +88,6 @@ pub enum ThemeCommand {
 const LIST_HEADER: [&str; 4] = ["theme", "variant", "family", "from"];
 const COLUMN_GAP: &str = "  ";
 const TERMINALS_OWN: &str = "the terminal's own colours";
-const UNREAD: &str = "does not read";
 const NO_FILE: &str = "the terminal's own colours have no file; dump a theme to start from";
 
 /// Lists the themes a terminal session can wear, or prints one's file.
@@ -103,13 +102,9 @@ pub fn run_theme(args: &ThemeArgs) -> anyhow::Result<()> {
     let (themes, complaints) = Themes::load(&DiskStore, &directory);
     match &args.command {
         ThemeCommand::List => {
-            let unread = themes
-                .listed()
-                .filter_map(|(_, listed)| listed?.read.as_ref().err());
-            complaints
-                .iter()
-                .chain(unread)
-                .for_each(|said| eprintln!("{said}"));
+            for complaint in &complaints {
+                eprintln!("{complaint}");
+            }
             print!("{}", listing(&themes));
         }
         ThemeCommand::Dump { name } => {
@@ -145,7 +140,7 @@ fn listing(themes: &Themes) -> String {
 
 /// A theme's variant, its family, and where it comes from.
 fn about(listed: &Listed) -> [&str; 3] {
-    let Ok(painted) = &listed.read else {
+    let Some(painted) = &listed.read else {
         return ["", "", UNREAD];
     };
     let from = match listed.origin {
@@ -172,6 +167,6 @@ fn dumped(
     if let (Origin::Embedded, Some((_, text))) = (listed.origin, embedded) {
         return Ok((*text).to_owned());
     }
-    let file = directory.join(format!("{}{EXTENSION}", listed.slug));
+    let file = directory.join(format!("{}{SUFFIX}", listed.slug));
     std::fs::read_to_string(&file).map_err(|error| format!("{}: {error}", file.display()))
 }

@@ -4,16 +4,19 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use bevy_ecs::prelude::With;
 use plurimus::core::TerminalSize;
 use plurimus::core::ratatui_core::style::Color;
 use plurimus::term::KeyCode;
+use plurimus::ui::{UiLabel, UiStyle};
+use plurimus::widgets::ListItem;
 
 use super::motion::Motion;
 use super::settings::Settings;
 use super::store::DiskStore;
 use super::support::{
-    Headless, ROOMY, SIZE, click, composed_buffer, composed_frame, headless_app_set, picker_rows,
-    press_key, said, scratch_plan, type_text,
+    Headless, ROOMY, SIZE, USER_THEME, USER_THEME_ACCENT, cell_of, composed_buffer, composed_frame,
+    headless_app_set, picker_rows, press_key, said, scratch_plan, tap, type_text,
 };
 use super::theme::Theme;
 
@@ -123,9 +126,6 @@ fn a_theme_that_cannot_be_kept_is_worn_for_the_session_and_said_so() {
     assert_eq!(std::fs::read_to_string(&path).unwrap(), "[tui\n");
 }
 
-const MINE: &str = "family = \"mine\"\nvariant = \"dark\"\naccent = \"#010203\"\n";
-const MINE_ACCENT: Color = Color::Rgb(1, 2, 3);
-
 /// Writes the user's theme `slug` beside the config at `path`.
 fn write_theme(path: &Path, slug: &str, text: &str) {
     let themes = path.with_file_name("themes");
@@ -144,10 +144,10 @@ fn badge_of(app: &mut Headless, slug: &str) -> String {
 #[test]
 fn a_theme_of_the_users_own_is_worn_from_the_start_and_offered_as_theirs() {
     let path = config("[tui.theme]\nname = \"mine\"\n");
-    write_theme(&path, "dusk", MINE);
-    write_theme(&path, "nord", MINE);
+    write_theme(&path, "dusk", USER_THEME);
+    write_theme(&path, "nord", USER_THEME);
     let mut app = app_under(path, SIZE);
-    assert_eq!(accent(&app), MINE_ACCENT, "named by its family");
+    assert_eq!(accent(&app), USER_THEME_ACCENT, "named by its family");
     assert!(said(&app).is_empty());
     open_theme_picker(&mut app);
     assert_eq!(badge_of(&mut app, "dusk"), "dark, yours");
@@ -160,14 +160,14 @@ fn a_theme_of_the_users_own_is_worn_from_the_start_and_offered_as_theirs() {
 fn a_theme_written_while_the_shell_runs_is_tried_on_by_opening_the_picker_again() {
     let path = config("");
     let mut app = app_under(path.clone(), SIZE);
-    write_theme(&path, "dusk", MINE);
+    write_theme(&path, "dusk", USER_THEME);
     open_theme_picker(&mut app);
     type_text(&mut app, "dusk");
     app.update();
-    assert_eq!(accent(&app), MINE_ACCENT);
+    assert_eq!(accent(&app), USER_THEME_ACCENT);
     press_key(&mut app, KeyCode::Esc);
 
-    write_theme(&path, "dusk", &MINE.replace("#010203", "#040506"));
+    write_theme(&path, "dusk", &USER_THEME.replace("#010203", "#040506"));
     open_theme_picker(&mut app);
     type_text(&mut app, "dusk");
     press_key(&mut app, KeyCode::Enter);
@@ -177,24 +177,55 @@ fn a_theme_written_while_the_shell_runs_is_tried_on_by_opening_the_picker_again(
     assert!(kept.ends_with("[tui.theme]\nname = \"dusk\"\n"), "{kept}");
 }
 
+/// The picker tries its first row on as it opens, so what was put on
+/// afresh is what escape goes back to.
 #[test]
-fn a_theme_of_the_users_that_does_not_read_is_offered_as_such_and_not_kept() {
-    let path = config("");
-    write_theme(
-        &path,
-        "dusk",
-        "family = \"mine\"\nvariant = \"dark\"\naccent = 3\n",
-    );
-    write_theme(&path, "terminal", MINE);
+fn the_theme_worn_is_read_again_as_the_picker_opens_and_is_what_escape_puts_back() {
+    let path = config("[tui.theme]\nname = \"dusk\"\n");
+    write_theme(&path, "dusk", USER_THEME);
     let mut app = app_under(path.clone(), SIZE);
-    let refused = said(&app);
+    write_theme(&path, "dusk", &USER_THEME.replace("#010203", "#040506"));
+    open_theme_picker(&mut app);
+    press_key(&mut app, KeyCode::Esc);
+    assert_eq!(accent(&app), Color::Rgb(4, 5, 6));
+
+    write_theme(&path, "dusk", BROKEN_THEME);
+    open_theme_picker(&mut app);
+    press_key(&mut app, KeyCode::Esc);
+    assert_eq!(accent(&app), Color::Rgb(4, 5, 6), "one that broke stays");
+}
+
+const BROKEN_THEME: &str = "family = \"mine\"\nvariant = \"dark\"\naccent = 3\n";
+const DUSK_UNREAD: &str = "theme \"dusk\" does not read";
+
+/// The shell beside a theme `dusk` that does not read, and what it wore
+/// as it opened.
+fn app_beside_a_broken_theme() -> (Headless, PathBuf, Color) {
+    let path = config("");
+    write_theme(&path, "dusk", BROKEN_THEME);
+    let app = app_under(path.clone(), SIZE);
+    let complaints = said(&app);
     assert!(
-        matches!(&refused[..], [said] if said.contains("terminal.toml")),
-        "{refused:?}"
+        matches!(&complaints[..], [said] if said.ends_with("dusk.toml: accent: not a colour")),
+        "{complaints:?}"
     );
     let worn = accent(&app);
+    (app, path, worn)
+}
+
+#[test]
+fn a_theme_of_the_users_that_does_not_read_is_offered_as_such_and_not_kept() {
+    let (mut app, path, worn) = app_beside_a_broken_theme();
     open_theme_picker(&mut app);
     assert_eq!(badge_of(&mut app, "dusk"), "does not read");
+    let mut rows = app
+        .world_mut()
+        .query_filtered::<&UiLabel, (With<ListItem>, With<UiStyle>)>();
+    let dim: Vec<String> = rows
+        .iter(app.world())
+        .map(|label| label.0.to_string())
+        .collect();
+    assert_eq!(dim, ["dusk"], "and is said dimly");
     type_text(&mut app, "d");
     app.update();
     assert_ne!(accent(&app), worn, "another theme is reached on the way");
@@ -203,31 +234,23 @@ fn a_theme_of_the_users_that_does_not_read_is_offered_as_such_and_not_kept() {
     assert_eq!(accent(&app), worn, "reaching it puts the first back");
     press_key(&mut app, KeyCode::Enter);
     assert_eq!(accent(&app), worn);
-    assert_eq!(
-        said(&app).last().unwrap(),
-        "theme dusk: accent: not a colour"
-    );
+    assert_eq!(said(&app).last().unwrap(), DUSK_UNREAD);
     assert_eq!(std::fs::read_to_string(&path).unwrap(), "");
+}
 
+#[test]
+fn a_theme_that_does_not_read_tapped_before_the_cursor_rests_on_it_puts_the_first_back() {
+    let (mut app, path, worn) = app_beside_a_broken_theme();
     open_theme_picker(&mut app);
     type_text(&mut app, "d");
     app.update();
     assert_ne!(accent(&app), worn);
-    let frame = composed_frame(&app);
-    let (row, line) = frame
-        .lines()
-        .enumerate()
-        .find(|(_, line)| line.contains("dusk"))
-        .unwrap();
-    let column = line[..line.find("dusk").unwrap()].chars().count();
-    click(&mut app, column as u16, row as u16);
-    app.update();
-    assert_eq!(
-        accent(&app),
-        worn,
-        "chosen by the pointer, it is reached first"
-    );
+    let (column, row) = cell_of(&app, "dusk");
+    tap(&mut app, column, row);
     assert!(!composed_frame(&app).contains("╭ Theme"));
+    assert_eq!(accent(&app), worn);
+    assert_eq!(said(&app).last().unwrap(), DUSK_UNREAD);
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), "");
 }
 
 /// The cells of the composed frame a theme with its own grounds left to the
