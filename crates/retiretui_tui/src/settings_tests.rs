@@ -33,8 +33,8 @@ fn config(text: &str) -> PathBuf {
 }
 
 fn app_under(path: PathBuf, size: TerminalSize) -> Headless {
-    let (mut settings, complaint) = Settings::at(Arc::new(DiskStore), path);
-    assert!(complaint.is_none(), "{complaint:?}");
+    let (mut settings, complaints) = Settings::at(Arc::new(DiskStore), path);
+    assert_eq!(complaints, [""; 0]);
     // A frame is compared still: an arriving overlay's cells are not all
     // there yet.
     settings.motion = Motion::Off;

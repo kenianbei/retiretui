@@ -33,6 +33,13 @@ use super::nav::{self, Page, PageSystems, ShownSurface};
 use super::overlay;
 use super::scope::{KeyScope, Scoped};
 use super::session::NO_DOCUMENT;
+use super::settings::Settings;
+
+/// The commands the shell names by itself: the one that walks a page's
+/// panes, and the two that find every other.
+pub const FOCUS_NEXT: &str = "focus-next";
+pub const PALETTE: &str = "palette";
+pub const HELP: &str = "help";
 
 pub struct CommandSpec {
     /// The stable kebab-case handle the command picker lists it under.
@@ -208,7 +215,13 @@ impl Registry {
 }
 
 pub fn plugin(app: &mut App) {
-    app.insert_resource(Keymap::defaults());
+    let (keymap, remarks) = Keymap::with(&app.world().resource::<Settings>().keys);
+    app.insert_resource(keymap);
+    // Said once the journal listens.
+    app.add_systems(Startup, move || {
+        remarks.refused.iter().for_each(journal::warn);
+        remarks.taken.iter().for_each(journal::say);
+    });
     app.init_resource::<Pending>();
     app.add_systems(Startup, register);
     app.add_systems(

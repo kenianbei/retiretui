@@ -52,9 +52,12 @@ impl FromWorld for ShellKeys {
             let key = keymap.label(command::named(name)?);
             (!key.is_empty()).then_some((key, word))
         };
-        let finders = [hint("palette", "commands"), hint("help", "help")];
+        let finders = [
+            hint(command::PALETTE, "commands"),
+            hint(command::HELP, "help"),
+        ];
         Self {
-            walk: hint("focus-next", "pane"),
+            walk: hint(command::FOCUS_NEXT, "pane"),
             finders: finders.into_iter().flatten().collect(),
         }
     }

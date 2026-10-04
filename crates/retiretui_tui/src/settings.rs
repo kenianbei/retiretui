@@ -1,12 +1,13 @@
 //! What the user has set: read from the `[tui]` table of `config.toml`,
 //! and written back a key at a time so the file stays the user's own.
 
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::prelude::{Res, ResMut, Resource};
-use serde::Deserialize;
+use serde::de::DeserializeOwned;
 use toml_edit::{DocumentMut, Item, Table, Value};
 
 use super::motion::Motion;
@@ -16,7 +17,10 @@ use crate::session::Session;
 use crate::store::Store;
 
 const TUI_TABLE: &str = "tui";
+const THEME_KEY: &str = "theme";
+const MOTION_KEY: &str = "motion";
 const DOCUMENT_KEY: &str = "document";
+const KEYS_KEY: &str = "keys";
 
 /// The file settings are read from and written back to.
 #[derive(Debug)]
@@ -25,24 +29,31 @@ struct Kept {
     path: PathBuf,
 }
 
-#[derive(Deserialize, Default)]
-struct ConfigFile {
-    #[serde(default)]
-    tui: Settings,
-}
-
 /// The settings in force, and the file they are kept in.
-#[derive(Resource, Deserialize, Default, Debug)]
-#[serde(default)]
+#[derive(Resource, Default, Debug)]
 pub struct Settings {
     /// Where a changed key is written; nowhere for a session that keeps
     /// nothing.
-    #[serde(skip)]
     kept: Option<Kept>,
     pub theme: Choice,
     pub motion: Motion,
     /// The document last open, where a session reopens it.
     pub document: Option<PathBuf>,
+    /// The keys each command named answers to, as the file states them:
+    /// the command table judges each entry.
+    pub keys: BTreeMap<String, toml::Value>,
+}
+
+/// `key` of `tui` read into `setting`, which keeps what it held where the
+/// value does not read, and why it did not.
+fn take<T: DeserializeOwned>(tui: &mut toml::Table, key: &str, setting: &mut T) -> Option<String> {
+    match tui.remove(key)?.try_into() {
+        Ok(read) => {
+            *setting = read;
+            None
+        }
+        Err(error) => Some(format!("[{TUI_TABLE}] {key}: {}", error.message())),
+    }
 }
 
 impl Settings {
@@ -56,22 +67,42 @@ impl Settings {
         }
     }
 
-    /// The settings the file at `path` in `store` holds. A file that is
-    /// absent is the defaults; one that does not read is the defaults and a
-    /// complaint, and is left as it is.
-    pub fn at(store: Arc<dyn Store>, path: PathBuf) -> (Self, Option<String>) {
-        let (mut settings, complaint) = match store.read(&path) {
-            Err(_) => (Self::default(), None),
-            Ok(text) => match toml::from_str::<ConfigFile>(&text) {
-                Ok(config) => (config.tui, None),
-                Err(error) => (
-                    Self::default(),
-                    Some(format!("{}: {}", path.display(), error.message())),
-                ),
-            },
-        };
+    /// The settings the file at `path` in `store` holds, and a complaint
+    /// for each that does not read. A file that is absent is the defaults,
+    /// as is one that is not TOML; a setting that does not read is its
+    /// default beside the rest. The file is left as it is.
+    pub fn at(store: Arc<dyn Store>, path: PathBuf) -> (Self, Vec<String>) {
+        let mut settings = Self::default();
+        let unread = store
+            .read(&path)
+            .map_or_else(|_| Vec::new(), |text| settings.read(&text));
+        let complaints = unread
+            .into_iter()
+            .map(|complaint| format!("{}: {complaint}", path.display()))
+            .collect();
         settings.kept = Some(Kept { store, path });
-        (settings, complaint)
+        (settings, complaints)
+    }
+
+    /// Takes each setting `text` states under `[tui]`, and says which did
+    /// not read.
+    fn read(&mut self, text: &str) -> Vec<String> {
+        let mut file = match text.parse::<toml::Table>() {
+            Ok(file) => file,
+            Err(error) => return vec![error.message().to_owned()],
+        };
+        let mut tui = match file.remove(TUI_TABLE) {
+            Some(toml::Value::Table(tui)) => tui,
+            Some(_) => return vec![format!("{TUI_TABLE} is not a table")],
+            None => return Vec::new(),
+        };
+        let unread = [
+            take(&mut tui, THEME_KEY, &mut self.theme),
+            take(&mut tui, MOTION_KEY, &mut self.motion),
+            take(&mut tui, DOCUMENT_KEY, &mut self.document),
+            take(&mut tui, KEYS_KEY, &mut self.keys),
+        ];
+        unread.into_iter().flatten().collect()
     }
 
     /// Writes one key under `[tui]`, leaving every other key, comment, and
@@ -167,8 +198,9 @@ kept = true
     #[test]
     fn a_kept_key_makes_the_tables_it_needs() {
         let kept = with_key("", &["theme", "name"], "nord".into()).unwrap();
-        let read: ConfigFile = toml::from_str(&kept).unwrap();
-        assert_eq!(read.tui.theme.name.as_deref(), Some("nord"));
+        let mut read = Settings::default();
+        assert_eq!(read.read(&kept), [""; 0]);
+        assert_eq!(read.theme.name.as_deref(), Some("nord"));
     }
 
     #[test]
@@ -184,21 +216,50 @@ kept = true
             "retiretui-settings-{}/config.toml",
             std::process::id()
         ));
-        let (absent, complaint) = Settings::at(Arc::new(DiskStore), path.clone());
-        assert!(complaint.is_none() && absent.theme == Choice::default());
+        let (absent, complaints) = Settings::at(Arc::new(DiskStore), path.clone());
+        assert!(complaints.is_empty() && absent.theme == Choice::default());
         absent.keep(&["theme", "name"], "nord").unwrap();
         absent.keep(&["motion"], "off").unwrap();
-        let (read, complaint) = Settings::at(Arc::new(DiskStore), path.clone());
-        assert!(complaint.is_none());
+        let (read, complaints) = Settings::at(Arc::new(DiskStore), path.clone());
+        assert_eq!(complaints, [""; 0]);
         assert_eq!(read.theme.name.as_deref(), Some("nord"));
         assert_eq!(read.motion, Motion::Off);
 
         std::fs::write(&path, "[tui\n").unwrap();
-        let (broken, complaint) = Settings::at(Arc::new(DiskStore), path.clone());
-        assert!(complaint.is_some_and(|said| said.contains("config.toml")));
+        let (broken, complaints) = Settings::at(Arc::new(DiskStore), path.clone());
+        assert!(matches!(&complaints[..], [said] if said.contains("config.toml")));
         assert!(broken.keep(&["motion"], "full").is_err());
         assert_eq!(std::fs::read_to_string(&path).unwrap(), "[tui\n");
         std::fs::remove_dir_all(path.parent().unwrap()).unwrap();
+    }
+
+    #[test]
+    fn a_setting_that_does_not_read_spoils_only_itself() {
+        let mut settings = Settings::default();
+        let unread = settings.read(
+            "[tui]\nmotion = \"slow\"\ndocument = \"/plans/ours.toml\"\n\
+             [tui.theme]\nname = \"nord\"\n[tui.keys]\nsave = \"ctrl-w\"\n",
+        );
+        assert!(
+            matches!(&unread[..], [said] if said.starts_with("[tui] motion: ")),
+            "{unread:?}"
+        );
+        assert_eq!(settings.motion, Motion::default());
+        assert_eq!(settings.theme.name.as_deref(), Some("nord"));
+        assert_eq!(settings.document, Some(PathBuf::from("/plans/ours.toml")));
+        assert_eq!(settings.keys["save"].as_str(), Some("ctrl-w"));
+    }
+
+    #[test]
+    fn a_keys_table_of_any_shape_reads_and_one_that_is_no_table_is_said() {
+        let mut settings = Settings::default();
+        assert_eq!(settings.read("[tui.keys]\nsave = 3\nquit = []\n"), [""; 0]);
+        assert_eq!(settings.keys.len(), 2);
+        let mut settings = Settings::default();
+        let unread = settings.read("[tui]\nkeys = \"ctrl-w\"\nmotion = \"off\"\n");
+        assert!(matches!(&unread[..], [said] if said.starts_with("[tui] keys: ")));
+        assert_eq!(settings.motion, Motion::Off);
+        assert_eq!(Settings::default().read("tui = 3"), ["tui is not a table"]);
     }
 
     #[test]

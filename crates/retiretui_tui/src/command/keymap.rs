@@ -1,14 +1,128 @@
 //! The keys in force: which command each runs, and how each command's key
 //! is shown.
 
+use std::collections::BTreeMap;
+
 use bevy_ecs::prelude::Resource;
 use bevy_input::ButtonState;
 use bevy_input::keyboard::{Key, KeyboardInput};
 use plurimus::term::KeyModifiers;
 use plurimus::ui::KeyBinding;
 
-use super::{COMMANDS, CommandId, Scope, all, keys};
+use super::{COMMANDS, CommandId, PALETTE, Scope, all, keys, named};
 use crate::nav::Page;
+
+/// The table of the settings file a user's keys are stated in, as what is
+/// said of them names it.
+const TABLE: &str = "[tui.keys]";
+
+/// Why an entry that would leave the palette no key is left out.
+const BARES_PALETTE: &str =
+    "the palette would be left no key, and every other command is reached through it";
+
+/// Whether one key may run a command in each scope: a page's row may take
+/// a key the shell binds or another page does, and two rows of the
+/// shell's, or two of one page's, may not share one.
+fn are_apart(a: Scope, b: Scope) -> bool {
+    match (a, b) {
+        (Scope::On(x), Scope::On(y)) => x != y,
+        (Scope::On(_), _) | (_, Scope::On(_)) => true,
+        _ => false,
+    }
+}
+
+/// What applying a user's entries came to, for the journal.
+#[derive(Default, Debug, PartialEq, Eq)]
+pub struct Remarks {
+    /// The entries left out, each with why.
+    pub refused: Vec<String>,
+    /// The keys an entry took from a command the user did not name.
+    pub taken: Vec<String>,
+}
+
+/// The keys an entry states: one, or a list of them.
+fn stated(value: &toml::Value) -> Result<Vec<KeyBinding>, String> {
+    let unread = || "a key or a list of keys is wanted".to_owned();
+    match value {
+        toml::Value::String(key) => Ok(vec![keys::parse(key)?]),
+        toml::Value::Array(keys) => keys
+            .iter()
+            .map(|key| keys::parse(key.as_str().ok_or_else(unread)?))
+            .collect(),
+        _ => Err(unread()),
+    }
+}
+
+/// The table's keys while a user's entries are applied over them.
+struct Rebinding {
+    /// Indexed as [`COMMANDS`] is.
+    keys: Vec<Vec<KeyBinding>>,
+    /// Whether each command's keys are the user's.
+    is_stated: Vec<bool>,
+    palette: Option<CommandId>,
+}
+
+impl Rebinding {
+    /// The command the user gave `key` to, where `command` may not share
+    /// it.
+    fn taker(&self, command: CommandId, key: &KeyBinding) -> Option<CommandId> {
+        all().find(|other| {
+            *other != command
+                && self.is_stated[other.0]
+                && !are_apart(command.spec().scope, other.spec().scope)
+                && self.keys[other.0].contains(key)
+        })
+    }
+
+    /// Whether `command` holding `keys` would leave the palette none.
+    fn bares_palette(&self, command: CommandId, keys: &[KeyBinding]) -> bool {
+        let Some(palette) = self.palette else {
+            return false;
+        };
+        if palette == command {
+            return keys.is_empty();
+        }
+        let is_lost = |key: &KeyBinding| keys.contains(key) || self.taker(palette, key).is_some();
+        !self.is_stated[palette.0]
+            && !are_apart(command.spec().scope, palette.spec().scope)
+            && self.keys[palette.0].iter().all(is_lost)
+    }
+
+    /// Gives `command` the `keys` the user states for it.
+    fn admit(&mut self, command: CommandId, keys: Vec<KeyBinding>) -> Result<(), String> {
+        if self.bares_palette(command, &keys) {
+            return Err(BARES_PALETTE.to_owned());
+        }
+        let held = keys
+            .iter()
+            .find_map(|key| Some((key, self.taker(command, key)?)));
+        if let Some((key, taker)) = held {
+            let name = taker.spec().name;
+            return Err(format!("{} is stated for {name}", keys::label(key)));
+        }
+        self.keys[command.0] = keys;
+        self.is_stated[command.0] = true;
+        Ok(())
+    }
+
+    /// Takes from each command the user did not name the keys they gave
+    /// another, and says each.
+    fn take(&mut self) -> Vec<String> {
+        let mut said = Vec::new();
+        for command in all().filter(|command| !self.is_stated[command.0]) {
+            for key in std::mem::take(&mut self.keys[command.0]) {
+                let Some(taker) = self.taker(command, &key) else {
+                    self.keys[command.0].push(key);
+                    continue;
+                };
+                let (winner, loser) = (taker.spec().name, command.spec().name);
+                let key = keys::label(&key);
+                said.push(format!("{TABLE} {key} now runs {winner}, not {loser}"));
+            }
+        }
+        said
+    }
+}
 
 /// Every keystroke bound to a command, and each command's first.
 #[derive(Resource)]
@@ -21,8 +135,41 @@ pub struct Keymap {
 
 impl Keymap {
     /// The keys the command table states.
+    #[cfg(test)]
     pub fn defaults() -> Self {
-        Self::of(COMMANDS.iter().map(|spec| spec.keys.clone()).collect())
+        Self::with(&BTreeMap::new()).0
+    }
+
+    /// The command table's keys under the entries of `user`, each naming a
+    /// command and stating every key it answers to. An entry that does not
+    /// read, or that states a key an earlier one did, is left out and the
+    /// command keeps the keys it had; a key another command holds unstated
+    /// is taken from it.
+    pub fn with(user: &BTreeMap<String, toml::Value>) -> (Self, Remarks) {
+        let palette = named(PALETTE);
+        let mut rebinding = Rebinding {
+            keys: COMMANDS.iter().map(|spec| spec.keys.clone()).collect(),
+            is_stated: vec![false; COMMANDS.len()],
+            palette,
+        };
+        let unknown = user.keys().filter(|name| named(name).is_none());
+        let mut refused: Vec<String> = unknown
+            .map(|name| format!("{TABLE} {name}: no command has that name"))
+            .collect();
+        // The palette's keys are settled first, so that an entry is judged
+        // against the ones it ends with wherever its own entry stands.
+        let rest = all().filter(|command| Some(*command) != palette);
+        for command in palette.into_iter().chain(rest) {
+            let name = command.spec().name;
+            let Some(value) = user.get(name) else {
+                continue;
+            };
+            if let Err(why) = stated(value).and_then(|keys| rebinding.admit(command, keys)) {
+                refused.push(format!("{TABLE} {name}: {why}"));
+            }
+        }
+        let taken = rebinding.take();
+        (Self::of(rebinding.keys), Remarks { refused, taken })
     }
 
     /// `keys` indexed as [`COMMANDS`] is. Each label is leaked, so that a
@@ -91,70 +238,4 @@ impl Keymap {
 }
 
 #[cfg(test)]
-mod tests {
-    use std::collections::BTreeSet;
-
-    use bevy_ecs::prelude::Entity;
-    use bevy_input::keyboard::KeyCode;
-
-    use super::*;
-
-    fn pressed(key_code: KeyCode, logical_key: Key) -> KeyboardInput {
-        KeyboardInput {
-            key_code,
-            logical_key,
-            state: ButtonState::Pressed,
-            text: None,
-            repeat: false,
-            window: Entity::PLACEHOLDER,
-        }
-    }
-
-    #[test]
-    fn names_are_unique_and_keys_are_unique_on_any_one_page() {
-        let names: BTreeSet<&str> = COMMANDS.iter().map(|spec| spec.name).collect();
-        assert_eq!(names.len(), COMMANDS.len());
-        let keys: Vec<(&KeyBinding, Scope)> = COMMANDS
-            .iter()
-            .flat_map(|spec| spec.keys.iter().map(|key| (key, spec.scope)))
-            .collect();
-        // A page's row may take a key the shell binds; two rows of the
-        // shell's, or two of one page's, may not share one.
-        let are_apart = |a: Scope, b: Scope| match (a, b) {
-            (Scope::On(x), Scope::On(y)) => x != y,
-            (Scope::On(_), _) | (_, Scope::On(_)) => true,
-            _ => false,
-        };
-        for (index, (key, scope)) in keys.iter().enumerate() {
-            let twice = keys[..index]
-                .iter()
-                .any(|(earlier, held)| earlier == key && !are_apart(*scope, *held));
-            assert!(!twice, "{} is bound twice", keys::label(key));
-        }
-    }
-
-    #[test]
-    fn a_pages_row_takes_a_key_the_shell_binds_while_the_page_is_shown() {
-        let keymap = Keymap::defaults();
-        let esc = pressed(KeyCode::Escape, Key::Escape);
-        let on = |page: Page| {
-            let command = keymap.bound_on(Some(page), &esc, KeyModifiers::default());
-            command.map(|command| command.spec().name)
-        };
-        assert_eq!(on(Page::Ledger), Some("ledger-plan"));
-        assert_eq!(on(Page::Accounts), Some("domains"));
-    }
-
-    #[test]
-    fn a_key_two_pages_bind_runs_the_command_of_the_page_on_show() {
-        let keymap = Keymap::defaults();
-        let w = pressed(KeyCode::KeyW, Key::Character("w".into()));
-        let on = |page: Page| {
-            let command = keymap.bound_on(Some(page), &w, KeyModifiers::default());
-            command.map(|command| command.spec().name)
-        };
-        assert_eq!(on(Page::RothConversions), Some("write-ladder"));
-        assert_eq!(on(Page::SsaBenefits), Some("write-claims"));
-        assert_eq!(on(Page::Overview), None, "a page's key is its own");
-    }
-}
+mod tests;

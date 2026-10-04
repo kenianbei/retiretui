@@ -8,7 +8,7 @@ use plurimus::ui::KeyBinding;
 
 use super::keys::character;
 use super::pickers;
-use super::{CommandSpec, Outcome, Scope};
+use super::{CommandSpec, FOCUS_NEXT, HELP, Outcome, PALETTE, Scope};
 use crate::compare::{self, Compared};
 use crate::confirm::Confirm;
 use crate::documents;
@@ -88,7 +88,7 @@ pub static COMMANDS: LazyLock<Vec<CommandSpec>> = LazyLock::new(|| {
             register: Box::new(|world| world.register_system(quit)),
         },
         CommandSpec {
-            name: "focus-next",
+            name: FOCUS_NEXT,
             scope: Scope::Shell,
             doc: "move to the page's next pane",
             keys: vec![KeyBinding::new(Key::Tab)],
@@ -168,7 +168,7 @@ pub static COMMANDS: LazyLock<Vec<CommandSpec>> = LazyLock::new(|| {
             register: Box::new(|world| world.register_system(edit::delete)),
         },
         CommandSpec {
-            name: "palette",
+            name: PALETTE,
             scope: Scope::Shell,
             doc: "run a command by name",
             keys: vec![character(":")],
@@ -176,7 +176,7 @@ pub static COMMANDS: LazyLock<Vec<CommandSpec>> = LazyLock::new(|| {
             register: Box::new(|world| world.register_system(pickers::open_commands)),
         },
         CommandSpec {
-            name: "help",
+            name: HELP,
             scope: Scope::Shell,
             doc: "find a command by what it does",
             keys: vec![character("?")],

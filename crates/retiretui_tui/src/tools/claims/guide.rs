@@ -184,10 +184,10 @@ pub(super) fn help_line(
     let keys = if keys.is_empty() {
         keys
     } else {
-        format!("{keys} act on {}.", person.display_name())
+        format!(" {keys} act on {}.", person.display_name())
     };
     if place == Place::Strategies {
-        return format!("⏎ takes the highlighted option into the plan, after asking. {keys}");
+        return format!("⏎ takes the highlighted option into the plan, after asking.{keys}");
     }
     if let Some(monthly) = typed_monthly(plan, person) {
         return format!(
@@ -197,9 +197,14 @@ pub(super) fn help_line(
         );
     }
     if !is_claimed(plan, person) {
-        return format!(
-            "⇥ to the claim options and ⏎ on one to set when each benefit starts. {keys}"
-        );
+        let walk = command::named(command::FOCUS_NEXT).map_or("", |walk| keymap.label(walk));
+        return if walk.is_empty() {
+            format!("⏎ on a claim option to set when each benefit starts.{keys}")
+        } else {
+            format!(
+                "{walk} to the claim options and ⏎ on one to set when each benefit starts.{keys}"
+            )
+        };
     }
     ABOUT.to_owned()
 }

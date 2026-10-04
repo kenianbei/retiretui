@@ -64,7 +64,6 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use bevy_app::{App, Startup, Update};
-use bevy_ecs::prelude::{Res, Resource};
 use plurimus::widgets::WidgetsPlugin;
 use plurimus_filepicker::FilePickerPlugin;
 use retiretui_engine::market::History;
@@ -106,7 +105,7 @@ pub struct Launch {
 ///
 /// Where the document cannot be read or resolved.
 pub fn build(app: &mut App, launch: Launch) -> Result<(), String> {
-    let (settings, complaint) = launch.settings.map_or_else(Default::default, |path| {
+    let (settings, complaints) = launch.settings.map_or_else(Default::default, |path| {
         settings::Settings::at(Arc::clone(&launch.store), path)
     });
     let path = match &settings.document {
@@ -136,10 +135,10 @@ pub fn build(app: &mut App, launch: Launch) -> Result<(), String> {
     if launch.reopens {
         app.add_systems(Update, settings::remember_document);
     }
-    if let Some(complaint) = complaint {
-        app.insert_resource(SettingsComplaint(complaint));
-        app.add_systems(Startup, say_settings_complaint);
-    }
+    // Said once the journal listens.
+    app.add_systems(Startup, move || {
+        complaints.iter().for_each(journal::warn);
+    });
     Ok(())
 }
 
@@ -168,14 +167,6 @@ pub fn install_journal(app: &App) -> anyhow::Result<()> {
 /// Where a subscriber is already installed.
 pub fn install_log(app: &App, file: anyhow::Result<PathBuf>) -> anyhow::Result<()> {
     log::install(app.world().resource::<journal::Inbox>(), file)
-}
-
-/// Why the settings file was not read, said once the journal listens.
-#[derive(Resource)]
-struct SettingsComplaint(String);
-
-fn say_settings_complaint(complaint: Res<SettingsComplaint>) {
-    journal::warn(complaint.0.clone());
 }
 
 /// Everything above the terminal backend and the session resources, shared
