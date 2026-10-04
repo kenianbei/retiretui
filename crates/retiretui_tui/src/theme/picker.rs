@@ -4,7 +4,8 @@
 use bevy_app::{App, Startup};
 use bevy_ecs::prelude::{In, Res, ResMut, Resource, World};
 
-use super::document::{self, Choice};
+use super::document::Choice;
+use super::library::Themes;
 use super::{Theme, WantedVariant};
 use crate::command::Outcome;
 use crate::journal;
@@ -42,9 +43,10 @@ pub fn open(
     Outcome::Done
 }
 
-fn list(In(query): In<String>) -> Vec<Offered> {
-    let offered = document::listed().enumerate().map(|(id, (slug, variant))| {
-        let badge = variant.map_or("", document::Variant::name);
+fn list(In(query): In<String>, themes: Res<Themes>) -> Vec<Offered> {
+    let offered = themes.listed().enumerate().map(|(id, (slug, listed))| {
+        let read = listed.and_then(|listed| listed.read.as_ref().ok());
+        let badge = read.map_or("", |painted| painted.variant.name());
         Offered::new(id, slug).badged(badge)
     });
     ranked(&query, offered)
@@ -52,8 +54,8 @@ fn list(In(query): In<String>) -> Vec<Offered> {
 
 /// The user's choice with the theme at `id` named in place of theirs, so
 /// that what they paint over a theme is tried on with it.
-fn choice_of(id: usize, settings: &Settings) -> Option<Choice> {
-    let (slug, _) = document::listed().nth(id)?;
+fn choice_of(id: usize, themes: &Themes, settings: &Settings) -> Option<Choice> {
+    let (slug, _) = themes.listed().nth(id)?;
     Some(Choice {
         name: Some(slug.to_owned()),
         ..settings.theme.clone()
@@ -63,11 +65,12 @@ fn choice_of(id: usize, settings: &Settings) -> Option<Choice> {
 fn try_on(
     In(id): In<usize>,
     settings: Res<Settings>,
+    themes: Res<Themes>,
     wanted: Res<WantedVariant>,
     mut theme: ResMut<Theme>,
 ) {
     let tried =
-        choice_of(id, &settings).and_then(|choice| document::resolve(&choice, wanted.0).ok());
+        choice_of(id, &themes, &settings).and_then(|choice| themes.resolve(&choice, wanted.0).ok());
     if let Some(tried) = tried
         && *theme != tried
     {
@@ -84,13 +87,14 @@ fn restore(mut worn: ResMut<Worn>, mut theme: ResMut<Theme>) {
 fn keep(
     In(id): In<usize>,
     mut settings: ResMut<Settings>,
+    themes: Res<Themes>,
     wanted: Res<WantedVariant>,
     mut theme: ResMut<Theme>,
 ) {
-    let Some(choice) = choice_of(id, &settings) else {
+    let Some(choice) = choice_of(id, &themes, &settings) else {
         return;
     };
-    match document::resolve(&choice, wanted.0) {
+    match themes.resolve(&choice, wanted.0) {
         Ok(kept) => *theme = kept,
         Err(error) => return journal::warn(error),
     }

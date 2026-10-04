@@ -3,6 +3,7 @@
 
 pub mod document;
 pub mod ground;
+pub mod library;
 pub mod picker;
 
 use bevy_app::{App, Startup, Update};
@@ -20,6 +21,7 @@ use super::settings::Settings;
 pub fn plugin(app: &mut App) {
     app.add_plugins((picker::plugin, ground::plugin));
     app.insert_resource(Theme::terminal());
+    app.insert_resource(library::Themes::embedded());
     app.init_resource::<WantedVariant>();
     app.add_systems(Startup, wear_the_theme_set);
     app.configure_sets(Update, Repainted.before(WidgetSystems::Style));
@@ -165,10 +167,11 @@ impl Theme {
 /// so, and the terminal's own worn instead.
 fn wear_the_theme_set(
     settings: Res<Settings>,
+    themes: Res<library::Themes>,
     wanted: Res<WantedVariant>,
     mut theme: ResMut<Theme>,
 ) {
-    match document::resolve(&settings.theme, wanted.0) {
+    match themes.resolve(&settings.theme, wanted.0) {
         Ok(set) => *theme = set,
         Err(error) => journal::warn(format!("config.toml: {error}")),
     }
