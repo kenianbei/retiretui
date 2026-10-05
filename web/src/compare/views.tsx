@@ -34,17 +34,17 @@ type YearRow = { year: number } & Record<string, number | string>;
 
 const seriesKey = (at: number) => `plan${String(at)}`;
 
-/** A row per year any plan reaches, each plan's `valueOf` its figure under its key. */
+/** A row per year any plan reaches, each plan's `figureOf` its figure under its key. */
 function rowsByYear(
   plans: readonly Charted[],
-  valueOf: (plan: Charted, shown: YearFigure) => number | string,
+  figureOf: (plan: Charted, shown: YearFigure) => number | string,
 ): YearRow[] {
   const years = new Map<number, YearRow>();
   plans.forEach((plan, at) => {
     if (typeof plan.figures === "string") return;
     for (const shown of plan.figures) {
       const row = years.get(shown.year) ?? { year: shown.year };
-      row[seriesKey(at)] = valueOf(plan, shown);
+      row[seriesKey(at)] = figureOf(plan, shown);
       years.set(shown.year, row);
     }
   });

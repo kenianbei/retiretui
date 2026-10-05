@@ -1,3 +1,4 @@
+// biome-ignore lint/suspicious/noDeprecatedImports: only the positional overload is deprecated; the options one is called
 import { useBlocker } from "@tanstack/react-router";
 import type { Editor } from "@wasm/retiretui_wasm.js";
 import { X } from "lucide-react";
@@ -63,9 +64,9 @@ export function FormSheet({
     if (refusal) refused.current?.focus();
   }, [refusal]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the editor changes in place; the count says when
   const views = useMemo(
     () => (document ? editor.view(document, focused ?? undefined) : []),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- the editor changes in place; the count says when
     [editor, document, focused, changes],
   );
 

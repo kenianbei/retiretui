@@ -19,7 +19,7 @@ async function expectFailed(
     .getByRole("link", { name: "report an issue" })
     .getAttribute("href");
   expect(decodeURIComponent(report ?? "")).toMatch(
-    /\/retiretui\/issues\/new\?body=[^]+\nMozilla\//,
+    /\/retiretui\/issues\/new\?body=[\s\S]+\nMozilla\//,
   );
 }
 

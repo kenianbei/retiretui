@@ -58,7 +58,6 @@ const index = createRoute({
   getParentRoute: () => root,
   path: "/",
   beforeLoad: () => {
-    // eslint-disable-next-line @typescript-eslint/only-throw-error -- the router's own redirect
     throw redirect({ to: "/overview" });
   },
 });

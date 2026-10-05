@@ -119,11 +119,8 @@ jobs:
       - name: Build the bindings for a browser
         run: npm run wasm
 
-      - name: Format
-        run: npm run format
-
-      - name: Lint
-        run: npm run lint
+      - name: Format, lint and import order
+        run: npm run check
 
       - name: Type-check
         run: npm run typecheck

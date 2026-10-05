@@ -93,6 +93,7 @@ export function LedgerPage() {
   const table = useRef<HTMLDivElement>(null);
   const details = useRef<HTMLDivElement>(null);
   const isWide = useIsWide();
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the selected row is scrolled to again when the year moves
   useEffect(() => {
     if (!isWide) return;
     table.current
