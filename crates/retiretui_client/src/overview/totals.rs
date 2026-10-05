@@ -24,6 +24,18 @@ pub enum Tool {
     TaxTables,
 }
 
+impl Tool {
+    /// The tool's page as an address names it.
+    #[must_use]
+    pub const fn slug(self) -> &'static str {
+        match self {
+            Self::RothConversions => "roth-conversions",
+            Self::WithdrawalOrder => "withdrawal-order",
+            Self::TaxTables => "tax-tables",
+        }
+    }
+}
+
 /// Where a total leads.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Leads {
@@ -50,13 +62,6 @@ pub struct Total {
 
 const INCOME_KINDS: [&str; 4] = ["salary", "Social Security", "pension", "other"];
 const SPENDING_KINDS: [&str; 3] = ["essential", "flexible", "one-time"];
-/// The classes in the order a household draws on them.
-const CLASSES: [TreatmentClass; 4] = [
-    TreatmentClass::Deferred,
-    TreatmentClass::Taxable,
-    TreatmentClass::Roth,
-    TreatmentClass::Hsa,
-];
 
 /// An amount over the years it was more than nothing.
 #[derive(Default)]
@@ -74,12 +79,12 @@ impl Spanned {
         self.years = Some(self.years.map_or((year, year), |(first, _)| (first, year)));
     }
 
-    /// `what` and its years: "to Roth, 2037 to 2044", "to Roth in 2037".
+    /// `what` and its years: "to Roth, 2037–2044", "to Roth in 2037".
     fn said(&self, what: &str) -> String {
         match self.years {
             None => String::new(),
             Some((first, last)) if first == last => format!("{what} in {first}"),
-            Some((first, last)) => format!("{what}, {first} to {last}"),
+            Some((first, last)) => format!("{what}, {first}–{last}"),
         }
     }
 }
@@ -87,9 +92,10 @@ impl Spanned {
 #[derive(Default)]
 struct Sums {
     income: [Dollars; 4],
+    /// What each class gave up, in the order of [`TreatmentClass::ALL`].
     withdrawn: [Dollars; 4],
     spent: [Dollars; 3],
-    federal: Dollars,
+    taxes: Dollars,
     state: Dollars,
     /// The year that paid the most tax, the first of them on a tie.
     heaviest: Option<(Dollars, i16)>,
@@ -106,18 +112,22 @@ impl Sums {
         }
         for (id, &amount) in &row.withdrawals {
             let class = plan.account(id).map(Account::treatment);
-            if let Some(at) = CLASSES.iter().position(|&each| Some(each) == class) {
+            let mut classes = TreatmentClass::ALL.iter();
+            if let Some(at) = classes.position(|&each| Some(each) == class) {
                 self.withdrawn[at] += dollars(amount);
             }
         }
-        let once = row.expenses - row.expenses_essential - row.expenses_flexible;
-        let spent = [row.expenses_essential, row.expenses_flexible, once];
+        let spent = [
+            row.expenses_essential,
+            row.expenses_flexible,
+            row.expenses_once(),
+        ];
         for (sum, amount) in self.spent.iter_mut().zip(spent) {
             *sum += dollars(amount);
         }
         let taxed = dollars(row.taxes.total);
+        self.taxes += taxed;
         self.state += dollars(row.taxes.state);
-        self.federal += dollars(row.taxes.total - row.taxes.state);
         if taxed > 0 && self.heaviest.is_none_or(|(most, _)| taxed > most) {
             self.heaviest = Some((taxed, row.year));
         }
@@ -130,8 +140,7 @@ impl Sums {
 /// Where an income's kind sits in [`INCOME_KINDS`]; an income the plan does
 /// not state is other.
 fn income_kind(plan: &Plan, id: &str) -> usize {
-    let kind = plan.income.iter().find(|income| income.id == id);
-    match kind.map(|income| income.kind) {
+    match plan.income_source(id).map(|income| income.kind) {
         Some(IncomeKind::Salary) => 0,
         Some(IncomeKind::SocialSecurity) => 1,
         Some(IncomeKind::Pension) => 2,
@@ -157,7 +166,8 @@ fn shares<'a>(parts: impl IntoIterator<Item = (&'a str, Dollars)> + Clone) -> St
 /// Federal and state tax, and the year that paid the most.
 fn taxes_said(sums: &Sums) -> String {
     let mut said = Vec::new();
-    for (name, amount) in [("federal", sums.federal), ("state", sums.state)] {
+    let federal = sums.taxes - sums.state;
+    for (name, amount) in [("federal", federal), ("state", sums.state)] {
         if amount > 0 {
             said.push(format!("{name} {}", compact_money(amount)));
         }
@@ -183,7 +193,7 @@ impl Sums {
     /// What came in, was drawn, was spent and was paid in tax.
     fn flows(&self) -> [Total; 4] {
         let domain = |domain| Some(Leads::Place((domain, None)));
-        let classes = CLASSES.map(treatment_word);
+        let classes = TreatmentClass::ALL.iter().copied().map(treatment_word);
         [
             Total::new(
                 "Income",
@@ -194,7 +204,7 @@ impl Sums {
             Total::new(
                 "Withdrawals",
                 self.withdrawn.iter().sum(),
-                shares(classes.into_iter().zip(self.withdrawn)),
+                shares(classes.zip(self.withdrawn)),
                 Some(Leads::Tool(Tool::WithdrawalOrder)),
             ),
             Total::new(
@@ -205,7 +215,7 @@ impl Sums {
             ),
             Total::new(
                 "Taxes",
-                self.federal + self.state,
+                self.taxes,
                 taxes_said(self),
                 Some(Leads::Tool(Tool::TaxTables)),
             ),
@@ -324,7 +334,7 @@ mod tests {
         assert!(converted.iter().all(|row| row.total_withdrawals() == 0));
         let found = totals(&converting, true);
         assert_eq!(found[4].amount, "$30k");
-        assert_eq!(found[4].made_of, "to Roth, 2026 to 2028");
+        assert_eq!(found[4].made_of, "to Roth, 2026–2028");
     }
 
     #[test]

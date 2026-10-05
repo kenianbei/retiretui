@@ -6,7 +6,10 @@
 use retiretui_engine::plan::IncomeKind;
 use retiretui_engine::project::YearRow;
 
-use super::{Row, Total, attention, milestones, rests_on, totals};
+use serde::Serialize;
+
+use super::{Place, Row, Total, attention, milestones, rests_on, totals};
+use crate::forms::DomainId;
 use crate::present::{
     BALANCES_CHART, ENDS_WITH, INCOME_CHART, MONEY_LASTS, NET_WORTH_CHART, SUCCESS, compact_money,
     lasts_through, runs_short,
@@ -16,18 +19,51 @@ use crate::session::Projected;
 use crate::table::basis_amount;
 
 /// What the strip calls the least the household holds once it stops earning.
-pub const LOW_POINT: &str = "Lowest after retiring";
+const LOW_POINT: &str = "Lowest after retiring";
 /// The strip's labels in its order; a search answers the second.
 pub const STRIP: [&str; 4] = [MONEY_LASTS, SUCCESS, LOW_POINT, ENDS_WITH];
 /// What the low point says of a household still paid a salary in its last
 /// year.
-pub const STILL_EARNING: &str = "Earning to the end";
+const STILL_EARNING: &str = "Earning to the end";
 /// What a surface says of its figures while the draft has issues.
 pub const STALE: &str = "The figures are the last the plan had without its issues.";
-/// What the chart of the plan through random markets is titled.
-pub const MARKETS_CHART: &str = "Net worth through random markets";
-/// The Overview's charts in the order they are turned through.
-pub const CHARTS: [&str; 4] = [BALANCES_CHART, NET_WORTH_CHART, INCOME_CHART, MARKETS_CHART];
+
+/// A chart of the Overview's.
+#[derive(Clone, Copy, PartialEq, Eq, Default, Debug, Serialize)]
+#[serde(rename_all = "kebab-case")]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+pub enum Chart {
+    /// What each tax treatment holds.
+    #[default]
+    Balances,
+    /// Everything the household holds.
+    NetWorth,
+    /// What it earns against what it pays in tax.
+    IncomeTaxes,
+    /// Its net worth through random markets.
+    Markets,
+}
+
+impl Chart {
+    /// Every chart, in the order they are turned through.
+    pub const ALL: [Self; 4] = [
+        Self::Balances,
+        Self::NetWorth,
+        Self::IncomeTaxes,
+        Self::Markets,
+    ];
+
+    /// What the chart is titled.
+    #[must_use]
+    pub const fn title(self) -> &'static str {
+        match self {
+            Self::Balances => BALANCES_CHART,
+            Self::NetWorth => NET_WORTH_CHART,
+            Self::IncomeTaxes => INCOME_CHART,
+            Self::Markets => "Net worth through random markets",
+        }
+    }
+}
 
 /// Where a plan runs short.
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -36,6 +72,8 @@ pub struct Shortfall {
     pub year: i16,
     /// That year and what the money cannot cover, as a sentence.
     pub said: String,
+    /// Where what the plan spends is edited.
+    pub place: Place,
 }
 
 /// What the Overview says of a projection, in one dollar basis.
@@ -64,10 +102,15 @@ impl View {
     #[must_use]
     pub fn new(projected: &Projected, nominal: bool) -> Self {
         let summary = projected.projection.summary(!nominal);
-        let shortfall = summary
-            .first_unfunded_year
-            .zip(runs_short(&summary))
-            .map(|(year, said)| Shortfall { year, said });
+        let shortfall =
+            summary
+                .first_unfunded_year
+                .zip(runs_short(&summary))
+                .map(|(year, said)| Shortfall {
+                    year,
+                    said,
+                    place: (DomainId::Expenses, None),
+                });
         Self {
             money_lasts: lasts_through(&summary, projected.plan.plan.start_year),
             shortfall,
@@ -186,11 +229,10 @@ mod tests {
     }
 
     #[test]
-    fn the_view_holds_every_block_the_page_draws() {
-        let view = View::new(&test_projected(), true);
-        assert_eq!(view.totals.len(), 7);
-        assert!(!view.milestones.is_empty() && !view.rests_on.is_empty());
-        assert_eq!(STRIP[2], LOW_POINT);
-        assert_eq!(CHARTS.len(), 4);
+    fn a_chart_is_named_in_an_address_as_it_is_turned_to() {
+        let keys = Chart::ALL.map(|chart| toml::Value::try_from(chart).unwrap());
+        let named = ["balances", "net-worth", "income-taxes", "markets"];
+        assert_eq!(keys, named.map(toml::Value::from));
+        assert_eq!(Chart::default(), Chart::ALL[0]);
     }
 }

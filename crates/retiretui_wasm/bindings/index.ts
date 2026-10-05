@@ -6,6 +6,7 @@ export type { Band } from "./Band";
 export type { Bases } from "./Bases";
 export type { CeilingOption } from "./CeilingOption";
 export type { Cell } from "./Cell";
+export type { Chart } from "./Chart";
 export type { ChartMark } from "./ChartMark";
 export type { ChartSeries } from "./ChartSeries";
 export type { ChartYear } from "./ChartYear";

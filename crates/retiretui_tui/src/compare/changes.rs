@@ -50,7 +50,7 @@ pub(super) fn refresh_changes(
         }
         *shown = Some((places, width));
         let texts = (lines(&plans, places).into_iter()).map(|line| (line.to_string(), line.style));
-        layout::fill_wrapped(&mut commands, (list, width), texts, |_, _| {});
+        layout::fill_wrapped(&mut commands, (list, width), texts);
         if let Ok(mut framed) = frames.get_mut(pane.parent()) {
             Framed::retitle(&mut framed, &title(&plans, places));
         }

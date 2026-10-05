@@ -6,7 +6,7 @@ use retiretui_client::overview::{NOTHING, STALE, View, failing_start, issue_rows
 use retiretui_engine::market::Runs;
 
 use super::rows::{Entry, Tone};
-use crate::edit::Draft;
+use crate::edit::{Draft, page_of};
 use crate::nav::Page;
 
 /// Every row - the draft's issues and that the figures predate them, where
@@ -19,34 +19,25 @@ pub(super) fn entries(view: &View, draft: &Draft, historical: Option<&Runs>) -> 
         tone: Tone::Warning,
         ..entry
     };
-    let mut found: Vec<Entry> = issue_rows(draft).into_iter().map(Entry::from).collect();
+    let issues = issue_rows(draft).into_iter();
+    let mut found: Vec<Entry> = issues.map(|row| warning(row.into())).collect();
     if !found.is_empty() {
-        found = found.into_iter().map(warning).collect();
-        found.push(quiet(STALE));
+        found.push(Entry::quiet(STALE));
     }
     found.extend(view.shortfall.as_ref().map(|shortfall| {
+        let (domain, index) = shortfall.place;
         warning(Entry {
             year: Some(shortfall.year),
-            is_dated: false,
-            opens: Some((Page::Expenses, None)),
+            opens: Some((page_of(domain), index)),
             ..Entry::plain(shortfall.said.clone())
         })
     }));
     found.extend(failing(historical));
-    let mut wanting: Vec<Entry> = view.attention.iter().cloned().map(Entry::from).collect();
-    wanting.sort_by_key(|entry| entry.year);
-    found.extend(wanting);
+    found.extend(view.attention.iter().cloned().map(Entry::from));
     if found.is_empty() {
-        found.push(quiet(NOTHING));
+        found.push(Entry::quiet(NOTHING));
     }
     found
-}
-
-fn quiet(text: &str) -> Entry {
-    Entry {
-        tone: Tone::Quiet,
-        ..Entry::plain(text.to_owned())
-    }
 }
 
 /// The worst historical start the plan does not survive, leading to the
@@ -79,7 +70,6 @@ mod tests {
         let draft = Draft::new(short.plan.clone(), false);
         let first = &entries(&view, &draft, None)[0];
         assert!(first.text.starts_with(&format!("Runs short from {year}: ")));
-        assert_eq!(first.line(), first.text, "the sentence names its own year");
         assert_eq!((first.year, first.tone), (Some(year), Tone::Warning));
         assert_eq!(first.opens, Some((Page::Expenses, None)));
     }

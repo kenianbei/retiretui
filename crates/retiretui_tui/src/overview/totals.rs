@@ -6,15 +6,19 @@
 use retiretui_client::overview::{Leads, Tool, Total, View};
 use retiretui_client::searches::markets::Assumption;
 
-use super::rows::{Entry, Tone};
+use super::rows::Entry;
 use crate::edit::page_of;
 use crate::layout;
 use crate::nav::Page;
 
-/// The cells a total's label is set in, the longest and a gap.
-const TOTAL_LABEL: usize = 13;
-/// The cells an assumption's label is set in, the longest and a gap.
-const ASSUMED_LABEL: usize = 14;
+/// The cells between a label and what it labels.
+const GAP: usize = 2;
+
+/// The cells a column of `labels` is set in: the longest and the gap.
+fn column<'a>(labels: impl Iterator<Item = &'a str>) -> usize {
+    let longest = labels.map(layout::cells_of).max().unwrap_or(0);
+    usize::from(longest) + GAP
+}
 
 /// Whether a list `rows` tall holds every total of `view` with what it is
 /// made of beneath it.
@@ -44,7 +48,6 @@ fn led(entry: Entry, leads: Option<Leads>) -> Entry {
         },
         Some(Leads::Year(year)) => Entry {
             year: Some(year),
-            is_dated: false,
             ..entry
         },
         None => entry,
@@ -55,9 +58,10 @@ fn led(entry: Entry, leads: Option<Leads>) -> Entry {
 /// what it is made of, leading where the total does.
 pub(super) fn entries(totals: &[Total], is_roomy: bool) -> Vec<Entry> {
     let mut entries = Vec::with_capacity(totals.len() * 2);
+    let width = column(totals.iter().map(|total| total.label));
     for total in totals {
         let figure = Entry {
-            lead: format!("{:<TOTAL_LABEL$}", total.label),
+            label: format!("{:<width$}", total.label),
             ..Entry::plain(total.amount.clone())
         };
         let figure = led(figure, total.leads);
@@ -71,9 +75,8 @@ pub(super) fn entries(totals: &[Total], is_roomy: bool) -> Vec<Entry> {
         entries.push(figure);
         if !total.made_of.is_empty() {
             let made_of = Entry {
-                lead: layout::CONTINUED.to_owned(),
-                tone: Tone::Quiet,
-                ..Entry::plain(total.made_of.clone())
+                label: layout::CONTINUED.to_owned(),
+                ..Entry::quiet(&total.made_of)
             };
             entries.push(led(made_of, total.leads));
         }
@@ -83,8 +86,9 @@ pub(super) fn entries(totals: &[Total], is_roomy: bool) -> Vec<Entry> {
 
 /// A row for each assumption, opening the page it is edited on.
 pub(super) fn assumed(rests_on: &[Assumption]) -> Vec<Entry> {
+    let width = column(rests_on.iter().map(|row| row.label));
     let rows = rests_on.iter().map(|row| Entry {
-        lead: format!("{:<ASSUMED_LABEL$}", row.label),
+        label: format!("{:<width$}", row.label),
         opens: Some((page_of(row.domain), None)),
         ..Entry::plain(row.value.clone())
     });
@@ -93,6 +97,7 @@ pub(super) fn assumed(rests_on: &[Assumption]) -> Vec<Entry> {
 
 #[cfg(test)]
 mod tests {
+    use super::super::rows::Tone;
     use super::*;
     use crate::support::test_projected;
 
@@ -140,10 +145,10 @@ mod tests {
     #[test]
     fn each_assumption_opens_the_page_it_is_edited_on() {
         let rows = assumed(&view().rests_on);
-        assert_eq!(rows[0].lines(40), ["Runs through  2050 · to age 70"]);
+        assert_eq!(rows[0].lines(40), ["Runs through   2050 · to age 70"]);
         assert_eq!(
-            rows[0].lines(24),
-            ["Runs through  2050 · to", "              age 70"],
+            rows[0].lines(25),
+            ["Runs through   2050 · to", "               age 70"],
             "a value too wide hangs under itself"
         );
         assert_eq!(rows[0].opens, Some((Page::Settings, None)));

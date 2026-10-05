@@ -189,7 +189,7 @@ fn the_markets_chart_is_drawn_once_the_runs_answer() {
     }
     let frame = redrawn(&mut app);
     assert!(
-        frame.contains("░░ 10th to 90th  ▒▒ 25th to 75th  ── As planned"),
+        frame.contains("░░ 10th to 90th  ▒▒ 25th to 75th  ── median"),
         "{frame}"
     );
 }
@@ -285,7 +285,7 @@ fn enter_on_an_assumption_opens_the_page_it_is_edited_on() {
     let mut app = headless_app(SIZE);
     hold(&mut app, "Rests on");
     let frame = redrawn(&mut app);
-    assert!(frame.contains("Runs through  2050 · to age 70"), "{frame}");
+    assert!(frame.contains("Runs through   2050 · to age 70"), "{frame}");
     press_key(&mut app, KeyCode::Enter);
     assert_eq!(active_page(&app), Page::Settings);
 }
@@ -326,4 +326,29 @@ fn a_plan_that_runs_short_says_so_first_and_leads_to_the_year_and_the_spending()
     press_key(&mut app, KeyCode::Enter);
     assert_eq!(active_page(&app), Page::Ledger);
     assert_eq!(ledger_year(&mut app), 2026);
+}
+
+/// The ceiling is the Overview's to search, after the rest; its tool takes
+/// the answer in place of searching again.
+#[test]
+fn the_ceiling_row_leads_to_its_tool_which_takes_what_was_found() {
+    let mut app = searched_app(scratch_plan(), TEST_PLAN, ROOMY);
+    let plan = app
+        .world()
+        .resource::<crate::session::Projected>()
+        .plan
+        .clone();
+    let answers = toml::Table::new();
+    let better = app.world().resource::<super::Better>();
+    let found = better.spending(&plan, &answers).expect("searched").clone();
+    hold(&mut app, "Could do better");
+    let frame = redrawn(&mut app);
+    assert!(frame.contains(" in 90% of markets"), "{frame}");
+    press_key(&mut app, KeyCode::End);
+    press_key(&mut app, KeyCode::Enter);
+    assert_eq!(active_page(&app), Page::SpendingCeiling);
+    app.update();
+    let tool = app.world().resource::<crate::tools::spending::Spending>();
+    assert!(!tool.is_running(), "it searches nothing again");
+    assert_eq!(tool.found(), Some(&found));
 }

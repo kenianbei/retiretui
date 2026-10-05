@@ -40,22 +40,20 @@ pub fn row_width(scroll: ScrollArea, area: ComputedWidgetArea) -> u16 {
 }
 
 /// Replaces `list`'s rows with a row per line each of `texts` wraps to at
-/// `width` - one too wide running on to indented lines - each `tag`ged
-/// with the place of the text it comes from; the cursor on the first.
+/// `width` - one too wide running on to indented lines - the cursor on the
+/// first, and says how many rows that is.
 pub fn fill_wrapped(
     commands: &mut Commands,
     (list, width): (Entity, u16),
     texts: impl IntoIterator<Item = (String, Style)>,
-    tag: impl FnMut(usize, &mut EntityCommands),
-) {
-    let lines = texts
-        .into_iter()
-        .enumerate()
-        .flat_map(|(at, (text, style))| {
-            let broken = wrapped(&text, width, CONTINUED).into_iter();
-            broken.map(move |line| (at, line, style))
-        });
-    fill_lines(commands, list, lines, tag);
+) -> usize {
+    let mut rows = 0;
+    let lines = texts.into_iter().flat_map(|(text, style)| {
+        let broken = wrapped(&text, width, CONTINUED).into_iter();
+        broken.map(move |line| (0, line, style))
+    });
+    fill_lines(commands, list, lines.inspect(|_| rows += 1), |_, _| {});
+    rows
 }
 
 /// Replaces `list`'s rows with a row per line of `lines`, each `tag`ged

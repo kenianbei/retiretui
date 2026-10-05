@@ -25,9 +25,7 @@ use retiretui_engine::plan::Plan;
 
 use super::markets::MarketHistory;
 use super::options::{self, CURRENT_PLAN, Laid, OptionsTable, say_instead, spawn_table};
-use super::{
-    Found, HelpLine, NOTHING_SEARCHED_YET, Searches, Tool, ToolPage, show_help, write, writes_it,
-};
+use super::{Found, HelpLine, NOTHING_SEARCHED_YET, Tool, ToolPage, show_help, write, writes_it};
 use crate::command::{Keymap, Outcome, TAKE_SPENDING, WRITE_SPENDING};
 use crate::confirm::{Answer, Confirm};
 use crate::documents::{Browsing, Pickers};
@@ -36,6 +34,7 @@ use crate::hints::Hints;
 use crate::journal;
 use crate::layout::{self, filling, placed};
 use crate::nav::{self, FocusStop, Page, ShownSurface};
+use crate::overview::Better;
 use crate::pane::Pane;
 use crate::present::MoneyForm;
 use crate::session::Session;
@@ -65,13 +64,10 @@ pub fn plugin(app: &mut App) {
     app.add_systems(
         Update,
         (
-            search_by_itself
-                .before(super::poll_search::<Ceilings>)
-                .run_if(is_asked),
-            say_help
-                .before(Repainted)
-                .run_if(nav::shows(Page::SpendingCeiling)),
-        ),
+            search_by_itself.before(super::poll_search::<Ceilings>),
+            say_help.before(Repainted),
+        )
+            .run_if(nav::shows(Page::SpendingCeiling)),
     );
     app.add_systems(
         Update,
@@ -166,22 +162,11 @@ impl Tool<Ceilings> {
     }
 }
 
-/// Whether a page on show asks for the ceiling: this one, or the Overview
-/// while it searches, which says the ceiling at the target among what
-/// could do better.
-fn is_asked(shown: ShownSurface, searches: Res<Searches>) -> bool {
-    match shown.surface() {
-        Some(Page::SpendingCeiling) => true,
-        Some(Page::Overview) => searches.0,
-        _ => false,
-    }
-}
-
-/// Searches whenever the page or the Overview shows a valid draft whose
-/// plan or target differs from the last searched, stopping a search under
-/// way.
+/// Searches whenever the page shows a valid draft whose plan or target
+/// differs from the last searched, stopping a search under way, and takes
+/// instead what the Overview has already found over the same.
 fn search_by_itself(
-    (draft, session, history): (Res<Draft>, Res<Session>, Res<MarketHistory>),
+    (draft, session, history, better): (Res<Draft>, Res<Session>, Res<MarketHistory>, Res<Better>),
     shown: ShownSurface,
     mut searched: Local<Option<(Plan, toml::Table)>>,
     mut tool: ResMut<Spending>,
@@ -193,6 +178,11 @@ fn search_by_itself(
 
     let is_same = |(plan, held): &(Plan, toml::Table)| *plan == draft.plan && *held == answers;
     if !super::is_due(&draft, searched.as_ref(), is_same) {
+        return;
+    }
+    if let Some(found) = better.spending(&draft.plan, &answers) {
+        *searched = Some((draft.plan.clone(), answers));
+        tool.take(found.clone());
         return;
     }
     let target = spending::target_in(answers.clone());

@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import {
+  type Chart,
   type ChartMark,
   type ChartSeries,
   compactMoney,
@@ -35,13 +36,11 @@ import {
   PLOT_SIZE,
   SERIES,
 } from "@/overview/bands";
-import { CHART_KEYS, type ChartKey, FIRST_CHART } from "@/overview/search";
+import { FIRST_CHART } from "@/overview/search";
 import { BASIS_LABEL, metricTitle, VIEW_WORDS } from "@/overview/view-words";
 import type { Basis } from "@/overview/words";
 import { useMarkets } from "@/searches";
 import { keptSearch } from "@/year/search";
-
-const [BALANCES, NET_WORTH_TITLE, INCOME, MARKETS] = VIEW_WORDS.charts;
 
 const FOREGROUND = "var(--foreground)";
 const MUTED = "var(--muted-foreground)";
@@ -227,7 +226,7 @@ function Balances(props: ChartsProps) {
       marks={props.series.marks}
       config={config}
       data={data}
-      label={BALANCES}
+      label={titleOf("balances")}
     >
       {series.classes.map((_, at) => (
         <Area
@@ -257,7 +256,7 @@ function NetWorth(props: ChartsProps) {
       marks={props.series.marks}
       config={NET_WORTH}
       data={props.series.years}
-      label={NET_WORTH_TITLE}
+      label={titleOf("net-worth")}
     >
       {seriesLine("net_worth")}
     </Plot>
@@ -276,7 +275,7 @@ function IncomeAndTax(props: ChartsProps) {
       marks={props.series.marks}
       config={INCOME_AND_TAX}
       data={props.series.years}
-      label={INCOME}
+      label={titleOf("income-taxes")}
     >
       {seriesLine("income")}
       {seriesLine("taxes")}
@@ -318,7 +317,7 @@ function Bands(props: ChartsProps & { plan: string }) {
       marks={props.series.marks}
       config={config}
       data={data}
-      label={MARKETS}
+      label={titleOf("markets")}
     >
       {bandAreas()}
       {seriesLine("median")}
@@ -326,21 +325,24 @@ function Bands(props: ChartsProps & { plan: string }) {
   );
 }
 
-const CHARTS: Record<
-  ChartKey,
-  { title: string; Chart: (props: ChartsProps) => ReactNode }
-> = {
-  balances: { title: BALANCES, Chart: Balances },
-  "net-worth": { title: NET_WORTH_TITLE, Chart: NetWorth },
-  income: { title: INCOME, Chart: IncomeAndTax },
-  markets: { title: MARKETS, Chart: MarketRuns },
+/** What draws each chart the client names. */
+const DRAWN: Record<Chart, (props: ChartsProps) => ReactNode> = {
+  balances: Balances,
+  "net-worth": NetWorth,
+  "income-taxes": IncomeAndTax,
+  markets: MarketRuns,
 };
 
+/** What the client titles `chart`. */
+function titleOf(chart: Chart): string {
+  return VIEW_WORDS.charts.find(([key]) => key === chart)?.[1] ?? chart;
+}
+
 /** The charts as tabs, the one on show marked. */
-function ChartTabs({ shown }: { shown: ChartKey }) {
+function ChartTabs({ shown }: { shown: Chart }) {
   return (
     <nav aria-label="Chart" className="flex flex-wrap gap-1">
-      {CHART_KEYS.map((key) => (
+      {VIEW_WORDS.charts.map(([key, title]) => (
         <Link
           key={key}
           to="/overview"
@@ -357,7 +359,7 @@ function ChartTabs({ shown }: { shown: ChartKey }) {
               : "text-muted-foreground hover:bg-muted",
           )}
         >
-          {CHARTS[key].title}
+          {title}
         </Link>
       ))}
     </nav>
@@ -369,19 +371,16 @@ function ChartTabs({ shown }: { shown: ChartKey }) {
  * it: one chart at a time, turned by its tabs, a click on a year opening
  * it in the Ledger, which is every chart's table.
  */
-export function PlanChart({
-  chart,
-  ...props
-}: ChartsProps & { chart: ChartKey }) {
-  const { title, Chart } = CHARTS[chart];
+export function PlanChart({ chart, ...props }: ChartsProps & { chart: Chart }) {
+  const Drawn = DRAWN[chart];
   const unit = BASIS_LABEL[chart === "markets" ? "today" : props.basis];
   return (
     <ChartSection
-      title={title}
+      title={titleOf(chart)}
       unit={`${unit} · click a year to open it in the Ledger`}
       controls={<ChartTabs shown={chart} />}
     >
-      <Chart {...props} />
+      <Drawn {...props} />
       <Link
         to="/ledger"
         search={(kept) => keptSearch(kept, ["year", "basis", "held"])}

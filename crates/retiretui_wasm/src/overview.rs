@@ -3,7 +3,7 @@
 //! years add up to and what the projection rests on.
 
 use retiretui_client::forms::DomainId;
-use retiretui_client::overview::{Leads, Row, Tool, Total, View};
+use retiretui_client::overview::{Leads, Row, Total, View};
 use retiretui_client::session::Projected;
 use serde::Serialize;
 use wasm_bindgen::prelude::{JsError, JsValue, wasm_bindgen};
@@ -88,16 +88,20 @@ pub struct OverviewView {
     pub rests_on: Vec<AssumptionRow>,
 }
 
-fn row_of(row: Row) -> OverviewRow {
-    let place = row.place.map(|(domain, index)| Place {
+/// A domain's page, and the item of its table where it has one.
+fn place_of((domain, index): (DomainId, Option<usize>)) -> Place {
+    Place {
         domain: slug_of(domain),
         index,
         field: None,
-    });
+    }
+}
+
+fn row_of(row: Row) -> OverviewRow {
     OverviewRow {
         text: row.text,
         year: row.year,
-        place,
+        place: row.place.map(place_of),
     }
 }
 
@@ -105,23 +109,10 @@ fn rows(rows: Vec<Row>) -> Vec<OverviewRow> {
     rows.into_iter().map(row_of).collect()
 }
 
-/// The address of a tool's page.
-const fn tool_page(tool: Tool) -> &'static str {
-    match tool {
-        Tool::RothConversions => "roth-conversions",
-        Tool::WithdrawalOrder => "withdrawal-order",
-        Tool::TaxTables => "tax-tables",
-    }
-}
-
 fn total_of(total: Total) -> OverviewTotal {
     let leads = total.leads.map(|leads| match leads {
-        Leads::Place((domain, index)) => TotalLeads::Place(Place {
-            domain: slug_of(domain),
-            index,
-            field: None,
-        }),
-        Leads::Tool(tool) => TotalLeads::Tool(tool_page(tool)),
+        Leads::Place(place) => TotalLeads::Place(place_of(place)),
+        Leads::Tool(tool) => TotalLeads::Tool(tool.slug()),
         Leads::Year(year) => TotalLeads::Year(year),
     });
     OverviewTotal {
@@ -140,7 +131,7 @@ fn overview_view(projected: &Projected, nominal: bool) -> OverviewView {
         shortfall: view.shortfall.map(|shortfall| Shortfall {
             year: shortfall.year,
             said: shortfall.said,
-            expenses: slug_of(DomainId::Expenses),
+            expenses: slug_of(shortfall.place.0),
         }),
         low_point: view.low_point,
         ends_with: view.ends_with,

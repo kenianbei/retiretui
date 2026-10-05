@@ -1,71 +1,17 @@
 import { Link } from "@tanstack/react-router";
-import type {
-  AssumptionRow,
-  OverviewTotal,
-  TotalLeads,
-} from "@wasm/retiretui_wasm.js";
-import { ChevronRight } from "lucide-react";
-import type { ReactNode } from "react";
+import type { AssumptionRow, OverviewTotal } from "@wasm/retiretui_wasm.js";
 
-import { pageOf, TOOLS } from "@/nav";
-import { Rows } from "@/overview/lists";
+import { RowContent, Rows, ToolRow } from "@/overview/lists";
 import { ROW } from "@/overview/row";
 import { BASIS_LABEL, VIEW_WORDS } from "@/overview/view-words";
 import type { Basis } from "@/overview/words";
 import { placeSearch } from "@/plan/search";
 import { YearInLedger } from "@/year/ledger-link";
-import { keptSearch } from "@/year/search";
-
-/** Where a total's row leads, in words a reader is told. */
-function destinationOf(leads: TotalLeads): string {
-  if ("tool" in leads) return `in ${pageOf(TOOLS, leads.tool).title}`;
-  return "year" in leads ? "in the Ledger" : "in the plan";
-}
-
-/** A total's row as a link to where it leads. */
-function Leading({
-  leads,
-  children,
-}: {
-  leads: TotalLeads;
-  children: ReactNode;
-}) {
-  if ("year" in leads) {
-    return (
-      <YearInLedger year={leads.year} className={ROW}>
-        {children}
-      </YearInLedger>
-    );
-  }
-  if ("tool" in leads) {
-    return (
-      <Link
-        to="/tools/$page"
-        params={{ page: leads.tool }}
-        search={(kept) => keptSearch(kept, ["basis", "held"])}
-        className={ROW}
-      >
-        {children}
-      </Link>
-    );
-  }
-  const { domain, index } = leads.place;
-  return (
-    <Link
-      to="/plan/$page"
-      params={{ page: domain }}
-      search={index === null ? {} : { item: index }}
-      className={ROW}
-    >
-      {children}
-    </Link>
-  );
-}
 
 /** A total: what it sums beside the sum, over what it is made of. */
-function TotalRow({ total }: { total: OverviewTotal }) {
-  const said = (
-    <span className="min-w-0 flex-1">
+function TotalSaid({ total }: { total: OverviewTotal }) {
+  return (
+    <>
       <span className="flex items-baseline justify-between gap-3">
         <span>{total.label}</span>
         <span className="font-semibold tabular-nums">{total.amount}</span>
@@ -75,17 +21,43 @@ function TotalRow({ total }: { total: OverviewTotal }) {
           {total.made_of}
         </span>
       )}
-    </span>
+    </>
   );
-  if (total.leads === null) {
-    return <p className="flex min-h-11 px-4 py-2.5 text-sm">{said}</p>;
+}
+
+/** A total's row, leading to its tool, its year in the Ledger or its page; nowhere where it leads none. */
+function TotalRow({ total }: { total: OverviewTotal }) {
+  const { leads } = total;
+  const said = <TotalSaid total={total} />;
+  if (leads === null) {
+    return (
+      <li className="px-4 py-2.5 text-sm">
+        <span className="block">{said}</span>
+      </li>
+    );
   }
+  if ("tool" in leads) return <ToolRow page={leads.tool}>{said}</ToolRow>;
+  if ("year" in leads) {
+    return (
+      <li>
+        <YearInLedger year={leads.year} className={ROW}>
+          <RowContent text={said} destination="in the Ledger" />
+        </YearInLedger>
+      </li>
+    );
+  }
+  const { domain, index } = leads.place;
   return (
-    <Leading leads={total.leads}>
-      {said}
-      <span className="sr-only">, {destinationOf(total.leads)}</span>
-      <ChevronRight aria-hidden className="text-muted-foreground size-4" />
-    </Leading>
+    <li>
+      <Link
+        to="/plan/$page"
+        params={{ page: domain }}
+        search={index === null ? {} : { item: index }}
+        className={ROW}
+      >
+        <RowContent text={said} destination="in the plan" />
+      </Link>
+    </li>
   );
 }
 
@@ -107,9 +79,7 @@ export function OverThePlan({
       </div>
       <Rows>
         {totals.map((total) => (
-          <li key={total.label}>
-            <TotalRow total={total} />
-          </li>
+          <TotalRow key={total.label} total={total} />
         ))}
       </Rows>
     </section>
@@ -137,14 +107,7 @@ export function RestsOn({ rows }: { rows: readonly AssumptionRow[] }) {
                 <span className="text-muted-foreground w-28 shrink-0">
                   {row.label}
                 </span>
-                <span className="min-w-0 flex-1">
-                  {row.value}
-                  <span className="sr-only">, in the plan</span>
-                </span>
-                <ChevronRight
-                  aria-hidden
-                  className="text-muted-foreground size-4"
-                />
+                <RowContent text={row.value} destination="in the plan" />
               </Link>
             </li>
           );

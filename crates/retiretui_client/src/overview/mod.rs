@@ -18,7 +18,7 @@ pub use attention::{FailingStart, NOTHING, attention, failing_start, issue_rows}
 pub use milestones::milestones;
 pub use rests::{RESTS_ON, rests_on};
 pub use totals::{Leads, OVER_THE_PLAN, Tool, Total, totals};
-pub use view::{CHARTS, LOW_POINT, MARKETS_CHART, STALE, STILL_EARNING, STRIP, Shortfall, View};
+pub use view::{Chart, STALE, STRIP, Shortfall, View};
 
 /// What the Overview titles its lists.
 pub const ATTENTION: &str = "Needs attention";

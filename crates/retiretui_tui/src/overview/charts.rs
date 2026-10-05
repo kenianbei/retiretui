@@ -10,14 +10,14 @@ use plurimus::core::UiWidget;
 use plurimus::core::ratatui_core::style::Style;
 use plurimus::ui::{ComputedWidgetArea, PointerPress};
 use retiretui_client::ledger::salary_marks;
-use retiretui_client::overview::CHARTS;
+use retiretui_client::overview::Chart;
 use retiretui_client::present::treatment_word;
-use retiretui_engine::market::Runs;
-use retiretui_engine::plan::{Dollars, TreatmentClass};
-use retiretui_engine::project::{ClassTotals, Projection};
+use retiretui_engine::market::{BAND_PERCENTILES, Band};
+use retiretui_engine::plan::TreatmentClass;
+use retiretui_engine::project::{Projection, YearRow};
 
 use super::key::{ChartKey, Keyed, line_swatch, swatch};
-use crate::chart::{KeyedBeside, Mark, Series, SeriesChart, Shade};
+use crate::chart::{Legend, Mark, Series, SeriesChart, Shade};
 use crate::command::Outcome;
 use crate::edit::Turn;
 use crate::hints::Hints;
@@ -29,7 +29,7 @@ use crate::session::{LedgerRun, Projected, Shown};
 use crate::success::Successes;
 use crate::table::basis_amount;
 use crate::theme::Theme;
-use crate::tools::markets::chart::{INNER, INNER_BAND, OUTER, OUTER_BAND, PLANNED, band, line};
+use crate::tools::markets::chart::{INNER, INNER_BAND, OUTER, OUTER_BAND, band};
 use crate::tools::{EnterRuns, handle_enter};
 
 /// Which of the theme's series colours each dataset is drawn in.
@@ -37,48 +37,21 @@ const WORTH_SERIES: usize = 0;
 const INCOME_SERIES: usize = 1;
 const TAXES_SERIES: usize = 2;
 
-/// What the chart shows.
-#[derive(Clone, Copy, PartialEq, Eq, Default, Debug)]
-pub(crate) enum View {
-    #[default]
-    Balances,
-    NetWorth,
-    IncomeTaxes,
-    Markets,
-}
-
-impl View {
-    const ALL: [Self; 4] = [
-        Self::Balances,
-        Self::NetWorth,
-        Self::IncomeTaxes,
-        Self::Markets,
-    ];
-
-    fn next(self) -> Self {
-        Self::ALL[(self as usize + 1) % Self::ALL.len()]
-    }
-
-    const fn title(self) -> &'static str {
-        CHARTS[self as usize]
-    }
-}
-
+/// The chart on show.
 #[derive(Resource, Default)]
-pub(crate) struct ChartView(pub(crate) View);
+pub(crate) struct ChartView(pub(crate) Chart);
 
 #[derive(Component)]
 pub(crate) struct OverviewChart;
 
 pub(super) fn spawn(commands: &mut Commands, band: Entity, share: f32) {
-    let pane = Pane::new(View::default().title())
+    let pane = Pane::new(Chart::default().title())
         .sharing(share)
         .spawn(commands, band);
     let ledger = Page::Ledger.label();
     commands
         .spawn((
             OverviewChart,
-            KeyedBeside,
             SeriesChart::default(),
             FocusStop,
             EnterRuns(ledger),
@@ -99,7 +72,8 @@ pub(super) fn spawn(commands: &mut Commands, band: Entity, share: f32) {
 
 /// The `overview-chart` command: the chart's next view.
 pub(crate) fn cycle_chart(mut view: ResMut<ChartView>) -> Outcome {
-    view.0 = view.0.next();
+    let turned = Chart::ALL.iter().position(|&chart| chart == view.0);
+    view.0 = Chart::ALL[turned.map_or(0, |at| (at + 1) % Chart::ALL.len())];
     Outcome::Done
 }
 
@@ -136,28 +110,28 @@ pub(super) fn refresh(
         || shown.basis.is_changed()
         || theme.is_changed()
         || view.is_changed()
-        || (view.0 == View::Markets && successes.is_changed());
+        || (view.0 == Chart::Markets && successes.is_changed());
     if !is_drawn {
         return;
     }
     let (projection, nominal) = (&shown.projected.projection, shown.basis.nominal);
     let (drawn, keyed) = match view.0 {
-        View::Balances => balances(projection, nominal, &theme),
-        View::NetWorth => lines(vec![net_worth(projection, nominal, &theme)], &theme),
-        View::IncomeTaxes => lines(income_taxes(projection, nominal, &theme), &theme),
-        View::Markets => match successes.runs(&shown.projected.plan) {
-            Some(runs) => markets(runs, &theme),
+        Chart::Balances => balances(projection, nominal, &theme),
+        Chart::NetWorth => lines(vec![net_worth(projection, nominal, &theme)], &theme),
+        Chart::IncomeTaxes => lines(income_taxes(projection, nominal, &theme), &theme),
+        Chart::Markets => match successes.bands(&shown.projected.plan) {
+            Some(bands) => markets(bands, &theme),
             None => (SeriesChart::default(), Vec::new()),
         },
     };
     // The runs are kept in today's dollars alone.
-    let basis = present::basis_name(nominal && view.0 != View::Markets);
+    let basis = present::basis_name(nominal && view.0 != Chart::Markets);
     let title = format!("{} · {basis}", view.0.title());
     let marks = marks(&shown.projected, &theme);
     for (mut chart, pane) in &mut charts {
         *chart = SeriesChart {
             marks: marks.clone(),
-            is_legend_hidden: true,
+            legend: Legend::Keyed,
             ..drawn.clone()
         };
         if let Ok(mut framed) = frames.get_mut(pane.parent()) {
@@ -178,11 +152,11 @@ pub(super) fn refresh(
 /// The tax treatments stacked from the bottom, each shaded in a glyph of
 /// its own and read from a year's totals. The HSA, usually the smallest,
 /// lies along the axis where no line crosses it.
-const CLASSES: [(TreatmentClass, &str, fn(&ClassTotals) -> Dollars); 4] = [
-    (TreatmentClass::Hsa, "█", |totals| totals.hsa),
-    (TreatmentClass::Deferred, "░", |totals| totals.deferred),
-    (TreatmentClass::Roth, "▒", |totals| totals.roth),
-    (TreatmentClass::Taxable, "▓", |totals| totals.taxable),
+const CLASSES: [(TreatmentClass, &str); 4] = [
+    (TreatmentClass::Hsa, "█"),
+    (TreatmentClass::Deferred, "░"),
+    (TreatmentClass::Roth, "▒"),
+    (TreatmentClass::Taxable, "▓"),
 ];
 
 /// Each treatment's balance stacked on those under it, a band each in its
@@ -198,10 +172,8 @@ pub(super) fn balances(
     let mut shades = Vec::with_capacity(CLASSES.len());
     let mut keyed = Vec::with_capacity(CLASSES.len());
     let mut lows: Vec<f64> = vec![0.0; projection.years.len()];
-    for (place, (class, symbol, value)) in CLASSES.iter().enumerate() {
-        let held = |row: &retiretui_engine::project::YearRow| {
-            basis_amount(value(&row.class_totals), row.deflator, nominal)
-        };
+    for (place, &(class, symbol)) in CLASSES.iter().enumerate() {
+        let held = |row: &YearRow| basis_amount(row.class_totals.get(class), row.deflator, nominal);
         let points = (projection.years.iter().zip(&mut lows))
             .map(|(row, low)| {
                 let high = *low + held(row) as f64;
@@ -213,7 +185,7 @@ pub(super) fn balances(
         let color = theme.series(place);
         keyed.push(Keyed {
             swatch: swatch(symbol, Style::new().fg(color)),
-            label: treatment_word(*class).to_owned(),
+            label: treatment_word(class).to_owned(),
             reads: (projection.years.iter())
                 .map(|row| (row.year, held(row), held(row)))
                 .collect(),
@@ -270,29 +242,41 @@ fn net_worth(projection: &Projection, nominal: bool, theme: &Theme) -> Series {
     )
 }
 
-/// The plan's net worth through `runs`, as the Monte Carlo tool charts
-/// it: the bands most runs fall in, under the plan's own market.
-pub(super) fn markets(runs: &Runs, theme: &Theme) -> (SeriesChart, Vec<Keyed>) {
-    let planned = line(runs, PLANNED, &runs.planned, theme);
-    let between = |(low, high): (usize, usize), symbol: &str, label: &str| Keyed {
+/// The plan's net worth through random markets: the `bands` most runs
+/// fall in, as the Monte Carlo tool shades them, under the median's line.
+pub(super) fn markets(bands: &[Band], theme: &Theme) -> (SeriesChart, Vec<Keyed>) {
+    let median = Series {
+        label: "median".to_owned(),
+        color: theme.series(WORTH_SERIES),
+        points: (bands.iter())
+            .map(|band| (f64::from(band.year), band.net_worth[MEDIAN] as f64))
+            .collect(),
+    };
+    let between = |(low, high): (usize, usize), symbol: &str| Keyed {
         swatch: swatch(symbol, Style::new().fg(theme.dim)),
-        label: label.to_owned(),
-        reads: (runs.bands.iter())
+        label: format!(
+            "{}th to {}th",
+            BAND_PERCENTILES[low], BAND_PERCENTILES[high]
+        ),
+        reads: (bands.iter())
             .map(|band| (band.year, band.net_worth[low], band.net_worth[high]))
             .collect(),
     };
     let keyed = vec![
-        between(OUTER_BAND, OUTER, "10th to 90th"),
-        between(INNER_BAND, INNER, "25th to 75th"),
-        Keyed::of(line_swatch(Style::new().fg(planned.color)), &planned),
+        between(OUTER_BAND, OUTER),
+        between(INNER_BAND, INNER),
+        Keyed::of(line_swatch(Style::new().fg(median.color)), &median),
     ];
     let shades = vec![
-        band(runs, OUTER_BAND, OUTER, theme),
-        band(runs, INNER_BAND, INNER, theme),
+        band(bands, OUTER_BAND, OUTER, theme),
+        band(bands, INNER_BAND, INNER, theme),
     ];
-    let chart = SeriesChart::of(vec![planned], theme.dimmed()).shaded(shades);
+    let chart = SeriesChart::of(vec![median], theme.dimmed()).shaded(shades);
     (chart, keyed)
 }
+
+/// Where the median sits among [`BAND_PERCENTILES`].
+const MEDIAN: usize = 2;
 
 /// Where each earner's salary ends.
 fn marks(projected: &Projected, theme: &Theme) -> Vec<Mark> {
@@ -387,17 +371,5 @@ end = { date = 2030-12-31 }
         let later_deflated = todays.series[0].points[5];
         assert!(later.1 > later_deflated.1);
         assert!(nominal.y_bounds[1] >= later.1);
-    }
-
-    #[test]
-    fn v_turns_through_the_four_charts_in_the_client_s_order() {
-        let mut view = View::default();
-        let mut titles = Vec::new();
-        for _ in 0..CHARTS.len() {
-            titles.push(view.title());
-            view = view.next();
-        }
-        assert_eq!(titles, CHARTS);
-        assert_eq!(view, View::default(), "and back to the first");
     }
 }

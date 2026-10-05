@@ -269,15 +269,19 @@ fn a_year_keeps_its_essential_and_flexible_spending_apart() {
         .iter()
         .find(|row| row.year == 2030)
         .unwrap();
-    let once = roof_year.expenses - roof_year.expenses_essential - roof_year.expenses_flexible;
+    let once = roof_year.expenses_once();
     assert_eq!(
         roof_year.expenses_essential, 12_000,
         "the mortgage never grows"
     );
     assert!(once >= 25_000, "the roof, grown to its year: {once}");
     for row in projection.years.iter().filter(|row| row.year != 2030) {
-        let parts = row.expenses_essential + row.expenses_flexible;
-        assert_eq!(parts, row.expenses, "nothing is spent once in {}", row.year);
+        assert_eq!(
+            row.expenses_once(),
+            0,
+            "nothing is spent once in {}",
+            row.year
+        );
         assert!(row.expenses_flexible >= 40_000, "living and travel, grown");
     }
 }
@@ -291,9 +295,10 @@ fn an_essential_expense_spent_once_is_essential_and_nothing_marked_is_flexible()
         .iter()
         .find(|row| row.year == 2030)
         .unwrap();
-    assert_eq!(
-        roof_year.expenses_essential + roof_year.expenses_flexible,
-        roof_year.expenses
+    assert_eq!(roof_year.expenses_once(), 0);
+    assert!(
+        roof_year.expenses_essential > 12_000 + 25_000,
+        "the mortgage and the roof"
     );
 
     let unmarked = RETIREE.replace("essential = true\n", "");

@@ -4,7 +4,7 @@
 use bevy_app::{App, Update};
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
 use bevy_ecs::hierarchy::ChildOf;
-use bevy_ecs::prelude::{Component, Has, On, Query, Ref, Res, ResMut};
+use bevy_ecs::prelude::{Component, On, Query, Ref, Res, ResMut};
 use plurimus::core::ratatui_core::buffer::Buffer;
 use plurimus::core::ratatui_core::layout::{Position, Rect};
 use plurimus::core::ratatui_core::style::{Color, Style};
@@ -55,9 +55,21 @@ pub struct SeriesChart {
     pub marks: Vec<Mark>,
     /// Bands shaded under the lines.
     pub shades: Vec<Shade>,
-    /// Whether the lines go unnamed on the chart, something beside it
-    /// naming them instead.
-    pub is_legend_hidden: bool,
+    /// Where the lines are named.
+    pub legend: Legend,
+}
+
+/// Where a chart's lines are named.
+#[derive(Clone, Copy, PartialEq, Eq, Default, Debug)]
+pub enum Legend {
+    /// On the chart.
+    #[default]
+    Inline,
+    /// Not on it: something beside it names them.
+    Hidden,
+    /// In a key beside it that also reads them out under the pointer, so
+    /// the chart's pane notes the year alone.
+    Keyed,
 }
 
 #[derive(Clone)]
@@ -134,7 +146,7 @@ impl SeriesChart {
             axis,
             marks: Vec::new(),
             shades: Vec::new(),
-            is_legend_hidden: false,
+            legend: Legend::Inline,
         }
     }
 
@@ -251,10 +263,10 @@ impl Widget for &SeriesChart {
                     .bounds(self.y_bounds)
                     .labels(self.y_labels.iter().map(String::as_str)),
             );
-        if self.is_legend_hidden {
-            chart.legend_position(None).render(area, buf);
-        } else {
+        if self.legend == Legend::Inline {
             chart.render(area, buf);
+        } else {
+            chart.legend_position(None).render(area, buf);
         }
         marks::draw_labels(self, area, buf);
     }
@@ -268,29 +280,19 @@ pub(crate) fn draw_charts(mut charts: Query<(Ref<SeriesChart>, &mut UiWidget)>) 
     }
 }
 
-/// A chart whose values something beside it reads out, so its pane notes
-/// the year alone.
-#[derive(Component)]
-pub struct KeyedBeside;
-
 /// The pane of the chart under the pointer notes the year and the values
 /// there; every other pane's note is cleared.
 fn read_out(
     cursor: Res<CursorCell>,
-    charts: Query<(
-        Ref<SeriesChart>,
-        &ComputedWidgetArea,
-        &ChildOf,
-        Has<KeyedBeside>,
-    )>,
+    charts: Query<(Ref<SeriesChart>, &ComputedWidgetArea, &ChildOf)>,
     mut frames: Query<&mut Framed>,
 ) {
     if !cursor.is_changed() && !charts.iter().any(|(chart, ..)| chart.is_changed()) {
         return;
     }
-    for (chart, area, parent, is_keyed) in &charts {
+    for (chart, area, parent) in &charts {
         let read = |cell| {
-            if is_keyed {
+            if chart.legend == Legend::Keyed {
                 Some(chart.year_at(area.0, cell)?.to_string())
             } else {
                 chart.read_at(area.0, cell)

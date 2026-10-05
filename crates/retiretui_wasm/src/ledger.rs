@@ -7,7 +7,7 @@ use retiretui_client::ledger::{
     income_and_tax, ledger_headers, salary_marks,
 };
 use retiretui_client::overview::{
-    ATTENTION, CHARTS, MILESTONES, NOTHING, OVER_THE_PLAN, RESTS_ON, STALE, STRIP,
+    ATTENTION, Chart, MILESTONES, NOTHING, OVER_THE_PLAN, RESTS_ON, STALE, STRIP,
 };
 use retiretui_client::present::{MoneyForm, basis_name, compact_money, money, treatment_word};
 use retiretui_client::replies::year_row;
@@ -281,9 +281,9 @@ pub struct ViewWords {
     pub income_and_tax: &'static str,
     /// What a year has the household do.
     pub to_do: &'static str,
-    /// The Overview's charts, in the order they are turned through: the
-    /// balances, net worth, income against taxes, and the random markets.
-    pub charts: [&'static str; 4],
+    /// The Overview's charts in the order they are turned through, each
+    /// beside its title.
+    pub charts: Vec<(Chart, &'static str)>,
     /// The Overview's strip: how long the money lasts, how surely, the
     /// least it holds once it stops earning, and what it ends with.
     pub strip: [&'static str; 4],
@@ -316,7 +316,7 @@ pub fn view_words() -> Result<JsValue, JsError> {
         flow_headers: FLOW_HEADERS,
         income_and_tax: INCOME_AND_TAX,
         to_do: TO_DO,
-        charts: CHARTS,
+        charts: Chart::ALL.map(|chart| (chart, chart.title())).to_vec(),
         strip: STRIP,
         over_the_plan: OVER_THE_PLAN,
         rests_on: RESTS_ON,

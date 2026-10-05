@@ -30,7 +30,6 @@ use crate::present;
 use crate::session::{LedgerRun, RowYear, Shown, YearCursor};
 use crate::theme::Theme;
 use crate::tools::ladders;
-use crate::tools::spending::Spending;
 use retiretui_client::overview::{ATTENTION, MILESTONES, OVER_THE_PLAN, RESTS_ON, Row};
 use retiretui_client::searches::overview::COULD_DO_BETTER;
 
@@ -60,15 +59,14 @@ pub(super) enum Tone {
 
 /// A row: what it says, the year it is about, the item behind it, and
 /// the page it leads to.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub(super) struct Entry {
     /// What stands before the text on its first line, in a column its
     /// later lines hang under.
-    pub lead: String,
+    pub label: String,
     pub text: String,
+    /// The year ⏎ opens the Ledger at.
     pub year: Option<i16>,
-    /// Whether the year leads the row, where it has one.
-    pub is_dated: bool,
     pub opens: Option<Target>,
     pub leads: Option<Lead>,
     pub tone: Tone,
@@ -77,12 +75,14 @@ pub(super) struct Entry {
 }
 
 impl From<Row> for Entry {
-    /// A client row, opening its item's page.
+    /// A client row, led by its year where it has one and opening its
+    /// item's page.
     fn from(row: Row) -> Self {
+        let text = row.line();
         Self {
             year: row.year,
             opens: row.place.map(|(domain, index)| (page_of(domain), index)),
-            ..Self::plain(row.text)
+            ..Self::plain(text)
         }
     }
 }
@@ -90,10 +90,9 @@ impl From<Row> for Entry {
 impl Entry {
     pub fn plain(text: String) -> Self {
         Self {
-            lead: String::new(),
+            label: String::new(),
             text,
             year: None,
-            is_dated: true,
             opens: None,
             leads: None,
             tone: Tone::Plain,
@@ -108,28 +107,28 @@ impl Entry {
         }
     }
 
-    /// The row's lines at `width`: its text wrapped, running on indented,
-    /// or hung under its lead where it has one.
-    pub fn lines(&self, width: u16) -> Vec<String> {
-        if self.lead.is_empty() {
-            return layout::wrapped(&self.line(), width, layout::CONTINUED);
+    /// A row said quietly, leading nowhere.
+    pub fn quiet(text: &str) -> Self {
+        Self {
+            tone: Tone::Quiet,
+            ..Self::plain(text.to_owned())
         }
-        let lead = u16::try_from(self.lead.len()).unwrap_or(u16::MAX);
-        let hung = " ".repeat(self.lead.len());
-        let broken = layout::wrapped(&self.text, width.saturating_sub(lead), "");
-        let mut leads = std::iter::once(&self.lead).chain(std::iter::repeat(&hung));
-        broken
-            .into_iter()
-            .map(|line| format!("{}{line}", leads.next().unwrap_or(&hung)))
-            .collect()
     }
 
-    /// The row as shown, led by its year where it has one.
-    pub fn line(&self) -> String {
-        match self.year {
-            Some(year) if self.is_dated => format!("{year} {}", self.text),
-            _ => self.text.clone(),
+    /// The row's lines at `width`: its text wrapped, running on indented,
+    /// or hung under its label where it has one.
+    pub fn lines(&self, width: u16) -> Vec<String> {
+        if self.label.is_empty() {
+            return layout::wrapped(&self.text, width, layout::CONTINUED);
         }
+        let label = layout::cells_of(&self.label);
+        let hung = " ".repeat(usize::from(label));
+        let broken = layout::wrapped(&self.text, width.saturating_sub(label), "");
+        let labels = std::iter::once(&self.label).chain(std::iter::repeat(&hung));
+        labels
+            .zip(broken)
+            .map(|(label, line)| format!("{label}{line}"))
+            .collect()
     }
 }
 
@@ -212,7 +211,7 @@ pub(super) fn spawn(commands: &mut Commands, band: Entity, lists: &[List]) {
 /// row highlighted as it is otherwise.
 pub(super) fn refresh(
     (viewed, shown, draft, theme): (Res<Viewed>, Shown, Res<Draft>, Res<Theme>),
-    (better, spending): (Res<Better>, Res<Spending>),
+    better: Res<Better>,
     mut lists: Query<(
         Entity,
         &mut Leads,
@@ -230,7 +229,7 @@ pub(super) fn refresh(
         let is_stale = is_moved
             || match leads.list {
                 List::Attention => draft.is_changed() || better.is_changed(),
-                List::Better => better.is_changed() || spending.is_changed(),
+                List::Better => better.is_changed(),
                 List::Milestones | List::Totals | List::RestsOn => false,
             };
         let width = layout::row_width(*scroll, *area);
@@ -245,10 +244,7 @@ pub(super) fn refresh(
                 let historical = better.found().and_then(|found| found.historical.as_ref());
                 attention::entries(view, &draft, historical)
             }
-            List::Better => {
-                let nominal = shown.basis.nominal;
-                better::entries((&better, &spending), &shown.projected, nominal)
-            }
+            List::Better => better::entries(&better, &shown.projected, shown.basis.nominal),
             List::Totals => {
                 let basis = present::basis_name(shown.basis.nominal);
                 if let Ok(mut framed) = frames.get_mut(pane.parent()) {

@@ -273,6 +273,12 @@ pub struct YearRow {
 }
 
 impl YearRow {
+    /// The part of `expenses` spent once: neither essential nor flexible.
+    #[must_use]
+    pub const fn expenses_once(&self) -> Dollars {
+        self.expenses - self.expenses_essential - self.expenses_flexible
+    }
+
     /// Total withdrawn across all accounts, RMDs included.
     #[must_use]
     pub fn total_withdrawals(&self) -> Dollars {

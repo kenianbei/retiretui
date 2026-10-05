@@ -6,7 +6,7 @@ use bevy_app::{App, Update};
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Entity, IntoScheduleConfigs, Local, Query, Res};
-use retiretui_engine::market::{Run, Runs};
+use retiretui_engine::market::{Band, Run, Runs};
 
 use super::views::{View, ViewOf, ViewPart};
 use super::{MarketTool, highlighted};
@@ -22,7 +22,7 @@ pub(crate) const INNER: &str = "▒";
 pub(crate) const OUTER_BAND: (usize, usize) = (0, 4);
 pub(crate) const INNER_BAND: (usize, usize) = (1, 3);
 const RUN_SERIES: usize = 0;
-pub(crate) const PLANNED: &str = "As planned";
+const PLANNED: &str = "As planned";
 
 pub(super) fn install<R: MarketTool>(app: &mut App) {
     app.add_systems(
@@ -48,14 +48,13 @@ pub(super) fn spawn_pane<R: MarketTool>(commands: &mut Commands, column: Entity)
 
 /// A band between two of the percentiles, year by year.
 pub(crate) fn band(
-    runs: &Runs,
+    bands: &[Band],
     (low, high): (usize, usize),
     symbol: &'static str,
     theme: &Theme,
 ) -> Shade {
     Shade {
-        points: runs
-            .bands
+        points: bands
             .iter()
             .map(|band| {
                 let (low, high) = (band.net_worth[low], band.net_worth[high]);
@@ -68,7 +67,7 @@ pub(crate) fn band(
 }
 
 /// One run's net worth year by year, from the plan's start.
-pub(crate) fn line(runs: &Runs, label: &str, run: &Run, theme: &Theme) -> Series {
+fn line(runs: &Runs, label: &str, run: &Run, theme: &Theme) -> Series {
     let years = runs.bands.iter().map(|band| f64::from(band.year));
     Series {
         label: label.to_owned(),
@@ -111,8 +110,8 @@ fn redraw<R: MarketTool>(
         |listed| (listed.first, listed.run),
     );
     let shades = vec![
-        band(runs, OUTER_BAND, OUTER, &theme),
-        band(runs, INNER_BAND, INNER, &theme),
+        band(&runs.bands, OUTER_BAND, OUTER, &theme),
+        band(&runs.bands, INNER_BAND, INNER, &theme),
     ];
     let title = super::views::title(view.0, runs, &label);
     for (mut chart, part, parent) in &mut charts {

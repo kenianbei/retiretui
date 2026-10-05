@@ -13,7 +13,13 @@ import {
 } from "@/nav";
 import { Rows, ToolRow } from "@/overview/lists";
 import type { Basis } from "@/overview/words";
-import { useClaims, useLadders, useOrders, useSpending } from "@/searches";
+import {
+  useClaims,
+  useLadders,
+  useMarkets,
+  useOrders,
+  useSpending,
+} from "@/searches";
 import { useSession } from "@/session";
 
 const WORDS = claimWords();
@@ -71,11 +77,17 @@ function BetterRow({
   );
 }
 
-/** What the plan could spend at the Spending Ceiling's target, leading to the tool. */
+/**
+ * What the plan could spend at the Spending Ceiling's target, leading to the
+ * tool: searched once the market runs have answered, being many times their
+ * work, so that a visit that moves on first never starts it.
+ */
 function CeilingRow({ plan }: { plan: string }) {
   const { reading } = useSession();
   const target = reading.document?.targetShare ?? 0;
-  const found = useSpending(plan, target, true);
+  const markets = useMarkets("monteCarlo", plan, true);
+  const isClear = markets.data !== undefined && !markets.isPlaceholderData;
+  const found = useSpending(plan, target, isClear);
   if (found.error) return null;
   const said =
     found.data && !found.isPlaceholderData ? found.data.better : SEARCHING;

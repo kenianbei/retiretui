@@ -71,15 +71,9 @@ fn refresh(
         }
         *drawn = Some(width);
         let said = actions(&shown.ledger().plan, row, shown.basis.nominal);
-        let lines: Vec<String> = said
-            .iter()
-            .flat_map(|action| layout::wrapped(action, width, layout::CONTINUED))
-            .collect();
-        let shown_lines = u16::try_from(lines.len())
-            .unwrap_or(u16::MAX)
-            .min(TODO_MOST);
-        let lines = lines.into_iter().map(|line| (0, line, Style::new()));
-        layout::fill_lines(&mut commands, list, lines, |_, _| {});
+        let texts = said.into_iter().map(|action| (action, Style::new()));
+        let lines = layout::fill_wrapped(&mut commands, (list, width), texts);
+        let shown_lines = u16::try_from(lines).unwrap_or(u16::MAX).min(TODO_MOST);
         if let Ok((mut framed, mut node)) = panes.get_mut(pane.parent()) {
             Framed::retitle(&mut framed, &format!("{} {TO_DO}", row.year));
             let height = Val::Px(f32::from(shown_lines + pane::BORDERS));

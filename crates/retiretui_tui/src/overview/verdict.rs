@@ -187,12 +187,6 @@ mod tests {
     }
 
     #[test]
-    fn each_tile_is_labelled_as_the_client_orders_the_strip() {
-        let labels = tiles_of(&test_projected(), false, Success::Waiting).map(|it| it.label);
-        assert_eq!(labels, STRIP);
-    }
-
-    #[test]
     fn the_money_lasts_tile_warns_only_of_a_plan_that_runs_short() {
         let theme = Theme::terminal();
         let lasting = &tiles_of(&test_projected(), false, Success::Waiting)[0];

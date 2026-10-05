@@ -14,7 +14,7 @@ export function Rows({ children }: { children: ReactNode }) {
 }
 
 /** What a row says and where it leads, the destination named for a reader. */
-function RowContent({
+export function RowContent({
   year,
   text,
   destination,

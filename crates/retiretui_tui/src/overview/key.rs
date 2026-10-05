@@ -177,11 +177,11 @@ mod tests {
         let (tables, history) = (TaxTables::embedded(), History::embedded());
         let found = monte_carlo(&projected.plan, &tables, history, &Progress::default());
         let runs = found.unwrap().runs;
-        let (chart, keyed) = markets(&runs, &Theme::terminal());
+        let (chart, keyed) = markets(&runs.bands, &Theme::terminal());
         assert_eq!((chart.series.len(), chart.shades.len()), (1, 2));
         assert_eq!(
             said(&key_line(&keyed, None, compact_money)),
-            "░░ 10th to 90th  ▒▒ 25th to 75th  ── As planned  "
+            "░░ 10th to 90th  ▒▒ 25th to 75th  ── median  "
         );
         let last = runs.bands.last().unwrap();
         let read = said(&key_line(&keyed, Some(last.year), compact_money));
