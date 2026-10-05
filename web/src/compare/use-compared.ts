@@ -2,9 +2,9 @@ import { useNavigate, useSearch } from "@tanstack/react-router";
 import type { Document, Searched } from "@wasm/retiretui_wasm.js";
 import { useEffect, useMemo, useRef } from "react";
 
-import { swapped, withIn, type WithSearch } from "@/compare/search";
-import { releaseLane, useSuccesses } from "@/searches";
+import { swapped, type WithSearch, withIn } from "@/compare/search";
 import { openAt } from "@/opened";
+import { releaseLane, useSuccesses } from "@/searches";
 import { useSession } from "@/session";
 
 /** A compared file, or why it would not open. */
@@ -50,7 +50,6 @@ function useCompared(paths: readonly string[]): ComparedFile[] {
             return { path, document, error, text };
           }),
     // `stored` is what the files' writes are counted by.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [workspace, joined, stored],
   );
 }

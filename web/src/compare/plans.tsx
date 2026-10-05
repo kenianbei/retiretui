@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { Options, type OptionRow } from "@/tools/options";
+import { type OptionRow, Options } from "@/tools/options";
 import { nameOf } from "@/workspace";
 
 /** A plan compared: the document, or a compared file. */

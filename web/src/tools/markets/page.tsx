@@ -1,7 +1,7 @@
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import {
-  marketWords,
   type AssumptionRow,
+  marketWords,
   type RunRow,
 } from "@wasm/retiretui_wasm.js";
 import { useMemo } from "react";
@@ -11,14 +11,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { placeSearch } from "@/plan/search";
-import { useMarkets, type MarketKind } from "@/searches";
+import { type MarketKind, useMarkets } from "@/searches";
 import { useSession } from "@/session";
+import { ToolAbout } from "@/tools/about";
 import { MarketCharts } from "@/tools/markets/charts";
 import { ZONE_CLASS } from "@/tools/markets/zone";
-import { Options, type OptionRow } from "@/tools/options";
+import { type OptionRow, Options } from "@/tools/options";
 import type { ToolSearch } from "@/tools/search";
 import { keptSearch } from "@/year/search";
-import { ToolAbout } from "@/tools/about";
 
 const WORDS = marketWords();
 /** The runs table's column a phone's row shows beside its name. */

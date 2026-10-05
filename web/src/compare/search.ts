@@ -1,4 +1,4 @@
-import { textOf, yearSearch, type YearSearch } from "@/year/search";
+import { textOf, type YearSearch, yearSearch } from "@/year/search";
 
 /** The workspace files compared with the document, which every route keeps. */
 export interface WithSearch {

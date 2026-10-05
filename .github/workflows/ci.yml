@@ -79,7 +79,7 @@ jobs:
           refuses retiretui_wasm 'bevy|plurimus|clap|rmcp|tokio|etcetera'
 
       - name: Install wasm-pack
-        run: cargo install wasm-pack --version 0.13.1 --locked
+        run: cargo install wasm-pack --version 0.15.0 --locked
 
       - name: The bindings answer from JavaScript
         run: |
@@ -87,7 +87,7 @@ jobs:
           node crates/retiretui_wasm/smoke.mjs
 
       - name: The bindings type-check
-        run: npx -y -p typescript@5.9.3 tsc -p crates/retiretui_wasm
+        run: npx -y -p typescript@7.0.2 tsc -p crates/retiretui_wasm
 
   web:
     runs-on: ubuntu-latest
@@ -105,25 +105,22 @@ jobs:
           cache-save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Install wasm-pack
-        run: cargo install wasm-pack --version 0.13.1 --locked
+        run: cargo install wasm-pack --version 0.15.0 --locked
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 22
+          node-version: 26
           cache: npm
           cache-dependency-path: web/package-lock.json
 
       - name: Install the app's packages
         run: npm ci
 
+      - name: Format, lint and import order
+        run: npm run check
+
       - name: Build the bindings for a browser
         run: npm run wasm
-
-      - name: Format
-        run: npm run format
-
-      - name: Lint
-        run: npm run lint
 
       - name: Type-check
         run: npm run typecheck
@@ -155,7 +152,7 @@ jobs:
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 22
+          node-version: 26
           cache: npm
           cache-dependency-path: web/package-lock.json
 
@@ -239,7 +236,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: crate-ci/typos@512fc24f32f44ab01972217aaaf3dc86ec234d53 # v1.50.2
+      - uses: crate-ci/typos@00f422f3b19c57bc6338715ebfe3316d38768461 # v1.50.3
 
   semver:
     runs-on: ubuntu-latest

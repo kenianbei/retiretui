@@ -9,15 +9,14 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-
-import { columnsFor } from "@/components/columns";
 import { ChartSection } from "@/components/chart-section";
+import { columnsFor } from "@/components/columns";
 import { DataTable } from "@/components/data-table";
 import {
+  type ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-  type ChartConfig,
 } from "@/components/ui/chart";
 import {
   bandAreas,

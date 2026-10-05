@@ -1,10 +1,10 @@
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import {
+  type CompareView,
   compareHeaders,
   compareWords,
-  yearAmong,
-  type CompareView,
   type YearFigure,
+  yearAmong,
 } from "@wasm/retiretui_wasm.js";
 import { FilePen, Sparkles } from "lucide-react";
 import { useMemo } from "react";
@@ -13,12 +13,12 @@ import {
   Changes,
   CompareWith,
   PlanActions,
-  Plans,
   type PlanEntry,
+  Plans,
 } from "@/compare/plans";
 import { withIn } from "@/compare/search";
-import { useRows, type Row } from "@/compare/use-compared";
-import { Views, type Charted } from "@/compare/views";
+import { type Row, useRows } from "@/compare/use-compared";
+import { type Charted, Views } from "@/compare/views";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,

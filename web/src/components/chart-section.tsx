@@ -1,4 +1,4 @@
-import { useId, type ReactNode } from "react";
+import { type ReactNode, useId } from "react";
 
 /** A chart, or its table, as a section: its title the heading, its unit under it,
  * its controls at the heading's end; the section is the plot's container. */

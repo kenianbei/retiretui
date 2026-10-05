@@ -6,18 +6,18 @@ import {
   useSearch,
 } from "@tanstack/react-router";
 import {
-  NewPlan,
-  setupSteps,
   type FieldView,
+  NewPlan,
   type Step as SetupStep,
+  setupSteps,
 } from "@wasm/retiretui_wasm.js";
 import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { CheckAnswers } from "@/onboarding/check";
 import {
-  CHECK,
   around,
+  CHECK,
   keepAnswers,
   keptAnswers,
   stepsAsked,
@@ -56,7 +56,7 @@ export function NewPlanPage() {
   const steps = useMemo(() => setupSteps(), []);
   const views = useMemo(
     () => answers.view(focused ?? undefined),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- the answers change in place; the count says when
+    // The answers change in place; the count says when.
     [answers, focused, changes],
   );
   const asked = stepsAsked(steps, new Set(views.map((view) => view.key)));

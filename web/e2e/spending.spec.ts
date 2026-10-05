@@ -1,11 +1,11 @@
 import {
-  FULL_MONEY,
-  SEARCH,
   example,
   expect,
   expectAccessible,
+  FULL_MONEY,
   isPhone,
   rowNamed,
+  SEARCH,
   searchesDone,
   seed,
   test,

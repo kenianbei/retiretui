@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  CHECK,
   around,
+  CHECK,
   keepAnswers,
   keptAnswers,
   newPlanSearch,

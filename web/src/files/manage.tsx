@@ -14,20 +14,20 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
 } from "@/components/ui/dialog";
-import { builtOn, type BaseAt } from "@/files/chain";
-import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { type BaseAt, builtOn } from "@/files/chain";
 import { NameDialog } from "@/files/name-dialog";
+import { cn } from "@/lib/utils";
 import { baseIn } from "@/opened";
 import { useSession } from "@/session";
 import { nameOf, pathOf, planName } from "@/workspace";

@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { MarginNote } from "@/components/margin-note";
 import { Button } from "@/components/ui/button";
 import { useFileActions } from "@/files/actions";
-import { INPUT, cn, messageOf } from "@/lib/utils";
+import { cn, INPUT, messageOf } from "@/lib/utils";
 import type { Answering } from "@/onboarding/page";
 import { planName } from "@/workspace";
 

@@ -1,8 +1,8 @@
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import {
-  claimWords,
   type ClaimOption,
   type ClaimsOptions,
+  claimWords,
 } from "@wasm/retiretui_wasm.js";
 import { useMemo } from "react";
 
@@ -10,14 +10,14 @@ import { MarginNote } from "@/components/margin-note";
 import type { Basis } from "@/overview/words";
 import { useClaims } from "@/searches";
 import { useSession } from "@/session";
-import { SearchActions, type Chosen } from "@/tools/act";
+import { ToolAbout } from "@/tools/about";
+import { type Chosen, SearchActions } from "@/tools/act";
 import { People } from "@/tools/claims/people";
-import { Options, type OptionRow } from "@/tools/options";
+import { type OptionRow, Options } from "@/tools/options";
 import type { ToolSearch } from "@/tools/search";
+import { offeredName } from "@/workspace";
 import { basisOf, heldIn, heldOf } from "@/year/search";
 import { BasisSwitch } from "@/year/year";
-import { offeredName } from "@/workspace";
-import { ToolAbout } from "@/tools/about";
 
 const WORDS = claimWords();
 

@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { cn, messageOf } from "@/lib/utils";
 import { ImportStatement } from "@/plan/import-statement";
 import { useSession } from "@/session";
-import { Options, type OptionRow } from "@/tools/options";
+import { type OptionRow, Options } from "@/tools/options";
 
 /** Which of the columns a phone's row shows beside the name: the FRA estimate. */
 const AT_FRA = 4;

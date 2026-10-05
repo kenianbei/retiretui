@@ -1,9 +1,8 @@
 import type { CompareWords, Metric, YearFigure } from "@wasm/retiretui_wasm.js";
 import { useMemo } from "react";
 import { Line } from "recharts";
-
-import { columnsFor } from "@/components/columns";
 import { ChartSection } from "@/components/chart-section";
+import { columnsFor } from "@/components/columns";
 import { DataTable } from "@/components/data-table";
 import type { ChartConfig } from "@/components/ui/chart";
 import { cn, INPUT } from "@/lib/utils";
@@ -34,17 +33,17 @@ type YearRow = { year: number } & Record<string, number | string>;
 
 const seriesKey = (at: number) => `plan${String(at)}`;
 
-/** A row per year any plan reaches, each plan's `valueOf` its figure under its key. */
+/** A row per year any plan reaches, each plan's `figureOf` its figure under its key. */
 function rowsByYear(
   plans: readonly Charted[],
-  valueOf: (plan: Charted, shown: YearFigure) => number | string,
+  figureOf: (plan: Charted, shown: YearFigure) => number | string,
 ): YearRow[] {
   const years = new Map<number, YearRow>();
   plans.forEach((plan, at) => {
     if (typeof plan.figures === "string") return;
     for (const shown of plan.figures) {
-      const row = years.get(shown.year) ?? { year: shown.year };
-      row[seriesKey(at)] = valueOf(plan, shown);
+      const row: YearRow = years.get(shown.year) ?? { year: shown.year };
+      row[seriesKey(at)] = figureOf(plan, shown);
       years.set(shown.year, row);
     }
   });

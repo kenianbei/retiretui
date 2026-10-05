@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { Workspace, fileAt, nameOf, pathOf, renameAt } from "@/workspace";
+import { fileAt, nameOf, pathOf, renameAt, Workspace } from "@/workspace";
 
 /** `Storage` over a map, as a browser's `localStorage` behaves. */
 class MemoryStorage implements Storage {

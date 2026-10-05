@@ -1,9 +1,10 @@
+// biome-ignore lint/suspicious/noDeprecatedImports: only the positional overload is deprecated; the options one is called
 import { useBlocker } from "@tanstack/react-router";
 import type { Editor } from "@wasm/retiretui_wasm.js";
 import { X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { useEffect, useMemo, useRef, useState } from "react";
-
+import { MarginNote } from "@/components/margin-note";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -13,7 +14,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MarginNote } from "@/components/margin-note";
 import { Button } from "@/components/ui/button";
 import { gathered } from "@/lib/utils";
 import { Field } from "@/plan/fields";
@@ -65,7 +65,7 @@ export function FormSheet({
 
   const views = useMemo(
     () => (document ? editor.view(document, focused ?? undefined) : []),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- the editor changes in place; the count says when
+    // The editor changes in place; the count says when.
     [editor, document, focused, changes],
   );
 

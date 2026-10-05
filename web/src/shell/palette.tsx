@@ -1,10 +1,10 @@
 import { useMatches, useNavigate, useSearch } from "@tanstack/react-router";
-import { useMemo, useState, type KeyboardEvent } from "react";
+import { type KeyboardEvent, useMemo, useState } from "react";
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useFileActions } from "@/files/actions";
-import { INPUT, cn } from "@/lib/utils";
-import { TABS, isGroup, type Page } from "@/nav";
+import { cn, INPUT } from "@/lib/utils";
+import { isGroup, type Page, TABS } from "@/nav";
 import { NEW_PLAN_START } from "@/onboarding/steps";
 import { BASIS_LABEL } from "@/overview/view-words";
 import { useSession } from "@/session";

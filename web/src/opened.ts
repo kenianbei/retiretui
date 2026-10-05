@@ -1,4 +1,4 @@
-import { Document, baseOf, type OpenFailure } from "@wasm/retiretui_wasm.js";
+import { baseOf, Document, type OpenFailure } from "@wasm/retiretui_wasm.js";
 
 import { messageOf } from "@/lib/utils";
 import type { Workspace } from "@/workspace";

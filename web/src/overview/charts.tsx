@@ -1,12 +1,12 @@
 import { Link } from "@tanstack/react-router";
 import {
+  type ChartMark,
+  type ChartSeries,
   compactMoney,
   money,
   signedMoney,
-  type ChartMark,
-  type ChartSeries,
 } from "@wasm/retiretui_wasm.js";
-import { useId, useMemo, type ReactNode } from "react";
+import { type ReactNode, useId, useMemo } from "react";
 import {
   Area,
   CartesianGrid,
@@ -19,16 +19,14 @@ import {
 
 import { ChartSection } from "@/components/chart-section";
 import {
+  type ChartConfig,
   ChartContainer,
   ChartLegend,
   ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
-  type ChartConfig,
 } from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Basis } from "@/overview/words";
-import { BASIS_LABEL, VIEW_WORDS, metricTitle } from "@/overview/view-words";
 import {
   bandAreas,
   bandData,
@@ -36,6 +34,8 @@ import {
   PLOT_SIZE,
   SERIES,
 } from "@/overview/bands";
+import { BASIS_LABEL, metricTitle, VIEW_WORDS } from "@/overview/view-words";
+import type { Basis } from "@/overview/words";
 import { useMarkets } from "@/searches";
 import { keptSearch } from "@/year/search";
 

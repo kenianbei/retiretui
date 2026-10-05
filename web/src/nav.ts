@@ -3,10 +3,10 @@ import { domains } from "@wasm/retiretui_wasm.js";
 import {
   ChartNoAxesColumn,
   Columns2,
+  type LucideIcon,
   NotebookPen,
   Table2,
   Wrench,
-  type LucideIcon,
 } from "lucide-react";
 
 /** A page a grouped tab holds, and what it will show. */
@@ -113,7 +113,6 @@ export function isWithin(tab: Tab, pathname: string): boolean {
 /** The page of `pages` at `slug`, or the router's not-found. */
 export function pageOf(pages: readonly Page[], slug: string): Page {
   const page = pages.find((each) => each.slug === slug);
-  // eslint-disable-next-line @typescript-eslint/only-throw-error -- the router's own not-found
   if (!page) throw notFound();
   return page;
 }

@@ -1,7 +1,7 @@
 import {
+  type Band,
   bandPercentiles,
   percentileLabel,
-  type Band,
 } from "@wasm/retiretui_wasm.js";
 
 import { Area } from "recharts";

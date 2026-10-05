@@ -4,9 +4,9 @@ import type {
   Offer,
   OperandView,
 } from "@wasm/retiretui_wasm.js";
-import { useId, useState, type ChangeEvent, type ReactNode } from "react";
+import { type ChangeEvent, type ReactNode, useId, useState } from "react";
 
-import { INPUT, cn } from "@/lib/utils";
+import { cn, INPUT } from "@/lib/utils";
 import { fieldId } from "@/plan/search";
 
 /** What a field's control changes, and whom it tells. */

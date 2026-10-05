@@ -1,23 +1,23 @@
 import {
   Document,
-  rebased,
   type Editor,
   type PlacedIssue,
+  rebased,
 } from "@wasm/retiretui_wasm.js";
 import {
   createContext,
+  type ReactNode,
   use,
   useCallback,
   useEffect,
   useMemo,
   useState,
-  type ReactNode,
 } from "react";
 
 import { scenariosOver } from "@/files/chain";
 import { messageOf } from "@/lib/utils";
-import { baseIn, openAt, type Opened } from "@/opened";
-import { Workspace, fileAt, nameOf, pathOf, renameAt } from "@/workspace";
+import { baseIn, type Opened, openAt } from "@/opened";
+import { fileAt, nameOf, pathOf, renameAt, Workspace } from "@/workspace";
 
 /** The open document, and how many changes it has seen. */
 export interface Reading {

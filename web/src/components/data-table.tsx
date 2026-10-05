@@ -1,4 +1,4 @@
-import { flexRender, useTable, type RowData } from "@tanstack/react-table";
+import { flexRender, type RowData, useTable } from "@tanstack/react-table";
 import type { KeyboardEvent } from "react";
 
 import { aligned, FEATURES, type TableColumns } from "@/components/columns";

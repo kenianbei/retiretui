@@ -1,5 +1,0 @@
-dist
-package-lock.json
-src/components/ui
-test-results
-playwright-report

@@ -1,24 +1,24 @@
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import {
-  ladderWords,
   type LadderOption,
   type LaddersReply,
+  ladderWords,
 } from "@wasm/retiretui_wasm.js";
 import { useMemo } from "react";
 
 import { MarginNote } from "@/components/margin-note";
+import type { Basis } from "@/overview/words";
 import { useLadders } from "@/searches";
 import { useSession } from "@/session";
-import { SearchActions, type Chosen } from "@/tools/act";
+import { ToolAbout } from "@/tools/about";
+import { type Chosen, SearchActions } from "@/tools/act";
 import { Conversions } from "@/tools/conversions/ladder";
-import { Options, type OptionRow } from "@/tools/options";
+import { type OptionRow, Options } from "@/tools/options";
 import { percentOf, type ToolSearch } from "@/tools/search";
-import { SettingsForm, SettingsRead, type Settings } from "@/tools/settings";
-import type { Basis } from "@/overview/words";
+import { type Settings, SettingsForm, SettingsRead } from "@/tools/settings";
+import { offeredName } from "@/workspace";
 import { basisOf } from "@/year/search";
 import { BasisSwitch } from "@/year/year";
-import { offeredName } from "@/workspace";
-import { ToolAbout } from "@/tools/about";
 
 const WORDS = ladderWords();
 

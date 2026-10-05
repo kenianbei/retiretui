@@ -1,8 +1,8 @@
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import {
-  orderWords,
   type OrderOption,
   type OrderOptions,
+  orderWords,
 } from "@wasm/retiretui_wasm.js";
 import { useMemo } from "react";
 
@@ -11,8 +11,8 @@ import type { Basis } from "@/overview/words";
 import { useOrders } from "@/searches";
 import { useSession } from "@/session";
 import { ToolAbout } from "@/tools/about";
-import { SearchActions, type Chosen } from "@/tools/act";
-import { Options, type OptionRow } from "@/tools/options";
+import { type Chosen, SearchActions } from "@/tools/act";
+import { type OptionRow, Options } from "@/tools/options";
 import type { ToolSearch } from "@/tools/search";
 import { offeredName } from "@/workspace";
 import { basisOf } from "@/year/search";

@@ -9,14 +9,14 @@ import {
 } from "@tanstack/react-router";
 
 import { compareSearch, withSearch } from "@/compare/search";
-import { DOMAINS, TOOLS, pageOf } from "@/nav";
+import { DOMAINS, pageOf, TOOLS } from "@/nav";
 import { newPlanSearch } from "@/onboarding/steps";
-import { planSearch } from "@/plan/search";
 import { Failed } from "@/pages/failed";
 import { NotFound } from "@/pages/not-found";
+import { planSearch } from "@/plan/search";
 import { Shell } from "@/shell/shell";
 import { toolSearch } from "@/tools/search";
-import { ledgerSearch, yearSearch, type KeptKey } from "@/year/search";
+import { type KeptKey, ledgerSearch, yearSearch } from "@/year/search";
 
 /**
  * The pages, each loaded the first time it is shown, so that what charts
@@ -58,7 +58,6 @@ const index = createRoute({
   getParentRoute: () => root,
   path: "/",
   beforeLoad: () => {
-    // eslint-disable-next-line @typescript-eslint/only-throw-error -- the router's own redirect
     throw redirect({ to: "/overview" });
   },
 });
