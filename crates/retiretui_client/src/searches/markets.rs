@@ -174,7 +174,7 @@ pub fn run_cells(plan: &Plan, first: String, run: &Run, form: MoneyForm) -> Vec<
 }
 
 /// What success means under the plan's `[market]`.
-fn success(plan: &Plan) -> Assumption {
+pub(crate) fn counts_as_success(plan: &Plan) -> Assumption {
     let value = plan.market().leave_at_least().map_or_else(
         || "Never running short".to_owned(),
         |floor| format!("Ending with at least {}", money(floor)),
@@ -234,7 +234,7 @@ fn unmixed(plan: &Plan) -> Option<Assumption> {
 /// the accounts every market leaves alone.
 #[must_use]
 pub fn assumptions<M: Markets>(plan: &Plan) -> Vec<Assumption> {
-    let mut rows = vec![success(plan)];
+    let mut rows = vec![counts_as_success(plan)];
     rows.extend(M::settings(plan));
     rows.extend(unmixed(plan));
     rows
