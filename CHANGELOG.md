@@ -169,7 +169,7 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     watch.
   - The terminal planner's `overview-year-previous` and `overview-year-next`
     commands are gone with the Overview's year, so a `[tui.keys]` entry for
-    either names no command.
+    either is said at launch to name no command. The file's other keys stand.
 - The Overview is of the whole plan, and it is laid out alike in the terminal
   and in the web app. Nothing on it is chosen by a year any more: the year
   stepper and "What to do" in the year are gone from it, and the year belongs to
@@ -181,15 +181,15 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     the last year it is funded through, as the web app does, and how much goes
     uncovered under Needs attention.
   - Three lists side by side: Milestones, Needs attention, and Could do better.
-    In the terminal a plan that runs short is the list's first row, leading to
-    that year in the Ledger and to its expenses.
+    In the terminal a plan that runs short leads the list, under any issues the
+    draft has, and its row leads to that year in the Ledger and to its expenses.
   - Could do better gains what the plan could spend: the Spending Ceiling at its
     target, said as "Could spend $4,200 more a year in 90% of markets", as
     spending less to last, or as already spending the most that lasts. It is
-    searched after the other searches and the market runs have answered, since
-    it is many times their work, and the Spending Ceiling page takes the answer
-    in place of searching again. The canvas page at `/ratzilla/` leaves it to
-    that page.
+    searched last, once the market runs have answered and, in the terminal, the
+    other searches too, since it is many times their work, and the Spending
+    Ceiling page takes the answer in place of searching again. The canvas page
+    at `/ratzilla/` leaves it to that page.
   - One chart, turned through four views: balances by tax treatment, net worth,
     income against taxes, and net worth through random markets with its median.
     The web app showed all four at once and now shows the one named in the
