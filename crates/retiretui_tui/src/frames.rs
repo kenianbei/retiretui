@@ -15,7 +15,6 @@ use super::support::{
     headless_app_at, let_pass, press_ctrl, press_key, scratch_workspace, searched_app, show,
     type_text,
 };
-use super::tools::Searches;
 
 const FIXTURE: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -48,8 +47,7 @@ fn assert_frame(name: &str, size: TerminalSize, app: &App) {
 #[test]
 fn every_page_draws_its_frame() {
     for size in [SIZE, ROOMY] {
-        let mut app = fixture_app(size);
-        app.insert_resource(Searches(true));
+        let mut app = searched_fixture(size);
         for page in Page::ALL {
             show(&mut app, page);
             // A tool's page searches on a thread of its own; its frame is
@@ -65,8 +63,7 @@ fn every_page_draws_its_frame() {
 #[test]
 fn the_overview_draws_each_chart_view() {
     for size in [SIZE, ROOMY] {
-        let mut app = fixture_app(size);
-        app.insert_resource(Searches(true));
+        let mut app = searched_fixture(size);
         super::tools::settle_all(&mut app);
         for view in ["net_worth", "income_taxes"] {
             press_key(&mut app, KeyCode::Char('v'));
