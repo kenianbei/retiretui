@@ -7,6 +7,7 @@
 mod attention;
 mod better;
 mod charts;
+mod key;
 mod rows;
 mod totals;
 mod verdict;
@@ -46,7 +47,7 @@ pub fn plugin(app: &mut App) {
             (
                 verdict::refresh,
                 (better::work, rows::refresh, rows::read_beneath).chain(),
-                (charts::refresh, charts::read_key).chain(),
+                (charts::refresh, key::read_key).chain(),
             ),
         )
             .chain(),
