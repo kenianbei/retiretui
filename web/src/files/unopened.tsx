@@ -67,7 +67,6 @@ function Written({ name, text, line }: WrittenProps) {
   const marked = useRef<HTMLSpanElement>(null);
   const lines = text.replace(/\n$/, "").split("\n");
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the marked line is scrolled to again when the line or the text changes
   useLayoutEffect(() => {
     const [within, at] = [box.current, marked.current];
     if (!within || !at) return;

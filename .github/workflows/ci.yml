@@ -116,11 +116,11 @@ jobs:
       - name: Install the app's packages
         run: npm ci
 
-      - name: Build the bindings for a browser
-        run: npm run wasm
-
       - name: Format, lint and import order
         run: npm run check
+
+      - name: Build the bindings for a browser
+        run: npm run wasm
 
       - name: Type-check
         run: npm run typecheck

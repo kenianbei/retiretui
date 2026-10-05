@@ -54,9 +54,9 @@ export function NewPlanPage() {
   const [changes, setChanges] = useState(0);
   const [focused, setFocused] = useState<string | null>(null);
   const steps = useMemo(() => setupSteps(), []);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the answers change in place; the count says when
   const views = useMemo(
     () => answers.view(focused ?? undefined),
+    // The answers change in place; the count says when.
     [answers, focused, changes],
   );
   const asked = stepsAsked(steps, new Set(views.map((view) => view.key)));

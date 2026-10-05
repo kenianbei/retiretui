@@ -1,30 +1,20 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true,
+    "root": ".."
+  },
   "files": {
-    "ignoreUnknown": true,
-    "includes": [
-      "**",
-      "!dist",
-      "!src/components/ui",
-      "!test-results",
-      "!playwright-report"
-    ]
+    "includes": ["**", "!src/components/ui"]
   },
   "formatter": {
-    "indentStyle": "space",
-    "indentWidth": 2,
-    "lineWidth": 80
+    "indentStyle": "space"
   },
   "css": {
     "parser": {
       "tailwindDirectives": true
-    }
-  },
-  "assist": {
-    "actions": {
-      "source": {
-        "organizeImports": "on"
-      }
     }
   },
   "linter": {
@@ -56,7 +46,12 @@
         "noUnusedLabels": "error",
         "noUnusedPrivateClassMembers": "error",
         "noUnusedVariables": "error",
-        "useExhaustiveDependencies": "warn",
+        "useExhaustiveDependencies": {
+          "level": "warn",
+          "options": {
+            "reportUnnecessaryDependencies": false
+          }
+        },
         "useHookAtTopLevel": "error",
         "useIsNan": "error",
         "useValidForDirection": "error",

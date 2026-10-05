@@ -36,7 +36,6 @@ function useCompared(paths: readonly string[]): ComparedFile[] {
   // ponytail: every compared file re-opens on any write; follow each one's files() if that gets slow.
   const { workspace, stored } = useSession();
   const joined = paths.join("\n");
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `stored` is what the files' writes are counted by
   return useMemo(
     () =>
       joined === ""
@@ -50,6 +49,7 @@ function useCompared(paths: readonly string[]): ComparedFile[] {
                 : "";
             return { path, document, error, text };
           }),
+    // `stored` is what the files' writes are counted by.
     [workspace, joined, stored],
   );
 }

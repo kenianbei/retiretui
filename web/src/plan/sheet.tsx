@@ -63,9 +63,9 @@ export function FormSheet({
     if (refusal) refused.current?.focus();
   }, [refusal]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the editor changes in place; the count says when
   const views = useMemo(
     () => (document ? editor.view(document, focused ?? undefined) : []),
+    // The editor changes in place; the count says when.
     [editor, document, focused, changes],
   );
 

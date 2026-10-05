@@ -199,7 +199,6 @@ function useScrollEdges(row: RefObject<HTMLElement | null>, shown: string) {
       observer.disconnect();
     };
   }, [row]);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the current tab is scrolled to again when the page shown changes
   useEffect(() => {
     row.current
       ?.querySelector('[aria-current="page"]')
