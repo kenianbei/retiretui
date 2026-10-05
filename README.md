@@ -99,7 +99,7 @@ Chromium, Firefox and WebKit, at desktop and phone sizes. After one visit every
 page works offline, and the browser can install it as an app. Plans are kept in
 the browser's own storage and never leave it unless downloaded; clearing the
 browser's site data deletes them. To build and serve it yourself, with
-[wasm-pack](https://wasm-bindgen.github.io/wasm-pack/) and Node 22 installed:
+[wasm-pack](https://wasm-bindgen.github.io/wasm-pack/) and Node 26 installed:
 
 ```sh
 cd web

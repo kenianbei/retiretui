@@ -42,7 +42,7 @@ function rowsByYear(
   plans.forEach((plan, at) => {
     if (typeof plan.figures === "string") return;
     for (const shown of plan.figures) {
-      const row = years.get(shown.year) ?? { year: shown.year };
+      const row: YearRow = years.get(shown.year) ?? { year: shown.year };
       row[seriesKey(at)] = figureOf(plan, shown);
       years.set(shown.year, row);
     }
