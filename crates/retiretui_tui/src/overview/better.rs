@@ -21,9 +21,10 @@ use crate::session::{Projected, Session};
 use crate::tools::claims::HeldClaims;
 use crate::tools::ladders::{self, Swept};
 use crate::tools::markets::MarketHistory;
+use crate::tools::spending::Spending;
 use crate::tools::{Keyed, Searches};
 use retiretui_client::searches::overview::{
-    Found, NOTHING_TO_SEARCH, Searched, claims_said, ladder_said, order_said, search,
+    Found, NOTHING_TO_SEARCH, Searched, claims_said, ladder_said, order_said, search, spending_said,
 };
 
 /// What the searches found, and what they were made over.
@@ -162,8 +163,13 @@ pub(super) fn work(
 }
 
 /// The Could do better rows: each Roth owner's best ladder, then the best
-/// claims and the best order, each against the plan as it stands.
-pub(super) fn entries(better: &Better, projected: &Projected, nominal: bool) -> Vec<Entry> {
+/// claims and the best order, each against the plan as it stands, and what
+/// the Spending Ceiling tool finds the plan could spend.
+pub(super) fn entries(
+    (better, spending): (&Better, &Spending),
+    projected: &Projected,
+    nominal: bool,
+) -> Vec<Entry> {
     let Some(found) = better.found() else {
         return vec![quiet(super::PENDING)];
     };
@@ -190,7 +196,19 @@ pub(super) fn entries(better: &Better, projected: &Projected, nominal: bool) -> 
     if rows.is_empty() {
         rows.push(quiet(NOTHING_TO_SEARCH));
     }
+    rows.extend(ceiling(spending, plan));
     rows
+}
+
+/// What the plan could spend at the tool's target, leading to the tool:
+/// pending while it is searched again, and no row where it has no
+/// spending to scale.
+fn ceiling(spending: &Spending, plan: &Plan) -> Option<Entry> {
+    if spending.is_running() {
+        return Some(quiet(super::PENDING));
+    }
+    let said = spending_said(spending.found()?, plan);
+    Some(Entry::leading(said, (Page::SpendingCeiling, None)))
 }
 
 fn quiet(text: &str) -> Entry {

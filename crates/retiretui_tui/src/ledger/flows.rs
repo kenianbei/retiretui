@@ -23,7 +23,6 @@ use super::super::edit::table_bundle;
 use super::super::hints::Hints;
 use super::super::layout::{self, filling, fixed, placed};
 use super::super::nav::FocusStop;
-use super::super::overview::WARNING_MARK;
 use super::super::pane::{Framed, Pane};
 use super::super::present;
 use super::super::session::{Session, Shown};
@@ -53,6 +52,8 @@ struct FlowsTable;
 
 #[derive(Component)]
 struct FlowWarnings;
+
+const WARNING_MARK: &str = "! ";
 
 pub(super) fn spawn_pane(commands: &mut Commands, parent: Entity) {
     let pane = Pane::new(FLOWS).sharing(1.0).spawn(commands, parent);

@@ -5,7 +5,7 @@
 //! stopping a search under way.
 
 mod assumptions;
-mod chart;
+pub(crate) mod chart;
 mod historical;
 mod monte_carlo;
 mod views;
@@ -171,7 +171,7 @@ fn say_help<R: MarketTool>(
 }
 
 /// How a share of runs reads against the zones.
-fn zone_style(share: f64, theme: &Theme) -> Style {
+pub(crate) fn zone_style(share: f64, theme: &Theme) -> Style {
     match zone_of(share) {
         Zone::Good => Style::new().fg(theme.good),
         Zone::Caution => Style::new().fg(theme.caution),

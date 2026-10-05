@@ -170,8 +170,8 @@ fn every_chart_marks_the_cursor_year_and_names_no_lines() {
     show(&mut app, Page::Overview);
     press_key(&mut app, KeyCode::Char('v'));
     assert!(
-        redrawn(&mut app).contains("│net worth│"),
-        "the Overview keeps its legend"
+        redrawn(&mut app).contains("── net worth"),
+        "the Overview keys its lines under the chart"
     );
 }
 

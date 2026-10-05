@@ -4,7 +4,7 @@
 use bevy_app::{App, Update};
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
 use bevy_ecs::hierarchy::ChildOf;
-use bevy_ecs::prelude::{Component, On, Query, Ref, Res, ResMut};
+use bevy_ecs::prelude::{Component, Has, On, Query, Ref, Res, ResMut};
 use plurimus::core::ratatui_core::buffer::Buffer;
 use plurimus::core::ratatui_core::layout::{Position, Rect};
 use plurimus::core::ratatui_core::style::{Color, Style};
@@ -268,21 +268,35 @@ pub(crate) fn draw_charts(mut charts: Query<(Ref<SeriesChart>, &mut UiWidget)>) 
     }
 }
 
+/// A chart whose values something beside it reads out, so its pane notes
+/// the year alone.
+#[derive(Component)]
+pub struct KeyedBeside;
+
 /// The pane of the chart under the pointer notes the year and the values
 /// there; every other pane's note is cleared.
 fn read_out(
     cursor: Res<CursorCell>,
-    charts: Query<(Ref<SeriesChart>, &ComputedWidgetArea, &ChildOf)>,
+    charts: Query<(
+        Ref<SeriesChart>,
+        &ComputedWidgetArea,
+        &ChildOf,
+        Has<KeyedBeside>,
+    )>,
     mut frames: Query<&mut Framed>,
 ) {
     if !cursor.is_changed() && !charts.iter().any(|(chart, ..)| chart.is_changed()) {
         return;
     }
-    for (chart, area, parent) in &charts {
-        let note = cursor
-            .0
-            .and_then(|cell| chart.read_at(area.0, cell))
-            .unwrap_or_default();
+    for (chart, area, parent, is_keyed) in &charts {
+        let read = |cell| {
+            if is_keyed {
+                Some(chart.year_at(area.0, cell)?.to_string())
+            } else {
+                chart.read_at(area.0, cell)
+            }
+        };
+        let note = cursor.0.and_then(read).unwrap_or_default();
         if let Ok(mut framed) = frames.get_mut(parent.parent()) {
             Framed::renote(&mut framed, &note);
         }
@@ -342,7 +356,7 @@ mod tests {
     }
 
     #[test]
-    fn hovering_a_chart_names_the_year_in_its_pane_and_a_press_sets_the_cursor() {
+    fn hovering_a_keyed_chart_names_the_year_and_a_press_sets_the_cursor() {
         let mut app = headless_app(SIZE);
         app.update();
         let chart = overview_chart(&mut app);
@@ -352,23 +366,22 @@ mod tests {
         let row = area.y + 1;
         hover(&mut app, column(2026), row);
         let frame = composed_frame(&app);
-        assert!(frame.contains("dollars · 2026 · "), "{frame}");
+        assert!(
+            frame.contains("dollars · 2026 ─"),
+            "the year alone: {frame}"
+        );
+        assert!(frame.contains("░░ pre-tax $"), "its key reads it: {frame}");
         hover(&mut app, column(2050), row);
         let frame = composed_frame(&app);
-        assert!(frame.contains("dollars · 2050 · "), "{frame}");
+        assert!(frame.contains("dollars · 2050 ─"), "{frame}");
         hover(&mut app, 0, 0);
         let frame = composed_frame(&app);
         assert!(
             frame.contains("╭ Balances by tax treatment · today's dollars ─"),
             "{frame}"
         );
+        assert!(frame.contains("░░ pre-tax  ▒▒ Roth"), "{frame}");
         click(&mut app, column(2038), row);
         assert_eq!(app.world().resource::<YearCursor>().0, Some(2038));
-        app.update();
-        let frame = composed_frame(&app);
-        assert!(
-            frame.contains("2038 · to do"),
-            "the To do pane follows: {frame}"
-        );
     }
 }

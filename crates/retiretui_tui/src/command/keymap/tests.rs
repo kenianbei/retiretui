@@ -228,11 +228,11 @@ fn a_hint_for_a_command_names_the_key_the_user_gave_it() {
 
 #[test]
 fn a_hint_for_two_commands_runs_their_keys_together_and_drops_one_unbound() {
-    let stepped = "overview-year-previous = \"[\"\noverview-year-next = \"]\"";
-    assert!(key_row(stepped, Page::Overview).contains("[] year"));
-    assert!(key_row("overview-year-next = []", Page::Overview).contains("← year"));
-    let neither = "overview-year-previous = []\noverview-year-next = []";
-    assert!(!key_row(neither, Page::Overview).contains("year"));
+    let stepped = "compare-metric-previous = \"[\"\ncompare-metric-next = \"]\"";
+    assert!(key_row(stepped, Page::Compare).contains("[] metric"));
+    assert!(key_row("compare-metric-next = []", Page::Compare).contains("← metric"));
+    let neither = "compare-metric-previous = []\ncompare-metric-next = []";
+    assert!(!key_row(neither, Page::Compare).contains("metric"));
     let compared = "compare-open = \"o\"\ncompare-metric-previous = []";
     let row = key_row(compared, Page::Compare);
     assert!(row.contains("o open") && row.contains("→ metric"), "{row}");

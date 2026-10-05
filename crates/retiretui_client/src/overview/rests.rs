@@ -46,7 +46,7 @@ pub fn rests_on(projected: &Projected) -> Vec<Assumption> {
         ),
         row(
             "Returns",
-            returns.join(" · "),
+            returns.join(", "),
             DomainId::Market,
             "stocks.mean",
         ),
@@ -61,7 +61,10 @@ pub fn rests_on(projected: &Projected) -> Vec<Assumption> {
         let lived_in = residence(home).to_owned();
         rows.push(row("Lives in", lived_in, DomainId::Residency, "state"));
     }
-    rows.push(counts_as_success(plan));
+    rows.push(Assumption {
+        label: "Success is",
+        ..counts_as_success(plan)
+    });
     rows
 }
 
@@ -89,7 +92,7 @@ mod tests {
             )
         );
         assert_eq!((rows[1].1.as_str(), rows[1].3), ("2.5%", Some("inflation")));
-        assert!(rows[2].1.starts_with("stocks ") && rows[2].1.contains(" · bonds "));
+        assert!(rows[2].1.starts_with("stocks ") && rows[2].1.contains(", bonds "));
         assert_eq!(
             (rows[2].2, rows[2].3),
             (DomainId::Market, Some("stocks.mean"))
@@ -100,11 +103,7 @@ mod tests {
         );
         assert_eq!(
             (rows[4].0, rows[4].1.as_str(), rows[4].3),
-            (
-                "Counts as a success",
-                "Never running short",
-                Some("leave_at_least")
-            )
+            ("Success is", "Never running short", Some("leave_at_least"))
         );
     }
 

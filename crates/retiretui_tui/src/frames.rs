@@ -65,7 +65,7 @@ fn the_overview_draws_each_chart_view() {
     for size in [SIZE, ROOMY] {
         let mut app = searched_fixture(size);
         super::tools::settle_all(&mut app);
-        for view in ["net_worth", "income_taxes"] {
+        for view in ["net_worth", "income_taxes", "markets"] {
             press_key(&mut app, KeyCode::Char('v'));
             app.update();
             assert_frame(&format!("overview_{view}"), size, &app);

@@ -23,7 +23,7 @@ pub const STRIP: [&str; 4] = [MONEY_LASTS, SUCCESS, LOW_POINT, ENDS_WITH];
 /// year.
 pub const STILL_EARNING: &str = "Earning to the end";
 /// What a surface says of its figures while the draft has issues.
-pub const STALE: &str = "The figures below are the last the plan had without them.";
+pub const STALE: &str = "The figures are the last the plan had without its issues.";
 /// What the chart of the plan through random markets is titled.
 pub const MARKETS_CHART: &str = "Net worth through random markets";
 /// The Overview's charts in the order they are turned through.

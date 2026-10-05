@@ -16,13 +16,13 @@ use crate::pane::{Framed, Pane};
 use crate::theme::Theme;
 use crate::tools::Tool;
 
-const OUTER: &str = "░";
-const INNER: &str = "▒";
+pub(crate) const OUTER: &str = "░";
+pub(crate) const INNER: &str = "▒";
 /// The bands' places in [`retiretui_engine::market::BAND_PERCENTILES`].
-const OUTER_BAND: (usize, usize) = (0, 4);
-const INNER_BAND: (usize, usize) = (1, 3);
+pub(crate) const OUTER_BAND: (usize, usize) = (0, 4);
+pub(crate) const INNER_BAND: (usize, usize) = (1, 3);
 const RUN_SERIES: usize = 0;
-const PLANNED: &str = "As planned";
+pub(crate) const PLANNED: &str = "As planned";
 
 pub(super) fn install<R: MarketTool>(app: &mut App) {
     app.add_systems(
@@ -47,7 +47,12 @@ pub(super) fn spawn_pane<R: MarketTool>(commands: &mut Commands, column: Entity)
 }
 
 /// A band between two of the percentiles, year by year.
-fn band(runs: &Runs, (low, high): (usize, usize), symbol: &'static str, theme: &Theme) -> Shade {
+pub(crate) fn band(
+    runs: &Runs,
+    (low, high): (usize, usize),
+    symbol: &'static str,
+    theme: &Theme,
+) -> Shade {
     Shade {
         points: runs
             .bands
@@ -63,7 +68,7 @@ fn band(runs: &Runs, (low, high): (usize, usize), symbol: &'static str, theme: &
 }
 
 /// One run's net worth year by year, from the plan's start.
-fn line(runs: &Runs, label: &str, run: &Run, theme: &Theme) -> Series {
+pub(crate) fn line(runs: &Runs, label: &str, run: &Run, theme: &Theme) -> Series {
     let years = runs.bands.iter().map(|band| f64::from(band.year));
     Series {
         label: label.to_owned(),

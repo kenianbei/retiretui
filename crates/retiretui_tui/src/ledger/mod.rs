@@ -31,9 +31,10 @@ use super::theme::Theme;
 mod detail;
 mod flows;
 mod split;
+mod todo;
 
 pub fn plugin(app: &mut App) {
-    app.add_plugins((detail::plugin, flows::plugin, split::plugin));
+    app.add_plugins((detail::plugin, flows::plugin, split::plugin, todo::plugin));
     app.add_systems(Startup, spawn_ledger.after(layout::spawn_frame));
     app.init_resource::<LedgerRun>();
     app.add_systems(
@@ -126,6 +127,7 @@ fn spawn_ledger(bodies: Query<Entity, With<Body>>, mut commands: Commands) {
         placed(),
         ChildOf(pane),
     ));
+    todo::spawn_pane(&mut commands, view);
     let detail = split::spawn_detail(&mut commands, view);
     flows::spawn_pane(&mut commands, detail);
     detail::spawn_pane(&mut commands, detail);

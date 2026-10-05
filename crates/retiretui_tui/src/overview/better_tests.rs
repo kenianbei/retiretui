@@ -16,8 +16,8 @@ use crate::present::{compact_money, signed_money};
 use crate::session::{Projected, Session};
 use crate::success::{Success, Successes};
 use crate::support::{
-    Headless, SETTLING_TICKS, SIZE, TEST_PLAN, active_page, commit_edit, headless_app_at,
-    press_key, redrawn, scratch_dir, scratch_plan, searched_app, show,
+    Headless, SETTLING_TICKS, TEST_PLAN, active_page, commit_edit, headless_app_at, press_key,
+    redrawn, scratch_dir, scratch_plan, searched_app, show,
 };
 use crate::tools::ladders::Swept;
 use crate::tools::ladders::tests::table_rows;
@@ -25,6 +25,9 @@ use crate::tools::ladders::{self, Constraints, rate_label};
 use crate::tools::orders::tests::RETIREE;
 use crate::tools::{self, Claims, Found, Tool, settle_all};
 use retiretui_engine::market::Runs;
+
+/// Wide enough that no row of Could do better runs on to a second line.
+const WIDE: plurimus::core::TerminalSize = plurimus::core::TerminalSize::new(320, 40);
 
 /// Two people, each with a 401(k) and a Roth IRA, the second named.
 const ROTH_OWNERS: &str = r#"
@@ -151,7 +154,7 @@ fn takes(app: &mut App, ladder: &SweptBracket, destination: &str) {
 
 #[test]
 fn each_roth_owner_is_swept_into_their_own_roth() {
-    let mut app = searched_app(scratch_plan(), ROTH_OWNERS, SIZE);
+    let mut app = searched_app(scratch_plan(), ROTH_OWNERS, WIDE);
     let frame = redrawn(&mut app);
     for (name, destination) in [("me", "roth"), ("Sam", "you-roth")] {
         let best = best_ladder(&app, destination);
@@ -169,7 +172,7 @@ fn each_roth_owner_is_swept_into_their_own_roth() {
 /// row the one the Overview read.
 #[test]
 fn enter_on_a_ladder_opens_its_search_with_the_same_best() {
-    let mut app = searched_app(scratch_plan(), ROTH_OWNERS, SIZE);
+    let mut app = searched_app(scratch_plan(), ROTH_OWNERS, WIDE);
     let tables = app.world().resource::<Session>().tables.clone();
     let plan = projected(&app).plan.clone();
     let (options, _) = options_of(&app, "roth");
@@ -238,7 +241,7 @@ fn a_held_constraint_is_searched_under_and_kept() {
     let mut app = searched_app(
         scratch_plan(),
         &std::fs::read_to_string(fixture).unwrap(),
-        SIZE,
+        WIDE,
     );
     let current = rank_key(&projected(&app).projection);
     let (options, _) = options_of(&app, ROTH);
@@ -280,7 +283,7 @@ fn a_held_constraint_is_searched_under_and_kept() {
 /// saying so, and ⏎ on it still aims the page at their Roth.
 #[test]
 fn an_owner_refused_under_the_held_answers_keeps_a_row() {
-    let mut app = searched_app(scratch_plan(), ROTH_OWNERS, SIZE);
+    let mut app = searched_app(scratch_plan(), ROTH_OWNERS, WIDE);
     let mut answers = toml::Table::new();
     answers.insert("from".to_owned(), "k".into());
     app.world_mut()
@@ -303,7 +306,7 @@ fn an_owner_refused_under_the_held_answers_keeps_a_row() {
 /// already holds the best one has nothing to gain.
 #[test]
 fn a_plan_holding_the_best_ladder_shows_no_gain() {
-    let mut app = searched_app(scratch_plan(), ROTH_OWNERS, SIZE);
+    let mut app = searched_app(scratch_plan(), ROTH_OWNERS, WIDE);
     let best = best_ladder(&app, "roth");
     takes(&mut app, &best, "roth");
     let frame = redrawn(&mut app);
@@ -315,7 +318,7 @@ fn a_plan_holding_the_best_ladder_shows_no_gain() {
 
 #[test]
 fn the_claim_search_shows_its_best_and_enter_opens_it() {
-    let mut app = searched_app(scratch_plan(), &claiming(), SIZE);
+    let mut app = searched_app(scratch_plan(), &claiming(), WIDE);
     let search = claim_search(&app);
     let best = search.best();
     let row = format!(
@@ -340,7 +343,7 @@ fn the_claim_search_shows_its_best_and_enter_opens_it() {
 
 #[test]
 fn claims_already_at_their_best_say_so() {
-    let mut app = searched_app(scratch_plan(), &claiming(), SIZE);
+    let mut app = searched_app(scratch_plan(), &claiming(), WIDE);
     let search = claim_search(&app);
     let (added, claims) = (search.added.clone(), search.best().claims.clone());
     commit_edit(&mut app, move |plan: &mut Plan| {
@@ -357,7 +360,7 @@ fn a_plan_with_nothing_to_search_says_so() {
         "inflation = 0.025",
         "inflation = 0.025\nwithdrawal_order = [\"deferred\"]",
     );
-    let mut app = searched_app(scratch_plan(), &one_class, SIZE);
+    let mut app = searched_app(scratch_plan(), &one_class, WIDE);
     let frame = redrawn(&mut app);
     assert!(
         frame.contains("No conversion, claim or withdrawal order to search"),
@@ -367,7 +370,7 @@ fn a_plan_with_nothing_to_search_says_so() {
 
 #[test]
 fn the_order_search_shows_its_best_and_enter_opens_it() {
-    let mut app = searched_app(scratch_plan(), RETIREE, SIZE);
+    let mut app = searched_app(scratch_plan(), RETIREE, WIDE);
     let found = app.world().resource::<Better>().found().unwrap();
     let best = found.order.as_ref().expect("searched").best().clone();
     let row = format!(
@@ -398,7 +401,7 @@ fn the_order_search_shows_its_best_and_enter_opens_it() {
 
 #[test]
 fn the_searches_run_only_while_the_overview_is_shown() {
-    let mut app = searched_app(scratch_plan(), ROTH_OWNERS, SIZE);
+    let mut app = searched_app(scratch_plan(), ROTH_OWNERS, WIDE);
     let is_running = |app: &App| app.world().resource::<Better>().is_running();
     commit_edit(&mut app, |plan: &mut Plan| plan.expenses[0].amount = 50_000);
     app.update();
@@ -420,8 +423,14 @@ fn the_searches_run_only_while_the_overview_is_shown() {
 #[test]
 fn a_failing_historical_start_leads_to_the_historical_page() {
     let plan = TEST_PLAN.replace("amount = 60000", "amount = 90000");
-    let mut app = searched_app(scratch_plan(), &plan, SIZE);
+    let mut app = searched_app(scratch_plan(), &plan, WIDE);
     hold(&mut app, "Needs attention");
+    let frame = redrawn(&mut app);
+    assert!(
+        frame.contains("▌ Runs short from "),
+        "it is said first: {frame}"
+    );
+    press_key(&mut app, KeyCode::Down);
     let frame = redrawn(&mut app);
     let (_, rest) = frame.split_once("▌ Fails from a ").expect(&frame);
     let start = &rest[..4];
@@ -439,7 +448,7 @@ fn a_failing_historical_start_leads_to_the_historical_page() {
 
 #[test]
 fn the_empty_shell_searches_nothing() {
-    let mut app = headless_app_at(scratch_dir(), SIZE);
+    let mut app = headless_app_at(scratch_dir(), WIDE);
     app.insert_resource(tools::Searches(true));
     for _ in 0..SETTLING_TICKS {
         app.update();
@@ -465,7 +474,7 @@ fn assert_taken<R: Found>(app: &mut Headless) {
 
 #[test]
 fn a_tool_opened_from_the_overview_takes_its_answer() {
-    let mut app = searched_app(scratch_plan(), ROTH_OWNERS, SIZE);
+    let mut app = searched_app(scratch_plan(), ROTH_OWNERS, WIDE);
     tools::hold::<Swept>(&mut app, true);
     tools::hold::<Runs>(&mut app, true);
     hold(&mut app, "Could do better");
@@ -476,7 +485,7 @@ fn a_tool_opened_from_the_overview_takes_its_answer() {
     nav::turn_in(app.world_mut(), Page::Historical);
     assert_taken::<Runs>(&mut app);
 
-    let mut app = searched_app(scratch_plan(), &claiming(), SIZE);
+    let mut app = searched_app(scratch_plan(), &claiming(), WIDE);
     tools::hold::<ClaimSearch>(&mut app, true);
     nav::turn_in(app.world_mut(), Page::SsaBenefits);
     assert_taken::<ClaimSearch>(&mut app);
