@@ -86,14 +86,20 @@ pub(super) fn read_key(
         let line = if key.keyed.is_empty() {
             Line::styled(key.waits_on.clone(), theme.dimmed())
         } else {
-            let full = key_line(&key.keyed, year, money);
-            if full.width() <= usize::from(area.0.width) {
-                full
-            } else {
-                key_line(&key.keyed, year, compact_money)
-            }
+            fitted(&key.keyed, year, area.0.width)
         };
         *widget = UiWidget::new(Paragraph::new(line));
+    }
+}
+
+/// The key at `year`: its figures whole where `width` holds them, and
+/// compact where it does not.
+fn fitted(keyed: &[Keyed], year: Option<i16>, width: u16) -> Line<'static> {
+    let full = key_line(keyed, year, money);
+    if full.width() <= usize::from(width) {
+        full
+    } else {
+        key_line(keyed, year, compact_money)
     }
 }
 
@@ -144,6 +150,9 @@ mod tests {
         assert!(read.contains(&format!("░░ pre-tax {deferred}  ")), "{read}");
         let compact = said(&key_line(&keyed, Some(2040), compact_money));
         assert!(compact.len() < read.len(), "{compact}");
+        let width = u16::try_from(key_line(&keyed, Some(2040), money).width()).unwrap();
+        assert_eq!(said(&fitted(&keyed, Some(2040), width)), read);
+        assert_eq!(said(&fitted(&keyed, Some(2040), width - 1)), compact);
         assert_eq!(
             said(&key_line(&keyed, Some(1999), money)),
             said(&key_line(&keyed, None, money)),

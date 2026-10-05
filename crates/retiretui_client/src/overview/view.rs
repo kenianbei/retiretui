@@ -221,6 +221,7 @@ mod tests {
         let view = View::new(&projected_from(&short), true);
         let shortfall = view.shortfall.unwrap();
         assert_eq!(view.money_lasts, format!("Through {}", shortfall.year - 1));
+        assert_eq!(shortfall.place, (DomainId::Expenses, None));
         assert!(
             shortfall
                 .said

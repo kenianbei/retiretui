@@ -421,6 +421,30 @@ fn the_searches_run_only_while_the_overview_is_shown() {
 }
 
 #[test]
+fn the_ceiling_is_searched_after_the_rest_and_stopped_on_leaving() {
+    let mut app = searched_app(scratch_plan(), ROTH_OWNERS, WIDE);
+    let is_searching = |app: &App| app.world().resource::<Better>().is_ceiling_running();
+    commit_edit(&mut app, |plan: &mut Plan| plan.expenses[0].amount = 50_000);
+    app.update();
+    assert!(app.world().resource::<Better>().is_running());
+    assert!(!is_searching(&app), "the rest are searched first");
+    for _ in 0..5_000 {
+        if is_searching(&app) {
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(2));
+        app.update();
+    }
+    assert!(is_searching(&app), "then the ceiling");
+    nav::turn_in(app.world_mut(), Page::Ledger);
+    app.update();
+    assert!(!is_searching(&app), "leaving the page stops it");
+    let plan = app.world().resource::<Projected>().plan.clone();
+    let better = app.world().resource::<Better>();
+    assert!(better.spending(&plan, &toml::Table::new()).is_none());
+}
+
+#[test]
 fn a_failing_historical_start_leads_to_the_historical_page() {
     let plan = TEST_PLAN.replace("amount = 60000", "amount = 90000");
     let mut app = searched_app(scratch_plan(), &plan, WIDE);

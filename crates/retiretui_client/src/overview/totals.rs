@@ -306,10 +306,33 @@ mod tests {
     #[test]
     fn todays_dollars_deflate_each_year_before_summing() {
         let projected = projected_from(FULL);
-        let summary = projected.projection.summary(true);
+        let today = |of: fn(&YearRow) -> Dollars| {
+            let years = projected.projection.years.iter();
+            compact_money(
+                years
+                    .map(|row| basis_amount(of(row), row.deflator, false))
+                    .sum(),
+            )
+        };
         let found = amounts(&projected, false);
-        assert_eq!(found[3].1, compact_money(summary.lifetime_taxes));
-        assert_ne!(found, amounts(&projected, true));
+        assert_eq!(
+            found,
+            [
+                ("Income", today(|row| row.total_income)),
+                ("Withdrawals", today(YearRow::total_withdrawals)),
+                ("Spending", today(|row| row.expenses)),
+                ("Taxes", today(|row| row.taxes.total)),
+                ("Converted", today(|row| row.conversions)),
+                ("Required", today(|row| row.rmds)),
+                ("Medicare", today(|row| row.medicare)),
+            ]
+        );
+        let nominal = amounts(&projected, true);
+        let differing = found
+            .iter()
+            .zip(&nominal)
+            .filter(|(today, nominal)| today != nominal);
+        assert!(differing.count() >= 4, "{found:?} against {nominal:?}");
     }
 
     #[test]

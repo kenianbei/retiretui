@@ -114,6 +114,11 @@ impl Better {
     }
 
     #[cfg(test)]
+    pub(crate) fn is_ceiling_running(&self) -> bool {
+        self.ceiling.running.is_some()
+    }
+
+    #[cfg(test)]
     pub(crate) fn is_running(&self) -> bool {
         self.running.is_some() || self.ceiling.running.is_some()
     }

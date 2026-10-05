@@ -374,6 +374,23 @@ mod tests {
     }
 
     #[test]
+    fn a_year_s_actions_are_said_in_the_basis_asked() {
+        let projected = projected();
+        let years = &projected.projection.years;
+        let row = (years.iter().skip(1))
+            .find(|row| !row.actions.is_empty())
+            .expect("a later year with something to do");
+        let said = |is_nominal| {
+            year_detail(&projected, row.year, is_nominal)
+                .unwrap()
+                .actions
+        };
+        assert_eq!(said(false), actions_said(&projected.plan, row, false));
+        assert_eq!(said(true), actions_said(&projected.plan, row, true));
+        assert_ne!(said(false), said(true));
+    }
+
+    #[test]
     fn charted_figures_follow_the_basis() {
         let projected = projected();
         let nominal = chart(&projected, true);

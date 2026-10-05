@@ -8,7 +8,7 @@ use crate::edit::Row;
 use crate::edit::tests::cursor as table_row;
 use crate::nav::Page;
 use crate::pane::Framed;
-use crate::session::YearCursor;
+use crate::session::{Basis, YearCursor};
 use crate::success::Successes;
 use crate::support::{
     Headless, ROOMY, SIZE, TEST_PLAN, active_page, commit_edit, composed_frame, headless_app,
@@ -191,6 +191,12 @@ fn the_markets_chart_is_drawn_once_the_runs_answer() {
     assert!(
         frame.contains("░░ 10th to 90th  ▒▒ 25th to 75th  ── median"),
         "{frame}"
+    );
+    app.world_mut().resource_mut::<Basis>().nominal = true;
+    let frame = redrawn(&mut app);
+    assert!(
+        frame.contains("Net worth through random markets · today's dollars"),
+        "the runs are kept in today's dollars alone: {frame}"
     );
 }
 
