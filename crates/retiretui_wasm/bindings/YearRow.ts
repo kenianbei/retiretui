@@ -33,6 +33,15 @@ total_income: number,
  */
 expenses: number, 
 /**
+ * The part of `expenses` the plan marks essential.
+ */
+expenses_essential: number, 
+/**
+ * The part of `expenses` the household could spend more or less of:
+ * recurring, and not essential. The rest is spent once.
+ */
+expenses_flexible: number, 
+/**
  * Medicare surcharges and crossed-cliff costs spent this year.
  */
 medicare: number, 
