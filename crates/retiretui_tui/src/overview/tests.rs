@@ -3,7 +3,6 @@ use bevy_ecs::prelude::Entity;
 use bevy_input_focus::InputFocus;
 use plurimus::term::KeyCode;
 
-use super::verdict::TileAt;
 use crate::edit::Row;
 use crate::edit::tests::cursor as table_row;
 use crate::nav::Page;
@@ -25,12 +24,9 @@ fn holder(app: &App) -> Option<Entity> {
     app.world().resource::<InputFocus>().get()
 }
 
-/// The title of the pane the keyboard is in; the Success tile has none.
+/// The title of the pane the keyboard is in.
 pub(super) fn held_title(app: &mut App) -> String {
     let held = holder(app).expect("a pane holds the keyboard");
-    if app.world().get::<TileAt>(held).is_some() {
-        return "Success".to_owned();
-    }
     let pane = app
         .world()
         .get::<bevy_ecs::hierarchy::ChildOf>(held)

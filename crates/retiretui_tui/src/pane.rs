@@ -238,6 +238,8 @@ mod tests {
     #[test]
     fn the_frame_the_keyboard_stands_in_is_the_one_drawn_in_the_accent() {
         let mut app = headless_app(SIZE);
+        app.update();
+        assert_eq!(lit_titles(&mut app), ["Success"], "the Overview's tile");
         show(&mut app, Page::Ledger);
         assert_eq!(lit_titles(&mut app), ["Ledger"]);
         show(&mut app, Page::Accounts);

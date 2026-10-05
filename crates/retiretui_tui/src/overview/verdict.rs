@@ -1,13 +1,12 @@
 //! The verdict strip: whether the money lasts, how often it would across
 //! random markets in the colour of its zone, the least the household holds
-//! once it stops earning, and what it ends with. ⏎ on the Success tile
-//! opens the Monte Carlo page.
+//! once it stops earning, and what it ends with, each in a pane titled
+//! for what it says. ⏎ on the Success tile opens the Monte Carlo page.
 
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Component, Entity, Query, Res};
-use bevy_input_focus::InputFocus;
-use bevy_ui::{FlexDirection, Node, Val};
+use bevy_ui::{FlexDirection, Node};
 use plurimus::core::UiWidget;
 use plurimus::core::ratatui_core::style::{Modifier, Style};
 use plurimus::core::ratatui_core::text::Line;
@@ -17,8 +16,9 @@ use retiretui_client::searches::markets::{self, Markets};
 use retiretui_engine::market::MonteCarlo;
 
 use crate::hints::Hints;
-use crate::layout::{fixed, placed};
+use crate::layout::{fixed, growing, placed};
 use crate::nav::{FocusStop, Page};
+use crate::pane::{BORDERS, Pane};
 use crate::session::Projected;
 use crate::success::{Success, Successes};
 use crate::theme::Theme;
@@ -27,13 +27,13 @@ use crate::tools::{EnterRuns, handle_enter};
 
 use super::Viewed;
 
-/// A tile's label over its value.
-const STRIP_ROWS: f32 = 2.0;
+/// A tile's value between its pane's borders.
+const STRIP_ROWS: f32 = BORDERS as f32 + 1.0;
 const TILE_COUNT: usize = STRIP.len();
 /// The Success tile's place in the strip.
 const SUCCESS_AT: usize = 1;
 
-/// A tile of the strip, by its place.
+/// A tile's value, by its place in the strip.
 #[derive(Component, Clone, Copy)]
 pub(super) struct TileAt(usize);
 
@@ -43,18 +43,14 @@ pub(super) fn spawn(commands: &mut Commands, view: Entity) {
         ..fixed(STRIP_ROWS)
     };
     let strip = commands.spawn((strip, ChildOf(view))).id();
-    for place in 0..TILE_COUNT {
-        let node = Node {
-            flex_grow: 1.0,
-            flex_basis: Val::Px(0.0),
-            ..Node::default()
-        };
+    for (place, label) in STRIP.into_iter().enumerate() {
+        let framed = Pane::new(label).sharing(1.0).spawn(commands, strip);
         let mut tile = commands.spawn((
             TileAt(place),
-            node,
+            growing(),
             UiWidget::default(),
             placed(),
-            ChildOf(strip),
+            ChildOf(framed),
         ));
         if place == SUCCESS_AT {
             let page = Page::MonteCarlo.label();
@@ -65,27 +61,17 @@ pub(super) fn spawn(commands: &mut Commands, view: Entity) {
 }
 
 struct Tile {
-    label: &'static str,
     value: String,
     /// What the value is drawn in, past bold.
     style: Style,
 }
 
 impl Tile {
-    /// The label is lit while the tile holds the keyboard.
-    fn paragraph(&self, theme: &Theme, is_focused: bool) -> Paragraph<'static> {
-        let label = if is_focused {
-            theme.accented()
-        } else {
-            theme.dimmed()
-        };
-        Paragraph::new(vec![
-            Line::styled(format!(" {}", self.label), label),
-            Line::styled(
-                format!(" {}", self.value),
-                self.style.add_modifier(Modifier::BOLD),
-            ),
-        ])
+    fn paragraph(&self) -> Paragraph<'static> {
+        Paragraph::new(Line::styled(
+            format!(" {}", self.value),
+            self.style.add_modifier(Modifier::BOLD),
+        ))
     }
 }
 
@@ -113,30 +99,25 @@ fn tiles(view: &View, success: (Success, String), theme: &Theme) -> [Tile; TILE_
         Success::Rate(rate) => zone_style(rate, theme),
         _ => Style::new(),
     };
-    let values = [
+    [
         (view.money_lasts.clone(), lasts),
         (said, surely),
         (view.low_point.clone(), Style::new()),
         (view.ends_with.clone(), Style::new()),
-    ];
-    let mut labels = STRIP.into_iter();
-    values.map(|(value, style)| Tile {
-        label: labels.next().unwrap_or_default(),
-        value,
-        style,
-    })
+    ]
+    .map(|(value, style)| Tile { value, style })
 }
 
 /// Rewrites each tile whenever what it reads moves: the page as the
 /// client says it and the theme for every one, and the Success tile also
-/// its answer and whether it holds the keyboard.
+/// its answer.
 pub(super) fn refresh(
     (viewed, projected, theme): (Res<Viewed>, Res<Projected>, Res<Theme>),
-    (successes, focus): (Res<Successes>, Res<InputFocus>),
-    mut parts: Query<(Entity, &TileAt, &mut UiWidget)>,
+    successes: Res<Successes>,
+    mut parts: Query<(&TileAt, &mut UiWidget)>,
 ) {
     let is_moved = viewed.is_changed() || theme.is_changed();
-    let is_success_moved = is_moved || successes.is_changed() || focus.is_changed();
+    let is_success_moved = is_moved || successes.is_changed();
     let Some(view) = &viewed.0 else {
         return;
     };
@@ -145,15 +126,14 @@ pub(super) fn refresh(
     }
     let success = successes.of(&projected.plan);
     let tiles = tiles(view, (success, success_text(success, &projected)), &theme);
-    for (tile, TileAt(place), mut widget) in &mut parts {
+    for (TileAt(place), mut widget) in &mut parts {
         let is_stale = if *place == SUCCESS_AT {
             is_success_moved
         } else {
             is_moved
         };
         if is_stale {
-            let is_focused = focus.get() == Some(tile);
-            *widget = UiWidget::new(tiles[*place].paragraph(&theme, is_focused));
+            *widget = UiWidget::new(tiles[*place].paragraph());
         }
     }
 }

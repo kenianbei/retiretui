@@ -177,9 +177,10 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   - Four figures: how long the money lasts, its success through random markets,
     the lowest the net worth falls after the last salary ends with its year, and
     what the plan ends with. The low point takes the place of lifetime taxes,
-    which is now one of the totals. The terminal says of a plan that runs short
-    the last year it is funded through, as the web app does, and how much goes
-    uncovered under Needs attention.
+    which is now one of the totals. The terminal draws each in a pane titled for
+    what it says, as it draws the rest of the page, and says of a plan that runs
+    short the last year it is funded through, as the web app does, and how much
+    goes uncovered under Needs attention.
   - Three lists side by side: Milestones, Needs attention, and Could do better.
     In the terminal a plan that runs short leads the list, under any issues the
     draft has, and its row leads to that year in the Ledger and to its expenses.
