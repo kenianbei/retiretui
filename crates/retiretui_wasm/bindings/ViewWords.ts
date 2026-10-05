@@ -22,22 +22,31 @@ flow_headers: [[string, boolean], [string, boolean], [string, boolean], [string,
  */
 income_and_tax: string, 
 /**
- * The balances chart.
+ * What a year has the household do.
  */
-balances_chart: string, 
+to_do: string, 
 /**
- * The net worth chart.
+ * The Overview's charts, in the order they are turned through: the
+ * balances, net worth, income against taxes, and the random markets.
  */
-net_worth_chart: string, 
+charts: [string, string, string, string], 
 /**
- * The income chart.
- */
-income_chart: string, 
-/**
- * The Overview's strip: how long the money lasts, how surely, what it
- * ends with and what it pays in tax.
+ * The Overview's strip: how long the money lasts, how surely, the
+ * least it holds once it stops earning, and what it ends with.
  */
 strip: [string, string, string, string], 
+/**
+ * The Overview's lifetime totals.
+ */
+over_the_plan: string, 
+/**
+ * The Overview's assumptions.
+ */
+rests_on: string, 
+/**
+ * What is said of the figures while the draft has issues.
+ */
+stale: string, 
 /**
  * The Overview's list of what needs attention.
  */

@@ -6,8 +6,8 @@
 use retiretui_client::overview::{FailingStart, failing_start};
 use retiretui_client::present::MoneyForm;
 use retiretui_client::searches::markets::{
-    self, Ending, Listed, Markets, NOTHING_SEARCHED, PLANNED, Zone, market_key, market_of,
-    market_said, zone_of,
+    self, Assumption, Ending, Listed, Markets, NOTHING_SEARCHED, PLANNED, Zone, market_key,
+    market_of, market_said, zone_of,
 };
 use retiretui_client::searches::page_refusal;
 use retiretui_client::session::Projected;
@@ -96,6 +96,17 @@ pub struct AssumptionRow {
     pub field: Option<&'static str>,
 }
 
+impl From<Assumption> for AssumptionRow {
+    fn from(assumption: Assumption) -> Self {
+        Self {
+            label: assumption.label,
+            value: assumption.value,
+            domain: slug_of(assumption.domain),
+            field: assumption.field,
+        }
+    }
+}
+
 /// What the market tools say that no search does.
 #[derive(Serialize, Debug)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
@@ -136,12 +147,7 @@ fn runs_of<M: Markets>(plan: &Plan, found: &M) -> MarketRuns {
     });
     let assumptions = markets::assumptions::<M>(plan)
         .into_iter()
-        .map(|assumption| AssumptionRow {
-            label: assumption.label,
-            value: assumption.value,
-            domain: slug_of(assumption.domain),
-            field: assumption.field,
-        })
+        .map(AssumptionRow::from)
         .collect();
     MarketRuns {
         verdict: found.headline(),

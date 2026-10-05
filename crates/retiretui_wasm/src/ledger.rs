@@ -1,23 +1,22 @@
 //! The projection as the Ledger and the Overview's charts show it: the
 //! year table, a year's flows, income and tax, and the series charted.
 
-use retiretui_client::actions::{NOTHING_SCHEDULED, collect_warnings};
+use retiretui_client::actions::{NOTHING_SCHEDULED, actions_said, collect_warnings};
 use retiretui_client::ledger::{
-    AccountFlows, DetailLine, FLOW_HEADERS, FLOWS, INCOME_AND_TAX, account_flows, income_and_tax,
-    ledger_headers, salary_marks,
+    AccountFlows, DetailLine, FLOW_HEADERS, FLOWS, INCOME_AND_TAX, TO_DO, account_flows,
+    income_and_tax, ledger_headers, salary_marks,
 };
-use retiretui_client::overview::{ATTENTION, MILESTONES, NOTHING};
-use retiretui_client::present::{
-    BALANCES_CHART, ENDS_WITH, INCOME_CHART, LIFETIME_TAXES, MONEY_LASTS, MoneyForm,
-    NET_WORTH_CHART, SUCCESS, basis_name, compact_money, money, treatment_class,
+use retiretui_client::overview::{
+    ATTENTION, CHARTS, MILESTONES, NOTHING, OVER_THE_PLAN, RESTS_ON, STALE, STRIP,
 };
+use retiretui_client::present::{MoneyForm, basis_name, compact_money, money, treatment_word};
 use retiretui_client::replies::year_row;
 use retiretui_client::session::Projected;
 use retiretui_client::table::{
     Column, ages_text, basis_amount, percentile_label, present_classes, year_figures,
 };
 use retiretui_engine::market::BAND_PERCENTILES;
-use retiretui_engine::plan::Dollars;
+use retiretui_engine::plan::{Dollars, Item};
 use serde::Serialize;
 use wasm_bindgen::prelude::{JsError, JsValue, wasm_bindgen};
 
@@ -50,6 +49,10 @@ pub struct LedgerRow {
 #[derive(Serialize, Debug)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct YearDetail {
+    /// Each person, by display name, and the age they reach in the year.
+    pub ages: Vec<(String, u8)>,
+    /// What the year has the household do, each action a sentence.
+    pub actions: Vec<String>,
     /// Each account the year touches, from its open to its close.
     pub flows: Vec<AccountFlows>,
     /// The year's income by source.
@@ -64,8 +67,8 @@ pub struct YearDetail {
 #[derive(Serialize, Debug)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct ChartSeries {
-    /// The treatment classes the plan uses, named, in the order each
-    /// year's `classes` are.
+    /// The treatment classes the plan uses, named as a chart keys them, in
+    /// the order each year's `classes` are.
     pub classes: Vec<&'static str>,
     /// Each year, first to last.
     pub years: Vec<ChartYear>,
@@ -131,7 +134,14 @@ pub fn year_detail(
     let previous = projection.row(year - 1);
     let (income, paid) = income_and_tax(plan, row, is_nominal);
     let deflating = (!is_nominal).then_some(projection);
+    let people = plan.household.people.iter();
+    let ages = people.filter_map(|person| {
+        let age = *row.ages.get(&person.id)?;
+        Some((person.display_name().to_owned(), age))
+    });
     Ok(YearDetail {
+        ages: ages.collect(),
+        actions: actions_said(plan, row, is_nominal),
         flows: account_flows(plan, previous, row, is_nominal),
         income,
         paid,
@@ -156,10 +166,7 @@ pub fn chart(projected: &Projected, is_nominal: bool) -> ChartSeries {
     });
     let marks = salary_marks(projected).into_iter();
     ChartSeries {
-        classes: classes
-            .iter()
-            .map(|&class| treatment_class(class))
-            .collect(),
+        classes: classes.iter().map(|&class| treatment_word(class)).collect(),
         years: years.collect(),
         marks: marks
             .map(|(label, year)| ChartMark { year, label })
@@ -187,7 +194,7 @@ impl JsDocument {
         }))
     }
 
-    /// `year`'s flows, income, payments and warnings, nominal or in
+    /// `year`'s to-dos, flows, income, payments and warnings, nominal or in
     /// today's dollars, in the plan's own market or the one `market` names.
     ///
     /// # Errors
@@ -272,15 +279,20 @@ pub struct ViewWords {
     pub flow_headers: [(&'static str, bool); 6],
     /// The year's income beside what it paid.
     pub income_and_tax: &'static str,
-    /// The balances chart.
-    pub balances_chart: &'static str,
-    /// The net worth chart.
-    pub net_worth_chart: &'static str,
-    /// The income chart.
-    pub income_chart: &'static str,
-    /// The Overview's strip: how long the money lasts, how surely, what it
-    /// ends with and what it pays in tax.
+    /// What a year has the household do.
+    pub to_do: &'static str,
+    /// The Overview's charts, in the order they are turned through: the
+    /// balances, net worth, income against taxes, and the random markets.
+    pub charts: [&'static str; 4],
+    /// The Overview's strip: how long the money lasts, how surely, the
+    /// least it holds once it stops earning, and what it ends with.
     pub strip: [&'static str; 4],
+    /// The Overview's lifetime totals.
+    pub over_the_plan: &'static str,
+    /// The Overview's assumptions.
+    pub rests_on: &'static str,
+    /// What is said of the figures while the draft has issues.
+    pub stale: &'static str,
     /// The Overview's list of what needs attention.
     pub attention: &'static str,
     /// What it says where nothing does.
@@ -303,10 +315,12 @@ pub fn view_words() -> Result<JsValue, JsError> {
         flows: FLOWS,
         flow_headers: FLOW_HEADERS,
         income_and_tax: INCOME_AND_TAX,
-        balances_chart: BALANCES_CHART,
-        net_worth_chart: NET_WORTH_CHART,
-        income_chart: INCOME_CHART,
-        strip: [MONEY_LASTS, SUCCESS, ENDS_WITH, LIFETIME_TAXES],
+        to_do: TO_DO,
+        charts: CHARTS,
+        strip: STRIP,
+        over_the_plan: OVER_THE_PLAN,
+        rests_on: RESTS_ON,
+        stale: STALE,
         attention: ATTENTION,
         nothing_wanting: NOTHING,
         milestones: MILESTONES,

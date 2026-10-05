@@ -11,12 +11,13 @@ import {
 import { compareSearch, withSearch } from "@/compare/search";
 import { DOMAINS, pageOf, TOOLS } from "@/nav";
 import { newPlanSearch } from "@/onboarding/steps";
+import { overviewSearch } from "@/overview/search";
 import { Failed } from "@/pages/failed";
 import { NotFound } from "@/pages/not-found";
 import { planSearch } from "@/plan/search";
 import { Shell } from "@/shell/shell";
 import { toolSearch } from "@/tools/search";
-import { type KeptKey, ledgerSearch, yearSearch } from "@/year/search";
+import { type KeptKey, ledgerSearch } from "@/year/search";
 
 /**
  * The pages, each loaded the first time it is shown, so that what charts
@@ -66,7 +67,7 @@ const overview = createRoute({
   getParentRoute: () => root,
   path: "/overview",
   staticData: { keeps: ["year", "basis", "held"] },
-  validateSearch: yearSearch,
+  validateSearch: overviewSearch,
   component: PAGES.overview,
 });
 

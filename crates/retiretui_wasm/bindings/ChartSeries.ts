@@ -7,8 +7,8 @@ import type { ChartYear } from "./ChartYear";
  */
 export type ChartSeries = { 
 /**
- * The treatment classes the plan uses, named, in the order each
- * year's `classes` are.
+ * The treatment classes the plan uses, named as a chart keys them, in
+ * the order each year's `classes` are.
  */
 classes: Array<string>, 
 /**

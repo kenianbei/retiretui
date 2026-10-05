@@ -12,7 +12,7 @@ use bevy_ui::{Node, Val};
 use plurimus::core::ratatui_core::style::Style;
 use plurimus::ui::{ComputedWidgetArea, ScrollArea};
 use plurimus::widgets::WidgetSystems;
-use retiretui_client::actions::{NOTHING_SCHEDULED, sentence};
+use retiretui_client::actions::{NOTHING_SCHEDULED, actions_said};
 use retiretui_client::ledger::TO_DO;
 use retiretui_engine::plan::Plan;
 use retiretui_engine::project::YearRow;
@@ -42,13 +42,9 @@ pub(super) fn spawn_pane(commands: &mut Commands, parent: Entity) {
     commands.entity(list).insert(TodoList);
 }
 
-/// What `row` has the household do, in nominal dollars or today's.
+/// What `row` has the household do, or that it is nothing.
 fn actions(plan: &Plan, row: &YearRow, nominal: bool) -> Vec<String> {
-    let deflator = (!nominal).then_some(row.deflator);
-    let said = row.actions.iter();
-    let mut said: Vec<String> = said
-        .map(|action| sentence(plan, action, deflator))
-        .collect();
+    let mut said = actions_said(plan, row, nominal);
     if said.is_empty() {
         said.push(NOTHING_SCHEDULED.to_owned());
     }

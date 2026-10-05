@@ -79,7 +79,7 @@ function Lines({ label, lines }: { label: string; lines: DetailLine[] }) {
   );
 }
 
-/** The year's flows through each account, and its income and what it paid. */
+/** What the year has the household do, its flows through each account, and its income and what it paid. */
 export function YearDetailCards({
   year,
   unit,
@@ -90,8 +90,30 @@ export function YearDetailCards({
   detail: YearDetail;
 }) {
   const title = (what: string) => `${String(year)} ${what} · ${unit}`;
+  const ages = detail.ages.map(([name, age]) => `${name} turns ${String(age)}`);
   return (
     <>
+      <Card className="gap-3 py-4 @4xl:col-span-2">
+        <CardHeader className="px-4">
+          <CardTitle>{title(VIEW_WORDS.to_do)}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 px-4 text-sm">
+          {ages.length > 0 && (
+            <p className="text-muted-foreground">{ages.join(" · ")}</p>
+          )}
+          {detail.actions.length === 0 ? (
+            <p className="text-muted-foreground">
+              {VIEW_WORDS.nothing_scheduled}
+            </p>
+          ) : (
+            <ul className="space-y-1 tabular-nums">
+              {detail.actions.map((action, at) => (
+                <li key={at}>{action}</li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
       <Card className="gap-3 py-4">
         <CardHeader className="px-4">
           <CardTitle>{title(VIEW_WORDS.flows)}</CardTitle>

@@ -5,10 +5,15 @@ import {
 } from "@wasm/retiretui_wasm.js";
 import { useMemo } from "react";
 
-import { ROTH_CONVERSIONS, SSA_BENEFITS, WITHDRAWAL_ORDER } from "@/nav";
+import {
+  ROTH_CONVERSIONS,
+  SPENDING_CEILING,
+  SSA_BENEFITS,
+  WITHDRAWAL_ORDER,
+} from "@/nav";
 import { Rows, ToolRow } from "@/overview/lists";
 import type { Basis } from "@/overview/words";
-import { useClaims, useLadders, useOrders } from "@/searches";
+import { useClaims, useLadders, useOrders, useSpending } from "@/searches";
 import { useSession } from "@/session";
 
 const WORDS = claimWords();
@@ -66,10 +71,22 @@ function BetterRow({
   );
 }
 
+/** What the plan could spend at the Spending Ceiling's target, leading to the tool. */
+function CeilingRow({ plan }: { plan: string }) {
+  const { reading } = useSession();
+  const target = reading.document?.targetShare ?? 0;
+  const found = useSpending(plan, target, true);
+  if (found.error) return null;
+  const said =
+    found.data && !found.isPlaceholderData ? found.data.better : SEARCHING;
+  return <ToolRow page={SPENDING_CEILING}>{said}</ToolRow>;
+}
+
 /**
  * Could do better: each Roth owner's best ladder, the household's best
  * claims and the best order to withdraw in against the plan as it stands,
- * searched as their tools search them, each leading to its tool.
+ * searched as their tools search them, and what the plan could spend at
+ * the Spending Ceiling's target, each leading to its tool.
  */
 export function Better({
   plan,
@@ -107,6 +124,7 @@ export function Better({
             {WORDS.nothing_to_search}
           </li>
         )}
+        <CeilingRow plan={plan} />
       </Rows>
     </section>
   );
