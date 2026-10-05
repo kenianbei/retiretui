@@ -4,20 +4,42 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     groups:
-      cargo:
-        update-types: [minor, patch]
+      bevy:
+        patterns: ["bevy*"]
+      plurimus:
+        patterns: ["plurimus", "plurimus_filepicker"]
+      wasm-bindgen:
+        patterns: ["wasm-bindgen", "wasm-bindgen-futures", "web-sys", "js-sys"]
+      toml:
+        patterns: ["toml", "toml_edit"]
+      cargo-patch:
+        patterns: ["*"]
+        update-types: [patch]
   - package-ecosystem: npm
     directory: /web
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     groups:
+      react:
+        patterns: ["react", "react-dom", "@types/react", "@types/react-dom"]
+      tailwind:
+        patterns: ["tailwindcss", "@tailwindcss/vite"]
+      vite:
+        patterns: ["vite", "@vitejs/plugin-react", "vitest"]
       npm:
+        patterns: ["*"]
         update-types: [minor, patch]
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     groups:
       actions:
-        update-types: [minor, patch]
+        patterns: ["*"]
