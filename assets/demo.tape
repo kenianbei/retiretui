@@ -26,7 +26,7 @@ Sleep 1s
 Enter
 Sleep 3s
 
-Right@400ms 4
+Type@1500ms "vvv"
 Sleep 2s
 
 Type "2"
