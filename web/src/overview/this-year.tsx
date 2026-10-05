@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 
 import { MarginNote } from "@/components/margin-note";
-import type { Basis } from "@/overview/words";
-import { BASIS_LABEL, VIEW_WORDS } from "@/overview/view-words";
 import { Rows } from "@/overview/lists";
+import { BASIS_LABEL, VIEW_WORDS } from "@/overview/view-words";
+import type { Basis } from "@/overview/words";
 import { useSession } from "@/session";
 import { YearInLedger } from "@/year/ledger-link";
 import type { ShownYear } from "@/year/use-year";

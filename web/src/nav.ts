@@ -3,10 +3,10 @@ import { domains } from "@wasm/retiretui_wasm.js";
 import {
   ChartNoAxesColumn,
   Columns2,
+  type LucideIcon,
   NotebookPen,
   Table2,
   Wrench,
-  type LucideIcon,
 } from "lucide-react";
 
 /** A page a grouped tab holds, and what it will show. */

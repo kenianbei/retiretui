@@ -1,4 +1,4 @@
-import { compareWords, viewWords, type Metric } from "@wasm/retiretui_wasm.js";
+import { compareWords, type Metric, viewWords } from "@wasm/retiretui_wasm.js";
 
 import type { Basis } from "@/overview/words";
 

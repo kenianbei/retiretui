@@ -1,10 +1,10 @@
 import {
-  STATEMENT,
   example,
   expect,
   expectAccessible,
   isPhone,
   openPlan,
+  STATEMENT,
   seed,
   test,
 } from "./support";

@@ -4,7 +4,7 @@ import type { Editor } from "@wasm/retiretui_wasm.js";
 import { X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { useEffect, useMemo, useRef, useState } from "react";
-
+import { MarginNote } from "@/components/margin-note";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -14,7 +14,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MarginNote } from "@/components/margin-note";
 import { Button } from "@/components/ui/button";
 import { gathered } from "@/lib/utils";
 import { Field } from "@/plan/fields";

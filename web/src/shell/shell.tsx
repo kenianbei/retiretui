@@ -8,37 +8,37 @@ import {
 
 import { Search } from "lucide-react";
 import {
+  type ReactNode,
+  type RefObject,
   useEffect,
   useRef,
   useState,
-  type ReactNode,
-  type RefObject,
 } from "react";
 
 import { useComparedFollowDocument } from "@/compare/use-compared";
+import { GitHubMark } from "@/components/github-mark";
+import { Button } from "@/components/ui/button";
 import { DraftNotices, UnsavedQuestion } from "@/draft/notices";
 import { DraftToolbar } from "@/draft/toolbar";
 import { FileActionsProvider } from "@/files/actions";
 import { FileMenu } from "@/files/menu";
 import { Start } from "@/files/start";
-import { Button } from "@/components/ui/button";
-import { GitHubMark } from "@/components/github-mark";
-import { REPO_URL } from "@/links";
 import { cn } from "@/lib/utils";
+import { REPO_URL } from "@/links";
+import {
+  type GroupTab,
+  isGroup,
+  isWithin,
+  type Page,
+  TABS,
+  type Tab,
+} from "@/nav";
 import { useSession } from "@/session";
 import { Footer } from "@/shell/footer";
 import { useTabTarget } from "@/shell/go";
 import { KeysSheet } from "@/shell/keys";
-import { useShellKeys } from "@/shell/use-keys";
 import { Palette } from "@/shell/palette";
-import {
-  TABS,
-  isGroup,
-  isWithin,
-  type GroupTab,
-  type Page,
-  type Tab,
-} from "@/nav";
+import { useShellKeys } from "@/shell/use-keys";
 
 function useIsActive() {
   const { pathname } = useLocation();

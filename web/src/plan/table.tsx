@@ -1,8 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import {
-  sortPressed,
   type DomainTable,
   type Sort,
+  sortPressed,
   type TableRow,
 } from "@wasm/retiretui_wasm.js";
 import { ArrowDown, ArrowUp } from "lucide-react";
@@ -10,7 +10,7 @@ import { useMemo } from "react";
 
 import { columnsFor } from "@/components/columns";
 import { DataTable } from "@/components/data-table";
-import { INPUT, cn } from "@/lib/utils";
+import { cn, INPUT } from "@/lib/utils";
 
 interface ItemTableProps {
   slug: string;

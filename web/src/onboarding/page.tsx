@@ -6,18 +6,18 @@ import {
   useSearch,
 } from "@tanstack/react-router";
 import {
-  NewPlan,
-  setupSteps,
   type FieldView,
+  NewPlan,
   type Step as SetupStep,
+  setupSteps,
 } from "@wasm/retiretui_wasm.js";
 import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { CheckAnswers } from "@/onboarding/check";
 import {
-  CHECK,
   around,
+  CHECK,
   keepAnswers,
   keptAnswers,
   stepsAsked,

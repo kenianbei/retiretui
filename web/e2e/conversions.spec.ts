@@ -1,11 +1,11 @@
 import {
   COMPACT_MONEY,
-  FULL_MONEY,
-  SEARCH,
   example,
   expect,
   expectAccessible,
+  FULL_MONEY,
   isPhone,
+  SEARCH,
   searchesDone,
   seed,
   test,

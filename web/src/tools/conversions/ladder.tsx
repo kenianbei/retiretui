@@ -1,7 +1,7 @@
 import {
-  money,
   type LadderOption,
   type LadderYear,
+  money,
 } from "@wasm/retiretui_wasm.js";
 import { useMemo } from "react";
 

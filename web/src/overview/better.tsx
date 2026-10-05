@@ -1,6 +1,6 @@
 import {
-  claimWords,
   type Bases,
+  claimWords,
   type RothOwner,
 } from "@wasm/retiretui_wasm.js";
 import { useMemo } from "react";

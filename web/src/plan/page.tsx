@@ -1,6 +1,6 @@
 import { Link, useRouteContext, useSearch } from "@tanstack/react-router";
-import { ChevronLeft, Plus } from "lucide-react";
 import type { Sort } from "@wasm/retiretui_wasm.js";
+import { ChevronLeft, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";

@@ -1,5 +1,4 @@
 import {
-  SEARCH,
   compareWith,
   example,
   expect,
@@ -7,6 +6,7 @@ import {
   isPhone,
   openPlan,
   rowNamed,
+  SEARCH,
   searchesDone,
   seed,
   test,

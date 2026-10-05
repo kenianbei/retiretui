@@ -1,8 +1,8 @@
 import { Link } from "@tanstack/react-router";
-import { statementPage, type ReadRow } from "@wasm/retiretui_wasm.js";
+import { type ReadRow, statementPage } from "@wasm/retiretui_wasm.js";
 import { Pencil, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
-
+import { aligned } from "@/components/columns";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,7 +14,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { aligned } from "@/components/columns";
 import { cn, gathered } from "@/lib/utils";
 import { ImportStatement } from "@/plan/import-statement";
 import { useSession } from "@/session";

@@ -2,7 +2,7 @@ import { readdirSync } from "node:fs";
 
 import type { Page } from "@playwright/test";
 
-import { SEARCH, example, expect, seed, test } from "./support";
+import { example, expect, SEARCH, seed, test } from "./support";
 
 /** How many built files the page has cached. */
 function cachedBuilt(page: Page): Promise<number> {

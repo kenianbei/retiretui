@@ -1,9 +1,8 @@
 import type { OpenFailure } from "@wasm/retiretui_wasm.js";
 import { Download, Upload } from "lucide-react";
 import { useLayoutEffect, useRef } from "react";
-
-import { Button } from "@/components/ui/button";
 import { MarginNote } from "@/components/margin-note";
+import { Button } from "@/components/ui/button";
 import { useFileActions } from "@/files/actions";
 import { cn } from "@/lib/utils";
 import { nameOf } from "@/workspace";

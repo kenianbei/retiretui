@@ -1,10 +1,10 @@
 import {
-  SEARCH,
   example,
   expect,
   expectAccessible,
   isPhone,
   rowNamed,
+  SEARCH,
   seed,
   test,
 } from "./support";

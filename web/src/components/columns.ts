@@ -1,8 +1,8 @@
 import {
-  createColumnHelper,
-  tableFeatures,
   type ColumnDef,
+  createColumnHelper,
   type RowData,
+  tableFeatures,
 } from "@tanstack/react-table";
 
 /** What every table here knows of a column beyond its cells. */

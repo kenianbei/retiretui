@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 
 // The suite's own `test` fails on what a page throws, which is what these are about.
 // A worker in control would answer requests the tests mean to refuse.

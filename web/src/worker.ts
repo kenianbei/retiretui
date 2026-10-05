@@ -1,15 +1,15 @@
 import init, {
+  type ClaimsOptions,
   claims,
   historical,
-  ladders,
-  monteCarlo,
-  orders,
-  spending,
-  type ClaimsOptions,
   type LaddersReply,
+  ladders,
   type MarketRuns,
+  monteCarlo,
   type OrderOptions,
+  orders,
   type SpendingOptions,
+  spending,
 } from "@wasm/retiretui_wasm.js";
 
 /** What a search is asked, by the kind of search it is. */

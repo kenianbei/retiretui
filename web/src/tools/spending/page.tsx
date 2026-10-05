@@ -1,8 +1,8 @@
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import {
-  spendingWords,
   type CeilingOption,
   type SpendingOptions,
+  spendingWords,
 } from "@wasm/retiretui_wasm.js";
 import { useMemo } from "react";
 
@@ -10,14 +10,14 @@ import { columnsFor } from "@/components/columns";
 import { DataTable } from "@/components/data-table";
 import { MarginNote } from "@/components/margin-note";
 import type { Basis } from "@/overview/words";
-import { useSpending } from "@/searches";
 import { placeSearch } from "@/plan/search";
+import { useSpending } from "@/searches";
 import { useSession } from "@/session";
 import { ToolAbout } from "@/tools/about";
-import { SearchActions, type Chosen } from "@/tools/act";
-import { Options, type OptionRow } from "@/tools/options";
+import { type Chosen, SearchActions } from "@/tools/act";
+import { type OptionRow, Options } from "@/tools/options";
 import type { ToolSearch } from "@/tools/search";
-import { SettingsForm, SettingsRead, type Settings } from "@/tools/settings";
+import { type Settings, SettingsForm, SettingsRead } from "@/tools/settings";
 import { offeredName } from "@/workspace";
 import { basisOf } from "@/year/search";
 import { BasisSwitch } from "@/year/year";

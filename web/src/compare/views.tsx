@@ -1,9 +1,8 @@
 import type { CompareWords, Metric, YearFigure } from "@wasm/retiretui_wasm.js";
 import { useMemo } from "react";
 import { Line } from "recharts";
-
-import { columnsFor } from "@/components/columns";
 import { ChartSection } from "@/components/chart-section";
+import { columnsFor } from "@/components/columns";
 import { DataTable } from "@/components/data-table";
 import type { ChartConfig } from "@/components/ui/chart";
 import { cn, INPUT } from "@/lib/utils";

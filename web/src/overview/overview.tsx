@@ -1,9 +1,8 @@
 import { useSearch } from "@tanstack/react-router";
 import { useMemo } from "react";
-
+import { HISTORICAL } from "@/nav";
 import { Better } from "@/overview/better";
 import { EveryYear, PlanChart } from "@/overview/charts";
-import { HISTORICAL } from "@/nav";
 import { RowList, ToolRow } from "@/overview/lists";
 import { Problems, Shortfall } from "@/overview/notes";
 import { Strip } from "@/overview/strip";
