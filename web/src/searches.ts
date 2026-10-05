@@ -202,3 +202,24 @@ export function useOrders(plan: string, isSearchable: boolean) {
     retry: false,
   });
 }
+
+/**
+ * The most `plan`'s flexible spending could be, in its own market and in
+ * `success` of its random markets, searched only where `isSearchable`; the
+ * last found stays in view while the next is.
+ */
+export function useSpending(
+  plan: string,
+  success: number,
+  isSearchable: boolean,
+) {
+  return useQuery({
+    queryKey: ["spending", plan, success],
+    queryFn: ({ signal }) =>
+      runSearch({ kind: "spending", plan, success }, signal),
+    enabled: isSearchable,
+    placeholderData: keepPreviousData,
+    staleTime: Infinity,
+    retry: false,
+  });
+}

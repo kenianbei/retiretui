@@ -115,6 +115,7 @@ amount = 55000
 id = "medicare"
 name = "Medicare premiums"
 amount = 7000
+essential = true
 
 [[expenses]]
 id = "travel"

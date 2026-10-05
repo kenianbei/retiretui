@@ -9,6 +9,7 @@ pub mod ladders;
 pub mod markets;
 mod options;
 pub mod orders;
+pub mod spending;
 pub mod tax;
 mod worker;
 mod write;
@@ -39,6 +40,7 @@ use retiretui_engine::plan::Plan;
 pub use claims::Claims;
 pub use ladders::Ladders;
 pub use orders::Orders;
+pub use spending::Spending;
 pub(crate) use worker::Keyed;
 pub use worker::Searches;
 pub use write::OVERLAY_OVER;
@@ -57,6 +59,7 @@ pub fn plugin(app: &mut App) {
         claims::plugin,
         orders::plugin,
         markets::plugin,
+        spending::plugin,
         options::plugin_said,
         tax::plugin,
     ));
@@ -71,18 +74,21 @@ pub struct Idle<'w> {
     ladders: Res<'w, Ladders>,
     claims: Res<'w, Claims>,
     orders: Res<'w, Orders>,
+    spending: Res<'w, Spending>,
 }
 
 impl Idle<'_> {
     /// Whether the command named `name` would refuse for want of a result.
     pub fn is_idle(&self, name: &str) -> bool {
         use super::command::{
-            TAKE_CLAIMS, TAKE_LADDER, TAKE_ORDER, WRITE_CLAIMS, WRITE_LADDER, WRITE_ORDER,
+            TAKE_CLAIMS, TAKE_LADDER, TAKE_ORDER, TAKE_SPENDING, WRITE_CLAIMS, WRITE_LADDER,
+            WRITE_ORDER, WRITE_SPENDING,
         };
         match name {
             WRITE_LADDER | TAKE_LADDER => self.ladders.highlighted_bracket().is_none(),
             WRITE_CLAIMS | TAKE_CLAIMS => self.claims.found().is_none(),
             WRITE_ORDER | TAKE_ORDER => self.orders.found().is_none(),
+            WRITE_SPENDING | TAKE_SPENDING => self.spending.found().is_none(),
             _ => false,
         }
     }
@@ -97,8 +103,11 @@ pub trait Found: Send + Sync + 'static {
     /// itself with no time beside it.
     const IS_COUNTED: bool = false;
     /// Whether the cursor may rest on the plan's own row, as a row of its
-    /// own to open, rather than going on to the best option.
+    /// own to open, rather than going on to the first option.
     const IS_PLAN_ROW_CHOSEN: bool = false;
+
+    /// The option the cursor starts on, by its place among them.
+    const LEADING: usize = 0;
 
     /// The options pane's rows, over `plan` as it stands.
     fn laid(&self, plan: &Plan, nominal: bool) -> options::Laid;
@@ -398,6 +407,7 @@ pub fn settle_all(app: &mut bevy_app::App) {
     settle::<ladders::Swept>(app);
     settle::<retiretui_engine::market::MonteCarlo>(app);
     settle::<retiretui_engine::market::Runs>(app);
+    settle::<spending::Ceilings>(app);
     settle_until_idle(app, |app| {
         let successes = app.world().resource::<super::success::Successes>();
         successes.is_running()

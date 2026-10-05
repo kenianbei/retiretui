@@ -12,8 +12,8 @@ expression: composed_frame(app)
 │  Withdrawal Order ││  Deductions and penalties       ││  $24,800                12%                                                                                                                  │
 │  Monte Carlo      ││  Contribution limits            ││  $100,800               22%                                                                                                                  │
 │  Historical       ││  Medicare surcharges (IRMAA)    ││  $211,400               24%                                                                                                                  │
-│▏ Tax Tables       ││  Required minimum distributions ││  $403,550               32%                                                                                                                  │
-│                   ││  Social Security                ││  $512,450               35%                                                                                                                  │
+│  Spending Ceiling ││  Required minimum distributions ││  $403,550               32%                                                                                                                  │
+│▏ Tax Tables       ││  Social Security                ││  $512,450               35%                                                                                                                  │
 │                   ││  Oregon income tax              ││  $768,700               37%                                                                                                                  │
 │                   ││  Oregon brackets                ││                                                                                                                                              │
 │                   ││                                 ││                                                                                                                                              │

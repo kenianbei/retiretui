@@ -20,7 +20,7 @@ use super::journal;
 use super::nav::{self, ActivePage, Page};
 use super::session::{Projected, Session, YearCursor};
 use super::tools::claims::HeldClaims;
-use super::tools::{Claims, Ladders, Orders};
+use super::tools::{Claims, Ladders, Orders, Spending};
 use super::watch::Watch;
 
 pub use browse::{Browsing, FilePick};
@@ -157,5 +157,6 @@ fn reset_session(world: &mut World, projected: Projected, watch: Watch) {
     world.insert_resource(Ladders::default());
     world.insert_resource(Claims::default());
     world.insert_resource(Orders::default());
+    world.insert_resource(Spending::default());
     world.insert_resource(HeldClaims::default());
 }

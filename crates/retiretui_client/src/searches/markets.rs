@@ -18,7 +18,7 @@ pub const PLANNED: &str = "As planned";
 /// What a run never short says in its "Short in" cell.
 const NEVER: &str = "never";
 /// A share this high or above reads as comfortable.
-const GOOD_ZONE: f64 = 0.9;
+pub(crate) const GOOD_ZONE: f64 = 0.9;
 /// A share this high or above, and under [`GOOD_ZONE`], reads as close.
 const CAUTION_ZONE: f64 = 0.75;
 /// Where the ending buckets break, in today's dollars: under the first,
@@ -30,7 +30,7 @@ const WORST: &str = "Worst";
 const TRIAL: &str = "trial-";
 
 /// A share of runs to a tenth of a percent: `85.2%`.
-fn share(share: f64) -> String {
+pub(crate) fn share(share: f64) -> String {
     const TENTHS_OF_A_PERCENT: f64 = 1000.0;
     rate((share * TENTHS_OF_A_PERCENT).round() / TENTHS_OF_A_PERCENT)
 }

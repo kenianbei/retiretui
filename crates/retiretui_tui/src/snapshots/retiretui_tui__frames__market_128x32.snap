@@ -31,7 +31,7 @@ expression: composed_frame(app)
 │                   ││    Cash and inflation    0.5, the default                                                              █│
 │                   ││  Monte Carlo                                                                                           █│
 │                   ││    Draws from            Your return assumptions                                                       ║│
-│                   ││    Trials                1,000, the default                                                            ║│
+│                   ││    Trials                20                                                                            ║│
 │                   ││    Seed                  42, the default                                                               ▼│
 ╰───────────────────╯╰─────────────────────────────────────────────────────────────────────────────────────────────────────────╯
  ⏎ edit  esc domains  ⇥ pane  ctrl-s save  r reload  q quit  ctrl-↓ tab  n dollars                           : commands  ? help

@@ -1,15 +1,18 @@
 //! The `optimize` subcommands: the Roth conversion ladder, the Social
-//! Security claim search and the withdrawal-order search.
+//! Security claim search, the withdrawal-order search and the spending
+//! ceiling.
 
 mod claims;
 mod conversions;
 mod order;
+mod spending;
 
 use clap::Subcommand;
 
 pub use claims::ClaimArgs;
 pub use conversions::OptimizeArgs;
 pub use order::OrderArgs;
+pub use spending::SpendingArgs;
 
 /// What `optimize` searches.
 #[derive(Subcommand, Debug)]
@@ -23,6 +26,9 @@ pub enum OptimizeCommand {
     /// Try every order the classes the plan withdraws from can be drained
     /// in and rank them by what the household ends with.
     Order(OrderArgs),
+    /// Find the most the plan's flexible spending can be and still last: in
+    /// its own market, and in a share of its random markets.
+    Spending(SpendingArgs),
 }
 
 pub fn run(command: &OptimizeCommand) -> anyhow::Result<()> {
@@ -30,5 +36,6 @@ pub fn run(command: &OptimizeCommand) -> anyhow::Result<()> {
         OptimizeCommand::Conversions(args) => conversions::run(args),
         OptimizeCommand::Claims(args) => claims::run(args),
         OptimizeCommand::Order(args) => order::run(args),
+        OptimizeCommand::Spending(args) => spending::run(args),
     }
 }

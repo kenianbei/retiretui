@@ -200,6 +200,9 @@ disability exceptions.
   window semantics as income.
 - `medical` (bool, default false) - health spending, which an HSA pays without
   tax.
+- `essential` (bool, default false) - spending the household could not cut.
+  `optimize_spending` scales every recurring expense not marked `essential`, and
+  leaves a one-time (`on`) expense as stated either way.
 
 An HSA is drawn untaxed up to the year's `medical` spending, across the
 household. What it pays beyond that is ordinary income, and pays a 20% penalty
@@ -476,6 +479,11 @@ id = "living"
 amount = 48000
 
 [[expenses]]
+id = "housing"
+amount = 18000
+essential = true      # the spending ceiling leaves this as it is
+
+[[expenses]]
 id = "health"
 amount = 6000
 medical = true        # an HSA pays this without tax
@@ -532,5 +540,5 @@ or `monte_carlo` table replaces the base's whole. Within a matched item each
 stated field replaces the base field entirely - triggers never merge internally.
 `replace = true` substitutes the stated item wholesale, which is also how an
 optional field is cleared. `write_plan` accepts scenario documents and validates
-them fully resolved; `optimize_conversions`, `optimize_claims` and
-`optimize_order` each emit one.
+them fully resolved; `optimize_conversions`, `optimize_claims`, `optimize_order`
+and `optimize_spending` each emit one.

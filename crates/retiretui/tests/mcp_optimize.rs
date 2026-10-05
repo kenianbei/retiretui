@@ -122,3 +122,53 @@ fn optimize_order_ranks_the_orders_and_stores_the_best() {
     let refused = client.call_expecting_error("optimize_order", json!({"path": "claims.toml"}));
     assert!(refused.contains("nothing to order"), "{refused}");
 }
+
+#[test]
+fn optimize_spending_finds_both_ceilings_and_stores_the_one_at_the_target() {
+    let few = format!("{OPT_PLAN}\n[market.monte_carlo]\ntrials = 100\n");
+    let fixed = few.replace("amount = 40000", "amount = 40000\nessential = true");
+    let root = scratch_dir(
+        "mcp-spending",
+        "plan.toml",
+        &[("opt.toml", &few), ("fixed.toml", &fixed)],
+    );
+    let mut client = McpClient::spawn(&root);
+    let reply = client.call(
+        "optimize_spending",
+        json!({"path": "opt.toml", "success": 0.8, "write_to": "nested/ceiling.toml"}),
+    );
+    assert_eq!(reply["flexible"], 40_000, "{reply}");
+    let at_target = &reply["at_target"];
+    assert!(at_target["success"].as_f64().unwrap() >= 0.8, "{reply}");
+    assert!(
+        at_target["flexible"].as_i64() < reply["planned"]["flexible"].as_i64(),
+        "{reply}"
+    );
+    assert_eq!(reply["written"], true, "{reply}");
+    let scenario = reply["scenario_toml"].as_str().unwrap();
+    assert_eq!(
+        scenario,
+        format!(
+            "schema = 1\nbase = \"../opt.toml\"\n\n[[expenses]]\nid = \"living\"\namount = {}\n",
+            at_target["flexible"]
+        )
+    );
+    let valid = client.call("validate_plan", json!({"path": "nested/ceiling.toml"}));
+    assert_eq!(valid["issues"].as_array().unwrap().len(), 0, "{valid}");
+    let runs = client.call("plan_monte_carlo", json!({"path": "nested/ceiling.toml"}));
+    assert_eq!(runs["success_rate"], at_target["success"], "{runs}");
+
+    let at_default = client.call("optimize_spending", json!({"path": "opt.toml"}));
+    assert!(
+        at_default["at_target"]["success"].as_f64().unwrap() >= 0.9,
+        "{at_default}"
+    );
+    assert!(
+        at_default["at_target"]["flexible"].as_i64() < at_target["flexible"].as_i64(),
+        "nine markets in ten leave less to spend than eight: {at_default}"
+    );
+    assert_eq!(at_default["written"], false, "{at_default}");
+
+    let refused = client.call_expecting_error("optimize_spending", json!({"path": "fixed.toml"}));
+    assert!(refused.contains("no flexible spending"), "{refused}");
+}

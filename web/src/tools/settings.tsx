@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
+import type { Document, Editor, ReadRow } from "@wasm/retiretui_wasm.js";
 import { Pencil } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { messageOf } from "@/lib/utils";
@@ -9,18 +10,27 @@ import { FormSheet } from "@/plan/sheet";
 import { useSession } from "@/session";
 import type { ToolSearch } from "@/tools/search";
 
-/** The constraints the ladders are searched under, read out, and Edit. */
-export function Constraints() {
+/** A tool's own settings, held beside the draft: how they are read, opened and held. */
+export interface Settings {
+  heading: string;
+  read: (document: Document) => ReadRow[];
+  open: (document: Document) => Editor;
+  apply: (document: Document, editor: Editor) => void;
+}
+
+/** A tool's settings read out, and Edit. */
+export function SettingsRead({ settings }: { settings: Settings }) {
   const { reading } = useSession();
+  const heading = useId();
   const rows = useMemo(
-    () => reading.document?.constraintsRead() ?? [],
-    [reading],
+    () => (reading.document ? settings.read(reading.document) : []),
+    [reading, settings],
   );
   return (
-    <section aria-labelledby="constraints" className="space-y-3">
+    <section aria-labelledby={heading} className="space-y-3">
       <div className="flex items-center gap-2">
-        <h2 id="constraints" className="mr-auto text-lg font-semibold">
-          Constraints
+        <h2 id={heading} className="mr-auto text-lg font-semibold">
+          {settings.heading}
         </h2>
         <Button variant="outline" size="sm" asChild>
           <Link
@@ -38,12 +48,15 @@ export function Constraints() {
   );
 }
 
-/** The constraints open in their form, held whole once applied. */
-export function ConstraintsForm() {
+/** A tool's settings open in their form, held whole once applied. */
+export function SettingsForm({ settings }: { settings: Settings }) {
   const session = useSession();
   const navigate = useNavigate({ from: "/tools/$page" });
   const { document } = session;
-  const editor = useMemo(() => document?.constraints() ?? null, [document]);
+  const editor = useMemo(
+    () => (document ? settings.open(document) : null),
+    [document, settings],
+  );
   const [refusal, setRefusal] = useState<string | null>(null);
 
   if (!editor) return null;
@@ -57,7 +70,7 @@ export function ConstraintsForm() {
   const apply = () => {
     try {
       session.change((document) => {
-        document.applyConstraints(editor);
+        settings.apply(document, editor);
       });
       setRefusal(null);
       close();

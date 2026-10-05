@@ -6,13 +6,14 @@ use std::collections::BTreeMap;
 
 use retiretui_engine::market::{BAND_PERCENTILES, Band, MonteCarlo, Run, RunName, Runs};
 use retiretui_engine::optimize::{
-    BracketSweep, Claim, ClaimSearch, LadderStep, OptimizedLadder, OrderSearch,
+    BracketSweep, Claim, ClaimSearch, LadderStep, OptimizedLadder, OrderSearch, ScaledExpense,
 };
 use retiretui_engine::plan::{Dollars, Plan, TreatmentClass};
 use retiretui_engine::project::{Action, Projection, Summary, YearRow};
 use schemars::JsonSchema;
 use serde::Serialize;
 
+use crate::searches::spending::{self, Listed};
 use crate::table::percentile_label;
 
 /// One year's to-dos, as `actions` and `plan_actions` reply.
@@ -126,6 +127,68 @@ impl OrderReply {
                     summary: candidate.projection.summary(deflated),
                 })
                 .collect(),
+        }
+    }
+}
+
+/// A spending ceiling search, as `optimize spending` and
+/// `optimize_spending` reply.
+#[derive(Serialize, JsonSchema)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+pub struct SpendingReply {
+    /// Headline figures of the plan as stated.
+    pub baseline: Summary,
+    /// What the plan spends a year on what it could cut: every recurring
+    /// expense not marked `essential`, in today's dollars.
+    pub flexible: Dollars,
+    /// The share of its Monte Carlo markets the plan lasts in as stated.
+    pub success: f64,
+    /// The most flexible spending that lasts in the plan's own market.
+    pub planned: CeilingEntry,
+    /// The most that lasts in the target share of its Monte Carlo markets.
+    pub at_target: CeilingEntry,
+}
+
+/// One spending ceiling.
+#[derive(Serialize, JsonSchema)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+pub struct CeilingEntry {
+    /// What every flexible amount is multiplied by; 1.0 is the plan.
+    pub factor: f64,
+    /// Whether the search stopped at its highest factor with the plan still
+    /// lasting, so the ceiling is at least this.
+    pub is_capped: bool,
+    /// Flexible spending a year at the ceiling, in today's dollars.
+    pub flexible: Dollars,
+    /// The share of its Monte Carlo markets the plan lasts in at the
+    /// ceiling.
+    pub success: f64,
+    /// Headline figures at the ceiling, in the plan's own market.
+    pub summary: Summary,
+    /// Each flexible expense's annual amount at the ceiling, in today's
+    /// dollars.
+    pub expenses: Vec<ScaledExpense>,
+}
+
+impl SpendingReply {
+    /// The reply for what was found over `plan`.
+    #[must_use]
+    pub fn new(found: &spending::Found, plan: &Plan, deflated: bool) -> Self {
+        let entry = |listed: &Listed| CeilingEntry {
+            factor: listed.ceiling.factor,
+            is_capped: listed.ceiling.is_capped,
+            flexible: listed.flexible(),
+            success: listed.success,
+            summary: listed.ceiling.judged.projection.summary(deflated),
+            expenses: listed.ceiling.expenses.clone(),
+        };
+        let [planned, at_target] = found.listed();
+        Self {
+            baseline: found.planned.baseline.projection.summary(deflated),
+            flexible: plan.flexible_spending(),
+            success: found.plan_success(),
+            planned: entry(&planned),
+            at_target: entry(&at_target),
         }
     }
 }

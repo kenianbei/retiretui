@@ -8,7 +8,7 @@ expression: composed_frame(app)
 ┴──────────┴┴────────┴╯         ╰┴───────┴┴──────┴──────────────────────────────────────────────────────────────────────────────
 ╭ Plans · today's dollars ──────────────────────────────────────────────────────────╮╭ Changes · full.toml ────────────────────╮
 │     Plan        Ends with  Money lasts  Success  Net worth 2026  Lifetime taxes   ││▏ The baseline.                          │
-│▌ ━━ full.toml      $2.17M  Never short    99.7%          $1.07M           $661k   ││                                         │
+│▌ ━━ full.toml      $2.17M  Never short     100%          $1.07M           $661k   ││                                         │
 │                                                                                   ││                                         │
 │                                                                                   ││                                         │
 │                                                                                   ││                                         │

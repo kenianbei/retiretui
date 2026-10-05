@@ -100,6 +100,7 @@ pub struct Pickers {
     pub ladder: FilePick,
     pub claims: FilePick,
     pub order: FilePick,
+    pub spending: FilePick,
     new_plan: FilePick,
     /// The Social Security statement to record on a person.
     pub earnings: FilePick,
@@ -128,24 +129,10 @@ pub fn register(world: &mut World) {
             badges: Badges::Compared,
             chosen: world.register_system(compare_chosen),
         },
-        ladder: writing(
-            world,
-            "Write overlay",
-            tools::ladders::write_overlay,
-            tools::OVERLAY_OVER,
-        ),
-        claims: writing(
-            world,
-            "Write overlay",
-            tools::claims::write_overlay,
-            tools::OVERLAY_OVER,
-        ),
-        order: writing(
-            world,
-            "Write overlay",
-            tools::orders::write_overlay,
-            tools::OVERLAY_OVER,
-        ),
+        ladder: overlay(world, tools::ladders::write_overlay),
+        claims: overlay(world, tools::claims::write_overlay),
+        order: overlay(world, tools::orders::write_overlay),
+        spending: overlay(world, tools::spending::write_overlay),
         new_plan: writing(world, "New plan as", setup::write_new, SAVE_OVER),
         earnings: FilePick {
             title: "Import earnings from",
@@ -237,6 +224,14 @@ fn is_the_document(session: &Session, path: &Path) -> bool {
         .as_deref()
         .and_then(|document| store.canonical(document).ok());
     document.is_some_and(|document| store.canonical(path).is_ok_and(|path| path == document))
+}
+
+/// A picker a tool writes its highlighted result through, as a scenario.
+fn overlay<M: 'static>(
+    world: &mut World,
+    write: impl IntoSystem<In<PathBuf>, (), M> + Copy + Send + Sync + 'static,
+) -> FilePick {
+    writing(world, "Write overlay", write, tools::OVERLAY_OVER)
 }
 
 /// A picker over the documents whose chosen name `write` is run with, after

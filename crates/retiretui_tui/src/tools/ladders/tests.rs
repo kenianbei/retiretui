@@ -105,6 +105,8 @@ fn applying_the_form_stores_the_constraints_and_leaves_the_draft_clean() {
     type_start_year(&mut app);
     assert_eq!(tool(&app).get("start_year"), Some(&Value::Integer(2030)));
     assert!(!app.world().resource::<Draft>().is_dirty());
+    let read_out = redrawn(&mut app);
+    assert!(read_out.contains("First year    2030"), "{read_out}");
     press_ctrl(&mut app, KeyCode::Char('z'));
     assert_eq!(
         said(&app).last().map(String::as_str),

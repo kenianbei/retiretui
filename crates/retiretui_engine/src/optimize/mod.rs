@@ -5,7 +5,9 @@
 mod claims;
 mod conversions;
 mod estimate;
+mod measure;
 mod order;
+mod spending;
 
 pub use claims::{
     Claim, ClaimCandidate, ClaimSearch, apply_claims, claims_overlay, optimize_claims,
@@ -15,7 +17,12 @@ pub use conversions::{
     SweptBracket, apply_ladder, is_ladder, ladder_overlay, optimize_conversions, sweep_brackets,
 };
 pub use estimate::{benefit_estimates, career_at_salary};
+pub use measure::{Judged, Measure};
 pub use order::{OrderCandidate, OrderSearch, apply_order, optimize_order, order_overlay};
+pub use spending::{
+    CEILING_STEPS, MAX_FACTOR, ScaledExpense, SpendingCeiling, apply_spending, spending_ceiling,
+    spending_overlay,
+};
 
 use std::cmp::Reverse;
 

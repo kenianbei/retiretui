@@ -25,6 +25,8 @@ const {
   setupSteps,
   statementPage,
   sortPressed,
+  spending,
+  spendingWords,
   validate,
   version,
   viewWords,
@@ -238,6 +240,36 @@ assert.match(
   /base = "ordering.toml"\n\n\[plan\]\nwithdrawal_order = \[/,
 );
 assert.throws(() => ordering.takeOrder(["cash"]));
+
+files.set("/plans/spending.toml", `${starter.text}\n[market.monte_carlo]\ntrials = 20\n`);
+const spent = Document.open("/plans/spending.toml", read);
+assert.equal(spent.targetShare, 0.9);
+const target = spent.target();
+target.set("success", undefined, "80%");
+spent.applyTarget(target);
+assert.equal(spent.targetShare, 0.8);
+assert.equal(spent.targetRead()[0].text, "80%");
+const ceilings = spending(spent.planText(), spent.targetShare);
+assert.deepEqual(
+  ceilings.options.map(({ key, held_to }) => [key, held_to]),
+  [
+    ["planned", "In its own market"],
+    ["target", "In 80% of markets"],
+  ],
+);
+assert.equal(spendingWords().item_columns.length, 3);
+const [, atTarget] = ceilings.options;
+assert.equal(atTarget.items.length, atTarget.expenses.length);
+assert.match(atTarget.question, /^Set flexible spending to \$/);
+assert.match(spent.takeSpending(atTarget.expenses), /^flexible spending is now \$/);
+assert.throws(() => spent.spendingScenario("/plans/ceiling.toml", atTarget.expenses), /save first/);
+spent.save(() => {});
+assert.match(
+  spent.spendingScenario("/plans/ceiling.toml", atTarget.expenses),
+  /base = "spending.toml"\n\n\[\[expenses\]\]\nid = /,
+);
+assert.throws(() => spent.takeSpending([{ id: 1 }]));
+assert.throws(() => spending(spent.planText(), 2), /share/);
 
 const scenario = files.get("/plans/claimed.toml") ?? 'schema = 1\nbase = "claiming.toml"\n';
 assert.equal(baseOf("/plans/claimed.toml", scenario), "/plans/claiming.toml");

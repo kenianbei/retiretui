@@ -31,6 +31,11 @@ describe("toolSearch", () => {
     expect(toolSearch({ order: "Taxable, Roth" })).toEqual({});
   });
 
+  it("keeps a spending ceiling by its key", () => {
+    expect(toolSearch({ ceiling: "planned" })).toEqual({ ceiling: "planned" });
+    expect(toolSearch({ ceiling: true })).toEqual({});
+  });
+
   it("keeps the year, and the status and state whose tax tables show", () => {
     expect(toolSearch({ year: "2031", status: "single", state: "or" })).toEqual(
       { year: 2031, status: "single", state: "or" },

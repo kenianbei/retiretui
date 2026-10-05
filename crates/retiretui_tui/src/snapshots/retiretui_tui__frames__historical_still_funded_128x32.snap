@@ -12,8 +12,8 @@ expression: composed_frame(app)
 │  Withdrawal Order ││  Counts as a success  Never running short      ││▏ 1968               $0 2054 (79)                     ║│
 │  Monte Carlo      ││  Years                1871–2025, wrapped       ││  1969               $0 2054 (79)                     ║│
 │▏ Historical       ││  Fixed return         cash, brokerage, fid-401 ││  1967               $0 2055 (80)                     ║│
-│  Tax Tables       ││                                                ││  1966               $0 2055 (80)                     ║│
-│                   ││                                                ││  1970               $0 2055 (80)                     ║│
+│  Spending Ceiling ││                                                ││  1966               $0 2055 (80)                     ║│
+│  Tax Tables       ││                                                ││  1970               $0 2055 (80)                     ║│
 │                   ││                                                ││  1971               $0 2056 (81)                     ▼│
 │                   ││                                                │╰───────────────────────────────────────────────────────╯
 │                   ││                                                │╭ Still Funded · share of runs ─────────────────────────╮

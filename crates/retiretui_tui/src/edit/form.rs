@@ -330,9 +330,17 @@ fn handle_text_submit(
     items: Items,
     mut state: SessionFocus,
     mut editor: DraftEditor,
+    mut commands: Commands,
 ) {
     items.set(submit.entity, Entered::Text(&submit.value), &mut state);
-    state.apply(items.key_of(submit.entity), &mut editor);
+    let label = items.key_of(submit.entity);
+    act(
+        FormButton::Apply,
+        label,
+        &mut state,
+        &mut editor,
+        &mut commands,
+    );
 }
 
 /// A flag's box reports the state it moved to.
@@ -433,7 +441,7 @@ pub fn handle_button(
 
 /// Does what a form's button does, then what the form does once it has:
 /// nothing, for all but a tool that acts on its answers at once.
-fn act(
+pub(super) fn act(
     which: FormButton,
     label: Option<&str>,
     state: &mut SessionFocus,

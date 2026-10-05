@@ -14,6 +14,7 @@ mod orders;
 mod overview;
 mod searches;
 mod setup;
+mod spending;
 mod tax_tables;
 mod unopened;
 mod view;
@@ -101,7 +102,8 @@ const TYPES: &str = r#"import type {
   Ledger, MarketRuns, MarketWords, Metric, OrderOptions, OrderWords, OverviewView, PersonAction,
   PersonRow, PlacedIssue,
   NewPlanMade, OpenFailure,
-  Projection, ReadRow, RothOwner, SaidYear, Searched, Sort, Step, Summary, TablesView,
+  Projection, ReadRow, RothOwner, SaidYear, ScaledExpense, Searched, Sort, SpendingOptions,
+  SpendingWords, Step, Summary, TablesView,
   TreatmentClass, ViewWords, YearDetail, YearFigure, YearTables,
 } from "../bindings/index";
 export type * from "../bindings/index";"#;
@@ -330,6 +332,7 @@ mod bindings {
     use crate::overview::OverviewView;
     use crate::searches::Example;
     use crate::setup::NewPlanMade;
+    use crate::spending::{SpendingOptions, SpendingWords};
     use crate::view::FieldView;
     use crate::vocabulary::Domain;
     use retiretui_client::setup::Step;
@@ -354,6 +357,8 @@ mod bindings {
         RothOwner::export_all,
         OrderOptions::export_all,
         OrderWords::export_all,
+        SpendingOptions::export_all,
+        SpendingWords::export_all,
         MarketRuns::export_all,
         MarketWords::export_all,
         CompareView::export_all,

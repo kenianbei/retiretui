@@ -8,11 +8,13 @@ export interface ToolSearch extends YearSearch {
   claim?: string;
   /** The highlighted order, its classes joined: `taxable-roth-deferred`; the best where none. */
   order?: string;
+  /** The highlighted spending ceiling, by its key; the one the search leads with where none. */
+  ceiling?: string;
   /** The highlighted person, by place in the household; the first where none. */
   person?: number;
   /** The highlighted market run: `planned`, `p90`, `worst`, a start year; the plan's own where none. */
   run?: string;
-  /** Whether the constraints are open in their form. */
+  /** Whether the tool's own settings are open in their form. */
   edit?: true;
   /** The filing status whose tax tables are shown; the plan's where none. */
   status?: string;
@@ -29,6 +31,7 @@ export function toolSearch(search: Record<string, unknown>): ToolSearch {
   const person = wholeOf(search.person);
   const claim = textOf(search.claim);
   const order = textOf(search.order);
+  const ceiling = textOf(search.ceiling);
   const run = textOf(search.run);
   const status = textOf(search.status);
   const state = textOf(search.state);
@@ -37,6 +40,7 @@ export function toolSearch(search: Record<string, unknown>): ToolSearch {
     ...(bracket !== undefined && { bracket }),
     ...(claim !== undefined && CLAIM_KEY.test(claim) && { claim }),
     ...(order !== undefined && ORDER_KEY.test(order) && { order }),
+    ...(ceiling !== undefined && { ceiling }),
     ...(person !== undefined && person >= 0 && { person }),
     ...(run !== undefined && { run }),
     ...((search.edit === true || search.edit === "true") && { edit: true }),

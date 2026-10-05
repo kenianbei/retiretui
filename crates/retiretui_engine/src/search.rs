@@ -45,6 +45,16 @@ pub enum RunError {
     Refused(Vec<Issue>),
 }
 
+impl RunError {
+    /// A refusal for the one reason `message`, at `path`.
+    pub(crate) fn refused(path: &str, message: &str) -> Self {
+        Self::Refused(vec![Issue {
+            path: path.to_owned(),
+            message: message.to_owned(),
+        }])
+    }
+}
+
 /// The steps at `range`, stopping early once `progress` is cancelled.
 fn run_range<T>(
     range: std::ops::Range<usize>,

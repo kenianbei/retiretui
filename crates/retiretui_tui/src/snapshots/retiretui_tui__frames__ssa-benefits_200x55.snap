@@ -12,8 +12,8 @@ expression: composed_frame(app)
 │  Withdrawal Order ││  alex   No record No benefit  -   -  -                                                 ││                                                                                       │
 │  Monte Carlo      ││                                                                                        ││                                                                                       │
 │  Historical       ││                                                                                        ││                                                                                       │
+│  Spending Ceiling ││                                                                                        ││                                                                                       │
 │  Tax Tables       ││                                                                                        ││                                                                                       │
-│                   ││                                                                                        ││                                                                                       │
 │                   ││                                                                                        ││                                                                                       │
 │                   ││                                                                                        ││                                                                                       │
 │                   ││                                                                                        ││                                                                                       │

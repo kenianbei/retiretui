@@ -1,7 +1,7 @@
-//! A tool's options pane: every option its search found, best first,
-//! under the plan as it stands. The plan's own row heads the body, dimmed,
-//! and the cursor never rests on it: landing there, by key or by pointer,
-//! sends it on to the best option.
+//! A tool's options pane: every option its search found under the plan as
+//! it stands. The plan's own row heads the body, dimmed, and the cursor
+//! never rests on it: landing there, by key or by pointer, sends it on to
+//! the first option.
 
 use std::marker::PhantomData;
 
@@ -128,7 +128,7 @@ fn refresh_options<R: Found>(
         // that; the header, the plan's own row and the options are told.
         let rows = laid.options.len().saturating_add(2);
         scroll.content_size.height = u16::try_from(rows).unwrap_or(u16::MAX);
-        let chosen = tool.highlighted().unwrap_or(0);
+        let chosen = tool.highlighted().unwrap_or(R::LEADING);
         let given = scroll.content_width(area.0.width);
         fill(&mut commands, table, (laid, given), chosen, &theme);
     }
@@ -210,7 +210,7 @@ fn fill(
 /// The option the table's cursor rests on is the one the tool's commands
 /// take; moving it redraws nothing, so the tool is not marked changed. A
 /// cursor that lands on the plan's own row rests there where the tool
-/// opens it, and goes on to the best option where it does not.
+/// opens it, and goes on to the first option where it does not.
 pub fn follow_cursor<R: Found>(
     mut tables: Query<
         (&mut ActiveDescendant, &Children),

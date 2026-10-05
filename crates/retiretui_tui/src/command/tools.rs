@@ -16,6 +16,8 @@ pub const WRITE_CLAIMS: &str = "write-claims";
 pub const TAKE_CLAIMS: &str = "take-claims";
 pub const WRITE_ORDER: &str = "write-order";
 pub const TAKE_ORDER: &str = "take-order";
+pub const WRITE_SPENDING: &str = "write-spending";
+pub const TAKE_SPENDING: &str = "take-spending";
 
 /// Every row the Tools tab's pages add to the command table.
 pub(super) fn commands() -> Vec<CommandSpec> {
@@ -26,6 +28,7 @@ pub(super) fn commands() -> Vec<CommandSpec> {
         orders(),
         market::<MonteCarlo>(),
         market::<Runs>(),
+        spending(),
         tax(),
     ]
     .into_iter()
@@ -156,6 +159,27 @@ fn orders() -> Vec<CommandSpec> {
             keys: vec![character("t")],
             hint: Some("take"),
             register: Box::new(|world| world.register_system(tools::orders::adopt)),
+        },
+    ]
+}
+
+fn spending() -> Vec<CommandSpec> {
+    vec![
+        CommandSpec {
+            name: WRITE_SPENDING,
+            scope: Scope::On(Page::SpendingCeiling),
+            doc: "write the highlighted ceiling as a scenario over the document",
+            keys: vec![character("w")],
+            hint: Some("write"),
+            register: Box::new(|world| world.register_system(tools::spending::write_picker)),
+        },
+        CommandSpec {
+            name: TAKE_SPENDING,
+            scope: Scope::On(Page::SpendingCeiling),
+            doc: "take the highlighted ceiling into the plan as what its expenses spend",
+            keys: vec![character("t")],
+            hint: Some("take"),
+            register: Box::new(|world| world.register_system(tools::spending::adopt)),
         },
     ]
 }

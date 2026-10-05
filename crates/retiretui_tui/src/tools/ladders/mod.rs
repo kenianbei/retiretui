@@ -10,8 +10,8 @@ pub(crate) mod tests;
 use std::path::PathBuf;
 
 use bevy_app::{App, Update};
-use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
-use bevy_ecs::prelude::{Commands, In, IntoScheduleConfigs, Local, Res, ResMut, World};
+use bevy_ecs::change_detection::DetectChanges;
+use bevy_ecs::prelude::{In, IntoScheduleConfigs, Local, Res, ResMut, World};
 use retiretui_engine::optimize::{
     LadderStep, OptimizeOptions, SweptBracket, apply_ladder, ladder_overlay,
 };
@@ -23,7 +23,7 @@ use super::{Found, NOTHING_SEARCHED_YET, Tool, ToolPage, write};
 use crate::command::Outcome;
 use crate::confirm::{Answer, Confirm};
 use crate::documents::{Browsing, Pickers};
-use crate::edit::{self, Draft, DraftEditor, FormButton, Ops};
+use crate::edit::{self, Draft, DraftEditor, Ops};
 use crate::journal;
 use crate::nav::{self, Page, ShownSurface};
 use crate::overview::Better;
@@ -51,8 +51,7 @@ pub fn plugin(app: &mut App) {
     guide::plugin(app);
 }
 
-const OPS: Ops = Ops::tool::<Constraints>(Some(Page::RothConversions), "Constraints", FIELDS)
-    .acting(["Discard", "Apply"], act);
+const OPS: Ops = Ops::tool::<Constraints>(Some(Page::RothConversions), "Constraints", FIELDS);
 const _: () = assert!(
     edit::help_fits(OPS.form.fields),
     "a field's help is missing or too long"
@@ -100,18 +99,6 @@ impl Tool<Swept> {
         let highlighted = self.highlighted().and_then(|at| brackets.get(at));
         highlighted.or_else(|| brackets.first())
     }
-}
-
-/// Applying holds the answers beside the draft without marking it
-/// changed, so the tool is marked instead, for the page to search again.
-fn act(which: FormButton, commands: &mut Commands) {
-    if which == FormButton::Apply {
-        commands.run_system_cached(mark_applied);
-    }
-}
-
-fn mark_applied(mut ladders: ResMut<Ladders>) {
-    ladders.set_changed();
 }
 
 /// Names the plan's one Roth account as the destination while the page is
