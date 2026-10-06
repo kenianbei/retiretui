@@ -58,6 +58,7 @@ export function DataTable<Row extends RowData>({
       },
     };
   // Without a focusable row, the keyboard reaches what scrolls through the frame itself.
+  // The frame is positioned so that what a cell hides for a screen reader scrolls and clips with its row.
   const reachable = onSelect
     ? undefined
     : { tabIndex: 0, role: "region", "aria-label": label };
@@ -65,7 +66,7 @@ export function DataTable<Row extends RowData>({
     <div
       {...reachable}
       className={cn(
-        "bg-card focus-visible:ring-ring/50 overflow-auto rounded-md border outline-none focus-visible:ring-[3px]",
+        "bg-card focus-visible:ring-ring/50 relative overflow-auto rounded-md border outline-none focus-visible:ring-[3px]",
         isFlush &&
           "rounded-none border-x-0 border-b-0 bg-transparent [&_tr>:first-child]:pl-4 [&_tr>:last-child]:pr-4",
         className,
