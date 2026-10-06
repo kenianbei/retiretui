@@ -1,41 +1,17 @@
-import { Link, useSearch } from "@tanstack/react-router";
-import type { LedgerRow } from "@wasm/retiretui_wasm.js";
-import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
+import { Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { useEffect, useMemo, useRef } from "react";
 
-import { columnsFor } from "@/components/columns";
-import { DataTable } from "@/components/data-table";
 import { MarginNote } from "@/components/margin-note";
-import { YearDetailCards } from "@/ledger/year-detail";
+import { columnSetOf } from "@/ledger/columns";
+import { ColumnsPick, MarkedStepper, ViewSwitch } from "@/ledger/controls";
+import { YearCards } from "@/ledger/year-detail";
+import { YearsList, YearTable } from "@/ledger/years";
 import { messageOf } from "@/lib/utils";
 import { BASIS_LABEL } from "@/overview/view-words";
 import { useSession } from "@/session";
 import { basisOf, type LedgerSearch } from "@/year/search";
 import { useYear } from "@/year/use-year";
 import { BasisSwitch, YearStepper } from "@/year/year";
-
-/** Where the table scrolls within its own half of the screen, the detail under it. */
-const WIDE = "(min-width: 1024px)";
-
-let wideQuery: MediaQueryList | undefined;
-
-function wide(): MediaQueryList {
-  wideQuery ??= window.matchMedia(WIDE);
-  return wideQuery;
-}
-
-function followWide(changed: () => void) {
-  wide().addEventListener("change", changed);
-  return () => {
-    wide().removeEventListener("change", changed);
-  };
-}
-
-/** Whether the table leads, the year's detail under it; narrower, the detail leads. */
-function useIsWide(): boolean {
-  return useSyncExternalStore(followWide, () => wide().matches);
-}
-
-const column = columnsFor<LedgerRow>();
 
 /** The Ledger in the plan's own market, the year and basis kept. */
 function BackToPlan() {
@@ -50,124 +26,105 @@ function BackToPlan() {
   );
 }
 
-/** The plan year by year, and the year shown's flows, income and tax. */
-export function LedgerPage() {
-  const { reading, issues } = useSession();
-  const search: LedgerSearch = useSearch({ from: "/ledger" });
+/** The page under its heading alone, saying why it shows nothing. */
+function Unshown({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="max-w-3xl space-y-3">
+      <h1 className="text-2xl font-semibold tracking-tight">Ledger</h1>
+      <p className="text-muted-foreground">{children}</p>
+    </div>
+  );
+}
+
+/** What the Ledger reads of the document for the address it is at. */
+function useLedger(search: LedgerSearch, year: number | undefined) {
+  const { reading } = useSession();
   const { market } = search;
-  const basis = basisOf(search);
-  const isNominal = basis === "nominal";
-  const shown = useYear();
-  const { year, setYear } = shown;
-  const replayed = useMemo(() => {
+  const isNominal = basisOf(search) === "nominal";
+  const set = columnSetOf(search.columns);
+  const isTable = search.view === "table";
+  return useMemo(() => {
     const document = reading.document;
     try {
+      const ledger = document?.ledger(isNominal, market, set);
+      const isYearShown = ledger && year !== undefined;
       return {
-        ledger: document?.ledger(isNominal, market),
+        ledger,
         said: market === undefined ? "" : document?.marketSaid(market),
+        detail:
+          isYearShown && !isTable
+            ? document?.ledgerYear(year, isNominal, market)
+            : undefined,
+        marked: isYearShown ? document?.markedYears(year, market) : undefined,
       };
     } catch (thrown) {
       return { refusal: messageOf(thrown) };
     }
-  }, [reading, isNominal, market]);
-  const ledger = replayed.ledger;
-  const detail = useMemo(
-    () =>
-      ledger && year !== undefined
-        ? reading.document?.yearDetail(year, isNominal, market)
-        : undefined,
-    [reading, ledger, year, isNominal, market],
-  );
-  const columns = useMemo(
-    () =>
-      (ledger?.columns ?? []).map((each, at) =>
-        column.display({
-          id: String(at),
-          header: each.header,
-          meta: { isNumeric: each.is_numeric },
-          cell: ({ row }) => row.original.cells[at],
-        }),
-      ),
-    [ledger],
-  );
-  const table = useRef<HTMLDivElement>(null);
-  const details = useRef<HTMLDivElement>(null);
-  const isWide = useIsWide();
+  }, [reading, isNominal, market, set, isTable, year]);
+}
+
+/** One year in the context of all of them, or every year in one table. */
+export function LedgerPage() {
+  const { reading, issues } = useSession();
+  const search: LedgerSearch = useSearch({ from: "/ledger" });
+  const navigate = useNavigate();
+  const shown = useYear();
+  const { year, setYear } = shown;
+  const read = useLedger(search, year);
+  const isTable = search.view === "table";
+  const years = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!isWide) return;
-    table.current
+    years.current
       ?.querySelector('[aria-selected="true"]')
       ?.scrollIntoView({ block: "nearest" });
-  }, [year, isWide]);
+  }, [year, isTable]);
 
   if (!reading.document) return null;
-  if (market !== undefined && "refusal" in replayed) {
+  if ("refusal" in read) {
     return (
-      <div className="max-w-3xl space-y-3">
-        <h1 className="text-2xl font-semibold tracking-tight">Ledger</h1>
-        <p className="text-muted-foreground">
-          {replayed.refusal}. <BackToPlan />
-        </p>
-      </div>
+      <Unshown>
+        {read.refusal}. <BackToPlan />
+      </Unshown>
     );
   }
+  const { ledger, detail } = read;
   if (!ledger) {
     return (
-      <div className="max-w-3xl space-y-3">
-        <h1 className="text-2xl font-semibold tracking-tight">Ledger</h1>
-        <p className="text-muted-foreground">
-          The ledger shows once the plan&apos;s issues are fixed; the{" "}
-          <Link to="/overview" className="underline underline-offset-4">
-            Overview
-          </Link>{" "}
-          lists them.
-        </p>
-      </div>
+      <Unshown>
+        The ledger shows once the plan&apos;s issues are fixed; the{" "}
+        <Link to="/overview" className="underline underline-offset-4">
+          Overview
+        </Link>{" "}
+        lists them.
+      </Unshown>
     );
   }
-  const unit = BASIS_LABEL[basis];
-  const years = (
-    <div key="years" ref={table} className="min-w-0">
-      <DataTable
-        label={`The plan year by year, ${unit}`}
-        columns={columns}
-        rows={ledger.rows}
-        rowKey={(row) => String(row.year)}
-        isSelected={(row) => row.year === year}
-        isExceeded={(row) => row.is_exceeded}
-        onSelect={(row) => {
-          setYear(row.year);
-          if (!isWide) {
-            details.current?.scrollIntoView({ block: "start" });
-          }
-        }}
-        isFirstPinned
-        className="max-h-[70dvh] lg:max-h-[50vh]"
-      />
-    </div>
-  );
-  const yearDetail = (
-    <div key="detail" ref={details} className="@container min-w-0 scroll-mt-4">
-      <div className="grid grid-cols-1 items-start gap-4 @4xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        {detail && year !== undefined && (
-          <YearDetailCards year={year} unit={unit} detail={detail} />
-        )}
-      </div>
-    </div>
-  );
+  const unit = BASIS_LABEL[basisOf(search)];
+  const showYear = (picked: number) => {
+    void navigate({
+      to: ".",
+      search: (prev) => ({ ...prev, year: picked, view: undefined }),
+      replace: true,
+    });
+  };
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">Ledger</h1>
         <div className="flex flex-wrap items-center gap-2">
           <YearStepper shown={shown} />
+          <MarkedStepper
+            marked={read.marked ?? [null, null]}
+            setYear={setYear}
+          />
           <BasisSwitch />
+          <ViewSwitch />
         </div>
       </div>
-      {market !== undefined && (
+      {search.market !== undefined && (
         <MarginNote zone="note">
           <p className="text-sm first-letter:uppercase">
-            {replayed.said}: the plan as a market tool ran it. <BackToPlan />
+            {read.said}: the plan as a market tool ran it. <BackToPlan />
           </p>
         </MarginNote>
       )}
@@ -178,9 +135,29 @@ export function LedgerPage() {
           </p>
         </MarginNote>
       )}
-      <div className="space-y-6">
-        {isWide ? [years, yearDetail] : [yearDetail, years]}
-      </div>
+      {isTable ? (
+        <div ref={years} className="min-w-0 space-y-3">
+          <ColumnsPick set={columnSetOf(search.columns)} />
+          <YearTable
+            ledger={ledger}
+            unit={unit}
+            year={year}
+            onSelect={showYear}
+          />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
+          <div ref={years} className="sticky top-4 min-w-0 max-lg:hidden">
+            <YearsList
+              ledger={ledger}
+              unit={unit}
+              year={year}
+              onSelect={setYear}
+            />
+          </div>
+          {detail && <YearCards detail={detail} unit={unit} />}
+        </div>
+      )}
     </div>
   );
 }

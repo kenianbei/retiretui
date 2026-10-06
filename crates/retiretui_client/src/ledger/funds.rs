@@ -1,8 +1,9 @@
 //! What a year lived on and where it went: income, withdrawals and any
-//! shortfall on one side, spending, tax and what was put away on the
-//! other. The two sides come to the same total.
+//! shortfall on one side, each expense, tax and what was put away on the
+//! other, each side over what its kinds come to. The two sides come to
+//! the same total.
 
-use retiretui_engine::plan::{Dollars, Plan};
+use retiretui_engine::plan::{Dollars, Item, Plan};
 use retiretui_engine::project::{Action, YearRow};
 use serde::Serialize;
 
@@ -26,23 +27,16 @@ pub struct DetailLine {
     pub amount: String,
 }
 
-/// Lines that belong together, and what they come to where there are
-/// several.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
-pub struct Group {
-    /// Each amount of the group.
-    pub lines: Vec<DetailLine>,
-    /// What they add up to.
-    pub subtotal: Option<DetailLine>,
-}
-
-/// One side of a year's money: its groups, and what they all come to.
+/// One side of a year's money: every amount in one list, what each kind
+/// of them comes to, and what they all come to.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct Funds {
-    /// The groups, in the order they are read.
-    pub groups: Vec<Group>,
+    /// Each amount, in the order it is read.
+    pub lines: Vec<DetailLine>,
+    /// What the lines of each kind come to, said beneath them as a
+    /// summary; none where one sum would only repeat the total.
+    pub sums: Vec<DetailLine>,
     /// The side's total, which the other side's equals.
     pub total: DetailLine,
 }
@@ -65,24 +59,19 @@ impl Saying {
         }
     }
 
-    /// `amounts` as a group, under `sum` where there are several; none of
-    /// nothing.
-    fn group(&self, amounts: &Amounts, sum: Option<&str>) -> Option<Group> {
-        let lines: Vec<DetailLine> = amounts
-            .iter()
-            .map(|(label, amount)| self.line(label, *amount))
-            .collect();
-        let whole: Dollars = amounts.iter().map(|&(_, amount)| amount).sum();
-        let subtotal = sum.filter(|_| lines.len() > 1);
-        (!lines.is_empty()).then(|| Group {
-            lines,
-            subtotal: subtotal.map(|label| self.line(label, whole)),
-        })
-    }
-
-    fn funds(&self, groups: Vec<Option<Group>>, total: Dollars) -> Funds {
+    /// `lines` over each of `sums` that is more than nothing, and `total`
+    /// under them all; no sums where one would only repeat the total.
+    fn funds(&self, lines: &Amounts, sums: &[(&str, Dollars)], total: Dollars) -> Funds {
+        let mut sums: Vec<_> = sums.iter().filter(|&&(_, sum)| sum != 0).collect();
+        if matches!(sums[..], [&(_, only)] if only == total) {
+            sums.clear();
+        }
+        let said = |&(ref label, amount): &(String, Dollars)| self.line(label, amount);
         Funds {
-            groups: groups.into_iter().flatten().collect(),
+            lines: lines.iter().map(said).collect(),
+            sums: (sums.iter())
+                .map(|&&(kind, sum)| self.line(kind, sum))
+                .collect(),
             total: self.line(TOTAL, total),
         }
     }
@@ -95,9 +84,9 @@ fn paid<'a>(amounts: impl IntoIterator<Item = (&'a str, Dollars)>) -> Amounts {
         .collect()
 }
 
-/// What `row` lived on: its income by source, what it drew from each
+/// What `row` lived on: its income by source, then what it drew from each
 /// account - a required distribution named as one - and what it could not
-/// find.
+/// find, over what the income and the withdrawals each come to.
 #[must_use]
 pub fn money_in(plan: &Plan, row: &YearRow, is_nominal: bool) -> Funds {
     let saying = Saying {
@@ -105,54 +94,55 @@ pub fn money_in(plan: &Plan, row: &YearRow, is_nominal: bool) -> Funds {
         is_nominal,
     };
     let income = row.income.iter();
-    let income = paid(income.map(|(id, &amount)| (income_name(plan, id), amount)));
-    let drawn: Amounts = (row.actions.iter())
-        .filter_map(|action| match action {
-            Action::Rmd { account, amount } => {
-                Some((format!("RMD from {}", account_name(plan, account)), *amount))
-            }
-            Action::Withdrawal { account, amount } => {
-                Some((format!("From {}", account_name(plan, account)), *amount))
-            }
-            _ => None,
-        })
-        .collect();
-    let groups = vec![
-        saying.group(&income, Some("Income")),
-        saying.group(&drawn, Some("Withdrawn")),
-        saying.group(&paid([("Unfunded", row.unfunded)]), None),
-    ];
-    let total = row.total_income + row.total_withdrawals() + row.unfunded;
-    saying.funds(groups, total)
+    let mut lines = paid(income.map(|(id, &amount)| (income_name(plan, id), amount)));
+    lines.extend(row.actions.iter().filter_map(|action| match action {
+        Action::Rmd { account, amount } => {
+            Some((format!("RMD from {}", account_name(plan, account)), *amount))
+        }
+        Action::Withdrawal { account, amount } => {
+            Some((format!("From {}", account_name(plan, account)), *amount))
+        }
+        _ => None,
+    }));
+    lines.extend(paid([("Unfunded", row.unfunded)]));
+    let drawn = row.total_withdrawals();
+    let sums = [("Income", row.total_income), ("Withdrawn", drawn)];
+    saying.funds(&lines, &sums, row.total_income + drawn + row.unfunded)
 }
 
-/// Where what `row` lived on went: its spending - by kind where it is of
-/// more than one - its tax and Medicare's surcharges, what the household
-/// paid into its accounts, and what was left over and saved.
+/// Where what `row` lived on went: each expense that spent anything, in the
+/// plan's order, then its tax and Medicare's surcharges, what the household
+/// paid into its accounts, and what was left over and saved - over what the
+/// spending comes to, by kind where it is of more than one.
 #[must_use]
-pub fn money_out(row: &YearRow, is_nominal: bool) -> Funds {
+pub fn money_out(plan: &Plan, row: &YearRow, is_nominal: bool) -> Funds {
     let saying = Saying {
         deflator: row.deflator,
         is_nominal,
     };
-    let mut spent = paid([
-        ("Essential", row.expenses_essential),
-        ("Flexible", row.expenses_flexible),
-        ("One-time", row.expenses_once()),
-    ]);
-    if spent.len() < 2 {
-        spent = paid([(SPENDING, row.expenses)]);
-    }
-    let rest = paid([
+    let mut lines: Amounts = (plan.expenses.iter())
+        .filter_map(|expense| {
+            let spent = *row.spending.get(&expense.id)?;
+            Some((expense.display_name().to_owned(), spent))
+        })
+        .collect();
+    lines.extend(paid([
         ("Tax", row.taxes.total),
         ("Medicare surcharges", row.medicare),
         ("Paid into accounts", row.contributions_employee),
         ("Surplus saved", row.surplus),
-    ]);
-    let groups = vec![
-        saying.group(&spent, Some(SPENDING)),
-        saying.group(&rest, None),
+    ]));
+    let kinds = [
+        ("Essential", row.expenses_essential),
+        ("Flexible", row.expenses_flexible),
+        ("One-time", row.expenses_once()),
     ];
+    let is_split = kinds.iter().filter(|&&(_, spent)| spent != 0).count() > 1;
+    let sums: &[(&str, Dollars)] = if is_split {
+        &kinds
+    } else {
+        &[(SPENDING, row.expenses)]
+    };
     let put_away = row.medicare + row.contributions_employee + row.surplus;
-    saying.funds(groups, row.expenses + row.taxes.total + put_away)
+    saying.funds(&lines, sums, row.expenses + row.taxes.total + put_away)
 }

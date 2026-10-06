@@ -1,13 +1,14 @@
 //! The three panes under the flows: what the cursor year lived on, where
-//! that went, and its tax - each a label beside its amount, a blank line
-//! between the groups, the amounts whole where a narrow pane clips.
+//! that went, and its tax - each a label beside its amount, what the kinds
+//! of them come to dimmed beneath, the amounts whole where a narrow pane
+//! clips.
 
 use bevy_app::{App, Update};
 use bevy_ecs::hierarchy::{ChildOf, Children};
 use bevy_ecs::prelude::{Commands, Component, Entity, IntoScheduleConfigs, Query};
 use plurimus::core::ratatui_core::layout::Constraint;
 use plurimus::core::ratatui_core::text::Line;
-use plurimus::ui::ScrollArea;
+use plurimus::ui::{ScrollArea, UiStyle};
 use plurimus::widgets::{ActiveDescendant, TableColumns, table_row};
 use retiretui_client::ledger::{DetailLine, Funds, MONEY_IN, MONEY_OUT, TAX, Year};
 
@@ -63,26 +64,41 @@ pub(super) fn spawn_panes(commands: &mut Commands, row: Entity) {
     }
 }
 
-type Row = Option<DetailLine>;
+/// A row of a pane: an amount, an amount said dimmed beneath the rest as
+/// their summary, or the gap between two parts.
+#[derive(Clone, PartialEq, Eq, Debug)]
+enum Row {
+    Line(DetailLine),
+    Sum(DetailLine),
+    Gap,
+}
 
-/// A side's groups, a blank line between them, and then all of it.
-fn funds_rows(funds: &Funds) -> Vec<Row> {
-    let mut rows = Vec::new();
-    for group in &funds.groups {
-        rows.extend(group.lines.iter().cloned().map(Some));
-        rows.extend(group.subtotal.clone().map(Some));
-        rows.push(None);
+impl Row {
+    fn line(&self) -> Option<&DetailLine> {
+        match self {
+            Self::Line(line) | Self::Sum(line) => Some(line),
+            Self::Gap => None,
+        }
     }
-    rows.push(Some(funds.total.clone()));
-    rows
+}
+
+/// A side's amounts in one list, then what each kind comes to, dimmed, and
+/// all of it.
+fn funds_rows(funds: &Funds) -> Vec<Row> {
+    let lines = funds.lines.iter().cloned().map(Row::Line);
+    let sums = funds.sums.iter().cloned().map(Row::Sum);
+    let total = Row::Line(funds.total.clone());
+    lines.chain([Row::Gap]).chain(sums).chain([total]).collect()
 }
 
 /// What was paid, then the bracket reached and what the tax was worked
 /// out from.
 fn tax_rows(year: &Year) -> Vec<Row> {
-    let paid = year.tax.iter().cloned().map(Some);
-    let worked = year.bracket.iter().chain(&year.picture).cloned().map(Some);
-    paid.chain([None]).chain(worked).collect()
+    let paid = year.tax.iter().cloned().map(Row::Line);
+    let worked = year.bracket.iter().chain(&year.picture).cloned();
+    paid.chain([Row::Gap])
+        .chain(worked.map(Row::Line))
+        .collect()
 }
 
 impl Said {
@@ -102,26 +118,28 @@ fn refresh(
     mut tables: Query<(Entity, &Said, &mut ScrollArea)>,
     mut commands: Commands,
 ) {
+    let dimmed = detail.theme.dimmed();
     let Some(year) = detail.due(false) else {
         return;
     };
     for (table, said, mut scroll) in &mut tables {
         let rows = said.rows(year);
-        let amounts = rows
-            .iter()
-            .flatten()
-            .map(|line| line.amount.chars().count());
+        let amounts = rows.iter().filter_map(Row::line);
+        let amounts = amounts.map(|line| line.amount.chars().count());
         let widest = u16::try_from(amounts.max().unwrap_or(0)).unwrap_or(u16::MAX);
         let columns = vec![Constraint::Fill(1), Constraint::Length(widest)];
         commands.entity(table).despawn_related::<Children>();
         let mut first = None;
-        for line in &rows {
-            let cells = line.as_ref().map_or_else(Vec::new, |line| {
+        for row in &rows {
+            let cells = row.line().map_or_else(Vec::new, |line| {
                 let amount = Line::from(line.amount.clone()).right_aligned();
                 vec![Line::from(line.label.clone()), amount]
             });
-            let row = commands.spawn((table_row(cells), ChildOf(table))).id();
-            first.get_or_insert(row);
+            let mut spawned = commands.spawn((table_row(cells), ChildOf(table)));
+            if matches!(row, Row::Sum(_)) {
+                spawned.insert(UiStyle(dimmed));
+            }
+            first.get_or_insert(spawned.id());
         }
         commands
             .entity(table)
@@ -141,14 +159,12 @@ mod tests {
     const FULL: &str = include_str!("../../../retiretui_engine/tests/fixtures/full.toml");
 
     fn labels(rows: &[Row]) -> Vec<&str> {
-        let labelled = rows.iter().map(|row| row.as_ref());
-        labelled
-            .map(|row| row.map_or("", |line| line.label.as_str()))
-            .collect()
+        let label = |row| Row::line(row).map_or("", |line| line.label.as_str());
+        rows.iter().map(label).collect()
     }
 
     #[test]
-    fn each_pane_lists_its_groups_apart_and_ends_on_what_they_come_to() {
+    fn each_pane_is_one_list_over_what_its_kinds_come_to_and_all_of_it() {
         let projected = projected_from(FULL);
         let asked = Asked {
             year: 2045,
@@ -162,17 +178,22 @@ mod tests {
             [
                 "db-pension",
                 "ss-jordan",
-                "Income",
-                "",
                 "From brokerage",
                 "From fid-401k",
-                "Withdrawn",
                 "",
+                "Income",
+                "Withdrawn",
                 "Total"
             ]
         );
+        let dimmed = |rows: &[Row]| rows.iter().filter(|row| matches!(row, Row::Sum(_))).count();
+        assert_eq!(dimmed(&money_in), 2, "what each kind comes to is a summary");
         let money_out = Said::MoneyOut.rows(&year);
-        assert_eq!(labels(&money_out), ["Spending", "", "Tax", "", "Total"]);
+        assert_eq!(
+            labels(&money_out),
+            ["living", "travel", "Tax", "", "Spending", "Total"]
+        );
+        assert_eq!(dimmed(&money_out), 1);
         assert_eq!(money_in.last(), money_out.last(), "the sides agree");
         let tax = labels(&Said::Tax.rows(&year)).join("|");
         assert!(

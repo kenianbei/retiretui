@@ -52,16 +52,21 @@ assert.equal(document.yearAt(first.year + 2, first.year), first.year + 2);
 const ledger = document.ledger(false);
 assert.equal(ledger.columns[0].header, "Year");
 assert.equal(ledger.rows[0].cells.length, ledger.columns.length);
-const detail = document.yearDetail(first.year, true);
+assert.equal(document.ledger(false, undefined, "tax").columns[6].header, "MAGI");
+const detail = document.ledgerYear(first.year, true);
 assert.ok(detail.flows.length > 0);
-assert.ok(detail.paid.some((line) => line.label === "Spending"));
-assert.throws(() => document.yearDetail(first.year - 99, true));
+assert.equal(detail.money_in.total.amount, detail.money_out.total.amount);
+assert.ok(detail.bracket.label.startsWith("To top of "));
+assert.throws(() => document.ledgerYear(first.year - 99, true));
+const [before, after] = document.markedYears(first.year);
+assert.equal(before, null);
+assert.ok(after > first.year);
 const chart = document.chart(true);
 assert.equal(chart.years[0].classes.length, chart.classes.length);
 assert.deepEqual(bandPercentiles(), [10, 25, 50, 75, 90]);
 assert.equal(compactMoney(1234567), "$1.23M");
 assert.equal(percentileLabel(90), "90th percentile");
-assert.deepEqual(document.yearDetail(first.year, true).ages, [["Sam", 30]]);
+assert.equal(document.ledgerYear(first.year, true).ages, "Sam turns 30");
 
 const accounts = document.table("accounts", sortPressed(sortPressed(null, 0), 0));
 assert.ok(accounts.rows.length > 0);
@@ -102,7 +107,10 @@ const worst = markets.runs.at(-1).market;
 const replayed = document.ledger(false, worst);
 assert.equal(replayed.rows.length, ledger.rows.length);
 assert.notDeepEqual(replayed.rows, ledger.rows);
-assert.ok(document.yearDetail(first.year, false, starts.runs[1].market));
+assert.equal(
+  document.ledgerYear(first.year, false, starts.runs[1].market).bracket,
+  null,
+);
 assert.match(document.marketSaid(worst), /^random market \d+$/);
 assert.throws(() => document.ledger(false, "p10"), /no market is called p10/);
 
@@ -287,6 +295,7 @@ assert.ok(taxed.sections.some(({ title }) => title === "Income tax brackets"));
 assert.equal(claiming.taxTables({ year: first.year, status: "single" }).status, "single");
 const said = viewWords();
 assert.equal(said.basis.nominal, "future dollars");
-assert.deepEqual(said.flow_headers[1], ["Open", true]);
+assert.deepEqual(said.flow_columns[2], ["Moves", false]);
+assert.deepEqual(said.column_sets[2], ["tax", "Tax figures"]);
 assert.match(version(), /^\d+\.\d+\.\d+$/);
 console.log("smoke: ok");

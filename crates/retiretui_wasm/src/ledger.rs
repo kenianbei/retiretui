@@ -1,34 +1,41 @@
 //! The projection as the Ledger and the Overview's charts show it: the
-//! year table, a year's flows, income and tax, and the series charted.
+//! year table under a column set, one year in full, and the series charted.
 
-use retiretui_client::actions::{NOTHING_SCHEDULED, actions_said, collect_warnings};
+use retiretui_client::actions::NOTHING_SCHEDULED;
 use retiretui_client::ledger::{
-    AccountFlows, DetailLine, FLOW_HEADERS, FLOWS, INCOME_AND_TAX, TO_DO, account_flows,
-    income_and_tax, ledger_headers, salary_marks,
+    Asked, ColumnSet, FLOW_COLUMNS, FLOWS, MONEY_IN, MONEY_OUT, Marks, TAX, TO_DO, Table, YEARS,
+    Year, salary_marks,
 };
 use retiretui_client::overview::{
     ATTENTION, Chart, MILESTONES, NOTHING, OVER_THE_PLAN, RESTS_ON, STALE, STRIP,
 };
 use retiretui_client::present::{MoneyForm, basis_name, compact_money, money, treatment_word};
-use retiretui_client::replies::year_row;
 use retiretui_client::session::Projected;
-use retiretui_client::table::{
-    Column, ages_text, basis_amount, percentile_label, present_classes, year_figures,
-};
+use retiretui_client::table::{basis_amount, percentile_label, present_classes};
 use retiretui_engine::market::BAND_PERCENTILES;
-use retiretui_engine::plan::{Dollars, Item};
+use retiretui_engine::plan::Dollars;
 use serde::Serialize;
 use wasm_bindgen::prelude::{JsError, JsValue, wasm_bindgen};
 
-use crate::domain::TableColumn;
 use crate::{Bases, JsDocument, reply, tables, to_js};
+
+/// One column of the Ledger's table.
+#[derive(Serialize, Debug)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+pub struct LedgerColumn {
+    /// What heads it.
+    pub header: String,
+    /// Whether it holds figures, which line up on the right.
+    pub is_numeric: bool,
+}
 
 /// Every projected year as the Ledger's table shows it.
 #[derive(Serialize, Debug)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct Ledger {
-    /// Each column, in the order its cells are.
-    pub columns: Vec<TableColumn>,
+    /// Each column, in the order its cells are: the year, the ages, and
+    /// then each figure.
+    pub columns: Vec<LedgerColumn>,
     /// Each year, first to last.
     pub rows: Vec<LedgerRow>,
 }
@@ -41,26 +48,10 @@ pub struct LedgerRow {
     pub year: i16,
     /// Its cells, in column order.
     pub cells: Vec<String>,
+    /// What sets it apart in the list of years.
+    pub marks: Marks,
     /// Whether the year could not pay for everything.
     pub is_exceeded: bool,
-}
-
-/// One year beside the Ledger's table.
-#[derive(Serialize, Debug)]
-#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
-pub struct YearDetail {
-    /// Each person, by display name, and the age they reach in the year.
-    pub ages: Vec<(String, u8)>,
-    /// What the year has the household do, each action a sentence.
-    pub actions: Vec<String>,
-    /// Each account the year touches, from its open to its close.
-    pub flows: Vec<AccountFlows>,
-    /// The year's income by source.
-    pub income: Vec<DetailLine>,
-    /// Its spending and what it paid besides.
-    pub paid: Vec<DetailLine>,
-    /// What needs attention, on the same basis.
-    pub warnings: Vec<String>,
 }
 
 /// The projection as the Overview charts it.
@@ -102,51 +93,41 @@ pub struct ChartMark {
     pub label: String,
 }
 
-pub fn ledger(projected: &Projected, is_nominal: bool) -> Ledger {
-    let classes = present_classes(&projected.plan);
-    let columns = ledger_headers(&classes)
-        .into_iter()
-        .map(|(header, is_numeric)| TableColumn { header, is_numeric });
-    let balances: Vec<Column> = classes.into_iter().map(Column::Class).collect();
-    let rows = projected.projection.years.iter().map(|row| {
-        let figures = year_figures(row, &balances).into_iter();
-        let figures = figures.map(|amount| money(basis_amount(amount, row.deflator, is_nominal)));
-        let leading = [row.year.to_string(), ages_text(&projected.plan, row)];
+/// The column set an address names; the one the table opens under for a
+/// name that is none.
+fn column_set(named: Option<&str>) -> ColumnSet {
+    let mut sets = ColumnSet::ALL.into_iter();
+    let named = sets.find(|set| Some(set.slug()) == named);
+    named.unwrap_or_default()
+}
+
+pub fn ledger(projected: &Projected, set: ColumnSet, is_nominal: bool) -> Ledger {
+    let table = Table::new(projected, tables(), set, is_nominal);
+    let columns = table.headers.into_iter();
+    let rows = table.rows.into_iter().map(|row| {
+        let figures = row.figures.into_iter().map(money);
         LedgerRow {
             year: row.year,
-            cells: leading.into_iter().chain(figures).collect(),
-            is_exceeded: row.unfunded > 0,
+            cells: [row.year.to_string(), row.ages]
+                .into_iter()
+                .chain(figures)
+                .collect(),
+            marks: row.marks,
+            is_exceeded: row.is_exceeded,
         }
     });
     Ledger {
-        columns: columns.collect(),
+        columns: columns
+            .map(|(header, is_numeric)| LedgerColumn { header, is_numeric })
+            .collect(),
         rows: rows.collect(),
     }
 }
 
-pub fn year_detail(
-    projected: &Projected,
-    year: i16,
-    is_nominal: bool,
-) -> Result<YearDetail, String> {
-    let Projected { plan, projection } = projected;
-    let row = year_row(projection, year)?;
-    let previous = projection.row(year - 1);
-    let (income, paid) = income_and_tax(plan, row, is_nominal);
-    let deflating = (!is_nominal).then_some(projection);
-    let people = plan.household.people.iter();
-    let ages = people.filter_map(|person| {
-        let age = *row.ages.get(&person.id)?;
-        Some((person.display_name().to_owned(), age))
-    });
-    Ok(YearDetail {
-        ages: ages.collect(),
-        actions: actions_said(plan, row, is_nominal),
-        flows: account_flows(plan, previous, row, is_nominal),
-        income,
-        paid,
-        warnings: collect_warnings(plan, tables(), row, deflating),
-    })
+/// The nearest marked years before and after `year`.
+fn marked_years(projected: &Projected, year: i16) -> [Option<i16>; 2] {
+    let table = Table::new(projected, tables(), ColumnSet::default(), true);
+    [-1, 1].map(|step| table.marked_year(year, step))
 }
 
 pub fn chart(projected: &Projected, is_nominal: bool) -> ChartSeries {
@@ -176,40 +157,70 @@ pub fn chart(projected: &Projected, is_nominal: bool) -> ChartSeries {
 
 #[wasm_bindgen(js_class = Document)]
 impl JsDocument {
-    /// Every projected year as the Ledger's table shows it, nominal or in
-    /// today's dollars, in the plan's own market or the one `market`
-    /// names; `null` while no valid draft has been projected.
+    /// Every projected year as the Ledger's table shows it under the
+    /// column set `columns` names, nominal or in today's dollars, in the
+    /// plan's own market or the one `market` names; `null` while no valid
+    /// draft has been projected.
     ///
     /// # Errors
     ///
     /// Where `market` names no market the plan can be replayed in, or the
     /// table does not convert.
     #[wasm_bindgen(unchecked_return_type = "Ledger | null")]
-    pub fn ledger(&self, nominal: bool, market: Option<String>) -> Result<JsValue, JsError> {
+    pub fn ledger(
+        &self,
+        nominal: bool,
+        market: Option<String>,
+        columns: Option<String>,
+    ) -> Result<JsValue, JsError> {
         if self.0.projected().is_err() {
             return Ok(JsValue::NULL);
         }
+        let set = column_set(columns.as_deref());
         reply(self.0.in_market(market.as_deref(), |projected| {
-            Ok(ledger(projected, nominal))
+            Ok(ledger(projected, set, nominal))
         }))
     }
 
-    /// `year`'s to-dos, flows, income, payments and warnings, nominal or in
-    /// today's dollars, in the plan's own market or the one `market` names.
+    /// The nearest years with a milestone or a warning before and after
+    /// `year`, in the plan's own market or the one `market` names.
+    ///
+    /// # Errors
+    ///
+    /// Where no valid draft has been projected, or `market` names no
+    /// market it can be replayed in.
+    #[wasm_bindgen(
+        js_name = markedYears,
+        unchecked_return_type = "[number | null, number | null]"
+    )]
+    pub fn marked_years(&self, year: i16, market: Option<String>) -> Result<JsValue, JsError> {
+        reply(self.0.in_market(market.as_deref(), |projected| {
+            Ok(marked_years(projected, year))
+        }))
+    }
+
+    /// `year` in full, nominal or in today's dollars, in the plan's own
+    /// market or the one `market` names, a run's year saying no bracket.
     ///
     /// # Errors
     ///
     /// Where no valid draft has been projected, `market` names no market it
     /// can be replayed in, or `year` is outside it.
-    #[wasm_bindgen(js_name = yearDetail, unchecked_return_type = "YearDetail")]
-    pub fn year_detail(
+    #[wasm_bindgen(js_name = ledgerYear, unchecked_return_type = "Year")]
+    pub fn ledger_year(
         &self,
         year: i16,
         nominal: bool,
         market: Option<String>,
     ) -> Result<JsValue, JsError> {
+        let asked = Asked {
+            year,
+            is_nominal: nominal,
+            is_run: market.is_some(),
+        };
         reply(self.0.in_market(market.as_deref(), |projected| {
-            year_detail(projected, year, nominal)
+            let said = Year::new(projected, tables(), asked);
+            said.ok_or_else(|| format!("{year} is outside the plan's years"))
         }))
     }
 
@@ -273,14 +284,23 @@ pub fn js_percentile_label(percentile: u8) -> String {
 pub struct ViewWords {
     /// The dollars figures are shown in.
     pub basis: Bases<&'static str>,
+    /// The Ledger's list of years.
+    pub years: &'static str,
     /// The year's flows through each account.
     pub flows: &'static str,
-    /// The flows table's headers, each beside whether its column holds figures.
-    pub flow_headers: [(&'static str, bool); 6],
-    /// The year's income beside what it paid.
-    pub income_and_tax: &'static str,
+    /// The flows table's columns, each beside whether it holds figures.
+    pub flow_columns: [(&'static str, bool); 5],
+    /// Where a year's money came from.
+    pub money_in: &'static str,
+    /// Where it went.
+    pub money_out: &'static str,
+    /// The year's tax.
+    pub tax: &'static str,
     /// What a year has the household do.
     pub to_do: &'static str,
+    /// The year table's column sets in the order they are turned through,
+    /// each as an address names it and as a heading says it.
+    pub column_sets: Vec<(&'static str, &'static str)>,
     /// The Overview's charts in the order they are turned through, each
     /// beside its title.
     pub charts: Vec<(Chart, &'static str)>,
@@ -312,10 +332,16 @@ pub struct ViewWords {
 pub fn view_words() -> Result<JsValue, JsError> {
     to_js(&ViewWords {
         basis: Bases::of(basis_name),
+        years: YEARS,
         flows: FLOWS,
-        flow_headers: FLOW_HEADERS,
-        income_and_tax: INCOME_AND_TAX,
+        flow_columns: FLOW_COLUMNS,
+        money_in: MONEY_IN,
+        money_out: MONEY_OUT,
+        tax: TAX,
         to_do: TO_DO,
+        column_sets: (ColumnSet::ALL.iter())
+            .map(|set| (set.slug(), set.title()))
+            .collect(),
         charts: Chart::ALL.map(|chart| (chart, chart.title())).to_vec(),
         strip: STRIP,
         over_the_plan: OVER_THE_PLAN,
@@ -347,47 +373,46 @@ mod tests {
     }
 
     #[test]
-    fn the_ledger_has_a_row_a_year_and_a_cell_a_column() {
+    fn the_ledger_has_a_row_a_year_and_a_cell_a_column_under_every_set() {
         let projected = projected();
-        let ledger = ledger(&projected, true);
-        assert_eq!(ledger.rows.len(), projected.projection.years.len());
-        assert!(
-            ledger
-                .rows
-                .iter()
-                .all(|row| row.cells.len() == ledger.columns.len())
-        );
-        assert_eq!(ledger.columns[0].header, "Year");
-        assert!(!ledger.columns[1].is_numeric && ledger.columns[2].is_numeric);
+        for set in ColumnSet::ALL {
+            let ledger = ledger(&projected, set, true);
+            assert_eq!(ledger.rows.len(), projected.projection.years.len());
+            let columns = ledger.columns.len();
+            assert!(ledger.rows.iter().all(|row| row.cells.len() == columns));
+            assert_eq!(ledger.columns[0].header, "Year");
+            assert!(!ledger.columns[1].is_numeric && ledger.columns[2].is_numeric);
+            let first = &ledger.rows[0];
+            let year = projected.projection.years[0].year;
+            assert_eq!((first.year, first.cells[0].as_str()), (year, "2026"));
+            assert!(first.cells[2].starts_with('$'), "{first:?}");
+        }
+        let todays = ledger(&projected, ColumnSet::Tax, false);
+        let nominal = ledger(&projected, ColumnSet::Tax, true);
+        assert_ne!(todays.rows[9].cells, nominal.rows[9].cells);
     }
 
     #[test]
-    fn a_year_s_detail_is_the_client_s_on_the_basis_asked() {
-        let projected = projected();
-        let year = projected.projection.years[3].year;
-        let detail = year_detail(&projected, year, false).expect("in range");
-        let row = &projected.projection.years[3];
-        let previous = Some(&projected.projection.years[2]);
-        let flows = account_flows(&projected.plan, previous, row, false);
-        assert_eq!(detail.flows, flows);
-        assert!(year_detail(&projected, year - 99, false).is_err());
+    fn a_column_set_is_read_from_its_name_and_any_other_is_the_first() {
+        assert_eq!(column_set(Some("tax")), ColumnSet::Tax);
+        assert_eq!(column_set(Some("accounts")), ColumnSet::Accounts);
+        assert_eq!(column_set(Some("balances")), ColumnSet::Treatments);
+        assert_eq!(column_set(None), ColumnSet::Treatments);
     }
 
     #[test]
-    fn a_year_s_actions_are_said_in_the_basis_asked() {
+    fn the_marked_years_either_side_are_marked_in_the_table() {
         let projected = projected();
-        let years = &projected.projection.years;
-        let row = (years.iter().skip(1))
-            .find(|row| !row.actions.is_empty())
-            .expect("a later year with something to do");
-        let said = |is_nominal| {
-            year_detail(&projected, row.year, is_nominal)
-                .unwrap()
-                .actions
-        };
-        assert_eq!(said(false), actions_said(&projected.plan, row, false));
-        assert_eq!(said(true), actions_said(&projected.plan, row, true));
-        assert_ne!(said(false), said(true));
+        let ledger = ledger(&projected, ColumnSet::default(), true);
+        let first = ledger.rows[0].year;
+        let [before, after] = marked_years(&projected, first);
+        assert_eq!(before, None, "nothing before the plan");
+        let after = after.expect("a milestone in the plan");
+        let row = ledger.rows.iter().find(|row| row.year == after).unwrap();
+        assert!(row.marks.is_marked(), "{row:?}");
+        let between = ledger.rows.iter().filter(|row| row.year < after);
+        assert!(between.skip(1).all(|row| !row.marks.is_marked()));
+        assert_eq!(marked_years(&projected, after + 1)[0], Some(after));
     }
 
     #[test]

@@ -95,7 +95,7 @@ impl Year {
             all_accounts: (flows.len() > 1).then(together),
             flows,
             money_in: money_in(plan, row, is_nominal),
-            money_out: money_out(row, is_nominal),
+            money_out: money_out(plan, row, is_nominal),
             tax: tax_lines(row, is_nominal),
             bracket: (!asked.is_run)
                 .then(|| bracket(plan, tables, row, is_nominal))

@@ -27,8 +27,8 @@ pub const FLOW_COLUMNS: [(&str, bool); 5] = [
     ("Close", true),
 ];
 
-/// An account's year, said: what it opened on, what came in and went out -
-/// each named by where from or to - what it grew, and what it closed on.
+/// An account's year, said: what it opened on, what moved through it, what
+/// it grew, and what it closed on.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct AccountFlows {
@@ -36,11 +36,8 @@ pub struct AccountFlows {
     pub account: String,
     /// Its balance as the year opened.
     pub open: String,
-    /// What came in, said.
-    pub ins: Vec<String>,
-    /// What went out, said.
-    pub outs: Vec<String>,
-    /// What came in and then what went out, said.
+    /// What came in and then what went out, each said and named by where
+    /// from or to.
     pub moves: Vec<String>,
     /// What it grew, signed; blank where it did not.
     pub growth: String,
@@ -69,14 +66,12 @@ pub fn account_flows(
             let open = previous.map_or(account.balance, |before| balance(before, id));
             let close = balance(row, id);
             let growth = row.growth.get(id).copied().unwrap_or(0);
-            let (ins, outs) = moves(plan, row, id, &show);
+            let moves = moves(plan, row, id, &show);
             let is_idle = open == 0 && close == 0 && growth == 0;
-            (!is_idle || !ins.is_empty() || !outs.is_empty()).then(|| AccountFlows {
+            (!is_idle || !moves.is_empty()).then(|| AccountFlows {
                 account: account.display_name().to_owned(),
                 open: show(open),
-                moves: ins.iter().chain(&outs).cloned().collect(),
-                ins,
-                outs,
+                moves,
                 growth: signed(growth, &show),
                 growth_rate: growth_rate(growth, open),
                 close: show(close),
@@ -105,8 +100,6 @@ pub fn all_accounts(
     AccountFlows {
         account: ALL_ACCOUNTS.to_owned(),
         open: show(open),
-        ins: Vec::new(),
-        outs: Vec::new(),
         moves: moves
             .map(|(amount, sign)| format!("{sign}{}", show(amount)))
             .collect(),
@@ -137,12 +130,7 @@ fn balance(row: &YearRow, id: &str) -> Dollars {
     row.balances.get(id).copied().unwrap_or(0)
 }
 
-fn moves(
-    plan: &Plan,
-    row: &YearRow,
-    id: &str,
-    show: &impl Fn(Dollars) -> String,
-) -> (Vec<String>, Vec<String>) {
+fn moves(plan: &Plan, row: &YearRow, id: &str, show: &impl Fn(Dollars) -> String) -> Vec<String> {
     let mut ins = Vec::new();
     let mut outs = Vec::new();
     for action in &row.actions {
@@ -181,7 +169,8 @@ fn moves(
             _ => {}
         }
     }
-    (ins, outs)
+    ins.extend(outs);
+    ins
 }
 
 /// A contribution's lines: the employee's and the employer's, each with the

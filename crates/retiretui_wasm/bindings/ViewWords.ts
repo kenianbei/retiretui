@@ -11,21 +11,38 @@ export type ViewWords = {
  */
 basis: Bases<string>, 
 /**
+ * The Ledger's list of years.
+ */
+years: string, 
+/**
  * The year's flows through each account.
  */
 flows: string, 
 /**
- * The flows table's headers, each beside whether its column holds figures.
+ * The flows table's columns, each beside whether it holds figures.
  */
-flow_headers: [[string, boolean], [string, boolean], [string, boolean], [string, boolean], [string, boolean], [string, boolean]], 
+flow_columns: [[string, boolean], [string, boolean], [string, boolean], [string, boolean], [string, boolean]], 
 /**
- * The year's income beside what it paid.
+ * Where a year's money came from.
  */
-income_and_tax: string, 
+money_in: string, 
+/**
+ * Where it went.
+ */
+money_out: string, 
+/**
+ * The year's tax.
+ */
+tax: string, 
 /**
  * What a year has the household do.
  */
 to_do: string, 
+/**
+ * The year table's column sets in the order they are turned through,
+ * each as an address names it and as a heading says it.
+ */
+column_sets: Array<[string, string]>, 
 /**
  * The Overview's charts in the order they are turned through, each
  * beside its title.

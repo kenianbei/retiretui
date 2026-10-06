@@ -1,15 +1,14 @@
 use retiretui_engine::params::TaxTables;
-use retiretui_engine::plan::{Dollars, TreatmentClass};
+use retiretui_engine::plan::Dollars;
 use retiretui_engine::project::Action;
 
 use super::*;
 use crate::actions::collect_warnings;
 use crate::overview::tests::{TEST_PLAN, projected_from};
 use crate::overview::{milestones, totals};
-use crate::present::{money, parse_money, treatment_class};
+use crate::present::{money, parse_money};
 use crate::session::Projected;
 use crate::setup::EXAMPLES;
-use crate::table::{Column, present_classes, year_figures};
 use crate::tax_tables::{TablesView, year_tables};
 
 const FULL: &str = include_str!("../../../retiretui_engine/tests/fixtures/full.toml");
@@ -18,12 +17,12 @@ const SPENDER: &str = include_str!("../../../retiretui_engine/tests/fixtures/spe
 const OVERSPENT: &str = "\n[[expenses]]\nid = \"yacht\"\namount = 400000\n";
 const CONVERTING: &str = "\n[[accounts]]\nid = \"r\"\nkind = \"ira\"\nroth = true\nowner = \"me\"\nbalance = 0\n\n[[conversions]]\nid = \"early\"\nfrom = \"k\"\nto = \"r\"\namount = 10000\ncola = false\nend = { date = 2028-12-31 }\n";
 
-fn full() -> Projected {
+pub(super) fn full() -> Projected {
     projected_from(FULL)
 }
 
 /// Every plan the Ledger is checked over: the fixtures and each example.
-fn plans() -> Vec<Projected> {
+pub(super) fn plans() -> Vec<Projected> {
     let examples = EXAMPLES.iter().map(|&(_, _, text)| text);
     let texts = [FULL, SPENDER].into_iter().chain(examples);
     let overspent = format!("{TEST_PLAN}{OVERSPENT}");
@@ -45,31 +44,13 @@ fn dollars(line: &DetailLine) -> Dollars {
     parse_money(&line.amount).unwrap_or_else(|| panic!("{line:?} is not money"))
 }
 
-/// What a side's lines add up to, and each group's beside its subtotal.
+/// What a side's lines add up to.
 fn added(funds: &Funds) -> Dollars {
-    let mut whole = 0;
-    for group in &funds.groups {
-        let lines: Dollars = group.lines.iter().map(dollars).sum();
-        if let Some(subtotal) = &group.subtotal {
-            assert_eq!(dollars(subtotal), lines, "{group:?}");
-            assert!(group.lines.len() > 1, "a subtotal of one line: {group:?}");
-        }
-        whole += lines;
-    }
-    whole
+    funds.lines.iter().map(dollars).sum()
 }
 
-fn labels(funds: &Funds) -> Vec<&str> {
-    let lines = funds.groups.iter().flat_map(|group| &group.lines);
-    lines.map(|line| line.label.as_str()).collect()
-}
-
-#[test]
-fn headers_frame_the_classes() {
-    let headers = ledger_headers(&[TreatmentClass::Roth]);
-    assert_eq!(headers[..2], [("Year", false), ("Age", false)]);
-    assert_eq!(headers[6], (treatment_class(TreatmentClass::Roth), true));
-    assert_eq!(headers.last(), Some(&("Net worth", true)));
+fn labels(lines: &[DetailLine]) -> Vec<&str> {
+    lines.iter().map(|line| line.label.as_str()).collect()
 }
 
 #[test]
@@ -83,18 +64,6 @@ fn every_account_holding_money_closes_on_it() {
         let held = row.balances.values().filter(|&&balance| balance != 0);
         assert_eq!(closes.count(), held.count(), "{}", row.year);
     }
-}
-
-#[test]
-fn income_comes_before_what_was_paid_and_follows_the_basis() {
-    let projected = full();
-    let row = &projected.projection.years[5];
-    let (income, paid) = income_and_tax(&projected.plan, row, true);
-    assert!(!income.is_empty());
-    assert_eq!(paid[0].label, "Spending");
-    assert!(paid.iter().all(|line| line.amount != money(0)));
-    let (deflated, _) = income_and_tax(&projected.plan, row, false);
-    assert_ne!(income, deflated);
 }
 
 #[test]
@@ -118,7 +87,7 @@ fn what_a_year_lived_on_is_what_it_spent_paid_and_put_away() {
                 "{name} {} in today's dollars",
                 row.year
             );
-            let is_short = labels(&nominal.money_in).contains(&"Unfunded");
+            let is_short = labels(&nominal.money_in.lines).contains(&"Unfunded");
             assert_eq!(is_short, row.unfunded > 0, "{name} {}", row.year);
             shortfalls += usize::from(is_short);
         }
@@ -132,7 +101,7 @@ fn withdrawals_are_listed_by_account_and_a_required_one_is_named() {
     for projected in plans() {
         for row in &projected.projection.years {
             let year = year_of(&projected, row.year, true);
-            let lines = year.money_in.groups.iter().flat_map(|group| &group.lines);
+            let lines = year.money_in.lines.iter();
             let drawn: Vec<&DetailLine> = lines
                 .filter(|line| line.label.starts_with("From ") || line.label.starts_with("RMD "))
                 .collect();
@@ -151,22 +120,49 @@ fn withdrawals_are_listed_by_account_and_a_required_one_is_named() {
 }
 
 #[test]
-fn spending_is_split_only_where_it_is_of_more_than_one_kind() {
+fn every_expense_is_listed_over_what_the_spending_comes_to_by_kind() {
     let split = projected_from(SPENDER);
     let row = (split.projection.years.iter())
-        .find(|row| row.expenses_essential > 0 && row.expenses_flexible > 0)
-        .expect("a year spending both ways");
+        .find(|row| row.expenses_essential > 0 && row.expenses_once() > 0)
+        .expect("the year the roof is paid for");
     let out = year_of(&split, row.year, true).money_out;
-    assert_eq!(labels(&out)[..2], ["Essential", "Flexible"]);
-    let subtotal = out.groups[0].subtotal.as_ref().expect("a subtotal");
+    let listed = labels(&out.lines);
     assert_eq!(
-        (subtotal.label.as_str(), dollars(subtotal)),
-        ("Spending", row.expenses)
+        listed[..4],
+        ["Living expenses", "mortgage", "roof", "travel"],
+        "the plan's order"
     );
+    let spent: Dollars = out.lines[..4].iter().map(dollars).sum();
+    assert_eq!(spent, row.expenses);
+    assert_eq!(labels(&out.sums), ["Essential", "Flexible", "One-time"]);
+    let kinds = [
+        row.expenses_essential,
+        row.expenses_flexible,
+        row.expenses_once(),
+    ];
+    assert_eq!(out.sums.iter().map(dollars).collect::<Vec<_>>(), kinds);
     let plain = projected_from(TEST_PLAN);
-    let out = year_of(&plain, 2026, true).money_out;
-    assert_eq!(labels(&out)[0], "Spending");
-    assert_eq!(out.groups[0].subtotal, None);
+    let working = year_of(&plain, 2026, true).money_out;
+    assert_eq!(labels(&working.lines)[..2], ["living", "Tax"]);
+    assert_eq!(labels(&working.sums), ["Spending"], "of one kind");
+}
+
+#[test]
+fn income_and_withdrawals_are_one_list_over_what_each_comes_to() {
+    let projected = full();
+    let row = projected.projection.row(2045).unwrap();
+    let lived = year_of(&projected, 2045, true).money_in;
+    assert_eq!(
+        labels(&lived.lines),
+        ["db-pension", "ss-jordan", "From brokerage", "From fid-401k"]
+    );
+    assert_eq!(labels(&lived.sums), ["Income", "Withdrawn"]);
+    let sums: Vec<Dollars> = lived.sums.iter().map(dollars).collect();
+    assert_eq!(sums, [row.total_income, row.total_withdrawals()]);
+    let working = year_of(&projected, 2026, true).money_in;
+    assert_eq!(labels(&working.lines), ["salary"]);
+    assert_eq!(working.sums, [], "one sum would only repeat the total");
+    assert_eq!(working.total.label, "Total");
 }
 
 #[test]
@@ -301,8 +297,8 @@ fn an_account_s_moves_are_what_came_in_and_then_what_went_out() {
         year.flows
     );
     for flow in &year.flows {
-        let in_then_out: Vec<&String> = flow.ins.iter().chain(&flow.outs).collect();
-        assert_eq!(flow.moves.iter().collect::<Vec<_>>(), in_then_out);
+        let went = flow.moves.iter().skip_while(|moved| moved.starts_with('+'));
+        assert!(went.clone().all(|moved| moved.starts_with('-')), "{flow:?}");
         assert_eq!(
             flow.growth_rate.is_empty(),
             flow.growth.is_empty(),
@@ -374,137 +370,4 @@ fn a_year_says_who_turns_what_its_milestones_and_what_to_do() {
         is_run: false,
     };
     assert_eq!(Year::new(&projected, &tables, outside), None);
-}
-
-#[test]
-fn a_year_is_marked_where_it_has_a_milestone_or_a_warning() {
-    let tables = TaxTables::embedded();
-    let (mut milestone_years, mut warned_years) = (0, 0);
-    for projected in plans() {
-        let table = Table::new(&projected, &tables, ColumnSet::Treatments, true);
-        let dated = milestones(&projected, true);
-        let years = projected.projection.years.iter();
-        for (row, said) in years.zip(&table.rows) {
-            let is_milestone = dated.iter().any(|each| each.year == Some(row.year));
-            let warnings = collect_warnings(&projected.plan, &tables, row, None);
-            let wanted = Marks {
-                is_milestone,
-                has_warning: !warnings.is_empty(),
-            };
-            assert_eq!(said.marks, wanted, "{}", row.year);
-            assert_eq!(said.is_exceeded, row.unfunded > 0);
-            milestone_years += usize::from(is_milestone);
-            warned_years += usize::from(wanted.has_warning);
-        }
-    }
-    assert!(milestone_years > 0 && warned_years > 0);
-}
-
-#[test]
-fn the_marked_year_either_side_stops_at_the_plan_s_ends() {
-    let projected = full();
-    let table = Table::new(&projected, &TaxTables::embedded(), ColumnSet::Tax, true);
-    let marked: Vec<i16> = (table.rows.iter())
-        .filter(|row| row.marks.is_marked())
-        .map(|row| row.year)
-        .collect();
-    let (first, last) = (marked[0], *marked.last().unwrap());
-    assert!(
-        marked.len() > 2 && marked.len() < table.rows.len(),
-        "{marked:?}"
-    );
-    assert_eq!(table.marked_year(first, -1), None);
-    assert_eq!(table.marked_year(last, 1), None);
-    assert_eq!(table.marked_year(first, 1), Some(marked[1]));
-    assert_eq!(table.marked_year(marked[1], -1), Some(first));
-    assert_eq!(table.marked_year(i16::MIN, 1), Some(first));
-    assert_eq!(table.marked_year(i16::MAX, -1), Some(last));
-    let unmarked = table
-        .rows
-        .iter()
-        .find(|row| !row.marks.is_marked())
-        .unwrap();
-    let later = table.marked_year(unmarked.year, 1);
-    assert!(later.is_none_or(|year| year > unmarked.year), "{later:?}");
-}
-
-#[test]
-fn every_column_set_heads_each_figure_it_holds() {
-    let projected = full();
-    let tables = TaxTables::embedded();
-    for set in ColumnSet::ALL {
-        for is_nominal in [true, false] {
-            let table = Table::new(&projected, &tables, set, is_nominal);
-            let figures = table.headers.iter().filter(|&&(_, is_figure)| is_figure);
-            let figures = figures.count();
-            assert_eq!(table.headers.len(), figures + 2, "{set:?}");
-            assert!(
-                table.rows.iter().all(|row| row.figures.len() == figures),
-                "{set:?}"
-            );
-            let named = |at: usize| table.headers[at].0.as_str();
-            assert_eq!((named(2), named(5)), ("Income", "Withdrawn"), "{set:?}");
-            assert_eq!(table.headers.last().unwrap().0, "Net worth", "{set:?}");
-        }
-    }
-}
-
-#[test]
-fn each_column_set_holds_its_own_figures() {
-    let projected = full();
-    let tables = TaxTables::embedded();
-    let treated = Table::new(&projected, &tables, ColumnSet::Treatments, true);
-    let classes = present_classes(&projected.plan);
-    let headers: Vec<(&str, bool)> = treated
-        .headers
-        .iter()
-        .map(|(header, is_figure)| (header.as_str(), *is_figure))
-        .collect();
-    assert_eq!(headers, ledger_headers(&classes), "today's table");
-    let columns: Vec<Column> = classes.into_iter().map(Column::Class).collect();
-    for (row, said) in projected.projection.years.iter().zip(&treated.rows) {
-        assert_eq!(said.figures, year_figures(row, &columns), "{}", row.year);
-    }
-    let by_account = Table::new(&projected, &tables, ColumnSet::Accounts, true);
-    assert_eq!(
-        by_account.headers.len(),
-        2 + 4 + projected.plan.accounts.len() + 1
-    );
-    let row = &projected.projection.years[11];
-    let tax = Table::new(&projected, &tables, ColumnSet::Tax, true);
-    let taxed = &tax.rows[11];
-    let named: Vec<&str> = vec!["MAGI", "Taxable inc", "Converted", "RMDs"];
-    let heads: Vec<&str> = tax.headers[6..10]
-        .iter()
-        .map(|(header, _)| header.as_str())
-        .collect();
-    assert_eq!(heads, named);
-    assert_eq!(
-        taxed.figures[4..8],
-        [
-            row.taxes.magi,
-            row.taxes.ordinary_taxable,
-            row.conversions,
-            row.rmds
-        ]
-    );
-    assert_eq!(
-        (taxed.figures[3], taxed.figures[8]),
-        (row.total_withdrawals(), row.net_worth)
-    );
-    let todays = &Table::new(&projected, &tables, ColumnSet::Tax, false).rows[11];
-    assert!(
-        todays.figures[4] < taxed.figures[4],
-        "figures follow the basis"
-    );
-}
-
-#[test]
-fn the_column_sets_turn_in_a_ring() {
-    assert_eq!(ColumnSet::default(), ColumnSet::Treatments);
-    assert_eq!(ColumnSet::Treatments.neighbor(1), ColumnSet::Accounts);
-    assert_eq!(ColumnSet::Tax.neighbor(1), ColumnSet::Treatments);
-    assert_eq!(ColumnSet::Treatments.neighbor(-1), ColumnSet::Tax);
-    let slugs: Vec<&str> = ColumnSet::ALL.iter().map(|set| set.slug()).collect();
-    assert_eq!(slugs, ["treatments", "accounts", "tax"]);
 }
