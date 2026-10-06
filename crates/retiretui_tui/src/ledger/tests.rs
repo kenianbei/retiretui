@@ -2,8 +2,10 @@
 //! sets, and the year stepped from any pane.
 
 use bevy_app::App;
+use bevy_ecs::prelude::With;
 use bevy_input_focus::InputFocus;
 use plurimus::term::KeyCode;
+use plurimus::widgets::TableStripe;
 
 use super::{Columns, LedgerTable, LedgerView};
 use crate::nav::Page;
@@ -12,6 +14,8 @@ use crate::support::{
     SIZE, TODAY, active_page, composed_frame, headless_app_at, ledger_year, press_key, redrawn,
     said, scratch_full_plan, show,
 };
+use crate::theme::Theme;
+use crate::theme::document::Variant;
 use retiretui_client::ledger::ColumnSet;
 
 /// The full fixture on the Ledger: several accounts, milestones and a
@@ -250,4 +254,19 @@ fn a_run_opened_while_the_table_is_shown_lands_on_its_year() {
     );
     press_key(&mut app, KeyCode::Esc);
     assert!(redrawn(&mut app).contains("To top of"), "the plan has");
+}
+
+#[test]
+fn the_terminal_s_own_theme_bands_the_tables_for_the_screen_it_is_on() {
+    let mut app = ledger();
+    let worn = app.world().resource::<Theme>().clone();
+    assert_eq!(worn, Theme::terminal_on(Variant::Dark));
+    let mut stripes = app
+        .world_mut()
+        .query_filtered::<&TableStripe, With<LedgerTable>>();
+    let stripe = stripes.single(app.world()).unwrap().0;
+    assert!(
+        stripe.bg.is_some() && stripe.bg == worn.stripe,
+        "{stripe:?}"
+    );
 }

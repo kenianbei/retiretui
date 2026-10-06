@@ -37,6 +37,11 @@ pub struct WantedVariant(pub document::Variant);
 #[derive(SystemSet, Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct Repainted;
 
+/// The stripe of the terminal's own theme on a dark screen and on a light
+/// one: a step off black and a step off white on the grey ramp.
+const STRIPE_ON_DARK: Color = Color::Indexed(235);
+const STRIPE_ON_LIGHT: Color = Color::Indexed(254);
+
 /// The colours a screen names. A ground the theme leaves unset is the
 /// terminal's own.
 #[derive(Resource, Clone, PartialEq, Eq, Debug)]
@@ -86,6 +91,21 @@ impl Theme {
                 Color::Blue,
                 Color::Red,
             ],
+        }
+    }
+
+    /// [`Self::terminal`] on a screen of `variant`, its tables banded in a
+    /// faint grey of the 256-colour ramp: the one ground it sets, since no
+    /// colour of the terminal's own sixteen is faint on every screen.
+    #[must_use]
+    pub fn terminal_on(variant: document::Variant) -> Self {
+        let stripe = match variant {
+            document::Variant::Dark => STRIPE_ON_DARK,
+            document::Variant::Light => STRIPE_ON_LIGHT,
+        };
+        Self {
+            stripe: Some(stripe),
+            ..Self::terminal()
         }
     }
 

@@ -23,7 +23,8 @@ interface DataTableProps<Row extends RowData> {
 
 /**
  * A table whose rows are the plan's: figures in tabular numerals on the
- * right, the selected row marked, an exceeded one in the shortfall colour.
+ * right, every second row banded, the selected row marked, an exceeded one
+ * in the shortfall colour.
  */
 export function DataTable<Row extends RowData>({
   label,
@@ -105,7 +106,9 @@ export function DataTable<Row extends RowData>({
                 className={cn(
                   "bg-card hover:bg-muted",
                   onSelect && "cursor-pointer",
-                  isRowSelected && "bg-accent hover:bg-accent",
+                  isRowSelected
+                    ? "bg-accent hover:bg-accent"
+                    : "even:bg-stripe",
                   isExceeded?.(row.original) && "text-destructive",
                 )}
               >
