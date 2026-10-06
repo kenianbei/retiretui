@@ -12,11 +12,14 @@ export type Year = {
  */
 year: number, 
 /**
- * The year, the run it is of, the age each person reaches in it and
- * the dollars it is said in: "2042 · Jordan turns 67 · today's
- * dollars".
+ * What its to-dos are titled, with the run it is of: "To do in 2042".
  */
 title: string, 
+/**
+ * The age each person reaches in it: "Jordan turns 67 · Alex turns
+ * 63".
+ */
+ages: string, 
 /**
  * The plan's milestones that fall in it.
  */
@@ -31,10 +34,15 @@ to_do: Array<string>,
  */
 warnings: Array<string>, 
 /**
- * What the plan has paid, converted and drawn through it, each beside
- * its lifetime total; none where every total is nothing.
+ * What its running totals are titled, with the dollars they are in:
+ * "So far · today's dollars".
  */
-so_far: string | null, 
+so_far_title: string, 
+/**
+ * What the plan has paid in tax, converted and drawn through it, each
+ * beside its lifetime total, a line only where the plan has any.
+ */
+so_far: Array<DetailLine>, 
 /**
  * Each account it touches, from its open to its close, and then every
  * account as one where there are several.

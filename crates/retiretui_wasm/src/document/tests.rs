@@ -54,7 +54,9 @@ fn a_plan_opens_projected() {
         Year::new(projected, tables(), asked).expect("in range")
     };
     let said = year_of(first, true);
-    assert_eq!(said.title, "2026 · Sam turns 30 · future dollars");
+    assert_eq!(said.title, "To do in 2026");
+    assert_eq!(said.ages, "Sam turns 30");
+    assert_eq!(said.so_far_title, "So far · future dollars");
     assert!(
         said.to_do
             .iter()

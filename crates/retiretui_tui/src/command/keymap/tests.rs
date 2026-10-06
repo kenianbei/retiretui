@@ -255,13 +255,13 @@ fn a_page_names_the_users_key_in_what_it_says_of_itself() {
     };
     let (ledger, compare) = said_of("ledger-plan = \"f9\"\ncompare-with = \"+\"");
     assert!(
-        ledger.contains("a run · f9 returns to the plan"),
+        ledger.contains("To do in 2026 · a run ") && ledger.contains("f9 the plan"),
         "{ledger}"
     );
     assert!(compare.contains("in its folder: + adds one."), "{compare}");
     let (ledger, compare) = said_of("ledger-plan = []\ncompare-with = []");
     assert!(
-        ledger.contains("a run ") && !ledger.contains("returns"),
+        ledger.contains("· a run ") && !ledger.contains("the plan"),
         "{ledger}"
     );
     assert!(compare.contains("in its folder. "), "{compare}");

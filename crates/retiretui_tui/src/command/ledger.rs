@@ -40,12 +40,15 @@ pub(super) fn commands() -> Vec<CommandSpec> {
 fn views() -> Vec<CommandSpec> {
     let arrow = KeyBinding::new;
     vec![
-        on_ledger(
-            LEDGER_PLAN,
-            "return the ledger from a market run to the plan",
-            vec![arrow(Key::Escape)],
-            Box::new(|world| world.register_system(ledger::return_to_plan)),
-        ),
+        CommandSpec {
+            hint: Some("the plan"),
+            ..on_ledger(
+                LEDGER_PLAN,
+                "return the ledger from a market run to the plan",
+                vec![arrow(Key::Escape)],
+                Box::new(|world| world.register_system(ledger::return_to_plan)),
+            )
+        },
         on_ledger(
             LEDGER_TABLE,
             "show every year in one table, or the year it left",

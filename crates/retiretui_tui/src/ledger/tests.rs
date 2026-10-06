@@ -44,9 +44,11 @@ fn holds_the_table(app: &App) -> bool {
 fn t_swaps_the_page_for_the_table_and_back_at_the_same_year() {
     let mut app = ledger();
     press_key(&mut app, KeyCode::Down);
-    press_key(&mut app, KeyCode::Tab);
-    press_key(&mut app, KeyCode::Tab);
-    assert!(!holds_the_table(&app), "the flows hold the keyboard");
+    for _ in 0..3 {
+        press_key(&mut app, KeyCode::Tab);
+    }
+    assert!(composed_frame(&app).contains("↑↓ account"), "the flows");
+    assert!(!holds_the_table(&app));
     press_key(&mut app, KeyCode::Char('t'));
     assert_eq!(view(&app), LedgerView::Table);
     assert!(holds_the_table(&app), "the keyboard goes with the pane");
@@ -70,7 +72,8 @@ fn t_swaps_the_page_for_the_table_and_back_at_the_same_year() {
     assert!(holds_the_table(&app), "which is the list of years again");
     let frame = redrawn(&mut app);
     assert!(frame.contains("╭ Years "), "{frame}");
-    assert!(frame.contains(&format!("╭ {} · ", TODAY.0 + 2)), "{frame}");
+    let to_do = format!("╭ To do in {} ", TODAY.0 + 2);
+    assert!(frame.contains(&to_do), "{frame}");
     assert!(frame.contains("t table"), "{frame}");
 }
 
@@ -86,7 +89,8 @@ fn enter_in_the_table_shows_the_year_its_cursor_is_on() {
     press_key(&mut app, KeyCode::Enter);
     assert_eq!(view(&app), LedgerView::Year);
     let frame = redrawn(&mut app);
-    assert!(frame.contains(&format!("╭ {} · ", TODAY.0 + 3)), "{frame}");
+    let to_do = format!("╭ To do in {} ", TODAY.0 + 3);
+    assert!(frame.contains(&to_do), "{frame}");
 }
 
 #[test]
@@ -114,10 +118,10 @@ fn c_turns_the_table_through_its_column_sets() {
 #[test]
 fn the_year_is_stepped_from_any_pane_by_the_arrows_or_the_brackets() {
     let mut app = ledger();
-    for _ in 0..2 {
+    for _ in 0..3 {
         press_key(&mut app, KeyCode::Tab);
     }
-    assert!(!holds_the_table(&app));
+    assert!(composed_frame(&app).contains("↑↓ account"), "the flows");
     press_key(&mut app, KeyCode::Right);
     assert_eq!(cursor(&app), Some(TODAY.0 + 1), "→ from the flows");
     press_key(&mut app, KeyCode::Char(']'));
@@ -175,7 +179,7 @@ fn the_braces_step_to_the_nearest_marked_year_and_say_where_there_is_none() {
 fn enter_on_the_tax_pane_shows_the_tax_tables_at_the_year() {
     let mut app = ledger();
     press_key(&mut app, KeyCode::Right);
-    for _ in 0..5 {
+    for _ in 0..6 {
         press_key(&mut app, KeyCode::Tab);
     }
     assert!(composed_frame(&app).contains("⏎ tax tables"));
@@ -221,12 +225,8 @@ fn a_year_that_is_shown_again_says_what_moved_while_it_was_hidden() {
     press_key(&mut app, KeyCode::Char('t'));
     let frame = redrawn(&mut app);
     let year = TODAY.0 + 4;
-    assert!(
-        frame.contains(&format!(
-            "╭ {year} · jordan turns 55 · alex turns 51 · future dollars "
-        )),
-        "{frame}"
-    );
+    assert!(frame.contains(&format!("╭ To do in {year} ")), "{frame}");
+    assert!(frame.contains("╭ So far · future dollars "), "{frame}");
     show(&mut app, Page::Overview);
     press_key(&mut app, KeyCode::Char('n'));
     show(&mut app, Page::Ledger);
@@ -245,9 +245,10 @@ fn a_run_opened_while_the_table_is_shown_lands_on_its_year() {
     app.update();
     assert_eq!(view(&app), LedgerView::Year);
     let frame = redrawn(&mut app);
+    assert!(frame.contains("╭ To do in 2026 · a run ─"), "{frame}");
     assert!(
-        frame.contains("╭ 2026 · a run · esc returns to the plan · "),
-        "{frame}"
+        frame.contains("esc the plan"),
+        "the key row says how to leave: {frame}"
     );
     assert!(
         !frame.contains("To top of"),
@@ -392,4 +393,36 @@ fn a_page_without_the_room_leaves_the_histories_out_and_gives_the_lists_the_rest
     );
     let lists = top_of(&frame, "╭ Money in ").unwrap();
     assert!(frame.lines().count() - 2 - lists > 8, "{frame}");
+}
+
+#[test]
+fn how_far_the_plan_has_come_is_a_pane_of_its_own_beside_what_to_do() {
+    let mut app = ledger();
+    for _ in 0..16 {
+        press_key(&mut app, KeyCode::Down);
+    }
+    let frame = redrawn(&mut app);
+    let lines: Vec<&str> = frame.lines().collect();
+    let top = top_of(&frame, "╭ To do in 2042 ").expect("the year's to-dos");
+    assert!(
+        lines[top].contains("╭ So far · today's dollars "),
+        "side by side: {frame}"
+    );
+    let said: Vec<&str> = lines[top + 1..top + 4].to_vec();
+    for (line, wanted) in said.iter().zip(["Taxes", "Converted", "Withdrawn"]) {
+        assert!(
+            line.contains(wanted) && line.contains(" of $"),
+            "{wanted}: {frame}"
+        );
+    }
+    assert!(
+        lines[top + 4].contains("╰") && !frame.contains("So far:"),
+        "{frame}"
+    );
+    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, KeyCode::Tab);
+    assert!(
+        composed_frame(&app).contains("↑↓ line"),
+        "⇥ reaches it after the to-dos"
+    );
 }

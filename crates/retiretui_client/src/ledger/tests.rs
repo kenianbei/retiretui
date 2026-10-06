@@ -224,10 +224,8 @@ fn the_bracket_is_the_one_the_tax_tables_hold_for_the_taxable_income() {
         of_run.worked_from[0].label, "MAGI",
         "a run's tables are not the plan's"
     );
-    assert_eq!(
-        of_run.title,
-        "2030 · a run · jordan turns 55 · alex turns 51 · future dollars"
-    );
+    assert_eq!(of_run.title, "To do in 2030 · a run");
+    assert_eq!(of_run.so_far_title, "So far · future dollars");
 }
 
 #[test]
@@ -329,20 +327,40 @@ fn the_last_year_has_come_as_far_as_the_overview_s_totals() {
             found.unwrap_or_else(|| panic!("no {label} total")).amount
         };
         let (taxes, converted, drawn) = (total("Taxes"), total("Converted"), total("Withdrawals"));
-        let wanted = format!(
-            "So far: {taxes} of {taxes} taxes · {converted} of {converted} converted · {drawn} of {drawn} withdrawn"
+        let said = |year| -> Vec<(String, String)> {
+            let lines = year_of(&projected, year, is_nominal).so_far;
+            lines
+                .into_iter()
+                .map(|line| (line.label, line.amount))
+                .collect()
+        };
+        let whole = |label: &str, total: &str| (label.to_owned(), format!("{total} of {total}"));
+        let wanted = [
+            whole("Taxes", &taxes),
+            whole("Converted", &converted),
+            whole("Withdrawn", &drawn),
+        ];
+        assert_eq!(said(last), wanted);
+        let first = said(2026);
+        assert!(first[0].1.ends_with(&format!(" of {taxes}")), "{first:?}");
+        assert_eq!(
+            first[1].1,
+            format!("$0 of {converted}"),
+            "nothing converted yet"
         );
-        assert_eq!(year_of(&projected, last, is_nominal).so_far, Some(wanted));
-        let first = year_of(&projected, 2026, is_nominal).so_far.unwrap();
-        assert!(first.contains(&format!("of {taxes} taxes")), "{first}");
-        assert!(first.contains("$0 of"), "nothing converted yet: {first}");
     }
+    let labels = |projected: &Projected, year| -> Vec<String> {
+        let lines = year_of(projected, year, true).so_far;
+        lines.into_iter().map(|line| line.label).collect()
+    };
     let unconverted = projected_from(TEST_PLAN);
-    let said = year_of(&unconverted, 2030, true).so_far.unwrap();
-    assert!(!said.contains("converted"), "{said}");
+    assert_eq!(labels(&unconverted, 2030), ["Taxes", "Withdrawn"]);
     let converting = projected_from(&format!("{TEST_PLAN}{CONVERTING}"));
-    let said = year_of(&converting, 2027, true).so_far.unwrap();
-    assert!(said.contains("$20k of $30k converted"), "{said}");
+    let said = year_of(&converting, 2027, true).so_far;
+    assert_eq!(
+        (said[1].label.as_str(), said[1].amount.as_str()),
+        ("Converted", "$20k of $30k")
+    );
 }
 
 #[test]
@@ -363,10 +381,10 @@ fn a_year_says_who_turns_what_its_milestones_and_what_to_do() {
         assert_eq!(year.warnings, warnings, "{}", row.year);
     }
     assert!(with_milestone > 1);
-    assert_eq!(
-        year_of(&projected, 2026, false).title,
-        "2026 · jordan turns 51 · alex turns 47 · today's dollars"
-    );
+    let first = year_of(&projected, 2026, false);
+    assert_eq!(first.title, "To do in 2026");
+    assert_eq!(first.ages, "jordan turns 51 · alex turns 47");
+    assert_eq!(first.so_far_title, "So far · today's dollars");
     let mut quiet = full();
     quiet.projection.years[0].actions.clear();
     assert_eq!(

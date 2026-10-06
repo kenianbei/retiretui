@@ -7,6 +7,7 @@ use retiretui_engine::plan::{Dollars, Item, Plan};
 use retiretui_engine::project::{Projection, YearRow};
 use serde::Serialize;
 
+use super::TO_DO;
 use super::flows::{AccountFlows, account_flows, all_accounts};
 use super::funds::{DetailLine, Funds, money_in, money_out};
 use super::tax::{bracket, picture, tax_lines};
@@ -17,6 +18,8 @@ use crate::session::Projected;
 use crate::table::basis_amount;
 
 const JOIN: &str = " · ";
+/// What the Ledger titles how far the plan has come.
+const SO_FAR: &str = "So far";
 
 /// Which year is asked for, and how it is to be said.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -37,10 +40,11 @@ pub struct Asked<'a> {
 pub struct Year {
     /// The calendar year.
     pub year: i16,
-    /// The year, the run it is of, the age each person reaches in it and
-    /// the dollars it is said in: "2042 · Jordan turns 67 · today's
-    /// dollars".
+    /// What its to-dos are titled, with the run it is of: "To do in 2042".
     pub title: String,
+    /// The age each person reaches in it: "Jordan turns 67 · Alex turns
+    /// 63".
+    pub ages: String,
     /// The plan's milestones that fall in it.
     pub milestones: Vec<String>,
     /// What it has the household do, each action a sentence; that there is
@@ -48,9 +52,12 @@ pub struct Year {
     pub to_do: Vec<String>,
     /// What to watch in it.
     pub warnings: Vec<String>,
-    /// What the plan has paid, converted and drawn through it, each beside
-    /// its lifetime total; none where every total is nothing.
-    pub so_far: Option<String>,
+    /// What its running totals are titled, with the dollars they are in:
+    /// "So far · today's dollars".
+    pub so_far_title: String,
+    /// What the plan has paid in tax, converted and drawn through it, each
+    /// beside its lifetime total, a line only where the plan has any.
+    pub so_far: Vec<DetailLine>,
     /// Each account it touches, from its open to its close, and then every
     /// account as one where there are several.
     pub flows: Vec<AccountFlows>,
@@ -89,7 +96,9 @@ impl Year {
         let room = bracket(plan, tables, row, is_nominal).filter(|_| asked.run.is_none());
         Some(Self {
             year,
-            title: title(plan, row, asked),
+            title: title(year, asked.run),
+            ages: ages(plan, row),
+            so_far_title: format!("{SO_FAR}{JOIN}{}", basis_name(is_nominal)),
             milestones: (dated.filter(|each| each.year == Some(year)))
                 .map(|each| each.text)
                 .collect(),
@@ -105,17 +114,10 @@ impl Year {
     }
 }
 
-/// The year, the run asked of, who turns what age and the dollars.
-fn title(plan: &Plan, row: &YearRow, asked: Asked) -> String {
-    let year = row.year.to_string();
-    let ages = ages(plan, row);
-    let parts = [
-        Some(year.as_str()),
-        asked.run,
-        Some(ages.as_str()).filter(|ages| !ages.is_empty()),
-        Some(basis_name(asked.is_nominal)),
-    ];
-    parts.into_iter().flatten().collect::<Vec<_>>().join(JOIN)
+/// What the year's to-dos are titled, with the `run` they are of.
+fn title(year: i16, run: Option<&str>) -> String {
+    let to_do = format!("{TO_DO} in {year}");
+    run.map_or_else(|| to_do.clone(), |run| format!("{to_do}{JOIN}{run}"))
 }
 
 /// Who turns what age in `row`, in household order.
@@ -130,14 +132,14 @@ fn ages(plan: &Plan, row: &YearRow) -> String {
     turning.join(JOIN)
 }
 
-/// Taxes, conversions and withdrawals summed through `year` beside what
-/// each comes to over the plan, each year's on its own basis as the
-/// Overview totals them: a clause only where the plan has any.
-fn so_far(projection: &Projection, year: i16, is_nominal: bool) -> Option<String> {
+/// Taxes, conversions and withdrawals summed through `year`, each beside
+/// what it comes to over the plan, each year's on its own basis as the
+/// Overview totals them: a line only where the plan has any.
+fn so_far(projection: &Projection, year: i16, is_nominal: bool) -> Vec<DetailLine> {
     let of: [(&str, fn(&YearRow) -> Vec<Dollars>); 3] = [
-        ("taxes", |row| vec![row.taxes.total]),
-        ("converted", |row| vec![row.conversions]),
-        ("withdrawn", |row| {
+        ("Taxes", |row| vec![row.taxes.total]),
+        ("Converted", |row| vec![row.conversions]),
+        ("Withdrawn", |row| {
             row.withdrawals.values().copied().collect()
         }),
     ];
@@ -152,12 +154,11 @@ fn so_far(projection: &Projection, year: i16, is_nominal: bool) -> Option<String
             }
         }
     }
-    let clauses: Vec<String> = (sums.into_iter().zip(of))
+    (sums.into_iter().zip(of))
         .filter(|&((_, lifetime), _)| lifetime != 0)
-        .map(|((through, lifetime), (what, _))| {
-            let (through, lifetime) = (compact_money(through), compact_money(lifetime));
-            format!("{through} of {lifetime} {what}")
+        .map(|((through, lifetime), (what, _))| DetailLine {
+            label: what.to_owned(),
+            amount: format!("{} of {}", compact_money(through), compact_money(lifetime)),
         })
-        .collect();
-    (!clauses.is_empty()).then(|| format!("So far: {}", clauses.join(JOIN)))
+        .collect()
 }

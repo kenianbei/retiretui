@@ -72,9 +72,9 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     key, is left out whole, the command keeps its keys, and the shell says which
     and why.
   - Everything that names a key names the one in force: the key row, the help
-    picker, the tab bar, a tool's help line, the Ledger's title while it shows a
-    run. A command left with no key is not hinted. A tab names its key only
-    where one cell holds it, so a tab bound to `alt-1` shows none.
+    picker, the tab bar, a tool's help line. A command left with no key is not
+    hinted. A tab names its key only where one cell holds it, so a tab bound to
+    `alt-1` shows none.
   - The keys a form, a list or a dialog answers to by itself - ⏎, esc and ⇥
     inside them, the arrows in a list - are not commands and are not rebound.
     The canvas page reads the same table from the page's storage, which nothing
@@ -224,11 +224,12 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     worth it ends on, marked `◆` where a milestone of the plan falls in it and
     `!` where it has something to watch. The list's cursor is the year. The web
     app leaves the list out below 1024px and shows the year alone.
-  - The year's own pane, titled with the year, who turns what age and the
-    dollars shown: the milestones that fall in it, what to do in it, what to
-    watch, and how far the plan has come, as "So far: $238k of $661k taxes ·
-    $180k of $330k converted · $538k of $2.37M withdrawn". What to watch has
-    moved here from under the flows.
+  - To do in the year: the milestones that fall in it, what to do in it and what
+    to watch, which has moved here from under the flows. Beside it, So far: what
+    the plan has paid in tax, converted and withdrawn through the year, each
+    beside its lifetime total, as "Taxes $238k of $661k", titled with the
+    dollars shown. The web app says who turns what age under the heading; the
+    terminal's list of years has their ages.
   - Flows: each account from its open to its close, with what came in and went
     out in one Moves column, each move named by where it came from or went, and
     its growth beside its rate. A last row says every account as one: what the
@@ -266,8 +267,10 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     `]`, and `{` and `}` step to the nearest year with a mark. The web app has a
     pair of buttons for the marked years beside its year stepper, and `←` and
     `→` step the year as they did.
-  - A market run opened from a market tool lands on the year in full, and the
-    year's title names it on both surfaces, as the table's does in the terminal.
+  - A market run opened from a market tool lands on the year in full, and the To
+    do title names it on both surfaces, as the table's does in the terminal.
+    While a run is open the terminal's key row says the key that returns to the
+    plan, where the Ledger's title said it.
 - Tables are banded. The web app shades every second row of every table. The
   terminal's own theme, the default, bands its tables in a faint grey chosen for
   a dark or a light screen; a named theme bands them in its own stripe as
@@ -279,6 +282,9 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- In the web app a chart's tooltip is headed by the year under the pointer. It
+  was headed by the name of the chart's first series, which the line under it
+  said again.
 - One setting in `config.toml` that does not read no longer resets every other.
   A misspelt `motion`, say, lost the theme and the document to reopen with it,
   under one complaint about the whole file. Each of `theme`, `motion`,

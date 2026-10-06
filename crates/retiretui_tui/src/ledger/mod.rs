@@ -28,7 +28,7 @@ pub use arrange::LedgerView;
 #[cfg(test)]
 pub use years::LedgerTable;
 
-use super::command::{Keymap, Outcome};
+use super::command::Outcome;
 use super::hints::{CommandHint, CommandHints};
 use super::layout::{self, Body, growing};
 use super::nav::{self, Page, ShownSurface};
@@ -89,10 +89,6 @@ const MILESTONE: &str = "◆";
 /// What marks something to watch, on its year and before its line.
 const WARNING: &str = "!";
 
-/// The key that returns a market run to the plan, said where a run is
-/// named.
-pub(super) const RETURN: &str = "returns to the plan";
-
 /// The year keys' and the table key's hints, said from any pane.
 const PAGE_HINTS: &[CommandHint] = &[
     CommandHint {
@@ -126,7 +122,7 @@ fn spawn_ledger(bodies: Query<Entity, With<Body>>, mut commands: Commands) {
     let across = commands.spawn((across, ChildOf(view))).id();
     years::spawn_pane(&mut commands, across);
     let detail = arrange::spawn_detail(&mut commands, across);
-    year::spawn_pane(&mut commands, detail);
+    year::spawn_panes(&mut commands, detail);
     flows::spawn_pane(&mut commands, detail);
     funds::spawn_panes(&mut commands, detail);
     history::spawn_row(&mut commands, detail);
@@ -160,7 +156,6 @@ fn open_run_on_its_year(run: Res<LedgerRun>, mut view: ResMut<LedgerView>) {
 /// set moves, and the year whenever any of those or the cursor does.
 fn say(
     (shown, session, columns): (Shown, Res<Session>, Res<Columns>),
-    keymap: Res<Keymap>,
     mut table: ResMut<TableSaid>,
     mut year: ResMut<YearSaid>,
 ) {
@@ -173,11 +168,11 @@ fn say(
         table.0 = Some(said);
     }
     if shown.is_changed() || year.is_added() {
-        let run = years::run_named(&shown.run, &keymap);
+        let run = shown.run.0.as_ref();
         let asked = Asked {
             year: shown.year(),
             is_nominal,
-            run: run.as_deref(),
+            run: run.map(|(label, _)| label.as_str()),
         };
         year.0 = Year::new(ledger, &session.tables, asked);
     }

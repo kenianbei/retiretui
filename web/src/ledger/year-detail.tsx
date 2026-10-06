@@ -50,11 +50,14 @@ const FLOW_COLUMNS = VIEW_WORDS.flow_columns.map(([header, isNumeric], at) => {
   });
 });
 
-/** The year's own card: its milestones, what to do, what to watch, and how far the plan has come. */
-function YearCard({ detail }: { detail: Year }) {
+/** What the year has the household do: its milestones, its actions and what to watch, under who turns what age. */
+function ToDoCard({ detail }: { detail: Year }) {
   return (
     <Titled title={detail.title} isLeading>
       <div className="space-y-3 text-sm">
+        {detail.ages !== "" && (
+          <p className="text-muted-foreground">{detail.ages}</p>
+        )}
         {detail.milestones.length > 0 && (
           <ul aria-label={VIEW_WORDS.milestones} className="space-y-1">
             {detail.milestones.map((milestone) => (
@@ -81,10 +84,23 @@ function YearCard({ detail }: { detail: Year }) {
             </ul>
           </MarginNote>
         )}
-        {detail.so_far !== null && (
-          <p className="text-muted-foreground tabular-nums">{detail.so_far}</p>
-        )}
       </div>
+    </Titled>
+  );
+}
+
+/** How far the plan has come through the year: each running total beside its lifetime total. */
+function SoFarCard({ detail }: { detail: Year }) {
+  return (
+    <Titled title={detail.so_far_title}>
+      <dl className="divide-y text-sm">
+        {detail.so_far.map((line) => (
+          <div key={line.label} className="flex justify-between gap-4 py-1.5">
+            <dt>{line.label}</dt>
+            <dd className="tabular-nums">{line.amount}</dd>
+          </div>
+        ))}
+      </dl>
     </Titled>
   );
 }
@@ -101,7 +117,10 @@ export function YearCards({
 }) {
   return (
     <div className="@container min-w-0 space-y-4">
-      <YearCard detail={detail} />
+      <div className="grid grid-cols-1 gap-4 @3xl:grid-cols-[minmax(0,1fr)_18rem]">
+        <ToDoCard detail={detail} />
+        {detail.so_far.length > 0 && <SoFarCard detail={detail} />}
+      </div>
       <Titled title={VIEW_WORDS.flows}>
         <DataTable
           label={`${String(detail.year)} ${VIEW_WORDS.flows}`}

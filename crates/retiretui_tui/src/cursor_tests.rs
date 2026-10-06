@@ -25,7 +25,8 @@ fn ledger_shows(app: &mut App) -> i16 {
     show(app, Page::Ledger);
     let year = ledger_year(app);
     let frame = redrawn(app);
-    assert!(frame.contains(&format!("╭ {year} · ")), "{year}: {frame}");
+    let to_do = format!("╭ To do in {year} ");
+    assert!(frame.contains(&to_do), "{year}: {frame}");
     year
 }
 

@@ -73,10 +73,10 @@ assert.equal(chart.years[0].classes.length, chart.classes.length);
 assert.deepEqual(bandPercentiles(), [10, 25, 50, 75, 90]);
 assert.equal(compactMoney(1234567), "$1.23M");
 assert.equal(percentileLabel(90), "90th percentile");
-assert.equal(
-  document.ledgerYear(first.year, true).title,
-  `${first.year} · Sam turns 30 · future dollars`,
-);
+assert.equal(detail.title, `To do in ${first.year}`);
+assert.equal(detail.ages, "Sam turns 30");
+assert.equal(detail.so_far_title, "So far · future dollars");
+assert.equal(detail.so_far[0].label, "Taxes");
 
 const accounts = document.table("accounts", sortPressed(sortPressed(null, 0), 0));
 assert.ok(accounts.rows.length > 0);
@@ -119,7 +119,7 @@ assert.equal(replayed.rows.length, ledger.rows.length);
 assert.notDeepEqual(replayed.rows, ledger.rows);
 const replayedYear = document.ledgerYear(first.year, false, starts.runs[1].market);
 assert.equal(replayedYear.worked_from[0].label, "MAGI");
-assert.match(replayedYear.title, / · retiring in \d{4} · /);
+assert.match(replayedYear.title, /^To do in \d{4} · retiring in \d{4}$/);
 assert.match(document.marketSaid(worst), /^random market \d+$/);
 assert.throws(() => document.ledger(false, "p10"), /no market is called p10/);
 

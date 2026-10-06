@@ -67,10 +67,11 @@ pub fn plugin(app: &mut App) {
 
 const NOTHING_SEARCHED_YET: &str = "nothing searched yet";
 
-/// Which tool commands have nothing to act on yet, so the key row leaves
-/// their hints out; the keys still run and say why they refuse.
+/// Which commands have nothing to act on yet, so the key row leaves their
+/// hints out; the keys still run, a tool's saying why it refuses.
 #[derive(SystemParam)]
 pub struct Idle<'w> {
+    run: Res<'w, crate::session::LedgerRun>,
     ladders: Res<'w, Ladders>,
     claims: Res<'w, Claims>,
     orders: Res<'w, Orders>,
@@ -81,14 +82,15 @@ impl Idle<'_> {
     /// Whether the command named `name` would refuse for want of a result.
     pub fn is_idle(&self, name: &str) -> bool {
         use super::command::{
-            TAKE_CLAIMS, TAKE_LADDER, TAKE_ORDER, TAKE_SPENDING, WRITE_CLAIMS, WRITE_LADDER,
-            WRITE_ORDER, WRITE_SPENDING,
+            LEDGER_PLAN, TAKE_CLAIMS, TAKE_LADDER, TAKE_ORDER, TAKE_SPENDING, WRITE_CLAIMS,
+            WRITE_LADDER, WRITE_ORDER, WRITE_SPENDING,
         };
         match name {
             WRITE_LADDER | TAKE_LADDER => self.ladders.highlighted_bracket().is_none(),
             WRITE_CLAIMS | TAKE_CLAIMS => self.claims.found().is_none(),
             WRITE_ORDER | TAKE_ORDER => self.orders.found().is_none(),
             WRITE_SPENDING | TAKE_SPENDING => self.spending.found().is_none(),
+            LEDGER_PLAN => self.run.0.is_none(),
             _ => false,
         }
     }

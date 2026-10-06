@@ -216,8 +216,8 @@ fn the_ledger_lists_years_beside_the_cursor_year_in_full() {
     assert!(frame.contains("╭ Years "), "{frame}");
     assert!(frame.contains("Net worth"), "{frame}");
     assert!(
-        frame.contains("╭ 2026 · me turns 46 · today's dollars "),
-        "the pane names the cursor year, who turns what and its dollars: {frame}"
+        frame.contains("╭ To do in 2026 ") && frame.contains("╭ So far · today's dollars "),
+        "the panes name the cursor year and their dollars: {frame}"
     );
     assert!(frame.contains("salary"), "{frame}");
     assert!(frame.contains("Spending"), "{frame}");
@@ -234,9 +234,10 @@ fn the_ledger_lists_years_beside_the_cursor_year_in_full() {
         "arrow moves the cursor off the first year"
     );
     let frame = composed_frame(&app);
-    assert!(frame.contains("╭ 2027 · me turns 47 "), "{frame}");
+    assert!(frame.contains("╭ To do in 2027 "), "{frame}");
     let walked = [
         "↑↓ scroll",
+        "↑↓ line",
         "↑↓ account",
         "↑↓ line",
         "↑↓ line",

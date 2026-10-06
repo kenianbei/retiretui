@@ -22,15 +22,14 @@ use retiretui_client::ledger::{Marks, Table, TableRow, YEARS};
 use retiretui_engine::plan::Dollars;
 
 use super::arrange::{LedgerView, YEARS_COLS};
-use super::{Columns, LedgerSystems, MILESTONE, RETURN, TableSaid, WARNING};
-use crate::command::{self, Keymap};
+use super::{Columns, LedgerSystems, MILESTONE, TableSaid, WARNING};
 use crate::edit::table_bundle;
 use crate::hints::CommandHints;
 use crate::layout::{self, filling, placed};
 use crate::nav::{self, FocusStop, Page};
 use crate::pane::{self, Framed, Pane};
 use crate::present::{self, MoneyForm};
-use crate::session::{LedgerRun, RowYear, Shown, track_cursor};
+use crate::session::{RowYear, Shown, track_cursor};
 use crate::theme::Theme;
 
 pub(super) fn plugin(app: &mut App) {
@@ -79,7 +78,6 @@ pub(super) fn spawn_pane(commands: &mut Commands, across: Entity) {
 /// the run it shows, the dollars and the column set.
 fn title_years(
     (shown, columns, view): (Shown, Res<Columns>, Res<LedgerView>),
-    keymap: Res<Keymap>,
     mut panes: Query<&mut Framed, With<YearsPane>>,
 ) {
     let is_moved = shown.run.is_changed() || shown.basis.is_changed() || columns.is_changed();
@@ -90,7 +88,7 @@ fn title_years(
         YEARS.to_owned()
     } else {
         let mut parts = vec![TITLE.to_owned()];
-        parts.extend(run_named(&shown.run, &keymap));
+        parts.extend(shown.run.0.iter().map(|(label, _)| label.clone()));
         parts.push(present::basis_name(shown.basis.nominal).to_owned());
         parts.push(columns.0.title().to_owned());
         parts.join(" · ")
@@ -98,16 +96,6 @@ fn title_years(
     for mut pane in &mut panes {
         Framed::retitle(&mut pane, &title);
     }
-}
-
-/// The run the Ledger shows and the key that leaves it, as a title says
-/// them; nothing of the plan's own projection.
-pub(super) fn run_named(run: &LedgerRun, keymap: &Keymap) -> Option<String> {
-    let (label, _) = run.0.as_ref()?;
-    Some(match keymap.label_named(command::LEDGER_PLAN, 0) {
-        "" => label.clone(),
-        back => format!("{label} · {back} {RETURN}"),
-    })
 }
 
 #[derive(SystemParam)]

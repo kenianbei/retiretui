@@ -9,12 +9,18 @@ import {
   test,
 } from "./support";
 
-/** The year shown in full, by its card's heading. */
-function yearShown(page: Page, year: string, unit = "today's dollars") {
+/** The year shown in full, by the heading of what to do in it. */
+function yearShown(page: Page, year: string) {
   return page.getByRole("heading", {
     level: 2,
-    name: new RegExp(`^${year} · Sam turns \\d+ · ${unit}$`),
+    name: `To do in ${year}`,
+    exact: true,
   });
+}
+
+/** How far the plan has come, by its heading, which says the dollars shown. */
+function soFar(page: Page, unit = "today's dollars") {
+  return page.getByRole("heading", { level: 3, name: `So far · ${unit}` });
 }
 
 /** What a side of the year's money comes to. */
@@ -59,7 +65,19 @@ test("the Ledger shows a year in full beside the list of years", async ({
   await page.waitForURL(/basis=nominal/);
   await expect(totalOf(page, "Money in")).not.toHaveText(lived ?? "");
   await page.reload();
-  await expect(yearShown(page, "2042", "future dollars")).toBeVisible();
+  await expect(yearShown(page, "2042")).toBeVisible();
+  await expect(soFar(page, "future dollars")).toBeVisible();
+
+  if (isPhone(testInfo)) return;
+  // Wide enough that the year is shorter than the list of years is long.
+  await page.setViewportSize({ width: 2000, height: 960 });
+  await expect(page.getByRole("img", { name: "Tax by year" })).toBeVisible();
+  const pastTheFooter = await page.evaluate(() => {
+    const footer = document.querySelector("footer")?.getBoundingClientRect();
+    const height = document.scrollingElement?.scrollHeight ?? 0;
+    return height - Math.round((footer?.bottom ?? 0) + window.scrollY);
+  });
+  expect(pastTheFooter, "the page ends with its footer").toBeLessThan(2);
 });
 
 test("the Ledger's table turns through its column sets, and a row leads to its year", async ({
@@ -127,14 +145,15 @@ test("the Ledger says what to do in its year, in the dollars shown", async ({
     .getByRole("listitem")
     .first();
   await expect(yearShown(page, "2045")).toBeVisible();
+  await expect(page.getByText(/^Sam turns \d+$/)).toBeVisible();
   const today = await first.textContent();
-  await expect(page.getByText(/^So far: /)).toBeVisible();
+  await expect(soFar(page)).toBeVisible();
   await page.getByRole("link", { name: "future dollars" }).click();
   await page.waitForURL(/basis=nominal/);
-  await expect(yearShown(page, "2045", "future dollars")).toBeVisible();
+  await expect(soFar(page, "future dollars")).toBeVisible();
   await expect(first).not.toHaveText(today ?? "");
   await page.getByRole("button", { name: "The year after" }).click();
-  await expect(yearShown(page, "2046", "future dollars")).toBeVisible();
+  await expect(yearShown(page, "2046")).toBeVisible();
   for (const title of ["Money in", "Money out", "Tax"]) {
     const history = page.getByRole("img", { name: `${title} by year` });
     await expect(history).toBeVisible();
@@ -145,10 +164,17 @@ test("the Ledger says what to do in its year, in the dollars shown", async ({
   await plot.scrollIntoViewIfNeeded();
   const box = await plot.boundingBox();
   if (!box) throw new Error("the history has no box");
+  await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5);
+  await expect(
+    page
+      .getByRole("img", { name: "Tax by year" })
+      .locator(".recharts-tooltip-wrapper"),
+    "the tooltip is headed by its year",
+  ).toContainText(/^20\d\d/);
   await page.mouse.click(box.x + box.width * 0.5, box.y + box.height * 0.5);
   await page.waitForURL((url) => !url.hash.includes("year=2046"));
   const pressed = /year=(\d{4})/.exec(page.url())?.[1] ?? "";
-  await expect(yearShown(page, pressed, "future dollars")).toBeVisible();
+  await expect(yearShown(page, pressed)).toBeVisible();
   await page.goto("#/ledger?year=2046&basis=nominal");
   await page.getByRole("link", { name: "Tax tables for 2046" }).click();
   await page.waitForURL(/#\/tools\/tax-tables\?.*year=2046/);

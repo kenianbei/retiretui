@@ -48,10 +48,10 @@ test("the Overview charts the plan a chart at a time, and a click opens that yea
   await page.waitForURL(/#\/ledger\?.*year=\d{4}/);
   const year = /year=(\d{4})/.exec(page.url())?.[1] ?? "";
   await expect(
-    page.getByRole("heading", {
-      level: 2,
-      name: new RegExp(`^${year} · .* · future dollars$`),
-    }),
+    page.getByRole("heading", { level: 2, name: `To do in ${year}` }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 3, name: "So far · future dollars" }),
   ).toBeVisible();
 });
 
