@@ -164,15 +164,42 @@ pub fn held_contributions(row: &YearRow) -> impl Iterator<Item = (&str, Held)> {
     })
 }
 
+/// Something to watch in a year.
+enum Watch<'a> {
+    /// An account whose contribution the year could not take as stated.
+    Held(&'a str, Held),
+    Unfunded,
+    Penalty,
+    Medicare,
+    /// What the year's MAGI buys in surcharges two years on.
+    Surcharged(Dollars),
+}
+
+/// What there is to watch in `row`, in the order it is said. The
+/// surcharge its MAGI buys is priced only by a reader that gets that far.
+fn watches<'a>(
+    plan: &'a Plan,
+    tables: &'a TaxTables,
+    row: &'a YearRow,
+) -> impl Iterator<Item = Watch<'a>> {
+    let held = held_contributions(row).map(|(account, held)| Watch::Held(account, held));
+    let paid = [
+        (row.unfunded, Watch::Unfunded),
+        (row.taxes.penalty, Watch::Penalty),
+        (row.medicare, Watch::Medicare),
+    ];
+    let paid = paid.into_iter().filter(|&(amount, _)| amount > 0);
+    let bought = std::iter::once_with(|| irmaa_purchase(plan, tables, row.year, row.taxes.magi));
+    let bought = bought.filter(|&purchase| purchase > 0);
+    held.chain(paid.map(|(_, watch)| watch))
+        .chain(bought.map(Watch::Surcharged))
+}
+
 /// Whether [`collect_warnings`] has anything to say of `row`, without
 /// saying it.
 #[must_use]
 pub fn has_warnings(plan: &Plan, tables: &TaxTables, row: &YearRow) -> bool {
-    row.unfunded > 0
-        || row.taxes.penalty > 0
-        || row.medicare > 0
-        || held_contributions(row).next().is_some()
-        || irmaa_purchase(plan, tables, row.year, row.taxes.magi) > 0
+    watches(plan, tables, row).next().is_some()
 }
 
 /// The year's warnings, each amount in the dollars of the year it is paid
@@ -185,37 +212,33 @@ pub fn collect_warnings(
     deflating: Option<&Projection>,
 ) -> Vec<String> {
     let dollars = |year, amount| deflating.map_or(amount, |years| years.deflate_in(year, amount));
-    let mut warnings: Vec<String> = held_contributions(row)
-        .map(|(account, held)| format!("{}: {}", account_name(plan, account), held.warning()))
-        .collect();
-    if row.unfunded > 0 {
-        warnings.push(format!(
+    let paid = |amount| money(dollars(row.year, amount));
+    let said = |watch| match watch {
+        Watch::Held(account, held) => {
+            format!("{}: {}", account_name(plan, account), held.warning())
+        }
+        Watch::Unfunded => format!(
             "Unfunded: spending exceeds available money by {}",
-            money(dollars(row.year, row.unfunded))
-        ));
-    }
-    if row.taxes.penalty > 0 {
-        warnings.push(format!(
+            paid(row.unfunded)
+        ),
+        Watch::Penalty => format!(
             "Early-withdrawal penalty paid this year: {}",
-            money(dollars(row.year, row.taxes.penalty))
-        ));
-    }
-    if row.medicare > 0 {
-        warnings.push(format!(
+            paid(row.taxes.penalty)
+        ),
+        Watch::Medicare => format!(
             "Medicare surcharges and cliff costs paid this year: {}",
-            money(dollars(row.year, row.medicare))
-        ));
-    }
-    let purchase = irmaa_purchase(plan, tables, row.year, row.taxes.magi);
-    if purchase > 0 {
-        let premium_year = row.year + tax::IRMAA_LOOKBACK_YEARS;
-        warnings.push(format!(
-            "This year's MAGI ({}) buys {} in IRMAA surcharges in {premium_year}",
-            money(dollars(row.year, row.taxes.magi)),
-            money(dollars(premium_year, purchase)),
-        ));
-    }
-    warnings
+            paid(row.medicare)
+        ),
+        Watch::Surcharged(purchase) => {
+            let premium_year = row.year + tax::IRMAA_LOOKBACK_YEARS;
+            format!(
+                "This year's MAGI ({}) buys {} in IRMAA surcharges in {premium_year}",
+                paid(row.taxes.magi),
+                money(dollars(premium_year, purchase)),
+            )
+        }
+    };
+    watches(plan, tables, row).map(said).collect()
 }
 
 #[cfg(test)]

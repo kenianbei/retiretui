@@ -24,3 +24,9 @@ pub use year::{Asked, Year};
 
 /// What the Ledger titles what a year has the household do.
 pub const TO_DO: &str = "To do";
+/// What the Ledger titles what to watch in a year.
+pub const TO_WATCH: &str = "To watch";
+/// What the Ledger titles the tax a year paid.
+pub const PAID: &str = "Paid";
+/// What the Ledger titles what a year's tax was worked out from.
+pub const WORKED_FROM: &str = "Worked out from";

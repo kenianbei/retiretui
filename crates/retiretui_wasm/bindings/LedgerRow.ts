@@ -10,13 +10,17 @@ export type LedgerRow = {
  */
 year: number, 
 /**
- * Its cells, in column order.
+ * The ages reached in it.
  */
-cells: Array<string>, 
+ages: string, 
 /**
  * What sets it apart in the list of years.
  */
 marks: Marks, 
+/**
+ * Its figures, in the order of their headers.
+ */
+figures: Array<string>, 
 /**
  * Whether the year could not pay for everything.
  */

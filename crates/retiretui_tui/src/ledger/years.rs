@@ -11,36 +11,36 @@ use bevy_ecs::prelude::{
 };
 use bevy_ecs::system::SystemParam;
 use plurimus::core::TerminalSize;
-use plurimus::core::ratatui_core::layout::{Constraint, Size};
+use plurimus::core::ratatui_core::layout::Constraint;
 use plurimus::core::ratatui_core::style::{Modifier, Style};
 use plurimus::core::ratatui_core::text::{Line, Span};
-use plurimus::ui::{ScrollArea, UiStyle};
+use plurimus::ui::UiStyle;
 use plurimus::widgets::{
-    ActiveDescendant, TableColumns, TableSelection, TableStripe, table, table_header, table_row,
-    table_self_update,
+    ActiveDescendant, TableColumns, table_header, table_row, table_self_update,
 };
 use retiretui_client::ledger::{Marks, Table, TableRow, YEARS};
 use retiretui_engine::plan::Dollars;
 
 use super::arrange::{LedgerView, YEARS_COLS};
-use super::{Columns, LedgerSystems, RETURN, TableSaid};
+use super::{Columns, LedgerSystems, MILESTONE, RETURN, TableSaid, WARNING};
 use crate::command::{self, Keymap};
-use crate::edit::table_keys;
+use crate::edit::table_bundle;
 use crate::hints::CommandHints;
 use crate::layout::{self, filling, placed};
-use crate::nav::{self, ActivePage, FocusStop, Page};
+use crate::nav::{self, FocusStop, Page};
 use crate::pane::{self, Framed, Pane};
 use crate::present::{self, MoneyForm};
 use crate::session::{LedgerRun, RowYear, Shown, track_cursor};
 use crate::theme::Theme;
 
 pub(super) fn plugin(app: &mut App) {
+    let on_ledger = nav::shows(Page::Ledger);
     app.add_systems(
         Update,
         (
             title_years,
-            rebuild_rows,
-            follow_cursor.run_if(nav::shows(Page::Ledger)),
+            rebuild_rows.run_if(on_ledger.clone()),
+            follow_cursor.run_if(on_ledger),
             track_cursor::<LedgerTable>,
         )
             .chain()
@@ -61,20 +61,13 @@ struct LedgerHeaderRow;
 pub(super) struct YearsPane;
 
 const TITLE: &str = "Ledger";
-const MILESTONE: &str = "◆";
-const WARNING: &str = "!";
 
 pub(super) fn spawn_pane(commands: &mut Commands, across: Entity) {
     let pane = Pane::new(YEARS).wide(YEARS_COLS).spawn(commands, across);
     commands.entity(pane).insert((YearsPane, CommandHints(&[])));
     commands.spawn((
-        table([Constraint::Length(YEAR_COLS)]),
+        table_bundle(),
         LedgerTable,
-        TableSelection::Row,
-        layout::table_cursor(),
-        table_keys(),
-        TableStripe(Style::new()),
-        ScrollArea::new(Size::default()),
         FocusStop,
         filling(),
         placed(),
@@ -85,12 +78,11 @@ pub(super) fn spawn_pane(commands: &mut Commands, across: Entity) {
 /// Titles the pane for the view: the list by what it lists, the table by
 /// the run it shows, the dollars and the column set.
 fn title_years(
-    (run, shown, columns): (Res<LedgerRun>, Shown, Res<Columns>),
-    view: Res<LedgerView>,
+    (shown, columns, view): (Shown, Res<Columns>, Res<LedgerView>),
     keymap: Res<Keymap>,
     mut panes: Query<&mut Framed, With<YearsPane>>,
 ) {
-    let is_moved = run.is_changed() || shown.basis.is_changed() || columns.is_changed();
+    let is_moved = shown.run.is_changed() || shown.basis.is_changed() || columns.is_changed();
     if !is_moved && !view.is_changed() {
         return;
     }
@@ -98,7 +90,7 @@ fn title_years(
         YEARS.to_owned()
     } else {
         let mut parts = vec![TITLE.to_owned()];
-        parts.extend(run_named(&run, &keymap));
+        parts.extend(run_named(&shown.run, &keymap));
         parts.push(present::basis_name(shown.basis.nominal).to_owned());
         parts.push(columns.0.title().to_owned());
         parts.join(" · ")
@@ -130,37 +122,30 @@ struct RowInputs<'w, 's> {
     said: Res<'w, TableSaid>,
     shown: Shown<'w>,
     view: Res<'w, LedgerView>,
-    active: Res<'w, ActivePage>,
     theme: Res<'w, Theme>,
     size: Res<'w, TerminalSize>,
-    is_stale: Local<'s, bool>,
     /// How the rows on screen were fitted, so a resize that fits the same
     /// way rebuilds nothing.
     fitted: Local<'s, Option<Fit>>,
 }
 
 impl RowInputs<'_, '_> {
-    /// Rows are rebuilt while the ledger is on screen, and a change that
-    /// lands while it is not waits for it: setting the cursor reveals it,
-    /// and a hidden table is placed nowhere, so a reveal resolved against
-    /// its empty area scrolls the rows out of view for good.
-    fn should_rebuild(&mut self) -> bool {
+    /// Whether what the rows say or how they fit has moved since they were
+    /// built. It is asked only while the Ledger is on show, and what moved
+    /// while it was not reads as moved on its return: setting the cursor
+    /// reveals it, and a hidden table is placed nowhere, so a reveal
+    /// resolved against its empty area scrolls the rows out of view for
+    /// good.
+    fn is_stale(&self) -> bool {
         let is_refitted = self.size.is_changed() && *self.fitted != self.fit();
-        *self.is_stale |= self.said.is_changed()
-            || self.view.is_changed()
-            || self.theme.is_changed()
-            || is_refitted;
-        let rebuilding = *self.is_stale && self.active.page() == Page::Ledger;
-        *self.is_stale &= !rebuilding;
-        rebuilding
+        self.said.is_changed() || self.view.is_changed() || self.theme.is_changed() || is_refitted
     }
 
     fn fit(&self) -> Option<Fit> {
         let table = self.said.0.as_ref()?;
-        let widest = widest_figure(&table.rows);
         Some(match *self.view {
-            LedgerView::Year => Fit::beside(widest),
-            LedgerView::Table => Fit::of(self.size.cols, set_columns(table), widest),
+            LedgerView::Year => Fit::beside(widest_figure(table)),
+            LedgerView::Table => Fit::of(self.size.cols, table),
         })
     }
 }
@@ -168,7 +153,7 @@ impl RowInputs<'_, '_> {
 /// Respawns the header and year rows whenever what they say, the view or
 /// the fit changes, carrying the cursor across by year.
 fn rebuild_rows(mut inputs: RowInputs, entities: LedgerEntities, mut commands: Commands) {
-    if !inputs.should_rebuild() {
+    if !inputs.is_stale() {
         return;
     }
     let (Ok(ledger_table), Some(table)) = (entities.tables.single(), inputs.said.0.as_ref()) else {
@@ -183,7 +168,7 @@ fn rebuild_rows(mut inputs: RowInputs, entities: LedgerEntities, mut commands: C
         }
     }
     *inputs.fitted = Some(fit);
-    let figures = fit.figures(table.headers.len() - TEXT_COLUMNS);
+    let figures = fit.figures(table.figure_headers.len());
     commands
         .entity(ledger_table)
         .insert(TableColumns(constraints(figures.len())));
@@ -239,24 +224,20 @@ const MARK_COLS: u16 = 2;
 const SCROLL_BAR_COLS: u16 = 1;
 /// The year, the ages and the marks, which lead every row.
 const LEADING: [u16; 3] = [YEAR_COLS, AGE_COLS, MARK_COLS];
-/// The year's and the ages' headers, which the client's table leads with.
-const TEXT_COLUMNS: usize = 2;
-/// Columns of the terminal the rows never get.
-const LEDGER_CHROME: u16 = pane::BORDERS + layout::CURSOR_COLS + SCROLL_BAR_COLS;
-/// Income, spending, tax and withdrawn, which lead every column set.
-const LEADING_FIGURES: usize = 4;
-/// The leading figures and net worth, which every width shows.
-const CORE_FIGURES: usize = LEADING_FIGURES + 1;
+/// The cells the leading columns take, each with the one after it.
+const LEADING_COLS: u16 = YEAR_COLS + AGE_COLS + MARK_COLS + LEADING.len() as u16;
+/// Columns of the pane the figures never get.
+const LEDGER_CHROME: u16 = pane::BORDERS + layout::CURSOR_COLS + SCROLL_BAR_COLS + LEADING_COLS;
 /// The cells a figure written short takes: `-$1.23M`.
 const COMPACT_COLS: usize = 7;
 
-/// How the years fit the width they have: whether the column set's own
-/// figures get columns, whether any but net worth does, and whether
-/// figures are written in full.
+/// How the years fit the width they have: how many figures are drawn
+/// ahead of the net worth, the cells each gets, and whether they are
+/// written in full.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 struct Fit {
-    has_set: bool,
-    has_figures: bool,
+    /// The figures drawn ahead of the net worth, from the first.
+    before_net_worth: usize,
     form: MoneyForm,
     /// The cells each figure's column gets.
     given: usize,
@@ -266,21 +247,20 @@ impl Fit {
     /// The table across `cols`. Figures are shortened before the set's own
     /// columns go, since the set is what the table was turned to, and they
     /// go before the figures every set leads with are shortened.
-    /// `widest` is the most cells a figure written in full takes.
-    fn of(cols: u16, set_columns: usize, widest: usize) -> Self {
-        let leading: u16 = LEADING.iter().map(|cols| cols + 1).sum();
-        let room = usize::from(cols.saturating_sub(LEDGER_CHROME + leading));
-        let per_column = |columns: usize| (room / columns).saturating_sub(1);
-        let with_set = per_column(CORE_FIGURES + set_columns);
-        let has_set = with_set >= widest.min(COMPACT_COLS);
-        let given = if has_set {
-            with_set
+    fn of(cols: u16, table: &Table) -> Self {
+        let figures = table.figure_headers.len();
+        let widest = widest_figure(table);
+        let room = usize::from(cols.saturating_sub(LEDGER_CHROME));
+        let per_column = |columns: usize| (room / columns.max(1)).saturating_sub(1);
+        let has_set = per_column(figures) >= widest.min(COMPACT_COLS);
+        let drawn = if has_set {
+            figures
         } else {
-            per_column(CORE_FIGURES)
+            figures.min(Table::LEADING + 1)
         };
+        let given = per_column(drawn);
         Self {
-            has_set,
-            has_figures: true,
+            before_net_worth: drawn.saturating_sub(1),
             form: form_for(given, widest),
             given,
         }
@@ -289,24 +269,19 @@ impl Fit {
     /// The list beside the year: net worth alone, in what the pane leaves
     /// it.
     fn beside(widest: usize) -> Self {
-        let leading: u16 = LEADING.iter().map(|cols| cols + 1).sum();
-        let room = (YEARS_COLS as u16).saturating_sub(LEDGER_CHROME + leading);
+        let given = usize::from((YEARS_COLS as u16).saturating_sub(LEDGER_CHROME));
         Self {
-            has_set: false,
-            has_figures: false,
-            form: form_for(usize::from(room), widest),
-            given: usize::from(room),
+            before_net_worth: 0,
+            form: form_for(given, widest),
+            given,
         }
     }
 
     /// Which of a row's `count` figures are drawn, by their place.
     fn figures(self, count: usize) -> Vec<usize> {
         let last = count.saturating_sub(1);
-        let leading = 0..LEADING_FIGURES.min(last);
-        let own = LEADING_FIGURES.min(last)..last;
-        let leading = leading.filter(|_| self.has_figures);
-        let own = own.filter(|_| self.has_figures && self.has_set);
-        leading.chain(own).chain([last]).collect()
+        let before = 0..self.before_net_worth.min(last);
+        before.chain([last]).collect()
     }
 }
 
@@ -318,19 +293,17 @@ fn form_for(given: usize, widest: usize) -> MoneyForm {
     }
 }
 
-/// How many columns are the set's own.
-fn set_columns(table: &Table) -> usize {
-    (table.headers.len() - TEXT_COLUMNS).saturating_sub(CORE_FIGURES)
-}
-
-/// The cells the widest figure takes written in full, or a header every
-/// set shows that is longer.
-fn widest_figure(rows: &[TableRow]) -> usize {
-    let largest = rows.iter().flat_map(|row| &row.figures);
+/// The cells the widest figure takes written in full, or the header of
+/// one every set shows that is longer.
+fn widest_figure(table: &Table) -> usize {
+    let largest = table.rows.iter().flat_map(|row| &row.figures);
     let largest = largest.map(|figure| figure.abs()).max();
+    let leading = table.figure_headers.iter().take(Table::LEADING);
+    let headers = leading.chain(table.figure_headers.last());
+    let header = headers.map(|header| header.chars().count()).max();
     present::money(largest.unwrap_or(0))
         .len()
-        .max("Withdrawn".len())
+        .max(header.unwrap_or(0))
 }
 
 fn constraints(figures: usize) -> Vec<Constraint> {
@@ -343,11 +316,9 @@ fn constraints(figures: usize) -> Vec<Constraint> {
 /// on the right; one too long for the `given` cells of its column stands
 /// on the left, clipped at its end rather than its start.
 fn header_cells(table: &Table, figures: &[usize], given: usize) -> Vec<Line<'static>> {
-    let text = table.headers.iter().take(TEXT_COLUMNS);
-    let text = text.map(|(header, _)| Line::from(header.clone()));
+    let text = table.text_headers.into_iter().map(Line::from);
     let figures = figures.iter().map(|&at| {
-        let (header, _) = &table.headers[TEXT_COLUMNS + at];
-        let cell = Line::from(header.clone());
+        let cell = Line::from(table.figure_headers[at].clone());
         if cell.width() > given {
             cell
         } else {
@@ -388,29 +359,45 @@ fn year_cells(
 mod tests {
     use super::*;
 
-    const SEVEN_DIGITS: usize = "$1,074,850".len();
+    /// A table of `figures` figures a year, the largest `largest`.
+    fn table_of(figures: usize, largest: Dollars) -> Table {
+        let row = TableRow {
+            year: 2026,
+            ages: "51".to_owned(),
+            marks: Marks::default(),
+            figures: vec![largest; figures],
+            is_exceeded: false,
+        };
+        Table {
+            text_headers: ["Year", "Age"],
+            figure_headers: vec!["Figure".to_owned(); figures],
+            rows: vec![row],
+        }
+    }
+
+    const SEVEN_FIGURES: Dollars = 1_074_850;
 
     #[test]
     fn the_table_shortens_its_figures_before_it_drops_the_set_s_columns() {
-        let roomy = Fit::of(200, 4, SEVEN_DIGITS);
-        assert!(roomy.has_set && roomy.form == MoneyForm::Full, "{roomy:?}");
-        let by_account = Fit::of(128, 7, SEVEN_DIGITS);
-        assert!(by_account.has_set, "{by_account:?}");
+        let roomy = Fit::of(200, &table_of(9, SEVEN_FIGURES));
+        assert_eq!((roomy.before_net_worth, roomy.form), (8, MoneyForm::Full));
+        let by_account = Fit::of(128, &table_of(12, SEVEN_FIGURES));
+        assert_eq!(by_account.before_net_worth, 11, "{by_account:?}");
         assert_eq!(by_account.form, MoneyForm::Compact, "{by_account:?}");
-        let cramped = Fit::of(128, 20, SEVEN_DIGITS);
-        assert!(!cramped.has_set, "{cramped:?}");
+        let cramped = Fit::of(128, &table_of(25, SEVEN_FIGURES));
+        assert_eq!(cramped.before_net_worth, Table::LEADING, "{cramped:?}");
         assert_eq!(cramped.form, MoneyForm::Full, "what leads has the room");
-        let vast = Fit::of(128, 20, "$1,234,567,890,123,456".len());
+        let vast = Fit::of(128, &table_of(25, 1_234_567_890_123_456));
         assert_eq!(vast.form, MoneyForm::Compact, "{vast:?}");
     }
 
     #[test]
     fn a_fit_draws_what_leads_the_set_s_own_and_always_the_net_worth() {
-        let all = Fit::of(200, 4, SEVEN_DIGITS);
+        let all = Fit::of(200, &table_of(9, SEVEN_FIGURES));
         assert_eq!(all.figures(9), [0, 1, 2, 3, 4, 5, 6, 7, 8]);
-        let cramped = Fit::of(128, 20, SEVEN_DIGITS);
+        let cramped = Fit::of(128, &table_of(25, SEVEN_FIGURES));
         assert_eq!(cramped.figures(25), [0, 1, 2, 3, 24]);
-        let beside = Fit::beside(SEVEN_DIGITS);
+        let beside = Fit::beside("$1,074,850".len());
         assert_eq!(beside.figures(9), [8], "the list is net worth alone");
         assert_eq!(beside.form, MoneyForm::Full, "{beside:?}");
         assert_eq!(
@@ -418,5 +405,17 @@ mod tests {
             MoneyForm::Compact
         );
         assert_eq!(constraints(3).len(), LEADING.len() + 3);
+    }
+
+    #[test]
+    fn the_widest_figure_is_a_header_where_every_figure_is_shorter() {
+        let mut table = table_of(6, 5);
+        table.figure_headers[3] = "Withdrawn".to_owned();
+        table.figure_headers[4] = "A set's own long header".to_owned();
+        assert_eq!(
+            widest_figure(&table),
+            "Withdrawn".len(),
+            "a set's own may clip"
+        );
     }
 }

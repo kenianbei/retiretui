@@ -49,12 +49,12 @@ fn a_plan_opens_projected() {
         let asked = Asked {
             year,
             is_nominal,
-            is_run: false,
+            run: None,
         };
         Year::new(projected, tables(), asked).expect("in range")
     };
     let said = year_of(first, true);
-    assert_eq!(said.ages, "Sam turns 30");
+    assert_eq!(said.title, "2026 · Sam turns 30 · future dollars");
     assert!(
         said.to_do
             .iter()

@@ -50,13 +50,17 @@ assert.equal(document.yearAt(null, first.year - 1), first.year);
 assert.equal(document.yearAt(first.year + 2, first.year), first.year + 2);
 
 const ledger = document.ledger(false);
-assert.equal(ledger.columns[0].header, "Year");
-assert.equal(ledger.rows[0].cells.length, ledger.columns.length);
-assert.equal(document.ledger(false, undefined, "tax").columns[6].header, "MAGI");
+assert.deepEqual(ledger.text_headers, ["Year", "Age"]);
+assert.equal(ledger.rows[0].figures.length, ledger.figure_headers.length);
+assert.equal(
+  document.ledger(false, undefined, "tax").figure_headers[ledger.leading],
+  "MAGI",
+);
 const detail = document.ledgerYear(first.year, true);
 assert.ok(detail.flows.length > 0);
 assert.equal(detail.money_in.total.amount, detail.money_out.total.amount);
-assert.ok(detail.bracket.label.startsWith("To top of "));
+assert.ok(detail.worked_from[0].label.startsWith("To top of "));
+assert.ok(ledger.rows.some(({ marks }) => marks.is_milestone));
 assert.throws(() => document.ledgerYear(first.year - 99, true));
 const histories = document.ledgerHistories(true);
 assert.deepEqual(
@@ -64,15 +68,15 @@ assert.deepEqual(
   ["Money in by year", "Money out by year", "Tax by year"],
 );
 assert.equal(histories[0].years[0].year, first.year);
-const [before, after] = document.markedYears(first.year);
-assert.equal(before, null);
-assert.ok(after > first.year);
 const chart = document.chart(true);
 assert.equal(chart.years[0].classes.length, chart.classes.length);
 assert.deepEqual(bandPercentiles(), [10, 25, 50, 75, 90]);
 assert.equal(compactMoney(1234567), "$1.23M");
 assert.equal(percentileLabel(90), "90th percentile");
-assert.equal(document.ledgerYear(first.year, true).ages, "Sam turns 30");
+assert.equal(
+  document.ledgerYear(first.year, true).title,
+  `${first.year} · Sam turns 30 · future dollars`,
+);
 
 const accounts = document.table("accounts", sortPressed(sortPressed(null, 0), 0));
 assert.ok(accounts.rows.length > 0);
@@ -113,10 +117,9 @@ const worst = markets.runs.at(-1).market;
 const replayed = document.ledger(false, worst);
 assert.equal(replayed.rows.length, ledger.rows.length);
 assert.notDeepEqual(replayed.rows, ledger.rows);
-assert.equal(
-  document.ledgerYear(first.year, false, starts.runs[1].market).bracket,
-  null,
-);
+const replayedYear = document.ledgerYear(first.year, false, starts.runs[1].market);
+assert.equal(replayedYear.worked_from[0].label, "MAGI");
+assert.match(replayedYear.title, / · retiring in \d{4} · /);
 assert.match(document.marketSaid(worst), /^random market \d+$/);
 assert.throws(() => document.ledger(false, "p10"), /no market is called p10/);
 

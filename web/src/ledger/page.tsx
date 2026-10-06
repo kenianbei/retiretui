@@ -4,8 +4,9 @@ import { useEffect, useMemo, useRef } from "react";
 import { MarginNote } from "@/components/margin-note";
 import { columnSetOf } from "@/ledger/columns";
 import { ColumnsPick, MarkedStepper, ViewSwitch } from "@/ledger/controls";
+import { markedBeside } from "@/ledger/marked";
 import { YearCards } from "@/ledger/year-detail";
-import { YearsList, YearTable } from "@/ledger/years";
+import { Years } from "@/ledger/years";
 import { messageOf } from "@/lib/utils";
 import { BASIS_LABEL } from "@/overview/view-words";
 import { useSession } from "@/session";
@@ -36,8 +37,9 @@ function Unshown({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** What the Ledger reads of the document for the address it is at: every year, and then the year shown. */
+/** What the Ledger reads of the document for the address it is at, each reading made again only when what it is of moves. */
 function useLedger(search: LedgerSearch, year: number | undefined) {
+  // The reading is the dependency, not its document: an edit renews the one and keeps the other.
   const { reading } = useSession();
   const { market } = search;
   const isNominal = basisOf(search) === "nominal";
@@ -46,31 +48,28 @@ function useLedger(search: LedgerSearch, year: number | undefined) {
   const plan = useMemo(() => {
     const document = reading.document;
     try {
-      const ledger = document?.ledger(isNominal, market, set);
       return {
-        ledger,
+        ledger: document?.ledger(isNominal, market, set),
         said: market === undefined ? "" : document?.marketSaid(market),
-        histories:
-          ledger && !isTable
-            ? document?.ledgerHistories(isNominal, market)
-            : undefined,
       };
     } catch (thrown) {
       return { refusal: messageOf(thrown), ledger: undefined };
     }
-  }, [reading, isNominal, market, set, isTable]);
-  const shown = useMemo(() => {
-    const document = reading.document;
-    const isShown = plan.ledger && year !== undefined;
-    return {
-      detail:
-        isShown && !isTable
-          ? document?.ledgerYear(year, isNominal, market)
-          : undefined,
-      marked: isShown ? document?.markedYears(year, market) : undefined,
-    };
-  }, [reading, plan, isNominal, market, isTable, year]);
-  return { ...plan, ...shown };
+  }, [reading, isNominal, market, set]);
+  const isYearShown = Boolean(plan.ledger) && !isTable;
+  const histories = useMemo(
+    () =>
+      isYearShown ? reading.document?.ledgerHistories(isNominal, market) : [],
+    [reading, isYearShown, isNominal, market],
+  );
+  const detail = useMemo(
+    () =>
+      isYearShown && year !== undefined
+        ? reading.document?.ledgerYear(year, isNominal, market)
+        : undefined,
+    [reading, isYearShown, year, isNominal, market],
+  );
+  return { ...plan, histories, detail, set, isTable };
 }
 
 /** One year in the context of all of them, or every year in one table. */
@@ -81,7 +80,11 @@ export function LedgerPage() {
   const shown = useYear();
   const { year, setYear } = shown;
   const read = useLedger(search, year);
-  const isTable = search.view === "table";
+  const { ledger, detail, isTable } = read;
+  const marked = useMemo(
+    () => markedBeside(ledger?.rows ?? [], year ?? 0),
+    [ledger, year],
+  );
   const years = useRef<HTMLDivElement>(null);
   useEffect(() => {
     years.current
@@ -97,7 +100,6 @@ export function LedgerPage() {
       </Unshown>
     );
   }
-  const { ledger, detail } = read;
   if (!ledger) {
     return (
       <Unshown>
@@ -123,10 +125,7 @@ export function LedgerPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Ledger</h1>
         <div className="flex flex-wrap items-center gap-2">
           <YearStepper shown={shown} />
-          <MarkedStepper
-            marked={read.marked ?? [null, null]}
-            setYear={setYear}
-          />
+          <MarkedStepper marked={marked} setYear={setYear} />
           <BasisSwitch />
           <ViewSwitch />
         </div>
@@ -147,28 +146,29 @@ export function LedgerPage() {
       )}
       {isTable ? (
         <div ref={years} className="min-w-0 space-y-3">
-          <ColumnsPick set={columnSetOf(search.columns)} />
-          <YearTable
+          <ColumnsPick set={read.set} />
+          <Years
             ledger={ledger}
             unit={unit}
             year={year}
             onSelect={showYear}
+            isWhole
           />
         </div>
       ) : (
         <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
           <div ref={years} className="sticky top-4 min-w-0 max-lg:hidden">
-            <YearsList
+            <Years
               ledger={ledger}
               unit={unit}
               year={year}
               onSelect={setYear}
+              isWhole={false}
             />
           </div>
           {detail && (
             <YearCards
               detail={detail}
-              unit={unit}
               histories={read.histories ?? []}
               onYear={setYear}
             />

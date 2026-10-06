@@ -41,9 +41,9 @@ pub struct AccountFlows {
     pub moves: Vec<String>,
     /// What it grew, signed; blank where it did not.
     pub growth: String,
-    /// What it grew over what it opened on; blank where it grew nothing or
-    /// opened empty.
-    pub growth_rate: String,
+    /// What it grew beside that over what it opened on: `+$9,469 · 5.0%`;
+    /// the growth alone where it opened on nothing.
+    pub growth_and_rate: String,
     /// Its balance as the year closed.
     pub close: String,
 }
@@ -72,8 +72,8 @@ pub fn account_flows(
                 account: account.display_name().to_owned(),
                 open: show(open),
                 moves,
+                growth_and_rate: with_rate(signed(growth, &show), growth, open),
                 growth: signed(growth, &show),
-                growth_rate: growth_rate(growth, open),
                 close: show(close),
             })
         })
@@ -103,19 +103,20 @@ pub fn all_accounts(
         moves: moves
             .map(|(amount, sign)| format!("{sign}{}", show(amount)))
             .collect(),
+        growth_and_rate: with_rate(signed(growth, &show), growth, open),
         growth: signed(growth, &show),
-        growth_rate: growth_rate(growth, open),
         close: show(row.net_worth),
     }
 }
 
-/// `growth` over `open` as a percent to a tenth; blank where it grew
-/// nothing or opened on nothing.
-fn growth_rate(growth: Dollars, open: Dollars) -> String {
+/// `said`, a growth, beside it over `open` as a percent to a tenth, where
+/// it grew anything on anything.
+fn with_rate(said: String, growth: Dollars, open: Dollars) -> String {
     if growth == 0 || open <= 0 {
-        return String::new();
+        return said;
     }
-    format!("{:.1}%", growth as f64 / open as f64 * PERCENT)
+    let rate = growth as f64 / open as f64 * PERCENT;
+    format!("{said}{NOTE_JOIN}{rate:.1}%")
 }
 
 fn signed(amount: Dollars, show: &impl Fn(Dollars) -> String) -> String {

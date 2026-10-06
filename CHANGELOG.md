@@ -162,11 +162,18 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     outside the client must cover it.
   - The engine's `Expense` gains `essential`, so a struct literal of one written
     outside the engine must add it.
-  - The engine's `YearRow` gains `expenses_essential` and `expenses_flexible`,
-    so a struct literal of one written outside the engine must add them.
+  - The engine's `YearRow` gains `expenses_essential`, `expenses_flexible` and
+    `spending`, what each expense spent by its id, so a struct literal of one
+    written outside the engine must add them. The JSON that `project` prints and
+    the MCP server returns gains `spending` in every year.
   - The client's `actions::year_in_words` is gone. `actions::actions_said` says
     a year's actions, and `actions::collect_warnings` still gathers what to
     watch.
+  - The client's `ledger` module is recast. `ledger_headers`, `income_and_tax`,
+    `FLOW_HEADERS` and `INCOME_AND_TAX` are gone, and `AccountFlows` trades
+    `ins` and `outs` for `moves` and gains `growth_rate`. `ledger::Table` is
+    every year under a `ColumnSet`, `ledger::Year` is one year in full, and
+    `ledger::History` is a money pane across the years.
   - The terminal planner's `overview-year-previous` and `overview-year-next`
     commands are gone with the Overview's year, so a `[tui.keys]` entry for
     either is said at launch to name no command. The file's other keys stand.
@@ -209,10 +216,61 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   - Rests on, under the totals: the year and age the plan runs to, inflation,
     the returns it assumes, the filing status, the state lived in, and what
     counts as success, each leading to the field it is edited at.
-- The Ledger says what to do in its year. The terminal has a To do band above
-  the year's flows, as tall as its actions up to four lines and scrolled past
-  that. The web app has a To do card over the flows, with who turns what age.
-  What to watch in the year stays with the flows.
+- The Ledger is of one year in the context of all of them, and it is laid out
+  alike in the terminal and in the web app. It opens on the year in full, beside
+  a list of every year, where it opened on the year table over a year's flows.
+  - Years, down the left: each year with the ages reached in it and the net
+    worth it ends on, marked `◆` where a milestone of the plan falls in it and
+    `!` where it has something to watch. The list's cursor is the year. The web
+    app leaves the list out below 1024px and shows the year alone.
+  - The year's own pane, titled with the year, who turns what age and the
+    dollars shown: the milestones that fall in it, what to do in it, what to
+    watch, and how far the plan has come, as "So far: $238k of $661k taxes ·
+    $180k of $330k converted · $538k of $2.37M withdrawn". What to watch has
+    moved here from under the flows.
+  - Flows: each account from its open to its close, with what came in and went
+    out in one Moves column, each move named by where it came from or went, and
+    its growth beside its rate. A last row says every account as one: what the
+    household held as the year opened and closed, what entered and left its
+    accounts, and what they grew. A move between two accounts is not in it.
+  - Money in and Money out, in place of Income & Tax. Money in lists each income
+    and then what was drawn from each account, a required distribution named as
+    one, and any shortfall. Money out lists every expense by name, then tax,
+    Medicare's surcharges, what the household paid into its accounts and what
+    was left over and saved. Under each list, dimmed, is what its kinds come to:
+    income and withdrawals, and spending as essential, flexible and one-time
+    where it is of more than one kind. The two totals are equal, in either
+    dollar basis.
+  - Tax: what the year paid of each kind, then the room left under the top of
+    the federal bracket its taxable income reaches, its MAGI, taxable income,
+    realized gains and taxable Social Security, and its tax as a share of its
+    MAGI. A market run opened in the Ledger says no bracket, since its tables
+    are not the plan's own. `⏎` on the pane in the terminal, and a link in the
+    web app, shows the Tax Tables at the year.
+  - Under each of those three, its history: income against withdrawals, spending
+    against tax, and MAGI against taxable income, as two lines across every year
+    with the year shown ruled. A press on a year shows it. The terminal draws
+    the three where it is at least 44 rows tall, and the lists are then as tall
+    as the longest; shorter, the page is the lists alone.
+  - The year table is the whole page, a key away: `t` in the terminal swaps the
+    page for it and back, and a Year and Table switch does in the web app. `c`
+    in the terminal and a Columns menu in the web app turn it through three
+    column sets, between Income, Spending, Tax and Withdrawn and the net worth:
+    balances by tax treatment, as before; balances by account; and tax figures,
+    with MAGI, taxable income, what was converted and what was required. The
+    terminal shortens the figures before it drops a set's columns. `⏎` on a row
+    in the terminal, and a click on one in the web app, shows that year in full.
+    The web app keeps the view and the column set in the page's address.
+  - The year is stepped from any pane in the terminal by `←` and `→` or `[` and
+    `]`, and `{` and `}` step to the nearest year with a mark. The web app has a
+    pair of buttons for the marked years beside its year stepper, and `←` and
+    `→` step the year as they did.
+  - A market run opened from a market tool lands on the year in full and is
+    named in its pane's title, and in the table's.
+- Tables are banded. The web app shades every second row of every table. The
+  terminal's own theme, the default, bands its tables in a faint grey chosen for
+  a dark or a light screen; a named theme bands them in its own stripe as
+  before, and a theme file that names no `stripe` has none.
 - The help picker names Tab and Enter by the glyphs the key row uses, `⇥` and
   `⏎`, where it said `tab`, `shift-tab` and `enter`.
 

@@ -191,10 +191,12 @@ fn wear_the_theme_set(
     mut commands: Commands,
 ) {
     let themes = library::Themes::beside(&settings);
-    match themes.resolve(&settings.theme, wanted.0) {
-        Ok(set) => *theme = set,
-        Err(error) => journal::warn(format!("config.toml: {error}")),
-    }
+    *theme = themes
+        .resolve(&settings.theme, wanted.0)
+        .unwrap_or_else(|error| {
+            journal::warn(format!("config.toml: {error}"));
+            Theme::terminal_on(wanted.0)
+        });
     commands.insert_resource(themes);
 }
 

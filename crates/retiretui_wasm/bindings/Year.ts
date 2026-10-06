@@ -12,9 +12,11 @@ export type Year = {
  */
 year: number, 
 /**
- * The age each person reaches in it: "Jordan turns 67 · Alex turns 63".
+ * The year, the run it is of, the age each person reaches in it and
+ * the dollars it is said in: "2042 · Jordan turns 67 · today's
+ * dollars".
  */
-ages: string, 
+title: string, 
 /**
  * The plan's milestones that fall in it.
  */
@@ -34,13 +36,10 @@ warnings: Array<string>,
  */
 so_far: string | null, 
 /**
- * Each account it touches, from its open to its close.
+ * Each account it touches, from its open to its close, and then every
+ * account as one where there are several.
  */
 flows: Array<AccountFlows>, 
-/**
- * Every account as one, where there are several.
- */
-all_accounts: AccountFlows | null, 
 /**
  * What it lived on.
  */
@@ -54,11 +53,8 @@ money_out: Funds,
  */
 tax: Array<DetailLine>, 
 /**
- * The room under the top of the federal bracket its taxable income
- * reaches; none for a market run.
+ * What its tax was worked out from, led by the room under the top of
+ * the federal bracket its taxable income reaches; a market run says
+ * no bracket.
  */
-bracket: DetailLine | null, 
-/**
- * What its tax was worked out from.
- */
-picture: Array<DetailLine>, };
+worked_from: Array<DetailLine>, };

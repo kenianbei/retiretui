@@ -23,10 +23,10 @@ moves: Array<string>,
  */
 growth: string, 
 /**
- * What it grew over what it opened on; blank where it grew nothing or
- * opened empty.
+ * What it grew beside that over what it opened on: `+$9,469 · 5.0%`;
+ * the growth alone where it opened on nothing.
  */
-growth_rate: string, 
+growth_and_rate: string, 
 /**
  * Its balance as the year closed.
  */

@@ -35,7 +35,7 @@ fn year_of(projected: &Projected, year: i16, is_nominal: bool) -> Year {
     let asked = Asked {
         year,
         is_nominal,
-        is_run: false,
+        run: None,
     };
     Year::new(projected, &TaxTables::embedded(), asked).expect("a projected year")
 }
@@ -200,9 +200,8 @@ fn the_bracket_is_the_one_the_tax_tables_hold_for_the_taxable_income() {
             .iter()
             .rposition(|cells| over(cells) <= taxable);
         let held = &brackets.rows[at.expect("a bracket from nothing")];
-        let said = year_of(&projected, row.year, true)
-            .bracket
-            .expect("a bracket");
+        let worked = year_of(&projected, row.year, true).worked_from;
+        let said = worked.into_iter().next().expect("a bracket leads");
         let above = brackets.rows.get(at.unwrap() + 1).map(over);
         let wanted = above.map_or_else(
             || ("Top bracket".to_owned(), held[1].clone()),
@@ -218,23 +217,30 @@ fn the_bracket_is_the_one_the_tax_tables_hold_for_the_taxable_income() {
     let run = Asked {
         year: 2030,
         is_nominal: true,
-        is_run: true,
+        run: Some("a run"),
     };
     let of_run = Year::new(&projected, &tables, run).unwrap();
-    assert_eq!(of_run.bracket, None, "a run's tables are not the plan's");
+    assert_eq!(
+        of_run.worked_from[0].label, "MAGI",
+        "a run's tables are not the plan's"
+    );
+    assert_eq!(
+        of_run.title,
+        "2030 · a run · jordan turns 55 · alex turns 51 · future dollars"
+    );
 }
 
 #[test]
 fn tax_over_magi_is_said_only_of_a_year_with_magi() {
     let projected = full();
     for row in &projected.projection.years {
-        let picture = year_of(&projected, row.year, true).picture;
+        let picture = year_of(&projected, row.year, true).worked_from;
         let has_rate = picture.iter().any(|line| line.label == "Tax over MAGI");
         assert_eq!(has_rate, row.taxes.magi > 0, "{}", row.year);
     }
     let mut none = full();
     none.projection.years[0].taxes.magi = 0;
-    let picture = year_of(&none, 2026, true).picture;
+    let picture = year_of(&none, 2026, true).worked_from;
     assert!(
         picture.iter().all(|line| !line.label.contains("MAGI")),
         "{picture:?}"
@@ -249,7 +255,8 @@ fn every_account_as_one_opens_and_closes_on_the_net_worth() {
     for pair in years.windows(2) {
         let (before, row) = (&pair[0], &pair[1]);
         let year = year_of(&projected, row.year, true);
-        let together = year.all_accounts.expect("several accounts");
+        let (together, accounts) = year.flows.split_last().expect("several accounts");
+        assert_eq!(together.account, "All accounts");
         let figure = |said: &str| parse_money(said.trim_start_matches('+')).unwrap();
         assert_eq!(figure(&together.open), before.net_worth, "{}", row.year);
         assert_eq!(figure(&together.close), row.net_worth, "{}", row.year);
@@ -267,8 +274,7 @@ fn every_account_as_one_opens_and_closes_on_the_net_worth() {
         );
         if row.conversions > 0 {
             converted += 1;
-            let both = year
-                .flows
+            let both = accounts
                 .iter()
                 .filter(|flow| flow.moves.iter().any(|each| each.contains("(conversion)")));
             assert_eq!(both.count(), 2, "{}: {:?}", row.year, year.flows);
@@ -284,7 +290,12 @@ fn every_account_as_one_opens_and_closes_on_the_net_worth() {
         TEST_PLAN.split("[[income]]").nth(1).unwrap()
     );
     let single = projected_from(&one_account);
-    assert_eq!(year_of(&single, 2026, true).all_accounts, None);
+    let alone = year_of(&single, 2026, true).flows;
+    assert_eq!(
+        alone.len(),
+        1,
+        "one account is not also said as all: {alone:?}"
+    );
 }
 
 #[test]
@@ -299,14 +310,12 @@ fn an_account_s_moves_are_what_came_in_and_then_what_went_out() {
     for flow in &year.flows {
         let went = flow.moves.iter().skip_while(|moved| moved.starts_with('+'));
         assert!(went.clone().all(|moved| moved.starts_with('-')), "{flow:?}");
-        assert_eq!(
-            flow.growth_rate.is_empty(),
-            flow.growth.is_empty(),
-            "{flow:?}"
-        );
+        assert!(flow.growth_and_rate.starts_with(&flow.growth), "{flow:?}");
+        assert_eq!(flow.growth_and_rate.ends_with('%'), !flow.growth.is_empty());
     }
     let grew = year.flows.iter().find(|flow| flow.account == "brokerage");
-    assert_eq!(grew.map(|flow| flow.growth_rate.as_str()), Some("5.0%"));
+    let grew = grew.expect("the brokerage account");
+    assert_eq!(grew.growth_and_rate, format!("{} · 5.0%", grew.growth));
 }
 
 #[test]
@@ -355,8 +364,8 @@ fn a_year_says_who_turns_what_its_milestones_and_what_to_do() {
     }
     assert!(with_milestone > 1);
     assert_eq!(
-        year_of(&projected, 2026, true).ages,
-        "jordan turns 51 · alex turns 47"
+        year_of(&projected, 2026, false).title,
+        "2026 · jordan turns 51 · alex turns 47 · today's dollars"
     );
     let mut quiet = full();
     quiet.projection.years[0].actions.clear();
@@ -367,7 +376,7 @@ fn a_year_says_who_turns_what_its_milestones_and_what_to_do() {
     let outside = Asked {
         year: 1999,
         is_nominal: true,
-        is_run: false,
+        run: None,
     };
     assert_eq!(Year::new(&projected, &tables, outside), None);
 }

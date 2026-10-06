@@ -25,6 +25,8 @@ const TEXT_PAIRS = [
   ["primary", "stripe"],
   ["destructive", "stripe"],
   ["warning", "stripe"],
+  ["primary", "accent"],
+  ["warning", "accent"],
   ["primary", "background"],
   ["destructive", "background"],
   ["destructive", "card"],

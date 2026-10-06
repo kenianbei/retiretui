@@ -35,7 +35,6 @@ export type { LadderWords } from "./LadderWords";
 export type { LadderYear } from "./LadderYear";
 export type { LaddersReply } from "./LaddersReply";
 export type { Ledger } from "./Ledger";
-export type { LedgerColumn } from "./LedgerColumn";
 export type { LedgerRow } from "./LedgerRow";
 export type { MarketRuns } from "./MarketRuns";
 export type { MarketWords } from "./MarketWords";

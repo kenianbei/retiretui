@@ -39,6 +39,18 @@ tax: string,
  */
 to_do: string, 
 /**
+ * What to watch in a year.
+ */
+to_watch: string, 
+/**
+ * The tax a year paid.
+ */
+paid: string, 
+/**
+ * What a year's tax was worked out from.
+ */
+worked_from: string, 
+/**
  * The year table's column sets in the order they are turned through,
  * each as an address names it and as a heading says it.
  */

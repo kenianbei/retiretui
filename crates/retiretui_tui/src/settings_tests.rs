@@ -19,6 +19,7 @@ use super::support::{
     headless_app_set, picker_rows, press_key, said, scratch_plan, tap, type_text,
 };
 use super::theme::Theme;
+use super::theme::document::Variant;
 
 const NORD_ACCENT: Color = Color::Rgb(0x88, 0xc0, 0xd0);
 
@@ -68,7 +69,8 @@ fn the_theme_the_config_names_is_worn_from_the_start() {
 #[test]
 fn a_theme_that_does_not_resolve_is_said_and_the_terminals_worn() {
     let app = app_under(config("[tui.theme]\nname = \"nrod\"\n"), SIZE);
-    assert_eq!(*app.world().resource::<Theme>(), Theme::terminal());
+    let worn = app.world().resource::<Theme>();
+    assert_eq!(*worn, Theme::terminal_on(Variant::Dark), "banded as ever");
     assert!(said(&app)[0].contains("nrod"), "{:?}", said(&app));
 }
 

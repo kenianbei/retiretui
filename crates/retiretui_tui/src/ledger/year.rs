@@ -1,12 +1,10 @@
 //! The cursor year's own pane: the milestones that fall in it, what to do
 //! and what to watch, and how far the plan has come - a line each, the
-//! pane as tall as they are - under a title saying who turns what age.
+//! pane as tall as they are - under the title the client gives the year.
 
 use bevy_app::{App, Update};
 use bevy_ecs::hierarchy::ChildOf;
-use bevy_ecs::prelude::{
-    Commands, Component, Entity, IntoScheduleConfigs, Local, Query, Res, With,
-};
+use bevy_ecs::prelude::{Commands, Component, Entity, IntoScheduleConfigs, Local, Query, With};
 use bevy_ecs::system::SystemParam;
 use bevy_ui::{Node, Val};
 use plurimus::core::ratatui_core::style::Style;
@@ -14,25 +12,20 @@ use plurimus::ui::{ComputedWidgetArea, ScrollArea};
 use retiretui_client::ledger::Year;
 
 use super::arrange::DetailStop;
-use super::years::run_named;
-use super::{Detail, LedgerSystems};
-use crate::command::Keymap;
+use super::{Detail, LedgerSystems, MILESTONE, WARNING, shows_the_year};
 use crate::hints::Hints;
 use crate::layout;
 use crate::pane::{self, Framed, Pane};
-use crate::present;
-use crate::session::{Basis, LedgerRun};
 use crate::theme::Theme;
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(Update, refresh.in_set(LedgerSystems::Draw));
+    let drawn = refresh.run_if(shows_the_year);
+    app.add_systems(Update, drawn.in_set(LedgerSystems::Draw));
 }
 
 /// The most lines the pane shows at once, the rest scrolled to: the flows
 /// and the money under it are the page's.
 const YEAR_MOST: u16 = 6;
-const MILESTONE: &str = "◆ ";
-const WARNING: &str = "! ";
 
 /// The list the year's lines are drawn in.
 #[derive(Component)]
@@ -51,10 +44,10 @@ pub(super) fn spawn_pane(commands: &mut Commands, detail: Entity) {
 /// come dimmed.
 fn lines(year: &Year, theme: &Theme) -> Vec<(String, Style)> {
     let milestones = year.milestones.iter();
-    let milestones = milestones.map(|each| (format!("{MILESTONE}{each}"), theme.accented()));
+    let milestones = milestones.map(|each| (format!("{MILESTONE} {each}"), theme.accented()));
     let to_do = year.to_do.iter().map(|each| (each.clone(), Style::new()));
     let warnings = year.warnings.iter();
-    let warnings = warnings.map(|each| (format!("{WARNING}{each}"), theme.exceeded()));
+    let warnings = warnings.map(|each| (format!("{WARNING} {each}"), theme.exceeded()));
     let so_far = year
         .so_far
         .iter()
@@ -64,15 +57,6 @@ fn lines(year: &Year, theme: &Theme) -> Vec<(String, Style)> {
         .chain(warnings)
         .chain(so_far)
         .collect()
-}
-
-/// The year, the run it is of where it is of one, who turns what age in
-/// it, and the dollars it is said in.
-fn title(year: &Year, run: Option<String>, is_nominal: bool) -> String {
-    let ages = Some(year.ages.clone()).filter(|ages| !ages.is_empty());
-    let basis = present::basis_name(is_nominal).to_owned();
-    let parts = [Some(year.year.to_string()), run, ages, Some(basis)];
-    parts.into_iter().flatten().collect::<Vec<_>>().join(" · ")
 }
 
 /// The year's list and the pane it is in.
@@ -95,8 +79,7 @@ struct YearPane<'w, 's> {
 /// Rewrites the lines whenever the year said or the pane's width moves,
 /// and makes the pane as tall as they are.
 fn refresh(
-    mut detail: Detail,
-    (run, basis, keymap): (Res<LedgerRun>, Res<Basis>, Res<Keymap>),
+    detail: Detail,
     mut drawn: Local<Option<u16>>,
     mut pane: YearPane,
     mut commands: Commands,
@@ -106,17 +89,15 @@ fn refresh(
     };
     let width = layout::row_width(*scroll, *area);
     let is_resized = drawn.replace(width) != Some(width);
-    let theme = detail.theme.clone();
-    let Some(year) = detail.due(is_resized) else {
+    let Some((year, theme)) = detail.due(is_resized) else {
         return;
     };
-    let lines = layout::fill_wrapped(&mut commands, (list, width), lines(year, &theme));
+    let lines = layout::fill_wrapped(&mut commands, (list, width), lines(year, theme));
     let shown_lines = u16::try_from(lines).unwrap_or(u16::MAX).min(YEAR_MOST);
     let Ok((mut framed, mut node)) = pane.panes.get_mut(parent.parent()) else {
         return;
     };
-    let said = title(year, run_named(&run, &keymap), basis.nominal);
-    Framed::retitle(&mut framed, &said);
+    Framed::retitle(&mut framed, &year.title);
     let height = Val::Px(f32::from(shown_lines + pane::BORDERS));
     if node.height != height {
         node.height = height;
@@ -137,7 +118,7 @@ mod tests {
         let asked = Asked {
             year,
             is_nominal: false,
-            is_run: false,
+            run: None,
         };
         Year::new(&projected_from(plan_text), &TaxTables::embedded(), asked).unwrap()
     }
@@ -164,19 +145,5 @@ mod tests {
         let (line, style) = warned.expect("a year that runs short");
         assert!(line.contains("Unfunded"), "{line}");
         assert_eq!(*style, theme.exceeded());
-    }
-
-    #[test]
-    fn the_title_names_the_year_a_run_who_turns_what_and_the_dollars() {
-        let year = year_of(TEST_PLAN, 2030);
-        assert_eq!(
-            title(&year, None, false),
-            "2030 · me turns 50 · today's dollars"
-        );
-        let run = Some("trial 7 · esc returns to the plan".to_owned());
-        assert_eq!(
-            title(&year, run, true),
-            "2030 · trial 7 · esc returns to the plan · me turns 50 · future dollars"
-        );
     }
 }

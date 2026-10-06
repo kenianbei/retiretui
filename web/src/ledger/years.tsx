@@ -19,7 +19,7 @@ function Marks({ row }: { row: LedgerRow }) {
         </span>
       )}
       {hasWarning && (
-        <span className="text-warning-foreground font-semibold">
+        <span className="text-warning font-semibold">
           <span aria-hidden>!</span>
           <span className="sr-only">warning</span>
         </span>
@@ -28,63 +28,64 @@ function Marks({ row }: { row: LedgerRow }) {
   );
 }
 
-const MARKS = column.display({
-  id: "marks",
-  header: () => <span className="sr-only">Marks</span>,
-  meta: { isNumeric: false },
-  cell: ({ row }) => <Marks row={row.original} />,
-});
-
-/** The year and the ages, the marks, then the figures at `shown`, by their place among the ledger's columns. */
+/** The year, the ages and the marks, then the figures at `shown`, by their place among the ledger's. */
 function columnsOf(ledger: Ledger, shown: readonly number[]) {
-  const cell = (at: number) =>
+  const [year, ages] = ledger.text_headers;
+  return [
     column.display({
-      id: String(at),
-      header: ledger.columns[at]?.header ?? "",
-      meta: { isNumeric: ledger.columns[at]?.is_numeric ?? false },
-      cell: ({ row }) => row.original.cells[at],
-    });
-  return [cell(0), cell(1), MARKS, ...shown.map(cell)];
+      id: "year",
+      header: year,
+      meta: { isNumeric: false },
+      cell: ({ row }) => row.original.year,
+    }),
+    column.display({
+      id: "ages",
+      header: ages,
+      meta: { isNumeric: false },
+      cell: ({ row }) => row.original.ages,
+    }),
+    column.display({
+      id: "marks",
+      header: () => <span className="sr-only">Marks</span>,
+      meta: { isNumeric: false },
+      cell: ({ row }) => <Marks row={row.original} />,
+    }),
+    ...shown.map((at) =>
+      column.display({
+        id: String(at),
+        header: ledger.figure_headers[at] ?? "",
+        meta: { isNumeric: true },
+        cell: ({ row }) => row.original.figures[at],
+      }),
+    ),
+  ];
 }
 
-interface YearsProps {
+/**
+ * Every year: as the whole table under the column set the ledger was asked
+ * for, or as the narrow list beside a year, with the net worth it ends on.
+ */
+export function Years({
+  ledger,
+  unit,
+  year,
+  onSelect,
+  isWhole,
+}: {
   ledger: Ledger;
   unit: string;
   year: number | undefined;
   onSelect: (year: number) => void;
-}
-
-/** Every year in a narrow list: the year, the ages, what marks it, and the net worth it ends on. */
-export function YearsList({ ledger, unit, year, onSelect }: YearsProps) {
-  const columns = useMemo(
-    () => columnsOf(ledger, [ledger.columns.length - 1]),
-    [ledger],
-  );
-  return (
-    <DataTable
-      label={`${VIEW_WORDS.years}, ${unit}`}
-      columns={columns}
-      rows={ledger.rows}
-      rowKey={(row) => String(row.year)}
-      isSelected={(row) => row.year === year}
-      isExceeded={(row) => row.is_exceeded}
-      onSelect={(row) => {
-        onSelect(row.year);
-      }}
-      className="max-h-[calc(100dvh-10rem)]"
-    />
-  );
-}
-
-/** Every year in one table, under the column set the ledger was asked for. */
-export function YearTable({ ledger, unit, year, onSelect }: YearsProps) {
+  isWhole: boolean;
+}) {
   const columns = useMemo(() => {
-    const figures = ledger.columns.map((_, at) => at).slice(2);
-    return columnsOf(ledger, figures);
-  }, [ledger]);
+    const figures = ledger.figure_headers.map((_, at) => at);
+    return columnsOf(ledger, isWhole ? figures : figures.slice(-1));
+  }, [ledger, isWhole]);
+  const label = isWhole ? "The plan year by year" : VIEW_WORDS.years;
   return (
     <DataTable
-      label={`The plan year by year, ${unit}`}
+      label={`${label}, ${unit}`}
       columns={columns}
       rows={ledger.rows}
       rowKey={(row) => String(row.year)}
@@ -93,8 +94,10 @@ export function YearTable({ ledger, unit, year, onSelect }: YearsProps) {
       onSelect={(row) => {
         onSelect(row.year);
       }}
-      isFirstPinned
-      className="max-h-[calc(100dvh-12rem)]"
+      isFirstPinned={isWhole}
+      className={
+        isWhole ? "max-h-[calc(100dvh-12rem)]" : "max-h-[calc(100dvh-10rem)]"
+      }
     />
   );
 }

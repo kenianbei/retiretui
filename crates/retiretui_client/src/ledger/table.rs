@@ -108,14 +108,19 @@ pub struct TableRow {
 /// Every projected year under one column set.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Table {
-    /// The year's and the ages' headers and then each figure's, each beside
-    /// whether its column holds figures.
-    pub headers: Vec<(String, bool)>,
+    /// What heads the year and the ages reached in it.
+    pub text_headers: [&'static str; 2],
+    /// What heads each figure: the [`Self::LEADING`] every set opens with,
+    /// then the set's own, then net worth.
+    pub figure_headers: Vec<String>,
     /// Each year, first to last.
     pub rows: Vec<TableRow>,
 }
 
 impl Table {
+    /// How many figures every set opens with, ahead of its own.
+    pub const LEADING: usize = LEADING.len();
+
     /// `projected` year by year under `set`, nominal or in today's dollars.
     /// Income, spending, tax and what was withdrawn lead every set, and net
     /// worth ends it.
@@ -138,8 +143,6 @@ impl Table {
             ColumnSet::Tax => (Vec::new(), TAX_HEADERS.to_vec()),
         };
         let figures = LEADING.into_iter().chain(named).chain([NET_WORTH]);
-        let text = TEXT_HEADERS.into_iter().map(|header| (header, false));
-        let headers = text.chain(figures.map(|header| (header, true)));
         let dated = milestones(projected, is_nominal);
         let dated: BTreeSet<i16> = dated.iter().filter_map(|row| row.year).collect();
         let rows = projected.projection.years.iter().map(|row| {
@@ -160,9 +163,8 @@ impl Table {
             }
         });
         Self {
-            headers: headers
-                .map(|(header, is_figure)| (header.to_owned(), is_figure))
-                .collect(),
+            text_headers: TEXT_HEADERS,
+            figure_headers: figures.map(str::to_owned).collect(),
             rows: rows.collect(),
         }
     }

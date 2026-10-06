@@ -66,16 +66,19 @@ fn every_column_set_heads_each_figure_it_holds() {
     for set in ColumnSet::ALL {
         for is_nominal in [true, false] {
             let table = Table::new(&projected, &tables, set, is_nominal);
-            let figures = table.headers.iter().filter(|&&(_, is_figure)| is_figure);
-            let figures = figures.count();
-            assert_eq!(table.headers.len(), figures + 2, "{set:?}");
+            let figures = table.figure_headers.len();
+            assert_eq!(table.text_headers, ["Year", "Age"]);
             assert!(
                 table.rows.iter().all(|row| row.figures.len() == figures),
                 "{set:?}"
             );
-            let named = |at: usize| table.headers[at].0.as_str();
-            assert_eq!((named(2), named(5)), ("Income", "Withdrawn"), "{set:?}");
-            assert_eq!(table.headers.last().unwrap().0, "Net worth", "{set:?}");
+            let leading = &table.figure_headers[..Table::LEADING];
+            assert_eq!(
+                leading,
+                ["Income", "Spending", "Tax", "Withdrawn"],
+                "{set:?}"
+            );
+            assert_eq!(table.figure_headers.last().unwrap(), "Net worth", "{set:?}");
         }
     }
 }
@@ -86,17 +89,10 @@ fn the_treatment_set_is_the_table_the_ledger_always_had() {
     let tables = TaxTables::embedded();
     let treated = Table::new(&projected, &tables, ColumnSet::Treatments, true);
     let classes = present_classes(&projected.plan);
-    let headers: Vec<(&str, bool)> = treated
-        .headers
-        .iter()
-        .map(|(header, is_figure)| (header.as_str(), *is_figure))
-        .collect();
     let named = classes.iter().map(|&class| treatment_class(class));
     let figures = ["Income", "Spending", "Tax", "Withdrawn"].into_iter();
-    let figures = figures.chain(named).chain(["Net worth"]);
-    let text = [("Year", false), ("Age", false)].into_iter();
-    let wanted: Vec<(&str, bool)> = text.chain(figures.map(|header| (header, true))).collect();
-    assert_eq!(headers, wanted);
+    let wanted: Vec<&str> = figures.chain(named).chain(["Net worth"]).collect();
+    assert_eq!(treated.figure_headers, wanted);
     let columns: Vec<Column> = classes.into_iter().map(Column::Class).collect();
     for (row, said) in projected.projection.years.iter().zip(&treated.rows) {
         assert_eq!(said.figures, year_figures(row, &columns), "{}", row.year);
@@ -109,17 +105,14 @@ fn the_account_and_tax_sets_hold_their_own_figures() {
     let tables = TaxTables::embedded();
     let by_account = Table::new(&projected, &tables, ColumnSet::Accounts, true);
     assert_eq!(
-        by_account.headers.len(),
-        2 + 4 + projected.plan.accounts.len() + 1
+        by_account.figure_headers.len(),
+        Table::LEADING + projected.plan.accounts.len() + 1
     );
     let row = &projected.projection.years[11];
     let tax = Table::new(&projected, &tables, ColumnSet::Tax, true);
     let taxed = &tax.rows[11];
     let named: Vec<&str> = vec!["MAGI", "Taxable inc", "Converted", "RMDs"];
-    let heads: Vec<&str> = tax.headers[6..10]
-        .iter()
-        .map(|(header, _)| header.as_str())
-        .collect();
+    let heads = &tax.figure_headers[Table::LEADING..Table::LEADING + 4];
     assert_eq!(heads, named);
     assert_eq!(
         taxed.figures[4..8],

@@ -1,8 +1,8 @@
 import type { HistoryChart } from "@wasm/retiretui_wasm.js";
 import { useMemo } from "react";
 import { Line } from "recharts";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ChartConfig } from "@/components/ui/chart";
+import { Titled } from "@/ledger/titled";
 import { SERIES } from "@/overview/bands";
 import { Plot } from "@/overview/charts";
 
@@ -36,33 +36,26 @@ export function History({
     [chart],
   );
   return (
-    <Card className="gap-3 py-4">
-      <CardHeader className="px-4">
-        <CardTitle>
-          <h3>{chart.title}</h3>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="@container px-4">
-        <Plot
-          config={config}
-          data={data}
-          label={chart.title}
-          year={year}
-          onYear={onYear}
-        >
-          {KEYS.map((key) => (
-            <Line
-              key={key}
-              isAnimationActive={false}
-              dataKey={key}
-              type="monotone"
-              stroke={`var(--color-${key})`}
-              strokeWidth={2}
-              dot={false}
-            />
-          ))}
-        </Plot>
-      </CardContent>
-    </Card>
+    <Titled title={chart.title}>
+      <Plot
+        config={config}
+        data={data}
+        label={chart.title}
+        year={year}
+        onYear={onYear}
+      >
+        {KEYS.map((key) => (
+          <Line
+            key={key}
+            isAnimationActive={false}
+            dataKey={key}
+            type="monotone"
+            stroke={`var(--color-${key})`}
+            strokeWidth={2}
+            dot={false}
+          />
+        ))}
+      </Plot>
+    </Titled>
   );
 }

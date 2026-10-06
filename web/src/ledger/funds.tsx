@@ -6,8 +6,8 @@ import type {
   Year,
 } from "@wasm/retiretui_wasm.js";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { History } from "@/ledger/history";
+import { Titled } from "@/ledger/titled";
 import { cn } from "@/lib/utils";
 import { VIEW_WORDS } from "@/overview/view-words";
 import { keptSearch } from "@/year/search";
@@ -29,25 +29,6 @@ function Lines({ label, lines }: { label: string; lines: DetailLine[] }) {
         <Line key={line.label} line={line} />
       ))}
     </dl>
-  );
-}
-
-function Titled({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <Card className="gap-3 py-4">
-      <CardHeader className="px-4">
-        <CardTitle>
-          <h3>{title}</h3>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3 px-4">{children}</CardContent>
-    </Card>
   );
 }
 
@@ -76,16 +57,14 @@ function FundsCard({ title, funds }: { title: string; funds: Funds }) {
   );
 }
 
-/** The year's tax: what was paid, then the bracket reached and what it was worked out from, over a way to the tables. */
+/** The year's tax: what was paid, then what it was worked out from, over a way to the tables. */
 function TaxCard({ detail }: { detail: Year }) {
-  const worked = [
-    ...(detail.bracket ? [detail.bracket] : []),
-    ...detail.picture,
-  ];
   return (
     <Titled title={VIEW_WORDS.tax}>
-      <Lines label="Paid" lines={detail.tax} />
-      {worked.length > 0 && <Lines label="Worked out from" lines={worked} />}
+      <Lines label={VIEW_WORDS.paid} lines={detail.tax} />
+      {detail.worked_from.length > 0 && (
+        <Lines label={VIEW_WORDS.worked_from} lines={detail.worked_from} />
+      )}
       <Link
         to="/tools/$page"
         params={{ page: "tax-tables" }}

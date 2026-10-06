@@ -17,7 +17,7 @@ use bevy_app::{App, Startup, Update};
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{
-    Commands, Entity, IntoScheduleConfigs, Local, Query, Res, ResMut, Resource, SystemSet, With,
+    Commands, Entity, IntoScheduleConfigs, Query, Res, ResMut, Resource, SystemSet, With,
 };
 use bevy_ecs::system::SystemParam;
 use bevy_ui::{FlexDirection, Node};
@@ -28,10 +28,10 @@ pub use arrange::LedgerView;
 #[cfg(test)]
 pub use years::LedgerTable;
 
-use super::command::Outcome;
+use super::command::{Keymap, Outcome};
 use super::hints::{CommandHint, CommandHints};
 use super::layout::{self, Body, growing};
-use super::nav::{self, ActivePage, Page};
+use super::nav::{self, Page, ShownSurface};
 use super::session::{LedgerRun, Projected, Session, Shown, Today, YearCursor, cursor_year};
 use super::theme::{Repainted, Theme};
 
@@ -83,6 +83,11 @@ struct TableSaid(Option<Table>);
 /// The cursor year of what the Ledger shows, as the client says it.
 #[derive(Resource, Default)]
 struct YearSaid(Option<Year>);
+
+/// What marks a milestone of the plan, on its year and before its line.
+const MILESTONE: &str = "◆";
+/// What marks something to watch, on its year and before its line.
+const WARNING: &str = "!";
 
 /// The key that returns a market run to the plan, said where a run is
 /// named.
@@ -155,6 +160,7 @@ fn open_run_on_its_year(run: Res<LedgerRun>, mut view: ResMut<LedgerView>) {
 /// set moves, and the year whenever any of those or the cursor does.
 fn say(
     (shown, session, columns): (Shown, Res<Session>, Res<Columns>),
+    keymap: Res<Keymap>,
     mut table: ResMut<TableSaid>,
     mut year: ResMut<YearSaid>,
 ) {
@@ -167,40 +173,39 @@ fn say(
         table.0 = Some(said);
     }
     if shown.is_changed() || year.is_added() {
+        let run = years::run_named(&shown.run, &keymap);
         let asked = Asked {
             year: shown.year(),
             is_nominal,
-            is_run: shown.run.0.is_some(),
+            run: run.as_deref(),
         };
         year.0 = Year::new(ledger, &session.tables, asked);
     }
 }
 
-/// The year's detail, for a pane that draws it: drawn while it is on show,
-/// and one that moves while it is not waits for it, since a table given
-/// its cursor while hidden scrolls that row into no area.
-#[derive(SystemParam)]
-struct Detail<'w, 's> {
-    year: Res<'w, YearSaid>,
-    view: Res<'w, LedgerView>,
-    active: Res<'w, ActivePage>,
-    theme: Res<'w, Theme>,
-    is_stale: Local<'s, bool>,
+/// A run condition: whether the year in full is on show. A pane it skips
+/// keeps its last run, so what moved while the pane was hidden reads as
+/// moved on its return - and is drawn then, since a table given its cursor
+/// while hidden scrolls that row into no area.
+fn shows_the_year(shown: ShownSurface, view: Res<LedgerView>) -> bool {
+    shown.surface() == Some(Page::Ledger) && *view == LedgerView::Year
 }
 
-impl Detail<'_, '_> {
-    /// Whether the detail is on the page on show.
-    fn is_on_show(&self) -> bool {
-        self.active.page() == Page::Ledger && *self.view == LedgerView::Year
-    }
+/// The year's detail, for a pane that draws it.
+#[derive(SystemParam)]
+struct Detail<'w> {
+    year: Res<'w, YearSaid>,
+    theme: Res<'w, Theme>,
+}
 
-    /// The year to draw, where it or the theme has moved since the pane
-    /// last drew it, or `is_resized` says the pane has.
-    fn due(&mut self, is_resized: bool) -> Option<&Year> {
-        *self.is_stale |= self.year.is_changed() || self.theme.is_changed() || is_resized;
-        let drawing = *self.is_stale && self.is_on_show();
-        *self.is_stale &= !drawing;
-        self.year.0.as_ref().filter(|_| drawing)
+impl Detail<'_> {
+    /// The year to draw and the theme to draw it in, where either has
+    /// moved since the pane last drew it, or `is_resized` says the pane
+    /// has.
+    fn due(&self, is_resized: bool) -> Option<(&Year, &Theme)> {
+        let is_due = self.year.is_changed() || self.theme.is_changed() || is_resized;
+        let year = self.year.0.as_ref().filter(|_| is_due)?;
+        Some((year, &self.theme))
     }
 }
 

@@ -13,7 +13,7 @@ use plurimus::widgets::TableColumns;
 use retiretui_client::ledger::{AccountFlows, FLOW_COLUMNS, FLOWS, Year};
 
 use super::arrange::DetailStop;
-use super::{Detail, LedgerSystems};
+use super::{Detail, LedgerSystems, shows_the_year};
 use crate::edit::table_bundle;
 use crate::hints::Hints;
 use crate::layout::{self, filling, placed};
@@ -21,7 +21,8 @@ use crate::pane::{self, Pane};
 use crate::tabulate;
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(Update, refresh.in_set(LedgerSystems::Draw));
+    let drawn = refresh.run_if(shows_the_year);
+    app.add_systems(Update, drawn.in_set(LedgerSystems::Draw));
 }
 
 /// The cells between the columns, past the one the table leaves.
@@ -57,7 +58,7 @@ pub(super) fn spawn_pane(commands: &mut Commands, detail: Entity) {
 /// under it for each further move, and then every account as one; the
 /// growth beside its rate where `has_rate`.
 fn flow_rows(year: &Year, has_rate: bool) -> Vec<Vec<String>> {
-    let accounts = year.flows.iter().chain(&year.all_accounts);
+    let accounts = year.flows.iter();
     accounts
         .flat_map(|flows| account_lines(flows, has_rate))
         .collect()
@@ -66,12 +67,13 @@ fn flow_rows(year: &Year, has_rate: bool) -> Vec<Vec<String>> {
 /// The account's name, open, growth and close beside its first move, then
 /// a line per further move, blank but for it.
 fn account_lines(flows: &AccountFlows, has_rate: bool) -> Vec<Vec<String>> {
-    let growth = match (has_rate, flows.growth_rate.as_str()) {
-        (false, _) | (_, "") => flows.growth.clone(),
-        (true, rate) => format!("{} · {rate}", flows.growth),
+    let growth = if has_rate {
+        &flows.growth_and_rate
+    } else {
+        &flows.growth
     };
     let first = flows.moves.first().cloned().unwrap_or_default();
-    let figures = [&flows.account, &flows.open, &first, &growth, &flows.close];
+    let figures = [&flows.account, &flows.open, &first, growth, &flows.close];
     let further = flows.moves.iter().skip(1).map(|moved| {
         let mut line = vec![String::new(); FLOW_COLUMNS.len()];
         line[MOVES].clone_from(moved);
@@ -111,7 +113,7 @@ fn fitted(year: &Year, header: &[String], width: u16) -> (Vec<Vec<String>>, Vec<
 /// the growth loses its rate before a move's name is clipped, and the pane
 /// is as tall as its rows.
 fn refresh(
-    mut detail: Detail,
+    detail: Detail,
     mut drawn: Local<Option<u16>>,
     mut tables: Query<(Entity, &ChildOf, &mut ScrollArea, &ComputedWidgetArea), With<FlowsTable>>,
     mut panes: Query<&mut Node>,
@@ -122,7 +124,7 @@ fn refresh(
     };
     let width = layout::row_width(*scroll, *area);
     let is_resized = drawn.replace(width) != Some(width);
-    let Some(year) = detail.due(is_resized) else {
+    let Some((year, _)) = detail.due(is_resized) else {
         return;
     };
     let header = FLOW_COLUMNS.map(|(header, _)| header.to_owned());
@@ -194,7 +196,7 @@ mod tests {
         let asked = Asked {
             year: 2027,
             is_nominal: true,
-            is_run: false,
+            run: None,
         };
         Year::new(&projected, &TaxTables::embedded(), asked).unwrap()
     }

@@ -5,27 +5,31 @@
 
 use bevy_app::{App, Update};
 use bevy_ecs::change_detection::DetectChanges;
-use bevy_ecs::hierarchy::{ChildOf, Children};
+use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Component, Entity, IntoScheduleConfigs, Query, Res, With};
 use bevy_ui::{FlexDirection, Node, Val};
 use plurimus::core::ratatui_core::layout::Constraint;
-use plurimus::core::ratatui_core::text::Line;
 use plurimus::ui::{ScrollArea, UiStyle};
-use plurimus::widgets::{ActiveDescendant, TableColumns, table_row};
+use plurimus::widgets::TableColumns;
 use retiretui_client::ledger::{DetailLine, Funds, MONEY_IN, MONEY_OUT, TAX, Year};
 
 use super::arrange::{DetailStop, Roomy};
-use super::{Detail, LedgerSystems};
+use super::{Detail, LedgerSystems, shows_the_year};
 use crate::edit::table_bundle;
 use crate::hints::Hints;
 use crate::layout::{self, filling, placed};
 use crate::nav::Page;
 use crate::pane::{self, Pane};
+use crate::tabulate;
 use crate::tools::{EnterRuns, handle_enter};
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(Update, refresh.in_set(LedgerSystems::Draw));
+    let drawn = refresh.run_if(shows_the_year);
+    app.add_systems(Update, drawn.in_set(LedgerSystems::Draw));
 }
+
+/// Where a row's amount is among its cells.
+const AMOUNT: usize = 1;
 
 /// One of the three panes, by what it says of the year.
 #[derive(Component, Clone, Copy, PartialEq, Eq, Debug)]
@@ -107,14 +111,11 @@ fn funds_rows(funds: &Funds) -> Vec<Row> {
     lines.chain([Row::Gap]).chain(sums).chain([total]).collect()
 }
 
-/// What was paid, then the bracket reached and what the tax was worked
-/// out from.
+/// What was paid, then what the tax was worked out from.
 fn tax_rows(year: &Year) -> Vec<Row> {
     let paid = year.tax.iter().cloned().map(Row::Line);
-    let worked = year.bracket.iter().chain(&year.picture).cloned();
-    paid.chain([Row::Gap])
-        .chain(worked.map(Row::Line))
-        .collect()
+    let worked = year.worked_from.iter().cloned().map(Row::Line);
+    paid.chain([Row::Gap]).chain(worked).collect()
 }
 
 impl Said {
@@ -145,40 +146,37 @@ fn fit(node: &mut Node, longest: usize, is_roomy: bool) {
 /// loses the room for the histories. The label gives way to the amount,
 /// which is as wide as the widest of them.
 fn refresh(
-    (mut detail, roomy): (Detail, Res<Roomy>),
+    (detail, roomy): (Detail, Res<Roomy>),
     mut tables: Query<(Entity, &Said, &mut ScrollArea)>,
     mut funds_rows: Query<&mut Node, With<FundsRow>>,
     mut commands: Commands,
 ) {
-    let dimmed = detail.theme.dimmed();
-    let Some(year) = detail.due(roomy.is_changed()) else {
+    let Some((year, theme)) = detail.due(roomy.is_changed()) else {
         return;
     };
+    let dimmed = theme.dimmed();
     let mut longest = 0;
     for (table, said, mut scroll) in &mut tables {
         let rows = said.rows(year);
         longest = longest.max(rows.len());
-        let amounts = rows.iter().filter_map(Row::line);
-        let amounts = amounts.map(|line| line.amount.chars().count());
-        let widest = u16::try_from(amounts.max().unwrap_or(0)).unwrap_or(u16::MAX);
+        let cells = |row: &Row| {
+            let line = row.line();
+            line.map_or_else(Vec::new, |line| {
+                vec![line.label.clone(), line.amount.clone()]
+            })
+        };
+        let cells: Vec<Vec<String>> = rows.iter().map(cells).collect();
+        let amounts = cells.iter().filter_map(|row| row.get(AMOUNT));
+        let widest = amounts.map(|amount| amount.chars().count()).max();
+        let widest = u16::try_from(widest.unwrap_or(0)).unwrap_or(u16::MAX);
         let columns = vec![Constraint::Fill(1), Constraint::Length(widest)];
-        commands.entity(table).despawn_related::<Children>();
-        let mut first = None;
-        for row in &rows {
-            let cells = row.line().map_or_else(Vec::new, |line| {
-                let amount = Line::from(line.amount.clone()).right_aligned();
-                vec![Line::from(line.label.clone()), amount]
-            });
-            let mut spawned = commands.spawn((table_row(cells), ChildOf(table)));
+        commands.entity(table).insert(TableColumns(columns));
+        let spawned = tabulate::refill(&mut commands, (table, &mut *scroll), (&[], &cells), &[0]);
+        for (row, entity) in rows.iter().zip(spawned) {
             if matches!(row, Row::Sum(_)) {
-                spawned.insert(UiStyle(dimmed));
+                commands.entity(entity).insert(UiStyle(dimmed));
             }
-            first.get_or_insert(spawned.id());
         }
-        commands
-            .entity(table)
-            .insert((TableColumns(columns), ActiveDescendant(first)));
-        scroll.content_size.height = u16::try_from(rows.len()).unwrap_or(u16::MAX);
     }
     for mut node in &mut funds_rows {
         fit(&mut node, longest, roomy.0);
@@ -206,7 +204,7 @@ mod tests {
         let asked = Asked {
             year: 2045,
             is_nominal: true,
-            is_run: false,
+            run: None,
         };
         let year = Year::new(&projected, &TaxTables::embedded(), asked).unwrap();
         let money_in = Said::MoneyIn.rows(&year);

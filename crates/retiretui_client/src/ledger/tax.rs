@@ -6,8 +6,8 @@ use retiretui_engine::plan::{Dollars, Plan};
 use retiretui_engine::project::YearRow;
 
 use super::DetailLine;
-use crate::present::money;
-use crate::table::{basis_amount, rate};
+use super::funds::{TOTAL, line, paid};
+use crate::table::rate;
 
 /// What the Ledger titles a year's tax.
 pub const TAX: &str = "Tax";
@@ -15,17 +15,15 @@ const PERCENT: f64 = 100.0;
 /// What the bracket no bracket is above is called.
 const TOP_BRACKET: &str = "Top bracket";
 
+/// `amounts` of `row` that are more than nothing, said.
 fn lines<'a>(
     row: &YearRow,
     is_nominal: bool,
     amounts: impl IntoIterator<Item = (&'a str, Dollars)>,
 ) -> Vec<DetailLine> {
-    let paid = amounts.into_iter().filter(|&(_, amount)| amount != 0);
-    paid.map(|(label, amount)| DetailLine {
-        label: label.to_owned(),
-        amount: money(basis_amount(amount, row.deflator, is_nominal)),
-    })
-    .collect()
+    let said = paid(amounts).into_iter();
+    said.map(|(label, amount)| line(row, is_nominal, &label, amount))
+        .collect()
 }
 
 /// What `row` paid of each kind of tax, a line only where it paid any, and
@@ -39,10 +37,7 @@ pub(super) fn tax_lines(row: &YearRow, is_nominal: bool) -> Vec<DetailLine> {
         ("Penalties", taxes.penalty),
     ];
     let mut said = lines(row, is_nominal, kinds);
-    said.push(DetailLine {
-        label: "Total".to_owned(),
-        amount: money(basis_amount(taxes.total, row.deflator, is_nominal)),
-    });
+    said.push(line(row, is_nominal, TOTAL, taxes.total));
     said
 }
 
@@ -70,10 +65,12 @@ pub(super) fn bracket(
     let (bracket, above) = reached(brackets, taxable)?;
     let rate = rate(bracket.rate);
     Some(match above {
-        Some(above) => DetailLine {
-            label: format!("To top of {rate}"),
-            amount: money(basis_amount(above - taxable, row.deflator, is_nominal)),
-        },
+        Some(above) => line(
+            row,
+            is_nominal,
+            &format!("To top of {rate}"),
+            above - taxable,
+        ),
         None => DetailLine {
             label: TOP_BRACKET.to_owned(),
             amount: rate,

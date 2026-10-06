@@ -3,8 +3,8 @@ import type { AccountFlows, HistoryChart, Year } from "@wasm/retiretui_wasm.js";
 import { columnsFor } from "@/components/columns";
 import { DataTable } from "@/components/data-table";
 import { MarginNote } from "@/components/margin-note";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MoneyCards } from "@/ledger/funds";
+import { Titled } from "@/ledger/titled";
 import { VIEW_WORDS } from "@/overview/view-words";
 
 /** One line of an account's year: its figures on the first, a move on each. */
@@ -19,14 +19,13 @@ interface FlowLine {
 
 /** An account's figures beside its first move, then a line per further move. */
 function linesOf(flows: AccountFlows): FlowLine[] {
-  const growth = [flows.growth, flows.growth_rate].filter(Boolean).join(" · ");
   const count = Math.max(flows.moves.length, 1);
   return Array.from({ length: count }, (_, at) => ({
     key: `${flows.account}:${String(at)}`,
     account: at === 0 ? flows.account : "",
     open: at === 0 ? flows.open : "",
     moved: flows.moves[at] ?? "",
-    growth: at === 0 ? growth : "",
+    growth: at === 0 ? flows.growth_and_rate : "",
     close: at === 0 ? flows.close : "",
   }));
 }
@@ -52,16 +51,10 @@ const FLOW_COLUMNS = VIEW_WORDS.flow_columns.map(([header, isNumeric], at) => {
 });
 
 /** The year's own card: its milestones, what to do, what to watch, and how far the plan has come. */
-function YearCard({ detail, unit }: { detail: Year; unit: string }) {
-  const title = [String(detail.year), detail.ages, unit].filter(Boolean);
+function YearCard({ detail }: { detail: Year }) {
   return (
-    <Card className="gap-3 py-4">
-      <CardHeader className="px-4">
-        <CardTitle>
-          <h2>{title.join(" · ")}</h2>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3 px-4 text-sm">
+    <Titled title={detail.title} isLeading>
+      <div className="space-y-3 text-sm">
         {detail.milestones.length > 0 && (
           <ul aria-label={VIEW_WORDS.milestones} className="space-y-1">
             {detail.milestones.map((milestone) => (
@@ -81,7 +74,7 @@ function YearCard({ detail, unit }: { detail: Year; unit: string }) {
         </ul>
         {detail.warnings.length > 0 && (
           <MarginNote zone="caution">
-            <ul aria-label="To watch" className="space-y-1">
+            <ul aria-label={VIEW_WORDS.to_watch} className="space-y-1">
               {detail.warnings.map((warning) => (
                 <li key={warning}>{warning}</li>
               ))}
@@ -91,49 +84,35 @@ function YearCard({ detail, unit }: { detail: Year; unit: string }) {
         {detail.so_far !== null && (
           <p className="text-muted-foreground tabular-nums">{detail.so_far}</p>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </Titled>
   );
 }
 
 /** One year in full: the year itself, its flows through each account, and its money and tax over their histories. */
 export function YearCards({
   detail,
-  unit,
   histories,
   onYear,
 }: {
   detail: Year;
-  unit: string;
   histories: readonly HistoryChart[];
   onYear: (year: number) => void;
 }) {
-  const accounts = [
-    ...detail.flows,
-    ...(detail.all_accounts ? [detail.all_accounts] : []),
-  ];
-  const flows = `${String(detail.year)} ${VIEW_WORDS.flows}`;
   return (
     <div className="@container min-w-0 space-y-4">
-      <YearCard detail={detail} unit={unit} />
-      <Card className="gap-3 py-4">
-        <CardHeader className="px-4">
-          <CardTitle>
-            <h3>{VIEW_WORDS.flows}</h3>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="px-4">
-          <DataTable
-            label={flows}
-            columns={FLOW_COLUMNS}
-            rows={accounts.flatMap(linesOf)}
-            rowKey={(line) => line.key}
-            isFirstPinned
-            isFlush
-            className="-mx-4"
-          />
-        </CardContent>
-      </Card>
+      <YearCard detail={detail} />
+      <Titled title={VIEW_WORDS.flows}>
+        <DataTable
+          label={`${String(detail.year)} ${VIEW_WORDS.flows}`}
+          columns={FLOW_COLUMNS}
+          rows={detail.flows.flatMap(linesOf)}
+          rowKey={(line) => line.key}
+          isFirstPinned
+          isFlush
+          className="-mx-4"
+        />
+      </Titled>
       <MoneyCards detail={detail} histories={histories} onYear={onYear} />
     </div>
   );

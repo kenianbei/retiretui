@@ -1,6 +1,6 @@
 import { Link, useSearch } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useEffect } from "react";
+import { type ReactNode, useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import { isHeld } from "@/lib/keys";
@@ -41,42 +41,90 @@ function useYearKeys({ before, after, setYear }: ShownYear) {
   }, [before, after, setYear]);
 }
 
+/** A button that shows the year `to`, and does nothing where there is none. */
+export function StepButton({
+  label,
+  to,
+  setYear,
+  children,
+}: {
+  label: string;
+  to: number | null | undefined;
+  setYear: (year: number) => void;
+  children: ReactNode;
+}) {
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      aria-label={label}
+      disabled={to == null}
+      onClick={() => {
+        if (to != null) setYear(to);
+      }}
+    >
+      {children}
+    </Button>
+  );
+}
+
 /** The year shown between the years either side; ← and → step it too. */
 export function YearStepper({ shown }: { shown: ShownYear }) {
   useYearKeys(shown);
   const { year, before, after, setYear } = shown;
   if (year === undefined) return null;
-  const step = (to: number | undefined) =>
-    to === undefined
-      ? undefined
-      : () => {
-          setYear(to);
-        };
-  const earlier = step(before);
-  const later = step(after);
   return (
     <div role="group" aria-label="Year" className="inline-flex items-center">
-      <Button
-        variant="ghost"
-        size="icon"
-        aria-label="The year before"
-        disabled={!earlier}
-        onClick={earlier}
-      >
+      <StepButton label="The year before" to={before} setYear={setYear}>
         <ChevronLeft aria-hidden />
-      </Button>
+      </StepButton>
       <span aria-live="polite" className="w-12 text-center tabular-nums">
         {year}
       </span>
-      <Button
-        variant="ghost"
-        size="icon"
-        aria-label="The year after"
-        disabled={!later}
-        onClick={later}
-      >
+      <StepButton label="The year after" to={after} setYear={setYear}>
         <ChevronRight aria-hidden />
-      </Button>
+      </StepButton>
+    </div>
+  );
+}
+
+/** One of a few choices kept in the address. */
+interface Choice {
+  label: string;
+  isCurrent: boolean;
+  /** The address with the choice made, from the one shown. */
+  search: (prev: Record<string, unknown>) => Record<string, unknown>;
+}
+
+/** A few choices side by side, the one made marked, each a link that keeps the page and the rest of its address. */
+export function Segmented({
+  label,
+  choices,
+}: {
+  label: string;
+  choices: readonly Choice[];
+}) {
+  return (
+    <div
+      role="group"
+      aria-label={label}
+      className="inline-flex rounded-md border p-0.5 text-sm"
+    >
+      {choices.map((choice) => (
+        <Link
+          key={choice.label}
+          to="."
+          search={choice.search}
+          replace
+          aria-current={choice.isCurrent ? "true" : undefined}
+          className={cn(
+            "max-md:touch-target relative rounded px-3 py-1",
+            choice.isCurrent && "bg-primary text-primary-foreground",
+          )}
+        >
+          {choice.label}
+        </Link>
+      ))}
     </div>
   );
 }
@@ -86,29 +134,13 @@ export function BasisSwitch() {
   const search: YearSearch = useSearch({ strict: false });
   const basis = basisOf(search);
   return (
-    <div
-      role="group"
-      aria-label="Show dollars as"
-      className="inline-flex rounded-md border p-0.5 text-sm"
-    >
-      {(["today", "nominal"] as const).map((each) => (
-        <Link
-          key={each}
-          to="."
-          search={(prev) => ({
-            ...prev,
-            basis: basisIn(each),
-          })}
-          replace
-          aria-current={each === basis ? "true" : undefined}
-          className={cn(
-            "max-md:touch-target relative rounded px-3 py-1",
-            each === basis && "bg-primary text-primary-foreground",
-          )}
-        >
-          {BASIS_LABEL[each]}
-        </Link>
-      ))}
-    </div>
+    <Segmented
+      label="Show dollars as"
+      choices={(["today", "nominal"] as const).map((each) => ({
+        label: BASIS_LABEL[each],
+        isCurrent: each === basis,
+        search: (prev) => ({ ...prev, basis: basisIn(each) }),
+      }))}
+    />
   );
 }

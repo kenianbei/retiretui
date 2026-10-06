@@ -116,7 +116,8 @@ fn key(history: History, theme: &Theme) -> Line<'static> {
 /// Redraws each history whenever what the Ledger shows, the basis, the
 /// cursor year or the theme moves.
 fn refresh(
-    (shown, theme): (Shown, Res<Theme>),
+    shown: Shown,
+    theme: Res<Theme>,
     mut charts: Query<(&Charted, &mut SeriesChart)>,
     mut keys: Query<(&HistoryKey, &mut UiWidget)>,
 ) {

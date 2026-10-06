@@ -14,7 +14,7 @@ use crate::table::basis_amount;
 pub const MONEY_IN: &str = "Money in";
 /// What the Ledger titles where a year's money went.
 pub const MONEY_OUT: &str = "Money out";
-const TOTAL: &str = "Total";
+pub(super) const TOTAL: &str = "Total";
 const SPENDING: &str = "Spending";
 
 /// One labelled amount of a year, said.
@@ -44,44 +44,43 @@ pub struct Funds {
 /// Amounts not yet said, each under its label.
 type Amounts = Vec<(String, Dollars)>;
 
-/// Says a year's amounts on one basis. A sum is said from the sum of what
-/// it adds, so both sides' totals agree to the dollar on either basis.
-struct Saying {
-    deflator: f64,
-    is_nominal: bool,
-}
-
-impl Saying {
-    fn line(&self, label: &str, amount: Dollars) -> DetailLine {
-        DetailLine {
-            label: label.to_owned(),
-            amount: money(basis_amount(amount, self.deflator, self.is_nominal)),
-        }
-    }
-
-    /// `lines` over each of `sums` that is more than nothing, and `total`
-    /// under them all; no sums where one would only repeat the total.
-    fn funds(&self, lines: &Amounts, sums: &[(&str, Dollars)], total: Dollars) -> Funds {
-        let mut sums: Vec<_> = sums.iter().filter(|&&(_, sum)| sum != 0).collect();
-        if matches!(sums[..], [&(_, only)] if only == total) {
-            sums.clear();
-        }
-        let said = |&(ref label, amount): &(String, Dollars)| self.line(label, amount);
-        Funds {
-            lines: lines.iter().map(said).collect(),
-            sums: (sums.iter())
-                .map(|&&(kind, sum)| self.line(kind, sum))
-                .collect(),
-            total: self.line(TOTAL, total),
-        }
+/// `amount` of `row` under `label`, nominal or in today's dollars.
+pub(super) fn line(row: &YearRow, is_nominal: bool, label: &str, amount: Dollars) -> DetailLine {
+    DetailLine {
+        label: label.to_owned(),
+        amount: money(basis_amount(amount, row.deflator, is_nominal)),
     }
 }
 
 /// `amounts` that are more than nothing.
-fn paid<'a>(amounts: impl IntoIterator<Item = (&'a str, Dollars)>) -> Amounts {
+pub(super) fn paid<'a>(amounts: impl IntoIterator<Item = (&'a str, Dollars)>) -> Amounts {
     let paid = amounts.into_iter().filter(|&(_, amount)| amount != 0);
     paid.map(|(label, amount)| (label.to_owned(), amount))
         .collect()
+}
+
+/// `lines` over each of `kinds`' sums that is more than nothing, and
+/// `total` under them all; no sums where one would only repeat the total.
+/// The total is said from the sum rather than added from the lines said,
+/// so both sides' totals agree to the dollar on either basis.
+fn funds(
+    (row, is_nominal): (&YearRow, bool),
+    lines: &Amounts,
+    kinds: &[(&str, Dollars)],
+    total: Dollars,
+) -> Funds {
+    let said = |label: &str, amount| line(row, is_nominal, label, amount);
+    let mut sums: Vec<_> = kinds.iter().filter(|&&(_, sum)| sum != 0).collect();
+    if matches!(sums[..], [&(_, only)] if only == total) {
+        sums.clear();
+    }
+    Funds {
+        lines: (lines.iter())
+            .map(|(label, amount)| said(label, *amount))
+            .collect(),
+        sums: sums.iter().map(|&&(kind, sum)| said(kind, sum)).collect(),
+        total: said(TOTAL, total),
+    }
 }
 
 /// What `row` lived on: its income by source, then what it drew from each
@@ -89,10 +88,6 @@ fn paid<'a>(amounts: impl IntoIterator<Item = (&'a str, Dollars)>) -> Amounts {
 /// find, over what the income and the withdrawals each come to.
 #[must_use]
 pub fn money_in(plan: &Plan, row: &YearRow, is_nominal: bool) -> Funds {
-    let saying = Saying {
-        deflator: row.deflator,
-        is_nominal,
-    };
     let income = row.income.iter();
     let mut lines = paid(income.map(|(id, &amount)| (income_name(plan, id), amount)));
     lines.extend(row.actions.iter().filter_map(|action| match action {
@@ -106,8 +101,9 @@ pub fn money_in(plan: &Plan, row: &YearRow, is_nominal: bool) -> Funds {
     }));
     lines.extend(paid([("Unfunded", row.unfunded)]));
     let drawn = row.total_withdrawals();
-    let sums = [("Income", row.total_income), ("Withdrawn", drawn)];
-    saying.funds(&lines, &sums, row.total_income + drawn + row.unfunded)
+    let kinds = [("Income", row.total_income), ("Withdrawn", drawn)];
+    let total = row.total_income + drawn + row.unfunded;
+    funds((row, is_nominal), &lines, &kinds, total)
 }
 
 /// Where what `row` lived on went: each expense that spent anything, in the
@@ -116,10 +112,6 @@ pub fn money_in(plan: &Plan, row: &YearRow, is_nominal: bool) -> Funds {
 /// spending comes to, by kind where it is of more than one.
 #[must_use]
 pub fn money_out(plan: &Plan, row: &YearRow, is_nominal: bool) -> Funds {
-    let saying = Saying {
-        deflator: row.deflator,
-        is_nominal,
-    };
     let mut lines: Amounts = (plan.expenses.iter())
         .filter_map(|expense| {
             let spent = *row.spending.get(&expense.id)?;
@@ -138,11 +130,12 @@ pub fn money_out(plan: &Plan, row: &YearRow, is_nominal: bool) -> Funds {
         ("One-time", row.expenses_once()),
     ];
     let is_split = kinds.iter().filter(|&&(_, spent)| spent != 0).count() > 1;
-    let sums: &[(&str, Dollars)] = if is_split {
+    let kinds: &[(&str, Dollars)] = if is_split {
         &kinds
     } else {
         &[(SPENDING, row.expenses)]
     };
     let put_away = row.medicare + row.contributions_employee + row.surplus;
-    saying.funds(&lines, sums, row.expenses + row.taxes.total + put_away)
+    let total = row.expenses + row.taxes.total + put_away;
+    funds((row, is_nominal), &lines, kinds, total)
 }

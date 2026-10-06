@@ -182,10 +182,10 @@ pub(super) fn fill_keyed(
     spawn_rows(commands, table, header, body)
 }
 
-/// Replaces `table`'s rows with `header` and `rows`, the columns at `text`
-/// on the left and the rest right, the cursor on the first row and the
-/// scroll sized to them, answering each row's entity; the widths are the
-/// caller's.
+/// Replaces `table`'s rows with `header`, where it has one, and `rows`,
+/// the columns at `text` on the left and the rest right, the cursor on the
+/// first row and the scroll sized to them, answering each row's entity;
+/// the widths are the caller's.
 pub(super) fn refill(
     commands: &mut Commands,
     (table, scroll): (Entity, &mut ScrollArea),
@@ -199,7 +199,8 @@ pub(super) fn refill(
     commands
         .entity(table)
         .insert(ActiveDescendant(spawned.first().copied()));
-    scroll.content_size.height = u16::try_from(body.len() + 1).unwrap_or(u16::MAX);
+    let lines = body.len() + usize::from(!header.is_empty());
+    scroll.content_size.height = u16::try_from(lines).unwrap_or(u16::MAX);
     spawned
 }
 
@@ -210,11 +211,13 @@ fn spawn_rows(
     rows: impl Iterator<Item = Vec<Line<'static>>>,
 ) -> Vec<Entity> {
     commands.entity(table).remove::<Said>();
-    commands.spawn((
-        table_header(header),
-        UiStyle(Style::new().add_modifier(Modifier::BOLD)),
-        ChildOf(table),
-    ));
+    if !header.is_empty() {
+        commands.spawn((
+            table_header(header),
+            UiStyle(Style::new().add_modifier(Modifier::BOLD)),
+            ChildOf(table),
+        ));
+    }
     rows.map(|row| commands.spawn((table_row(row), ChildOf(table))).id())
         .collect()
 }
