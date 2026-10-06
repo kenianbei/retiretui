@@ -136,6 +136,13 @@ impl Theme {
             .map_or_else(Style::new, |stripe| Style::new().bg(stripe))
     }
 
+    /// The ground of a row left out of the banding, patched over a stripe
+    /// that would fall on it: the theme's own, or the terminal's.
+    #[must_use]
+    pub fn unbanded(&self) -> Style {
+        Style::new().bg(self.bg.unwrap_or(Color::Reset))
+    }
+
     /// The colour of a chart's `index`th dataset, wrapping past the last.
     ///
     /// # Panics

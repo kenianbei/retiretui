@@ -271,7 +271,9 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Tables are banded. The web app shades every second row of every table. The
   terminal's own theme, the default, bands its tables in a faint grey chosen for
   a dark or a light screen; a named theme bands them in its own stripe as
-  before, and a theme file of your own that names no `stripe` has none.
+  before, and a theme file of your own that names no `stripe` has none. In the
+  Ledger's Money in, Money out and Tax panes the blank line between two parts
+  and the dimmed sums stand on the plain ground, where a band would hide them.
 - The help picker names Tab and Enter by the glyphs the key row uses, `⇥` and
   `⏎`, where it said `tab`, `shift-tab` and `enter`.
 

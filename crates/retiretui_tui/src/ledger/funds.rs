@@ -9,6 +9,7 @@ use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Component, Entity, IntoScheduleConfigs, Query, Res, With};
 use bevy_ui::{FlexDirection, Node, Val};
 use plurimus::core::ratatui_core::layout::Constraint;
+use plurimus::core::ratatui_core::style::Style;
 use plurimus::ui::{ScrollArea, UiStyle};
 use plurimus::widgets::TableColumns;
 use retiretui_client::ledger::{DetailLine, Funds, MONEY_IN, MONEY_OUT, TAX, Year};
@@ -21,6 +22,7 @@ use crate::layout::{self, filling, placed};
 use crate::nav::Page;
 use crate::pane::{self, Pane};
 use crate::tabulate;
+use crate::theme::Theme;
 use crate::tools::{EnterRuns, handle_enter};
 
 pub(super) fn plugin(app: &mut App) {
@@ -100,6 +102,17 @@ impl Row {
             Self::Gap => None,
         }
     }
+
+    /// What the row is drawn in past the table's own: a gap and a sum
+    /// stand on the plain ground, since a band would read as a bar across
+    /// the one and leave the other, dimmed, too faint to read.
+    fn ink(&self, theme: &Theme) -> Option<Style> {
+        match self {
+            Self::Line(_) => None,
+            Self::Gap => Some(theme.unbanded()),
+            Self::Sum(_) => Some(theme.unbanded().patch(theme.dimmed())),
+        }
+    }
 }
 
 /// A side's amounts in one list, then what each kind comes to, dimmed, and
@@ -154,7 +167,6 @@ fn refresh(
     let Some((year, theme)) = detail.due(roomy.is_changed()) else {
         return;
     };
-    let dimmed = theme.dimmed();
     let mut longest = 0;
     for (table, said, mut scroll) in &mut tables {
         let rows = said.rows(year);
@@ -173,8 +185,8 @@ fn refresh(
         commands.entity(table).insert(TableColumns(columns));
         let spawned = tabulate::refill(&mut commands, (table, &mut *scroll), (&[], &cells), &[0]);
         for (row, entity) in rows.iter().zip(spawned) {
-            if matches!(row, Row::Sum(_)) {
-                commands.entity(entity).insert(UiStyle(dimmed));
+            if let Some(ink) = row.ink(theme) {
+                commands.entity(entity).insert(UiStyle(ink));
             }
         }
     }
@@ -187,6 +199,8 @@ fn refresh(
 mod tests {
     use retiretui_client::ledger::Asked;
     use retiretui_engine::params::TaxTables;
+
+    use plurimus::core::ratatui_core::style::Color;
 
     use super::*;
     use crate::support::projected_from;
@@ -236,5 +250,24 @@ mod tests {
             "{tax}"
         );
         assert!(tax.ends_with("|Tax over MAGI"), "{tax}");
+    }
+
+    #[test]
+    fn a_gap_and_a_sum_stand_on_the_plain_ground_and_a_line_is_banded() {
+        let line = DetailLine {
+            label: "Spending".to_owned(),
+            amount: "$1".to_owned(),
+        };
+        let terminal = Theme::terminal_on(crate::theme::document::Variant::Dark);
+        assert_eq!(Row::Line(line.clone()).ink(&terminal), None);
+        let ground = Row::Gap.ink(&terminal).expect("a gap is unbanded");
+        assert_eq!(ground.bg, Some(Color::Reset), "the terminal's own ground");
+        assert_ne!(ground.bg, terminal.stripe);
+        let sum = Row::Sum(line).ink(&terminal).expect("a sum is unbanded");
+        assert_eq!((sum.bg, sum.fg), (ground.bg, terminal.dimmed().fg));
+        let mut painted = terminal;
+        painted.bg = Some(Color::Rgb(1, 2, 3));
+        let ground = Row::Gap.ink(&painted).expect("a gap is unbanded");
+        assert_eq!(ground.bg, painted.bg, "a theme's own ground");
     }
 }
