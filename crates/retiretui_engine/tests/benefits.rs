@@ -346,7 +346,7 @@ fn a_computed_benefit_claimed_before_the_month_62_is_attained_is_refused() {
         early[0].message.ends_with("claims at 61 and 9 months"),
         "{early:?}"
     );
-    assert!(issues("{ date = 2042-06-01 }").is_empty());
+    assert_eq!(issues("{ date = 2042-06-01 }"), []);
 }
 
 #[test]

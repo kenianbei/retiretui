@@ -54,7 +54,7 @@ fn a_toast_outlives_a_glance_and_not_a_long_look() {
         "a warning stays longer"
     );
     let_pass(&mut app, Duration::from_secs(5));
-    assert!(toasts(&app).is_empty());
+    assert_eq!(toasts(&app), [] as [String; 0]);
     assert_eq!(
         said(&app).len(),
         2,
@@ -88,7 +88,7 @@ fn a_press_takes_a_toast_down() {
     let (before, _) = text.split_once("plan reloaded").unwrap();
     let column = before.chars().count();
     click(&mut app, column as u16, row as u16);
-    assert!(toasts(&app).is_empty());
+    assert_eq!(toasts(&app), [] as [String; 0]);
 }
 
 #[test]

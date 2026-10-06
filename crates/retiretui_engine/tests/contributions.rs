@@ -331,14 +331,14 @@ fn a_roth_ira_contribution_over_the_income_band_is_said() {
     let (_, _, notes) = contribution(&over, 0, "roth");
     assert_eq!(notes, [ContributionNote::RothIraPhaseOut]);
     let under = run(&ira_plan(100_000, 0));
-    assert!(contribution(&under, 0, "roth").2.is_empty());
+    assert_eq!(contribution(&under, 0, "roth").2, []);
 }
 
 #[test]
 fn a_covered_person_s_ira_deduction_phases_out_across_the_band() {
     // MAGI 81,000 is the band's foot: all deducted, nothing to say.
     let foot = run(&ira_plan(95_000, 14_000));
-    assert!(contribution(&foot, 0, "ira").2.is_empty());
+    assert_eq!(contribution(&foot, 0, "ira").2, []);
     // MAGI 86,000 is halfway: half the 3,000 is deducted.
     let middle = run(&ira_plan(100_000, 14_000));
     assert_eq!(
@@ -358,5 +358,5 @@ fn a_covered_person_s_ira_deduction_phases_out_across_the_band() {
     );
     // Uncovered, the same MAGI deducts in full.
     let uncovered = run(&ira_plan(110_000, 0));
-    assert!(contribution(&uncovered, 0, "ira").2.is_empty());
+    assert_eq!(contribution(&uncovered, 0, "ira").2, []);
 }

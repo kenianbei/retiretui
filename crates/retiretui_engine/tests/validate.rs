@@ -400,7 +400,7 @@ fn a_state_is_given_exactly_where_the_country_has_them() {
     assert_issue(&found, "residency[0].state", "only a `us` residency");
     let abroad =
         "[[residency]]\ncountry = \"us\"\nstate = \"or\"\n\n[[residency]]\ncountry = \"pt\"\n";
-    assert!(issues(&with(&format!("{abroad}{MOVE}\n"))).is_empty());
+    assert_eq!(issues(&with(&format!("{abroad}{MOVE}\n"))), []);
 }
 
 #[test]
@@ -412,14 +412,17 @@ fn residencies_have_one_beginning() {
     assert_issue(&found, "residency[1].from", "only one residency begins");
     let found = issues(&with(&format!("{oregon}{MOVE}\n")));
     assert_issue(&found, "residency", "starts nowhere");
-    assert!(issues(&with(&format!("{oregon}\n{washington}{MOVE}\n"))).is_empty());
+    assert_eq!(
+        issues(&with(&format!("{oregon}\n{washington}{MOVE}\n"))),
+        []
+    );
 }
 
 #[test]
 fn place_codes_are_read_in_any_case_and_kept_lowercase() {
     let plan = Plan::from_toml_str(&with("[[residency]]\ncountry = \"US\"\nstate = \"Or\"\n"));
     let plan = plan.unwrap();
-    assert!(plan.validate().is_empty());
+    assert_eq!(plan.validate(), []);
     let saved = plan.to_toml_string().unwrap();
     assert!(
         saved.contains("country = \"us\"\nstate = \"or\"\n"),

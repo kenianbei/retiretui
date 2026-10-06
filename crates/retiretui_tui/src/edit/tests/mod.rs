@@ -337,7 +337,7 @@ fn a_domain_emptied_of_items_says_what_it_is_for() {
         press_key(&mut app, KeyCode::Enter);
     }
     app.update();
-    assert!(draft_plan(&app).accounts.is_empty());
+    assert_eq!(draft_plan(&app).accounts, []);
     let frame = composed_frame(&app);
     assert!(
         frame.contains(<retiretui_client::forms::accounts::Accounts as retiretui_client::forms::Domain>::PURPOSE),
@@ -529,7 +529,7 @@ fn a_table_turned_back_to_unmoved_keeps_its_rows() {
     let mut app = fixture_app();
     show(&mut app, Page::Accounts);
     let before = body_rows(&mut app, Page::Accounts);
-    assert!(!before.is_empty());
+    assert_ne!(before, []);
     show(&mut app, Page::Income);
     show(&mut app, Page::Accounts);
     assert_eq!(body_rows(&mut app, Page::Accounts), before);

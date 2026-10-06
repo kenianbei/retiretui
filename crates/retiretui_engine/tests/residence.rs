@@ -108,7 +108,7 @@ fn an_override_year_without_states_inherits_them_inflated() {
             "a later year",
         )
         .unwrap();
-    assert!(validate_plan(&plan(OREGON), &tables).is_empty());
+    assert_eq!(validate_plan(&plan(OREGON), &tables), []);
     let inflation = Inflation::constant(0.025);
     let carried = TaxTables::embedded().params_for(2030, &inflation);
     let inherited = tables.params_for(2030, &inflation);

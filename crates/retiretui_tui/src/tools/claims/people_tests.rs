@@ -220,7 +220,7 @@ fn t_adds_the_benefit_the_search_made_up_with_its_claim() {
                 .as_ref()
                 .is_some_and(|start| start.age.is_some())
     );
-    assert!(app.world().resource::<Draft>().issues().is_empty());
+    assert_eq!(app.world().resource::<Draft>().issues(), []);
     press_ctrl(&mut app, KeyCode::Char('z'));
     assert!(
         plan(&app).income.is_empty(),

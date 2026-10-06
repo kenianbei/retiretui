@@ -187,7 +187,7 @@ mod tests {
 
     #[test]
     fn a_cancelled_search_settles_no_step() {
-        assert!(!settled(&Progress::default()).is_empty());
+        assert_ne!(settled(&Progress::default()), []);
         let cancelled = Progress::default();
         cancelled.cancel();
         assert_eq!(settled(&cancelled), []);

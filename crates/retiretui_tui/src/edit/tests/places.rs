@@ -31,5 +31,5 @@ fn a_place_is_searched_for_and_applied() {
     let residency = draft_plan(&app).residency.remove(0);
     assert_eq!(residency.country, "pt");
     assert_eq!(residency.state, None, "a field that may be empty");
-    assert!(draft_plan(&app).validate().is_empty());
+    assert_eq!(draft_plan(&app).validate(), []);
 }

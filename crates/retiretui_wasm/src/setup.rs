@@ -204,7 +204,7 @@ mod tests {
         let made = new_plan.create().expect("a plan");
         assert_eq!(made.name, "Jordan");
         let plan = Plan::from_toml_str(&made.text).expect("parses");
-        assert!(validate_plan(&plan, tables()).is_empty());
+        assert_eq!(validate_plan(&plan, tables()), []);
     }
 
     fn born_as_the_statement_says(text: &str) -> Document {

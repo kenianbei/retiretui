@@ -246,7 +246,7 @@ fn without_benefit() -> String {
 fn a_record_without_an_income_is_searched_under_a_made_up_one() {
     let base = without_benefit();
     let plan = plan_from(&base);
-    assert!(plan.income.is_empty());
+    assert_eq!(plan.income, []);
     let found = search(&plan, &[]).unwrap();
     assert_eq!(found.incomes, ["ss-me"]);
     assert_eq!(found.added.len(), 1);
@@ -289,7 +289,7 @@ fn nothing_is_made_up_without_a_record_or_when_incomes_are_named() {
         "",
     );
     let plan = plan_from(&couple);
-    assert!(search(&plan, &["ss"]).unwrap().added.is_empty());
+    assert_eq!(search(&plan, &["ss"]).unwrap().added, []);
     assert_eq!(search(&plan, &[]).unwrap().incomes, ["ss", "ss-you"]);
 }
 

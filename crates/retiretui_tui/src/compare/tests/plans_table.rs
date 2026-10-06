@@ -32,7 +32,7 @@ fn picking_a_file_compares_it_and_picking_it_again_stops() {
     );
 
     compare_with(&mut app, "variant");
-    assert!(compared(&app).is_empty());
+    assert_eq!(compared(&app), [] as [String; 0]);
     assert_eq!(series_count(&mut app), 1);
 }
 
@@ -90,7 +90,7 @@ fn x_stops_comparing_the_highlighted_plan_but_not_the_document() {
     );
     press_key(&mut app, KeyCode::Down);
     press_key(&mut app, KeyCode::Char('x'));
-    assert!(compared(&app).is_empty());
+    assert_eq!(compared(&app), [] as [String; 0]);
     assert!(said(&app).contains(&"variant.toml no longer compared".to_owned()));
     let table = single::<PlansTable>(&mut app);
     redrawn(&mut app);

@@ -359,10 +359,9 @@ mod tests {
         let changes = compare::changes(&plan.plan, &richer.plan).expect("compared");
         assert_eq!(changes.len(), 1, "{changes:?}");
         assert!(changes[0].contains("Checking"), "{changes:?}");
-        assert!(
-            compare::changes(&plan.plan, &plan.plan)
-                .expect("same")
-                .is_empty()
+        assert_eq!(
+            compare::changes(&plan.plan, &plan.plan).expect("same"),
+            [] as [String; 0]
         );
     }
 

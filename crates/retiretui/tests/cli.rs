@@ -65,7 +65,7 @@ fn project_nominal_differs_from_todays_dollars() {
 fn project_json_carries_nominal_amounts_and_deflators() {
     let parsed = json_of(&retiretui(&["project", FULL_PLAN, "--format", "json"]));
     let years = parsed["years"].as_array().unwrap();
-    assert!(!years.is_empty());
+    assert_ne!(years.as_slice(), [] as [serde_json::Value; 0]);
     assert!((years[0]["deflator"].as_f64().unwrap() - 1.0).abs() < 1e-9);
     assert!(years[0]["balances"].get("pension-dc").is_some());
 }
@@ -183,7 +183,10 @@ fn compare_json_carries_summaries_and_years() {
     assert_eq!(plans.len(), 2);
     assert_eq!(plans[1]["name"], "retire-early");
     assert!(plans[0]["summary"]["final_net_worth"].is_i64());
-    assert!(!plans[0]["years"].as_array().unwrap().is_empty());
+    assert_ne!(
+        plans[0]["years"].as_array().unwrap().as_slice(),
+        [] as [serde_json::Value; 0]
+    );
 }
 
 #[test]

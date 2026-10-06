@@ -169,7 +169,7 @@ mod tests {
         let settings = form_at("settings").expect("a domain");
         assert!(table(&draft, settings, None).is_err());
         let rows = read_out(&draft, settings, 0).expect("the one item");
-        assert!(!rows.is_empty());
+        assert_ne!(rows, []);
         assert!(read_out(&draft, form_at("accounts").expect("a domain"), 99).is_err());
     }
 }

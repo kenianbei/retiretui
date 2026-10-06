@@ -331,7 +331,7 @@ mod standing {
     fn what_is_replaced_by_another_of_its_kind_does_not_leave_under_it() {
         let mut world = world_with((ComputedWidgetArea(PANEL), Leaves::Slide));
         world.run_system_once(reopen).unwrap();
-        assert!(world.resource::<Cues>().0.is_empty());
+        assert_eq!(world.resource::<Cues>().0, []);
         let standing = world.query::<&Panel>().iter(&world).count();
         assert_eq!(standing, 1, "the one it took down is gone");
     }
@@ -340,7 +340,7 @@ mod standing {
     fn what_closes_before_it_was_laid_out_has_nothing_to_leave_from() {
         let mut world = world_with(());
         world.run_system_once(close).unwrap();
-        assert!(world.resource::<Cues>().0.is_empty());
+        assert_eq!(world.resource::<Cues>().0, []);
         assert_eq!(world.query::<&Panel>().iter(&world).count(), 0);
     }
 }

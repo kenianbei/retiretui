@@ -17,7 +17,7 @@ const GOLDEN_PATH: &str = "tests/fixtures/full-projection.json";
 #[test]
 fn projection_matches_golden_fixture() {
     let plan = Plan::from_toml_str(FULL).unwrap();
-    assert!(plan.validate().is_empty());
+    assert_eq!(plan.validate(), []);
     let projection = project(&plan, &TaxTables::embedded());
     let actual = serde_json::to_string_pretty(&projection).unwrap() + "\n";
     if std::env::var_os("REGEN_GOLDEN").is_some() {

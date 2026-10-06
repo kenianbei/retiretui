@@ -208,7 +208,7 @@ fn a_working_person_with_no_figure_typed_gets_a_benefit_computed_from_a_career()
     assert_eq!(typed.amount, Some(30_000), "the partner's figure stands");
     assert!(plan.household.people[1].earnings.is_empty());
 
-    assert!(validate_plan(&plan, &tables).is_empty());
+    assert_eq!(validate_plan(&plan, &tables), []);
     let found =
         retiretui_engine::optimize::optimize_claims(&plan, &tables, &[], &[], &Progress::default())
             .unwrap();
@@ -238,7 +238,7 @@ fn a_retiree_s_benefit_is_computed_from_what_they_last_earned() {
         Some(&(1975 + 45 - 1)),
         "to the year before they stopped"
     );
-    assert!(validate_plan(&retired, &tables).is_empty());
+    assert_eq!(validate_plan(&retired, &tables), []);
 
     let unpaid = stopped.replace("salary = 150000\n", "");
     let retired = generated(FilingStatus::Single, LifeStage::Retired, &unpaid);

@@ -31,7 +31,7 @@ fn a_plan_opens_projected() {
         &mut reader(&[("/plan.toml", starter())]),
     )
     .expect("opens");
-    assert!(document.issues().is_empty());
+    assert_eq!(document.issues(), []);
     assert!(!document.is_read_only());
     assert_eq!(document.files(), [PathBuf::from("/plan.toml")]);
     let projection = document.projection().expect("projected");

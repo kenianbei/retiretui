@@ -84,7 +84,7 @@ fn b_makes_the_highlighted_plan_the_baseline_and_removing_it_returns_to_the_docu
     press_key(&mut app, KeyCode::Char('b'));
     press_key(&mut app, KeyCode::Char('x'));
     redrawn(&mut app);
-    assert!(compared(&app).is_empty());
+    assert_eq!(compared(&app), [] as [String; 0]);
     assert_eq!(baseline(&app), None);
     assert_eq!(dimmed(&mut app), [0]);
 }

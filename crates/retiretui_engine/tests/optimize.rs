@@ -107,7 +107,7 @@ fn fills_to_the_bracket_top() {
     )
     .unwrap();
     let top = twelve_top();
-    assert!(!ladder.ladder.steps.is_empty());
+    assert_ne!(ladder.ladder.steps, []);
     for year in 2026..=2030 {
         assert_eq!(taxable_in(&ladder.ladder.optimized, year), top, "{year}");
         assert!(taxable_in(&ladder.baseline, year) < top, "{year}");
@@ -367,8 +367,8 @@ fn sweep_covers_every_fillable_bracket_best_first() {
         .iter()
         .find(|bracket| (bracket.rate - 0.12).abs() < 1e-9)
         .unwrap();
-    assert!(!twelve.steps.is_empty());
-    assert!(!sweep.baseline.years.is_empty());
+    assert_ne!(twelve.steps, []);
+    assert_ne!(sweep.baseline.years, []);
 }
 
 #[test]

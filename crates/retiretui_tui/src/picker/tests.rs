@@ -47,5 +47,5 @@ fn rows_are_written_over_the_ones_listed_and_the_rest_despawned() {
         "the extra row is gone"
     );
     assert_eq!(place_rows(&mut world, results, &[], &theme), None);
-    assert!(listed(&world, results).is_empty());
+    assert_eq!(listed(&world, results), []);
 }

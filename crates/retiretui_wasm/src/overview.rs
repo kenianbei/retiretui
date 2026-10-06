@@ -236,6 +236,6 @@ mod tests {
             (first.label, first.domain.as_str(), first.field),
             ("Runs through", "settings", Some("horizon_age"))
         );
-        assert!(!view.low_point.is_empty());
+        assert_ne!(view.low_point, "");
     }
 }

@@ -63,7 +63,7 @@ fn open_theme_picker(app: &mut Headless) {
 fn the_theme_the_config_names_is_worn_from_the_start() {
     let app = app_under(config("[tui.theme]\nname = \"nord\"\n"), SIZE);
     assert_eq!(accent(&app), NORD_ACCENT);
-    assert!(said(&app).is_empty());
+    assert_eq!(said(&app), [] as [String; 0]);
 }
 
 #[test]
@@ -149,7 +149,7 @@ fn a_theme_of_the_users_own_is_worn_from_the_start_and_offered_as_theirs() {
     write_theme(&path, "nord", USER_THEME);
     let mut app = app_under(path, SIZE);
     assert_eq!(accent(&app), USER_THEME_ACCENT, "named by its family");
-    assert!(said(&app).is_empty());
+    assert_eq!(said(&app), [] as [String; 0]);
     open_theme_picker(&mut app);
     assert_eq!(badge_of(&mut app, "dusk"), "dark, yours");
     assert_eq!(badge_of(&mut app, "nord"), "dark, yours");

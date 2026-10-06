@@ -112,6 +112,6 @@ mod tests {
         let rows = rests_on(&projected_from(FULL));
         let lives = rows.iter().find(|row| row.label == "Lives in").unwrap();
         assert_eq!(lives.domain, DomainId::Residency);
-        assert!(!lives.value.is_empty());
+        assert_ne!(lives.value, "");
     }
 }
