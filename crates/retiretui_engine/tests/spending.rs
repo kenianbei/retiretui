@@ -310,3 +310,21 @@ fn an_essential_expense_spent_once_is_essential_and_nothing_marked_is_flexible()
             .all(|row| row.expenses_essential == 0)
     );
 }
+
+#[test]
+fn a_year_records_what_each_expense_spent() {
+    let plan = plan_from(RETIREE);
+    let projection = project(&plan, &TaxTables::embedded());
+    let mut roofed = 0;
+    for row in &projection.years {
+        let spent: i64 = row.spending.values().sum();
+        assert_eq!(spent, row.expenses, "{}", row.year);
+        assert!(row.spending.values().all(|&spent| spent != 0), "{row:?}");
+        let stated = |id: &String| plan.expenses.iter().any(|expense| expense.id == *id);
+        assert!(row.spending.keys().all(stated), "{:?}", row.spending);
+        roofed += usize::from(row.spending.contains_key("roof"));
+    }
+    assert_eq!(roofed, 1, "what is spent once is in one year");
+    let first = &projection.years[0];
+    assert!(first.spending.len() > 1, "{:?}", first.spending);
+}
