@@ -139,7 +139,8 @@ impl Themes {
     }
 
     /// The theme `choice` names, painted as it asks. A name that is a
-    /// family takes the `wanted` variant of it, or whichever it has.
+    /// family takes the `wanted` variant of it, or whichever it has, and
+    /// the terminal's own is banded for a screen of that variant.
     ///
     /// # Errors
     ///
@@ -147,7 +148,7 @@ impl Themes {
     /// read, or a colour painted over it does not.
     pub fn resolve(&self, choice: &Choice, wanted: Variant) -> Result<Theme, String> {
         let theme = match choice.name.as_deref() {
-            None | Some(TERMINAL) => Theme::terminal(),
+            None | Some(TERMINAL) => Theme::terminal_on(wanted),
             Some(name) => self.named(name, wanted)?,
         };
         choice.over(theme)
@@ -246,9 +247,23 @@ mod tests {
         let themes = Themes::embedded();
         let (slug, listed) = themes.listed().next().unwrap();
         assert!(slug == TERMINAL && listed.is_none());
-        let worn = themes.resolve(&Choice::default(), Variant::Light);
-        assert_eq!(worn, Ok(Theme::terminal()));
-        assert_eq!(themes.resolve(&chosen(TERMINAL), Variant::Dark), worn);
+        let worn = themes.resolve(&Choice::default(), Variant::Light).unwrap();
+        assert_eq!(worn, Theme::terminal_on(Variant::Light));
+        let on_dark = themes.resolve(&chosen(TERMINAL), Variant::Dark).unwrap();
+        assert_ne!(
+            on_dark.stripe, worn.stripe,
+            "banded for the screen it is on"
+        );
+        let unbanded = |theme: Theme| Theme {
+            stripe: None,
+            ..theme
+        };
+        assert_eq!(
+            unbanded(on_dark),
+            Theme::terminal(),
+            "and nothing else moves"
+        );
+        assert_eq!(unbanded(worn), Theme::terminal());
     }
 
     #[test]
@@ -371,7 +386,7 @@ mod tests {
             "{complaints:?}"
         );
         let worn = themes.resolve(&chosen(TERMINAL), Variant::Dark);
-        assert_eq!(worn, Ok(Theme::terminal()));
+        assert_eq!(worn, Ok(Theme::terminal_on(Variant::Dark)));
     }
 
     #[test]

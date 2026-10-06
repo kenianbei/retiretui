@@ -101,14 +101,24 @@ fn enter_on_a_run_opens_it_in_the_ledger_until_esc_or_an_edit() {
     );
     let frame = redrawn(&mut app);
     assert!(
-        frame.contains("Ledger · the 90th percentile market"),
-        "{frame}"
+        frame.contains("╭ To do in 2026 · the 90th percentile market ─")
+            && frame.contains("esc the plan"),
+        "the year names the run it is of: {frame}"
+    );
+    press_key(&mut app, KeyCode::Char('t'));
+    let frame = redrawn(&mut app);
+    assert!(
+        frame.contains("╭ Ledger · the 90th percentile market · today's dollars · "),
+        "and so does the table: {frame}"
     );
     let projected = &app.world().resource::<Projected>().projection;
     assert_eq!(*projected, plan_before, "the overview still shows the plan");
     press_key(&mut app, KeyCode::Esc);
     assert_eq!(ledger_run(&app), None);
-    assert!(!redrawn(&mut app).contains("esc returns"));
+    assert!(
+        !redrawn(&mut app).contains("esc the plan"),
+        "no run to leave"
+    );
     show(&mut app, Page::MonteCarlo);
     to_runs(&mut app);
     press_key(&mut app, KeyCode::Enter);

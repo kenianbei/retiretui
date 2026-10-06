@@ -4,8 +4,8 @@ use retiretui_client::setup::EXAMPLES;
 use retiretui_engine::plan::Plan;
 
 use super::*;
-use crate::ledger::year_detail;
 use crate::unopened::{OpenFailure, Written};
+use retiretui_client::ledger::{Asked, Year};
 
 fn reader(files: &[(&str, &str)]) -> impl FnMut(&Path) -> Result<String, String> + use<> {
     let files: BTreeMap<PathBuf, String> = files
@@ -31,7 +31,7 @@ fn a_plan_opens_projected() {
         &mut reader(&[("/plan.toml", starter())]),
     )
     .expect("opens");
-    assert!(document.issues().is_empty());
+    assert_eq!(document.issues(), []);
     assert!(!document.is_read_only());
     assert_eq!(document.files(), [PathBuf::from("/plan.toml")]);
     let projection = document.projection().expect("projected");
@@ -45,20 +45,25 @@ fn a_plan_opens_projected() {
     assert_eq!(document.year_at(Some(first - 9), first + 3), Some(first));
     assert_eq!(document.year_at(Some(last + 9), first), Some(last));
     let projected = document.projected().expect("projected");
-    let said = year_detail(projected, first, true).expect("in range");
-    assert_eq!(said.ages, [("Sam".to_owned(), 30)]);
+    let year_of = |year, is_nominal| {
+        let asked = Asked {
+            year,
+            is_nominal,
+            run: None,
+        };
+        Year::new(projected, tables(), asked).expect("in range")
+    };
+    let said = year_of(first, true);
+    assert_eq!(said.title, "To do in 2026");
+    assert_eq!(said.ages, "Sam turns 30");
+    assert_eq!(said.so_far_title, "So far · future dollars");
     assert!(
-        said.actions
+        said.to_do
             .iter()
             .any(|action| action.contains("Sam's Roth IRA"))
     );
     let later = first + 10;
-    let nominal = year_detail(projected, later, true)
-        .expect("in range")
-        .actions;
-    let today = year_detail(projected, later, false)
-        .expect("in range")
-        .actions;
+    let (nominal, today) = (year_of(later, true).to_do, year_of(later, false).to_do);
     assert_eq!(nominal.len(), today.len());
     assert_ne!(nominal, today, "a later year's amounts follow the basis");
     let reopened = Plan::from_toml_str(&document.plan_text().expect("serializes"));

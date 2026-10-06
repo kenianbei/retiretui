@@ -102,7 +102,7 @@ fn a_domain_emptied_can_still_be_added_to() {
         press_key(&mut app, KeyCode::Enter);
     }
     app.update();
-    assert!(draft_plan(&app).accounts.is_empty());
+    assert_eq!(draft_plan(&app).accounts, []);
     press_key(&mut app, KeyCode::Char('a'));
     app.update();
     let frame = composed_frame(&app);

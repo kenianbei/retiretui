@@ -180,7 +180,7 @@ fn enter_on_a_ladder_opens_its_search_with_the_same_best() {
     let best = best_ladder(&app, "roth");
     let lesser = sweep.brackets.iter().rfind(|held| held.steps != best.steps);
     takes(&mut app, &lesser.unwrap().clone(), "roth");
-    assert!(!projected(&app).plan.conversions.is_empty());
+    assert_ne!(projected(&app).plan.conversions, []);
     assert_eq!(
         best_ladder(&app, "roth").steps,
         best.steps,

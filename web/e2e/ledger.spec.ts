@@ -1,3 +1,5 @@
+import type { Page } from "@playwright/test";
+
 import {
   example,
   expect,
@@ -7,40 +9,96 @@ import {
   test,
 } from "./support";
 
-test("the Ledger tables every year over the chosen year's flows", async ({
+/** The year shown in full, by the heading of what to do in it. */
+function yearShown(page: Page, year: string) {
+  return page.getByRole("heading", {
+    level: 2,
+    name: `To do in ${year}`,
+    exact: true,
+  });
+}
+
+/** How far the plan has come, by its heading, which says the dollars shown. */
+function soFar(page: Page, unit = "today's dollars") {
+  return page.getByRole("heading", { level: 3, name: `So far · ${unit}` });
+}
+
+/** What a side of the year's money comes to. */
+function totalOf(page: Page, side: string) {
+  return page.getByRole("group", { name: side }).locator("dd").last();
+}
+
+test("the Ledger shows a year in full beside the list of years", async ({
   page,
 }, testInfo) => {
   await seed(
     page,
     { "/starter.toml": example("starter.toml") },
     "/starter.toml",
-    "#/ledger",
+    "#/ledger?year=2040",
   );
+  await expect(yearShown(page, "2040")).toBeVisible();
+  await expect(page.getByRole("table", { name: /Flows/ })).toBeVisible();
+  const lived = await totalOf(page, "Money in").textContent();
+  expect(lived).toMatch(/^\$[\d,]+$/);
+  await expect(totalOf(page, "Money out")).toHaveText(lived ?? "");
+  await expect(page.getByLabel("Paid").getByText("Total")).toBeVisible();
+
+  const years = page.getByRole("table", { name: /^Years/ });
+  if (isPhone(testInfo)) {
+    await expect(years, "a phone reads the year alone").toBeHidden();
+    await page.getByRole("button", { name: "The year after" }).click();
+  } else {
+    const rows = years.locator("tbody tr");
+    await expect(rows.nth(20)).toBeVisible();
+    await expect(rows.nth(14)).toHaveAttribute("aria-selected", "true");
+    await rows.nth(15).click();
+    await expect(rows.nth(15)).toHaveAttribute("aria-selected", "true");
+  }
+  await page.waitForURL(/year=2041/);
+  await expect(yearShown(page, "2041")).toBeVisible();
+  await page.keyboard.press("ArrowRight");
+  await expect(yearShown(page, "2042")).toBeVisible();
+  await expectAccessible(page);
+
+  await page.getByRole("link", { name: "future dollars" }).click();
+  await page.waitForURL(/basis=nominal/);
+  await expect(totalOf(page, "Money in")).not.toHaveText(lived ?? "");
+  await page.reload();
+  await expect(yearShown(page, "2042")).toBeVisible();
+  await expect(soFar(page, "future dollars")).toBeVisible();
+
+  if (isPhone(testInfo)) return;
+  // Wide enough that the year is shorter than the list of years is long.
+  await page.setViewportSize({ width: 2000, height: 960 });
+  await expect(page.getByRole("img", { name: "Tax by year" })).toBeVisible();
+  const pastTheFooter = await page.evaluate(() => {
+    const footer = document.querySelector("footer")?.getBoundingClientRect();
+    const height = document.scrollingElement?.scrollHeight ?? 0;
+    return height - Math.round((footer?.bottom ?? 0) + window.scrollY);
+  });
+  expect(pastTheFooter, "the page ends with its footer").toBeLessThan(2);
+});
+
+test("the Ledger's table turns through its column sets, and a row leads to its year", async ({
+  page,
+}) => {
+  await seed(
+    page,
+    { "/starter.toml": example("starter.toml") },
+    "/starter.toml",
+    "#/ledger?year=2045",
+  );
+  await page
+    .getByRole("group", { name: "Show" })
+    .getByRole("link", { name: "Table" })
+    .click();
+  await page.waitForURL(/view=table/);
   const table = page.getByRole("table", { name: /year by year/ });
   const rows = table.locator("tbody tr");
   await expect(rows.nth(20)).toBeVisible();
-  const flows = page.getByRole("table", { name: /Flows/ });
-  await expect(flows).toBeVisible();
-  const isFlowsFirst = await page.evaluate(() => {
-    const [first] = document.querySelectorAll("table");
-    return first?.getAttribute("aria-label")?.includes("Flows") ?? false;
-  });
-  expect(isFlowsFirst, "a phone reads the year's flows first").toBe(
-    isPhone(testInfo),
-  );
-  const target = rows.nth(5);
-  const year = (
-    (await target.locator("td").first().textContent()) ?? ""
-  ).trim();
-  await target.click();
-  await page.waitForURL(new RegExp(`year=${year}`));
-  await expect(target).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByText(`${year} Flows`)).toBeVisible();
-  await expect(page.getByText(`${year} Income & Tax`)).toBeVisible();
-  await page.keyboard.press("ArrowRight");
-  const next = String(Number(year) + 1);
-  await expect(page.getByText(`${next} Flows`)).toBeVisible();
-  await expectAccessible(page);
+  await expect(rows.nth(19)).toHaveAttribute("aria-selected", "true");
+  await expect(yearShown(page, "2045")).toHaveCount(0);
 
   const scroller = table.locator("xpath=..");
   await scroller.evaluate((element) => {
@@ -50,12 +108,27 @@ test("the Ledger tables every year over the chosen year's flows", async ({
   const frame = await scroller.boundingBox();
   expect(pinned?.x ?? 0).toBeLessThanOrEqual((frame?.x ?? 0) + 2);
 
-  const today = await rows.nth(5).locator("td").last().textContent();
-  await page.getByRole("link", { name: "future dollars" }).click();
-  await page.waitForURL(/basis=nominal/);
-  await expect(rows.nth(5).locator("td").last()).not.toHaveText(today ?? "");
-  await page.reload();
-  await expect(page.getByText(`${next} Flows · future dollars`)).toBeVisible();
+  const columns = page.getByLabel("Columns");
+  const header = (name: string) =>
+    table.getByRole("columnheader", { name, exact: true });
+  await expect(header("Roth")).toBeVisible();
+  await columns.selectOption({ label: "Tax figures" });
+  await page.waitForURL(/columns=tax/);
+  await expect(header("MAGI")).toBeVisible();
+  await expect(header("Roth")).toHaveCount(0);
+  await expect(header("Net worth")).toBeVisible();
+  await expectAccessible(page);
+  await columns.selectOption({ label: "Balances by account" });
+  await page.waitForURL(/columns=accounts/);
+  await expect(header("Sam's Roth IRA")).toBeVisible();
+  await columns.selectOption({ label: "Balances by treatment" });
+  await page.waitForURL((url) => !url.hash.includes("columns="));
+
+  await rows.nth(21).click();
+  await page.waitForURL(
+    (url) => url.hash.includes("year=2047") && !url.hash.includes("view="),
+  );
+  await expect(yearShown(page, "2047")).toBeVisible();
 });
 
 test("the Ledger says what to do in its year, in the dollars shown", async ({
@@ -67,22 +140,76 @@ test("the Ledger says what to do in its year, in the dollars shown", async ({
     "/starter.toml",
     "#/ledger?year=2045",
   );
-  const todo = page
-    .locator("[data-slot=card]")
-    .filter({ hasText: "2045 To do · today's dollars" });
-  await expect(todo).toContainText(/turns \d+/);
-  const first = todo.getByRole("listitem").first();
+  const first = page
+    .getByRole("list", { name: "To do" })
+    .getByRole("listitem")
+    .first();
+  await expect(yearShown(page, "2045")).toBeVisible();
+  await expect(page.getByText(/^Sam turns \d+$/)).toBeVisible();
   const today = await first.textContent();
+  await expect(soFar(page)).toBeVisible();
   await page.getByRole("link", { name: "future dollars" }).click();
   await page.waitForURL(/basis=nominal/);
-  await expect(page.getByText("2045 To do · future dollars")).toBeVisible();
+  await expect(soFar(page, "future dollars")).toBeVisible();
+  await expect(first).not.toHaveText(today ?? "");
+  await page.getByRole("button", { name: "The year after" }).click();
+  await expect(yearShown(page, "2046")).toBeVisible();
+  for (const title of ["Money in", "Money out", "Tax"]) {
+    const history = page.getByRole("img", { name: `${title} by year` });
+    await expect(history).toBeVisible();
+  }
+  const plot = page
+    .getByRole("img", { name: "Tax by year" })
+    .locator(".recharts-surface");
+  await plot.scrollIntoViewIfNeeded();
+  const box = await plot.boundingBox();
+  if (!box) throw new Error("the history has no box");
+  await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5);
   await expect(
     page
-      .locator("[data-slot=card]")
-      .filter({ hasText: "2045 To do" })
-      .getByRole("listitem")
-      .first(),
-  ).not.toHaveText(today ?? "");
-  await page.getByRole("button", { name: "The year after" }).click();
-  await expect(page.getByText("2046 To do")).toBeVisible();
+      .getByRole("img", { name: "Tax by year" })
+      .locator(".recharts-tooltip-wrapper"),
+    "the tooltip is headed by its year",
+  ).toContainText(/^20\d\d/);
+  await page.mouse.click(box.x + box.width * 0.5, box.y + box.height * 0.5);
+  await page.waitForURL((url) => !url.hash.includes("year=2046"));
+  const pressed = /year=(\d{4})/.exec(page.url())?.[1] ?? "";
+  await expect(yearShown(page, pressed)).toBeVisible();
+  await page.goto("#/ledger?year=2046&basis=nominal");
+  await page.getByRole("link", { name: "Tax tables for 2046" }).click();
+  await page.waitForURL(/#\/tools\/tax-tables\?.*year=2046/);
+  expect(page.url()).toContain("basis=nominal");
+});
+
+test("the marked years either side are stepped to, and say what marks them", async ({
+  page,
+}) => {
+  await seed(
+    page,
+    { "/couple.toml": example("retired-couple.toml") },
+    "/couple.toml",
+    "#/ledger?year=2029",
+  );
+  const before = page.getByRole("button", { name: "The marked year before" });
+  const after = page.getByRole("button", { name: "The marked year after" });
+  const marks = page.getByRole("list", { name: /^(Milestones|To watch)$/ });
+  await expect(marks).toHaveCount(0);
+  await after.click();
+  await page.waitForURL(/year=2031/);
+  await expect(marks.first()).toBeVisible();
+  const lived = page.getByRole("group", { name: "Money in" });
+  await expect(lived.getByText(/^RMD from /).first()).toBeVisible();
+  await expect(lived.getByText("Withdrawn", { exact: true })).toBeVisible();
+  const spent = page.getByRole("group", { name: "Money out" });
+  await expect(spent.locator("dt").first()).not.toHaveText(
+    /^(Spending|Essential|Flexible)$/,
+  );
+  await expect(spent.getByText("Essential", { exact: true })).toBeVisible();
+  await expect(spent.getByText("Tax", { exact: true })).toBeVisible();
+  await before.click();
+  await page.waitForURL(/year=2027/);
+  await expect(page.getByRole("list", { name: "To watch" })).toBeVisible();
+  await before.click();
+  await page.waitForURL(/year=2026/);
+  await expect(before).toBeDisabled();
 });

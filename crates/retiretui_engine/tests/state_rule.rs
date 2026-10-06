@@ -239,7 +239,7 @@ fn a_bracket_takes_the_rate_the_law_has_set_by_the_year() {
     };
     assert_eq!(left(2026), [2029, 2027, 2030]);
     assert_eq!(left(2028), [2029, 2030]);
-    assert!(left(2030).is_empty());
+    assert_eq!(left(2030), [] as [i16; 0]);
     let unstepped = tables.params_for(2040, &Inflation::constant(INFLATION));
     let joint = &unstepped.states["ca"].brackets.married_joint[0];
     assert!((joint.rate - 0.04).abs() < f64::EPSILON);
@@ -261,9 +261,9 @@ fn a_federal_bracket_steps_as_a_state_s_does() {
 #[test]
 fn a_table_without_the_new_keys_reads_as_it_did_and_one_with_them_writes_back() {
     let plain = flat_tenth("");
-    assert!(plain.exclusions.is_empty());
+    assert_eq!(plain.exclusions, []);
     assert!(!plain.taxes_deferrals && !plain.deduction_unindexed);
-    assert!(plain.brackets.single[0].later.is_empty());
+    assert_eq!(plain.brackets.single[0].later, []);
     let written = toml::to_string(&plain).unwrap();
     for key in [
         "exclusions",

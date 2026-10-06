@@ -98,13 +98,13 @@ fn reply<T: Serialize>(answer: Result<T, String>) -> Result<JsValue, JsError> {
 const TYPES: &str = r#"import type {
   ActionsReply, ChartSeries, Claim, ClaimWords, ClaimsOptions, CompareView, CompareWords,
   Domain, DomainTable,
-  Example, FieldView, Issue, LadderWords, LadderYear, LaddersReply,
+  Example, FieldView, HistoryChart, Issue, LadderWords, LadderYear, LaddersReply,
   Ledger, MarketRuns, MarketWords, Metric, OrderOptions, OrderWords, OverviewView, PersonAction,
   PersonRow, PlacedIssue,
   NewPlanMade, OpenFailure,
   Projection, ReadRow, RothOwner, ScaledExpense, Searched, Sort, SpendingOptions,
   SpendingWords, Step, Summary, TablesView,
-  TreatmentClass, ViewWords, YearDetail, YearFigure, YearTables,
+  TreatmentClass, ViewWords, Year, YearFigure, YearTables,
 } from "../bindings/index";
 export type * from "../bindings/index";"#;
 
@@ -315,7 +315,7 @@ mod bindings {
     use crate::compare::{CompareView, CompareWords, Searched, YearFigure};
     use crate::domain::DomainTable;
     use crate::ladders::{LadderWords, LaddersReply};
-    use crate::ledger::{ChartSeries, Ledger, ViewWords, YearDetail};
+    use crate::ledger::{ChartSeries, HistoryChart, Ledger, ViewWords};
     use crate::markets::{MarketRuns, MarketWords};
     use crate::orders::{OrderOptions, OrderWords};
     use crate::overview::OverviewView;
@@ -324,6 +324,7 @@ mod bindings {
     use crate::spending::{SpendingOptions, SpendingWords};
     use crate::view::FieldView;
     use crate::vocabulary::Domain;
+    use retiretui_client::ledger::Year;
     use retiretui_client::setup::Step;
     use retiretui_client::tax_tables::{TablesView, YearTables};
 
@@ -359,7 +360,8 @@ mod bindings {
         Sort::export_all,
         FieldView::export_all,
         Ledger::export_all,
-        YearDetail::export_all,
+        Year::export_all,
+        HistoryChart::export_all,
         ChartSeries::export_all,
         ViewWords::export_all,
         OverviewView::export_all,

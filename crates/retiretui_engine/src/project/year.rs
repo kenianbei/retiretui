@@ -65,6 +65,7 @@ pub(super) struct YearAcc {
     pub(super) penalty_base: Dollars,
     pub(super) hsa_penalty_base: Dollars,
     pub(super) expenses: Dollars,
+    pub(super) spending: BTreeMap<String, Dollars>,
     pub(super) essential: Dollars,
     pub(super) flexible: Dollars,
     /// The year's medical spending no HSA draw has yet paid.
@@ -286,6 +287,7 @@ impl<'a> Simulation<'a> {
             total_income: acc.income.values().sum(),
             income: acc.income,
             expenses: acc.expenses,
+            spending: acc.spending,
             expenses_essential: acc.essential,
             expenses_flexible: acc.flexible,
             contributions_employee: acc.employee,

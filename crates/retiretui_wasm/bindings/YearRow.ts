@@ -33,6 +33,11 @@ total_income: number,
  */
 expenses: number, 
 /**
+ * What each expense spent, by expense id; one that spent nothing is
+ * left out. They sum to `expenses`.
+ */
+spending: { [key in string]: number }, 
+/**
  * The part of `expenses` the plan marks essential.
  */
 expenses_essential: number, 

@@ -1,102 +1,140 @@
+//! The Ledger: one year in the context of all of them. A list of every
+//! year stands beside the cursor year in full - what happens in it and
+//! what to do, each account's flows, where its money came from and went,
+//! and its tax - and one key swaps the page for the whole year table.
+
+mod arrange;
+mod flows;
+mod funds;
+mod history;
+mod year;
+mod years;
+
+#[cfg(test)]
+mod tests;
+
 use bevy_app::{App, Startup, Update};
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
+use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{
-    ChildOf, Commands, Component, Entity, IntoScheduleConfigs, Local, Or, Query, Res, ResMut, With,
+    Commands, Entity, IntoScheduleConfigs, Query, Res, ResMut, Resource, SystemSet, With,
 };
 use bevy_ecs::system::SystemParam;
-use plurimus::core::TerminalSize;
-use plurimus::core::ratatui_core::layout::{Constraint, Size};
-use plurimus::core::ratatui_core::style::{Modifier, Style};
-use plurimus::core::ratatui_core::text::Line;
-use plurimus::ui::{ScrollArea, UiStyle};
-use plurimus::widgets::{
-    ActiveDescendant, TableColumns, TableKeys, TableSelection, TableStripe, table, table_header,
-    table_row, table_self_update,
-};
-use retiretui_engine::plan::{Dollars, Plan, TreatmentClass};
-use retiretui_engine::project::YearRow;
+use bevy_ui::{FlexDirection, Node};
+use plurimus::widgets::WidgetSystems;
+use retiretui_client::ledger::{Asked, ColumnSet, Table, Year};
 
-use retiretui_client::ledger::ledger_headers;
+pub use arrange::LedgerView;
+#[cfg(test)]
+pub use years::LedgerTable;
 
-use crate::table::{Column, ages_text, basis_amount, present_classes, year_figures};
-
-use super::command::{self, Keymap};
-use super::layout::{self, Body, filling, placed};
-use super::nav::{self, ActivePage, FocusStop, Page};
-use super::pane::{self, Framed, Pane};
-use super::present::{self, MoneyForm};
-use super::session::{LedgerRun, Projected, RowYear, Shown, track_cursor};
-use super::theme::Theme;
-
-mod detail;
-mod flows;
-mod split;
-mod todo;
+use super::command::Outcome;
+use super::hints::{CommandHint, CommandHints};
+use super::layout::{self, Body, growing};
+use super::nav::{self, Page, ShownSurface};
+use super::session::{LedgerRun, Projected, Session, Shown, Today, YearCursor, cursor_year};
+use super::theme::{Repainted, Theme};
 
 pub fn plugin(app: &mut App) {
-    app.add_plugins((detail::plugin, flows::plugin, split::plugin, todo::plugin));
-    app.add_systems(Startup, spawn_ledger.after(layout::spawn_frame));
     app.init_resource::<LedgerRun>();
+    app.init_resource::<LedgerView>();
+    app.init_resource::<Columns>();
+    app.init_resource::<TableSaid>();
+    app.init_resource::<YearSaid>();
+    app.configure_sets(
+        Update,
+        (LedgerSystems::Say, LedgerSystems::Draw)
+            .chain()
+            .before(Repainted)
+            .before(WidgetSystems::Layout),
+    );
+    app.add_plugins((
+        arrange::plugin,
+        years::plugin,
+        year::plugin,
+        flows::plugin,
+        funds::plugin,
+        history::plugin,
+    ));
+    app.add_systems(Startup, spawn_ledger.after(layout::spawn_frame));
     app.add_systems(
         Update,
-        (
-            leave_run_on_replan,
-            title_ledger,
-            rebuild_rows,
-            follow_cursor.run_if(nav::shows(Page::Ledger)),
-            track_cursor::<LedgerTable>,
-        )
-            .chain(),
+        (leave_run_on_replan, open_run_on_its_year, say)
+            .chain()
+            .in_set(LedgerSystems::Say),
     );
-    app.add_observer(table_self_update);
 }
 
-/// The cells between the detail tables' columns, past the one a table
-/// leaves.
-const DETAIL_GAP: u16 = 2;
+/// The Ledger's frame: what it says is settled, and then drawn.
+#[derive(SystemSet, Clone, Copy, PartialEq, Eq, Hash, Debug)]
+enum LedgerSystems {
+    Say,
+    Draw,
+}
 
-#[derive(Component)]
-pub struct LedgerTable;
+/// The column set the year table is under.
+#[derive(Resource, Default, Clone, Copy, PartialEq, Eq, Debug)]
+pub struct Columns(pub ColumnSet);
 
-#[derive(Component)]
-struct LedgerHeaderRow;
+/// Every year of what the Ledger shows, as the client tables it.
+#[derive(Resource, Default)]
+struct TableSaid(Option<Table>);
 
-const TITLE: &str = "Ledger";
-const RETURN: &str = "returns to the plan";
+/// The cursor year of what the Ledger shows, as the client says it.
+#[derive(Resource, Default)]
+struct YearSaid(Option<Year>);
 
-/// The pane the years are listed in, whose title names a run it shows.
-#[derive(Component)]
-struct LedgerPane;
+/// What marks a milestone of the plan, on its year and before its line.
+const MILESTONE: &str = "◆";
+/// What marks something to watch, on its year and before its line.
+const WARNING: &str = "!";
 
-/// Names the run the Ledger shows in its title.
-fn title_ledger(
-    run: Res<LedgerRun>,
-    keymap: Res<Keymap>,
-    mut panes: Query<&mut Framed, With<LedgerPane>>,
-) {
-    if !run.is_changed() {
+/// The year keys' and the table key's hints, said from any pane.
+const PAGE_HINTS: &[CommandHint] = &[
+    CommandHint {
+        commands: &[
+            super::command::LEDGER_YEARS[0],
+            super::command::LEDGER_YEARS[1],
+        ],
+        key: 1,
+        word: "year",
+    },
+    CommandHint {
+        commands: &[
+            super::command::LEDGER_MARKED[0],
+            super::command::LEDGER_MARKED[1],
+        ],
+        key: 0,
+        word: "marked year",
+    },
+];
+
+fn spawn_ledger(bodies: Query<Entity, With<Body>>, mut commands: Commands) {
+    let Ok(body) = bodies.single() else {
         return;
-    }
-    let back = keymap.label_named(command::LEDGER_PLAN, 0);
-    let title = run.0.as_ref().map_or_else(
-        || TITLE.to_owned(),
-        |(label, _)| match back {
-            "" => format!("{TITLE} · {label}"),
-            back => format!("{TITLE} · {label} · {back} {RETURN}"),
-        },
-    );
-    for mut pane in &mut panes {
-        Framed::retitle(&mut pane, &title);
-    }
+    };
+    let view = nav::spawn_surface(&mut commands, body, Some(Page::Ledger));
+    commands.entity(view).insert(CommandHints(PAGE_HINTS));
+    let across = Node {
+        flex_direction: FlexDirection::Row,
+        ..growing()
+    };
+    let across = commands.spawn((across, ChildOf(view))).id();
+    years::spawn_pane(&mut commands, across);
+    let detail = arrange::spawn_detail(&mut commands, across);
+    year::spawn_panes(&mut commands, detail);
+    flows::spawn_pane(&mut commands, detail);
+    funds::spawn_panes(&mut commands, detail);
+    history::spawn_row(&mut commands, detail);
 }
 
 /// The `ledger-plan` command: the plan's own projection back in the
 /// Ledger, in place of a run opened from a market tool.
-pub fn return_to_plan(mut run: ResMut<LedgerRun>) -> super::command::Outcome {
+pub fn return_to_plan(mut run: ResMut<LedgerRun>) -> Outcome {
     if run.0.is_some() {
         run.0 = None;
     }
-    super::command::Outcome::Done
+    Outcome::Done
 }
 
 /// A run describes the plan it was drawn from, so a plan that changes
@@ -107,330 +145,120 @@ fn leave_run_on_replan(projected: Res<Projected>, mut run: ResMut<LedgerRun>) {
     }
 }
 
-fn spawn_ledger(bodies: Query<Entity, With<Body>>, mut commands: Commands) {
-    let Ok(body) = bodies.single() else {
-        return;
-    };
-    let view = nav::spawn_surface(&mut commands, body, Some(Page::Ledger));
-    let pane = Pane::new(TITLE).sharing(1.0).spawn(&mut commands, view);
-    commands.entity(pane).insert(LedgerPane);
-    commands.spawn((
-        table([Constraint::Length(5)]),
-        LedgerTable,
-        TableSelection::Row,
-        layout::table_cursor(),
-        TableKeys::default(),
-        TableStripe(Style::new()),
-        ScrollArea::new(Size::default()),
-        FocusStop,
-        filling(),
-        placed(),
-        ChildOf(pane),
-    ));
-    todo::spawn_pane(&mut commands, view);
-    let detail = split::spawn_detail(&mut commands, view);
-    flows::spawn_pane(&mut commands, detail);
-    detail::spawn_pane(&mut commands, detail);
-}
-
-#[derive(SystemParam)]
-struct LedgerEntities<'w, 's> {
-    tables: Query<'w, 's, Entity, With<LedgerTable>>,
-    rows: Query<'w, 's, (Entity, &'static ChildOf), Or<(With<RowYear>, With<LedgerHeaderRow>)>>,
-}
-
-/// What the rows are built from, and what makes them stale.
-#[derive(SystemParam)]
-struct RowInputs<'w, 's> {
-    shown: Shown<'w>,
-    active: Res<'w, ActivePage>,
-    theme: Res<'w, Theme>,
-    size: Res<'w, TerminalSize>,
-    is_stale: Local<'s, bool>,
-    /// How the rows on screen were fitted, so a resize that fits the same
-    /// way rebuilds nothing.
-    fitted: Local<'s, Option<Fit>>,
-}
-
-impl RowInputs<'_, '_> {
-    /// Rows are rebuilt while the ledger is on screen, and a change that
-    /// lands while it is not waits for it: setting the cursor reveals it,
-    /// and a hidden table is placed nowhere, so a reveal resolved against
-    /// its empty area scrolls the rows out of view for good.
-    fn should_rebuild(&mut self) -> bool {
-        let is_refitted = self.size.is_changed() && *self.fitted != Some(self.fit());
-        *self.is_stale |= self.shown.projected.is_changed()
-            || self.shown.run.is_changed()
-            || self.shown.basis.is_changed()
-            || self.theme.is_changed()
-            || is_refitted;
-        let rebuilding = *self.is_stale && self.active.page() == Page::Ledger;
-        *self.is_stale &= !rebuilding;
-        rebuilding
-    }
-
-    fn fit(&self) -> Fit {
-        let classes = present_classes(&self.shown.ledger().plan);
-        let widest = widest_cell(&self.shown.ledger().projection.years, &classes);
-        Fit::of(self.size.cols, classes.len(), widest)
+/// A run is opened to be read a year at a time.
+fn open_run_on_its_year(run: Res<LedgerRun>, mut view: ResMut<LedgerView>) {
+    if run.is_changed() && run.0.is_some() {
+        view.set_if_neq(LedgerView::Year);
     }
 }
 
-/// Respawns the header and year rows whenever the projection or the basis
-/// changes, carrying the cursor across by year.
-fn rebuild_rows(mut inputs: RowInputs, entities: LedgerEntities, mut commands: Commands) {
-    if !inputs.should_rebuild() {
-        return;
-    }
-    let Ok(ledger_table) = entities.tables.single() else {
-        return;
-    };
-    for (row, table) in &entities.rows {
-        if table.parent() == ledger_table {
-            commands.entity(row).despawn();
-        }
-    }
-    let fit = inputs.fit();
-    *inputs.fitted = Some(fit);
-    let mut classes = present_classes(&inputs.shown.ledger().plan);
-    if !fit.has_classes {
-        classes.clear();
-    }
-    let columns = class_columns(&classes);
-    let style = RowStyle {
-        plan: &inputs.shown.ledger().plan,
-        is_nominal: inputs.shown.basis.nominal,
-        form: if fit.is_compact {
-            MoneyForm::Compact
-        } else {
-            MoneyForm::Full
-        },
-        columns: &columns,
-    };
-    commands
-        .entity(ledger_table)
-        .insert(TableColumns(ledger_constraints(&classes)));
-    commands.spawn((
-        table_header(header_cells(&classes)),
-        LedgerHeaderRow,
-        UiStyle(Style::new().add_modifier(Modifier::BOLD)),
-        ChildOf(ledger_table),
-    ));
-    let cursor_row = spawn_year_rows(&mut commands, ledger_table, &inputs, style);
-    commands
-        .entity(ledger_table)
-        .insert(ActiveDescendant(cursor_row));
-}
-
-/// Points the table at a year set elsewhere, which, like the rows, waits
-/// for the Ledger to be shown.
-fn follow_cursor(
-    shown: Shown,
-    mut tables: Query<(Entity, &mut ActiveDescendant), With<LedgerTable>>,
-    rows: Query<(Entity, &RowYear, &ChildOf)>,
+/// Says the table again whenever the plan shown, the basis or the column
+/// set moves, and the year whenever any of those or the cursor does.
+fn say(
+    (shown, session, columns): (Shown, Res<Session>, Res<Columns>),
+    mut table: ResMut<TableSaid>,
+    mut year: ResMut<YearSaid>,
 ) {
-    if !shown.is_changed() {
-        return;
+    let ledger = shown.ledger();
+    let is_nominal = shown.basis.nominal;
+    let is_replanned =
+        shown.projected.is_changed() || shown.run.is_changed() || shown.basis.is_changed();
+    if is_replanned || columns.is_changed() || table.0.is_none() {
+        let said = Table::new(ledger, &session.tables, columns.0, is_nominal);
+        table.0 = Some(said);
     }
-    let Ok((table, mut active)) = tables.single_mut() else {
-        return;
+    if shown.is_changed() || year.is_added() {
+        let run = shown.run.0.as_ref();
+        let asked = Asked {
+            year: shown.year(),
+            is_nominal,
+            run: run.map(|(label, _)| label.as_str()),
+        };
+        year.0 = Year::new(ledger, &session.tables, asked);
+    }
+}
+
+/// A run condition: whether the year in full is on show. A pane it skips
+/// keeps its last run, so what moved while the pane was hidden reads as
+/// moved on its return - and is drawn then, since a table given its cursor
+/// while hidden scrolls that row into no area.
+fn shows_the_year(shown: ShownSurface, view: Res<LedgerView>) -> bool {
+    shown.surface() == Some(Page::Ledger) && *view == LedgerView::Year
+}
+
+/// The year's detail, for a pane that draws it.
+#[derive(SystemParam)]
+struct Detail<'w> {
+    year: Res<'w, YearSaid>,
+    theme: Res<'w, Theme>,
+}
+
+impl Detail<'_> {
+    /// The year to draw and the theme to draw it in, where either has
+    /// moved since the pane last drew it, or `is_resized` says the pane
+    /// has.
+    fn due(&self, is_resized: bool) -> Option<(&Year, &Theme)> {
+        let is_due = self.year.is_changed() || self.theme.is_changed() || is_resized;
+        let year = self.year.0.as_ref().filter(|_| is_due)?;
+        Some((year, &self.theme))
+    }
+}
+
+/// The `ledger-table` command: the whole year table in the page's place,
+/// or the year it left.
+pub fn swap_table(mut view: ResMut<LedgerView>) -> Outcome {
+    *view = match *view {
+        LedgerView::Year => LedgerView::Table,
+        LedgerView::Table => LedgerView::Year,
     };
-    let year = shown.year();
-    let row = rows
-        .iter()
-        .find(|(_, row_year, parent)| parent.parent() == table && row_year.0 == year);
-    if let Some((row, ..)) = row {
-        active.set_if_neq(ActiveDescendant(Some(row)));
-    }
+    Outcome::Done
 }
 
-/// Spawns a row per projected year, answering the one the cursor belongs
-/// on.
-fn spawn_year_rows(
-    commands: &mut Commands,
-    ledger_table: Entity,
-    inputs: &RowInputs,
-    style: RowStyle,
-) -> Option<Entity> {
-    let cursor_year = inputs.shown.year();
-    let mut cursor_row = None;
-    for year_row in &inputs.shown.ledger().projection.years {
-        let cells = ledger_cells(year_row, style);
-        let id = commands
-            .spawn((
-                table_row(cells),
-                RowYear(year_row.year),
-                ChildOf(ledger_table),
-            ))
-            .id();
-        if year_row.unfunded > 0 {
-            commands.entity(id).insert(UiStyle(inputs.theme.exceeded()));
-        }
-        if cursor_year == year_row.year {
-            cursor_row = Some(id);
-        }
-    }
-    cursor_row
+/// The `ledger-year` command: the cursor's year in full, from the table.
+pub fn show_year(mut view: ResMut<LedgerView>) -> Outcome {
+    view.set_if_neq(LedgerView::Year);
+    Outcome::Done
 }
 
-const YEAR_COLS: u16 = 5;
-const AGE_COLS: u16 = 6;
-const SCROLL_BAR_COLS: u16 = 1;
-/// Columns of the terminal the rows never get.
-const LEDGER_CHROME: u16 = pane::BORDERS + layout::CURSOR_COLS + SCROLL_BAR_COLS;
-/// Income, spending, tax, withdrawn and net worth, which every width shows.
-const CORE_MONEY_COLUMNS: usize = 5;
-
-/// How the ledger fits the width it has: whether the treatment classes get
-/// columns of their own, and whether figures are written in full.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-struct Fit {
-    has_classes: bool,
-    is_compact: bool,
+/// The `ledger-columns` command: the table under its next column set.
+pub fn turn_columns(mut columns: ResMut<Columns>, mut view: ResMut<LedgerView>) -> Outcome {
+    columns.0 = columns.0.neighbor(1);
+    view.set_if_neq(LedgerView::Table);
+    Outcome::Done
 }
 
-impl Fit {
-    /// The classes are the first to go, since the detail pane under the
-    /// table lists every account; figures are compacted only where the
-    /// widest of them would still run into its neighbour.
-    /// `widest` is the most cells any money column has to show, header
-    /// included.
-    fn of(cols: u16, classes: usize, widest: usize) -> Self {
-        let room = usize::from(cols.saturating_sub(LEDGER_CHROME + YEAR_COLS + AGE_COLS));
-        let per_column = |columns: usize| (room / columns).saturating_sub(1);
-        let has_classes = per_column(CORE_MONEY_COLUMNS + classes) >= widest;
-        let shown = CORE_MONEY_COLUMNS + if has_classes { classes } else { 0 };
-        Self {
-            has_classes,
-            is_compact: per_column(shown) < widest,
-        }
-    }
+/// What the year cursor is read from and moved through.
+#[derive(SystemParam)]
+pub struct Stepped<'w> {
+    table: Res<'w, TableSaid>,
+    projected: Res<'w, Projected>,
+    today: Res<'w, Today>,
+    cursor: ResMut<'w, YearCursor>,
 }
 
-/// The cells the widest money column takes: the largest figure written in
-/// full, or a header longer than it.
-fn widest_cell(years: &[YearRow], classes: &[TreatmentClass]) -> usize {
-    let largest = years.iter().map(|row| row.net_worth.abs()).max();
-    let figure = present::money(largest.unwrap_or(0)).len();
-    let headers = header_cells(classes);
-    let header = headers.iter().skip(2).map(Line::width).max();
-    figure.max(header.unwrap_or(0))
-}
-
-fn ledger_constraints(classes: &[TreatmentClass]) -> Vec<Constraint> {
-    let money_columns = CORE_MONEY_COLUMNS + classes.len();
-    let mut constraints = vec![Constraint::Length(YEAR_COLS), Constraint::Length(AGE_COLS)];
-    constraints.extend(std::iter::repeat_n(Constraint::Fill(1), money_columns));
-    constraints
-}
-
-/// The year and the ages on the left, the figures on the right.
-fn header_cells(classes: &[TreatmentClass]) -> Vec<Line<'static>> {
-    let headers = ledger_headers(classes).into_iter();
-    headers
-        .map(|(header, is_figure)| {
-            let cell = Line::from(header);
-            if is_figure {
-                cell.right_aligned()
-            } else {
-                cell
+impl Stepped<'_> {
+    /// Moves the cursor to the nearest marked year `step` says to look
+    /// towards, refusing where there is none.
+    fn step_to_marked(&mut self, step: i16) -> Outcome {
+        let from = cursor_year(&self.projected, *self.today, *self.cursor);
+        let table = self.table.0.as_ref();
+        match table.and_then(|table| table.marked_year(from, step)) {
+            Some(year) => {
+                self.cursor.set_if_neq(YearCursor(Some(year)));
+                Outcome::Done
             }
-        })
-        .collect()
-}
-
-#[derive(Clone, Copy)]
-struct RowStyle<'a> {
-    plan: &'a Plan,
-    is_nominal: bool,
-    form: MoneyForm,
-    columns: &'a [Column],
-}
-
-fn class_columns(classes: &[TreatmentClass]) -> Vec<Column> {
-    classes.iter().copied().map(Column::Class).collect()
-}
-
-fn ledger_cells(row: &YearRow, style: RowStyle) -> Vec<Line<'static>> {
-    let money = |amount: Dollars| {
-        let amount = basis_amount(amount, row.deflator, style.is_nominal);
-        Line::from(style.form.money(amount)).right_aligned()
-    };
-    let mut cells = vec![
-        Line::from(row.year.to_string()),
-        Line::from(ages_text(style.plan, row)),
-    ];
-    cells.extend(year_figures(row, style.columns).into_iter().map(money));
-    cells
-}
-
-#[cfg(test)]
-mod tests {
-    use super::super::support::test_projected;
-    use super::*;
-
-    fn style<'a>(plan: &'a Plan, columns: &'a [Column]) -> RowStyle<'a> {
-        RowStyle {
-            plan,
-            is_nominal: true,
-            form: MoneyForm::Full,
-            columns,
+            None if step > 0 => Outcome::Refused(format!("No marked year after {from}")),
+            None => Outcome::Refused(format!("No marked year before {from}")),
         }
     }
+}
 
-    #[test]
-    fn cells_follow_the_plan_shape() {
-        let projected = test_projected();
-        let plan = &projected.plan;
-        let classes = present_classes(plan);
-        // The test plan has taxable (cash) and deferred (401k) accounts.
-        assert_eq!(classes, [TreatmentClass::Taxable, TreatmentClass::Deferred]);
-        let header = header_cells(&classes);
-        let columns = class_columns(&classes);
-        let first = ledger_cells(&projected.projection.years[0], style(plan, &columns));
-        assert_eq!(header.len(), first.len());
-        assert_eq!(header.len(), ledger_constraints(&classes).len());
-        assert_eq!(first[0].to_string(), "2026");
-        assert_eq!(first[1].to_string(), "46");
-        assert!(first[2].to_string().starts_with('$'), "{}", first[2]);
-    }
+/// The `ledger-marked-next` command.
+pub fn next_marked(mut stepped: Stepped) -> Outcome {
+    stepped.step_to_marked(1)
+}
 
-    #[test]
-    fn cells_deflate_unless_nominal() {
-        let projected = test_projected();
-        let plan = &projected.plan;
-        let classes = present_classes(plan);
-        let columns = class_columns(&classes);
-        let later = &projected.projection.years[5];
-        let nominal = ledger_cells(later, style(plan, &columns));
-        let todays = ledger_cells(
-            later,
-            RowStyle {
-                is_nominal: false,
-                ..style(plan, &columns)
-            },
-        );
-        let parse = |line: &Line<'_>| present::parse_money(&line.to_string()).unwrap();
-        assert!(parse(&nominal[2]) > parse(&todays[2]), "income deflates");
-        assert_eq!(nominal[0], todays[0], "years never scale");
-    }
-
-    #[test]
-    fn a_narrow_ledger_drops_the_classes_before_it_shortens_a_figure() {
-        let seven_digits = "$1,074,850".len();
-        let narrow = Fit::of(80, 4, seven_digits);
-        assert!(!narrow.has_classes && !narrow.is_compact, "{narrow:?}");
-        let wide = Fit::of(200, 4, seven_digits);
-        assert!(wide.has_classes && !wide.is_compact, "{wide:?}");
-        let classes = [TreatmentClass::Taxable, TreatmentClass::Deferred];
-        let small_figures = widest_cell(&[], &classes);
-        assert_eq!(
-            small_figures,
-            "Withdrawn".len(),
-            "a header sets the width too"
-        );
-        assert!(!Fit::of(80, 2, small_figures).has_classes);
-        let vast = Fit::of(80, 4, "$1,234,567,890".len());
-        assert!(!vast.has_classes && vast.is_compact, "{vast:?}");
-    }
+/// The `ledger-marked-previous` command.
+pub fn previous_marked(mut stepped: Stepped) -> Outcome {
+    stepped.step_to_marked(-1)
 }

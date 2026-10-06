@@ -90,7 +90,7 @@ fn adopting_replaces_the_record_of_the_person_it_is_for() {
     plan.household.people[0].earnings.insert(1980, 1);
     plan.adopt_earnings("jordan", &statement).unwrap();
     assert_eq!(plan.household.people[0].earnings, statement.earnings);
-    assert!(plan.validate().is_empty());
+    assert_eq!(plan.validate(), []);
     let wrong_person = plan.adopt_earnings("alex", &statement).unwrap_err();
     assert_eq!(wrong_person.path, "household.people[1].birth");
     assert!(

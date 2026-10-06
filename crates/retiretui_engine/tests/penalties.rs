@@ -110,7 +110,10 @@ amount = 50000
     assert_eq!(projection.years[0].withdrawals["cash"], 30_000);
     assert_eq!(penalized_years(&projection, "401k", 2026..=2026), [2026]);
     let exempt = run(&plan.replace("kind = \"401k\"", "kind = \"457b\""));
-    assert!(penalized_years(&exempt, "401k", 2026..=2026).is_empty());
+    assert_eq!(
+        penalized_years(&exempt, "401k", 2026..=2026),
+        [] as [i16; 0]
+    );
 }
 
 #[test]
@@ -135,7 +138,10 @@ fn a_plan_left_at_55_or_later_is_free_from_the_year_it_is_left() {
 fn the_year_its_owner_turns_55_is_the_first_a_plan_can_be_left_in() {
     // Born June 1971: 55 in 2026, 59 and a half in December 2030.
     let left_at_55 = living_on_a_plan(1971, "separated = { date = 2026-03-01 }");
-    assert!(penalized_years(&run(&left_at_55), "k", 2026..=2031).is_empty());
+    assert_eq!(
+        penalized_years(&run(&left_at_55), "k", 2026..=2031),
+        [] as [i16; 0]
+    );
     let left_at_54 = living_on_a_plan(1971, "separated = { date = 2025-12-31 }");
     let projection = run(&left_at_54);
     assert_eq!(
@@ -148,7 +154,10 @@ fn the_year_its_owner_turns_55_is_the_first_a_plan_can_be_left_in() {
 fn a_job_left_before_the_plan_starts_frees_its_plan_from_the_first_year() {
     // Born June 1970: 55 in 2025.
     let already_left = living_on_a_plan(1970, "separated = { date = 2025-08-01 }");
-    assert!(penalized_years(&run(&already_left), "k", 2026..=2030).is_empty());
+    assert_eq!(
+        penalized_years(&run(&already_left), "k", 2026..=2030),
+        [] as [i16; 0]
+    );
 }
 
 #[test]
@@ -181,7 +190,10 @@ fn a_public_safety_plan_is_freed_from_50() {
     );
     let flagged = format!("{left_at_51}\npublic_safety = true");
     let left_at_51 = run(&living_on_a_plan(1975, &flagged));
-    assert!(penalized_years(&left_at_51, "k", 2026..=2035).is_empty());
+    assert_eq!(
+        penalized_years(&left_at_51, "k", 2026..=2035),
+        [] as [i16; 0]
+    );
     // Born June 1977: 49 in 2026.
     let left_at_49 = run(&living_on_a_plan(1977, &flagged));
     assert_eq!(

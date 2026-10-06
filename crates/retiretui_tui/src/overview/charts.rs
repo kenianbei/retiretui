@@ -345,11 +345,11 @@ end = { date = 2030-12-31 }
     fn no_salary_and_a_salary_paid_to_the_horizon_mark_nothing() {
         let mut unsalaried = test_projected();
         unsalaried.plan.income.clear();
-        assert!(salary_ends(&unsalaried).is_empty());
+        assert_eq!(salary_ends(&unsalaried), []);
         let working =
             projected_from(&TEST_PLAN.replace("end = { age = 60, owner = \"me\" }\n", ""));
         assert_eq!(working.plan.income[0].end, None);
-        assert!(salary_ends(&working).is_empty());
+        assert_eq!(salary_ends(&working), []);
     }
 
     #[test]

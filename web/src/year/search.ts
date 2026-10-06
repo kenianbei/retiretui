@@ -39,14 +39,21 @@ export function yearSearch(search: Record<string, unknown>): YearSearch {
 export interface LedgerSearch extends YearSearch {
   /** The market the plan is shown in: `trial-423`, `1929`; its own where none. */
   market?: string;
+  /** The whole year table in the year's place; the year in full where none. */
+  view?: "table";
+  /** The column set the table is under, as the client names it; its first where none. */
+  columns?: string;
 }
 
 /** The Ledger's search params from whatever the address holds. */
 export function ledgerSearch(search: Record<string, unknown>): LedgerSearch {
   const market = textOf(search.market);
+  const columns = textOf(search.columns);
   return {
     ...yearSearch(search),
     ...(market !== undefined && market !== "" && { market }),
+    ...(search.view === "table" && { view: "table" }),
+    ...(columns !== undefined && columns !== "" && { columns }),
   };
 }
 

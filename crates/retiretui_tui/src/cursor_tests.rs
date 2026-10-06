@@ -1,5 +1,5 @@
-//! The year cursor from every writer to every reader: the Ledger's table
-//! and its detail, a press on the Overview's chart, and Compare.
+//! The year cursor from every writer to every reader: the Ledger's years
+//! and the year beside them, a press on the Overview's chart, and Compare.
 
 use bevy_app::App;
 use plurimus::term::KeyCode;
@@ -19,19 +19,19 @@ fn cursor(app: &App) -> YearCursor {
     *app.world().resource::<YearCursor>()
 }
 
-/// Shows the Ledger, asserting its table, its To do and its Flows agree on
-/// the year.
+/// Shows the Ledger, asserting its list of years and the year in full
+/// beside it agree on the year.
 fn ledger_shows(app: &mut App) -> i16 {
     show(app, Page::Ledger);
     let year = ledger_year(app);
     let frame = redrawn(app);
-    assert!(frame.contains(&format!("{year} Flows")), "{year}: {frame}");
-    assert!(frame.contains(&format!("{year} To do")), "{year}: {frame}");
+    let to_do = format!("╭ To do in {year} ");
+    assert!(frame.contains(&to_do), "{year}: {frame}");
     year
 }
 
 #[test]
-fn a_year_moved_in_the_ledger_moves_its_to_do_and_its_flows() {
+fn a_year_moved_in_the_ledger_moves_the_year_beside_it() {
     let mut app = headless_app(SIZE);
     assert_eq!(ledger_shows(&mut app), TODAY.0);
     press_key(&mut app, KeyCode::Down);

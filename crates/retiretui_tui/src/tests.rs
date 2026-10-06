@@ -208,17 +208,16 @@ fn the_overview_renders_its_strip_its_chart_and_what_the_years_add_up_to() {
 }
 
 #[test]
-fn ledger_lists_years_and_detail_follows_the_cursor() {
-    // Roomy, so the detail's last lines are above its fold.
+fn the_ledger_lists_years_beside_the_cursor_year_in_full() {
     let mut app = headless_app(ROOMY);
     show(&mut app, Page::Ledger);
     app.update();
     let frame = composed_frame(&app);
-    assert!(frame.contains("2026"), "{frame}");
+    assert!(frame.contains("╭ Years "), "{frame}");
     assert!(frame.contains("Net worth"), "{frame}");
     assert!(
-        frame.contains("2026 Flows · today's dollars"),
-        "the pane names the cursor year and its dollars: {frame}"
+        frame.contains("╭ To do in 2026 ") && frame.contains("╭ So far · today's dollars "),
+        "the panes name the cursor year and their dollars: {frame}"
     );
     assert!(frame.contains("salary"), "{frame}");
     assert!(frame.contains("Spending"), "{frame}");
@@ -235,20 +234,20 @@ fn ledger_lists_years_and_detail_follows_the_cursor() {
         "arrow moves the cursor off the first year"
     );
     let frame = composed_frame(&app);
-    assert!(frame.contains("2027 Flows"), "{frame}");
-    assert!(frame.contains("2027 To do"), "{frame}");
-    press_key(&mut app, KeyCode::Tab);
-    let frame = composed_frame(&app);
-    assert!(frame.contains("↑↓ scroll"), "⇥ reaches the to-dos: {frame}");
-    press_key(&mut app, KeyCode::Tab);
-    let frame = composed_frame(&app);
-    assert!(frame.contains("↑↓ account"), "then the flows: {frame}");
-    press_key(&mut app, KeyCode::Tab);
-    let frame = composed_frame(&app);
-    assert!(
-        frame.contains("↑↓ line"),
-        "and then income and tax: {frame}"
-    );
+    assert!(frame.contains("╭ To do in 2027 "), "{frame}");
+    let walked = [
+        "↑↓ scroll",
+        "↑↓ line",
+        "↑↓ account",
+        "↑↓ line",
+        "↑↓ line",
+        "⏎ tax tables",
+    ];
+    for hint in walked {
+        press_key(&mut app, KeyCode::Tab);
+        let frame = composed_frame(&app);
+        assert!(frame.contains(hint), "⇥ walks the year's panes: {frame}");
+    }
 }
 
 #[test]
@@ -422,30 +421,4 @@ fn quitting_a_dirty_draft_asks_first() {
     press_key(&mut app, KeyCode::Char('q'));
     press_key(&mut app, KeyCode::Enter);
     assert!(app.should_exit().is_some());
-}
-
-#[test]
-fn the_detail_is_as_tall_as_its_year_needs_up_to_half_the_page() {
-    for size in [SIZE, ROOMY] {
-        let mut app = headless_app(size);
-        show(&mut app, Page::Ledger);
-        let detail_of = |frame: &str| {
-            let lines: Vec<&str> = frame.lines().collect();
-            let starts = |title: &str| lines.iter().position(|line| line.contains(title)).unwrap();
-            let (table_top, detail_top) = (starts("╭ Ledger"), starts("Flows ·"));
-            let key_row = lines.len() - 1;
-            (key_row - detail_top, key_row - table_top)
-        };
-        let (working, whole) = detail_of(&composed_frame(&app));
-        assert!(
-            working * 2 <= whole,
-            "{working} of {whole} rows at {size:?}"
-        );
-        press_key(&mut app, KeyCode::End);
-        let (retired, _) = detail_of(&composed_frame(&app));
-        assert!(
-            retired < working,
-            "a quieter year takes fewer rows: {retired} against {working} at {size:?}"
-        );
-    }
 }

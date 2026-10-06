@@ -4,6 +4,7 @@
 
 mod keymap;
 mod keys;
+mod ledger;
 mod pickers;
 mod table;
 mod tools;
@@ -47,6 +48,11 @@ pub const HELP: &str = "help";
 /// The commands a page says the key of, in a hint or in its help.
 pub const DOMAINS: &str = "domains";
 pub const LEDGER_PLAN: &str = "ledger-plan";
+pub const LEDGER_TABLE: &str = "ledger-table";
+pub const LEDGER_YEAR: &str = "ledger-year";
+pub const LEDGER_COLUMNS: &str = "ledger-columns";
+pub const LEDGER_YEARS: [&str; 2] = ["ledger-year-previous", "ledger-year-next"];
+pub const LEDGER_MARKED: [&str; 2] = ["ledger-marked-previous", "ledger-marked-next"];
 pub const COMPARE_WITH: &str = "compare-with";
 pub const COMPARE_OPEN: &str = "compare-open";
 pub const COMPARE_METRICS: [&str; 2] = ["compare-metric-previous", "compare-metric-next"];

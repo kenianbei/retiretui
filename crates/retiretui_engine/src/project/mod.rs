@@ -235,6 +235,9 @@ pub struct YearRow {
     pub total_income: Dollars,
     /// Spending for the year.
     pub expenses: Dollars,
+    /// What each expense spent, by expense id; one that spent nothing is
+    /// left out. They sum to `expenses`.
+    pub spending: BTreeMap<String, Dollars>,
     /// The part of `expenses` the plan marks essential.
     pub expenses_essential: Dollars,
     /// The part of `expenses` the household could spend more or less of:

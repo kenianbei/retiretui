@@ -393,6 +393,7 @@ pub const fn tab_title(tab: usize) -> &'static str {
 #[derive(Resource, Clone, Copy, PartialEq, Eq, Debug)]
 pub struct ActivePage(Page);
 
+#[cfg(test)]
 impl ActivePage {
     #[must_use]
     pub const fn page(self) -> Page {

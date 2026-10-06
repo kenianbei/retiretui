@@ -341,7 +341,7 @@ mod tests {
         let mut editor = Entry::open(*settings, document.draft(), Some(0));
         editor.set("inflation", None, "500%").expect("a field");
         assert_eq!(document.apply(&mut editor), Ok(Some(0)));
-        assert!(!document.issues().is_empty());
+        assert_ne!(document.issues(), []);
         assert!(document.projection().is_some(), "the last good view");
         assert!(saved(&mut document).is_err());
     }

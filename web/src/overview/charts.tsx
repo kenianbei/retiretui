@@ -54,14 +54,21 @@ interface ChartsProps {
   onYear: (year: number) => void;
 }
 
-/** Each series' figure under the pointer, signed where the plot is of
- * differences. */
+/** The year a plotted row is of, as a tooltip heads it. */
+function yearOf(row: unknown): string {
+  const year = (row as { year?: unknown } | undefined)?.year;
+  return typeof year === "number" ? String(year) : "";
+}
+
+/** The year under the pointer over each series' figure there, signed where
+ * the plot is of differences. */
 function tooltip(config: ChartConfig, isDifference: boolean) {
   const said = isDifference ? signedMoney : money;
   return (
     <ChartTooltip
       content={
         <ChartTooltipContent
+          labelFormatter={(_, [first]) => yearOf(first?.payload)}
           formatter={(value, name) => (
             <div className="flex w-full justify-between gap-4">
               <span className="text-muted-foreground">

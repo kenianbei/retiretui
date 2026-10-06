@@ -31,6 +31,15 @@ describe("ledgerSearch", () => {
     expect(ledgerSearch({ market: 1929 })).toEqual({ market: "1929" });
   });
 
+  it("keeps the table view and the column set it is under", () => {
+    expect(ledgerSearch({ view: "table", columns: "tax" })).toEqual({
+      view: "table",
+      columns: "tax",
+    });
+    expect(ledgerSearch({ view: "year", columns: "" })).toEqual({});
+    expect(ledgerSearch({ view: ["table"] })).toEqual({});
+  });
+
   it("drops a market that is not text, or is none", () => {
     expect(ledgerSearch({ market: ["1929"] })).toEqual({});
     expect(ledgerSearch({ market: "" })).toEqual({});

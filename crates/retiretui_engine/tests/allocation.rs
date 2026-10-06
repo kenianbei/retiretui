@@ -241,7 +241,7 @@ allocation = { stocks = 1.0 }
         stocks.volatility, None,
         "a stated table replaces the base's"
     );
-    assert!(plan.validate().is_empty());
+    assert_eq!(plan.validate(), []);
 }
 
 #[test]

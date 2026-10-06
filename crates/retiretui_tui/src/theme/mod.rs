@@ -37,6 +37,11 @@ pub struct WantedVariant(pub document::Variant);
 #[derive(SystemSet, Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct Repainted;
 
+/// The stripe of the terminal's own theme on a dark screen and on a light
+/// one: a step off black and a step off white on the grey ramp.
+const STRIPE_ON_DARK: Color = Color::Indexed(235);
+const STRIPE_ON_LIGHT: Color = Color::Indexed(254);
+
 /// The colours a screen names. A ground the theme leaves unset is the
 /// terminal's own.
 #[derive(Resource, Clone, PartialEq, Eq, Debug)]
@@ -89,6 +94,21 @@ impl Theme {
         }
     }
 
+    /// [`Self::terminal`] on a screen of `variant`, its tables banded in a
+    /// faint grey of the 256-colour ramp: the one ground it sets, since no
+    /// colour of the terminal's own sixteen is faint on every screen.
+    #[must_use]
+    pub fn terminal_on(variant: document::Variant) -> Self {
+        let stripe = match variant {
+            document::Variant::Dark => STRIPE_ON_DARK,
+            document::Variant::Light => STRIPE_ON_LIGHT,
+        };
+        Self {
+            stripe: Some(stripe),
+            ..Self::terminal()
+        }
+    }
+
     #[must_use]
     pub fn dimmed(&self) -> Style {
         Style::new().fg(self.dim)
@@ -114,6 +134,13 @@ impl Theme {
     pub fn striped(&self) -> Style {
         self.stripe
             .map_or_else(Style::new, |stripe| Style::new().bg(stripe))
+    }
+
+    /// The ground of a row left out of the banding, patched over a stripe
+    /// that would fall on it: the theme's own, or the terminal's.
+    #[must_use]
+    pub fn unbanded(&self) -> Style {
+        Style::new().bg(self.bg.unwrap_or(Color::Reset))
     }
 
     /// The colour of a chart's `index`th dataset, wrapping past the last.
@@ -171,10 +198,12 @@ fn wear_the_theme_set(
     mut commands: Commands,
 ) {
     let themes = library::Themes::beside(&settings);
-    match themes.resolve(&settings.theme, wanted.0) {
-        Ok(set) => *theme = set,
-        Err(error) => journal::warn(format!("config.toml: {error}")),
-    }
+    *theme = themes
+        .resolve(&settings.theme, wanted.0)
+        .unwrap_or_else(|error| {
+            journal::warn(format!("config.toml: {error}"));
+            Theme::terminal_on(wanted.0)
+        });
     commands.insert_resource(themes);
 }
 

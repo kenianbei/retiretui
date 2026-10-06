@@ -1,197 +1,167 @@
 //! The Ledger's Flows pane: each account's year from its open to its
-//! close, with what came in and went out and from or to where, over the
-//! year's warnings.
+//! close, with what came in and went out named by where from or to, and
+//! every account as one beneath them; as tall as its rows, and giving them
+//! up before the money under it loses its own.
 
 use bevy_app::{App, Update};
-use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::ChildOf;
-use bevy_ecs::prelude::{Commands, Component, Entity, IntoScheduleConfigs, Query, Res, With};
-use bevy_ui::Node;
-use plurimus::core::UiWidget;
+use bevy_ecs::prelude::{Commands, Component, Entity, IntoScheduleConfigs, Local, Query, With};
+use bevy_ui::{Node, Val};
 use plurimus::core::ratatui_core::layout::Constraint;
-use plurimus::core::ratatui_core::text::Line;
-use plurimus::ui::ScrollArea;
-use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
-use plurimus::widgets::{TableColumns, WidgetSystems};
-use retiretui_client::ledger::{FLOW_HEADERS, FLOWS, account_flows};
-use retiretui_engine::plan::Plan;
-use retiretui_engine::project::YearRow;
+use plurimus::ui::{ComputedWidgetArea, ScrollArea};
+use plurimus::widgets::TableColumns;
+use retiretui_client::ledger::{AccountFlows, FLOW_COLUMNS, FLOWS, Year};
 
-use crate::actions::collect_warnings;
+use super::arrange::DetailStop;
+use super::{Detail, LedgerSystems, shows_the_year};
+use crate::edit::table_bundle;
+use crate::hints::Hints;
+use crate::layout::{self, filling, placed};
+use crate::pane::{self, Pane};
+use crate::tabulate;
 
-use super::super::edit::table_bundle;
-use super::super::hints::Hints;
-use super::super::layout::{self, filling, fixed, placed};
-use super::super::nav::FocusStop;
-use super::super::pane::{Framed, Pane};
-use super::super::present;
-use super::super::session::{Session, Shown};
-use super::super::tabulate;
-use super::super::theme::{Repainted, Theme};
-use super::DETAIL_GAP;
-
-pub fn plugin(app: &mut App) {
-    app.add_systems(
-        Update,
-        (refresh_flows, refresh_warnings)
-            .in_set(super::split::DetailFilled)
-            .before(Repainted)
-            .before(WidgetSystems::Layout),
-    );
+pub(super) fn plugin(app: &mut App) {
+    let drawn = refresh.run_if(shows_the_year);
+    app.add_systems(Update, drawn.in_set(LedgerSystems::Draw));
 }
 
-/// In and Out share what the name and the figures leave, so a narrow pane
-/// clips the end of a flow rather than every column.
-const FLOW_COLUMNS: [usize; 2] = [2, 3];
-
-#[derive(Component)]
-struct FlowsPane;
+/// The cells between the columns, past the one the table leaves.
+const FLOW_GAP: u16 = 1;
+/// Moves take what the name and the figures leave, so a narrow pane clips
+/// the end of a move rather than every column.
+const MOVES: usize = 2;
+/// The rows the pane keeps, borders included, however short the page.
+const FLOWS_LEAST: f32 = 5.0;
+const HEADER_ROWS: usize = 1;
 
 #[derive(Component)]
 struct FlowsTable;
 
-#[derive(Component)]
-struct FlowWarnings;
-
-const WARNING_MARK: &str = "! ";
-
-pub(super) fn spawn_pane(commands: &mut Commands, parent: Entity) {
-    let pane = Pane::new(FLOWS).sharing(1.0).spawn(commands, parent);
-    commands.entity(pane).insert(FlowsPane);
+pub(super) fn spawn_pane(commands: &mut Commands, detail: Entity) {
+    let pane = Pane::new(FLOWS)
+        .tall(f32::from(pane::BORDERS))
+        .shrinking_to(FLOWS_LEAST)
+        .spawn(commands, detail);
     commands.spawn((
         table_bundle(),
         FlowsTable,
-        FocusStop,
+        DetailStop,
         Hints(&[("↑↓", "account")]),
         layout::Rests,
         filling(),
         placed(),
         ChildOf(pane),
     ));
-    commands.spawn((
-        FlowWarnings,
-        fixed(0.0),
-        UiWidget::default(),
-        placed(),
-        ChildOf(pane),
-    ));
 }
 
-fn refresh_flows(
-    shown: Shown,
-    mut tables: Query<(Entity, &mut ScrollArea), With<FlowsTable>>,
-    mut panes: Query<&mut Framed, With<FlowsPane>>,
+/// A row per account the year touches, in the plan's order, a line more
+/// under it for each further move, and then every account as one; the
+/// growth beside its rate where `has_rate`.
+fn flow_rows(year: &Year, has_rate: bool) -> Vec<Vec<String>> {
+    let accounts = year.flows.iter();
+    accounts
+        .flat_map(|flows| account_lines(flows, has_rate))
+        .collect()
+}
+
+/// The account's name, open, growth and close beside its first move, then
+/// a line per further move, blank but for it.
+fn account_lines(flows: &AccountFlows, has_rate: bool) -> Vec<Vec<String>> {
+    let growth = if has_rate {
+        &flows.growth_and_rate
+    } else {
+        &flows.growth
+    };
+    let first = flows.moves.first().cloned().unwrap_or_default();
+    let figures = [&flows.account, &flows.open, &first, growth, &flows.close];
+    let further = flows.moves.iter().skip(1).map(|moved| {
+        let mut line = vec![String::new(); FLOW_COLUMNS.len()];
+        line[MOVES].clone_from(moved);
+        line
+    });
+    let figures = figures.into_iter().cloned().collect();
+    std::iter::once(figures).chain(further).collect()
+}
+
+/// The columns as wide as what they hold, and the cells all of them take
+/// with the one the table leaves between each.
+fn measured(header: &[String], rows: &[Vec<String>]) -> (Vec<Constraint>, u16) {
+    let TableColumns(widths) = tabulate::columns((header, rows), FLOW_GAP);
+    let held = widths.iter().map(|width| match width {
+        Constraint::Length(cells) => *cells,
+        _ => 0,
+    });
+    let between = u16::try_from(widths.len().saturating_sub(1)).unwrap_or(u16::MAX);
+    let cells = held.sum::<u16>().saturating_add(between);
+    (widths, cells)
+}
+
+/// The year's rows and their columns in `width` cells: the growth beside
+/// its rate where every move's name still fits, and alone where not.
+fn fitted(year: &Year, header: &[String], width: u16) -> (Vec<Vec<String>>, Vec<Constraint>) {
+    let rows = flow_rows(year, true);
+    let (widths, cells) = measured(header, &rows);
+    if cells <= width {
+        return (rows, widths);
+    }
+    let rows = flow_rows(year, false);
+    let (widths, _) = measured(header, &rows);
+    (rows, widths)
+}
+
+/// Rewrites the rows whenever the year said or the pane's width moves:
+/// the growth loses its rate before a move's name is clipped, and the pane
+/// is as tall as its rows.
+fn refresh(
+    detail: Detail,
+    mut drawn: Local<Option<u16>>,
+    mut tables: Query<(Entity, &ChildOf, &mut ScrollArea, &ComputedWidgetArea), With<FlowsTable>>,
+    mut panes: Query<&mut Node>,
     mut commands: Commands,
 ) {
-    if !shown.is_changed() {
-        return;
-    }
-    let Some(row) = shown.row() else {
+    let Ok((table, pane, mut scroll, area)) = tables.single_mut() else {
         return;
     };
-    let previous = shown.ledger().projection.row(row.year - 1);
-    let rows = flow_rows(&shown.ledger().plan, previous, row, shown.basis.nominal);
-    let header = FLOW_HEADERS.map(|(header, _)| header.to_owned());
-    let text: Vec<usize> = (FLOW_HEADERS.iter().enumerate())
+    let width = layout::row_width(*scroll, *area);
+    let is_resized = drawn.replace(width) != Some(width);
+    let Some((year, _)) = detail.due(is_resized) else {
+        return;
+    };
+    let header = FLOW_COLUMNS.map(|(header, _)| header.to_owned());
+    let (rows, mut widths) = fitted(year, &header, width);
+    widths[MOVES] = Constraint::Fill(1);
+    let text: Vec<usize> = (FLOW_COLUMNS.iter().enumerate())
         .filter_map(|(at, &(_, is_figure))| (!is_figure).then_some(at))
         .collect();
-    let TableColumns(mut widths) = tabulate::columns((&header, &rows), DETAIL_GAP);
-    for at in FLOW_COLUMNS {
-        widths[at] = Constraint::Fill(1);
-    }
-    for (table, mut scroll) in &mut tables {
-        commands.entity(table).insert(TableColumns(widths.clone()));
-        let scrolled = (table, &mut *scroll);
-        tabulate::refill(&mut commands, scrolled, (&header, &rows), &text);
-    }
-    let title = format!(
-        "{} {FLOWS} · {}",
-        row.year,
-        present::basis_name(shown.basis.nominal)
+    commands.entity(table).insert(TableColumns(widths));
+    tabulate::refill(
+        &mut commands,
+        (table, &mut *scroll),
+        (&header, &rows),
+        &text,
     );
-    for mut framed in &mut panes {
-        Framed::retitle(&mut framed, &title);
+    let lines = u16::try_from(rows.len() + HEADER_ROWS).unwrap_or(u16::MAX);
+    let height = Val::Px(f32::from(lines + pane::BORDERS));
+    if let Ok(mut node) = panes.get_mut(pane.parent())
+        && node.height != height
+    {
+        node.height = height;
     }
-}
-
-fn refresh_warnings(
-    shown: Shown,
-    session: Res<Session>,
-    theme: Res<Theme>,
-    mut texts: Query<(&mut UiWidget, &mut Node), With<FlowWarnings>>,
-) {
-    if !shown.is_changed() && !theme.is_changed() {
-        return;
-    }
-    let Some(row) = shown.row() else {
-        return;
-    };
-    let ledger = shown.ledger();
-    let deflating = (!shown.basis.nominal).then_some(&ledger.projection);
-    let warnings = collect_warnings(&ledger.plan, &session.tables, row, deflating);
-    let lines: Vec<Line<'static>> = warnings
-        .into_iter()
-        .map(|warning| Line::styled(format!("{WARNING_MARK}{warning}"), theme.exceeded()))
-        .collect();
-    let height = f32::from(u16::try_from(lines.len()).unwrap_or(u16::MAX));
-    for (mut widget, mut node) in &mut texts {
-        *node = fixed(height);
-        *widget = UiWidget::new(Paragraph::new(lines.clone()));
-    }
-}
-
-/// A row per account the year touches, in the plan's order, and a line
-/// more under it for each further flow in or out.
-fn flow_rows(
-    plan: &Plan,
-    previous: Option<&YearRow>,
-    row: &YearRow,
-    is_nominal: bool,
-) -> Vec<Vec<String>> {
-    account_flows(plan, previous, row, is_nominal)
-        .into_iter()
-        .flat_map(|flows| {
-            let figures = [flows.account, flows.open, flows.growth, flows.close];
-            account_lines(figures, flows.ins, flows.outs)
-        })
-        .collect()
-}
-
-/// The account's name, open, growth and close beside its first flow in and
-/// out, then a line per further flow, blank but for them.
-fn account_lines(figures: [String; 4], ins: Vec<String>, outs: Vec<String>) -> Vec<Vec<String>> {
-    let lines = ins.len().max(outs.len()).max(1);
-    let mut figures = Some(figures);
-    let mut ins = ins.into_iter();
-    let mut outs = outs.into_iter();
-    (0..lines)
-        .map(|_| {
-            let [name, open, growth, close] = figures.take().unwrap_or_default();
-            let (came, went) = (ins.next(), outs.next());
-            vec![
-                name,
-                open,
-                came.unwrap_or_default(),
-                went.unwrap_or_default(),
-                growth,
-                close,
-            ]
-        })
-        .collect()
 }
 
 #[cfg(test)]
 mod tests {
+    use retiretui_client::ledger::Asked;
     use retiretui_engine::params::TaxTables;
-    use retiretui_engine::project::{Action, ContributionNote, deflate};
+    use retiretui_engine::project::{Action, ContributionNote};
 
-    use super::super::super::support::{TEST_PLAN, projected_from, test_projected};
     use super::*;
-    use crate::table::money;
+    use crate::support::test_projected;
 
-    fn busy_year(row: &YearRow) -> YearRow {
-        let mut row = row.clone();
-        row.actions = vec![
+    /// The test plan's second year with one of every kind of action.
+    fn busy_year() -> Year {
+        let mut projected = test_projected();
+        projected.projection.years[1].actions = vec![
             Action::Contribution {
                 account: "k".to_owned(),
                 employee: 20_000,
@@ -223,98 +193,59 @@ mod tests {
                 amount: 500,
             },
         ];
-        row
+        let asked = Asked {
+            year: 2027,
+            is_nominal: true,
+            run: None,
+        };
+        Year::new(&projected, &TaxTables::embedded(), asked).unwrap()
     }
 
     #[test]
-    fn a_warning_names_its_amount_in_the_basis_shown() {
-        let short = TEST_PLAN.replace("amount = 60000", "amount = 600000");
-        let projected = projected_from(&short);
-        let row = &projected.projection.years[5];
-        assert!(row.unfunded > 0, "a year that runs short");
-        let tables = TaxTables::embedded();
-        let deflating = Some(&projected.projection);
-        let said = collect_warnings(&projected.plan, &tables, row, deflating).join("\n");
-        let deflated = money(deflate(row.unfunded, row.deflator));
-        assert!(said.contains(&deflated), "{said}");
-        assert!(!said.contains(&money(row.unfunded)), "{said}");
-    }
-
-    #[test]
-    fn an_account_takes_a_line_per_flow_named_by_where_it_went() {
-        let projected = test_projected();
-        let years = &projected.projection.years;
-        let row = busy_year(&years[1]);
-        let rows = flow_rows(&projected.plan, Some(&years[0]), &row, true);
-        let texts: Vec<[&str; 2]> = rows.iter().map(|line| [&*line[2], &*line[3]]).collect();
+    fn an_account_takes_a_line_per_move_named_by_where_it_went() {
+        let rows = flow_rows(&busy_year(), true);
+        let moves: Vec<&str> = rows.iter().map(|line| &*line[MOVES]).collect();
         assert_eq!(
-            texts,
+            moves[..7],
             [
-                ["+$7,000 ← k (conversion)", "-$1,000 for spending"],
-                ["+$500 surplus", ""],
-                [
-                    "+$20,000 yours · the maximum",
-                    "-$7,000 → cash (conversion)"
-                ],
-                [
-                    "+$5,000 employer · 50% match up to 6% of salary",
-                    "-$3,000 RMD"
-                ],
+                "+$7,000 ← k (conversion)",
+                "+$500 surplus",
+                "-$1,000 for spending",
+                "+$20,000 yours · the maximum",
+                "+$5,000 employer · 50% match up to 6% of salary",
+                "-$7,000 → cash (conversion)",
+                "-$3,000 RMD",
             ],
             "{rows:?}"
         );
-        assert_eq!(rows[0][0], "cash");
-        assert!(rows[0][4].is_empty(), "no growth is left blank");
-        assert!(rows[1][0].is_empty() && rows[1][1].is_empty() && rows[1][5].is_empty());
-        assert_eq!(rows[2][0], "k");
-        assert_eq!(rows[2][1], present::money(years[0].balances["k"]));
-        assert_eq!(rows[2][4], format!("+{}", present::money(row.growth["k"])));
-    }
-
-    #[test]
-    fn every_action_of_every_year_is_a_flow() {
-        let projected = projected_from(include_str!(
-            "../../../retiretui_engine/tests/fixtures/full.toml"
-        ));
-        let years = &projected.projection.years;
-        for (at, row) in years.iter().enumerate() {
-            let previous = at.checked_sub(1).map(|before| &years[before]);
-            let rows = flow_rows(&projected.plan, previous, row, true);
-            let flows: Vec<&str> = rows
-                .iter()
-                .flat_map(|line| [&*line[2], &*line[3]])
-                .collect();
-            let amounts = row.actions.iter().flat_map(|action| match action {
-                Action::Contribution {
-                    employee, employer, ..
-                } => vec![*employee, *employer],
-                Action::Transfer { amount, .. }
-                | Action::Conversion { amount, .. }
-                | Action::Rmd { amount, .. }
-                | Action::Withdrawal { amount, .. }
-                | Action::Surplus { amount, .. } => vec![*amount],
-            });
-            for amount in amounts.filter(|&amount| amount > 0) {
-                let said = present::money(amount);
-                assert!(
-                    flows.iter().any(|flow| flow.contains(&said)),
-                    "{} {said}: {flows:?}",
-                    row.year
-                );
-            }
+        assert_eq!((&*rows[0][0], &*rows[3][0]), ("cash", "k"));
+        for further in [1, 2, 4, 5, 6] {
+            let line = &rows[further];
+            let blank = [0, 1, 3, 4].iter().all(|&at| line[at].is_empty());
+            assert!(blank, "a further move stands alone: {line:?}");
         }
+        assert_eq!(rows.last().unwrap()[0], "All accounts");
+        assert_eq!(rows.len(), 8, "{rows:?}");
     }
 
     #[test]
-    fn the_first_year_opens_on_the_plan_and_figures_follow_the_basis() {
-        let projected = test_projected();
-        let years = &projected.projection.years;
-        let first = flow_rows(&projected.plan, None, &years[0], true);
-        assert_eq!(first[1][1], "$200,000", "{first:?}");
-        let later = &years[5];
-        assert_ne!(
-            flow_rows(&projected.plan, Some(&years[4]), later, true),
-            flow_rows(&projected.plan, Some(&years[4]), later, false)
+    fn growth_is_said_beside_its_rate_only_where_there_is_room() {
+        let year = busy_year();
+        let grown = |has_rate| flow_rows(&year, has_rate)[3][3].clone();
+        let (with, without) = (grown(true), grown(false));
+        assert!(with.starts_with(&without) && with.ends_with('%'), "{with}");
+        assert!(
+            without.starts_with("+$") && !without.contains('%'),
+            "{without}"
         );
+        let header = FLOW_COLUMNS.map(|(header, _)| header.to_owned());
+        let (_, wide) = measured(&header, &flow_rows(&year, true));
+        let (widths, narrow) = measured(&header, &flow_rows(&year, false));
+        assert!(narrow < wide, "{narrow} against {wide}");
+        assert_eq!(widths.len(), FLOW_COLUMNS.len());
+        let has_rate = |width| fitted(&year, &header, width).0[3][3].ends_with('%');
+        assert!(has_rate(wide), "what fits exactly keeps its rate");
+        assert!(!has_rate(wide - 1), "a move's name outranks the rate");
+        assert!(!has_rate(0));
     }
 }

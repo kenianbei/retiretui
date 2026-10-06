@@ -253,7 +253,7 @@ mod tests {
         let needed = width_of(&LEADING[..2]) + width_of(&FINDERS) + 2 * EDGE + HINT_GAP;
         assert_eq!(fitted(LEADING.to_vec(), &FINDERS, needed), LEADING[..2]);
         assert_eq!(fitted(LEADING.to_vec(), &FINDERS, needed - 1), LEADING[..1]);
-        assert!(fitted(LEADING.to_vec(), &FINDERS, 0).is_empty());
+        assert_eq!(fitted(LEADING.to_vec(), &FINDERS, 0), []);
     }
 
     #[test]

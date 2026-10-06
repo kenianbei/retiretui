@@ -51,6 +51,9 @@ impl Simulation<'_> {
             }
             let spent = scale(expense.amount, self.cola_factor(expense.cola, year));
             acc.expenses += spent;
+            if spent != 0 {
+                acc.spending.insert(expense.id.clone(), spent);
+            }
             if expense.essential {
                 acc.essential += spent;
             } else if expense.is_flexible() {

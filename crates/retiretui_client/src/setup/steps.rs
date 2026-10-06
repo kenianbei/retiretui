@@ -80,7 +80,7 @@ mod tests {
 
     #[test]
     fn only_a_joint_filer_is_asked_about_a_partner() {
-        assert!(shown("single").is_empty());
+        assert_eq!(shown("single"), [] as [&str; 0]);
         assert_eq!(shown("married-joint").len(), 7);
     }
 
