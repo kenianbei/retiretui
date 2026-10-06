@@ -164,14 +164,15 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     outside the engine must add it.
   - The engine's `YearRow` gains `expenses_essential`, `expenses_flexible` and
     `spending`, what each expense spent by its id, so a struct literal of one
-    written outside the engine must add them. The JSON that `project` prints and
-    the MCP server returns gains `spending` in every year.
+    written outside the engine must add them. The JSON `project` prints, and the
+    rows the MCP server's `project` returns in full, gain `spending` in every
+    year.
   - The client's `actions::year_in_words` is gone. `actions::actions_said` says
     a year's actions, and `actions::collect_warnings` still gathers what to
     watch.
   - The client's `ledger` module is recast. `ledger_headers`, `income_and_tax`,
     `FLOW_HEADERS` and `INCOME_AND_TAX` are gone, and `AccountFlows` trades
-    `ins` and `outs` for `moves` and gains `growth_rate`. `ledger::Table` is
+    `ins` and `outs` for `moves` and gains `growth_and_rate`. `ledger::Table` is
     every year under a `ColumnSet`, `ledger::Year` is one year in full, and
     `ledger::History` is a money pane across the years.
   - The terminal planner's `overview-year-previous` and `overview-year-next`
@@ -265,12 +266,12 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     `]`, and `{` and `}` step to the nearest year with a mark. The web app has a
     pair of buttons for the marked years beside its year stepper, and `←` and
     `→` step the year as they did.
-  - A market run opened from a market tool lands on the year in full and is
-    named in its pane's title, and in the table's.
+  - A market run opened from a market tool lands on the year in full, and the
+    year's title names it on both surfaces, as the table's does in the terminal.
 - Tables are banded. The web app shades every second row of every table. The
   terminal's own theme, the default, bands its tables in a faint grey chosen for
   a dark or a light screen; a named theme bands them in its own stripe as
-  before, and a theme file that names no `stripe` has none.
+  before, and a theme file of your own that names no `stripe` has none.
 - The help picker names Tab and Enter by the glyphs the key row uses, `⇥` and
   `⏎`, where it said `tab`, `shift-tab` and `enter`.
 
