@@ -164,6 +164,17 @@ pub fn held_contributions(row: &YearRow) -> impl Iterator<Item = (&str, Held)> {
     })
 }
 
+/// Whether [`collect_warnings`] has anything to say of `row`, without
+/// saying it.
+#[must_use]
+pub fn has_warnings(plan: &Plan, tables: &TaxTables, row: &YearRow) -> bool {
+    row.unfunded > 0
+        || row.taxes.penalty > 0
+        || row.medicare > 0
+        || held_contributions(row).next().is_some()
+        || irmaa_purchase(plan, tables, row.year, row.taxes.magi) > 0
+}
+
 /// The year's warnings, each amount in the dollars of the year it is paid
 /// in, or in today's through `deflating`'s deflators where one is given.
 #[must_use]
@@ -237,5 +248,50 @@ mod tests {
         assert_eq!(row.taxes.penalty, 0);
         let said = collect_warnings(&unpenalized.plan, &tables, row, None);
         assert!(!said.iter().any(|line| line.starts_with(PENALTY_PAID)));
+    }
+
+    #[test]
+    fn a_year_has_warnings_exactly_where_it_says_any() {
+        let tables = TaxTables::embedded();
+        let retired = crate::setup::EXAMPLES.iter();
+        let (.., retired) = retired
+            .clone()
+            .find(|each| each.0 == "retired-couple.toml")
+            .unwrap();
+        let projected = projected_from(retired);
+        let plan = &projected.plan;
+        let quiet = (projected.projection.years.iter())
+            .find(|row| collect_warnings(plan, &tables, row, None).is_empty())
+            .expect("a year with nothing to watch");
+        assert!(!has_warnings(plan, &tables, quiet));
+        let held = Action::Contribution {
+            account: plan.accounts[0].id.clone(),
+            employee: 1,
+            employer: 0,
+            notes: vec![ContributionNote::HeldToLimit],
+        };
+        let alone: [fn(&mut YearRow); 4] = [
+            |row| row.unfunded = 1,
+            |row| row.taxes.penalty = 1,
+            |row| row.medicare = 1,
+            |row| row.taxes.magi = 5_000_000,
+        ];
+        let mut rows: Vec<YearRow> = alone
+            .into_iter()
+            .map(|change| {
+                let mut row = quiet.clone();
+                change(&mut row);
+                row
+            })
+            .collect();
+        rows.push(YearRow {
+            actions: vec![held],
+            ..quiet.clone()
+        });
+        for row in &rows {
+            let said = collect_warnings(plan, &tables, row, None);
+            assert_eq!(said.len(), 1, "one thing to watch: {said:?}");
+            assert!(has_warnings(plan, &tables, row), "{said:?}");
+        }
     }
 }

@@ -22,9 +22,17 @@ ins: Array<string>,
  */
 outs: Array<string>, 
 /**
+ * What came in and then what went out, said.
+ */
+moves: Array<string>, 
+/**
  * What it grew, signed; blank where it did not.
  */
 growth: string, 
+/**
+ * What it grew over what it opened on; blank where it opened empty.
+ */
+growth_rate: string, 
 /**
  * Its balance as the year closed.
  */
