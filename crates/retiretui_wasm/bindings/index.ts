@@ -27,6 +27,8 @@ export type { Example } from "./Example";
 export type { FailingStart } from "./FailingStart";
 export type { FieldView } from "./FieldView";
 export type { Funds } from "./Funds";
+export type { HistoryChart } from "./HistoryChart";
+export type { HistoryYear } from "./HistoryYear";
 export type { Issue } from "./Issue";
 export type { LadderOption } from "./LadderOption";
 export type { LadderWords } from "./LadderWords";

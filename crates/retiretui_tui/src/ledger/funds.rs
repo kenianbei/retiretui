@@ -4,21 +4,23 @@
 //! clips.
 
 use bevy_app::{App, Update};
+use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::{ChildOf, Children};
-use bevy_ecs::prelude::{Commands, Component, Entity, IntoScheduleConfigs, Query};
+use bevy_ecs::prelude::{Commands, Component, Entity, IntoScheduleConfigs, Query, Res, With};
+use bevy_ui::{FlexDirection, Node, Val};
 use plurimus::core::ratatui_core::layout::Constraint;
 use plurimus::core::ratatui_core::text::Line;
 use plurimus::ui::{ScrollArea, UiStyle};
 use plurimus::widgets::{ActiveDescendant, TableColumns, table_row};
 use retiretui_client::ledger::{DetailLine, Funds, MONEY_IN, MONEY_OUT, TAX, Year};
 
-use super::arrange::DetailStop;
+use super::arrange::{DetailStop, Roomy};
 use super::{Detail, LedgerSystems};
 use crate::edit::table_bundle;
 use crate::hints::Hints;
 use crate::layout::{self, filling, placed};
 use crate::nav::Page;
-use crate::pane::Pane;
+use crate::pane::{self, Pane};
 use crate::tools::{EnterRuns, handle_enter};
 
 pub(super) fn plugin(app: &mut App) {
@@ -39,7 +41,21 @@ const PANES: [(Said, &str); 3] = [
     (Said::Tax, TAX),
 ];
 
-pub(super) fn spawn_panes(commands: &mut Commands, row: Entity) {
+/// The rows the three panes keep, borders included, however many
+/// accounts the year touches.
+const FUNDS_LEAST: f32 = 7.0;
+
+/// The row the three panes stand in.
+#[derive(Component)]
+struct FundsRow;
+
+pub(super) fn spawn_panes(commands: &mut Commands, detail: Entity) {
+    let row = Node {
+        flex_direction: FlexDirection::Row,
+        min_height: Val::Px(FUNDS_LEAST),
+        ..Node::default()
+    };
+    let row = commands.spawn((row, FundsRow, ChildOf(detail))).id();
     for (said, title) in PANES {
         let pane = Pane::new(title).sharing(1.0).spawn(commands, row);
         let mut table = commands.spawn((
@@ -111,19 +127,37 @@ impl Said {
     }
 }
 
-/// Rewrites each pane whenever the year said moves. The label gives way to
-/// the amount, which is as wide as the widest of them.
+/// The row as tall as its longest pane where the histories stand under
+/// it, and taking what the page leaves where they do not.
+fn fit(node: &mut Node, longest: usize, is_roomy: bool) {
+    let rows = u16::try_from(longest)
+        .unwrap_or(u16::MAX)
+        .saturating_add(pane::BORDERS);
+    let (height, grow, basis) = if is_roomy {
+        (Val::Px(f32::from(rows)), 0.0, Val::Auto)
+    } else {
+        (Val::Auto, 1.0, Val::Px(0.0))
+    };
+    (node.height, node.flex_grow, node.flex_basis) = (height, grow, basis);
+}
+
+/// Rewrites each pane whenever the year said moves, or the page gains or
+/// loses the room for the histories. The label gives way to the amount,
+/// which is as wide as the widest of them.
 fn refresh(
-    mut detail: Detail,
+    (mut detail, roomy): (Detail, Res<Roomy>),
     mut tables: Query<(Entity, &Said, &mut ScrollArea)>,
+    mut funds_rows: Query<&mut Node, With<FundsRow>>,
     mut commands: Commands,
 ) {
     let dimmed = detail.theme.dimmed();
-    let Some(year) = detail.due(false) else {
+    let Some(year) = detail.due(roomy.is_changed()) else {
         return;
     };
+    let mut longest = 0;
     for (table, said, mut scroll) in &mut tables {
         let rows = said.rows(year);
+        longest = longest.max(rows.len());
         let amounts = rows.iter().filter_map(Row::line);
         let amounts = amounts.map(|line| line.amount.chars().count());
         let widest = u16::try_from(amounts.max().unwrap_or(0)).unwrap_or(u16::MAX);
@@ -145,6 +179,9 @@ fn refresh(
             .entity(table)
             .insert((TableColumns(columns), ActiveDescendant(first)));
         scroll.content_size.height = u16::try_from(rows.len()).unwrap_or(u16::MAX);
+    }
+    for mut node in &mut funds_rows {
+        fit(&mut node, longest, roomy.0);
     }
 }
 

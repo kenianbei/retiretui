@@ -6,6 +6,7 @@
 mod arrange;
 mod flows;
 mod funds;
+mod history;
 mod year;
 mod years;
 
@@ -19,7 +20,7 @@ use bevy_ecs::prelude::{
     Commands, Entity, IntoScheduleConfigs, Local, Query, Res, ResMut, Resource, SystemSet, With,
 };
 use bevy_ecs::system::SystemParam;
-use bevy_ui::{FlexDirection, Node, Val};
+use bevy_ui::{FlexDirection, Node};
 use plurimus::widgets::WidgetSystems;
 use retiretui_client::ledger::{Asked, ColumnSet, Table, Year};
 
@@ -53,6 +54,7 @@ pub fn plugin(app: &mut App) {
         year::plugin,
         flows::plugin,
         funds::plugin,
+        history::plugin,
     ));
     app.add_systems(Startup, spawn_ledger.after(layout::spawn_frame));
     app.add_systems(
@@ -106,10 +108,6 @@ const PAGE_HINTS: &[CommandHint] = &[
     },
 ];
 
-/// The rows the three panes under the flows keep, borders included,
-/// however many accounts the year touches.
-const FUNDS_LEAST: f32 = 7.0;
-
 fn spawn_ledger(bodies: Query<Entity, With<Body>>, mut commands: Commands) {
     let Ok(body) = bodies.single() else {
         return;
@@ -125,15 +123,8 @@ fn spawn_ledger(bodies: Query<Entity, With<Body>>, mut commands: Commands) {
     let detail = arrange::spawn_detail(&mut commands, across);
     year::spawn_pane(&mut commands, detail);
     flows::spawn_pane(&mut commands, detail);
-    let funds = Node {
-        flex_direction: FlexDirection::Row,
-        flex_grow: 1.0,
-        flex_basis: Val::Px(0.0),
-        min_height: Val::Px(FUNDS_LEAST),
-        ..Node::default()
-    };
-    let funds = commands.spawn((funds, ChildOf(detail))).id();
-    funds::spawn_panes(&mut commands, funds);
+    funds::spawn_panes(&mut commands, detail);
+    history::spawn_row(&mut commands, detail);
 }
 
 /// The `ledger-plan` command: the plan's own projection back in the

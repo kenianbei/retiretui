@@ -58,6 +58,12 @@ assert.ok(detail.flows.length > 0);
 assert.equal(detail.money_in.total.amount, detail.money_out.total.amount);
 assert.ok(detail.bracket.label.startsWith("To top of "));
 assert.throws(() => document.ledgerYear(first.year - 99, true));
+const histories = document.ledgerHistories(true);
+assert.deepEqual(
+  histories.map(({ title }) => title),
+  ["Money in by year", "Money out by year", "Tax by year"],
+);
+assert.equal(histories[0].years[0].year, first.year);
 const [before, after] = document.markedYears(first.year);
 assert.equal(before, null);
 assert.ok(after > first.year);

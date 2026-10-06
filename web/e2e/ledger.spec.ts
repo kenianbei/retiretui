@@ -135,6 +135,21 @@ test("the Ledger says what to do in its year, in the dollars shown", async ({
   await expect(first).not.toHaveText(today ?? "");
   await page.getByRole("button", { name: "The year after" }).click();
   await expect(yearShown(page, "2046", "future dollars")).toBeVisible();
+  for (const title of ["Money in", "Money out", "Tax"]) {
+    const history = page.getByRole("img", { name: `${title} by year` });
+    await expect(history).toBeVisible();
+  }
+  const plot = page
+    .getByRole("img", { name: "Tax by year" })
+    .locator(".recharts-surface");
+  await plot.scrollIntoViewIfNeeded();
+  const box = await plot.boundingBox();
+  if (!box) throw new Error("the history has no box");
+  await page.mouse.click(box.x + box.width * 0.5, box.y + box.height * 0.5);
+  await page.waitForURL((url) => !url.hash.includes("year=2046"));
+  const pressed = /year=(\d{4})/.exec(page.url())?.[1] ?? "";
+  await expect(yearShown(page, pressed, "future dollars")).toBeVisible();
+  await page.goto("#/ledger?year=2046&basis=nominal");
   await page.getByRole("link", { name: "Tax tables for 2046" }).click();
   await page.waitForURL(/#\/tools\/tax-tables\?.*year=2046/);
   expect(page.url()).toContain("basis=nominal");

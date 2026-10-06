@@ -371,3 +371,43 @@ fn a_year_says_who_turns_what_its_milestones_and_what_to_do() {
     };
     assert_eq!(Year::new(&projected, &tables, outside), None);
 }
+
+#[test]
+fn a_history_charts_two_figures_of_every_year_on_the_basis_asked() {
+    let projected = full();
+    let projection = &projected.projection;
+    let titles: Vec<&str> = History::ALL.iter().map(|each| each.title()).collect();
+    assert_eq!(
+        titles,
+        ["Money in by year", "Money out by year", "Tax by year"]
+    );
+    let row = projection.row(2045).unwrap();
+    let wanted = [
+        (
+            History::MoneyIn,
+            ["Income", "Withdrawn"],
+            [row.total_income, row.total_withdrawals()],
+        ),
+        (
+            History::MoneyOut,
+            ["Spending", "Tax"],
+            [row.expenses, row.taxes.total],
+        ),
+        (
+            History::Tax,
+            ["MAGI", "Taxable income"],
+            [row.taxes.magi, row.taxes.ordinary_taxable],
+        ),
+    ];
+    for (history, lines, figures) in wanted {
+        assert_eq!(history.lines(), lines);
+        let nominal = history.points(projection, true);
+        assert_eq!(nominal.len(), projection.years.len());
+        let at = nominal.iter().find(|&&(year, _)| year == 2045).unwrap();
+        assert_eq!(at.1, figures, "{history:?}");
+        let todays = history.points(projection, false);
+        let later = todays.iter().find(|&&(year, _)| year == 2045).unwrap();
+        assert!(later.1[0] < figures[0], "{history:?} follows the basis");
+        assert_eq!(todays[0], nominal[0], "the first year is today's");
+    }
+}

@@ -2,17 +2,18 @@
 //! sets, and the year stepped from any pane.
 
 use bevy_app::App;
-use bevy_ecs::prelude::With;
+use bevy_ecs::prelude::{Entity, With};
 use bevy_input_focus::InputFocus;
 use plurimus::term::KeyCode;
 use plurimus::widgets::TableStripe;
 
 use super::{Columns, LedgerTable, LedgerView};
+use crate::chart::{Legend, SeriesChart};
 use crate::nav::Page;
 use crate::session::{LedgerRun, Projected, YearCursor};
 use crate::support::{
-    SIZE, TODAY, active_page, composed_frame, headless_app_at, ledger_year, press_key, redrawn,
-    said, scratch_full_plan, show,
+    ROOMY, SETTLING_TICKS, SIZE, TODAY, active_page, click_year, composed_frame, headless_app_at,
+    ledger_year, press_key, redrawn, said, scratch_full_plan, show,
 };
 use crate::theme::Theme;
 use crate::theme::document::Variant;
@@ -269,4 +270,126 @@ fn the_terminal_s_own_theme_bands_the_tables_for_the_screen_it_is_on() {
         stripe.bg.is_some() && stripe.bg == worn.stripe,
         "{stripe:?}"
     );
+}
+
+fn roomy_ledger() -> crate::support::Headless {
+    let mut app = headless_app_at(scratch_full_plan(), ROOMY);
+    show(&mut app, Page::Ledger);
+    app
+}
+
+/// The row a pane titled `title` starts on.
+fn top_of(frame: &str, title: &str) -> Option<usize> {
+    frame.lines().position(|line| line.contains(title))
+}
+
+fn histories(app: &mut App) -> Vec<(Entity, SeriesChart)> {
+    let mut charts = app.world_mut().query::<(Entity, &SeriesChart)>();
+    let mut drawn: Vec<_> = (charts.iter(app.world()))
+        .filter(|(_, chart)| chart.legend == Legend::Hidden && chart.series.len() == 2)
+        .map(|(entity, chart)| (entity, chart.clone()))
+        .collect();
+    drawn.sort_by_key(|&(entity, _)| entity);
+    drawn
+}
+
+#[test]
+fn a_tall_page_draws_each_money_pane_s_history_under_it() {
+    let mut app = roomy_ledger();
+    let frame = redrawn(&mut app);
+    let titles = [
+        "╭ Money in by year ",
+        "╭ Money out by year ",
+        "╭ Tax by year ",
+    ];
+    let tops: Vec<Option<usize>> = titles.iter().map(|title| top_of(&frame, title)).collect();
+    assert!(
+        tops[0].is_some() && tops.iter().all(|top| *top == tops[0]),
+        "{frame}"
+    );
+    let lists = top_of(&frame, "╭ Money in ").unwrap();
+    let tax_lines = 8;
+    let borders = 2;
+    assert_eq!(tops[0].unwrap() - lists, tax_lines + borders, "{frame}");
+    for key in [
+        "━ Income  ━ Withdrawn",
+        "━ Spending  ━ Tax",
+        "━ MAGI  ━ Taxable income",
+    ] {
+        assert!(frame.contains(key), "{key}: {frame}");
+    }
+    let drawn = histories(&mut app);
+    assert_eq!(drawn.len(), 3);
+    let years = app.world().resource::<Projected>().projection.years.len();
+    for (_, chart) in &drawn {
+        assert!(chart.series.iter().all(|line| line.points.len() == years));
+        assert_ne!(chart.series[0].color, chart.series[1].color);
+        assert_eq!(chart.marks[0].year, TODAY.0, "the cursor year is ruled");
+    }
+}
+
+#[test]
+fn a_history_follows_the_year_the_basis_and_a_press() {
+    let mut app = roomy_ledger();
+    let before = histories(&mut app);
+    press_key(&mut app, KeyCode::Right);
+    let (chart, stepped) = histories(&mut app).swap_remove(0);
+    assert_eq!(stepped.marks[0].year, TODAY.0 + 1);
+    click_year(&mut app, chart, 2050);
+    let pressed = cursor(&app).expect("a press sets the year");
+    assert!(
+        (2049..=2051).contains(&pressed),
+        "the column 2050 is in: {pressed}"
+    );
+    assert_eq!(ledger_year(&mut app), pressed);
+    assert_eq!(histories(&mut app)[0].1.marks[0].year, pressed);
+    press_key(&mut app, KeyCode::Char('n'));
+    let nominal = histories(&mut app);
+    for ((_, todays), (_, nominal)) in before.iter().zip(&nominal) {
+        let (last_today, last_nominal) = (
+            todays.series[0].points.last(),
+            nominal.series[0].points.last(),
+        );
+        assert!(
+            last_nominal.unwrap().1 > last_today.unwrap().1,
+            "the lines follow the basis"
+        );
+    }
+}
+
+#[test]
+fn a_page_without_the_room_leaves_the_histories_out_and_gives_the_lists_the_rest() {
+    let mut app = ledger();
+    let frame = redrawn(&mut app);
+    assert!(!frame.contains("by year"), "{frame}");
+    let last = frame.lines().count() - 2;
+    assert!(frame.lines().nth(last).unwrap().contains("╰"), "{frame}");
+    let lists = top_of(&frame, "╭ Money in ").unwrap();
+    assert!(
+        last - lists > 8,
+        "the lists run to the page's foot: {frame}"
+    );
+    app.insert_resource(ROOMY);
+    for _ in 0..SETTLING_TICKS {
+        app.update();
+    }
+    let frame = redrawn(&mut app);
+    let lists = top_of(&frame, "╭ Money in ").unwrap();
+    let gained = top_of(&frame, "╭ Tax by year ").expect("a taller page gains them");
+    assert_eq!(
+        gained - lists,
+        8 + 2,
+        "the lists as tall as the longest: {frame}"
+    );
+    app.insert_resource(SIZE);
+    for _ in 0..SETTLING_TICKS {
+        app.update();
+    }
+    let frame = redrawn(&mut app);
+    assert!(
+        !frame.contains("by year"),
+        "and a shorter one loses them: {frame}"
+    );
+    let lists = top_of(&frame, "╭ Money in ").unwrap();
+    assert!(frame.lines().count() - 2 - lists > 8, "{frame}");
 }

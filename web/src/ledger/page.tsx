@@ -36,31 +36,41 @@ function Unshown({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** What the Ledger reads of the document for the address it is at. */
+/** What the Ledger reads of the document for the address it is at: every year, and then the year shown. */
 function useLedger(search: LedgerSearch, year: number | undefined) {
   const { reading } = useSession();
   const { market } = search;
   const isNominal = basisOf(search) === "nominal";
   const set = columnSetOf(search.columns);
   const isTable = search.view === "table";
-  return useMemo(() => {
+  const plan = useMemo(() => {
     const document = reading.document;
     try {
       const ledger = document?.ledger(isNominal, market, set);
-      const isYearShown = ledger && year !== undefined;
       return {
         ledger,
         said: market === undefined ? "" : document?.marketSaid(market),
-        detail:
-          isYearShown && !isTable
-            ? document?.ledgerYear(year, isNominal, market)
+        histories:
+          ledger && !isTable
+            ? document?.ledgerHistories(isNominal, market)
             : undefined,
-        marked: isYearShown ? document?.markedYears(year, market) : undefined,
       };
     } catch (thrown) {
-      return { refusal: messageOf(thrown) };
+      return { refusal: messageOf(thrown), ledger: undefined };
     }
-  }, [reading, isNominal, market, set, isTable, year]);
+  }, [reading, isNominal, market, set, isTable]);
+  const shown = useMemo(() => {
+    const document = reading.document;
+    const isShown = plan.ledger && year !== undefined;
+    return {
+      detail:
+        isShown && !isTable
+          ? document?.ledgerYear(year, isNominal, market)
+          : undefined,
+      marked: isShown ? document?.markedYears(year, market) : undefined,
+    };
+  }, [reading, plan, isNominal, market, isTable, year]);
+  return { ...plan, ...shown };
 }
 
 /** One year in the context of all of them, or every year in one table. */
@@ -80,7 +90,7 @@ export function LedgerPage() {
   }, [year, isTable]);
 
   if (!reading.document) return null;
-  if ("refusal" in read) {
+  if (read.refusal !== undefined) {
     return (
       <Unshown>
         {read.refusal}. <BackToPlan />
@@ -155,7 +165,14 @@ export function LedgerPage() {
               onSelect={setYear}
             />
           </div>
-          {detail && <YearCards detail={detail} unit={unit} />}
+          {detail && (
+            <YearCards
+              detail={detail}
+              unit={unit}
+              histories={read.histories ?? []}
+              onYear={setYear}
+            />
+          )}
         </div>
       )}
     </div>

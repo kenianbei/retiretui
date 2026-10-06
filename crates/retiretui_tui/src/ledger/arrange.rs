@@ -1,14 +1,16 @@
 //! How the Ledger's page is split: the years beside the cursor year in
-//! full, or the years alone as the whole table.
+//! full, or the years alone as the whole table; and whether it is tall
+//! enough for the histories.
 
 use bevy_app::{App, Update};
-use bevy_ecs::change_detection::DetectChanges;
+use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{
-    Commands, Component, Entity, IntoScheduleConfigs, Query, Res, Resource, With, Without,
+    Commands, Component, Entity, IntoScheduleConfigs, Query, Res, ResMut, Resource, With, Without,
 };
 use bevy_ecs::system::SystemParam;
 use bevy_ui::{FlexDirection, Node, Val};
+use plurimus::core::TerminalSize;
 
 use super::years::{LedgerTable, YearsPane};
 use super::{LedgerSystems, say};
@@ -19,7 +21,24 @@ use crate::layout::set_display;
 use crate::nav::FocusStop;
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(Update, arrange.after(say).in_set(LedgerSystems::Say));
+    app.init_resource::<Roomy>();
+    app.add_systems(
+        Update,
+        (measure, arrange.after(say)).in_set(LedgerSystems::Say),
+    );
+}
+
+/// Whether the page is tall enough for the histories under the money
+/// panes.
+#[derive(Resource, Clone, Copy, PartialEq, Eq, Default, Debug)]
+pub(super) struct Roomy(pub(super) bool);
+
+/// The terminal at least this tall has the room: the year, a dozen
+/// accounts' flows and the money panes fit above the histories' least.
+const ROOMY_ROWS: u16 = 44;
+
+fn measure(size: Res<TerminalSize>, mut roomy: ResMut<Roomy>) {
+    roomy.set_if_neq(Roomy(size.rows >= ROOMY_ROWS));
 }
 
 /// What the Ledger's page is given over to.

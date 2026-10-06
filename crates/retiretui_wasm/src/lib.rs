@@ -98,7 +98,7 @@ fn reply<T: Serialize>(answer: Result<T, String>) -> Result<JsValue, JsError> {
 const TYPES: &str = r#"import type {
   ActionsReply, ChartSeries, Claim, ClaimWords, ClaimsOptions, CompareView, CompareWords,
   Domain, DomainTable,
-  Example, FieldView, Issue, LadderWords, LadderYear, LaddersReply,
+  Example, FieldView, HistoryChart, Issue, LadderWords, LadderYear, LaddersReply,
   Ledger, MarketRuns, MarketWords, Metric, OrderOptions, OrderWords, OverviewView, PersonAction,
   PersonRow, PlacedIssue,
   NewPlanMade, OpenFailure,
@@ -315,7 +315,7 @@ mod bindings {
     use crate::compare::{CompareView, CompareWords, Searched, YearFigure};
     use crate::domain::DomainTable;
     use crate::ladders::{LadderWords, LaddersReply};
-    use crate::ledger::{ChartSeries, Ledger, ViewWords};
+    use crate::ledger::{ChartSeries, HistoryChart, Ledger, ViewWords};
     use crate::markets::{MarketRuns, MarketWords};
     use crate::orders::{OrderOptions, OrderWords};
     use crate::overview::OverviewView;
@@ -361,6 +361,7 @@ mod bindings {
         FieldView::export_all,
         Ledger::export_all,
         Year::export_all,
+        HistoryChart::export_all,
         ChartSeries::export_all,
         ViewWords::export_all,
         OverviewView::export_all,
