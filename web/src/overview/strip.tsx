@@ -11,7 +11,7 @@ import { useMarkets } from "@/searches";
 import { ZONE_CLASS } from "@/tools/markets/zone";
 import { keptSearch } from "@/year/search";
 
-const [MONEY_LASTS, SUCCESS, ENDS_WITH, LIFETIME_TAXES] = VIEW_WORDS.strip;
+const [MONEY_LASTS, SUCCESS, LOW_POINT, ENDS_WITH] = VIEW_WORDS.strip;
 
 /**
  * A reading of the strip: its label beside its figure in a narrow strip,
@@ -84,7 +84,7 @@ function Success({ plan }: { plan: string | null }) {
   );
 }
 
-/** The verdict: how long the money lasts, how surely, what it ends with and pays in tax. */
+/** The verdict: how long the money lasts, how surely, the least it holds once it stops earning, and what it ends with. */
 export function Strip({
   view,
   basis,
@@ -104,11 +104,11 @@ export function Strip({
           </span>
         </Reading>
         <Success plan={plan} />
+        <Reading label={LOW_POINT} caption={unit}>
+          {view.low_point}
+        </Reading>
         <Reading label={ENDS_WITH} caption={unit}>
           {view.ends_with}
-        </Reading>
-        <Reading label={LIFETIME_TAXES} caption={unit}>
-          {view.lifetime_taxes}
         </Reading>
       </dl>
     </div>

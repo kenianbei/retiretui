@@ -8,6 +8,7 @@ import {
 import { MarginNote } from "@/components/margin-note";
 import { IssueLink } from "@/draft/issue-link";
 import { DOMAINS, pageOf } from "@/nav";
+import { VIEW_WORDS } from "@/overview/view-words";
 import { YearInLedger } from "@/year/ledger-link";
 
 /**
@@ -35,7 +36,7 @@ export function Problems({
       </ul>
       <p className="text-muted-foreground text-sm">
         {hasFigures
-          ? "The figures below are the last the plan had without them."
+          ? VIEW_WORDS.stale
           : "Its figures show once they are fixed."}
       </p>
     </MarginNote>

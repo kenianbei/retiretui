@@ -7,6 +7,7 @@ use retiretui_client::forms::Form;
 use retiretui_client::forms::details::{self, ReadRow};
 use retiretui_client::forms::edit::Entry;
 use retiretui_client::present::MoneyForm;
+use retiretui_client::searches::overview::spending_said;
 use retiretui_client::searches::spending::{
     ABOUT, Answers, FIELDS, Found, ITEM_COLUMNS, LEADING, Listed, NOTHING_SEARCHED, PLANNED, note,
     option_columns, search, taken, target_in,
@@ -64,6 +65,9 @@ pub struct SpendingOptions {
     pub options: Vec<CeilingOption>,
     /// The key of the ceiling highlighted where the address names none.
     pub leading: &'static str,
+    /// What the Overview says of the ceiling at the target against what
+    /// the plan spends.
+    pub better: String,
 }
 
 fn option_of(listed: &Listed, plan: &Plan) -> CeilingOption {
@@ -87,6 +91,7 @@ impl SpendingOptions {
             baseline: Bases::of(|nominal| found.plan_cells(plan, !nominal, MoneyForm::Full)),
             options: listed.iter().map(|each| option_of(each, plan)).collect(),
             leading: listed[LEADING].key,
+            better: spending_said(found, plan),
         }
     }
 }

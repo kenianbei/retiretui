@@ -4,6 +4,7 @@ import { ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { pageOf, TOOLS } from "@/nav";
+import { ROW } from "@/overview/row";
 import { YearInLedger } from "@/year/ledger-link";
 import { keptSearch } from "@/year/search";
 
@@ -12,11 +13,8 @@ export function Rows({ children }: { children: ReactNode }) {
   return <ul className="bg-card divide-y rounded-md border">{children}</ul>;
 }
 
-const ROW =
-  "hover:bg-muted flex min-h-11 items-center gap-3 px-4 py-2.5 text-sm focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50";
-
 /** What a row says and where it leads, the destination named for a reader. */
-function RowContent({
+export function RowContent({
   year,
   text,
   destination,

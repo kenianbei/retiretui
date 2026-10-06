@@ -11,56 +11,107 @@ import {
 
 const FILES = { "/starter.toml": example("starter.toml") };
 
-test("the Overview charts the plan at once, and a click chooses the year", async ({
+test("the Overview charts the plan a chart at a time, and a click opens that year in the Ledger", async ({
   page,
 }) => {
   await seed(page, FILES, "/starter.toml", "#/overview?basis=nominal");
   const chart = (name: string) =>
     page.getByRole("region", { name, exact: true });
-  for (const name of ["Balances", "Net worth", "Income & tax"]) {
-    await expect(chart(name).locator(".recharts-surface")).toBeVisible();
-    await expect(chart(name)).toContainText("future dollars");
-  }
-  const markets = chart("Market runs");
+  const tabs = page.getByRole("navigation", { name: "Chart" });
+  const balances = chart("Balances by tax treatment");
+  await expect(balances.locator(".recharts-surface")).toBeVisible();
+  await expect(balances).toContainText("future dollars");
+  await expect(balances).toContainText("pre-tax");
+  await expectAccessible(page);
+
+  await tabs.getByRole("link", { name: "Income against taxes" }).click();
+  await page.waitForURL(/chart=income/);
+  await expect(
+    chart("Income against taxes").locator(".recharts-surface"),
+  ).toBeVisible();
+  await tabs
+    .getByRole("link", { name: "Net worth through random markets" })
+    .click();
+  const markets = chart("Net worth through random markets");
   await expect(markets.locator(".recharts-area").first()).toBeVisible(SEARCH);
   await expect(markets).toContainText("today's dollars");
   await expectAccessible(page);
 
+  await tabs.getByRole("link", { name: "Net worth", exact: true }).click();
+  await page.waitForURL(/chart=net-worth/);
+  await page.reload();
   const plot = chart("Net worth").locator(".recharts-surface");
   await plot.scrollIntoViewIfNeeded();
   const box = await plot.boundingBox();
   if (!box) throw new Error("the chart has no box");
   await page.mouse.click(box.x + box.width * 0.6, box.y + box.height * 0.5);
-  await page.waitForURL(/year=\d{4}/);
+  await page.waitForURL(/#\/ledger\?.*year=\d{4}/);
   const year = /year=(\d{4})/.exec(page.url())?.[1] ?? "";
-  await expect(page.locator("#this-year")).toContainText(year);
-  await page.getByRole("link", { name: "Ledger" }).first().click();
   await expect(page.getByText(`${year} Flows · future dollars`)).toBeVisible();
 });
 
-test("the year steps by button and key, within the plan's years", async ({
+test("the Overview holds no year, and carries the one it was given on", async ({
+  page,
+}) => {
+  await seed(page, FILES, "/starter.toml", "#/overview?year=2045");
+  await expect(page.getByRole("term")).toHaveCount(4);
+  await expect(page.getByRole("button", { name: /^The year/ })).toHaveCount(0);
+  await expect(page.getByText(/What to do/)).toHaveCount(0);
+  const totals = page.getByRole("region", { name: "Over the plan" });
+  const before = await totals.textContent();
+  await page.keyboard.press("ArrowRight");
+  expect(page.url()).toContain("year=2045");
+  expect(await totals.textContent()).toBe(before);
+  await page.getByRole("link", { name: "Ledger", exact: true }).click();
+  await page.waitForURL(/#\/ledger\?.*year=2045/);
+});
+
+test("the years add up, each total leading to its page or tool", async ({
   page,
 }) => {
   await seed(page, FILES, "/starter.toml");
-  const heading = page.locator("#this-year");
-  await expect(heading).toContainText(/\d{4}/);
-  const first = Number(/\d{4}/.exec((await heading.textContent()) ?? "")?.[0]);
-  await page.getByRole("button", { name: "The year after" }).click();
-  await expect(heading).toContainText(String(first + 1));
-  expect(page.url()).toContain(`year=${String(first + 1)}`);
-  await page.keyboard.press("ArrowLeft");
-  await expect(heading).toContainText(String(first));
+  const totals = page.getByRole("region", { name: "Over the plan" });
+  await expect(totals.getByRole("listitem")).toHaveCount(7);
+  await expect(totals).toContainText("today's dollars");
+  const income = totals.getByRole("link", { name: /^Income/ });
+  await expect(income).toContainText(/salary \d+%/);
+  const today = await income.textContent();
   await page.getByRole("link", { name: "future dollars" }).click();
   await page.waitForURL(/basis=nominal/);
-  expect(page.url()).toContain(`year=${String(first)}`);
-  await page.getByRole("link", { name: "Ledger" }).first().click();
-  await page.waitForURL(/ledger.*basis=nominal/);
+  await expect(income).not.toHaveText(today ?? "");
+  await expect(totals).toContainText("future dollars");
+  await expectAccessible(page);
 
-  await page.goto("#/overview?year=1900");
-  await expect(heading).toContainText(String(first));
-  await expect(
-    page.getByRole("button", { name: "The year before" }),
-  ).toBeDisabled();
+  await totals.getByRole("link", { name: /^Withdrawals/ }).click();
+  await page.waitForURL(/#\/tools\/withdrawal-order\?.*basis=nominal/);
+  await page.goBack();
+  await totals.getByRole("link", { name: /^Taxes/ }).click();
+  await page.waitForURL(/#\/tools\/tax-tables/);
+  await page.goBack();
+  await income.click();
+  await page.waitForURL(/#\/plan\/income/);
+});
+
+test("what the plan rests on leads to the field it is edited at", async ({
+  page,
+}) => {
+  await seed(page, FILES, "/starter.toml");
+  const rests = page.getByRole("region", { name: "Rests on" });
+  await expect(rests.getByRole("link").first()).toContainText(/to age \d+/);
+  await rests.getByRole("link", { name: /^Inflation/ }).click();
+  await page.waitForURL(/#\/plan\/settings\?.*field=inflation/);
+});
+
+test("what the plan could spend is said among what could do better", async ({
+  page,
+}) => {
+  await seed(page, FILES, "/starter.toml");
+  const better = page.getByRole("region", { name: "Could do better" });
+  const row = better.getByRole("link", { name: /\d+% of markets/ });
+  await expect(row).toBeVisible(SEARCH);
+  await expect(row).toContainText(/^(Could spend|Spend|Spends) /);
+  await row.click();
+  await page.waitForURL(/#\/tools\/spending-ceiling/);
 });
 
 test("the strip reads the plan, and a plan that runs short says where", async ({
@@ -74,8 +125,8 @@ test("the strip reads the plan, and a plan that runs short says where", async ({
   await expect(page.getByRole("term")).toHaveText([
     "Money lasts",
     "Success",
+    "Lowest after retiring",
     "Ends with",
-    "Lifetime taxes",
   ]);
   const note = page.getByText(/^Runs short from \d{4}: /);
   await expect(note).toBeVisible();
@@ -148,15 +199,4 @@ test("a milestone leads to its year in the Ledger", async ({ page }) => {
   const milestones = page.getByRole("region", { name: "Milestones" });
   await milestones.getByRole("link", { name: /^2043 Priya retires/ }).click();
   await page.waitForURL(/#\/ledger\?.*year=2043/);
-});
-
-test("this year's actions are in the dollars shown", async ({ page }) => {
-  await seed(page, FILES, "/starter.toml", "#/overview?year=2045");
-  const actions = page.getByRole("region", { name: /^What to do in 2045/ });
-  const today = await actions.getByRole("listitem").first().textContent();
-  await page.getByRole("link", { name: "future dollars" }).click();
-  await page.waitForURL(/basis=nominal/);
-  await expect(actions.getByRole("listitem").first()).not.toHaveText(
-    today ?? "",
-  );
 });

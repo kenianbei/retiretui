@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import {
+  type Chart,
   type ChartMark,
   type ChartSeries,
   compactMoney,
@@ -27,6 +28,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import {
   bandAreas,
   bandData,
@@ -34,6 +36,7 @@ import {
   PLOT_SIZE,
   SERIES,
 } from "@/overview/bands";
+import { FIRST_CHART } from "@/overview/search";
 import { BASIS_LABEL, metricTitle, VIEW_WORDS } from "@/overview/view-words";
 import type { Basis } from "@/overview/words";
 import { useMarkets } from "@/searches";
@@ -47,7 +50,7 @@ interface ChartsProps {
   basis: Basis;
   /** The plan's text for its market runs; none while it has issues. */
   plan: string | null;
-  year: number | undefined;
+  /** What a click on a year does with it. */
   onYear: (year: number) => void;
 }
 
@@ -108,10 +111,10 @@ function MarkKey() {
 }
 
 /**
- * A plot of years across and dollars up, the year shown and `marks` marked
- * and listed under it, a click choosing the year under it where `onYear`
- * takes one. It reads as one image named by `label`; the year stepper
- * beside it is the keyboard's way to a year.
+ * A plot of years across and dollars up, `marks` marked and listed under
+ * it and the year shown marked where there is one, a click giving the
+ * year under it to `onYear` where it takes one. It reads as one image
+ * named by `label`; its table is the keyboard's way to a year.
  */
 export function Plot({
   config,
@@ -223,7 +226,7 @@ function Balances(props: ChartsProps) {
       marks={props.series.marks}
       config={config}
       data={data}
-      label={VIEW_WORDS.balances_chart}
+      label={titleOf("balances")}
     >
       {series.classes.map((_, at) => (
         <Area
@@ -253,7 +256,7 @@ function NetWorth(props: ChartsProps) {
       marks={props.series.marks}
       config={NET_WORTH}
       data={props.series.years}
-      label={VIEW_WORDS.net_worth_chart}
+      label={titleOf("net-worth")}
     >
       {seriesLine("net_worth")}
     </Plot>
@@ -272,7 +275,7 @@ function IncomeAndTax(props: ChartsProps) {
       marks={props.series.marks}
       config={INCOME_AND_TAX}
       data={props.series.years}
-      label={VIEW_WORDS.income_chart}
+      label={titleOf("income-taxes")}
     >
       {seriesLine("income")}
       {seriesLine("taxes")}
@@ -314,7 +317,7 @@ function Bands(props: ChartsProps & { plan: string }) {
       marks={props.series.marks}
       config={config}
       data={data}
-      label="Net worth through random markets"
+      label={titleOf("markets")}
     >
       {bandAreas()}
       {seriesLine("median")}
@@ -322,38 +325,69 @@ function Bands(props: ChartsProps & { plan: string }) {
   );
 }
 
-const CHARTS = {
-  balances: { title: "Balances", Chart: Balances },
-  "net-worth": { title: "Net worth", Chart: NetWorth },
-  income: { title: "Income & tax", Chart: IncomeAndTax },
-  markets: { title: "Market runs", Chart: MarketRuns },
+/** What draws each chart the client names. */
+const DRAWN: Record<Chart, (props: ChartsProps) => ReactNode> = {
+  balances: Balances,
+  "net-worth": NetWorth,
+  "income-taxes": IncomeAndTax,
+  markets: MarketRuns,
 };
 
-export type ChartKey = keyof typeof CHARTS;
+/** What the client titles `chart`. */
+function titleOf(chart: Chart): string {
+  return VIEW_WORDS.charts.find(([key]) => key === chart)?.[1] ?? chart;
+}
 
-/** One of what the plan holds and earns year by year, or how random markets spread it. */
-export function PlanChart({
-  chart,
-  ...props
-}: ChartsProps & { chart: ChartKey }) {
-  const { title, Chart } = CHARTS[chart];
-  const unit = BASIS_LABEL[chart === "markets" ? "today" : props.basis];
+/** The charts as tabs, the one on show marked. */
+function ChartTabs({ shown }: { shown: Chart }) {
   return (
-    <ChartSection title={title} unit={`${unit} · click a year to show it`}>
-      <Chart {...props} />
-    </ChartSection>
+    <nav aria-label="Chart" className="flex flex-wrap gap-1">
+      {VIEW_WORDS.charts.map(([key, title]) => (
+        <Link
+          key={key}
+          to="/overview"
+          search={(kept) => ({
+            ...kept,
+            chart: key === FIRST_CHART ? undefined : key,
+          })}
+          replace
+          aria-current={key === shown ? "true" : undefined}
+          className={cn(
+            "focus-visible:ring-ring/50 rounded-md px-2.5 py-1 text-sm focus-visible:ring-[3px] focus-visible:outline-none",
+            key === shown
+              ? "bg-accent text-accent-foreground font-medium"
+              : "text-muted-foreground hover:bg-muted",
+          )}
+        >
+          {title}
+        </Link>
+      ))}
+    </nav>
   );
 }
 
-/** The Ledger, every chart's table. */
-export function EveryYear() {
+/**
+ * What the plan holds and earns year by year, or how random markets spread
+ * it: one chart at a time, turned by its tabs, a click on a year opening
+ * it in the Ledger, which is every chart's table.
+ */
+export function PlanChart({ chart, ...props }: ChartsProps & { chart: Chart }) {
+  const Drawn = DRAWN[chart];
+  const unit = BASIS_LABEL[chart === "markets" ? "today" : props.basis];
   return (
-    <Link
-      to="/ledger"
-      search={(kept) => keptSearch(kept, ["year", "basis", "held"])}
-      className="text-primary inline-block text-sm underline-offset-4 hover:underline"
+    <ChartSection
+      title={titleOf(chart)}
+      unit={`${unit} · click a year to open it in the Ledger`}
+      controls={<ChartTabs shown={chart} />}
     >
-      Every year in the Ledger
-    </Link>
+      <Drawn {...props} />
+      <Link
+        to="/ledger"
+        search={(kept) => keptSearch(kept, ["year", "basis", "held"])}
+        className="text-primary inline-block text-sm underline-offset-4 hover:underline"
+      >
+        Every year in the Ledger
+      </Link>
+    </ChartSection>
   );
 }

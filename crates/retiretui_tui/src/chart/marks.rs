@@ -110,14 +110,10 @@ pub(super) fn draw_labels(chart: &SeriesChart, area: Rect, buf: &mut Buffer) {
 mod tests {
     use super::*;
     use crate::chart::Series;
-    use crate::session::YearCursor;
-    use crate::support::{
-        SIZE, cell_fg, click_year, composed_frame, frame_to_string, headless_app, overview_chart,
-    };
+    use crate::support::frame_to_string;
     use plurimus::core::ratatui_core::layout::Position;
     use plurimus::core::ratatui_core::style::Color;
     use plurimus::core::ratatui_core::widgets::Widget;
-    use plurimus::ui::ComputedWidgetArea;
 
     const AREA: Rect = Rect::new(1, 2, 60, 10);
 
@@ -211,23 +207,15 @@ mod tests {
     }
 
     #[test]
-    fn a_press_moves_the_accent_mark() {
-        let mut app = headless_app(SIZE);
-        app.update();
-        let chart = overview_chart(&mut app);
-        click_year(&mut app, chart, 2038);
-        app.update();
-        let year = app.world().resource::<YearCursor>().0.unwrap();
-        // The pane's note names the year too, so it is looked for under the axis.
-        let area = app.world().get::<ComputedWidgetArea>(chart).unwrap().0;
-        let row = area.bottom() - 1;
-        let frame = composed_frame(&app);
-        let labels = frame.lines().nth(usize::from(row)).unwrap();
-        let at = labels
-            .find(&format!(" {year} "))
-            .expect("the year under the axis");
-        let column = labels[..at].chars().count() as u16 + 1;
-        let accent = Theme::terminal().accented().fg;
-        assert_eq!(cell_fg(&app, column, row), accent, "{year}: {frame}");
+    fn the_year_cursor_is_marked_in_the_accent() {
+        let theme = Theme::terminal();
+        let mut chart = marked(&[]);
+        chart.marks = vec![Mark::cursor(2038, &theme)];
+        let buf = drawn(&chart);
+        let row = AREA.bottom() - 1;
+        let labels = row_of(&buf, row);
+        let at = labels.find("2038").expect("the year under the axis");
+        let column = labels[..at].chars().count() as u16;
+        assert_eq!(Some(buf[(column, row)].fg), theme.accented().fg, "{labels}");
     }
 }

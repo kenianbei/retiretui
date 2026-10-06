@@ -4,7 +4,7 @@ use plurimus::term::KeyCode;
 use super::*;
 use crate::session::{LedgerRun, Today};
 use crate::support::{
-    SIZE, TEST_PLAN, TODAY, assert_at_rest, headless_app_in, ledger_year, overview_year, redrawn,
+    SIZE, TEST_PLAN, TODAY, assert_at_rest, headless_app_in, ledger_year, redrawn,
 };
 
 /// The By-year view, ↓ from the plan's first year.
@@ -20,14 +20,13 @@ fn by_year_down(app: &mut App) {
 }
 
 #[test]
-fn the_by_year_cursor_reaches_the_ledger_and_the_overview() {
+fn the_by_year_cursor_reaches_the_ledger() {
     let mut app = comparing_variant(SIZE);
     show(&mut app, Page::Ledger);
     show(&mut app, Page::Compare);
     by_year_down(&mut app);
     assert_eq!(cursor_year(&app), Some(2027));
     assert_at_rest(&mut app);
-    assert_eq!(overview_year(&mut app), 2027);
     show(&mut app, Page::Ledger);
     assert_eq!(ledger_year(&mut app), 2027);
     assert_at_rest(&mut app);
@@ -55,9 +54,8 @@ fn compare_reaches_years_the_document_does_not() {
     assert_eq!(cursor_year(&app), Some(2055));
     assert!(frame.contains("dollars · 2055 ─"), "{frame}");
     assert_at_rest(&mut app);
-    assert_eq!(overview_year(&mut app), 2050, "as near as the plan reaches");
     show(&mut app, Page::Ledger);
-    assert_eq!(ledger_year(&mut app), 2050);
+    assert_eq!(ledger_year(&mut app), 2050, "as near as the plan reaches");
     assert_eq!(
         cursor_year(&app),
         Some(2055),
@@ -70,7 +68,8 @@ fn today_past_the_document_is_its_last_year_in_compare_too() {
     let mut app = comparing_longer(Today(2053));
     let frame = redrawn(&mut app);
     assert!(frame.contains("dollars · 2050 ─"), "{frame}");
-    assert_eq!(overview_year(&mut app), 2050);
+    show(&mut app, Page::Ledger);
+    assert_eq!(ledger_year(&mut app), 2050);
 }
 
 #[test]

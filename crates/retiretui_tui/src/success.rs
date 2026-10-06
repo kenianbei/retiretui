@@ -9,7 +9,7 @@ use std::sync::Arc;
 use bevy_app::{App, Update};
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
 use bevy_ecs::prelude::{IntoScheduleConfigs, Res, ResMut, Resource};
-use retiretui_engine::market::{History, RunError, monte_carlo};
+use retiretui_engine::market::{Band, History, RunError, monte_carlo};
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::Plan;
 
@@ -30,15 +30,21 @@ pub fn plugin(app: &mut App) {
 /// What the page knows of each plan's success.
 #[derive(Resource, Default)]
 pub struct Successes {
-    /// Each plan run, and the share of its runs that succeeded, `None`
-    /// where the run was refused or panicked.
-    answered: Vec<(Arc<Plan>, Option<f64>)>,
+    /// Each plan run, and what its runs came to, `None` where the run was
+    /// refused or panicked.
+    answered: Vec<(Arc<Plan>, Option<Ran>)>,
     running: Option<Running>,
 }
 
+/// What is kept of a plan's runs: the share that succeeded, and the bands
+/// most of them fell in year by year.
+struct Ran {
+    rate: f64,
+    bands: Vec<Band>,
+}
+
 struct Running {
-    /// The plan's share of successful runs.
-    run: Keyed<Arc<Plan>, Result<f64, RunError>>,
+    run: Keyed<Arc<Plan>, Result<Ran, RunError>>,
     total: usize,
     /// How many runs the table last said were done.
     shown: usize,
@@ -50,8 +56,11 @@ impl Running {
         let plan = Arc::new(plan.clone());
         let ran = Arc::clone(&plan);
         let run = Keyed::spawn(plan, move |progress| {
-            let found = monte_carlo(&ran, &tables, &history, progress)?;
-            Ok(found.runs.success_rate())
+            let runs = monte_carlo(&ran, &tables, &history, progress)?.runs;
+            Ok(Ran {
+                rate: runs.success_rate(),
+                bands: runs.bands,
+            })
         });
         Self {
             run,
@@ -64,7 +73,8 @@ impl Running {
 impl Successes {
     pub(crate) fn of(&self, plan: &Plan) -> Success {
         if let Some((_, answer)) = self.answered.iter().find(|(held, _)| **held == *plan) {
-            return answer.map_or(Success::Failed, Success::Rate);
+            let rate = answer.as_ref().map(|ran| ran.rate);
+            return rate.map_or(Success::Failed, Success::Rate);
         }
         match &self.running {
             Some(running) if *running.run.key == *plan => Success::Running {
@@ -73,6 +83,18 @@ impl Successes {
             },
             _ => Success::Waiting,
         }
+    }
+
+    /// Whether `plan`'s runs have answered, with runs or with none.
+    pub(crate) fn has_answered_for(&self, plan: &Plan) -> bool {
+        self.answered.iter().any(|(held, _)| **held == *plan)
+    }
+
+    /// The bands `plan`'s net worth fell in through random markets, year by
+    /// year, where they are answered.
+    pub(crate) fn bands(&self, plan: &Plan) -> Option<&[Band]> {
+        let (_, answer) = self.answered.iter().find(|(held, _)| **held == *plan)?;
+        answer.as_ref().map(|ran| ran.bands.as_slice())
     }
 
     #[cfg(test)]
@@ -92,7 +114,7 @@ impl Successes {
         };
         let (plan, answer, _) = running.run.join();
         let answer = match answer {
-            Some(Ok(rate)) => Some(rate),
+            Some(Ok(ran)) => Some(ran),
             Some(Err(RunError::Cancelled)) => return,
             Some(Err(RunError::Refused(_))) | None => None,
         };

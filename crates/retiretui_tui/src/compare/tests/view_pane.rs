@@ -1,4 +1,5 @@
 use super::*;
+use crate::chart::Legend;
 
 #[test]
 fn tab_walks_the_table_the_changes_and_the_chart_and_arrows_cycle_the_metric_from_either() {
@@ -163,15 +164,15 @@ fn every_chart_marks_the_cursor_year_and_names_no_lines() {
     assert_eq!(charts.len(), 5);
     for chart in charts {
         assert!(chart.marks.iter().any(|mark| mark.year == 2040));
-        assert!(chart.is_legend_hidden);
+        assert_eq!(chart.legend, Legend::Hidden);
     }
     let frame = composed_frame(&app);
     assert!(!frame.contains("│variant.toml│"), "{frame}");
     show(&mut app, Page::Overview);
     press_key(&mut app, KeyCode::Char('v'));
     assert!(
-        redrawn(&mut app).contains("│net worth│"),
-        "the Overview keeps its legend"
+        redrawn(&mut app).contains("── net worth"),
+        "the Overview keys its lines under the chart"
     );
 }
 

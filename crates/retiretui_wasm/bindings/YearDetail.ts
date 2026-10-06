@@ -7,6 +7,14 @@ import type { DetailLine } from "./DetailLine";
  */
 export type YearDetail = { 
 /**
+ * Each person, by display name, and the age they reach in the year.
+ */
+ages: Array<[string, number]>, 
+/**
+ * What the year has the household do, each action a sentence.
+ */
+actions: Array<string>, 
+/**
  * Each account the year touches, from its open to its close.
  */
 flows: Array<AccountFlows>, 

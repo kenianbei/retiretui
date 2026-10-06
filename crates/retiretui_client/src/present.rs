@@ -103,6 +103,17 @@ pub(crate) const fn filing_status(status: FilingStatus) -> &'static str {
     }
 }
 
+/// A tax treatment class as a chart's legend and a total's make-up name it.
+#[must_use]
+pub const fn treatment_word(class: TreatmentClass) -> &'static str {
+    match class {
+        TreatmentClass::Taxable => "taxable",
+        TreatmentClass::Deferred => "pre-tax",
+        TreatmentClass::Roth => "Roth",
+        TreatmentClass::Hsa => "HSA",
+    }
+}
+
 /// A tax treatment class as a person says it.
 #[must_use]
 pub const fn treatment_class(class: TreatmentClass) -> &'static str {

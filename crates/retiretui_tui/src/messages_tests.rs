@@ -85,7 +85,8 @@ fn a_press_takes_a_toast_down() {
         .enumerate()
         .find(|(_, text)| text.contains("plan reloaded"))
         .unwrap();
-    let column = text.chars().position(|symbol| symbol == 'p').unwrap();
+    let (before, _) = text.split_once("plan reloaded").unwrap();
+    let column = before.chars().count();
     click(&mut app, column as u16, row as u16);
     assert!(toasts(&app).is_empty());
 }

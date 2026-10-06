@@ -1,7 +1,7 @@
 //! What the Overview asks is better than the plan: each Roth owner's best
 //! ladder, the household's best claims and the best order to withdraw in,
 //! and the plan from every historical start, searched as the tools search
-//! them.
+//! them, and what the spending ceiling's own search says here.
 
 use std::collections::BTreeSet;
 
@@ -16,7 +16,9 @@ use retiretui_engine::project::Projection;
 use super::claims::said;
 use super::ladders::{Swept, rate_label};
 use super::orders::said_within;
-use crate::present::{compact_money, signed_money};
+use super::spending;
+use crate::present::{SAME, compact_money, signed_money};
+use crate::table::rate;
 
 /// The card's title.
 pub const COULD_DO_BETTER: &str = "Could do better";
@@ -187,6 +189,27 @@ pub fn order_said(search: &OrderSearch, nominal: bool) -> String {
     format!("Withdraw in the order {}: {gain}", said_within(&best.order))
 }
 
+/// What the spending row says of `found` against what `plan` spends on
+/// what it could cut: how much more a year it could, or how much less it
+/// must, to last in the target share of random markets, in today's
+/// dollars.
+#[must_use]
+pub fn spending_said(found: &spending::Found, plan: &Plan) -> String {
+    let [_, at_target] = found.listed();
+    let markets = format!("{} of markets", rate(found.target));
+    let more = at_target.flexible() - plan.flexible_spending();
+    if at_target.change(plan) == SAME {
+        return format!("Spends the most that lasts in {markets}");
+    }
+    let a_year = compact_money(more.abs());
+    if more < 0 {
+        format!("Spend {a_year} less a year to last in {markets}")
+    } else {
+        let a_year = at_target.flexible_said(a_year);
+        format!("Could spend {a_year} more a year in {markets}")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -260,5 +283,49 @@ mod tests {
             "{said}"
         );
         assert!(!said.contains('-'), "{said}");
+    }
+
+    #[test]
+    fn the_spending_row_says_how_much_more_or_less_lasts_at_the_target() {
+        use retiretui_engine::market::{History, Progress};
+        const RETIREE: &str =
+            include_str!("../../../retiretui_engine/tests/fixtures/spending-plan.toml");
+        let said = |text: &str| {
+            let plan = Plan::from_toml_str(text).expect("the plan parses");
+            let (tables, history) = (TaxTables::embedded(), History::embedded());
+            let found = spending::search(&plan, &tables, history, 0.9, &Progress::default())
+                .expect("it has spending to scale");
+            let more = found.listed()[1].flexible() - plan.flexible_spending();
+            (spending_said(&found, &plan), compact_money(more.abs()))
+        };
+
+        let plan = Plan::from_toml_str(RETIREE).expect("the plan parses");
+        let (tables, history) = (TaxTables::embedded(), History::embedded());
+        let mut found = spending::search(&plan, &tables, history, 0.9, &Progress::default())
+            .expect("it has spending to scale");
+        for scaled in &mut found.at_target.expenses {
+            let stated = plan.expenses.iter().find(|expense| expense.id == scaled.id);
+            scaled.amount = stated.expect("a stated expense").amount;
+        }
+        assert_eq!(
+            spending_said(&found, &plan),
+            "Spends the most that lasts in 90% of markets"
+        );
+
+        let (short, by) = said(RETIREE);
+        assert_eq!(
+            short,
+            format!("Spend {by} less a year to last in 90% of markets")
+        );
+        let (roomy, by) = said(&RETIREE.replace("balance = 1200000", "balance = 2400000"));
+        assert_eq!(
+            roomy,
+            format!("Could spend {by} more a year in 90% of markets")
+        );
+        let (capped, by) = said(&RETIREE.replace("balance = 1200000", "balance = 91200000"));
+        assert_eq!(
+            capped,
+            format!("Could spend at least {by} more a year in 90% of markets")
+        );
     }
 }

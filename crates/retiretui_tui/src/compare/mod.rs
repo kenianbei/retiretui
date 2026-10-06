@@ -29,7 +29,7 @@ use retiretui_client::compare::{amounts, figure, less};
 
 use crate::metric::Metric;
 
-use super::chart::{Mark, Series, SeriesChart};
+use super::chart::{Legend, Mark, Series, SeriesChart};
 use super::command::{self, Keymap, Outcome};
 use super::hints::{CommandHint, CommandHints};
 use super::journal;
@@ -279,7 +279,7 @@ impl Plans<'_> {
             })
             .collect();
         let mut chart = SeriesChart::of(series, self.theme.dimmed());
-        chart.is_legend_hidden = true;
+        chart.legend = Legend::Hidden;
         chart.marks = vec![Mark::cursor(self.year(), &self.theme)];
         chart
     }

@@ -22,6 +22,8 @@ const NET_WORTH: &str = "Net worth";
 
 /// The year's flows through each account, as every surface titles them.
 pub const FLOWS: &str = "Flows";
+/// What the Ledger titles what a year has the household do.
+pub const TO_DO: &str = "To do";
 /// The flows table's headers, each beside whether its column holds figures.
 pub const FLOW_HEADERS: [(&str, bool); 6] = [
     ("Account", false),

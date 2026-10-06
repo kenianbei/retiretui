@@ -1,37 +1,35 @@
-import { useSearch } from "@tanstack/react-router";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { HISTORICAL } from "@/nav";
 import { Better } from "@/overview/better";
-import { EveryYear, PlanChart } from "@/overview/charts";
+import { PlanChart } from "@/overview/charts";
 import { RowList, ToolRow } from "@/overview/lists";
 import { Problems, Shortfall } from "@/overview/notes";
+import { chartOf } from "@/overview/search";
 import { Strip } from "@/overview/strip";
-import { ThisYear } from "@/overview/this-year";
+import { OverThePlan, RestsOn } from "@/overview/totals";
 import { VIEW_WORDS } from "@/overview/view-words";
 import { useMarkets } from "@/searches";
 import { useSession } from "@/session";
-import { basisOf, heldOf } from "@/year/search";
-import { useYear } from "@/year/use-year";
+import { basisOf, heldOf, keptSearch } from "@/year/search";
 import { BasisSwitch } from "@/year/year";
 
-/** Sections four across on a wide page, two on a narrower one, one on a phone. */
-const QUARTERS =
-  "grid grid-cols-1 items-start gap-6 @3xl/page:grid-cols-2 @wide/page:grid-cols-4";
-
-const CHART_ORDER = ["balances", "net-worth", "income", "markets"] as const;
+/** Lists three across on a wide page, one under another on a narrower one. */
+const THIRDS = "grid grid-cols-1 items-start gap-6 @4xl/page:grid-cols-3";
 
 /**
- * The ledger's first page: whether the money lasts and how surely, what to
- * do in the year shown, what needs attention and when the big things
- * happen, what could do better, and the plan charted.
+ * The plan as a whole, nothing on it chosen by a year: whether the money
+ * lasts and how surely, when the big things happen, what needs attention
+ * and what could do better, then the plan charted beside what its years
+ * add up to and what it rests on.
  */
 export function Overview() {
   const { reading, document, issues } = useSession();
   const search = useSearch({ from: "/overview" });
+  const navigate = useNavigate({ from: "/overview" });
   const basis = basisOf(search);
   const held = useMemo(() => heldOf({ held: search.held }), [search.held]);
   const isValid = issues.length === 0;
-  const shown = useYear();
   const plan = useMemo(
     () => (isValid ? (reading.document?.planText() ?? null) : null),
     [reading, isValid],
@@ -47,13 +45,6 @@ export function Overview() {
     [reading, basis],
   );
   if (!document) return null;
-  const charts = series && {
-    series,
-    basis,
-    plan,
-    year: shown.year,
-    onYear: shown.setYear,
-  };
 
   return (
     <div className="space-y-6">
@@ -66,8 +57,7 @@ export function Overview() {
         {view?.shortfall && <Shortfall shortfall={view.shortfall} />}
         {view && <Strip view={view} basis={basis} plan={plan} />}
       </div>
-      <div className={QUARTERS}>
-        <ThisYear shown={shown} basis={basis} />
+      <div className={THIRDS}>
         {view && view.milestones.length > 0 && (
           <RowList
             id="milestones"
@@ -92,14 +82,29 @@ export function Overview() {
         )}
         {plan !== null && <Better plan={plan} held={held} basis={basis} />}
       </div>
-      {charts && (
-        <div className="space-y-3">
-          <div className="grid grid-cols-1 items-start gap-6 @3xl/page:grid-cols-2">
-            {CHART_ORDER.map((chart) => (
-              <PlanChart key={chart} chart={chart} {...charts} />
-            ))}
+      {view && series && (
+        <div className={THIRDS}>
+          <div className="min-w-0 @4xl/page:col-span-2">
+            <PlanChart
+              chart={chartOf(search.chart)}
+              series={series}
+              basis={basis}
+              plan={plan}
+              onYear={(year) => {
+                void navigate({
+                  to: "/ledger",
+                  search: (kept) => ({
+                    ...keptSearch(kept, ["basis", "held"]),
+                    year,
+                  }),
+                });
+              }}
+            />
           </div>
-          <EveryYear />
+          <div className="min-w-0 space-y-6">
+            <OverThePlan totals={view.totals} basis={basis} />
+            <RestsOn rows={view.rests_on} />
+          </div>
         </div>
       )}
     </div>

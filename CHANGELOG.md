@@ -147,6 +147,11 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   - The `mid-career-couple` example marks its mortgage essential and
     `retired-couple` its Medicare premiums; both project as they did.
 
+- A projected year says how much of its spending was essential and how much
+  flexible: `expenses_essential` and `expenses_flexible` stand beside `expenses`
+  in each year of `retiretui project --format json` and of the MCP server's full
+  projection. What is neither was spent once.
+
 ### Changed
 
 - **Breaking.** No plan key is removed or renamed, and a plan written for 0.3.0
@@ -157,6 +162,57 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     outside the client must cover it.
   - The engine's `Expense` gains `essential`, so a struct literal of one written
     outside the engine must add it.
+  - The engine's `YearRow` gains `expenses_essential` and `expenses_flexible`,
+    so a struct literal of one written outside the engine must add them.
+  - The client's `actions::year_in_words` is gone. `actions::actions_said` says
+    a year's actions, and `actions::collect_warnings` still gathers what to
+    watch.
+  - The terminal planner's `overview-year-previous` and `overview-year-next`
+    commands are gone with the Overview's year, so a `[tui.keys]` entry for
+    either is said at launch to name no command. The file's other keys stand.
+- The Overview is of the whole plan, and it is laid out alike in the terminal
+  and in the web app. Nothing on it is chosen by a year any more: the year
+  stepper and "What to do" in the year are gone from it, and the year belongs to
+  the Ledger. From the top:
+  - Four figures: how long the money lasts, its success through random markets,
+    the lowest the net worth falls after the last salary ends with its year, and
+    what the plan ends with. The low point takes the place of lifetime taxes,
+    which is now one of the totals. The terminal draws each in a pane titled for
+    what it says, as it draws the rest of the page, and says of a plan that runs
+    short the last year it is funded through, as the web app does, and how much
+    goes uncovered under Needs attention.
+  - Three lists side by side: Milestones, Needs attention, and Could do better.
+    In the terminal a plan that runs short leads the list, under any issues the
+    draft has, and its row leads to that year in the Ledger and to its expenses.
+  - Could do better gains what the plan could spend: the Spending Ceiling at its
+    target, said as "Could spend $4,200 more a year in 90% of markets", as
+    spending less to last, or as already spending the most that lasts. It is
+    searched last, once the market runs have answered and, in the terminal, the
+    other searches too, since it is many times their work, and the Spending
+    Ceiling page takes the answer in place of searching again. The canvas page
+    at `/ratzilla/` leaves it to that page.
+  - One chart, turned through four views: balances by tax treatment, net worth,
+    income against taxes, and net worth through random markets with its median.
+    The web app showed all four at once and now shows the one named in the
+    address, chosen from a row of links above it. The terminal's `v` gains the
+    random markets view. In the terminal the line under the chart names each
+    series and reads its figure out at the pointer's year, and `⏎` or a press on
+    a year opens the Ledger there; in the web app a click on a year does.
+  - Over the plan, beside the chart: what the plan's years add up to in the
+    dollars shown. Income by kind, withdrawals by tax treatment, spending as
+    essential, flexible and one-time, taxes as federal and state with the
+    heaviest year, what was converted to Roth and when, the required
+    distributions and the year they start, and Medicare's surcharges. Each leads
+    to the page, tool or Ledger year behind it. Where the terminal's pane is
+    short, each total is one line and the highlighted one's make-up is read out
+    beneath.
+  - Rests on, under the totals: the year and age the plan runs to, inflation,
+    the returns it assumes, the filing status, the state lived in, and what
+    counts as success, each leading to the field it is edited at.
+- The Ledger says what to do in its year. The terminal has a To do band above
+  the year's flows, as tall as its actions up to four lines and scrolled past
+  that. The web app has a To do card over the flows, with who turns what age.
+  What to watch in the year stays with the flows.
 - The help picker names Tab and Enter by the glyphs the key row uses, `⇥` and
   `⏎`, where it said `tab`, `shift-tab` and `enter`.
 

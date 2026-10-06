@@ -5,7 +5,7 @@
 use std::cell::{OnceCell, RefCell};
 use std::path::{Path, PathBuf};
 
-use retiretui_client::actions::{collect_warnings, year_in_words};
+use retiretui_client::actions::collect_warnings;
 use retiretui_client::draft::{Draft, draft_text};
 use retiretui_client::files::resolve_with_files;
 use retiretui_client::forms::{DomainId, Form, ToolAnswers};
@@ -18,7 +18,7 @@ use retiretui_client::store::normal;
 use retiretui_engine::market::RunName;
 use retiretui_engine::optimize::benefit_estimates;
 use retiretui_engine::plan::resolve::ResolveError;
-use retiretui_engine::plan::{Dollars, Item, Plan};
+use retiretui_engine::plan::{Dollars, Plan};
 use retiretui_engine::project::{Projection, Summary, YearRow};
 use serde::Serialize;
 
@@ -80,21 +80,6 @@ fn place_of(path: &str) -> Option<Place> {
         index,
         field: issue_field(path),
     })
-}
-
-/// A year as every surface says it: what to do, what to watch, and how old
-/// everyone is.
-#[derive(Serialize, Debug)]
-#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
-pub struct SaidYear {
-    /// The year.
-    pub year: i16,
-    /// Each person, by display name, and the age they reach in it.
-    pub ages: Vec<(String, u8)>,
-    /// Each action as a sentence, in the dollars asked for.
-    pub actions: Vec<String>,
-    /// What to watch for in the year.
-    pub warnings: Vec<String>,
 }
 
 impl Document {
@@ -441,29 +426,6 @@ impl Document {
         let plan = &self.projected()?.plan;
         let warnings = collect_warnings(plan, tables(), row, None);
         Ok(ActionsReply::new(row, warnings))
-    }
-
-    /// `year` in words, its amounts nominal or in today's dollars.
-    ///
-    /// # Errors
-    ///
-    /// Where the plan has issues, or `year` is outside its projection.
-    pub fn said(&self, year: i16, nominal: bool) -> Result<SaidYear, String> {
-        let row = self.row(year)?;
-        let projected = self.projected()?;
-        let plan = &projected.plan;
-        let (actions, warnings) = year_in_words(projected, tables(), row, nominal);
-        let people = plan.household.people.iter();
-        let ages = people.filter_map(|person| {
-            let age = *row.ages.get(&person.id)?;
-            Some((person.display_name().to_owned(), age))
-        });
-        Ok(SaidYear {
-            year,
-            ages: ages.collect(),
-            actions,
-            warnings,
-        })
     }
 
     fn row(&self, year: i16) -> Result<&YearRow, String> {

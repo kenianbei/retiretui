@@ -259,3 +259,54 @@ fn overlay_round_trips_into_the_ceilings_projection() {
         found.judged.projection
     );
 }
+
+#[test]
+fn a_year_keeps_its_essential_and_flexible_spending_apart() {
+    let plan = plan_from(RETIREE);
+    let projection = project(&plan, &TaxTables::embedded());
+    let roof_year = projection
+        .years
+        .iter()
+        .find(|row| row.year == 2030)
+        .unwrap();
+    let once = roof_year.expenses_once();
+    assert_eq!(
+        roof_year.expenses_essential, 12_000,
+        "the mortgage never grows"
+    );
+    assert!(once >= 25_000, "the roof, grown to its year: {once}");
+    for row in projection.years.iter().filter(|row| row.year != 2030) {
+        assert_eq!(
+            row.expenses_once(),
+            0,
+            "nothing is spent once in {}",
+            row.year
+        );
+        assert!(row.expenses_flexible >= 40_000, "living and travel, grown");
+    }
+}
+
+#[test]
+fn an_essential_expense_spent_once_is_essential_and_nothing_marked_is_flexible() {
+    let marked = RETIREE.replace("amount = 25000\n", "amount = 25000\nessential = true\n");
+    let projection = project(&plan_from(&marked), &TaxTables::embedded());
+    let roof_year = projection
+        .years
+        .iter()
+        .find(|row| row.year == 2030)
+        .unwrap();
+    assert_eq!(roof_year.expenses_once(), 0);
+    assert!(
+        roof_year.expenses_essential > 12_000 + 25_000,
+        "the mortgage and the roof"
+    );
+
+    let unmarked = RETIREE.replace("essential = true\n", "");
+    let projection = project(&plan_from(&unmarked), &TaxTables::embedded());
+    assert!(
+        projection
+            .years
+            .iter()
+            .all(|row| row.expenses_essential == 0)
+    );
+}

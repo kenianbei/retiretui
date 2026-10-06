@@ -26,4 +26,9 @@ options: Array<CeilingOption>,
 /**
  * The key of the ceiling highlighted where the address names none.
  */
-leading: string, };
+leading: string, 
+/**
+ * What the Overview says of the ceiling at the target against what
+ * the plan spends.
+ */
+better: string, };

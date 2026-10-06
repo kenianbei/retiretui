@@ -13,7 +13,7 @@ use crate::hints::Hints;
 use crate::nav::FocusStop;
 
 /// What leads each line a row runs on to past its first.
-const CONTINUED: &str = "  ";
+pub const CONTINUED: &str = "  ";
 
 /// A list filling `pane`, its rows scrolled through.
 pub fn spawn_scrolled_list(commands: &mut Commands, pane: Entity, hints: Hints) -> Entity {
@@ -40,22 +40,36 @@ pub fn row_width(scroll: ScrollArea, area: ComputedWidgetArea) -> u16 {
 }
 
 /// Replaces `list`'s rows with a row per line each of `texts` wraps to at
-/// `width` - one too wide running on to indented lines - each `tag`ged
-/// with the place of the text it comes from; the cursor on the first.
+/// `width` - one too wide running on to indented lines - the cursor on the
+/// first, and says how many rows that is.
 pub fn fill_wrapped(
     commands: &mut Commands,
     (list, width): (Entity, u16),
     texts: impl IntoIterator<Item = (String, Style)>,
+) -> usize {
+    let mut rows = 0;
+    let lines = texts.into_iter().flat_map(|(text, style)| {
+        let broken = wrapped(&text, width, CONTINUED).into_iter();
+        broken.map(move |line| (0, line, style))
+    });
+    fill_lines(commands, list, lines.inspect(|_| rows += 1), |_, _| {});
+    rows
+}
+
+/// Replaces `list`'s rows with a row per line of `lines`, each `tag`ged
+/// with the place it is given; the cursor on the first.
+pub fn fill_lines(
+    commands: &mut Commands,
+    list: Entity,
+    lines: impl IntoIterator<Item = (usize, String, Style)>,
     mut tag: impl FnMut(usize, &mut EntityCommands),
 ) {
     commands.entity(list).despawn_related::<Children>();
     let mut first = None;
-    for (at, (text, style)) in texts.into_iter().enumerate() {
-        for line in wrapped(&text, width, CONTINUED) {
-            let mut row = commands.spawn((list_item(Line::styled(line, style)), ChildOf(list)));
-            tag(at, &mut row);
-            first.get_or_insert(row.id());
-        }
+    for (at, line, style) in lines {
+        let mut row = commands.spawn((list_item(Line::styled(line, style)), ChildOf(list)));
+        tag(at, &mut row);
+        first.get_or_insert(row.id());
     }
     commands.entity(list).insert(ActiveDescendant(first));
 }

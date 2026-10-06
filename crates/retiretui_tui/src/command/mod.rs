@@ -50,7 +50,6 @@ pub const LEDGER_PLAN: &str = "ledger-plan";
 pub const COMPARE_WITH: &str = "compare-with";
 pub const COMPARE_OPEN: &str = "compare-open";
 pub const COMPARE_METRICS: [&str; 2] = ["compare-metric-previous", "compare-metric-next"];
-pub const OVERVIEW_YEARS: [&str; 2] = ["overview-year-previous", "overview-year-next"];
 
 pub struct CommandSpec {
     /// The stable kebab-case handle the command picker lists it under.

@@ -8,11 +8,10 @@ use plurimus::widgets::ActiveDescendant;
 
 use crate::chart::SeriesChart;
 use crate::ledger::LedgerTable;
-use crate::nav::Page;
 use crate::overview::OverviewChart;
 use crate::session::{RowYear, YearCursor};
 
-use super::{click, composed_frame, show};
+use super::click;
 
 /// Clicks `chart` in the column that reads as `year`.
 pub fn click_year(app: &mut App, chart: Entity, year: i16) {
@@ -31,23 +30,6 @@ pub fn ledger_year(app: &mut App) -> i16 {
         .query_filtered::<&ActiveDescendant, With<LedgerTable>>();
     let row = tables.single(app.world()).unwrap().0.expect("a row is on");
     app.world().get::<RowYear>(row).unwrap().0
-}
-
-/// The year the Overview shows, which its To do and its chart's cursor
-/// mark agree on.
-pub fn overview_year(app: &mut App) -> i16 {
-    show(app, Page::Overview);
-    let frame = composed_frame(app);
-    let (heading, _) = (frame.lines())
-        .find_map(|line| line.split_once(" · to do"))
-        .unwrap_or_else(|| panic!("the To do's year: {frame}"));
-    let year: i16 = heading[heading.len() - 4..].parse().unwrap();
-    let chart = overview_chart(app);
-    let label = year.to_string();
-    let chart = app.world().get::<SeriesChart>(chart).unwrap();
-    let is_marked = chart.marks.iter().any(|mark| mark.label == label);
-    assert!(is_marked, "the cursor mark is on {year}");
-    year
 }
 
 pub fn overview_chart(app: &mut App) -> Entity {

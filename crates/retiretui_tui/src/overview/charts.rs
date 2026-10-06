@@ -1,84 +1,68 @@
 //! The Overview's chart, which `v` turns between the balances by tax
-//! treatment, net worth, and income against taxes, and the years it
-//! points out.
-
-use std::iter;
+//! treatment, net worth, income against taxes, and net worth through
+//! random markets, with the key under it: what each mark is, and under
+//! the pointer what each reads that year. ⏎ and a press open the Ledger.
 
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::ChildOf;
-use bevy_ecs::prelude::{Commands, Component, Entity, Query, Res, ResMut, Resource, With};
-use bevy_ui::Node;
+use bevy_ecs::prelude::{Commands, Component, Entity, On, Query, Res, ResMut, Resource, With};
 use plurimus::core::UiWidget;
 use plurimus::core::ratatui_core::style::Style;
-use plurimus::core::ratatui_core::text::{Line, Span};
-use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
+use plurimus::ui::{ComputedWidgetArea, PointerPress};
 use retiretui_client::ledger::salary_marks;
-use retiretui_engine::plan::Dollars;
-use retiretui_engine::project::{ClassTotals, Projection};
+use retiretui_client::overview::Chart;
+use retiretui_client::present::treatment_word;
+use retiretui_engine::market::{BAND_PERCENTILES, Band};
+use retiretui_engine::plan::TreatmentClass;
+use retiretui_engine::project::{Projection, YearRow};
 
-use crate::chart::{Mark, Series, SeriesChart, Shade};
+use super::key::{ChartKey, Keyed, line_swatch, swatch};
+use crate::chart::{Legend, Mark, Series, SeriesChart, Shade};
 use crate::command::Outcome;
-use crate::layout::{self, filling, fixed, placed};
-use crate::nav::FocusStop;
+use crate::edit::Turn;
+use crate::hints::Hints;
+use crate::layout::{filling, fixed, placed};
+use crate::nav::{FocusStop, Page};
 use crate::pane::{Framed, Pane};
 use crate::present;
-use crate::session::{Projected, Shown};
+use crate::session::{LedgerRun, Projected, Shown};
+use crate::success::Successes;
 use crate::table::basis_amount;
 use crate::theme::Theme;
+use crate::tools::markets::chart::{INNER, INNER_BAND, OUTER, OUTER_BAND, band};
+use crate::tools::{EnterRuns, handle_enter};
 
-/// How many of its glyph each treatment is keyed by.
-const KEY_SWATCH: usize = 2;
 /// Which of the theme's series colours each dataset is drawn in.
 const WORTH_SERIES: usize = 0;
 const INCOME_SERIES: usize = 1;
 const TAXES_SERIES: usize = 2;
 
-/// What the chart shows.
-#[derive(Clone, Copy, PartialEq, Eq, Default, Debug)]
-pub(crate) enum View {
-    #[default]
-    Balances,
-    NetWorth,
-    IncomeTaxes,
-}
-
-impl View {
-    fn next(self) -> Self {
-        match self {
-            Self::Balances => Self::NetWorth,
-            Self::NetWorth => Self::IncomeTaxes,
-            Self::IncomeTaxes => Self::Balances,
-        }
-    }
-
-    const fn title(self) -> &'static str {
-        match self {
-            Self::Balances => present::BALANCES_CHART,
-            Self::NetWorth => present::NET_WORTH_CHART,
-            Self::IncomeTaxes => present::INCOME_CHART,
-        }
-    }
-}
-
+/// The chart on show.
 #[derive(Resource, Default)]
-pub(crate) struct ChartView(pub(crate) View);
+pub(crate) struct ChartView(pub(crate) Chart);
 
 #[derive(Component)]
 pub(crate) struct OverviewChart;
 
 pub(super) fn spawn(commands: &mut Commands, band: Entity, share: f32) {
-    let pane = Pane::new(View::default().title())
+    let pane = Pane::new(Chart::default().title())
         .sharing(share)
         .spawn(commands, band);
+    let ledger = Page::Ledger.label();
+    commands
+        .spawn((
+            OverviewChart,
+            SeriesChart::default(),
+            FocusStop,
+            EnterRuns(ledger),
+            Hints(&[("⏎", "ledger")]),
+            filling(),
+            ChildOf(pane),
+        ))
+        .observe(handle_enter)
+        .observe(open_ledger);
     commands.spawn((
-        OverviewChart,
-        SeriesChart::default(),
-        FocusStop,
-        filling(),
-        ChildOf(pane),
-    ));
-    commands.spawn((
-        BalancesKey,
+        ChartKey::default(),
         UiWidget::default(),
         fixed(1.0),
         placed(),
@@ -86,119 +70,151 @@ pub(super) fn spawn(commands: &mut Commands, band: Entity, share: f32) {
     ));
 }
 
-/// The line under the chart keying the balances, shown with them alone.
-#[derive(Component)]
-pub(crate) struct BalancesKey;
-
 /// The `overview-chart` command: the chart's next view.
 pub(crate) fn cycle_chart(mut view: ResMut<ChartView>) -> Outcome {
-    view.0 = view.0.next();
+    let turned = Chart::ALL.iter().position(|&chart| chart == view.0);
+    view.0 = Chart::ALL[turned.map_or(0, |at| (at + 1) % Chart::ALL.len())];
     Outcome::Done
 }
 
+/// A press on a year of the chart opens the Ledger there: the press has
+/// set the year, as it does on every chart.
+fn open_ledger(
+    press: On<PointerPress>,
+    charts: Query<(&SeriesChart, &ComputedWidgetArea)>,
+    mut run: ResMut<LedgerRun>,
+    mut turn: Turn,
+) {
+    let Ok((chart, area)) = charts.get(press.entity) else {
+        return;
+    };
+    if chart.year_at(area.0, press.position).is_none() {
+        return;
+    }
+    if run.0.is_some() {
+        run.0 = None;
+    }
+    turn.to(Page::Ledger, None);
+}
+
 /// Redraws the chart whenever the plan, the basis, the theme or the view
-/// moves, naming the view and its dollars in the pane's title; the year
-/// moves its marks alone.
+/// moves, or the markets answer while they are on show, naming the view
+/// and its dollars in the pane's title.
 pub(super) fn refresh(
-    (shown, theme, view): (Shown, Res<Theme>, Res<ChartView>),
+    (shown, theme, view, successes): (Shown, Res<Theme>, Res<ChartView>, Res<Successes>),
     mut charts: Query<(&mut SeriesChart, &ChildOf), With<OverviewChart>>,
-    mut keys: Query<(&mut UiWidget, &mut Node), With<BalancesKey>>,
+    mut keys: Query<&mut ChartKey>,
     mut frames: Query<&mut Framed>,
 ) {
     let is_drawn = shown.projected.is_changed()
         || shown.basis.is_changed()
         || theme.is_changed()
-        || view.is_changed();
-    if !is_drawn && !shown.is_year_changed() {
-        return;
-    }
-    let marks = marks(&shown.projected, shown.year(), &theme);
+        || view.is_changed()
+        || (view.0 == Chart::Markets && successes.is_changed());
     if !is_drawn {
-        for (mut chart, _) in &mut charts {
-            chart.marks.clone_from(&marks);
-        }
         return;
     }
     let (projection, nominal) = (&shown.projected.projection, shown.basis.nominal);
-    let drawn = match view.0 {
-        View::Balances => balances(projection, nominal, &theme),
-        View::NetWorth => net_worth(projection, nominal, &theme),
-        View::IncomeTaxes => income_taxes(projection, nominal, &theme),
+    let (drawn, keyed) = match view.0 {
+        Chart::Balances => balances(projection, nominal, &theme),
+        Chart::NetWorth => lines(vec![net_worth(projection, nominal, &theme)], &theme),
+        Chart::IncomeTaxes => lines(income_taxes(projection, nominal, &theme), &theme),
+        Chart::Markets => match successes.bands(&shown.projected.plan) {
+            Some(bands) => markets(bands, &theme),
+            None => (SeriesChart::default(), Vec::new()),
+        },
     };
-    let title = format!("{} · {}", view.0.title(), present::basis_name(nominal));
+    // The runs are kept in today's dollars alone.
+    let basis = present::basis_name(nominal && view.0 != Chart::Markets);
+    let title = format!("{} · {basis}", view.0.title());
+    let marks = marks(&shown.projected, &theme);
     for (mut chart, pane) in &mut charts {
         *chart = SeriesChart {
             marks: marks.clone(),
+            legend: Legend::Keyed,
             ..drawn.clone()
         };
         if let Ok(mut framed) = frames.get_mut(pane.parent()) {
             Framed::retitle(&mut framed, &title);
         }
     }
-    for (mut widget, mut node) in &mut keys {
-        *widget = UiWidget::new(Paragraph::new(key(&theme)));
-        layout::set_display(&mut node, view.0 == View::Balances);
+    let waits_on = if keyed.is_empty() {
+        successes.of(&shown.projected.plan).text()
+    } else {
+        String::new()
+    };
+    for mut key in &mut keys {
+        key.keyed.clone_from(&keyed);
+        key.waits_on.clone_from(&waits_on);
     }
 }
 
-/// The tax treatments stacked from the bottom, each named, shaded in a
-/// glyph of its own, and read from a year's totals. The HSA, usually the
-/// smallest, lies along the axis where no line crosses it.
-const CLASSES: [(&str, &str, fn(&ClassTotals) -> Dollars); 4] = [
-    ("HSA", "█", |totals| totals.hsa),
-    ("pre-tax", "░", |totals| totals.deferred),
-    ("Roth", "▒", |totals| totals.roth),
-    ("taxable", "▓", |totals| totals.taxable),
+/// The tax treatments stacked from the bottom, each shaded in a glyph of
+/// its own and read from a year's totals. The HSA, usually the smallest,
+/// lies along the axis where no line crosses it.
+const CLASSES: [(TreatmentClass, &str); 4] = [
+    (TreatmentClass::Hsa, "█"),
+    (TreatmentClass::Deferred, "░"),
+    (TreatmentClass::Roth, "▒"),
+    (TreatmentClass::Taxable, "▓"),
 ];
 
 /// Each treatment's balance stacked on those under it, a band each in its
-/// own colour and glyph, under net worth's line along the top edge. A
-/// later band wins the row it shares with an earlier one, so the HSA is
-/// drawn last and keeps a row wherever it holds anything.
-fn balances(projection: &Projection, nominal: bool, theme: &Theme) -> SeriesChart {
+/// own colour and glyph, under net worth's line along the top edge, and
+/// each keyed by what it holds. A later band wins the row it shares with
+/// an earlier one, so the HSA is drawn last and keeps a row wherever it
+/// holds anything.
+pub(super) fn balances(
+    projection: &Projection,
+    nominal: bool,
+    theme: &Theme,
+) -> (SeriesChart, Vec<Keyed>) {
     let mut shades = Vec::with_capacity(CLASSES.len());
+    let mut keyed = Vec::with_capacity(CLASSES.len());
     let mut lows: Vec<f64> = vec![0.0; projection.years.len()];
-    for (place, (_, symbol, value)) in CLASSES.iter().enumerate() {
+    for (place, &(class, symbol)) in CLASSES.iter().enumerate() {
+        let held = |row: &YearRow| basis_amount(row.class_totals.get(class), row.deflator, nominal);
         let points = (projection.years.iter().zip(&mut lows))
             .map(|(row, low)| {
-                let amount = basis_amount(value(&row.class_totals), row.deflator, nominal);
-                let high = *low + amount as f64;
+                let high = *low + held(row) as f64;
                 let band = (f64::from(row.year), *low, high);
                 *low = high;
                 band
             })
             .collect();
+        let color = theme.series(place);
+        keyed.push(Keyed {
+            swatch: swatch(symbol, Style::new().fg(color)),
+            label: treatment_word(class).to_owned(),
+            reads: (projection.years.iter())
+                .map(|row| (row.year, held(row), held(row)))
+                .collect(),
+        });
         shades.push(Shade {
             points,
             symbol,
-            color: theme.series(place),
+            color,
         });
     }
     shades.rotate_left(1);
     let worth = Series::of("net worth", theme.fg, projection, nominal, |row| {
         row.net_worth
     });
-    let mut chart = SeriesChart::of(vec![worth], theme.dimmed()).shaded(shades);
-    chart.is_legend_hidden = true;
-    chart
+    let chart = SeriesChart::of(vec![worth], theme.dimmed()).shaded(shades);
+    (chart, keyed)
 }
 
-/// The key the balances are read by: each treatment's glyph in its colour.
-fn key(theme: &Theme) -> Line<'static> {
-    let spans = CLASSES
-        .iter()
-        .enumerate()
-        .flat_map(|(place, (label, symbol, _))| {
-            let swatch = Span::styled(
-                symbol.repeat(KEY_SWATCH),
-                Style::new().fg(theme.series(place)),
-            );
-            [swatch, Span::raw(format!(" {label}  "))]
-        });
-    Line::from(spans.collect::<Vec<_>>())
+/// `series` charted as lines, each keyed by its colour.
+pub(super) fn lines(series: Vec<Series>, theme: &Theme) -> (SeriesChart, Vec<Keyed>) {
+    let keyed = series.iter().map(|series| {
+        let style = Style::new().fg(series.color);
+        Keyed::of(line_swatch(style), series)
+    });
+    let keyed = keyed.collect();
+    (SeriesChart::of(series, theme.dimmed()), keyed)
 }
 
-fn income_taxes(projection: &Projection, nominal: bool, theme: &Theme) -> SeriesChart {
+pub(super) fn income_taxes(projection: &Projection, nominal: bool, theme: &Theme) -> Vec<Series> {
     let income = Series::of(
         "income",
         theme.series(INCOME_SERIES),
@@ -213,32 +229,64 @@ fn income_taxes(projection: &Projection, nominal: bool, theme: &Theme) -> Series
         nominal,
         |row| row.taxes.total,
     );
-    SeriesChart::of(vec![income, taxes], theme.dimmed())
+    vec![income, taxes]
 }
 
-fn net_worth(projection: &Projection, nominal: bool, theme: &Theme) -> SeriesChart {
-    let worth = Series::of(
+fn net_worth(projection: &Projection, nominal: bool, theme: &Theme) -> Series {
+    Series::of(
         "net worth",
         theme.series(WORTH_SERIES),
         projection,
         nominal,
         |row| row.net_worth,
-    );
-    SeriesChart::of(vec![worth], theme.dimmed())
+    )
 }
 
-/// The year cursor, then where each earner's salary ends; a label that
-/// does not fit gives way in that order.
-fn marks(projected: &Projected, cursor: i16, theme: &Theme) -> Vec<Mark> {
-    let cursor = Mark::cursor(cursor, theme);
-    let ends = salary_marks(projected)
-        .into_iter()
-        .map(|(label, year)| Mark {
-            year,
-            label,
-            style: theme.dimmed(),
-        });
-    iter::once(cursor).chain(ends).collect()
+/// The plan's net worth through random markets: the `bands` most runs
+/// fall in, as the Monte Carlo tool shades them, under the median's line.
+pub(super) fn markets(bands: &[Band], theme: &Theme) -> (SeriesChart, Vec<Keyed>) {
+    let median = Series {
+        label: "median".to_owned(),
+        color: theme.series(WORTH_SERIES),
+        points: (bands.iter())
+            .map(|band| (f64::from(band.year), band.net_worth[MEDIAN] as f64))
+            .collect(),
+    };
+    let between = |(low, high): (usize, usize), symbol: &str| Keyed {
+        swatch: swatch(symbol, Style::new().fg(theme.dim)),
+        label: format!(
+            "{}th to {}th",
+            BAND_PERCENTILES[low], BAND_PERCENTILES[high]
+        ),
+        reads: (bands.iter())
+            .map(|band| (band.year, band.net_worth[low], band.net_worth[high]))
+            .collect(),
+    };
+    let keyed = vec![
+        between(OUTER_BAND, OUTER),
+        between(INNER_BAND, INNER),
+        Keyed::of(line_swatch(Style::new().fg(median.color)), &median),
+    ];
+    let shades = vec![
+        band(bands, OUTER_BAND, OUTER, theme),
+        band(bands, INNER_BAND, INNER, theme),
+    ];
+    let chart = SeriesChart::of(vec![median], theme.dimmed()).shaded(shades);
+    (chart, keyed)
+}
+
+/// Where the median sits among [`BAND_PERCENTILES`].
+const MEDIAN: usize = 2;
+
+/// Where each earner's salary ends.
+fn marks(projected: &Projected, theme: &Theme) -> Vec<Mark> {
+    let ends = salary_marks(projected).into_iter();
+    ends.map(|(label, year)| Mark {
+        year,
+        label,
+        style: theme.dimmed(),
+    })
+    .collect()
 }
 
 #[cfg(test)]
@@ -269,7 +317,7 @@ end = { date = 2030-12-31 }
 "#;
 
     fn labels(projected: &Projected) -> Vec<String> {
-        let marks = marks(projected, 2030, &Theme::terminal());
+        let marks = marks(projected, &Theme::terminal());
         marks.into_iter().map(|mark| mark.label).collect()
     }
 
@@ -282,7 +330,7 @@ end = { date = 2030-12-31 }
             row.unwrap().income.contains_key("salary")
         };
         assert!(paid(end - 1) && !paid(end), "{end}");
-        assert_eq!(labels(&alone), ["2030".to_owned(), format!("retire {end}")]);
+        assert_eq!(labels(&alone), [format!("retire {end}")]);
     }
 
     #[test]
@@ -290,7 +338,7 @@ end = { date = 2030-12-31 }
         let pair = projected_from(&format!("{TEST_PLAN}{SECOND_EARNER}"));
         let end = salary_ends(&test_projected())[0].1;
         assert_eq!(salary_ends(&pair), [("you", 2035), ("me", end)]);
-        assert_eq!(labels(&pair)[1], "you 2035");
+        assert_eq!(labels(&pair)[0], "you 2035");
     }
 
     #[test]
@@ -308,8 +356,9 @@ end = { date = 2030-12-31 }
     fn series_deflation_and_bounds() {
         let projected = test_projected();
         let projection = &projected.projection;
-        let nominal = income_taxes(projection, true, &Theme::terminal());
-        let todays = income_taxes(projection, false, &Theme::terminal());
+        let theme = Theme::terminal();
+        let (nominal, _) = lines(income_taxes(projection, true, &theme), &theme);
+        let (todays, _) = lines(income_taxes(projection, false, &theme), &theme);
         let first_year = f64::from(projection.years.first().unwrap().year);
         let last_year = f64::from(projection.years.last().unwrap().year);
         assert!((nominal.x_bounds[0] - first_year).abs() < f64::EPSILON);

@@ -6,7 +6,7 @@ use bevy_app::{App, Update};
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Entity, IntoScheduleConfigs, Local, Query, Res};
-use retiretui_engine::market::{Run, Runs};
+use retiretui_engine::market::{Band, Run, Runs};
 
 use super::views::{View, ViewOf, ViewPart};
 use super::{MarketTool, highlighted};
@@ -16,11 +16,11 @@ use crate::pane::{Framed, Pane};
 use crate::theme::Theme;
 use crate::tools::Tool;
 
-const OUTER: &str = "░";
-const INNER: &str = "▒";
+pub(crate) const OUTER: &str = "░";
+pub(crate) const INNER: &str = "▒";
 /// The bands' places in [`retiretui_engine::market::BAND_PERCENTILES`].
-const OUTER_BAND: (usize, usize) = (0, 4);
-const INNER_BAND: (usize, usize) = (1, 3);
+pub(crate) const OUTER_BAND: (usize, usize) = (0, 4);
+pub(crate) const INNER_BAND: (usize, usize) = (1, 3);
 const RUN_SERIES: usize = 0;
 const PLANNED: &str = "As planned";
 
@@ -47,10 +47,14 @@ pub(super) fn spawn_pane<R: MarketTool>(commands: &mut Commands, column: Entity)
 }
 
 /// A band between two of the percentiles, year by year.
-fn band(runs: &Runs, (low, high): (usize, usize), symbol: &'static str, theme: &Theme) -> Shade {
+pub(crate) fn band(
+    bands: &[Band],
+    (low, high): (usize, usize),
+    symbol: &'static str,
+    theme: &Theme,
+) -> Shade {
     Shade {
-        points: runs
-            .bands
+        points: bands
             .iter()
             .map(|band| {
                 let (low, high) = (band.net_worth[low], band.net_worth[high]);
@@ -106,8 +110,8 @@ fn redraw<R: MarketTool>(
         |listed| (listed.first, listed.run),
     );
     let shades = vec![
-        band(runs, OUTER_BAND, OUTER, &theme),
-        band(runs, INNER_BAND, INNER, &theme),
+        band(&runs.bands, OUTER_BAND, OUTER, &theme),
+        band(&runs.bands, INNER_BAND, INNER, &theme),
     ];
     let title = super::views::title(view.0, runs, &label);
     for (mut chart, part, parent) in &mut charts {

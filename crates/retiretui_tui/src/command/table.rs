@@ -10,7 +10,7 @@ use super::keys::character;
 use super::pickers;
 use super::{
     COMPARE_METRICS, COMPARE_OPEN, COMPARE_WITH, CommandSpec, DOMAINS, FOCUS_NEXT, HELP,
-    LEDGER_PLAN, OVERVIEW_YEARS, Outcome, PALETTE, Scope,
+    LEDGER_PLAN, Outcome, PALETTE, Scope,
 };
 use crate::compare::{self, Compared};
 use crate::confirm::Confirm;
@@ -25,7 +25,7 @@ use crate::ledger;
 use crate::motion;
 use crate::nav::{self, Group, LastShown, Page, Turn};
 use crate::overview;
-use crate::session::{self, Basis};
+use crate::session::Basis;
 use crate::setup;
 use crate::sidebar;
 use crate::theme;
@@ -337,22 +337,6 @@ pub static COMMANDS: LazyLock<Vec<CommandSpec>> = LazyLock::new(|| {
         keys: vec![KeyBinding::new(Key::ArrowLeft)],
         hint: None,
         register: Box::new(|world| world.register_system(compare::previous_metric)),
-    });
-    commands.push(CommandSpec {
-        name: OVERVIEW_YEARS[1],
-        scope: Scope::On(Page::Overview),
-        doc: "move the year a year on",
-        keys: vec![KeyBinding::new(Key::ArrowRight)],
-        hint: None,
-        register: Box::new(|world| world.register_system(session::next_year)),
-    });
-    commands.push(CommandSpec {
-        name: OVERVIEW_YEARS[0],
-        scope: Scope::On(Page::Overview),
-        doc: "move the year a year back",
-        keys: vec![KeyBinding::new(Key::ArrowLeft)],
-        hint: None,
-        register: Box::new(|world| world.register_system(session::previous_year)),
     });
     commands.push(CommandSpec {
         name: "overview-chart",

@@ -102,7 +102,7 @@ const TYPES: &str = r#"import type {
   Ledger, MarketRuns, MarketWords, Metric, OrderOptions, OrderWords, OverviewView, PersonAction,
   PersonRow, PlacedIssue,
   NewPlanMade, OpenFailure,
-  Projection, ReadRow, RothOwner, SaidYear, ScaledExpense, Searched, Sort, SpendingOptions,
+  Projection, ReadRow, RothOwner, ScaledExpense, Searched, Sort, SpendingOptions,
   SpendingWords, Step, Summary, TablesView,
   TreatmentClass, ViewWords, YearDetail, YearFigure, YearTables,
 } from "../bindings/index";
@@ -203,17 +203,6 @@ impl JsDocument {
     #[wasm_bindgen(unchecked_return_type = "ActionsReply")]
     pub fn actions(&self, year: i16) -> Result<JsValue, JsError> {
         reply(self.0.actions(year))
-    }
-
-    /// `year` in words: its actions and warnings, nominal or in today's
-    /// dollars, and everyone's age.
-    ///
-    /// # Errors
-    ///
-    /// Where the plan has issues, or `year` is outside its projection.
-    #[wasm_bindgen(unchecked_return_type = "SaidYear")]
-    pub fn said(&self, year: i16, nominal: bool) -> Result<JsValue, JsError> {
-        reply(self.0.said(year, nominal))
     }
 
     /// The resolved plan as canonical TOML: what a worker is handed, and
@@ -318,7 +307,7 @@ mod bindings {
     use ts_rs::{Config, ExportError, TS};
 
     use crate::claims::{ClaimWords, ClaimsOptions, PersonRow, RothOwner};
-    use crate::document::{PlacedIssue, SaidYear};
+    use crate::document::PlacedIssue;
     use crate::unopened::{OpenFailure, Written};
     use retiretui_client::forms::details::ReadRow;
     use retiretui_client::forms::sort::Sort;
@@ -345,7 +334,6 @@ mod bindings {
         Issue::export_all,
         PlacedIssue::export_all,
         ReadRow::export_all,
-        SaidYear::export_all,
         Projection::export_all,
         Summary::export_all,
         ActionsReply::export_all,

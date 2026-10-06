@@ -55,9 +55,21 @@ pub struct SeriesChart {
     pub marks: Vec<Mark>,
     /// Bands shaded under the lines.
     pub shades: Vec<Shade>,
-    /// Whether the lines go unnamed on the chart, something beside it
-    /// naming them instead.
-    pub is_legend_hidden: bool,
+    /// Where the lines are named.
+    pub legend: Legend,
+}
+
+/// Where a chart's lines are named.
+#[derive(Clone, Copy, PartialEq, Eq, Default, Debug)]
+pub enum Legend {
+    /// On the chart.
+    #[default]
+    Inline,
+    /// Not on it: something beside it names them.
+    Hidden,
+    /// In a key beside it that also reads them out under the pointer, so
+    /// the chart's pane notes the year alone.
+    Keyed,
 }
 
 #[derive(Clone)]
@@ -134,7 +146,7 @@ impl SeriesChart {
             axis,
             marks: Vec::new(),
             shades: Vec::new(),
-            is_legend_hidden: false,
+            legend: Legend::Inline,
         }
     }
 
@@ -251,10 +263,10 @@ impl Widget for &SeriesChart {
                     .bounds(self.y_bounds)
                     .labels(self.y_labels.iter().map(String::as_str)),
             );
-        if self.is_legend_hidden {
-            chart.legend_position(None).render(area, buf);
-        } else {
+        if self.legend == Legend::Inline {
             chart.render(area, buf);
+        } else {
+            chart.legend_position(None).render(area, buf);
         }
         marks::draw_labels(self, area, buf);
     }
@@ -279,10 +291,14 @@ fn read_out(
         return;
     }
     for (chart, area, parent) in &charts {
-        let note = cursor
-            .0
-            .and_then(|cell| chart.read_at(area.0, cell))
-            .unwrap_or_default();
+        let read = |cell| {
+            if chart.legend == Legend::Keyed {
+                Some(chart.year_at(area.0, cell)?.to_string())
+            } else {
+                chart.read_at(area.0, cell)
+            }
+        };
+        let note = cursor.0.and_then(read).unwrap_or_default();
         if let Ok(mut framed) = frames.get_mut(parent.parent()) {
             Framed::renote(&mut framed, &note);
         }
@@ -342,7 +358,7 @@ mod tests {
     }
 
     #[test]
-    fn hovering_a_chart_names_the_year_in_its_pane_and_a_press_sets_the_cursor() {
+    fn hovering_a_keyed_chart_names_the_year_and_a_press_sets_the_cursor() {
         let mut app = headless_app(SIZE);
         app.update();
         let chart = overview_chart(&mut app);
@@ -352,23 +368,22 @@ mod tests {
         let row = area.y + 1;
         hover(&mut app, column(2026), row);
         let frame = composed_frame(&app);
-        assert!(frame.contains("dollars · 2026 · "), "{frame}");
+        assert!(
+            frame.contains("dollars · 2026 ─"),
+            "the year alone: {frame}"
+        );
+        assert!(frame.contains("░░ pre-tax $"), "its key reads it: {frame}");
         hover(&mut app, column(2050), row);
         let frame = composed_frame(&app);
-        assert!(frame.contains("dollars · 2050 · "), "{frame}");
+        assert!(frame.contains("dollars · 2050 ─"), "{frame}");
         hover(&mut app, 0, 0);
         let frame = composed_frame(&app);
         assert!(
             frame.contains("╭ Balances by tax treatment · today's dollars ─"),
             "{frame}"
         );
+        assert!(frame.contains("░░ pre-tax  ▒▒ Roth"), "{frame}");
         click(&mut app, column(2038), row);
         assert_eq!(app.world().resource::<YearCursor>().0, Some(2038));
-        app.update();
-        let frame = composed_frame(&app);
-        assert!(
-            frame.contains("2038 · to do"),
-            "the To do pane follows: {frame}"
-        );
     }
 }

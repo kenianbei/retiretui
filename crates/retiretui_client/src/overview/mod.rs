@@ -5,6 +5,9 @@
 
 mod attention;
 mod milestones;
+mod rests;
+mod totals;
+mod view;
 
 #[cfg(test)]
 pub(crate) mod tests;
@@ -13,6 +16,9 @@ use crate::forms::DomainId;
 
 pub use attention::{FailingStart, NOTHING, attention, failing_start, issue_rows};
 pub use milestones::milestones;
+pub use rests::{RESTS_ON, rests_on};
+pub use totals::{Leads, OVER_THE_PLAN, Tool, Total, totals};
+pub use view::{Chart, STALE, STRIP, Shortfall, View};
 
 /// What the Overview titles its lists.
 pub const ATTENTION: &str = "Needs attention";

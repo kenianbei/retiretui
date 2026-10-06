@@ -175,7 +175,7 @@ fn the_chrome_keeps_the_first_and_last_rows_through_a_resize() {
         assert!(rows[0].contains('\u{256d}'), "the tab row: {frame}");
         assert!(rows[rows.len() - 1].contains("q quit"), "{frame}");
         assert!(
-            rows[usize::from(layout::BODY_TOP)].contains("Lifetime taxes"),
+            rows[usize::from(layout::BODY_TOP)].contains("Lowest after retiring"),
             "the body starts under the tab row: {frame}"
         );
     }
@@ -188,11 +188,11 @@ fn the_chrome_keeps_the_first_and_last_rows_through_a_resize() {
 }
 
 #[test]
-fn the_overview_renders_its_verdict_chart_and_to_do() {
+fn the_overview_renders_its_strip_its_chart_and_what_the_years_add_up_to() {
     let mut app = headless_app(SIZE);
     app.update();
     let frame = composed_frame(&app);
-    for said in ["Money lasts", "Success", "Ends with", "Lifetime taxes"] {
+    for said in retiretui_client::overview::STRIP {
         assert!(frame.contains(said), "{said}: {frame}");
     }
     assert!(
@@ -200,9 +200,11 @@ fn the_overview_renders_its_verdict_chart_and_to_do() {
         "{frame}"
     );
     assert!(
-        frame.contains("2026 · to do · today's dollars"),
-        "the To do follows the basis: {frame}"
+        frame.contains("Over the plan · today's dollars"),
+        "the totals follow the basis: {frame}"
     );
+    assert!(frame.contains("╭ Rests on "), "{frame}");
+    assert!(!frame.contains("to do"), "no year's to-dos: {frame}");
 }
 
 #[test]
@@ -234,9 +236,13 @@ fn ledger_lists_years_and_detail_follows_the_cursor() {
     );
     let frame = composed_frame(&app);
     assert!(frame.contains("2027 Flows"), "{frame}");
+    assert!(frame.contains("2027 To do"), "{frame}");
     press_key(&mut app, KeyCode::Tab);
     let frame = composed_frame(&app);
-    assert!(frame.contains("↑↓ account"), "⇥ reaches the flows: {frame}");
+    assert!(frame.contains("↑↓ scroll"), "⇥ reaches the to-dos: {frame}");
+    press_key(&mut app, KeyCode::Tab);
+    let frame = composed_frame(&app);
+    assert!(frame.contains("↑↓ account"), "then the flows: {frame}");
     press_key(&mut app, KeyCode::Tab);
     let frame = composed_frame(&app);
     assert!(

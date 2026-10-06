@@ -57,3 +57,32 @@ test("the Ledger tables every year over the chosen year's flows", async ({
   await page.reload();
   await expect(page.getByText(`${next} Flows · future dollars`)).toBeVisible();
 });
+
+test("the Ledger says what to do in its year, in the dollars shown", async ({
+  page,
+}) => {
+  await seed(
+    page,
+    { "/starter.toml": example("starter.toml") },
+    "/starter.toml",
+    "#/ledger?year=2045",
+  );
+  const todo = page
+    .locator("[data-slot=card]")
+    .filter({ hasText: "2045 To do · today's dollars" });
+  await expect(todo).toContainText(/turns \d+/);
+  const first = todo.getByRole("listitem").first();
+  const today = await first.textContent();
+  await page.getByRole("link", { name: "future dollars" }).click();
+  await page.waitForURL(/basis=nominal/);
+  await expect(page.getByText("2045 To do · future dollars")).toBeVisible();
+  await expect(
+    page
+      .locator("[data-slot=card]")
+      .filter({ hasText: "2045 To do" })
+      .getByRole("listitem")
+      .first(),
+  ).not.toHaveText(today ?? "");
+  await page.getByRole("button", { name: "The year after" }).click();
+  await expect(page.getByText("2046 To do")).toBeVisible();
+});

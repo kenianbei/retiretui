@@ -235,6 +235,11 @@ pub struct YearRow {
     pub total_income: Dollars,
     /// Spending for the year.
     pub expenses: Dollars,
+    /// The part of `expenses` the plan marks essential.
+    pub expenses_essential: Dollars,
+    /// The part of `expenses` the household could spend more or less of:
+    /// recurring, and not essential. The rest is spent once.
+    pub expenses_flexible: Dollars,
     /// Medicare surcharges and crossed-cliff costs spent this year.
     pub medicare: Dollars,
     /// Employee contributions paid from cash flow.
@@ -268,6 +273,12 @@ pub struct YearRow {
 }
 
 impl YearRow {
+    /// The part of `expenses` spent once: neither essential nor flexible.
+    #[must_use]
+    pub const fn expenses_once(&self) -> Dollars {
+        self.expenses - self.expenses_essential - self.expenses_flexible
+    }
+
     /// Total withdrawn across all accounts, RMDs included.
     #[must_use]
     pub fn total_withdrawals(&self) -> Dollars {
