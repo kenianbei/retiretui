@@ -58,8 +58,8 @@ pub struct Year {
     pub money_out: Funds,
     /// What it paid of each kind of tax, and all of it.
     pub tax: Vec<DetailLine>,
-    /// The federal bracket its taxable income reaches and the room under
-    /// that bracket's top; none for a market run.
+    /// The room under the top of the federal bracket its taxable income
+    /// reaches; none for a market run.
     pub bracket: Option<DetailLine>,
     /// What its tax was worked out from.
     pub picture: Vec<DetailLine>,

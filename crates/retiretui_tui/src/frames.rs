@@ -58,6 +58,24 @@ fn every_page_draws_its_frame() {
     }
 }
 
+/// The Ledger past its first frame: a year with a milestone, a ladder
+/// step and money drawn, and the table under each column set `c` turns to.
+#[test]
+fn the_ledger_draws_a_drawing_year_and_each_column_set() {
+    let mut app = fixture_app(SIZE);
+    show(&mut app, Page::Ledger);
+    for _ in 0..16 {
+        press_key(&mut app, KeyCode::Down);
+    }
+    settle(&mut app);
+    assert_frame("ledger_drawing", SIZE, &app);
+    for (key, set) in [('t', "treatments"), ('c', "accounts"), ('c', "tax")] {
+        press_key(&mut app, KeyCode::Char(key));
+        settle(&mut app);
+        assert_frame(&format!("ledger_table_{set}"), SIZE, &app);
+    }
+}
+
 /// The Overview's chart in each view `v` turns to after the balances,
 /// beside what its searches found.
 #[test]

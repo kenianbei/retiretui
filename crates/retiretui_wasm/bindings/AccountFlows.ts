@@ -30,7 +30,8 @@ moves: Array<string>,
  */
 growth: string, 
 /**
- * What it grew over what it opened on; blank where it opened empty.
+ * What it grew over what it opened on; blank where it grew nothing or
+ * opened empty.
  */
 growth_rate: string, 
 /**

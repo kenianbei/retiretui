@@ -2,7 +2,6 @@ use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
 use bevy_ecs::prelude::{Changed, ChildOf, Component, Entity, Query, Res, ResMut, Resource, With};
 use bevy_ecs::system::SystemParam;
 use plurimus::widgets::ActiveDescendant;
-use retiretui_engine::project::YearRow;
 
 use crate::command::Outcome;
 
@@ -126,11 +125,6 @@ impl Shown<'_> {
     pub fn year_among(&self, shows: (i16, i16)) -> i16 {
         let planned = span(&self.projected.projection.years);
         self.cursor.resolve(*self.today, planned, shows)
-    }
-
-    /// The Ledger's row for the cursor's year.
-    pub fn row(&self) -> Option<&YearRow> {
-        self.ledger().projection.row(self.year())
     }
 }
 

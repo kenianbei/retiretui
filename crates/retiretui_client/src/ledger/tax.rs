@@ -12,8 +12,8 @@ use crate::table::{basis_amount, rate};
 /// What the Ledger titles a year's tax.
 pub const TAX: &str = "Tax";
 const PERCENT: f64 = 100.0;
-/// What is said of room in the bracket no bracket is above.
-const TOP_BRACKET: &str = "the top one";
+/// What the bracket no bracket is above is called.
+const TOP_BRACKET: &str = "Top bracket";
 
 fn lines<'a>(
     row: &YearRow,
@@ -54,9 +54,10 @@ fn reached(brackets: &[Bracket], taxable: Dollars) -> Option<(&Bracket, Option<D
     Some((&brackets[at], above))
 }
 
-/// The federal bracket `row`'s taxable income reaches and the room left
-/// under its top, from the tables the plan's own projection applies: the
-/// latest grown at the plan's inflation, for its filing status.
+/// The room left under the top of the federal bracket `row`'s taxable
+/// income reaches - or, of the last bracket, its rate - from the tables the
+/// plan's own projection applies: the latest grown at the plan's
+/// inflation, for its filing status.
 pub(super) fn bracket(
     plan: &Plan,
     tables: &TaxTables,
@@ -67,16 +68,16 @@ pub(super) fn bracket(
     let brackets = params.brackets.for_status(plan.household.filing);
     let taxable = row.taxes.ordinary_taxable;
     let (bracket, above) = reached(brackets, taxable)?;
-    let room = above.map_or_else(
-        || TOP_BRACKET.to_owned(),
-        |above| {
-            let room = basis_amount(above - taxable, row.deflator, is_nominal);
-            format!("{} to top", money(room))
+    let rate = rate(bracket.rate);
+    Some(match above {
+        Some(above) => DetailLine {
+            label: format!("To top of {rate}"),
+            amount: money(basis_amount(above - taxable, row.deflator, is_nominal)),
         },
-    );
-    Some(DetailLine {
-        label: format!("{} bracket", rate(bracket.rate)),
-        amount: room,
+        None => DetailLine {
+            label: TOP_BRACKET.to_owned(),
+            amount: rate,
+        },
     })
 }
 

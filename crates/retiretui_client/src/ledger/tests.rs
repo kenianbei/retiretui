@@ -207,10 +207,15 @@ fn the_bracket_is_the_one_the_tax_tables_hold_for_the_taxable_income() {
         let said = year_of(&projected, row.year, true)
             .bracket
             .expect("a bracket");
-        assert_eq!(said.label, format!("{} bracket", held[1]), "{}", row.year);
         let above = brackets.rows.get(at.unwrap() + 1).map(over);
-        let room = above.map(|above| format!("{} to top", money(above - taxable)));
-        assert_eq!(Some(said.amount), room, "{}", row.year);
+        let wanted = above.map_or_else(
+            || ("Top bracket".to_owned(), held[1].clone()),
+            |above| {
+                let label = format!("To top of {}", held[1]);
+                (label, money(above - taxable))
+            },
+        );
+        assert_eq!((said.label.clone(), said.amount), wanted, "{}", row.year);
         reached.insert(said.label);
     }
     assert!(reached.len() > 1, "one bracket throughout: {reached:?}");
@@ -300,7 +305,7 @@ fn an_account_s_moves_are_what_came_in_and_then_what_went_out() {
         assert_eq!(flow.moves.iter().collect::<Vec<_>>(), in_then_out);
         assert_eq!(
             flow.growth_rate.is_empty(),
-            flow.open == money(0),
+            flow.growth.is_empty(),
             "{flow:?}"
         );
     }

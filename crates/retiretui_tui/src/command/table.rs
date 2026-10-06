@@ -9,8 +9,8 @@ use plurimus::ui::KeyBinding;
 use super::keys::character;
 use super::pickers;
 use super::{
-    COMPARE_METRICS, COMPARE_OPEN, COMPARE_WITH, CommandSpec, DOMAINS, FOCUS_NEXT, HELP,
-    LEDGER_PLAN, Outcome, PALETTE, Scope,
+    COMPARE_METRICS, COMPARE_OPEN, COMPARE_WITH, CommandSpec, DOMAINS, FOCUS_NEXT, HELP, Outcome,
+    PALETTE, Scope,
 };
 use crate::compare::{self, Compared};
 use crate::confirm::Confirm;
@@ -21,7 +21,6 @@ use crate::edit::{self, Draft, DraftEditor};
 use crate::exchange;
 use crate::focus;
 use crate::issues;
-use crate::ledger;
 use crate::motion;
 use crate::nav::{self, Group, LastShown, Page, Turn};
 use crate::overview;
@@ -258,14 +257,7 @@ pub static COMMANDS: LazyLock<Vec<CommandSpec>> = LazyLock::new(|| {
         hint: None,
         register: Box::new(|world| world.register_system(focus::enter_sidebar)),
     });
-    commands.push(CommandSpec {
-        name: LEDGER_PLAN,
-        scope: Scope::On(Page::Ledger),
-        doc: "return the ledger from a market run to the plan",
-        keys: vec![KeyBinding::new(Key::Escape)],
-        hint: None,
-        register: Box::new(|world| world.register_system(ledger::return_to_plan)),
-    });
+    commands.extend(super::ledger::commands());
     commands.push(CommandSpec {
         name: "issues",
         scope: Scope::Anywhere,

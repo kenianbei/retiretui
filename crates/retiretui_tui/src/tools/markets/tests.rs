@@ -101,8 +101,14 @@ fn enter_on_a_run_opens_it_in_the_ledger_until_esc_or_an_edit() {
     );
     let frame = redrawn(&mut app);
     assert!(
-        frame.contains("Ledger · the 90th percentile market"),
-        "{frame}"
+        frame.contains("╭ 2026 · the 90th percentile market · esc returns to the plan · "),
+        "the year names the run it is of: {frame}"
+    );
+    press_key(&mut app, KeyCode::Char('t'));
+    let frame = redrawn(&mut app);
+    assert!(
+        frame.contains("╭ Ledger · the 90th percentile market · esc returns to the plan · "),
+        "and so does the table: {frame}"
     );
     let projected = &app.world().resource::<Projected>().projection;
     assert_eq!(*projected, plan_before, "the overview still shows the plan");

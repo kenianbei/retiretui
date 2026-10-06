@@ -3,7 +3,7 @@
 
 pub mod exchange;
 
-use retiretui_client::{actions, files, metric, present, store, table};
+use retiretui_client::{files, metric, present, store, table};
 
 mod chart;
 mod command;

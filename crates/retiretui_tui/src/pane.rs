@@ -195,6 +195,15 @@ impl Pane {
         self
     }
 
+    /// The same pane given up to a full parent, down to `rows`, borders
+    /// included.
+    #[must_use]
+    pub fn shrinking_to(mut self, rows: f32) -> Self {
+        self.node.flex_shrink = 1.0;
+        self.node.min_height = Val::Px(rows);
+        self
+    }
+
     /// The same pane `cols` wide, borders included, which a full parent does
     /// not shrink.
     #[must_use]
@@ -241,7 +250,7 @@ mod tests {
         app.update();
         assert_eq!(lit_titles(&mut app), ["Success"], "the Overview's tile");
         show(&mut app, Page::Ledger);
-        assert_eq!(lit_titles(&mut app), ["Ledger"]);
+        assert_eq!(lit_titles(&mut app), ["Years"]);
         show(&mut app, Page::Accounts);
         assert_eq!(lit_titles(&mut app), ["Accounts"]);
     }

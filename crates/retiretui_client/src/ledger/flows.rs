@@ -44,7 +44,8 @@ pub struct AccountFlows {
     pub moves: Vec<String>,
     /// What it grew, signed; blank where it did not.
     pub growth: String,
-    /// What it grew over what it opened on; blank where it opened empty.
+    /// What it grew over what it opened on; blank where it grew nothing or
+    /// opened empty.
     pub growth_rate: String,
     /// Its balance as the year closed.
     pub close: String,
@@ -115,9 +116,10 @@ pub fn all_accounts(
     }
 }
 
-/// `growth` over `open` as a percent to a tenth; blank over nothing.
+/// `growth` over `open` as a percent to a tenth; blank where it grew
+/// nothing or opened on nothing.
 fn growth_rate(growth: Dollars, open: Dollars) -> String {
-    if open <= 0 {
+    if growth == 0 || open <= 0 {
         return String::new();
     }
     format!("{:.1}%", growth as f64 / open as f64 * PERCENT)
