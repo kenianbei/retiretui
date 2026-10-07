@@ -1,12 +1,11 @@
-//! The Ledger: one year in the context of all of them. A list of every
-//! year stands beside the cursor year in full - what happens in it and
-//! what to do, each account's flows, where its money came from and went,
-//! and its tax - and one key swaps the page for the whole year table.
+//! The Ledger: one year in the context of all of them. The table of every
+//! year stands over the cursor year in full - what happens in it and what
+//! to do, each account's flows, where its money came from and went, and
+//! its tax - and one key gives the table the whole page.
 
 mod arrange;
 mod flows;
 mod funds;
-mod history;
 mod year;
 mod years;
 
@@ -54,7 +53,6 @@ pub fn plugin(app: &mut App) {
         year::plugin,
         flows::plugin,
         funds::plugin,
-        history::plugin,
     ));
     app.add_systems(Startup, spawn_ledger.after(layout::spawn_frame));
     app.add_systems(
@@ -89,7 +87,7 @@ const MILESTONE: &str = "◆";
 /// What marks something to watch, on its year and before its line.
 const WARNING: &str = "!";
 
-/// The year keys' and the table key's hints, said from any pane.
+/// The year keys' hints, said from any pane.
 const PAGE_HINTS: &[CommandHint] = &[
     CommandHint {
         commands: &[
@@ -115,17 +113,16 @@ fn spawn_ledger(bodies: Query<Entity, With<Body>>, mut commands: Commands) {
     };
     let view = nav::spawn_surface(&mut commands, body, Some(Page::Ledger));
     commands.entity(view).insert(CommandHints(PAGE_HINTS));
-    let across = Node {
-        flex_direction: FlexDirection::Row,
+    let page = Node {
+        flex_direction: FlexDirection::Column,
         ..growing()
     };
-    let across = commands.spawn((across, ChildOf(view))).id();
-    years::spawn_pane(&mut commands, across);
-    let detail = arrange::spawn_detail(&mut commands, across);
-    year::spawn_panes(&mut commands, detail);
-    flows::spawn_pane(&mut commands, detail);
-    funds::spawn_panes(&mut commands, detail);
-    history::spawn_row(&mut commands, detail);
+    let page = commands.spawn((page, ChildOf(view))).id();
+    years::spawn_pane(&mut commands, page);
+    let (year, actions) = arrange::spawn_year(&mut commands, page);
+    year::spawn_panes(&mut commands, actions);
+    flows::spawn_pane(&mut commands, actions);
+    funds::spawn_panes(&mut commands, year);
 }
 
 /// The `ledger-plan` command: the plan's own projection back in the
@@ -204,8 +201,8 @@ impl Detail<'_> {
     }
 }
 
-/// The `ledger-table` command: the whole year table in the page's place,
-/// or the year it left.
+/// The `ledger-table` command: the page given to the year table alone, or
+/// the year back under it.
 pub fn swap_table(mut view: ResMut<LedgerView>) -> Outcome {
     *view = match *view {
         LedgerView::Year => LedgerView::Table,
@@ -214,16 +211,15 @@ pub fn swap_table(mut view: ResMut<LedgerView>) -> Outcome {
     Outcome::Done
 }
 
-/// The `ledger-year` command: the cursor's year in full, from the table.
+/// The `ledger-year` command: the cursor's year in full, under the table.
 pub fn show_year(mut view: ResMut<LedgerView>) -> Outcome {
     view.set_if_neq(LedgerView::Year);
     Outcome::Done
 }
 
 /// The `ledger-columns` command: the table under its next column set.
-pub fn turn_columns(mut columns: ResMut<Columns>, mut view: ResMut<LedgerView>) -> Outcome {
+pub fn turn_columns(mut columns: ResMut<Columns>) -> Outcome {
     columns.0 = columns.0.neighbor(1);
-    view.set_if_neq(LedgerView::Table);
     Outcome::Done
 }
 

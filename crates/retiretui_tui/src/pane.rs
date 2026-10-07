@@ -204,6 +204,13 @@ impl Pane {
         self
     }
 
+    /// The same pane taking, past its own size, what its siblings leave.
+    #[must_use]
+    pub fn stretching(mut self) -> Self {
+        self.node.flex_grow = 1.0;
+        self
+    }
+
     /// The same pane `cols` wide, borders included, which a full parent does
     /// not shrink.
     #[must_use]
@@ -250,7 +257,8 @@ mod tests {
         app.update();
         assert_eq!(lit_titles(&mut app), ["Success"], "the Overview's tile");
         show(&mut app, Page::Ledger);
-        assert_eq!(lit_titles(&mut app), ["Years"]);
+        let ledger = "Ledger · today's dollars · Balances by treatment";
+        assert_eq!(lit_titles(&mut app), [ledger]);
         show(&mut app, Page::Accounts);
         assert_eq!(lit_titles(&mut app), ["Accounts"]);
     }

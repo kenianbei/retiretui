@@ -42,6 +42,10 @@ pub const SIZE: TerminalSize = TerminalSize::new(128, 32);
 /// actually seen at, and wide enough for a form to dock beside its table.
 pub const ROOMY: TerminalSize = TerminalSize::new(200, 55);
 
+/// A terminal on a screen stood on its end: taller than it is wide, a
+/// cell being about twice as tall as wide.
+pub const TALL: TerminalSize = TerminalSize::new(128, 70);
+
 /// The year the test plans start in, so the year cursor opens on their
 /// first row whenever the suite runs.
 pub const TODAY: Today = Today(2026);
