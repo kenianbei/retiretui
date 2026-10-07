@@ -6,6 +6,7 @@ use bevy_ecs::entity::Entities;
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Component, Entity, Query, ResMut, With};
 use bevy_ecs::system::SystemParam;
+use bevy_input_focus::tab_navigation::TabGroup;
 use bevy_input_focus::{FocusCause, InputFocus};
 use plurimus::ui::ComputedWidgetArea;
 
@@ -41,8 +42,9 @@ pub struct Standing<'w, 's, Marker: Component + Default> {
 
 impl<Marker: Component + Default> Standing<'_, '_, Marker> {
     /// Takes down what stands and answers with the overlay's new root,
-    /// marked, hung under the body, and carrying the band everything under
-    /// it is painted in. `None` is a shell with no body to hang one under.
+    /// marked, hung under the body, keeping the arrows and ⇥ among what it
+    /// holds, and carrying the band everything under it is painted in.
+    /// `None` is a shell with no body to hang one under.
     pub fn open(&mut self, commands: &mut Commands) -> Option<Entity> {
         self.take_down(commands);
         let Ok(body) = self.body.single() else {
@@ -55,6 +57,7 @@ impl<Marker: Component + Default> Standing<'_, '_, Marker> {
                 Marker::default(),
                 Arriving,
                 KeyScope::All,
+                TabGroup::modal(),
                 ChildOf(body),
                 Propagate(Band::at(beneath)),
             ))
