@@ -360,44 +360,45 @@ depends on UI.
   of the shell's. The keyboard walks a page's panes in the order they are drawn,
   the sidebar first beside a grouped page, and a page is entered on its first
   pane. Whatever stands over the page - a menu, a picker, a dialog, an open
-  item - takes the keyboard on a stack and gives it back to what held it, and a
-  command chosen from one runs once it has, since what holds the keyboard is
-  what a command acts on. Whether a key is a command at all is asked of the
-  widget it was typed at and everything that widget sits in: what stands over
-  the page keeps every key, and a form's fields and buttons keep the plain ones,
-  a text field the chords it edits with besides. Everything the shell says is a
-  `tracing` event with two readers: a journal the shell toasts from and lists in
-  a drawer, and, in a terminal, a log file. Colour is named by role, never by
-  value: a theme is a table of roles - the terminal's own colours by default,
-  its tables banded in a faint grey for a dark screen or a light one, or, by
-  name, one of an embedded set or a file of the user's own in a directory beside
-  their config file, read at launch and again as the theme picker opens, one
-  that does not read costing only itself - and a cell no widget coloured is
-  drawn in the theme's own ground. What the user sets - theme, motion, the keys
-  a command answers to - lives in one user config file the shell reads at
-  launch, a setting at a time so that one it cannot read costs only itself, and
-  writes a theme or motion it changes back into a key at a time, leaving the
-  rest of the file as the user wrote it. Each applied item re-validates the
-  draft: a valid draft is re-projected at once so the views follow it, and an
-  invalid one holds the last good view, reports its first issue, counts them
-  beside the file name, and lists every one in a panel whose rows turn to the
-  item. Saving writes the draft as canonical TOML through the same validation
-  gate as every other write; a scenario session saves into its own overlay,
-  still naming its base and stating what differs from it beside whatever it
-  stated that still holds; an edit no overlay can state - clearing what the base
-  states outside an item - is refused in the form's words, and saving one under
-  a new name writes the resolved plan as a plan of its own. The resolved chain's
-  files are watched so edits made outside the session - on disk, or from another
-  tab of the page - re-project in place, except under an unsaved draft or an
-  item being edited, which is reported rather than overwritten, and so are each
-  compared file's, which have no draft to protect; `theme` lists the themes a
-  terminal session can wear and prints one's file to start another from; `mcp`
-  serves the same contract to AI agents over stdio - list, read, validate,
-  write, project, actions, compare, earnings-import, optimizer and market tools
-  over plan files sandboxed to a served directory, plus tax-parameter lookup and
-  an embedded schema reference. Writes are gated on full validation - scenarios
-  validated fully resolved - and stored in canonical TOML; the schema
-  reference's worked example is kept valid by the test suite.
+  item - takes the keyboard on a stack, keeps the keys that walk it among what
+  it holds, and gives it back to what held it, and a command chosen from one
+  runs once it has, since what holds the keyboard is what a command acts on.
+  Whether a key is a command at all is asked of the widget it was typed at and
+  everything that widget sits in: what stands over the page keeps every key, and
+  a form's fields and buttons keep the plain ones, a text field the chords it
+  edits with besides. Everything the shell says is a `tracing` event with two
+  readers: a journal the shell toasts from and lists in a drawer, and, in a
+  terminal, a log file. Colour is named by role, never by value: a theme is a
+  table of roles - the terminal's own colours by default, its tables banded in a
+  faint grey for a dark screen or a light one, or, by name, one of an embedded
+  set or a file of the user's own in a directory beside their config file, read
+  at launch and again as the theme picker opens, one that does not read costing
+  only itself - and a cell no widget coloured is drawn in the theme's own
+  ground. What the user sets - theme, motion, the keys a command answers to -
+  lives in one user config file the shell reads at launch, a setting at a time
+  so that one it cannot read costs only itself, and writes a theme or motion it
+  changes back into a key at a time, leaving the rest of the file as the user
+  wrote it. Each applied item re-validates the draft: a valid draft is
+  re-projected at once so the views follow it, and an invalid one holds the last
+  good view, reports its first issue, counts them beside the file name, and
+  lists every one in a panel whose rows turn to the item. Saving writes the
+  draft as canonical TOML through the same validation gate as every other write;
+  a scenario session saves into its own overlay, still naming its base and
+  stating what differs from it beside whatever it stated that still holds; an
+  edit no overlay can state - clearing what the base states outside an item - is
+  refused in the form's words, and saving one under a new name writes the
+  resolved plan as a plan of its own. The resolved chain's files are watched so
+  edits made outside the session - on disk, or from another tab of the page -
+  re-project in place, except under an unsaved draft or an item being edited,
+  which is reported rather than overwritten, and so are each compared file's,
+  which have no draft to protect; `theme` lists the themes a terminal session
+  can wear and prints one's file to start another from; `mcp` serves the same
+  contract to AI agents over stdio - list, read, validate, write, project,
+  actions, compare, earnings-import, optimizer and market tools over plan files
+  sandboxed to a served directory, plus tax-parameter lookup and an embedded
+  schema reference. Writes are gated on full validation - scenarios validated
+  fully resolved - and stored in canonical TOML; the schema reference's worked
+  example is kept valid by the test suite.
 - `retiretui_web` - the planner in a browser page, built for wasm alone and
   published to GitHub Pages under `/ratzilla` with each release, apart from the
   web app it sits beside: plurimus's WebGL canvas, the workspace kept in the
@@ -442,24 +443,24 @@ depends on UI.
   basis, and, against another such document, what the Compare page says of it:
   its figures or their differences from the other's, a metric year by year, and
   what it changes of the other - and the tax tables its plan asks for in a year,
-  under issues too, with the client's names for the editing domains, what the
-  Overview, the Ledger and Compare title what they show, and its count of
-  issues, and, over a file's text, the file a scenario is resolved over and the
-  scenario renamed to name another, and, over a plan's text alone so that a
-  worker can run them, the gate, the conversion search into a given account and
-  the claim search with the people held out of it, the order search, the
-  spending ceiling search at a given target share, the market runs through
-  random markets or from every historical start, and the example plans - each
-  search in the words the tools table it in: the conversion, claim and order
-  searches' every option in both dollar bases and against the plan, with what
-  the best does better than the plan, the ceiling search's two ceilings with the
-  expenses each scales, the one a highlight starts on and what the one at the
-  target comes to beside what the plan spends, and the market runs' verdict in
-  its zone, each run singled out with its net worth year by year and the market
-  it went through, their spread, what they were made under with where each is
-  edited, and of the historical starts the worst the plan does not survive.
-  Values cross as plain objects, typed by TypeScript generated from the Rust
-  types; the build fails where the two have drifted.
+  under issues too, with the client's names for the editing domains, how many
+  items each holds, what the Overview, the Ledger and Compare title what they
+  show, and its count of issues, and, over a file's text, the file a scenario is
+  resolved over and the scenario renamed to name another, and, over a plan's
+  text alone so that a worker can run them, the gate, the conversion search into
+  a given account and the claim search with the people held out of it, the order
+  search, the spending ceiling search at a given target share, the market runs
+  through random markets or from every historical start, and the example plans -
+  each search in the words the tools table it in: the conversion, claim and
+  order searches' every option in both dollar bases and against the plan, with
+  what the best does better than the plan, the ceiling search's two ceilings
+  with the expenses each scales, the one a highlight starts on and what the one
+  at the target comes to beside what the plan spends, and the market runs'
+  verdict in its zone, each run singled out with its net worth year by year and
+  the market it went through, their spread, what they were made under with where
+  each is edited, and of the historical starts the worst the plan does not
+  survive. Values cross as plain objects, typed by TypeScript generated from the
+  Rust types; the build fails where the two have drifted.
 - `web/` - outside the cargo workspace, the web app, published at the Pages
   site's root with each release: a React page over `retiretui_wasm` for a phone
   or a desktop. Its plan files are kept in the page's own storage, under keys
@@ -476,103 +477,105 @@ depends on UI.
   where the failure is in it. The page says that clearing the browser's site
   data deletes the plans, and asks, on a button, for the browser to keep them.
   The terminal's five tabs are a bar along a phone's bottom edge and a sidebar
-  on a wider screen, their addresses in the page's hash. The Overview, the
-  Ledger, Compare and the tools share a year, a basis and the people whose
-  claims are held, all in that address and kept by the links between them - each
-  route naming what of the address a tab's link carries to it, and every link
-  carrying the plans compared: the Overview is of the plan as a whole, in the
-  terminal's layout and with nothing on it chosen by the year: it leads with how
-  long the money lasts and how surely, the lowest it falls after the last salary
-  and what it ends with, noting the year a plan first runs short, then lists,
-  across a wide page, its milestones, what needs attention - led, once the
-  historical runs answer, by the worst start the plan does not survive - and
-  what each Roth owner's best ladder, the household's best claims, the best
-  order to withdraw in and, once the market runs have answered, the spending
-  ceiling at its target do better than the plan, each row leading to its year in
-  the Ledger, its item, that start in the Historical tool, or its tool; beneath
-  them is the one chart the address names of four - the plan's balances by
-  treatment, its net worth, its income against its taxes, or its net worth
-  through random markets as percentile bands in today's dollars - an image with
-  the Ledger as its table, a click on a year opening the Ledger there, beside
-  what the plan's years add up to, each total leading to its page, its tool or
-  its year, and what the plan rests on, each assumption leading to the field it
-  is edited at; the Ledger is the terminal's: the chosen year in full - its
-  milestones, what to do and what to watch, its flows through each account, and
-  what it lived on, where that went and its tax, each over its history across
-  the plan - beside a list of every year on a wide screen and alone on a phone,
-  or, by a switch the address keeps, every year in a table whose year column
-  stays in view, under the column set the address names, a row leading to its
-  year; the arrow keys step the year, and a pair of buttons the marked years
-  either side. The Plan tab's pages are the plan's editing domains: a table -
-  rows of a name and one figure on a phone - with the highlighted item read out,
-  or a domain's one item read out alone, and one item at a time edited in a form
-  over the page, a sheet or a phone's whole screen, whose address names the item
-  and the field an issue's link lands on. A Social Security statement downloaded
-  from ssa.gov is recorded on a person from the People page. The Tools tab's
-  Roth Conversions page ranks every fillable bracket's ladder under and against
-  the plan as it stands, the highlighted one - kept in the address - year by
-  year, taken into the draft after asking or written as a scenario beside the
-  saved plan and compared with it at once, over the constraints its ladders are
-  searched under, read out and edited in the same sheet as an item; it searches
-  again whenever the plan or the constraints change. Its SSA Benefits page ranks
-  every claim age for the household the same way, taken or written the same way,
-  beside each person's earnings record, how their benefit is set and its
-  estimated benefit, with what can be done for the highlighted one, a held claim
-  left as the plan states it. Its Withdrawal Order page ranks every order the
-  plan's kinds of account can be withdrawn in the same way, the highlighted one
-  kept in the address and taken or written the same way; what the Overview found
-  is what each tool shows, a search answered once for both. Its Spending Ceiling
-  page tables the most the plan could spend in its own market and at a target
-  share of random markets under the plan as it stands, the highlighted ceiling
-  kept in the address and taken or written the same way, over its expenses now
-  and at the ceiling and the target, read out and edited in the same sheet as
-  the constraints. Its Monte Carlo and Historical pages say how the plan fared
-  through random markets or from every historical start, in the colour of its
-  zone, beside what the runs were made under - each a link to the field it is
-  edited at - over the runs singled out, the highlighted one kept in the
-  address, and the views of their spread, all shown at once; the highlighted run
-  opens in the Ledger, which shows the plan replayed through its market, named
-  by it and kept in the address through the year, the basis and edits, until a
-  link returns it to the plan's own. Its Tax Tables page reads out the tables
-  the plan's projection applies in the shared year, for the plan's filing status
-  and the state it lives in, or for any status or modeled state picked in the
-  address. The Compare tab sets the document beside the workspace files chosen
-  from a menu: each plan's figures and its success through random markets, or
-  their differences from the one chosen as the baseline, what the highlighted
-  plan changes of the baseline, and one metric year by year, charted and tabled
-  at once - a plan alone offered another file, or an example written beside it;
-  a compared plan opened takes the document's place, the document joining the
-  compared, and any other plan opened leaves nothing compared. The compared
-  files are opened again whenever the workspace is written, here or in another
-  tab. What is applied is a step of the draft's history, undone and redone from
-  the header, which saves it or saves it under another name; edits not yet
-  applied or saved are asked about before they are dropped, and a file another
-  tab changes under unsaved edits is reported rather than reopened. What it says
-  of a plan - a year's actions, where an issue is, the domains' names, a form's
-  fields - is the client's words through the bindings, never its own. Each kind
-  of search runs in a Web Worker kept loaded for it between searches - a ladder
-  search one for each account it fills, so that owners' ladders run side by
-  side, and a compared plan's market runs one for each plan, released once it is
-  no longer compared; stopping one, or a newer search in its worker, terminates
-  that worker and loads another. A palette finds any page, plan or action by
-  part of its name, opened from the header on any screen; keys open it, go to
-  the tabs and list every key, never while a field or anything over the page
-  holds them; focus moves to a page's heading when another page is shown, unless
-  the page has placed it. Each page loads the first time it is shown, and all of
-  them once the app is idle; a service worker serves the page from the network
-  while there is one and from its cache when there is not, and keeps a build
-  whole - every file the build lists as its own, then the page that needs them,
-  the old build's files dropped only after - so that after one visit every page
-  works offline, a build that does not arrive whole leaves the one before it to
-  open, and the app installs. Its colours are the terminal theme's roles, light
-  or dark as the system is, each held to a readable contrast by a test, and
-  every page is checked against WCAG 2.1 A and AA in Chromium, Firefox and
-  WebKit by a browser suite CI runs. Under every page it says that it is a model
-  and not advice, and leads to its source and to where an issue is reported.
-  Where it cannot start, with scripts off, no WebAssembly, the page's storage
-  blocked or a file that does not load or run, the page says why from markup and
-  a script of its own, which need nothing of the app; a page that throws while
-  it is drawn is said in its place, with a way to reload.
+  on a wider screen - a domain there beside how many items it holds - their
+  addresses in the page's hash, a grouped tab's leading to the page last shown
+  through it. The Overview, the Ledger, Compare and the tools share a year, a
+  basis and the people whose claims are held, all in that address and kept by
+  the links between them - each route naming what of the address a tab's link
+  carries to it, and every link carrying the plans compared: the Overview is of
+  the plan as a whole, in the terminal's layout and with nothing on it chosen by
+  the year: it leads with how long the money lasts and how surely, the lowest it
+  falls after the last salary and what it ends with, noting the year a plan
+  first runs short, then lists, across a wide page, its milestones, what needs
+  attention - led, once the historical runs answer, by the worst start the plan
+  does not survive - and what each Roth owner's best ladder, the household's
+  best claims, the best order to withdraw in and, once the market runs have
+  answered, the spending ceiling at its target do better than the plan, each row
+  leading to its year in the Ledger, its item, that start in the Historical
+  tool, or its tool; beneath them is the one chart the address names of four -
+  the plan's balances by treatment, its net worth, its income against its taxes,
+  or its net worth through random markets as percentile bands in today's
+  dollars - an image with the Ledger as its table, a click on a year opening the
+  Ledger there, beside what the plan's years add up to, each total leading to
+  its page, its tool or its year, and what the plan rests on, each assumption
+  leading to the field it is edited at; the Ledger is the terminal's: the chosen
+  year in full - its milestones, what to do and what to watch, its flows through
+  each account, and what it lived on, where that went and its tax, each over its
+  history across the plan - beside a list of every year on a wide screen and
+  alone on a phone, or, by a switch the address keeps, every year in a table
+  whose year column stays in view, under the column set the address names, a row
+  leading to its year; the arrow keys step the year, and a pair of buttons the
+  marked years either side. The Plan tab's pages are the plan's editing domains:
+  a table - rows of a name and one figure on a phone - with the highlighted item
+  read out, or a domain's one item read out alone, and one item at a time edited
+  in a form over the page, a sheet or a phone's whole screen, whose address
+  names the item and the field an issue's link lands on. A Social Security
+  statement downloaded from ssa.gov is recorded on a person from the People
+  page. The Tools tab's Roth Conversions page ranks every fillable bracket's
+  ladder under and against the plan as it stands, the highlighted one - kept in
+  the address - year by year, taken into the draft after asking or written as a
+  scenario beside the saved plan and compared with it at once, over the
+  constraints its ladders are searched under, read out and edited in the same
+  sheet as an item; it searches again whenever the plan or the constraints
+  change. Its SSA Benefits page ranks every claim age for the household the same
+  way, taken or written the same way, beside each person's earnings record, how
+  their benefit is set and its estimated benefit, with what can be done for the
+  highlighted one, a held claim left as the plan states it. Its Withdrawal Order
+  page ranks every order the plan's kinds of account can be withdrawn in the
+  same way, the highlighted one kept in the address and taken or written the
+  same way; what the Overview found is what each tool shows, a search answered
+  once for both. Its Spending Ceiling page tables the most the plan could spend
+  in its own market and at a target share of random markets under the plan as it
+  stands, the highlighted ceiling kept in the address and taken or written the
+  same way, over its expenses now and at the ceiling and the target, read out
+  and edited in the same sheet as the constraints. Its Monte Carlo and
+  Historical pages say how the plan fared through random markets or from every
+  historical start, in the colour of its zone, beside what the runs were made
+  under - each a link to the field it is edited at - over the runs singled out,
+  the highlighted one kept in the address, and the views of their spread, all
+  shown at once; the highlighted run opens in the Ledger, which shows the plan
+  replayed through its market, named by it and kept in the address through the
+  year, the basis and edits, until a link returns it to the plan's own. Its Tax
+  Tables page reads out the tables the plan's projection applies in the shared
+  year, for the plan's filing status and the state it lives in, or for any
+  status or modeled state picked in the address. The Compare tab sets the
+  document beside the workspace files chosen from a menu: each plan's figures
+  and its success through random markets, or their differences from the one
+  chosen as the baseline, what the highlighted plan changes of the baseline, and
+  one metric year by year, charted and tabled at once - a plan alone offered
+  another file, or an example written beside it; a compared plan opened takes
+  the document's place, the document joining the compared, and any other plan
+  opened leaves nothing compared. The compared files are opened again whenever
+  the workspace is written, here or in another tab. What is applied is a step of
+  the draft's history, undone and redone from the header, which saves it or
+  saves it under another name; edits not yet applied or saved are asked about
+  before they are dropped, and a file another tab changes under unsaved edits is
+  reported rather than reopened. What it says of a plan - a year's actions,
+  where an issue is, the domains' names, a form's fields - is the client's words
+  through the bindings, never its own. Each kind of search runs in a Web Worker
+  kept loaded for it between searches - a ladder search one for each account it
+  fills, so that owners' ladders run side by side, and a compared plan's market
+  runs one for each plan, released once it is no longer compared; stopping one,
+  or a newer search in its worker, terminates that worker and loads another. A
+  palette finds any page, plan or action by part of its name, opened from the
+  header on any screen; keys open it, go to the tabs and list every key, never
+  while a field or anything over the page holds them; focus moves to a page's
+  heading when another page is shown, unless the page has placed it. Each page
+  loads the first time it is shown, and all of them once the app is idle; a
+  service worker serves the page from the network while there is one and from
+  its cache when there is not, and keeps a build whole - every file the build
+  lists as its own, then the page that needs them, the old build's files dropped
+  only after - so that after one visit every page works offline, a build that
+  does not arrive whole leaves the one before it to open, and the app installs.
+  Its colours are the terminal theme's roles, light or dark as the system is,
+  each held to a readable contrast by a test, and every page is checked against
+  WCAG 2.1 A and AA in Chromium, Firefox and WebKit by a browser suite CI runs.
+  Under every page it says that it is a model and not advice, and leads to its
+  source and to where an issue is reported. Where it cannot start, with scripts
+  off, no WebAssembly, the page's storage blocked or a file that does not load
+  or run, the page says why from markup and a script of its own, which need
+  nothing of the app; a page that throws while it is drawn is said in its place,
+  with a way to reload.
 
 Plans express timing through a closed trigger vocabulary - a fixed date, a
 person's age, or a reference to a named event or income source with a whole year
