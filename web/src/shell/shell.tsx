@@ -11,6 +11,7 @@ import {
   type ReactNode,
   type RefObject,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -26,6 +27,7 @@ import { Start } from "@/files/start";
 import { cn } from "@/lib/utils";
 import { REPO_URL } from "@/links";
 import {
+  DOMAINS,
   type GroupTab,
   isGroup,
   isWithin,
@@ -35,7 +37,7 @@ import {
 } from "@/nav";
 import { useSession } from "@/session";
 import { Footer } from "@/shell/footer";
-import { useTabTarget } from "@/shell/go";
+import { useShownKept, useTabTarget } from "@/shell/go";
 import { KeysSheet } from "@/shell/keys";
 import { Palette } from "@/shell/palette";
 import { useShellKeys } from "@/shell/use-keys";
@@ -47,7 +49,7 @@ function useIsActive() {
 
 interface TabLinkProps {
   tab: Tab;
-  /** The group's page to go to; its first where none is named. */
+  /** The group's page to go to; the one last shown in it where none is named. */
   page?: Page;
   className: string;
   children: ReactNode;
@@ -70,6 +72,8 @@ function TabLink({ tab, page, className, children, isCurrent }: TabLinkProps) {
 
 function Sidebar() {
   const isActive = useIsActive();
+  const { reading } = useSession();
+  const counts = useMemo(() => reading.document?.itemCounts() ?? [], [reading]);
   return (
     <nav
       aria-label="Main"
@@ -91,7 +95,11 @@ function Sidebar() {
               {tab.title}
             </TabLink>
             {isGroup(tab) && isActive(tab) && (
-              <PageLinks tab={tab} variant="sidebar" />
+              <PageLinks
+                tab={tab}
+                variant="sidebar"
+                counts={tab.pages === DOMAINS ? counts : undefined}
+              />
             )}
           </li>
         ))}
@@ -131,7 +139,7 @@ function BottomBar() {
 const PAGE_LINK = {
   sidebar: {
     list: "mt-1 ml-5 space-y-0.5 border-l pl-2",
-    link: "hover:bg-accent block rounded-md px-3 py-1.5 text-sm",
+    link: "hover:bg-accent flex justify-between gap-2 rounded-md px-3 py-1.5 text-sm",
     current: "bg-accent font-semibold",
   },
   chips: {
@@ -141,20 +149,26 @@ const PAGE_LINK = {
   },
 };
 
-/** A grouped tab's pages: nested in the sidebar, or chips above the page on a phone. */
+/**
+ * A grouped tab's pages: nested in the sidebar, each beside how many items
+ * it holds where `counts` says, or chips above the page on a phone.
+ */
 function PageLinks({
   tab,
   variant,
+  counts,
 }: {
   tab: GroupTab;
   variant: keyof typeof PAGE_LINK;
+  counts?: readonly (number | null)[];
 }) {
   const { pathname } = useLocation();
   const style = PAGE_LINK[variant];
   return (
     <ul className={style.list}>
-      {tab.pages.map((page) => {
+      {tab.pages.map((page, at) => {
         const isCurrent = pathname.endsWith(`/${page.slug}`);
+        const count = counts?.[at];
         return (
           <li key={page.slug}>
             <TabLink
@@ -164,6 +178,11 @@ function PageLinks({
               className={cn(style.link, isCurrent && style.current)}
             >
               {page.title}
+              {typeof count === "number" && (
+                <span className="text-muted-foreground font-normal tabular-nums">
+                  {count}
+                </span>
+              )}
             </TabLink>
           </li>
         );
@@ -277,6 +296,7 @@ export function Shell() {
   const { document } = useSession();
   useComparedFollowDocument();
   useFocusOnNavigation();
+  useShownKept();
   const main = useRef<HTMLElement>(null);
   const [isFinding, setFinding] = useState(false);
   const [isListingKeys, setListingKeys] = useState(false);

@@ -1,19 +1,35 @@
-import { useNavigate, useRouter } from "@tanstack/react-router";
-import { useCallback } from "react";
+import { useLocation, useNavigate, useRouter } from "@tanstack/react-router";
+import { useCallback, useEffect } from "react";
 
-import { isGroup, type Page, type Tab } from "@/nav";
+import { isGroup, type Page, TABS, type Tab } from "@/nav";
+import { noteShown, shownIn } from "@/shell/shown";
 import { keptSearch } from "@/year/search";
 
 /**
- * Where a tab's link goes - its page, or the group's page named, its first
- * where none - carrying what of the address its route keeps.
+ * Keeps the page of a group the address is on as the one the group's tab
+ * comes back to from anywhere else.
+ */
+export function useShownKept() {
+  const pathname = useLocation({ select: (location) => location.pathname });
+  useEffect(() => {
+    for (const tab of TABS.filter(isGroup)) noteShown(tab, pathname);
+  }, [pathname]);
+}
+
+/**
+ * Where a tab's link goes - its page, or the group's page named, the one
+ * the group is on or was last on where none - carrying what of the address
+ * its route keeps.
  */
 export function useTabTarget() {
   const router = useRouter();
   return useCallback(
     (tab: Tab, page?: Page) => {
       const keeps = router.routesByPath[tab.path].options.staticData?.keeps;
-      const slug = isGroup(tab) ? (page ?? tab.pages[0])?.slug : undefined;
+      const { pathname } = router.state.location;
+      const slug = isGroup(tab)
+        ? (page ?? shownIn(tab, pathname))?.slug
+        : undefined;
       return {
         to: tab.path,
         params: slug === undefined ? {} : { page: slug },
