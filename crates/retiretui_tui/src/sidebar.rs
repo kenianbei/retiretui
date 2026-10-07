@@ -11,6 +11,7 @@ use bevy_ecs::prelude::{
 };
 use bevy_ecs::system::SystemParam;
 use bevy_input::keyboard::Key;
+use bevy_input_focus::InputFocus;
 use bevy_ui::Node;
 use plurimus::core::ratatui_core::layout::Size;
 use plurimus::core::ratatui_core::text::Line;
@@ -174,21 +175,25 @@ impl SidebarCursor<'_, '_> {
 }
 
 /// A cursor moved, by key or by pointer: the page follows it, and the
-/// sidebar keeps the keyboard through the turn.
+/// sidebar keeps the keyboard through the turn where it has it. A tap,
+/// pressed and released in one frame, has already gone into the page.
 fn turn_to_the_cursor(
-    moved: Query<(&Sidebar, &ActiveDescendant), Changed<ActiveDescendant>>,
+    moved: Query<(Entity, &Sidebar, &ActiveDescendant), Changed<ActiveDescendant>>,
     rows: Query<&SidebarRow>,
+    focus: Res<InputFocus>,
     mut turn: Turn,
     mut led: ResMut<SidebarLed>,
 ) {
-    for (sidebar, cursor) in &moved {
+    for (list, sidebar, cursor) in &moved {
         // A sidebar that is not shown had its cursor moved by no one.
         if turn.page().group() != Some(sidebar.0) {
             continue;
         }
         if let Some(row) = cursor.0.and_then(|row| rows.get(row).ok()) {
             turn.to(row.0);
-            led.0 = true;
+            if focus.get() == Some(list) {
+                led.0 = true;
+            }
         }
     }
 }

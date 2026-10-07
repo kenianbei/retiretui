@@ -83,6 +83,10 @@ assert.ok(accounts.rows.length > 0);
 assert.equal(accounts.columns.length, accounts.rows[0].cells.length);
 assert.ok(document.readOut("settings", 0).length > 0);
 assert.throws(() => document.table("settings", null), /not a table/);
+const counts = document.itemCounts();
+assert.equal(counts.length, wasm.domains().length);
+assert.equal(counts[0], accounts.rows.length);
+assert.ok(counts.includes(null));
 
 const editor = document.edit("accounts", 0);
 const name = editor.view(document).find((field) => field.key === "name");

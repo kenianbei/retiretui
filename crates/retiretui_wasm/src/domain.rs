@@ -2,11 +2,11 @@
 //! for the view alone, and an item read out in the form's words.
 
 use retiretui_client::draft::Draft;
-use retiretui_client::forms::Form;
 use retiretui_client::forms::cells::Cell;
 use retiretui_client::forms::details::{self, ReadRow};
 use retiretui_client::forms::edit::{known_as, list_of, name_at};
 use retiretui_client::forms::sort::Sort;
+use retiretui_client::forms::{DOMAINS, Form};
 use serde::Serialize;
 use wasm_bindgen::prelude::{JsError, JsValue, wasm_bindgen};
 
@@ -88,8 +88,27 @@ pub fn read_out(draft: &Draft, form: &Form, index: usize) -> Result<Vec<ReadRow>
     Ok(details::rows(form, &item, &draft.plan))
 }
 
+/// How many items each domain holds, in the order the domains are named
+/// in; none for a domain that is one item.
+#[must_use]
+pub fn item_counts(draft: &Draft) -> Vec<Option<usize>> {
+    let count = |form: &Form| form.list.map(|list| (list.count)(&draft.plan));
+    DOMAINS.iter().map(count).collect()
+}
+
 #[wasm_bindgen(js_class = Document)]
 impl JsDocument {
+    /// How many items each domain holds, in `domains()`' order; `null` for
+    /// a domain that is one item.
+    ///
+    /// # Errors
+    ///
+    /// Where the counts do not convert.
+    #[wasm_bindgen(js_name = itemCounts, unchecked_return_type = "(number | null)[]")]
+    pub fn item_counts(&self) -> Result<JsValue, JsError> {
+        to_js(&item_counts(self.0.draft()))
+    }
+
     /// The table of the domain at `slug`, ordered by `sort`, or in the
     /// plan's own order where none.
     ///
@@ -161,6 +180,26 @@ mod tests {
         let mut reordered: Vec<usize> = down.rows.iter().map(|row| row.index).collect();
         reordered.sort_unstable();
         assert_eq!(reordered, indices);
+    }
+
+    #[test]
+    fn a_domain_s_items_are_counted_and_a_single_item_s_are_not() {
+        let mut draft = draft();
+        let counted = |draft: &Draft| {
+            let titles = DOMAINS.iter().map(|form| form.title);
+            titles.zip(item_counts(draft)).collect::<Vec<_>>()
+        };
+        let before = counted(&draft);
+        let accounts = draft.plan.accounts.len();
+        assert!(before.contains(&("Accounts", Some(accounts))), "{before:?}");
+        assert!(before.contains(&("Settings", None)), "{before:?}");
+        assert_eq!(before.len(), crate::vocabulary::domains().len());
+        draft.plan.accounts.pop();
+        let after = counted(&draft);
+        assert!(
+            after.contains(&("Accounts", Some(accounts - 1))),
+            "{after:?}"
+        );
     }
 
     #[test]

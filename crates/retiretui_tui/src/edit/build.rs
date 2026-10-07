@@ -4,7 +4,6 @@
 
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Component, Entity};
-use bevy_input_focus::tab_navigation::TabGroup;
 use bevy_ui::{FlexDirection, Node, Overflow, PositionType, Val};
 use plurimus::core::UiWidget;
 use plurimus::core::ratatui_core::style::{Modifier, Style};
@@ -159,7 +158,7 @@ pub fn spawn_form(commands: &mut Commands, form: Entity, ops: Ops, is_alone: boo
     let label_cols = label_cols(ops.fields);
     commands
         .entity(form)
-        .insert((EditForm { ops }, TabGroup::modal()))
+        .insert(EditForm { ops })
         .observe(handle_form_key);
     let bar = commands
         .spawn((

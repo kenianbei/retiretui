@@ -9,7 +9,6 @@ use bevy_ecs::prelude::{
 };
 use bevy_input::keyboard::KeyboardInput;
 use bevy_input_focus::FocusedInput;
-use bevy_input_focus::tab_navigation::TabGroup;
 use plurimus::core::UiWidget;
 use plurimus::term::bevy_compat::HeldModifiers;
 use plurimus::ui::{ModalDismiss, ModalOpen, first_bound};
@@ -158,7 +157,6 @@ fn spawn_dialog(commands: &mut Commands, root: Entity, asked: &Asked) -> Option<
         .insert((
             overlay::centred(WIDTH, rows + ANSWER_ROWS),
             Framed::over(TITLE),
-            TabGroup::modal(),
             ModalOpen,
             Hints(&[("⇥", "switch"), ("⏎", "choose"), ("esc", "cancel")]),
         ))

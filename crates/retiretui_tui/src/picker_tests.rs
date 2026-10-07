@@ -179,3 +179,15 @@ fn an_arrow_at_the_end_of_the_rows_stays_in_the_picker() {
     assert!(is_palette_open(&app));
     assert_eq!(app.world().resource::<InputFocus>().get(), list);
 }
+
+#[test]
+fn an_arrow_the_query_has_no_use_for_stays_on_the_palette() {
+    let mut app = headless_app(SIZE);
+    show(&mut app, Page::Accounts);
+    press_key(&mut app, KeyCode::Char(':'));
+    type_text(&mut app, "ta");
+    press_shift(&mut app, KeyCode::Left);
+    type_text(&mut app, "x");
+    let frame = composed_frame(&app);
+    assert!(frame.contains("> tax"), "over a page of panes: {frame}");
+}

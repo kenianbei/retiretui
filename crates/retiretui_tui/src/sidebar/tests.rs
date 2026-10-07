@@ -8,7 +8,7 @@ use crate::edit::tests::open;
 use crate::nav::{FocusStop, Group, Page, tab_digit};
 use crate::support::{
     SIZE, active_page, cell_of, click, commit_edit, composed_frame, headless_app, press_key,
-    press_shift, redrawn, run_command, show,
+    press_shift, redrawn, run_command, show, tap,
 };
 
 /// The bar of the list the keyboard is in.
@@ -282,4 +282,18 @@ fn a_press_on_the_tab_bar_turns_the_page_and_never_holds_the_keyboard() {
         focused,
         "and keeps it"
     );
+}
+
+#[test]
+fn a_press_on_a_row_shows_its_page_and_goes_into_it() {
+    for press in [click, tap] {
+        let mut app = headless_app(SIZE);
+        show(&mut app, Page::Accounts);
+        redrawn(&mut app);
+        let (x, y) = cell_of(&app, "Income ");
+        press(&mut app, x, y);
+        app.update();
+        assert_eq!(active_page(&app), Page::Income);
+        assert!(is_on_table(&app), "and not back to the sidebar");
+    }
 }

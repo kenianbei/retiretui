@@ -271,6 +271,10 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     do title names it on both surfaces, as the table's does in the terminal.
     While a run is open the terminal's key row says the key that returns to the
     plan, where the Ledger's title said it.
+- In the web app's sidebar each of the Plan's pages that lists items says how
+  many it holds, as the terminal's does. Tools and Plan, by their links and by
+  `4` and `5`, come back to the page last shown in them for as long as the app
+  stays loaded, where they opened on Roth Conversions and Accounts each time.
 - Tables are banded. The web app shades every second row of every table. The
   terminal's own theme, the default, bands its tables in a faint grey chosen for
   a dark or a light screen; a named theme bands them in its own stripe as
@@ -313,6 +317,13 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   gone on to name the plan. The Constraints read-out beside the ladders also
   kept showing what it held before an apply, by any of the three. Each now
   searches, creates and reads out as the button does.
+- In the terminal, whatever stands over the page keeps the arrows as it keeps
+  the keys. `shift-←` in the command palette's query, with nothing there to
+  select, walked the keyboard off the palette to a pane of the page beneath it,
+  and the query lost what was typed next.
+- In the terminal, a quick tap on a row of the Tools or the Plan sidebar,
+  pressed and released within one frame, goes into the page it shows. It showed
+  the page and left the keyboard on the sidebar.
 
 ### Security
 
