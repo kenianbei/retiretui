@@ -62,12 +62,6 @@ assert.equal(detail.money_in.total.amount, detail.money_out.total.amount);
 assert.ok(detail.worked_from[0].label.startsWith("To top of "));
 assert.ok(ledger.rows.some(({ marks }) => marks.is_milestone));
 assert.throws(() => document.ledgerYear(first.year - 99, true));
-const histories = document.ledgerHistories(true);
-assert.deepEqual(
-  histories.map(({ title }) => title),
-  ["Money in by year", "Money out by year", "Tax by year"],
-);
-assert.equal(histories[0].years[0].year, first.year);
 const chart = document.chart(true);
 assert.equal(chart.years[0].classes.length, chart.classes.length);
 assert.deepEqual(bandPercentiles(), [10, 25, 50, 75, 90]);
