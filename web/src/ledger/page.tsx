@@ -1,5 +1,5 @@
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo } from "react";
 
 import { MarginNote } from "@/components/margin-note";
 import { columnSetOf } from "@/ledger/columns";
@@ -57,11 +57,6 @@ function useLedger(search: LedgerSearch, year: number | undefined) {
     }
   }, [reading, isNominal, market, set]);
   const isYearShown = Boolean(plan.ledger) && !isTable;
-  const histories = useMemo(
-    () =>
-      isYearShown ? reading.document?.ledgerHistories(isNominal, market) : [],
-    [reading, isYearShown, isNominal, market],
-  );
   const detail = useMemo(
     () =>
       isYearShown && year !== undefined
@@ -69,10 +64,10 @@ function useLedger(search: LedgerSearch, year: number | undefined) {
         : undefined,
     [reading, isYearShown, year, isNominal, market],
   );
-  return { ...plan, histories, detail, set, isTable };
+  return { ...plan, detail, set, isTable };
 }
 
-/** One year in the context of all of them, or every year in one table. */
+/** Every year in a table, over the one shown in full or alone. */
 export function LedgerPage() {
   const { reading, issues } = useSession();
   const search: LedgerSearch = useSearch({ from: "/ledger" });
@@ -85,12 +80,6 @@ export function LedgerPage() {
     () => markedBeside(ledger?.rows ?? [], year ?? 0),
     [ledger, year],
   );
-  const years = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    years.current
-      ?.querySelector('[aria-selected="true"]')
-      ?.scrollIntoView({ block: "nearest" });
-  }, [year, isTable]);
 
   if (!reading.document) return null;
   if (read.refusal !== undefined) {
@@ -144,37 +133,17 @@ export function LedgerPage() {
           </p>
         </MarginNote>
       )}
-      {isTable ? (
-        <div ref={years} className="min-w-0 space-y-3">
-          <ColumnsPick set={read.set} />
-          <Years
-            ledger={ledger}
-            unit={unit}
-            year={year}
-            onSelect={showYear}
-            isWhole
-          />
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
-          <div ref={years} className="sticky top-4 min-w-0 max-lg:hidden">
-            <Years
-              ledger={ledger}
-              unit={unit}
-              year={year}
-              onSelect={setYear}
-              isWhole={false}
-            />
-          </div>
-          {detail && (
-            <YearCards
-              detail={detail}
-              histories={read.histories ?? []}
-              onYear={setYear}
-            />
-          )}
-        </div>
-      )}
+      <div className="space-y-3">
+        <ColumnsPick set={read.set} />
+        <Years
+          ledger={ledger}
+          unit={unit}
+          year={year}
+          onSelect={isTable ? showYear : setYear}
+          isAlone={isTable}
+        />
+      </div>
+      {detail && <YearCards detail={detail} />}
     </div>
   );
 }

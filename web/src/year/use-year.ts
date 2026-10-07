@@ -34,6 +34,7 @@ export function useYear(): ShownYear {
         to: ".",
         search: (prev) => ({ ...prev, year }),
         replace: true,
+        resetScroll: false,
       });
     },
     [navigate],
