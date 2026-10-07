@@ -51,13 +51,13 @@ fn views() -> Vec<CommandSpec> {
         },
         on_ledger(
             LEDGER_TABLE,
-            "show every year in one table, or the year it left",
+            "give the year table the whole page, or bring the year back under it",
             vec![character("t")],
             Box::new(|world| world.register_system(ledger::swap_table)),
         ),
         on_ledger(
             LEDGER_YEAR,
-            "show the year the table's cursor is on",
+            "show the year the table's cursor is on under it",
             vec![arrow(Key::Enter)],
             Box::new(|world| world.register_system(ledger::show_year)),
         ),

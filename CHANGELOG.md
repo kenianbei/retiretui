@@ -229,10 +229,10 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     and tax figures, with MAGI, taxable income, what was converted and what was
     required. The terminal shortens the figures before it drops a set's columns.
     In the terminal the table takes a third of a page wider than it is tall and
-    half of one taller than it is wide. In the web app it scrolls in a frame two
-    fifths of the screen tall, on a phone too, the year column held in view as
-    the rest scroll sideways. The web app keeps the column set in the page's
-    address.
+    half of one taller than it is wide. In the web app it scrolls in a frame up
+    to two fifths of the screen tall, on a phone too, the year column held in
+    view as the rest scroll sideways. The web app keeps the column set in the
+    page's address.
   - To do in the year: the milestones that fall in it, what to do in it and what
     to watch, which has moved here from under the flows. Beside it, So far: what
     the plan has paid in tax, converted and withdrawn through the year, each
