@@ -6,7 +6,7 @@
 
 use bevy_app::{App, Update};
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
-use bevy_ecs::hierarchy::ChildOf;
+use bevy_ecs::hierarchy::{ChildOf, Children};
 use bevy_ecs::prelude::{
     Commands, Component, Entity, IntoScheduleConfigs, Local, Query, Res, With,
 };
@@ -58,9 +58,6 @@ pub struct LedgerTable;
 /// it does not scroll with them.
 #[derive(Component)]
 struct LedgerHeads;
-
-#[derive(Component)]
-struct LedgerHeaderRow;
 
 /// The pane the years are tabled in.
 #[derive(Component)]
@@ -118,8 +115,6 @@ fn title_years(
 struct LedgerEntities<'w, 's> {
     tables: Query<'w, 's, Entity, With<LedgerTable>>,
     heads: Query<'w, 's, Entity, With<LedgerHeads>>,
-    header_rows: Query<'w, 's, Entity, With<LedgerHeaderRow>>,
-    rows: Query<'w, 's, (Entity, &'static ChildOf), With<RowYear>>,
 }
 
 /// What the rows are built from, and what makes them stale.
@@ -164,23 +159,15 @@ fn rebuild_rows(mut inputs: RowInputs, entities: LedgerEntities, mut commands: C
     let (Some(table), Some(fit)) = (inputs.said.0.as_ref(), inputs.fit()) else {
         return;
     };
-    for row in &entities.header_rows {
-        commands.entity(row).despawn();
-    }
-    for (row, parent) in &entities.rows {
-        if parent.parent() == ledger_table {
-            commands.entity(row).despawn();
-        }
-    }
     *inputs.fitted = Some(fit);
     let figures = fit.figures(table.figure_headers.len());
     for tabled in [heads, ledger_table] {
         let columns = TableColumns(constraints(figures.len()));
-        commands.entity(tabled).insert(columns);
+        let mut tabled = commands.entity(tabled);
+        tabled.despawn_related::<Children>().insert(columns);
     }
     commands.spawn((
         table_header(header_cells(table, &figures, fit.given)),
-        LedgerHeaderRow,
         UiStyle(Style::new().add_modifier(Modifier::BOLD)),
         ChildOf(heads),
     ));
@@ -269,7 +256,11 @@ impl Fit {
         let given = per_column(drawn);
         Self {
             before_net_worth: drawn.saturating_sub(1),
-            form: form_for(given, widest),
+            form: if given < widest {
+                MoneyForm::Compact
+            } else {
+                MoneyForm::Full
+            },
             given,
         }
     }
@@ -279,14 +270,6 @@ impl Fit {
         let last = count.saturating_sub(1);
         let before = 0..self.before_net_worth.min(last);
         before.chain([last]).collect()
-    }
-}
-
-fn form_for(given: usize, widest: usize) -> MoneyForm {
-    if given < widest {
-        MoneyForm::Compact
-    } else {
-        MoneyForm::Full
     }
 }
 

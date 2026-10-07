@@ -13,18 +13,19 @@ use bevy_ui::{FlexDirection, Node, Val};
 use plurimus::core::TerminalSize;
 
 use super::years::{LedgerTable, YearsPane};
-use super::{LedgerSystems, say};
+use super::{LedgerSystems, open_run_on_its_year, say};
 use crate::command::{LEDGER_COLUMNS, LEDGER_TABLE};
 use crate::focus::PageFocus;
 use crate::hints::{CommandHint, CommandHints};
 use crate::layout::{self, growing, set_display};
 use crate::nav::FocusStop;
+use crate::pane;
 
 pub(super) fn plugin(app: &mut App) {
     app.init_resource::<Shape>();
     app.add_systems(
         Update,
-        (measure, arrange.after(say))
+        (measure.before(open_run_on_its_year), arrange.after(say))
             .chain()
             .in_set(LedgerSystems::Say),
     );
@@ -59,10 +60,6 @@ impl Shape {
         }
     }
 
-    pub(super) fn is_landscape(self) -> bool {
-        self == Self::Landscape
-    }
-
     /// The rows the table takes over the year on a terminal of `size`:
     /// whole rows, since a share that splits one leaves the panes under it
     /// a row out.
@@ -74,17 +71,31 @@ impl Shape {
         };
         f32::from(page / part)
     }
+
+    /// What a money pane of `lines` lines starts from along the way the
+    /// three are laid: its own height down a column, and nothing across a
+    /// row.
+    pub(super) fn money_basis(self, lines: usize) -> Val {
+        match self {
+            Self::Landscape => {
+                let rows = u16::try_from(lines).unwrap_or(u16::MAX);
+                Val::Px(f32::from(rows.saturating_add(pane::BORDERS)))
+            }
+            Self::Portrait => Val::Px(0.0),
+        }
+    }
 }
 
-/// The terminal at least this tall opens on the year under the table:
-/// past the tab and key rows, the two thirds a landscape table leaves hold
-/// the three money panes at their least. A shorter one opens on the table
-/// alone.
-const SPLIT_ROWS: u16 = 36;
+/// The terminal at least this tall opens on the year under the table: of
+/// the 31 rows between the tab row and the key row a landscape table takes
+/// 10, and the 21 it leaves hold the three money panes at their least. A
+/// shorter one opens on the table alone.
+const SPLIT_ROWS: u16 = 35;
 
 /// Settles the shape as the terminal is resized, and the view a terminal
 /// of its height opens on whenever it comes to have, or to lack, the room
-/// for the year.
+/// for the year; a run opened in the same frame is still shown by its
+/// year.
 fn measure(
     size: Res<TerminalSize>,
     mut shape: ResMut<Shape>,
@@ -190,24 +201,25 @@ impl Laid<'_, '_> {
     /// the year or to the whole page, and the year's two sides beside each
     /// other on a landscape page and one over the other on a portrait one.
     fn lay(&mut self, is_table: bool, shape: Shape, size: TerminalSize) {
+        let table = if is_table {
+            Val::Percent(100.0)
+        } else {
+            Val::Px(shape.table_rows(size))
+        };
         let (across, down) = (FlexDirection::Row, FlexDirection::Column);
+        let (year_way, money_way, actions) = match shape {
+            Shape::Landscape => (across, down, (ACTIONS_SHARE, Val::Px(0.0))),
+            Shape::Portrait => (down, across, (0.0, Val::Auto)),
+        };
         for (part, mut node) in &mut self.parts {
-            match (part, shape) {
-                (Part::Table, _) if is_table => node.flex_basis = Val::Percent(100.0),
-                (Part::Table, _) => node.flex_basis = Val::Px(shape.table_rows(size)),
-                (Part::Year, _) => {
+            match part {
+                Part::Table => node.flex_basis = table,
+                Part::Year => {
                     set_display(&mut node, !is_table);
-                    node.flex_direction = if shape.is_landscape() { across } else { down };
+                    node.flex_direction = year_way;
                 }
-                (Part::Actions, Shape::Landscape) => {
-                    (node.flex_grow, node.flex_basis) = (ACTIONS_SHARE, Val::Px(0.0));
-                }
-                (Part::Actions, Shape::Portrait) => {
-                    (node.flex_grow, node.flex_basis) = (0.0, Val::Auto);
-                }
-                (Part::Money, _) => {
-                    node.flex_direction = if shape.is_landscape() { down } else { across };
-                }
+                Part::Actions => (node.flex_grow, node.flex_basis) = actions,
+                Part::Money => node.flex_direction = money_way,
             }
         }
     }
@@ -227,6 +239,9 @@ fn arrange(
     }
     let is_table = *view == LedgerView::Table;
     laid.lay(is_table, *shape, *size);
+    if !view.is_changed() {
+        return;
+    }
     for mut hints in &mut laid.hints {
         hints.0 = if is_table { FROM_TABLE } else { TO_TABLE };
     }

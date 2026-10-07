@@ -21,7 +21,7 @@ use crate::edit::table_bundle;
 use crate::hints::Hints;
 use crate::layout::{self, filling, placed};
 use crate::nav::Page;
-use crate::pane::{self, Pane};
+use crate::pane::Pane;
 use crate::tabulate;
 use crate::theme::Theme;
 use crate::tools::{EnterRuns, handle_enter};
@@ -140,16 +140,6 @@ impl Said {
     }
 }
 
-/// What a pane of `lines` lines starts from along the way the three are
-/// laid: its own height down a column, and nothing across a row.
-fn basis(lines: usize, shape: Shape) -> Val {
-    if !shape.is_landscape() {
-        return Val::Px(0.0);
-    }
-    let rows = u16::try_from(lines).unwrap_or(u16::MAX);
-    Val::Px(f32::from(rows.saturating_add(pane::BORDERS)))
-}
-
 /// Rewrites each pane whenever the year said or the page's shape moves.
 /// The label gives way to the amount, which is as wide as the widest of
 /// them.
@@ -164,7 +154,7 @@ fn refresh(
     };
     for (table, said, pane, mut scroll) in &mut tables {
         let rows = said.rows(year);
-        let basis = basis(rows.len(), *shape);
+        let basis = shape.money_basis(rows.len());
         if let Ok(mut node) = panes.get_mut(pane.parent())
             && node.flex_basis != basis
         {

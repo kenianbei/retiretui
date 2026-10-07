@@ -133,7 +133,7 @@ export function LedgerPage() {
           </p>
         </MarginNote>
       )}
-      <div className="space-y-3">
+      <div className="min-w-0 space-y-3">
         <ColumnsPick set={read.set} />
         <Years
           ledger={ledger}

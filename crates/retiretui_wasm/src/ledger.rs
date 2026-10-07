@@ -43,7 +43,7 @@ pub struct LedgerRow {
     pub year: i16,
     /// The ages reached in it.
     pub ages: String,
-    /// What sets it apart in the list of years.
+    /// What sets it apart in the table of years.
     pub marks: Marks,
     /// Its figures, in the order of their headers.
     pub figures: Vec<String>,
@@ -254,7 +254,7 @@ pub fn js_percentile_label(percentile: u8) -> String {
 pub struct ViewWords {
     /// The dollars figures are shown in.
     pub basis: Bases<&'static str>,
-    /// The Ledger's list of years.
+    /// The Ledger's table of years.
     pub years: &'static str,
     /// The year's flows through each account.
     pub flows: &'static str,

@@ -12,8 +12,8 @@ use super::{Columns, LedgerTable, LedgerView};
 use crate::nav::Page;
 use crate::session::{LedgerRun, Projected, YearCursor};
 use crate::support::{
-    ROOMY, SETTLING_TICKS, SIZE, TALL, TODAY, active_page, composed_frame, headless_app_at,
-    ledger_year, press_key, redrawn, said, scratch_full_plan, show,
+    ROOMY, SETTLING_TICKS, SIZE, TALL, TODAY, active_page, cell_of, composed_frame,
+    headless_app_at, ledger_year, press_key, redrawn, said, scratch_full_plan, show,
 };
 use crate::theme::Theme;
 use crate::theme::document::Variant;
@@ -199,13 +199,11 @@ fn enter_on_the_tax_pane_shows_the_tax_tables_at_the_year() {
     assert!(frame.contains(&(TODAY.0 + 1).to_string()), "{frame}");
 }
 
-/// The row a pane titled `title` starts on, and the column.
-fn corner_of(frame: &str, title: &str) -> (usize, usize) {
-    let found = frame.lines().enumerate().find_map(|(row, line)| {
-        let before = line.split_once(title)?.0;
-        Some((row, before.chars().count()))
-    });
-    found.unwrap_or_else(|| panic!("no {title}: {frame}"))
+/// The row a pane titled `title` starts on in the frame last drawn, and
+/// the column.
+fn corner_of(app: &App, title: &str) -> (usize, usize) {
+    let (column, row) = cell_of(app, title);
+    (usize::from(row), usize::from(column))
 }
 
 /// The rows of the page between the tab row and the key row.
@@ -217,11 +215,11 @@ fn page_rows(size: TerminalSize) -> usize {
 fn a_landscape_page_stacks_the_money_beside_what_the_year_does() {
     let mut app = ledger();
     let frame = redrawn(&mut app);
-    let (table, _) = corner_of(&frame, "╭ Ledger ");
-    let (to_do, _) = corner_of(&frame, "╭ To do in ");
+    let (table, _) = corner_of(&app, "╭ Ledger ");
+    let (to_do, _) = corner_of(&app, "╭ To do in ");
     assert_eq!(to_do - table, page_rows(ROOMY) / 3, "a third: {frame}");
-    let (flows, flows_at) = corner_of(&frame, "╭ Flows ");
-    let money = ["╭ Money in ", "╭ Money out ", "╭ Tax "].map(|title| corner_of(&frame, title));
+    let (flows, flows_at) = corner_of(&app, "╭ Flows ");
+    let money = ["╭ Money in ", "╭ Money out ", "╭ Tax "].map(|title| corner_of(&app, title));
     assert_eq!(money[0].0, to_do, "beside the year's first row: {frame}");
     assert!(flows > to_do && flows_at == 0, "{frame}");
     assert!(
@@ -247,11 +245,11 @@ fn a_landscape_page_stacks_the_money_beside_what_the_year_does() {
 fn a_portrait_page_rows_the_money_under_flows_as_tall_as_their_rows() {
     let mut app = ledger_at(TALL);
     let frame = redrawn(&mut app);
-    let (table, _) = corner_of(&frame, "╭ Ledger ");
-    let (to_do, _) = corner_of(&frame, "╭ To do in ");
+    let (table, _) = corner_of(&app, "╭ Ledger ");
+    let (to_do, _) = corner_of(&app, "╭ To do in ");
     assert_eq!(to_do - table, page_rows(TALL) / 2, "a half: {frame}");
-    let (flows, _) = corner_of(&frame, "╭ Flows ");
-    let money = ["╭ Money in ", "╭ Money out ", "╭ Tax "].map(|title| corner_of(&frame, title));
+    let (flows, _) = corner_of(&app, "╭ Flows ");
+    let money = ["╭ Money in ", "╭ Money out ", "╭ Tax "].map(|title| corner_of(&app, title));
     assert!(
         money.iter().all(|&(row, _)| row == money[0].0),
         "side by side: {frame}"
@@ -278,14 +276,14 @@ fn the_headers_stay_over_the_years_as_they_scroll() {
     press_key(&mut app, KeyCode::End);
     let last = ledger_year(&mut app);
     let frame = redrawn(&mut app);
-    let (table, _) = corner_of(&frame, "╭ Ledger ");
+    let (table, _) = corner_of(&app, "╭ Ledger ");
     let lines: Vec<&str> = frame.lines().collect();
     let heads = lines[table + 1].trim_end_matches('│').trim_end();
     assert!(
         heads.contains("Year  Age") && heads.ends_with("Net worth"),
         "{frame}"
     );
-    let (year, _) = corner_of(&frame, &format!("▌ {last} "));
+    let (year, _) = corner_of(&app, &format!("▌ {last} "));
     assert!(year > table + 1, "the last year is scrolled to: {frame}");
     let scrollbar_and_border = 2;
     assert_eq!(
@@ -304,8 +302,8 @@ fn a_terminal_resized_between_the_shapes_is_laid_out_again() {
             app.update();
         }
         let frame = redrawn(&mut app);
-        let (to_do, _) = corner_of(&frame, "╭ To do in ");
-        let (money, _) = corner_of(&frame, "╭ Money in ");
+        let (to_do, _) = corner_of(&app, "╭ To do in ");
+        let (money, _) = corner_of(&app, "╭ Money in ");
         assert_eq!(money == to_do, is_beside, "{frame}");
     }
 }
@@ -320,7 +318,15 @@ fn a_terminal_too_short_for_the_year_opens_on_the_table_alone() {
     press_key(&mut app, KeyCode::Char('t'));
     assert_eq!(view(&app), LedgerView::Year, "t still shows the year");
     assert!(redrawn(&mut app).contains("╭ Flows "));
-    for (size, opened) in [(ROOMY, LedgerView::Year), (SIZE, LedgerView::Table)] {
+    let least = TerminalSize::new(SIZE.cols, 35);
+    let under = TerminalSize::new(SIZE.cols, 34);
+    let resized = [
+        (ROOMY, LedgerView::Year),
+        (SIZE, LedgerView::Table),
+        (least, LedgerView::Year),
+        (under, LedgerView::Table),
+    ];
+    for (size, opened) in resized {
         app.insert_resource(size);
         app.update();
         assert_eq!(view(&app), opened, "{size:?}");
@@ -386,11 +392,6 @@ fn the_terminal_s_own_theme_bands_the_tables_for_the_screen_it_is_on() {
     );
 }
 
-/// The row a pane titled `title` starts on.
-fn top_of(frame: &str, title: &str) -> Option<usize> {
-    frame.lines().position(|line| line.contains(title))
-}
-
 #[test]
 fn how_far_the_plan_has_come_is_a_pane_of_its_own_beside_what_to_do() {
     let mut app = ledger();
@@ -399,7 +400,7 @@ fn how_far_the_plan_has_come_is_a_pane_of_its_own_beside_what_to_do() {
     }
     let frame = redrawn(&mut app);
     let lines: Vec<&str> = frame.lines().collect();
-    let top = top_of(&frame, "╭ To do in 2042 ").expect("the year's to-dos");
+    let (top, _) = corner_of(&app, "╭ To do in 2042 ");
     assert!(
         lines[top].contains("╭ So far · today's dollars "),
         "side by side: {frame}"

@@ -67,10 +67,10 @@ function columnsOf(ledger: Ledger) {
  * is not taken back up to the table.
  */
 function useYearInView(year: number | undefined, isAlone: boolean) {
-  const within = useRef<HTMLDivElement>(null);
+  const scrolled = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const row = within.current?.querySelector('[aria-selected="true"]');
-    const frame = row?.closest("table")?.parentElement;
+    const frame = scrolled.current;
+    const row = frame?.querySelector('[aria-selected="true"]');
     if (!row || !frame) return;
     const [edges, at] = [
       frame.getBoundingClientRect(),
@@ -82,7 +82,7 @@ function useYearInView(year: number | undefined, isAlone: boolean) {
     else if (at.bottom > edges.bottom)
       frame.scrollTop += at.bottom - edges.bottom;
   }, [year, isAlone]);
-  return within;
+  return scrolled;
 }
 
 /**
@@ -104,22 +104,21 @@ export function Years({
   isAlone: boolean;
 }) {
   const columns = useMemo(() => columnsOf(ledger), [ledger]);
-  const within = useYearInView(year, isAlone);
+  const scrolled = useYearInView(year, isAlone);
   return (
-    <div ref={within} className="min-w-0">
-      <DataTable
-        label={`${VIEW_WORDS.years}, ${unit}`}
-        columns={columns}
-        rows={ledger.rows}
-        rowKey={(row) => String(row.year)}
-        isSelected={(row) => row.year === year}
-        isExceeded={(row) => row.is_exceeded}
-        onSelect={(row) => {
-          onSelect(row.year);
-        }}
-        isFirstPinned
-        className={isAlone ? "max-h-[calc(100dvh-12rem)]" : "max-h-[40dvh]"}
-      />
-    </div>
+    <DataTable
+      ref={scrolled}
+      label={`${VIEW_WORDS.years}, ${unit}`}
+      columns={columns}
+      rows={ledger.rows}
+      rowKey={(row) => String(row.year)}
+      isSelected={(row) => row.year === year}
+      isExceeded={(row) => row.is_exceeded}
+      onSelect={(row) => {
+        onSelect(row.year);
+      }}
+      isFirstPinned
+      className={isAlone ? "max-h-[calc(100dvh-12rem)]" : "max-h-[40dvh]"}
+    />
   );
 }
