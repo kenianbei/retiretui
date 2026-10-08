@@ -141,7 +141,7 @@ jobs:
     runs-on: ubuntu-latest
     # The image's version is @playwright/test's, so its browsers are the ones the suite expects.
     container:
-      image: mcr.microsoft.com/playwright:v1.64.0-noble
+      image: mcr.microsoft.com/playwright:v1.63.0-noble
       options: --ipc=host
     defaults:
       run:
