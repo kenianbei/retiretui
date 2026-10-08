@@ -6,6 +6,8 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-07
+
 ### Added
 
 - An income may say that its amount is what it pays in its first year, with
@@ -24,8 +26,8 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   cost-of-living adjustments whether or not it is claimed. Expenses, conversions
   and contributions escalate from the plan's start as they did.
   - The Income form, in the terminal and in the web app, asks it as "Grows from"
-    under Growth - "Plan start" or "Its first year" - and does not ask it of a
-    Social Security income.
+    beside Growth - "Plan start" or "Its first year" - and not of a Social
+    Security income.
   - The MCP server's schema reference says it under Escalation.
   - The `public-pension` example states Dana's pension this way, so it pays
     42,000 in its first year rather than 45,462.
@@ -61,11 +63,11 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     the arrows. A shifted character is written as itself, `G` or `?`, and
     `shift-g` is refused saying so.
   - A key another command holds by default is taken from it, which keeps its
-    others, and the shell says so once at launch: "q now runs save, not quit". A
-    key two entries state goes to the command the palette lists first, and the
-    other entry is left out. A command particular to a page may share a key with
-    one of the shell's, as the defaults do, and runs in its place while that
-    page is shown.
+    others, and the shell says so once at launch: "[tui.keys] q now runs save,
+    not quit". A key two entries state goes to the command the palette lists
+    first, and the other entry is left out. A command particular to a page may
+    share a key with one of the shell's, as the defaults do, and runs in its
+    place while that page is shown.
   - The palette always keeps a key: an entry that empties it, or states the key
     it holds, is left out.
   - An entry that names no command, or states anything that does not read as a
@@ -84,9 +86,10 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `config.toml` in the user's config directory, is a theme named by its file
   name - `themes/dusk.toml` is `dusk` - written as the built-in ones are: a
   `family`, a `variant` of `"dark"` or `"light"`, and a colour for each role it
-  names, the rest left as the terminal's own. It is chosen from the theme picker
-  or by `[tui.theme] name` like any other, and by its family where it states
-  one, the variant following a light or dark terminal.
+  names, the rest left as the terminal's own, its tables unbanded unless it
+  names `stripe`. It is chosen from the theme picker or by `[tui.theme] name`
+  like any other, and by its family where it states one, the variant following a
+  light or dark terminal.
   - `retiretui theme list` names every theme with its variant, its family and
     where it comes from, and `retiretui theme dump <name>` prints one's file,
     taking a name as `[tui.theme] name` does, to start another from:
@@ -107,27 +110,26 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   expense the household could cut alike and projects the plan whole at each
   step, so tax, Medicare and every other interaction is priced in, and answers
   twice: the most that lasts in the plan's own market, and the most that lasts
-  in a target share of its Monte Carlo markets, 90% unless another is set. A run
+  in a target share of its random markets, 90% unless another is set. A run
   lasts as the Monte Carlo tool counts it: never short, and ending with at least
   `[market] leave_at_least` where the plan states one. Every candidate is walked
   through the same markets, so the answers differ by spending alone. A plan that
   falls short as it stands is answered with less than it spends.
   - An expense may say `essential = true`: spending the household could not cut,
-    which the tool leaves as stated. A one-time expense is left as stated either
-    way, and a plan that marks nothing has all its recurring spending scaled.
-    The key is left out of a saved file while false, and no plan projects
-    differently for it. The Expenses form, in the terminal and in the web app,
-    ticks it as "Essential".
+    which the tool leaves as stated. A one-time expense is left either way. The
+    rest is the flexible spending it scales. The key is left out of a saved file
+    while false, and no plan projects differently for it. The Expenses form, in
+    the terminal and in the web app, ticks it as "Essential".
   - The search judges at most 16 plans for each answer, settles within $100 a
     year of flexible spending, and stops at eight times what the plan spends,
     which it says as "at least". It refuses a plan with no flexible spending,
     and one that falls short even with none.
-  - `retiretui optimize spending <plan>` prints the plan and both ceilings - the
-    flexible spending, its change, the share of markets it lasts in and the
-    headline figures - over each expense now and at each ceiling. `--success`
-    sets the target as a fraction, and `--write` writes the ceiling at the
-    target as a scenario that restates each scaled expense's `amount`. It takes
-    `--nominal`, `--format json`, `--history` and `--tax-dir` as the other
+  - `retiretui optimize spending <plan>` prints the plan as it stands and both
+    ceilings - the flexible spending, its change, the share of markets it lasts
+    in and the headline figures - over each expense now and at each ceiling.
+    `--success` sets the target as a fraction, and `--write` writes the ceiling
+    at the target as a scenario that restates each scaled expense's `amount`. It
+    takes `--nominal`, `--format json`, `--history` and `--tax-dir` as the other
     searches do.
   - The MCP server gains `optimize_spending`, which replies both ceilings with
     the scenario and stores it with `write_to`, and its schema reference
@@ -136,12 +138,12 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     Historical and Tax Tables: both ceilings under the plan's own row, the
     highlighted one's expenses now and at the ceiling, and the target, edited in
     a form and held for the session rather than saved with the plan. The cursor
-    starts on the ceiling at the target. `t` or `⏎` takes the highlighted
-    ceiling into the plan after asking, as one step that undo takes back, and
-    `w` writes it as a scenario and compares it; the commands are
-    `take-spending` and `write-spending`. Where the plan asks to leave nothing,
-    the ceiling in its own market says that it spends everything by the plan's
-    end.
+    starts on the ceiling at the target. It takes what the Overview has already
+    found rather than searching again. `t` or `⏎` takes the highlighted ceiling
+    into the plan after asking, as one step that undo takes back, and `w` writes
+    it as a scenario and compares it; the commands are `take-spending` and
+    `write-spending`. Where the plan asks to leave nothing, the ceiling in its
+    own market says that it spends everything by the plan's end.
   - The web app has the same page, the highlighted ceiling kept in the address,
     with a link from that note to Leave at least on the Market page.
   - The `mid-career-couple` example marks its mortgage essential and
@@ -173,10 +175,10 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   - The client's `ledger` module is recast. `ledger_headers`, `income_and_tax`,
     `FLOW_HEADERS` and `INCOME_AND_TAX` are gone, and `AccountFlows` trades
     `ins` and `outs` for `moves` and gains `growth_and_rate`. `ledger::Table` is
-    every year under a `ColumnSet`, and `ledger::Year` is one year in full.
+    every year under one of its column sets, and `ledger::Year` is one year in
+    full.
   - The terminal planner's `overview-year-previous` and `overview-year-next`
-    commands are gone with the Overview's year, so a `[tui.keys]` entry for
-    either is said at launch to name no command. The file's other keys stand.
+    commands are gone with the Overview's year.
 - The Overview is of the whole plan, and it is laid out alike in the terminal
   and in the web app. Nothing on it is chosen by a year any more: the year
   stepper and "What to do" in the year are gone from it, and the year belongs to
@@ -195,9 +197,8 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     target, said as "Could spend $4,200 more a year in 90% of markets", as
     spending less to last, or as already spending the most that lasts. It is
     searched last, once the market runs have answered and, in the terminal, the
-    other searches too, since it is many times their work, and the Spending
-    Ceiling page takes the answer in place of searching again. The canvas page
-    at `/ratzilla/` leaves it to that page.
+    other searches too, since it is many times their work. The canvas page at
+    `/ratzilla/` leaves it to the Spending Ceiling page.
   - One chart, turned through four views: balances by tax treatment, net worth,
     income against taxes, and net worth through random markets with its median.
     The web app showed all four at once and now shows the one named in the
@@ -218,7 +219,8 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     counts as success, each leading to the field it is edited at.
 - The Ledger is of one year in the context of all of them, and it is laid out
   alike in the terminal and in the web app: the table of every year over the
-  year shown in full, where the table stood over a year's flows alone.
+  year shown in full, where it stood over the year's flows and its income and
+  tax.
   - The year table, across the top: each year with the ages reached in it,
     marked `◆` where a milestone of the plan falls in it and `!` where it has
     something to watch, then its figures and the net worth it ends on. The
@@ -234,9 +236,9 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     view as the rest scroll sideways. The web app keeps the column set in the
     page's address.
   - To do in the year: the milestones that fall in it, what to do in it and what
-    to watch, which has moved here from under the flows. Beside it, So far: what
-    the plan has paid in tax, converted and withdrawn through the year, each
-    beside its lifetime total, as "Taxes $238k of $661k", titled with the
+    to watch, from the Overview and from under the flows. Beside it, So far:
+    what the plan has paid in tax, converted and withdrawn through the year,
+    each beside its lifetime total, as "Taxes $238k of $661k", titled with the
     dollars shown. The web app says who turns what age under the heading; the
     terminal's table has their ages.
   - Flows: each account from its open to its close, with what came in and went
@@ -271,7 +273,10 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     `]`, and `{` and `}` step to the nearest year with a mark. The web app has a
     pair of buttons for the marked years beside its year stepper, and `←` and
     `→` step the year as they did. Stepping the year there leaves the page where
-    it is scrolled to, where it went back to the top.
+    it is scrolled to, where it went back to the top. For `[tui.keys]` the
+    commands are `ledger-columns`, `ledger-table`, `ledger-year`,
+    `ledger-year-previous`, `ledger-year-next`, `ledger-marked-previous` and
+    `ledger-marked-next`.
   - A market run opened from a market tool lands on the year in full, and the To
     do title names it on both surfaces, as the table's does in the terminal.
     While a run is open the terminal's key row says the key that returns to the
@@ -280,12 +285,12 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   many it holds, as the terminal's does. Tools and Plan, by their links and by
   `4` and `5`, come back to the page last shown in them for as long as the app
   stays loaded, where they opened on Roth Conversions and Accounts each time.
-- Tables are banded. The web app shades every second row of every table. The
-  terminal's own theme, the default, bands its tables in a faint grey chosen for
-  a dark or a light screen; a named theme bands them in its own stripe as
-  before, and a theme file of your own that names no `stripe` has none. In the
-  Ledger's Money in, Money out and Tax panes the blank line between two parts
-  and the dimmed sums stand on the plain ground, where a band would hide them.
+- Tables are banded. The web app shades every second row of every table but the
+  Tax Tables'. The terminal's own theme, the default, bands its tables in a
+  faint grey chosen for a dark or a light screen; a named theme bands them in
+  its own stripe as before. In the Ledger's Money in, Money out and Tax panes
+  the blank line between two parts and the dimmed sums stand on the plain
+  ground, where a band would hide them.
 - The help picker names Tab and Enter by the glyphs the key row uses, `⇥` and
   `⏎`, where it said `tab`, `shift-tab` and `enter`.
 
@@ -296,10 +301,10 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   said again.
 - One setting in `config.toml` that does not read no longer resets every other.
   A misspelt `motion`, say, lost the theme and the document to reopen with it,
-  under one complaint about the whole file. Each of `theme`, `motion`,
-  `document` and `keys` is now read by itself: one that does not read keeps its
-  default, the rest stand, and the shell names the one at fault. A file that is
-  not TOML at all is still the defaults and one complaint.
+  under one complaint about the whole file. Each of `theme`, `motion` and
+  `document` is now read by itself: one that does not read keeps its default,
+  the rest stand, and the shell names the one at fault. A file that is not TOML
+  at all is still the defaults and one complaint.
 - The web app stays usable offline across a new release. Its service worker kept
   a newly released page before any of the files that page needs and dropped the
   old release's, so a visitor who opened the app as a release landed and lost
