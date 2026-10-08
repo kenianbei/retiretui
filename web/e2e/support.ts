@@ -17,9 +17,17 @@ const EXAMPLES = new URL(
   import.meta.url,
 );
 
-/** An example plan's text, as the client ships it. */
+const MONTE_CARLO = "[market.monte_carlo]";
+
+/** The table every seeded plan states: a tenth of the markets a plan runs through unasked. */
+const FEW_MARKETS = `${MONTE_CARLO}\ntrials = 100`;
+
+/** An example plan's text as the client ships it, but for how many random markets it runs through. */
 export function example(file: string): string {
-  return readFileSync(new URL(file, EXAMPLES), "utf8");
+  const text = readFileSync(new URL(file, EXAMPLES), "utf8");
+  return text.includes(MONTE_CARLO)
+    ? text.replace(MONTE_CARLO, FEW_MARKETS)
+    : `${text}\n${FEW_MARKETS}\n`;
 }
 
 /** A Social Security statement as ssa.gov gives one. */
@@ -110,8 +118,12 @@ export async function compareWith(page: Page, name: string) {
   await page.waitForURL(/with=/);
 }
 
-/** The page as it stands breaks no WCAG A or AA rule axe can check. */
+/** The one engine axe runs in: it reads the DOM and computed styles, which the engines agree on. */
+const AXE_ENGINE = "chromium";
+
+/** The page as it stands breaks no WCAG A or AA rule axe can check, asked in Chromium alone. */
 export async function expectAccessible(page: Page) {
+  if (page.context().browser()?.browserType().name() !== AXE_ENGINE) return;
   const { violations } = await new AxeBuilder({ page })
     .withTags(WCAG)
     .analyze();
@@ -122,6 +134,9 @@ export async function expectAccessible(page: Page) {
   expect(said).toEqual([]);
 }
 
+/** Playwright's driver inside Firefox, which logs a worker's load cut short by a navigation as the page's. */
+const DRIVER = "chrome://juggler/";
+
 /** Every test, failing on anything the page throws or logs as an error. */
 export const test = base.extend<{ pageErrors: undefined }>({
   pageErrors: [
@@ -129,7 +144,9 @@ export const test = base.extend<{ pageErrors: undefined }>({
       const errors: string[] = [];
       page.on("pageerror", (error) => errors.push(error.message));
       page.on("console", (message) => {
-        if (message.type() === "error") errors.push(message.text());
+        if (message.type() !== "error" || message.text().includes(DRIVER))
+          return;
+        errors.push(message.text());
       });
       await use(undefined);
       expect(errors).toEqual([]);

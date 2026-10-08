@@ -9,7 +9,7 @@ export default defineConfig({
   timeout: 120_000,
   expect: { timeout: 30_000 },
   fullyParallel: true,
-  workers: isCi ? 2 : 4,
+  workers: 4,
   forbidOnly: isCi,
   retries: isCi ? 1 : 0,
   reporter: isCi ? [["github"], ["html", { open: "never" }]] : "list",
