@@ -11,8 +11,7 @@ import {
   test,
 } from "./support";
 
-/** The retired couple through fewer markets, which a search of them is quick over. */
-const RETIRED = `${example("retired-couple.toml")}\n[market.monte_carlo]\ntrials = 100\n`;
+const RETIRED = example("retired-couple.toml");
 
 test("both ceilings are found, one taken and written, and another target searched", async ({
   page,

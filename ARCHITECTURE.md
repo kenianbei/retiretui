@@ -569,13 +569,13 @@ depends on UI.
   works offline, a build that does not arrive whole leaves the one before it to
   open, and the app installs. Its colours are the terminal theme's roles, light
   or dark as the system is, each held to a readable contrast by a test, and
-  every page is checked against WCAG 2.1 A and AA in Chromium, Firefox and
-  WebKit by a browser suite CI runs. Under every page it says that it is a model
-  and not advice, and leads to its source and to where an issue is reported.
-  Where it cannot start, with scripts off, no WebAssembly, the page's storage
-  blocked or a file that does not load or run, the page says why from markup and
-  a script of its own, which need nothing of the app; a page that throws while
-  it is drawn is said in its place, with a way to reload.
+  every page is checked against WCAG 2.1 A and AA, in Chromium, by a browser
+  suite CI runs in Chromium, Firefox and WebKit. Under every page it says that
+  it is a model and not advice, and leads to its source and to where an issue is
+  reported. Where it cannot start, with scripts off, no WebAssembly, the page's
+  storage blocked or a file that does not load or run, the page says why from
+  markup and a script of its own, which need nothing of the app; a page that
+  throws while it is drawn is said in its place, with a way to reload.
 
 Plans express timing through a closed trigger vocabulary - a fixed date, a
 person's age, or a reference to a named event or income source with a whole year

@@ -141,7 +141,9 @@ test("the strip reads the plan, and a plan that runs short says where", async ({
   ).toBeVisible();
   await expect(page.getByText(/unfunded/)).toHaveCount(0);
   await expect(page.getByRole("term")).toHaveCount(4);
-  await expect(page.getByText("through random markets")).toBeVisible(SEARCH);
+  await expect(
+    page.getByText("through random markets", { exact: true }),
+  ).toBeVisible(SEARCH);
   await expectAccessible(page);
 
   await page
