@@ -1,12 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import type {
-  DetailLine,
-  Funds,
-  HistoryChart,
-  Year,
-} from "@wasm/retiretui_wasm.js";
+import type { DetailLine, Funds, Year } from "@wasm/retiretui_wasm.js";
 
-import { History } from "@/ledger/history";
 import { Titled } from "@/ledger/titled";
 import { cn } from "@/lib/utils";
 import { VIEW_WORDS } from "@/overview/view-words";
@@ -80,45 +74,13 @@ function TaxCard({ detail }: { detail: Year }) {
   );
 }
 
-/** A topic's column: its card over its history, each in the row its neighbours' are in. */
-function Topic({ children }: { children: React.ReactNode }) {
+/** What the year lived on, where that went, and its tax. */
+export function MoneyCards({ detail }: { detail: Year }) {
   return (
-    <div className="row-span-2 grid grid-rows-subgrid gap-4">{children}</div>
-  );
-}
-
-/** What the year lived on, where that went, and its tax, each over its history across the plan. */
-export function MoneyCards({
-  detail,
-  histories,
-  onYear,
-}: {
-  detail: Year;
-  histories: readonly HistoryChart[];
-  onYear: (year: number) => void;
-}) {
-  const cards = [
-    <FundsCard key="in" title={VIEW_WORDS.money_in} funds={detail.money_in} />,
-    <FundsCard
-      key="out"
-      title={VIEW_WORDS.money_out}
-      funds={detail.money_out}
-    />,
-    <TaxCard key="tax" detail={detail} />,
-  ];
-  return (
-    <div className="grid grid-cols-1 gap-4 @xl:grid-cols-2 @4xl:grid-cols-3">
-      {cards.map((card, at) => {
-        const history = histories[at];
-        return (
-          <Topic key={card.key}>
-            {card}
-            {history && (
-              <History chart={history} year={detail.year} onYear={onYear} />
-            )}
-          </Topic>
-        );
-      })}
+    <div className="grid grid-cols-1 items-start gap-4 @xl:grid-cols-2 @4xl:grid-cols-3">
+      <FundsCard title={VIEW_WORDS.money_in} funds={detail.money_in} />
+      <FundsCard title={VIEW_WORDS.money_out} funds={detail.money_out} />
+      <TaxCard detail={detail} />
     </div>
   );
 }

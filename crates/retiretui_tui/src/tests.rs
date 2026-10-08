@@ -208,12 +208,15 @@ fn the_overview_renders_its_strip_its_chart_and_what_the_years_add_up_to() {
 }
 
 #[test]
-fn the_ledger_lists_years_beside_the_cursor_year_in_full() {
+fn the_ledger_tables_years_over_the_cursor_year_in_full() {
     let mut app = headless_app(ROOMY);
     show(&mut app, Page::Ledger);
     app.update();
     let frame = composed_frame(&app);
-    assert!(frame.contains("╭ Years "), "{frame}");
+    assert!(
+        frame.contains("╭ Ledger · today's dollars · Balances by treatment "),
+        "{frame}"
+    );
     assert!(frame.contains("Net worth"), "{frame}");
     assert!(
         frame.contains("╭ To do in 2026 ") && frame.contains("╭ So far · today's dollars "),

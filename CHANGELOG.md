@@ -173,8 +173,7 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   - The client's `ledger` module is recast. `ledger_headers`, `income_and_tax`,
     `FLOW_HEADERS` and `INCOME_AND_TAX` are gone, and `AccountFlows` trades
     `ins` and `outs` for `moves` and gains `growth_and_rate`. `ledger::Table` is
-    every year under a `ColumnSet`, `ledger::Year` is one year in full, and
-    `ledger::History` is a money pane across the years.
+    every year under a `ColumnSet`, and `ledger::Year` is one year in full.
   - The terminal planner's `overview-year-previous` and `overview-year-next`
     commands are gone with the Overview's year, so a `[tui.keys]` entry for
     either is said at launch to name no command. The file's other keys stand.
@@ -218,18 +217,28 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     the returns it assumes, the filing status, the state lived in, and what
     counts as success, each leading to the field it is edited at.
 - The Ledger is of one year in the context of all of them, and it is laid out
-  alike in the terminal and in the web app. It opens on the year in full, beside
-  a list of every year, where it opened on the year table over a year's flows.
-  - Years, down the left: each year with the ages reached in it and the net
-    worth it ends on, marked `◆` where a milestone of the plan falls in it and
-    `!` where it has something to watch. The list's cursor is the year. The web
-    app leaves the list out below 1024px and shows the year alone.
+  alike in the terminal and in the web app: the table of every year over the
+  year shown in full, where the table stood over a year's flows alone.
+  - The year table, across the top: each year with the ages reached in it,
+    marked `◆` where a milestone of the plan falls in it and `!` where it has
+    something to watch, then its figures and the net worth it ends on. The
+    table's cursor is the year, and its headers stay in view as the years
+    scroll. `c` in the terminal and a Columns menu in the web app turn it
+    through three column sets, between Income, Spending, Tax and Withdrawn and
+    the net worth: balances by tax treatment, as before; balances by account;
+    and tax figures, with MAGI, taxable income, what was converted and what was
+    required. The terminal shortens the figures before it drops a set's columns.
+    In the terminal the table takes a third of a page wider than it is tall and
+    half of one taller than it is wide. In the web app it scrolls in a frame up
+    to two fifths of the screen tall, on a phone too, the year column held in
+    view as the rest scroll sideways. The web app keeps the column set in the
+    page's address.
   - To do in the year: the milestones that fall in it, what to do in it and what
     to watch, which has moved here from under the flows. Beside it, So far: what
     the plan has paid in tax, converted and withdrawn through the year, each
     beside its lifetime total, as "Taxes $238k of $661k", titled with the
     dollars shown. The web app says who turns what age under the heading; the
-    terminal's list of years has their ages.
+    terminal's table has their ages.
   - Flows: each account from its open to its close, with what came in and went
     out in one Moves column, each move named by where it came from or went, and
     its growth beside its rate. A last row says every account as one: what the
@@ -249,24 +258,20 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     MAGI. A market run opened in the Ledger says no bracket, since its tables
     are not the plan's own. `⏎` on the pane in the terminal, and a link in the
     web app, shows the Tax Tables at the year.
-  - Under each of those three, its history: income against withdrawals, spending
-    against tax, and MAGI against taxable income, as two lines across every year
-    with the year shown ruled. A press on a year shows it. The terminal draws
-    the three where it is at least 44 rows tall, and the lists are then as tall
-    as the longest; shorter, the page is the lists alone.
-  - The year table is the whole page, a key away: `t` in the terminal swaps the
-    page for it and back, and a Year and Table switch does in the web app. `c`
-    in the terminal and a Columns menu in the web app turn it through three
-    column sets, between Income, Spending, Tax and Withdrawn and the net worth:
-    balances by tax treatment, as before; balances by account; and tax figures,
-    with MAGI, taxable income, what was converted and what was required. The
-    terminal shortens the figures before it drops a set's columns. `⏎` on a row
-    in the terminal, and a click on one in the web app, shows that year in full.
-    The web app keeps the view and the column set in the page's address.
+  - The terminal lays the year out by the shape of its window. Wider than it is
+    tall, Money in, Money out and Tax stand in a column down the right, a third
+    of the page wide, beside To do, So far and Flows. Taller than it is wide,
+    the three are a row under Flows.
+  - The table alone is a key away: `t` in the terminal gives it the whole page
+    and brings the year back under it, and a Year and Table switch does in the
+    web app, which keeps the view in the page's address. `⏎` on a row of the
+    terminal's table alone, and a click on one in the web app's, shows that year
+    in full. A terminal under 35 rows tall opens on the table alone.
   - The year is stepped from any pane in the terminal by `←` and `→` or `[` and
     `]`, and `{` and `}` step to the nearest year with a mark. The web app has a
     pair of buttons for the marked years beside its year stepper, and `←` and
-    `→` step the year as they did.
+    `→` step the year as they did. Stepping the year there leaves the page where
+    it is scrolled to, where it went back to the top.
   - A market run opened from a market tool lands on the year in full, and the To
     do title names it on both surfaces, as the table's does in the terminal.
     While a run is open the terminal's key row says the key that returns to the

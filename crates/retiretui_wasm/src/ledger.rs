@@ -3,8 +3,8 @@
 
 use retiretui_client::actions::NOTHING_SCHEDULED;
 use retiretui_client::ledger::{
-    Asked, ColumnSet, FLOW_COLUMNS, FLOWS, History, MONEY_IN, MONEY_OUT, Marks, PAID, TAX, TO_DO,
-    TO_WATCH, Table, WORKED_FROM, YEARS, Year, salary_marks,
+    Asked, ColumnSet, FLOW_COLUMNS, FLOWS, MONEY_IN, MONEY_OUT, Marks, PAID, TAX, TO_DO, TO_WATCH,
+    Table, WORKED_FROM, YEARS, Year, salary_marks,
 };
 use retiretui_client::overview::{
     ATTENTION, Chart, MILESTONES, NOTHING, OVER_THE_PLAN, RESTS_ON, STALE, STRIP,
@@ -43,34 +43,12 @@ pub struct LedgerRow {
     pub year: i16,
     /// The ages reached in it.
     pub ages: String,
-    /// What sets it apart in the list of years.
+    /// What sets it apart in the table of years.
     pub marks: Marks,
     /// Its figures, in the order of their headers.
     pub figures: Vec<String>,
     /// Whether the year could not pay for everything.
     pub is_exceeded: bool,
-}
-
-/// One of the year's money panes charted across every year.
-#[derive(Serialize, Debug)]
-#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
-pub struct HistoryChart {
-    /// What it is titled.
-    pub title: &'static str,
-    /// What its two lines are named.
-    pub lines: [&'static str; 2],
-    /// Each year, first to last.
-    pub years: Vec<HistoryYear>,
-}
-
-/// One year of a history.
-#[derive(Serialize, Debug)]
-#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
-pub struct HistoryYear {
-    /// The calendar year.
-    pub year: i16,
-    /// Its two figures, in the order of the lines.
-    pub figures: [Dollars; 2],
 }
 
 /// The projection as the Overview charts it.
@@ -135,22 +113,6 @@ pub fn ledger(projected: &Projected, set: ColumnSet, is_nominal: bool) -> Ledger
         leading: Table::LEADING,
         rows: rows.collect(),
     }
-}
-
-/// The year's three money panes, each across every year.
-fn histories(projected: &Projected, is_nominal: bool) -> Vec<HistoryChart> {
-    let charted = History::ALL.into_iter().map(|history| {
-        let points = history.points(&projected.projection, is_nominal);
-        let years = points.into_iter();
-        HistoryChart {
-            title: history.title(),
-            lines: history.lines(),
-            years: years
-                .map(|(year, figures)| HistoryYear { year, figures })
-                .collect(),
-        }
-    });
-    charted.collect()
 }
 
 pub fn chart(projected: &Projected, is_nominal: bool) -> ChartSeries {
@@ -232,25 +194,6 @@ impl JsDocument {
         }))
     }
 
-    /// The year's three money panes charted across every year, nominal or
-    /// in today's dollars, in the plan's own market or the one `market`
-    /// names.
-    ///
-    /// # Errors
-    ///
-    /// Where no valid draft has been projected, or `market` names no
-    /// market it can be replayed in.
-    #[wasm_bindgen(js_name = ledgerHistories, unchecked_return_type = "HistoryChart[]")]
-    pub fn ledger_histories(
-        &self,
-        nominal: bool,
-        market: Option<String>,
-    ) -> Result<JsValue, JsError> {
-        reply(self.0.in_market(market.as_deref(), |projected| {
-            Ok(histories(projected, nominal))
-        }))
-    }
-
     /// The projection as the Overview charts it, nominal or in today's
     /// dollars; `null` while no valid draft has been projected.
     ///
@@ -311,7 +254,7 @@ pub fn js_percentile_label(percentile: u8) -> String {
 pub struct ViewWords {
     /// The dollars figures are shown in.
     pub basis: Bases<&'static str>,
-    /// The Ledger's list of years.
+    /// The Ledger's table of years.
     pub years: &'static str,
     /// The year's flows through each account.
     pub flows: &'static str,
@@ -433,21 +376,6 @@ mod tests {
         assert_eq!(column_set(Some("accounts")), ColumnSet::Accounts);
         assert_eq!(column_set(Some("balances")), ColumnSet::Treatments);
         assert_eq!(column_set(None), ColumnSet::Treatments);
-    }
-
-    #[test]
-    fn the_histories_chart_each_money_pane_over_every_year() {
-        let projected = projected();
-        let charts = histories(&projected, true);
-        let titles: Vec<&str> = charts.iter().map(|chart| chart.title).collect();
-        assert_eq!(titles, History::ALL.map(History::title));
-        let years = projected.projection.years.len();
-        assert!(charts.iter().all(|chart| chart.years.len() == years));
-        let first = &projected.projection.years[0];
-        assert_eq!(charts[0].lines, ["Income", "Withdrawn"]);
-        assert_eq!(charts[0].years[0].figures[0], first.total_income);
-        let todays = histories(&projected, false);
-        assert_ne!(todays[1].years[9].figures, charts[1].years[9].figures);
     }
 
     #[test]

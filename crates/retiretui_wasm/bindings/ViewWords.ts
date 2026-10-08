@@ -11,7 +11,7 @@ export type ViewWords = {
  */
 basis: Bases<string>, 
 /**
- * The Ledger's list of years.
+ * The Ledger's table of years.
  */
 years: string, 
 /**

@@ -1,5 +1,5 @@
 //! The year cursor from every writer to every reader: the Ledger's years
-//! and the year beside them, a press on the Overview's chart, and Compare.
+//! and the year under them, a press on the Overview's chart, and Compare.
 
 use bevy_app::App;
 use plurimus::term::KeyCode;
@@ -7,7 +7,7 @@ use plurimus::term::KeyCode;
 use super::nav::Page;
 use super::session::{Today, YearCursor};
 use super::support::{
-    ROOMY, SIZE, TODAY, active_page, assert_at_rest, cell_of, click, click_year, composed_frame,
+    ROOMY, TODAY, active_page, assert_at_rest, cell_of, click, click_year, composed_frame,
     headless_app, headless_app_in, ledger_year, overview_chart, press_key, redrawn, scratch_plan,
     show,
 };
@@ -19,8 +19,8 @@ fn cursor(app: &App) -> YearCursor {
     *app.world().resource::<YearCursor>()
 }
 
-/// Shows the Ledger, asserting its list of years and the year in full
-/// beside it agree on the year.
+/// Shows the Ledger, asserting its table of years and the year in full
+/// under it agree on the year.
 fn ledger_shows(app: &mut App) -> i16 {
     show(app, Page::Ledger);
     let year = ledger_year(app);
@@ -31,8 +31,8 @@ fn ledger_shows(app: &mut App) -> i16 {
 }
 
 #[test]
-fn a_year_moved_in_the_ledger_moves_the_year_beside_it() {
-    let mut app = headless_app(SIZE);
+fn a_year_moved_in_the_ledger_moves_the_year_under_it() {
+    let mut app = headless_app(ROOMY);
     assert_eq!(ledger_shows(&mut app), TODAY.0);
     press_key(&mut app, KeyCode::Down);
     assert_eq!(ledger_shows(&mut app), TODAY.0 + 1);
@@ -61,7 +61,7 @@ fn a_chart_click_on_the_overview_opens_the_ledger_at_that_year() {
 
 #[test]
 fn the_ledger_reveals_a_year_set_elsewhere() {
-    let mut app = headless_app(SIZE);
+    let mut app = headless_app(ROOMY);
     ledger_shows(&mut app);
     show(&mut app, Page::Overview);
     let chart = overview_chart(&mut app);
@@ -73,7 +73,7 @@ fn the_ledger_reveals_a_year_set_elsewhere() {
 
 /// Every view, opened in `today`, shows `year`, and no visit moves it.
 fn every_view_agrees_in(today: Today, year: i16) {
-    let mut app = headless_app_in(scratch_plan(), SIZE, today);
+    let mut app = headless_app_in(scratch_plan(), ROOMY, today);
     assert_eq!(ledger_shows(&mut app), year);
     assert_at_rest(&mut app);
     assert_eq!(cursor(&app), YearCursor(None), "the visit wrote no year");

@@ -1,6 +1,6 @@
 import type { LedgerRow } from "@wasm/retiretui_wasm.js";
 
-/** The nearest years the client marked before and after `year`, as the list shows them. */
+/** The nearest years the client marked before and after `year`, as the table shows them. */
 export function markedBeside(
   rows: readonly LedgerRow[],
   year: number,

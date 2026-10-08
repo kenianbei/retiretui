@@ -1,7 +1,7 @@
 //! The Ledger's Flows pane: each account's year from its open to its
 //! close, with what came in and went out named by where from or to, and
-//! every account as one beneath them; as tall as its rows, and giving them
-//! up before the money under it loses its own.
+//! every account as one beneath them; as tall as its rows and whatever the
+//! year's panes leave under it, and giving its rows up before they do.
 
 use bevy_app::{App, Update};
 use bevy_ecs::hierarchy::ChildOf;
@@ -37,11 +37,12 @@ const HEADER_ROWS: usize = 1;
 #[derive(Component)]
 struct FlowsTable;
 
-pub(super) fn spawn_pane(commands: &mut Commands, detail: Entity) {
+pub(super) fn spawn_pane(commands: &mut Commands, actions: Entity) {
     let pane = Pane::new(FLOWS)
         .tall(f32::from(pane::BORDERS))
         .shrinking_to(FLOWS_LEAST)
-        .spawn(commands, detail);
+        .stretching()
+        .spawn(commands, actions);
     commands.spawn((
         table_bundle(),
         FlowsTable,

@@ -1,4 +1,4 @@
-import type { AccountFlows, HistoryChart, Year } from "@wasm/retiretui_wasm.js";
+import type { AccountFlows, Year } from "@wasm/retiretui_wasm.js";
 
 import { columnsFor } from "@/components/columns";
 import { DataTable } from "@/components/data-table";
@@ -105,16 +105,8 @@ function SoFarCard({ detail }: { detail: Year }) {
   );
 }
 
-/** One year in full: the year itself, its flows through each account, and its money and tax over their histories. */
-export function YearCards({
-  detail,
-  histories,
-  onYear,
-}: {
-  detail: Year;
-  histories: readonly HistoryChart[];
-  onYear: (year: number) => void;
-}) {
+/** One year in full: the year itself, its flows through each account, and its money and tax. */
+export function YearCards({ detail }: { detail: Year }) {
   return (
     <div className="@container min-w-0 space-y-4">
       <div className="grid grid-cols-1 gap-4 @3xl:grid-cols-[minmax(0,1fr)_18rem]">
@@ -132,7 +124,7 @@ export function YearCards({
           className="-mx-4"
         />
       </Titled>
-      <MoneyCards detail={detail} histories={histories} onYear={onYear} />
+      <MoneyCards detail={detail} />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { flexRender, type RowData, useTable } from "@tanstack/react-table";
-import type { KeyboardEvent } from "react";
+import type { KeyboardEvent, Ref } from "react";
 
 import { aligned, FEATURES, type TableColumns } from "@/components/columns";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,8 @@ interface DataTableProps<Row extends RowData> {
   /** Set in a container of its own: no frame but a rule above, the edge cells at the container's inset. */
   isFlush?: boolean;
   className?: string;
+  /** The frame the table scrolls in. */
+  ref?: Ref<HTMLDivElement>;
 }
 
 /**
@@ -37,6 +39,7 @@ export function DataTable<Row extends RowData>({
   isFirstPinned = false,
   isFlush = false,
   className,
+  ref,
 }: DataTableProps<Row>) {
   const table = useTable<typeof FEATURES, Row>({
     features: FEATURES,
@@ -64,6 +67,7 @@ export function DataTable<Row extends RowData>({
     : { tabIndex: 0, role: "region", "aria-label": label };
   return (
     <div
+      ref={ref}
       {...reachable}
       className={cn(
         "bg-card focus-visible:ring-ring/50 relative overflow-auto rounded-md border outline-none focus-visible:ring-[3px]",

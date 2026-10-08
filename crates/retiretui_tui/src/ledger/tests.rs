@@ -1,30 +1,35 @@
-//! The Ledger as a user drives it: its two views, the table's column
-//! sets, and the year stepped from any pane.
+//! The Ledger as a user drives it: its two views, its two shapes, the
+//! table's column sets, and the year stepped from any pane.
 
 use bevy_app::App;
-use bevy_ecs::prelude::{Entity, With};
+use bevy_ecs::prelude::With;
 use bevy_input_focus::InputFocus;
+use plurimus::core::TerminalSize;
 use plurimus::term::KeyCode;
 use plurimus::widgets::TableStripe;
 
 use super::{Columns, LedgerTable, LedgerView};
-use crate::chart::{Legend, SeriesChart};
 use crate::nav::Page;
 use crate::session::{LedgerRun, Projected, YearCursor};
 use crate::support::{
-    ROOMY, SETTLING_TICKS, SIZE, TODAY, active_page, click_year, composed_frame, headless_app_at,
-    ledger_year, press_key, redrawn, said, scratch_full_plan, show,
+    ROOMY, SETTLING_TICKS, SIZE, TALL, TODAY, active_page, cell_of, composed_frame,
+    headless_app_at, ledger_year, press_key, redrawn, said, scratch_full_plan, show,
 };
 use crate::theme::Theme;
 use crate::theme::document::Variant;
 use retiretui_client::ledger::ColumnSet;
 
-/// The full fixture on the Ledger: several accounts, milestones and a
-/// ladder of conversions.
-fn ledger() -> crate::support::Headless {
-    let mut app = headless_app_at(scratch_full_plan(), SIZE);
+/// The full fixture on the Ledger, on a terminal of `size`: several
+/// accounts, milestones and a ladder of conversions.
+fn ledger_at(size: TerminalSize) -> crate::support::Headless {
+    let mut app = headless_app_at(scratch_full_plan(), size);
     show(&mut app, Page::Ledger);
     app
+}
+
+/// The fixture on a landscape terminal with the room for the year.
+fn ledger() -> crate::support::Headless {
+    ledger_at(ROOMY)
 }
 
 fn view(app: &App) -> LedgerView {
@@ -41,7 +46,7 @@ fn holds_the_table(app: &App) -> bool {
 }
 
 #[test]
-fn t_swaps_the_page_for_the_table_and_back_at_the_same_year() {
+fn t_gives_the_table_the_page_and_the_year_back_at_the_same_year() {
     let mut app = ledger();
     press_key(&mut app, KeyCode::Down);
     for _ in 0..3 {
@@ -69,19 +74,19 @@ fn t_swaps_the_page_for_the_table_and_back_at_the_same_year() {
     press_key(&mut app, KeyCode::Down);
     press_key(&mut app, KeyCode::Char('t'));
     assert_eq!(view(&app), LedgerView::Year);
-    assert!(holds_the_table(&app), "which is the list of years again");
+    assert!(holds_the_table(&app), "which the keyboard stays in");
     let frame = redrawn(&mut app);
-    assert!(frame.contains("╭ Years "), "{frame}");
+    assert!(frame.contains("╭ Flows "), "{frame}");
     let to_do = format!("╭ To do in {} ", TODAY.0 + 2);
     assert!(frame.contains(&to_do), "{frame}");
-    assert!(frame.contains("t table"), "{frame}");
+    assert!(frame.contains("t table  c columns"), "{frame}");
 }
 
 #[test]
 fn enter_in_the_table_shows_the_year_its_cursor_is_on() {
     let mut app = ledger();
     press_key(&mut app, KeyCode::Enter);
-    assert_eq!(view(&app), LedgerView::Year, "⏎ on the list keeps the year");
+    assert_eq!(view(&app), LedgerView::Year, "⏎ over the year keeps it");
     press_key(&mut app, KeyCode::Char('t'));
     for _ in 0..3 {
         press_key(&mut app, KeyCode::Down);
@@ -98,7 +103,11 @@ fn c_turns_the_table_through_its_column_sets() {
     let mut app = ledger();
     press_key(&mut app, KeyCode::Down);
     press_key(&mut app, KeyCode::Char('c'));
-    assert_eq!(view(&app), LedgerView::Table, "c shows the table it turns");
+    assert_eq!(
+        view(&app),
+        LedgerView::Year,
+        "c turns the table where it is"
+    );
     let sets = [
         (ColumnSet::Accounts, "Balances by account", "fid-401k"),
         (ColumnSet::Tax, "Tax figures", "MAGI"),
@@ -110,6 +119,7 @@ fn c_turns_the_table_through_its_column_sets() {
         assert!(frame.contains(&format!("· {title} ")), "{frame}");
         assert!(frame.contains(header), "{set:?}: {frame}");
         assert!(frame.contains("Withdraw"), "every set leads alike: {frame}");
+        assert!(frame.contains("╭ Flows "), "over the year: {frame}");
         assert_eq!(ledger_year(&mut app), TODAY.0 + 1, "the year stays");
         press_key(&mut app, KeyCode::Char('c'));
     }
@@ -189,29 +199,138 @@ fn enter_on_the_tax_pane_shows_the_tax_tables_at_the_year() {
     assert!(frame.contains(&(TODAY.0 + 1).to_string()), "{frame}");
 }
 
+/// The row a pane titled `title` starts on in the frame last drawn, and
+/// the column.
+fn corner_of(app: &App, title: &str) -> (usize, usize) {
+    let (column, row) = cell_of(app, title);
+    (usize::from(row), usize::from(column))
+}
+
+/// The rows of the page between the tab row and the key row.
+fn page_rows(size: TerminalSize) -> usize {
+    usize::from(size.rows - crate::layout::CHROME_ROWS)
+}
+
 #[test]
-fn the_flows_are_as_tall_as_their_rows_and_say_every_account_as_one() {
+fn a_landscape_page_stacks_the_money_beside_what_the_year_does() {
     let mut app = ledger();
     let frame = redrawn(&mut app);
-    let lines: Vec<&str> = frame.lines().collect();
-    let top = lines.iter().position(|line| line.contains("╭ Flows "));
-    let under = lines.iter().position(|line| line.contains("╭ Money in "));
-    let (top, under) = (top.unwrap(), under.unwrap());
+    let (table, _) = corner_of(&app, "╭ Ledger ");
+    let (to_do, _) = corner_of(&app, "╭ To do in ");
+    assert_eq!(to_do - table, page_rows(ROOMY) / 3, "a third: {frame}");
+    let (flows, flows_at) = corner_of(&app, "╭ Flows ");
+    let money = ["╭ Money in ", "╭ Money out ", "╭ Tax "].map(|title| corner_of(&app, title));
+    assert_eq!(money[0].0, to_do, "beside the year's first row: {frame}");
+    assert!(flows > to_do && flows_at == 0, "{frame}");
+    assert!(
+        money[0].0 < money[1].0 && money[1].0 < money[2].0,
+        "one over the next: {frame}"
+    );
+    assert!(
+        money
+            .iter()
+            .all(|&(_, at)| at == money[0].1 && at > flows_at),
+        "in one column: {frame}"
+    );
+    let foot = frame.lines().nth(frame.lines().count() - 2).unwrap();
+    assert_eq!(
+        foot.matches('╰').count(),
+        2,
+        "the flows and the tax run to the page's foot: {frame}"
+    );
+    assert!(frame.contains("To top of 12% "), "{frame}");
+}
+
+#[test]
+fn a_portrait_page_rows_the_money_under_flows_as_tall_as_their_rows() {
+    let mut app = ledger_at(TALL);
+    let frame = redrawn(&mut app);
+    let (table, _) = corner_of(&app, "╭ Ledger ");
+    let (to_do, _) = corner_of(&app, "╭ To do in ");
+    assert_eq!(to_do - table, page_rows(TALL) / 2, "a half: {frame}");
+    let (flows, _) = corner_of(&app, "╭ Flows ");
+    let money = ["╭ Money in ", "╭ Money out ", "╭ Tax "].map(|title| corner_of(&app, title));
+    assert!(
+        money.iter().all(|&(row, _)| row == money[0].0),
+        "side by side: {frame}"
+    );
     let accounts = 6;
     let further_moves = 1;
     let header_total_and_borders = 4;
     assert_eq!(
-        under - top,
+        money[0].0 - flows,
         accounts + further_moves + header_total_and_borders,
         "{frame}"
     );
-    assert!(lines[under - 2].contains("All accounts"), "{frame}");
+    let lines: Vec<&str> = frame.lines().collect();
+    assert!(lines[money[0].0 - 2].contains("All accounts"), "{frame}");
     assert!(
         frame.contains("+$15,000 · 5.0%"),
         "growth beside its rate: {frame}"
     );
-    assert!(frame.contains("╭ Money out "), "{frame}");
-    assert!(frame.contains("To top of 12% "), "{frame}");
+}
+
+#[test]
+fn the_headers_stay_over_the_years_as_they_scroll() {
+    let mut app = ledger();
+    press_key(&mut app, KeyCode::End);
+    let last = ledger_year(&mut app);
+    let frame = redrawn(&mut app);
+    let (table, _) = corner_of(&app, "╭ Ledger ");
+    let lines: Vec<&str> = frame.lines().collect();
+    let heads = lines[table + 1].trim_end_matches('│').trim_end();
+    assert!(
+        heads.contains("Year  Age") && heads.ends_with("Net worth"),
+        "{frame}"
+    );
+    let (year, _) = corner_of(&app, &format!("▌ {last} "));
+    assert!(year > table + 1, "the last year is scrolled to: {frame}");
+    let scrollbar_and_border = 2;
+    assert_eq!(
+        heads.chars().count(),
+        lines[year].chars().count() - scrollbar_and_border,
+        "the net worth stands under its header: {frame}"
+    );
+}
+
+#[test]
+fn a_terminal_resized_between_the_shapes_is_laid_out_again() {
+    let mut app = ledger();
+    for (size, is_beside) in [(TALL, false), (ROOMY, true)] {
+        app.insert_resource(size);
+        for _ in 0..SETTLING_TICKS {
+            app.update();
+        }
+        let frame = redrawn(&mut app);
+        let (to_do, _) = corner_of(&app, "╭ To do in ");
+        let (money, _) = corner_of(&app, "╭ Money in ");
+        assert_eq!(money == to_do, is_beside, "{frame}");
+    }
+}
+
+#[test]
+fn a_terminal_too_short_for_the_year_opens_on_the_table_alone() {
+    let mut app = ledger_at(SIZE);
+    assert_eq!(view(&app), LedgerView::Table);
+    let frame = redrawn(&mut app);
+    assert!(!frame.contains("╭ Flows "), "{frame}");
+    assert!(frame.contains("c columns  t the year"), "{frame}");
+    press_key(&mut app, KeyCode::Char('t'));
+    assert_eq!(view(&app), LedgerView::Year, "t still shows the year");
+    assert!(redrawn(&mut app).contains("╭ Flows "));
+    let least = TerminalSize::new(SIZE.cols, 35);
+    let under = TerminalSize::new(SIZE.cols, 34);
+    let resized = [
+        (ROOMY, LedgerView::Year),
+        (SIZE, LedgerView::Table),
+        (least, LedgerView::Year),
+        (under, LedgerView::Table),
+    ];
+    for (size, opened) in resized {
+        app.insert_resource(size);
+        app.update();
+        assert_eq!(view(&app), opened, "{size:?}");
+    }
 }
 
 #[test]
@@ -273,128 +392,6 @@ fn the_terminal_s_own_theme_bands_the_tables_for_the_screen_it_is_on() {
     );
 }
 
-fn roomy_ledger() -> crate::support::Headless {
-    let mut app = headless_app_at(scratch_full_plan(), ROOMY);
-    show(&mut app, Page::Ledger);
-    app
-}
-
-/// The row a pane titled `title` starts on.
-fn top_of(frame: &str, title: &str) -> Option<usize> {
-    frame.lines().position(|line| line.contains(title))
-}
-
-fn histories(app: &mut App) -> Vec<(Entity, SeriesChart)> {
-    let mut charts = app.world_mut().query::<(Entity, &SeriesChart)>();
-    let mut drawn: Vec<_> = (charts.iter(app.world()))
-        .filter(|(_, chart)| chart.legend == Legend::Hidden && chart.series.len() == 2)
-        .map(|(entity, chart)| (entity, chart.clone()))
-        .collect();
-    drawn.sort_by_key(|&(entity, _)| entity);
-    drawn
-}
-
-#[test]
-fn a_tall_page_draws_each_money_pane_s_history_under_it() {
-    let mut app = roomy_ledger();
-    let frame = redrawn(&mut app);
-    let titles = [
-        "╭ Money in by year ",
-        "╭ Money out by year ",
-        "╭ Tax by year ",
-    ];
-    let tops: Vec<Option<usize>> = titles.iter().map(|title| top_of(&frame, title)).collect();
-    assert!(
-        tops[0].is_some() && tops.iter().all(|top| *top == tops[0]),
-        "{frame}"
-    );
-    let lists = top_of(&frame, "╭ Money in ").unwrap();
-    let tax_lines = 8;
-    let borders = 2;
-    assert_eq!(tops[0].unwrap() - lists, tax_lines + borders, "{frame}");
-    for key in [
-        "━ Income  ━ Withdrawn",
-        "━ Spending  ━ Tax",
-        "━ MAGI  ━ Taxable income",
-    ] {
-        assert!(frame.contains(key), "{key}: {frame}");
-    }
-    let drawn = histories(&mut app);
-    assert_eq!(drawn.len(), 3);
-    let years = app.world().resource::<Projected>().projection.years.len();
-    for (_, chart) in &drawn {
-        assert!(chart.series.iter().all(|line| line.points.len() == years));
-        assert_ne!(chart.series[0].color, chart.series[1].color);
-        assert_eq!(chart.marks[0].year, TODAY.0, "the cursor year is ruled");
-    }
-}
-
-#[test]
-fn a_history_follows_the_year_the_basis_and_a_press() {
-    let mut app = roomy_ledger();
-    let before = histories(&mut app);
-    press_key(&mut app, KeyCode::Right);
-    let (chart, stepped) = histories(&mut app).swap_remove(0);
-    assert_eq!(stepped.marks[0].year, TODAY.0 + 1);
-    click_year(&mut app, chart, 2050);
-    let pressed = cursor(&app).expect("a press sets the year");
-    assert!(
-        (2049..=2051).contains(&pressed),
-        "the column 2050 is in: {pressed}"
-    );
-    assert_eq!(ledger_year(&mut app), pressed);
-    assert_eq!(histories(&mut app)[0].1.marks[0].year, pressed);
-    press_key(&mut app, KeyCode::Char('n'));
-    let nominal = histories(&mut app);
-    for ((_, todays), (_, nominal)) in before.iter().zip(&nominal) {
-        let (last_today, last_nominal) = (
-            todays.series[0].points.last(),
-            nominal.series[0].points.last(),
-        );
-        assert!(
-            last_nominal.unwrap().1 > last_today.unwrap().1,
-            "the lines follow the basis"
-        );
-    }
-}
-
-#[test]
-fn a_page_without_the_room_leaves_the_histories_out_and_gives_the_lists_the_rest() {
-    let mut app = ledger();
-    let frame = redrawn(&mut app);
-    assert!(!frame.contains("by year"), "{frame}");
-    let last = frame.lines().count() - 2;
-    assert!(frame.lines().nth(last).unwrap().contains("╰"), "{frame}");
-    let lists = top_of(&frame, "╭ Money in ").unwrap();
-    assert!(
-        last - lists > 8,
-        "the lists run to the page's foot: {frame}"
-    );
-    app.insert_resource(ROOMY);
-    for _ in 0..SETTLING_TICKS {
-        app.update();
-    }
-    let frame = redrawn(&mut app);
-    let lists = top_of(&frame, "╭ Money in ").unwrap();
-    let gained = top_of(&frame, "╭ Tax by year ").expect("a taller page gains them");
-    assert_eq!(
-        gained - lists,
-        8 + 2,
-        "the lists as tall as the longest: {frame}"
-    );
-    app.insert_resource(SIZE);
-    for _ in 0..SETTLING_TICKS {
-        app.update();
-    }
-    let frame = redrawn(&mut app);
-    assert!(
-        !frame.contains("by year"),
-        "and a shorter one loses them: {frame}"
-    );
-    let lists = top_of(&frame, "╭ Money in ").unwrap();
-    assert!(frame.lines().count() - 2 - lists > 8, "{frame}");
-}
-
 #[test]
 fn how_far_the_plan_has_come_is_a_pane_of_its_own_beside_what_to_do() {
     let mut app = ledger();
@@ -403,7 +400,7 @@ fn how_far_the_plan_has_come_is_a_pane_of_its_own_beside_what_to_do() {
     }
     let frame = redrawn(&mut app);
     let lines: Vec<&str> = frame.lines().collect();
-    let top = top_of(&frame, "╭ To do in 2042 ").expect("the year's to-dos");
+    let (top, _) = corner_of(&app, "╭ To do in 2042 ");
     assert!(
         lines[top].contains("╭ So far · today's dollars "),
         "side by side: {frame}"

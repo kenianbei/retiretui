@@ -1,15 +1,17 @@
-//! The years: a narrow list beside the cursor year - the year, the ages
-//! reached, what marks it and the net worth it ends on - or, as the whole
-//! page, the year table under the column set it is turned to. The table's
-//! cursor is the year cursor either way.
+//! The year table: every year under the column set it is turned to - the
+//! year, the ages reached, what marks it, its figures and the net worth it
+//! ends on - over the cursor year or as the whole page, its headers held
+//! above the years as they scroll. The table's cursor is the year cursor
+//! either way.
 
 use bevy_app::{App, Update};
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
-use bevy_ecs::hierarchy::ChildOf;
+use bevy_ecs::hierarchy::{ChildOf, Children};
 use bevy_ecs::prelude::{
-    Commands, Component, Entity, IntoScheduleConfigs, Local, Or, Query, Res, With,
+    Commands, Component, Entity, IntoScheduleConfigs, Local, Query, Res, With,
 };
 use bevy_ecs::system::SystemParam;
+use bevy_ui::{Node, UiRect, Val};
 use plurimus::core::TerminalSize;
 use plurimus::core::ratatui_core::layout::Constraint;
 use plurimus::core::ratatui_core::style::{Modifier, Style};
@@ -18,14 +20,14 @@ use plurimus::ui::UiStyle;
 use plurimus::widgets::{
     ActiveDescendant, TableColumns, table_header, table_row, table_self_update,
 };
-use retiretui_client::ledger::{Marks, Table, TableRow, YEARS};
+use retiretui_client::ledger::{Marks, Table, TableRow};
 use retiretui_engine::plan::Dollars;
 
-use super::arrange::{LedgerView, YEARS_COLS};
+use super::arrange::Part;
 use super::{Columns, LedgerSystems, MILESTONE, TableSaid, WARNING};
 use crate::edit::table_bundle;
 use crate::hints::CommandHints;
-use crate::layout::{self, filling, placed};
+use crate::layout::{self, growing, placed};
 use crate::nav::{self, FocusStop, Page};
 use crate::pane::{self, Framed, Pane};
 use crate::present::{self, MoneyForm};
@@ -48,51 +50,62 @@ pub(super) fn plugin(app: &mut App) {
     app.add_observer(table_self_update);
 }
 
-/// The table of years, as the list or as the whole page.
+/// The table of years.
 #[derive(Component)]
 pub struct LedgerTable;
 
+/// The table of one row the headers stand in, over the years' own so that
+/// it does not scroll with them.
 #[derive(Component)]
-struct LedgerHeaderRow;
+struct LedgerHeads;
 
-/// The pane the years are listed in.
+/// The pane the years are tabled in.
 #[derive(Component)]
 pub(super) struct YearsPane;
 
 const TITLE: &str = "Ledger";
 
-pub(super) fn spawn_pane(commands: &mut Commands, across: Entity) {
-    let pane = Pane::new(YEARS).wide(YEARS_COLS).spawn(commands, across);
-    commands.entity(pane).insert((YearsPane, CommandHints(&[])));
+pub(super) fn spawn_pane(commands: &mut Commands, ledger: Entity) {
+    let pane = Pane::new(TITLE).spawn(commands, ledger);
+    let parts = (YearsPane, Part::Table, CommandHints(&[]));
+    commands.entity(pane).insert(parts);
+    // The years' columns start past their cursor and end before their
+    // scrollbar, and the headers' are solved over the same cells.
+    let heads = Node {
+        margin: UiRect {
+            left: Val::Px(f32::from(layout::CURSOR_COLS)),
+            right: Val::Px(f32::from(SCROLL_BAR_COLS)),
+            ..UiRect::default()
+        },
+        height: Val::Px(HEADER_ROWS),
+        flex_shrink: 0.0,
+        ..Node::default()
+    };
+    let headed = (plurimus::widgets::table([]), LedgerHeads, heads, placed());
+    commands.spawn((headed, ChildOf(pane)));
     commands.spawn((
         table_bundle(),
         LedgerTable,
         FocusStop,
-        filling(),
+        growing(),
         placed(),
         ChildOf(pane),
     ));
 }
 
-/// Titles the pane for the view: the list by what it lists, the table by
-/// the run it shows, the dollars and the column set.
+/// Titles the pane by the run it shows, the dollars and the column set.
 fn title_years(
-    (shown, columns, view): (Shown, Res<Columns>, Res<LedgerView>),
+    (shown, columns): (Shown, Res<Columns>),
     mut panes: Query<&mut Framed, With<YearsPane>>,
 ) {
-    let is_moved = shown.run.is_changed() || shown.basis.is_changed() || columns.is_changed();
-    if !is_moved && !view.is_changed() {
+    if !shown.run.is_changed() && !shown.basis.is_changed() && !columns.is_changed() {
         return;
     }
-    let title = if *view == LedgerView::Year {
-        YEARS.to_owned()
-    } else {
-        let mut parts = vec![TITLE.to_owned()];
-        parts.extend(shown.run.0.iter().map(|(label, _)| label.clone()));
-        parts.push(present::basis_name(shown.basis.nominal).to_owned());
-        parts.push(columns.0.title().to_owned());
-        parts.join(" · ")
-    };
+    let mut parts = vec![TITLE.to_owned()];
+    parts.extend(shown.run.0.iter().map(|(label, _)| label.clone()));
+    parts.push(present::basis_name(shown.basis.nominal).to_owned());
+    parts.push(columns.0.title().to_owned());
+    let title = parts.join(" · ");
     for mut pane in &mut panes {
         Framed::retitle(&mut pane, &title);
     }
@@ -101,7 +114,7 @@ fn title_years(
 #[derive(SystemParam)]
 struct LedgerEntities<'w, 's> {
     tables: Query<'w, 's, Entity, With<LedgerTable>>,
-    rows: Query<'w, 's, (Entity, &'static ChildOf), Or<(With<RowYear>, With<LedgerHeaderRow>)>>,
+    heads: Query<'w, 's, Entity, With<LedgerHeads>>,
 }
 
 /// What the rows are built from, and what makes them stale.
@@ -109,7 +122,6 @@ struct LedgerEntities<'w, 's> {
 struct RowInputs<'w, 's> {
     said: Res<'w, TableSaid>,
     shown: Shown<'w>,
-    view: Res<'w, LedgerView>,
     theme: Res<'w, Theme>,
     size: Res<'w, TerminalSize>,
     /// How the rows on screen were fitted, so a resize that fits the same
@@ -126,45 +138,38 @@ impl RowInputs<'_, '_> {
     /// good.
     fn is_stale(&self) -> bool {
         let is_refitted = self.size.is_changed() && *self.fitted != self.fit();
-        self.said.is_changed() || self.view.is_changed() || self.theme.is_changed() || is_refitted
+        self.said.is_changed() || self.theme.is_changed() || is_refitted
     }
 
     fn fit(&self) -> Option<Fit> {
         let table = self.said.0.as_ref()?;
-        Some(match *self.view {
-            LedgerView::Year => Fit::beside(widest_figure(table)),
-            LedgerView::Table => Fit::of(self.size.cols, table),
-        })
+        Some(Fit::of(self.size.cols, table))
     }
 }
 
-/// Respawns the header and year rows whenever what they say, the view or
-/// the fit changes, carrying the cursor across by year.
+/// Respawns the header and year rows whenever what they say or the fit
+/// changes, carrying the cursor across by year.
 fn rebuild_rows(mut inputs: RowInputs, entities: LedgerEntities, mut commands: Commands) {
     if !inputs.is_stale() {
         return;
     }
-    let (Ok(ledger_table), Some(table)) = (entities.tables.single(), inputs.said.0.as_ref()) else {
+    let (Ok(ledger_table), Ok(heads)) = (entities.tables.single(), entities.heads.single()) else {
         return;
     };
-    let Some(fit) = inputs.fit() else {
+    let (Some(table), Some(fit)) = (inputs.said.0.as_ref(), inputs.fit()) else {
         return;
     };
-    for (row, parent) in &entities.rows {
-        if parent.parent() == ledger_table {
-            commands.entity(row).despawn();
-        }
-    }
     *inputs.fitted = Some(fit);
     let figures = fit.figures(table.figure_headers.len());
-    commands
-        .entity(ledger_table)
-        .insert(TableColumns(constraints(figures.len())));
+    for tabled in [heads, ledger_table] {
+        let columns = TableColumns(constraints(figures.len()));
+        let mut tabled = commands.entity(tabled);
+        tabled.despawn_related::<Children>().insert(columns);
+    }
     commands.spawn((
         table_header(header_cells(table, &figures, fit.given)),
-        LedgerHeaderRow,
         UiStyle(Style::new().add_modifier(Modifier::BOLD)),
-        ChildOf(ledger_table),
+        ChildOf(heads),
     ));
     let cursor_year = inputs.shown.year();
     let mut cursor_row = None;
@@ -206,6 +211,8 @@ fn follow_cursor(
     }
 }
 
+/// The row the headers stand in.
+const HEADER_ROWS: f32 = 1.0;
 const YEAR_COLS: u16 = 5;
 const AGE_COLS: u16 = 6;
 const MARK_COLS: u16 = 2;
@@ -249,18 +256,11 @@ impl Fit {
         let given = per_column(drawn);
         Self {
             before_net_worth: drawn.saturating_sub(1),
-            form: form_for(given, widest),
-            given,
-        }
-    }
-
-    /// The list beside the year: net worth alone, in what the pane leaves
-    /// it.
-    fn beside(widest: usize) -> Self {
-        let given = usize::from((YEARS_COLS as u16).saturating_sub(LEDGER_CHROME));
-        Self {
-            before_net_worth: 0,
-            form: form_for(given, widest),
+            form: if given < widest {
+                MoneyForm::Compact
+            } else {
+                MoneyForm::Full
+            },
             given,
         }
     }
@@ -270,14 +270,6 @@ impl Fit {
         let last = count.saturating_sub(1);
         let before = 0..self.before_net_worth.min(last);
         before.chain([last]).collect()
-    }
-}
-
-fn form_for(given: usize, widest: usize) -> MoneyForm {
-    if given < widest {
-        MoneyForm::Compact
-    } else {
-        MoneyForm::Full
     }
 }
 
@@ -385,13 +377,6 @@ mod tests {
         assert_eq!(all.figures(9), [0, 1, 2, 3, 4, 5, 6, 7, 8]);
         let cramped = Fit::of(128, &table_of(25, SEVEN_FIGURES));
         assert_eq!(cramped.figures(25), [0, 1, 2, 3, 24]);
-        let beside = Fit::beside("$1,074,850".len());
-        assert_eq!(beside.figures(9), [8], "the list is net worth alone");
-        assert_eq!(beside.form, MoneyForm::Full, "{beside:?}");
-        assert_eq!(
-            Fit::beside("$123,456,789,012".len()).form,
-            MoneyForm::Compact
-        );
         assert_eq!(constraints(3).len(), LEADING.len() + 3);
     }
 

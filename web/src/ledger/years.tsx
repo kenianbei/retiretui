@@ -1,5 +1,5 @@
 import type { Ledger, LedgerRow } from "@wasm/retiretui_wasm.js";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 import { columnsFor } from "@/components/columns";
 import { DataTable } from "@/components/data-table";
@@ -28,8 +28,8 @@ function Marks({ row }: { row: LedgerRow }) {
   );
 }
 
-/** The year, the ages and the marks, then the figures at `shown`, by their place among the ledger's. */
-function columnsOf(ledger: Ledger, shown: readonly number[]) {
+/** The year, the ages and the marks, then every figure of the ledger's column set. */
+function columnsOf(ledger: Ledger) {
   const [year, ages] = ledger.text_headers;
   return [
     column.display({
@@ -50,10 +50,10 @@ function columnsOf(ledger: Ledger, shown: readonly number[]) {
       meta: { isNumeric: false },
       cell: ({ row }) => <Marks row={row.original} />,
     }),
-    ...shown.map((at) =>
+    ...ledger.figure_headers.map((header, at) =>
       column.display({
         id: String(at),
-        header: ledger.figure_headers[at] ?? "",
+        header,
         meta: { isNumeric: true },
         cell: ({ row }) => row.original.figures[at],
       }),
@@ -62,30 +62,53 @@ function columnsOf(ledger: Ledger, shown: readonly number[]) {
 }
 
 /**
- * Every year: as the whole table under the column set the ledger was asked
- * for, or as the narrow list beside a year, with the net worth it ends on.
+ * Scrolls the table's own frame, and nothing the frame is in, until the year shown is clear of
+ * its edges and of the headers that stay at its top: a reader down the page stepping the year
+ * is not taken back up to the table.
+ */
+function useYearInView(year: number | undefined, isAlone: boolean) {
+  const scrolled = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const frame = scrolled.current;
+    const row = frame?.querySelector('[aria-selected="true"]');
+    if (!row || !frame) return;
+    const [edges, at] = [
+      frame.getBoundingClientRect(),
+      row.getBoundingClientRect(),
+    ];
+    const headers = frame.querySelector("thead")?.getBoundingClientRect();
+    const top = edges.top + (headers?.height ?? 0);
+    if (at.top < top) frame.scrollTop -= top - at.top;
+    else if (at.bottom > edges.bottom)
+      frame.scrollTop += at.bottom - edges.bottom;
+  }, [year, isAlone]);
+  return scrolled;
+}
+
+/**
+ * Every year in a table under the column set the ledger was asked for, the year shown kept in
+ * view: over a year in full, in a frame short enough to leave the year in reach, or alone, in
+ * one as tall as the screen.
  */
 export function Years({
   ledger,
   unit,
   year,
   onSelect,
-  isWhole,
+  isAlone,
 }: {
   ledger: Ledger;
   unit: string;
   year: number | undefined;
   onSelect: (year: number) => void;
-  isWhole: boolean;
+  isAlone: boolean;
 }) {
-  const columns = useMemo(() => {
-    const figures = ledger.figure_headers.map((_, at) => at);
-    return columnsOf(ledger, isWhole ? figures : figures.slice(-1));
-  }, [ledger, isWhole]);
-  const label = isWhole ? "The plan year by year" : VIEW_WORDS.years;
+  const columns = useMemo(() => columnsOf(ledger), [ledger]);
+  const scrolled = useYearInView(year, isAlone);
   return (
     <DataTable
-      label={`${label}, ${unit}`}
+      ref={scrolled}
+      label={`${VIEW_WORDS.years}, ${unit}`}
       columns={columns}
       rows={ledger.rows}
       rowKey={(row) => String(row.year)}
@@ -94,10 +117,8 @@ export function Years({
       onSelect={(row) => {
         onSelect(row.year);
       }}
-      isFirstPinned={isWhole}
-      className={
-        isWhole ? "max-h-[calc(100dvh-12rem)]" : "max-h-[calc(100dvh-10rem)]"
-      }
+      isFirstPinned
+      className={isAlone ? "max-h-[calc(100dvh-12rem)]" : "max-h-[40dvh]"}
     />
   );
 }

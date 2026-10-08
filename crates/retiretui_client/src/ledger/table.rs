@@ -14,7 +14,7 @@ use crate::present::treatment_class;
 use crate::session::Projected;
 use crate::table::{Column, ages_text, basis_amount, present_classes, year_figures};
 
-/// What the Ledger titles its list of years.
+/// What the Ledger titles its table of years.
 pub const YEARS: &str = "Years";
 const TEXT_HEADERS: [&str; 2] = ["Year", "Age"];
 /// What every set's figures open with.

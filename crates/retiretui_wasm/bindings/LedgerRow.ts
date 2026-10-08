@@ -14,7 +14,7 @@ year: number,
  */
 ages: string, 
 /**
- * What sets it apart in the list of years.
+ * What sets it apart in the table of years.
  */
 marks: Marks, 
 /**

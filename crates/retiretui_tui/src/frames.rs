@@ -11,7 +11,7 @@ use super::edit::tests::open;
 use super::nav::Page;
 use super::session::Session;
 use super::support::{
-    FEW_TRIALS, Headless, ROOMY, SETTLING_TICKS, SIZE, commit_edit, composed_frame,
+    FEW_TRIALS, Headless, ROOMY, SETTLING_TICKS, SIZE, TALL, commit_edit, composed_frame,
     headless_app_at, let_pass, press_ctrl, press_key, scratch_workspace, searched_app, show,
     type_text,
 };
@@ -58,21 +58,29 @@ fn every_page_draws_its_frame() {
     }
 }
 
-/// The Ledger past its first frame: a year with a milestone, a ladder
-/// step and money drawn, and the table under each column set `c` turns to.
-#[test]
-fn the_ledger_draws_a_drawing_year_and_each_column_set() {
-    let mut app = fixture_app(SIZE);
+/// The Ledger past its first frame, on a year with a milestone, a ladder
+/// step and money drawn.
+fn drawing_ledger(size: TerminalSize) -> Headless {
+    let mut app = fixture_app(size);
     show(&mut app, Page::Ledger);
     for _ in 0..16 {
         press_key(&mut app, KeyCode::Down);
     }
     settle(&mut app);
-    assert_frame("ledger_drawing", SIZE, &app);
-    for (key, set) in [('t', "treatments"), ('c', "accounts"), ('c', "tax")] {
-        press_key(&mut app, KeyCode::Char(key));
+    app
+}
+
+/// A drawing year on a landscape page and a portrait one, and the table
+/// under each column set `c` turns to.
+#[test]
+fn the_ledger_draws_a_drawing_year_in_each_shape_and_each_column_set() {
+    assert_frame("ledger_drawing", TALL, &drawing_ledger(TALL));
+    let mut app = drawing_ledger(ROOMY);
+    assert_frame("ledger_drawing", ROOMY, &app);
+    for set in ["accounts", "tax"] {
+        press_key(&mut app, KeyCode::Char('c'));
         settle(&mut app);
-        assert_frame(&format!("ledger_table_{set}"), SIZE, &app);
+        assert_frame(&format!("ledger_table_{set}"), ROOMY, &app);
     }
 }
 
