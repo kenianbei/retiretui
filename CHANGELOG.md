@@ -6,7 +6,7 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-## [0.4.0] - 2026-10-08
+## [0.4.0] - 2026-10-07
 
 ### Added
 
@@ -301,7 +301,7 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   said again.
 - One setting in `config.toml` that does not read no longer resets every other.
   A misspelt `motion`, say, lost the theme and the document to reopen with it,
-  under one complaint about the whole file. Each of `theme`, `motion`,
+  under one complaint about the whole file. Each of `theme`, `motion` and
   `document` is now read by itself: one that does not read keeps its default,
   the rest stand, and the shell names the one at fault. A file that is not TOML
   at all is still the defaults and one complaint.
