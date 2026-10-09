@@ -88,6 +88,16 @@ export function rowNamed(
     : page.getByRole("row", { name: named });
 }
 
+/** Scrolls the window down a page long enough to scroll, and gives where it came to. */
+export async function scrollDown(page: Page): Promise<number> {
+  const top = await page.evaluate(() => {
+    window.scrollTo(0, 300);
+    return window.scrollY;
+  });
+  expect(top, "the page is long enough to scroll").toBeGreaterThan(0);
+  return top;
+}
+
 /** Every search on the page has answered. */
 export async function searchesDone(page: Page) {
   await expect(page.getByText("Searching…")).toHaveCount(0, SEARCH);

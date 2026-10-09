@@ -11,7 +11,7 @@ import { useSession } from "@/session";
 import { useGoTo } from "@/shell/go";
 import { ranked } from "@/shell/match";
 import { nameOf } from "@/workspace";
-import { basisIn, basisOf, type YearSearch } from "@/year/search";
+import { basisIn, basisOf, IN_PLACE, type YearSearch } from "@/year/search";
 
 /** Something the palette finds: a page, a plan or an action. */
 interface Command {
@@ -80,7 +80,7 @@ function useActions(showKeys: () => void): Command[] {
         void navigate({
           to: ".",
           search: (prev) => ({ ...prev, basis: basisIn(other) }),
-          replace: true,
+          ...IN_PLACE,
         });
       },
     ],

@@ -52,6 +52,7 @@ export function ReadOut({
             to="/plan/$page"
             params={{ page: slug }}
             search={(held) => ({ ...held, edit: index })}
+            resetScroll={false}
           >
             <Pencil aria-hidden />
             Edit

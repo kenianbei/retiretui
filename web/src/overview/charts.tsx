@@ -40,7 +40,7 @@ import { FIRST_CHART } from "@/overview/search";
 import { BASIS_LABEL, metricTitle, VIEW_WORDS } from "@/overview/view-words";
 import type { Basis } from "@/overview/words";
 import { useMarkets } from "@/searches";
-import { keptSearch } from "@/year/search";
+import { IN_PLACE, keptSearch } from "@/year/search";
 
 const FOREGROUND = "var(--foreground)";
 const MUTED = "var(--muted-foreground)";
@@ -357,7 +357,7 @@ function ChartTabs({ shown }: { shown: Chart }) {
             ...kept,
             chart: key === FIRST_CHART ? undefined : key,
           })}
-          replace
+          {...IN_PLACE}
           aria-current={key === shown ? "true" : undefined}
           className={cn(
             "focus-visible:ring-ring/50 rounded-md px-2.5 py-1 text-sm focus-visible:ring-[3px] focus-visible:outline-none",

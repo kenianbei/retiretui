@@ -16,7 +16,7 @@ import { People } from "@/tools/claims/people";
 import { type OptionRow, Options } from "@/tools/options";
 import type { ToolSearch } from "@/tools/search";
 import { offeredName } from "@/workspace";
-import { basisOf, heldIn, heldOf } from "@/year/search";
+import { basisOf, heldIn, heldOf, IN_PLACE } from "@/year/search";
 import { BasisSwitch } from "@/year/year";
 
 const WORDS = claimWords();
@@ -95,7 +95,7 @@ export function ClaimsPage() {
         held: heldIn(isHeld ? [...others, id] : others),
         claim: undefined,
       }),
-      replace: true,
+      ...IN_PLACE,
     });
   };
 
@@ -126,7 +126,7 @@ export function ClaimsPage() {
               highlight={(person) => {
                 void navigate({
                   search: (kept) => ({ ...kept, person }),
-                  replace: true,
+                  ...IN_PLACE,
                 });
               }}
               hold={hold}
@@ -177,7 +177,7 @@ export function ClaimsPage() {
               highlight={(option) => {
                 void navigate({
                   search: (kept) => ({ ...kept, claim: option.key }),
-                  replace: true,
+                  ...IN_PLACE,
                 });
               }}
             />

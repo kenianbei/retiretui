@@ -10,7 +10,7 @@ import { Years } from "@/ledger/years";
 import { messageOf } from "@/lib/utils";
 import { BASIS_LABEL } from "@/overview/view-words";
 import { useSession } from "@/session";
-import { basisOf, type LedgerSearch } from "@/year/search";
+import { basisOf, IN_PLACE, type LedgerSearch } from "@/year/search";
 import { useYear } from "@/year/use-year";
 import { BasisSwitch, YearStepper } from "@/year/year";
 
@@ -105,7 +105,7 @@ export function LedgerPage() {
     void navigate({
       to: ".",
       search: (prev) => ({ ...prev, year: picked, view: undefined }),
-      replace: true,
+      ...IN_PLACE,
     });
   };
   return (

@@ -10,6 +10,9 @@ export interface YearSearch {
   held?: string;
 }
 
+/** A change to this page's own address: no new entry, and the reader left where they are. */
+export const IN_PLACE = { replace: true, resetScroll: false } as const;
+
 /** A whole number the address holds, as text or as a number. */
 export function wholeOf(value: unknown): number | undefined {
   const number = typeof value === "string" ? Number(value) : value;

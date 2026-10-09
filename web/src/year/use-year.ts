@@ -2,7 +2,7 @@ import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useCallback, useMemo } from "react";
 
 import { useSession } from "@/session";
-import type { YearSearch } from "@/year/search";
+import { IN_PLACE, type YearSearch } from "@/year/search";
 
 /** The year shown and how to show another; no year while nothing is projected. */
 export interface ShownYear {
@@ -33,8 +33,7 @@ export function useYear(): ShownYear {
       void navigate({
         to: ".",
         search: (prev) => ({ ...prev, year }),
-        replace: true,
-        resetScroll: false,
+        ...IN_PLACE,
       });
     },
     [navigate],

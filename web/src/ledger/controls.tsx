@@ -4,7 +4,7 @@ import { ChevronsLeft, ChevronsRight } from "lucide-react";
 import { FIRST_SET } from "@/ledger/columns";
 import { cn, INPUT } from "@/lib/utils";
 import { VIEW_WORDS } from "@/overview/view-words";
-import type { LedgerSearch } from "@/year/search";
+import { IN_PLACE, type LedgerSearch } from "@/year/search";
 import { Segmented, StepButton } from "@/year/year";
 
 /** The nearest year with a milestone or a warning either side of the one shown. */
@@ -68,7 +68,7 @@ export function ColumnsPick({ set }: { set: string | undefined }) {
               ...prev,
               columns: picked === FIRST_SET?.[0] ? undefined : picked,
             }),
-            replace: true,
+            ...IN_PLACE,
           });
         }}
         className={cn(INPUT, "h-8 w-auto")}

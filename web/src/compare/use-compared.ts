@@ -1,11 +1,11 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import type { Document, Searched } from "@wasm/retiretui_wasm.js";
 import { useEffect, useMemo, useRef } from "react";
-
 import { swapped, type WithSearch, withIn } from "@/compare/search";
 import { openAt } from "@/opened";
 import { releaseLane, useSuccesses } from "@/searches";
 import { useSession } from "@/session";
+import { IN_PLACE } from "@/year/search";
 
 /** A compared file, or why it would not open. */
 export interface ComparedFile {
@@ -136,7 +136,7 @@ export function useComparedFollowMove() {
         baseline: movedPath(prev.baseline, from, to),
         plan: movedPath(prev.plan, from, to),
       }),
-      replace: true,
+      ...IN_PLACE,
     });
   };
 }
@@ -175,7 +175,7 @@ export function useComparedFollowDocument() {
             : undefined,
         plan: undefined,
       }),
-      replace: true,
+      ...IN_PLACE,
     });
   }, [path, document, compared, navigate]);
 }

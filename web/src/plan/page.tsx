@@ -25,7 +25,12 @@ function ListDomain({ slug, purpose }: { slug: string; purpose: string }) {
 
   const add = (
     <Button size="sm" variant="outline" asChild>
-      <Link to="/plan/$page" params={{ page: slug }} search={{ edit: "new" }}>
+      <Link
+        to="/plan/$page"
+        params={{ page: slug }}
+        search={{ edit: "new" }}
+        resetScroll={false}
+      >
         <Plus aria-hidden />
         Add
       </Link>

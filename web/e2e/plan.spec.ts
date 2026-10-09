@@ -5,9 +5,13 @@ import {
   isPhone,
   openPlan,
   STATEMENT,
+  scrollDown,
   seed,
   test,
 } from "./support";
+
+/** A window too short for a domain's page, so that it scrolls. */
+const SHORT_WINDOW = 320;
 
 test("a domain's items are tabled in any column's order", async ({
   page,
@@ -123,6 +127,31 @@ test("a statement's earnings are recorded on the person it names", async ({
   await expect(
     page.getByRole("button", { name: "Import statement" }),
   ).toHaveCount(0);
+});
+
+test("a form opened and closed leaves the page where it was", async ({
+  page,
+}) => {
+  await seed(
+    page,
+    { "/early.toml": example("early-retiree.toml") },
+    "/early.toml",
+    "#/plan/expenses",
+  );
+  const add = page.locator("main").getByRole("link", { name: "Add" });
+  await expect(add).toBeVisible();
+  const width = page.viewportSize()?.width ?? 0;
+  await page.setViewportSize({ width, height: SHORT_WINDOW });
+  const top = await scrollDown(page);
+  await add.dispatchEvent("click");
+  const sheet = page.getByRole("dialog");
+  await expect(sheet).toBeVisible();
+  const opened = await page.evaluate(() => window.scrollY);
+  expect(opened, "opened over the page as it was").toBe(top);
+  await sheet.getByRole("button", { name: "Cancel" }).click();
+  await expect(sheet).toHaveCount(0);
+  const closed = await page.evaluate(() => window.scrollY);
+  expect(closed, "and closed on it").toBe(top);
 });
 
 test("an empty domain says what it holds before Add, and a form leads with the name", async ({

@@ -38,7 +38,10 @@ export function ItemForm({ slug, edit, field }: ItemFormProps) {
   if (!editor) return null;
 
   const close = () => {
-    void navigate({ search: { item: edit === "new" ? undefined : edit } });
+    void navigate({
+      search: { item: edit === "new" ? undefined : edit },
+      resetScroll: false,
+    });
   };
 
   /** Stores the item and closes the form, or shows why it was refused. */
@@ -47,7 +50,7 @@ export function ItemForm({ slug, edit, field }: ItemFormProps) {
       const stored = session.apply(editor);
       setRefusal(null);
       const item = stored ?? (edit === "new" ? undefined : edit);
-      void navigate({ search: { item } });
+      void navigate({ search: { item }, resetScroll: false });
     } catch (thrown) {
       setRefusal(messageOf(thrown));
     }

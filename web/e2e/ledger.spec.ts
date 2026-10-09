@@ -71,6 +71,12 @@ test("the Ledger shows a year in full under the table of years", async ({
   await expect(yearShown(page, "2043")).toBeVisible();
   const scrolled = await page.evaluate(() => window.scrollY);
   expect(scrolled, "a reader down the page is left there").toBeGreaterThan(250);
+  await page
+    .getByRole("link", { name: "today's dollars" })
+    .dispatchEvent("click");
+  await expect(soFar(page)).toBeVisible();
+  const switched = await page.evaluate(() => window.scrollY);
+  expect(switched, "and by a switch of the basis").toBeGreaterThan(250);
 });
 
 test("the Ledger's table turns through its column sets, and a row leads to its year", async ({

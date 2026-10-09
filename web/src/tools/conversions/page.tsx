@@ -17,7 +17,7 @@ import { type OptionRow, Options } from "@/tools/options";
 import { percentOf, type ToolSearch } from "@/tools/search";
 import { type Settings, SettingsForm, SettingsRead } from "@/tools/settings";
 import { offeredName } from "@/workspace";
-import { basisOf } from "@/year/search";
+import { basisOf, IN_PLACE } from "@/year/search";
 import { BasisSwitch } from "@/year/year";
 
 const WORDS = ladderWords();
@@ -114,7 +114,7 @@ export function ConversionsPage() {
         ...held,
         bracket: percentOf(option.rate),
       }),
-      replace: true,
+      ...IN_PLACE,
     });
   };
 
