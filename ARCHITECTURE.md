@@ -175,21 +175,21 @@ depends on UI.
   conversions, required distributions and Medicare's surcharges, each with what
   it is made of and the page, tool or year it leads to - what it rests on, each
   assumption at the field it is edited at, the charts it turns through and the
-  lines each draws - the treatments it holds stacked taxable first, and the
-  market runs' bands - each named as every surface keys it, and what it lists -
-  the draft's issues, the years the plan pays Medicare's surcharges, the
-  contributions it could not make as stated, a benefit estimated without its
-  record, an amount too large to be likely, and the plan's milestones - each row
-  led by its year or the item behind it, the worst historical start the plan
-  does not survive with how many do not, and a year's actions and warnings in
-  either dollar basis; what plans compared side by side are said in - each one's
-  figures, or its differences from a baseline's, a metric year by year, and what
-  one changes of another; a year's tax tables as a plan's projection applies
-  them - for its filing status and the state it lives in that year, or any other
-  picked, the plan's own offered first - in the words its other tables are said
-  in; and the shapes a search or a year's actions are replied in as data. Where
-  there is a machine beneath it, what that machine supplies: the user's own tax
-  tables, market history and directories.
+  lines each draws - the treatments it holds stacked taxable first, then net
+  worth - and what the market runs' bands are called, each as every surface keys
+  it, and what it lists - the draft's issues, the years the plan pays Medicare's
+  surcharges, the contributions it could not make as stated, a benefit estimated
+  without its record, an amount too large to be likely, and the plan's
+  milestones - each row led by its year or the item behind it, the worst
+  historical start the plan does not survive with how many do not, and a year's
+  actions and warnings in either dollar basis; what plans compared side by side
+  are said in - each one's figures, or its differences from a baseline's, a
+  metric year by year, and what one changes of another; a year's tax tables as a
+  plan's projection applies them - for its filing status and the state it lives
+  in that year, or any other picked, the plan's own offered first - in the words
+  its other tables are said in; and the shapes a search or a year's actions are
+  replied in as data. Where there is a machine beneath it, what that machine
+  supplies: the user's own tax tables, market history and directories.
 - `retiretui_tui` - the interactive planner described under `tui` below, as a
   library over the client and above whatever backend draws it, mapping each
   editing domain to its page. It runs each search beside the frames: on a thread
