@@ -1,5 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
 
+import { example, openPlan, seed } from "./support";
+
 // The suite's own `test` fails on what a page throws, which is what these are about.
 // A worker in control would answer requests the tests mean to refuse.
 test.use({ serviceWorkers: "block" });
@@ -148,4 +150,27 @@ test("a page that throws is said inside the shell, which goes on working", async
   await expect(page.locator("header").getByText("starter.toml")).toBeVisible();
   await page.getByRole("link", { name: "Ledger" }).click();
   await expect(page.getByRole("heading", { name: "Ledger" })).toBeVisible();
+});
+
+test("a start screen that throws is said inside the shell, which opens a plan over it", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(Navigator.prototype, "storage", {
+      get() {
+        throw new Error("storage refused");
+      },
+    });
+  });
+  await seed(page, { "/starter.toml": example("starter.toml") }, null);
+  await expect(
+    page.getByRole("heading", { name: "This page stopped working" }),
+  ).toBeVisible();
+  await expect(page.getByRole("main").getByRole("alert")).toContainText(
+    "storage refused",
+  );
+  await expect(page.getByRole("contentinfo")).toContainText("Version");
+  await openPlan(page, "starter.toml");
+  await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
+  await expect(page.locator("header").getByText("starter.toml")).toBeVisible();
 });

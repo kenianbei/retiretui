@@ -6,6 +6,13 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- In the web app a throw on the start screen, in a draft notice or in a group's
+  page chips is said in the page's place, the header, the navigation and the
+  footer still around it. It took them with it. Opening a plan or going to
+  another page tries again.
+
 ## [0.4.0] - 2026-10-07
 
 ### Added
