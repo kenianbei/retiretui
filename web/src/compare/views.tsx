@@ -4,8 +4,8 @@ import { Line } from "recharts";
 import { ChartSection } from "@/components/chart-section";
 import { columnsFor } from "@/components/columns";
 import { DataTable } from "@/components/data-table";
+import { LabelledSelect } from "@/components/labelled-select";
 import type { ChartConfig } from "@/components/ui/chart";
-import { cn, INPUT } from "@/lib/utils";
 import { SERIES } from "@/overview/bands";
 import { Plot } from "@/overview/charts";
 
@@ -139,25 +139,18 @@ export function Views(props: ViewsProps) {
         title="By year"
         unit={caption}
         controls={
-          <label className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">Metric</span>
-            <select
-              value={metric}
-              onChange={(event) => {
-                const picked = words.metrics.find(
-                  (each) => each.key === event.target.value,
-                );
-                if (picked) onMetric(picked.key);
-              }}
-              className={cn(INPUT, "h-8 w-auto")}
-            >
-              {words.metrics.map((each) => (
-                <option key={each.key} value={each.key}>
-                  {each.title}
-                </option>
-              ))}
-            </select>
-          </label>
+          <LabelledSelect
+            label="Metric"
+            value={metric}
+            options={words.metrics.map((each) => ({
+              value: each.key,
+              label: each.title,
+            }))}
+            onChange={(key) => {
+              const picked = words.metrics.find((each) => each.key === key);
+              if (picked) onMetric(picked.key);
+            }}
+          />
         }
       >
         <PlansChart {...props} />

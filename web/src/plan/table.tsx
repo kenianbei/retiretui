@@ -10,7 +10,7 @@ import { useMemo } from "react";
 
 import { columnsFor } from "@/components/columns";
 import { DataTable } from "@/components/data-table";
-import { cn, INPUT } from "@/lib/utils";
+import { LabelledSelect } from "@/components/labelled-select";
 
 interface ItemTableProps {
   slug: string;
@@ -141,31 +141,32 @@ function NarrowRows({ slug, table, sort, onSort }: ItemTableProps) {
       : `${String(sort.column)}:${sort.is_descending ? "down" : "up"}`;
   return (
     <div className="space-y-3 @lg:hidden">
-      <label className="flex items-center gap-2 text-sm">
-        <span className="text-muted-foreground">Sort by</span>
-        <select
-          className={cn(INPUT, "flex-1")}
-          value={sortValue}
-          onChange={(event) => {
-            const [column, way] = event.target.value.split(":");
-            onSort(
-              column === undefined || column === ""
-                ? null
-                : { column: Number(column), is_descending: way === "down" },
-            );
-          }}
-        >
-          <option value="">The plan's order</option>
-          {table.columns.flatMap((column, at) => [
-            <option key={`${String(at)}:up`} value={`${String(at)}:up`}>
-              {column.header}, lowest first
-            </option>,
-            <option key={`${String(at)}:down`} value={`${String(at)}:down`}>
-              {column.header}, highest first
-            </option>,
-          ])}
-        </select>
-      </label>
+      <LabelledSelect
+        label="Sort by"
+        value={sortValue}
+        options={[
+          { value: "", label: "The plan's order" },
+          ...table.columns.flatMap((column, at) => [
+            {
+              value: `${String(at)}:up`,
+              label: `${column.header}, lowest first`,
+            },
+            {
+              value: `${String(at)}:down`,
+              label: `${column.header}, highest first`,
+            },
+          ]),
+        ]}
+        onChange={(picked) => {
+          const [column, way] = picked.split(":");
+          onSort(
+            column === undefined || column === ""
+              ? null
+              : { column: Number(column), is_descending: way === "down" },
+          );
+        }}
+        className="flex-1"
+      />
       <ul className="bg-card divide-y rounded-md border">
         {table.rows.map((row) => (
           <li key={row.index}>
