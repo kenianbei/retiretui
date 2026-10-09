@@ -4,7 +4,7 @@
 use retiretui_client::actions::NOTHING_SCHEDULED;
 use retiretui_client::ledger::{
     Asked, ColumnSet, FLOW_COLUMNS, FLOWS, MONEY_IN, MONEY_OUT, Marks, PAID, TAX, TO_DO, TO_WATCH,
-    Table, WORKED_FROM, YEARS, Year, salary_marks,
+    Table, WORKED_FROM, YEARS, Year,
 };
 use retiretui_client::overview::{
     ATTENTION, Chart, MILESTONES, NOTHING, OVER_THE_PLAN, RESTS_ON, STALE, STRIP, band_words,

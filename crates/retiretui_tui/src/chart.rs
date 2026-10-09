@@ -358,7 +358,10 @@ mod tests {
             frame.contains("╭ Balances by tax treatment · today's dollars ─"),
             "{frame}"
         );
-        assert!(frame.contains("▓▓ taxable  ░░ pre-tax  ── Net worth"), "{frame}");
+        assert!(
+            frame.contains("▓▓ taxable  ░░ pre-tax  ── Net worth"),
+            "{frame}"
+        );
         click(&mut app, column(2038), row);
         assert_eq!(app.world().resource::<YearCursor>().0, Some(2038));
     }
