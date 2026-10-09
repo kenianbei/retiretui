@@ -174,9 +174,11 @@ depends on UI.
   with, what its years add up to - income, withdrawals, spending, taxes,
   conversions, required distributions and Medicare's surcharges, each with what
   it is made of and the page, tool or year it leads to - what it rests on, each
-  assumption at the field it is edited at, the charts it turns through, and what
-  it lists - the draft's issues, the years the plan pays Medicare's surcharges,
-  the contributions it could not make as stated, a benefit estimated without its
+  assumption at the field it is edited at, the charts it turns through and the
+  lines each draws - the treatments it holds stacked taxable first, and the
+  market runs' bands - each named as every surface keys it, and what it lists -
+  the draft's issues, the years the plan pays Medicare's surcharges, the
+  contributions it could not make as stated, a benefit estimated without its
   record, an amount too large to be likely, and the plan's milestones - each row
   led by its year or the item behind it, the worst historical start the plan
   does not survive with how many do not, and a year's actions and warnings in
