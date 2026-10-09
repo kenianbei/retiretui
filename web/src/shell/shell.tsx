@@ -1,4 +1,5 @@
 import {
+  CatchBoundary,
   Link,
   Outlet,
   useLocation,
@@ -35,6 +36,7 @@ import {
   TABS,
   type Tab,
 } from "@/nav";
+import { Failed } from "@/pages/failed";
 import { useSession } from "@/session";
 import { Footer } from "@/shell/footer";
 import { useShownKept, useTabTarget } from "@/shell/go";
@@ -292,8 +294,35 @@ function useFocusOnNavigation() {
   }, [router]);
 }
 
+/** What the page area holds: a throw in it is said there, and tried again once the address or the document changes. */
+function PageArea() {
+  const { document, path, reading } = useSession();
+  const href = useLocation({ select: (location) => location.href });
+  const isWithoutDocument = useMatches({
+    select: (matches) =>
+      matches.some((match) => match.staticData.isWithoutDocument === true),
+  });
+  return (
+    <CatchBoundary
+      errorComponent={Failed}
+      getResetKey={() => `${href}\n${path ?? ""}\n${String(reading.revision)}`}
+    >
+      <DraftNotices />
+      {isWithoutDocument ? (
+        <Outlet />
+      ) : document ? (
+        <>
+          <GroupPages />
+          <Outlet />
+        </>
+      ) : (
+        <Start />
+      )}
+    </CatchBoundary>
+  );
+}
+
 export function Shell() {
-  const { document } = useSession();
   useComparedFollowDocument();
   useFocusOnNavigation();
   useShownKept();
@@ -301,10 +330,6 @@ export function Shell() {
   const [isFinding, setFinding] = useState(false);
   const [isListingKeys, setListingKeys] = useState(false);
   useShellKeys(setFinding, setListingKeys);
-  const isWithoutDocument = useMatches({
-    select: (matches) =>
-      matches.some((match) => match.staticData.isWithoutDocument === true),
-  });
   return (
     <FileActionsProvider>
       <a
@@ -360,17 +385,7 @@ export function Shell() {
             tabIndex={-1}
             className="@container/page flex-1 px-4 py-6 outline-none md:px-8"
           >
-            <DraftNotices />
-            {isWithoutDocument ? (
-              <Outlet />
-            ) : document ? (
-              <>
-                <GroupPages />
-                <Outlet />
-              </>
-            ) : (
-              <Start />
-            )}
+            <PageArea />
           </main>
           <Footer />
         </div>
