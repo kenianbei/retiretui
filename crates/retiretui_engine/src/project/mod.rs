@@ -406,7 +406,7 @@ pub fn irmaa_purchase(
     if covered == 0 {
         return 0;
     }
-    let params = tables.params_for(premium_year, &plan_inflation(plan));
+    let params = tables.params_in(premium_year, &plan_inflation(plan), None);
     let per_person =
         crate::tax::irmaa_surcharge(&params, plan.household.filing, magi, medicare.part_d);
     per_person * covered as Dollars
