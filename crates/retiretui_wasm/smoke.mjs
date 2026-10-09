@@ -6,7 +6,7 @@ import wasm from "./pkg/retiretui_wasm.js";
 const {
   Document,
   NewPlan,
-  bandPercentiles,
+  bandWords,
   baseOf,
   claimWords,
   claims,
@@ -20,7 +20,6 @@ const {
   monteCarlo,
   orderWords,
   orders,
-  percentileLabel,
   rebased,
   setupSteps,
   statementPage,
@@ -62,11 +61,16 @@ assert.equal(detail.money_in.total.amount, detail.money_out.total.amount);
 assert.ok(detail.worked_from[0].label.startsWith("To top of "));
 assert.ok(ledger.rows.some(({ marks }) => marks.is_milestone));
 assert.throws(() => document.ledgerYear(first.year - 99, true));
-const chart = document.chart(true);
-assert.equal(chart.years[0].classes.length, chart.classes.length);
-assert.deepEqual(bandPercentiles(), [10, 25, 50, 75, 90]);
+const chart = document.chart("balances", true);
+assert.equal(chart.stacked[0].label, "taxable");
+assert.equal(chart.stacked[0].points.length, ledger.rows.length);
+assert.deepEqual(
+  document.chart("income-taxes", true).lines.map(({ label }) => label),
+  ["Income", "Taxes"],
+);
+assert.throws(() => document.chart("pie", true));
+assert.equal(bandWords().outer.label, "10th to 90th");
 assert.equal(compactMoney(1234567), "$1.23M");
-assert.equal(percentileLabel(90), "90th percentile");
 assert.equal(detail.title, `To do in ${first.year}`);
 assert.equal(detail.ages, "Sam turns 30");
 assert.equal(detail.so_far_title, "So far · future dollars");

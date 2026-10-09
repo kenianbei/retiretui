@@ -1,8 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import {
   type Chart,
+  type Charted,
   type ChartMark,
-  type ChartSeries,
   compactMoney,
   money,
   signedMoney,
@@ -37,7 +37,7 @@ import {
   SERIES,
 } from "@/overview/bands";
 import { FIRST_CHART } from "@/overview/search";
-import { BASIS_LABEL, metricTitle, VIEW_WORDS } from "@/overview/view-words";
+import { BASIS_LABEL, VIEW_WORDS } from "@/overview/view-words";
 import type { Basis } from "@/overview/words";
 import { useMarkets } from "@/searches";
 import { IN_PLACE, keptSearch } from "@/year/search";
@@ -46,7 +46,8 @@ const FOREGROUND = "var(--foreground)";
 const MUTED = "var(--muted-foreground)";
 
 interface ChartsProps {
-  series: ChartSeries;
+  /** What the chart shown draws of the plan's own projection. */
+  series: Charted;
   basis: Basis;
   /** The plan's text for its market runs; none while it has issues. */
   plan: string | null;
@@ -194,6 +195,7 @@ function seriesLine(key: string, width = 2) {
   return (
     <Line
       isAnimationActive={false}
+      key={key}
       dataKey={key}
       type="monotone"
       stroke={`var(--color-${key})`}
@@ -203,89 +205,71 @@ function seriesLine(key: string, width = 2) {
   );
 }
 
-const classKey = (at: number) => `class${String(at)}`;
+const stackKey = (at: number) => `stack${String(at)}`;
+const lineKey = (at: number) => `line${String(at)}`;
 
-function Balances(props: ChartsProps) {
-  const { series } = props;
+/** The colour each chart draws its lines in, by their place; a line over a stack is in ink. */
+const LINE_COLOURS: Record<
+  Exclude<Chart, "markets">,
+  (string | undefined)[]
+> = {
+  balances: [FOREGROUND],
+  "net-worth": [SERIES[0]],
+  "income-taxes": [SERIES[1], SERIES[2]],
+};
+
+/** What the plan's own projection charts: its stack, if any, under its lines. */
+function Lines(props: ChartsProps & { chart: Exclude<Chart, "markets"> }) {
+  const { series, chart } = props;
   const [config, data] = useMemo(() => {
-    const classes = series.classes.map(
-      (label, at): [string, ChartConfig[string]] => [
-        classKey(at),
-        { label, color: SERIES[at % SERIES.length] },
-      ],
+    const keyed = [
+      ...series.stacked.map((line, at) => ({
+        key: stackKey(at),
+        line,
+        color: SERIES[at % SERIES.length],
+      })),
+      ...series.lines.map((line, at) => ({
+        key: lineKey(at),
+        line,
+        color: LINE_COLOURS[chart][at],
+      })),
+    ];
+    const shown: ChartConfig = Object.fromEntries(
+      keyed.map(({ key, line, color }) => [key, { label: line.label, color }]),
     );
-    const shown: ChartConfig = {
-      ...Object.fromEntries(classes),
-      net_worth: { label: metricTitle("net-worth"), color: FOREGROUND },
-    };
-    const rows = series.years.map((row) => ({
-      year: row.year,
-      net_worth: row.net_worth,
+    const years = keyed[0]?.line.points ?? [];
+    const rows = years.map(([year], at) => ({
+      year,
       ...Object.fromEntries(
-        row.classes.map((amount, at) => [classKey(at), amount]),
+        keyed.map(({ key, line }) => [key, line.points[at]?.[1]]),
       ),
     }));
     return [shown, rows] as const;
-  }, [series]);
+  }, [series, chart]);
+  const isOverStack = series.stacked.length > 0;
   return (
     <Plot
       {...props}
-      marks={props.series.marks}
+      marks={series.marks}
       config={config}
       data={data}
-      label={titleOf("balances")}
+      label={titleOf(chart)}
     >
-      {series.classes.map((_, at) => (
+      {series.stacked.map((_, at) => (
         <Area
           isAnimationActive={false}
-          key={classKey(at)}
-          dataKey={classKey(at)}
-          stackId="classes"
+          key={stackKey(at)}
+          dataKey={stackKey(at)}
+          stackId="stacked"
           type="monotone"
-          fill={`var(--color-${classKey(at)})`}
-          stroke={`var(--color-${classKey(at)})`}
+          fill={`var(--color-${stackKey(at)})`}
+          stroke={`var(--color-${stackKey(at)})`}
           fillOpacity={0.5}
         />
       ))}
-      {seriesLine("net_worth", 1)}
-    </Plot>
-  );
-}
-
-const NET_WORTH: ChartConfig = {
-  net_worth: { label: metricTitle("net-worth"), color: SERIES[0] },
-};
-
-function NetWorth(props: ChartsProps) {
-  return (
-    <Plot
-      {...props}
-      marks={props.series.marks}
-      config={NET_WORTH}
-      data={props.series.years}
-      label={titleOf("net-worth")}
-    >
-      {seriesLine("net_worth")}
-    </Plot>
-  );
-}
-
-const INCOME_AND_TAX: ChartConfig = {
-  income: { label: metricTitle("income"), color: SERIES[1] },
-  taxes: { label: metricTitle("taxes"), color: SERIES[2] },
-};
-
-function IncomeAndTax(props: ChartsProps) {
-  return (
-    <Plot
-      {...props}
-      marks={props.series.marks}
-      config={INCOME_AND_TAX}
-      data={props.series.years}
-      label={titleOf("income-taxes")}
-    >
-      {seriesLine("income")}
-      {seriesLine("taxes")}
+      {series.lines.map((_, at) =>
+        seriesLine(lineKey(at), isOverStack ? 1 : 2),
+      )}
     </Plot>
   );
 }
@@ -334,9 +318,9 @@ function Bands(props: ChartsProps & { plan: string }) {
 
 /** What draws each chart the client names. */
 const DRAWN: Record<Chart, (props: ChartsProps) => ReactNode> = {
-  balances: Balances,
-  "net-worth": NetWorth,
-  "income-taxes": IncomeAndTax,
+  balances: (props) => <Lines {...props} chart="balances" />,
+  "net-worth": (props) => <Lines {...props} chart="net-worth" />,
+  "income-taxes": (props) => <Lines {...props} chart="income-taxes" />,
   markets: MarketRuns,
 };
 
