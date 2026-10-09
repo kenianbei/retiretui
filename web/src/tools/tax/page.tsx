@@ -1,8 +1,8 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import type { Offer, TaxSection } from "@wasm/retiretui_wasm.js";
 import { useMemo } from "react";
+import { LabelledSelect } from "@/components/labelled-select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn, INPUT } from "@/lib/utils";
 import { useSession } from "@/session";
 import { ToolAbout } from "@/tools/about";
 import type { ToolSearch } from "@/tools/search";
@@ -25,24 +25,15 @@ interface PickerProps {
 /** A choice of status or state, the plan's own first. */
 function Picker({ label, own, value, choices, pick }: PickerProps) {
   return (
-    <label className="flex min-w-0 items-center gap-2 text-sm">
-      <span className="text-muted-foreground whitespace-nowrap">{label}</span>
-      <select
-        value={value ?? THE_PLAN_S}
-        onChange={(event) => {
-          const key = event.target.value;
-          pick(key === THE_PLAN_S ? undefined : key);
-        }}
-        className={cn(INPUT, "h-8 w-auto min-w-0")}
-      >
-        <option value={THE_PLAN_S}>{own}</option>
-        {choices.map((choice) => (
-          <option key={choice.value} value={choice.value}>
-            {choice.label}
-          </option>
-        ))}
-      </select>
-    </label>
+    <LabelledSelect
+      label={label}
+      value={value ?? THE_PLAN_S}
+      options={[{ value: THE_PLAN_S, label: own }, ...choices]}
+      onChange={(key) => {
+        pick(key === THE_PLAN_S ? undefined : key);
+      }}
+      isTight
+    />
   );
 }
 

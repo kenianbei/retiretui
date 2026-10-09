@@ -1,8 +1,8 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { ChevronsLeft, ChevronsRight } from "lucide-react";
 
+import { LabelledSelect } from "@/components/labelled-select";
 import { FIRST_SET } from "@/ledger/columns";
-import { cn, INPUT } from "@/lib/utils";
 import { VIEW_WORDS } from "@/overview/view-words";
 import { IN_PLACE, type LedgerSearch } from "@/year/search";
 import { Segmented, StepButton } from "@/year/year";
@@ -56,29 +56,23 @@ export function ViewSwitch() {
 export function ColumnsPick({ set }: { set: string | undefined }) {
   const navigate = useNavigate();
   return (
-    <label className="flex items-center gap-2 text-sm">
-      <span className="text-muted-foreground">Columns</span>
-      <select
-        value={set}
-        onChange={(event) => {
-          const picked = event.target.value;
-          void navigate({
-            to: ".",
-            search: (prev) => ({
-              ...prev,
-              columns: picked === FIRST_SET?.[0] ? undefined : picked,
-            }),
-            ...IN_PLACE,
-          });
-        }}
-        className={cn(INPUT, "h-8 w-auto")}
-      >
-        {VIEW_WORDS.column_sets.map(([slug, title]) => (
-          <option key={slug} value={slug}>
-            {title}
-          </option>
-        ))}
-      </select>
-    </label>
+    <LabelledSelect
+      label="Columns"
+      value={set}
+      options={VIEW_WORDS.column_sets.map(([slug, title]) => ({
+        value: slug,
+        label: title,
+      }))}
+      onChange={(picked) => {
+        void navigate({
+          to: ".",
+          search: (prev) => ({
+            ...prev,
+            columns: picked === FIRST_SET?.[0] ? undefined : picked,
+          }),
+          ...IN_PLACE,
+        });
+      }}
+    />
   );
 }
