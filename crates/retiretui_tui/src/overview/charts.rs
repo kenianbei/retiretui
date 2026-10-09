@@ -7,8 +7,7 @@ use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Component, Entity, On, Query, Res, ResMut, Resource, With};
 use plurimus::core::UiWidget;
-use plurimus::core::ratatui_core::style::Color;
-use plurimus::core::ratatui_core::style::Style;
+use plurimus::core::ratatui_core::style::{Color, Style};
 use plurimus::core::ratatui_core::text::Span;
 use plurimus::ui::{ComputedWidgetArea, PointerPress};
 use retiretui_client::overview::{Chart, ChartLine, ChartMark, Charted, Spread, band_words};
@@ -151,7 +150,6 @@ pub(super) fn refresh(
 /// the bottom, so that neighbours read apart without colour.
 const GLYPHS: [&str; 4] = ["▓", "░", "▒", "█"];
 
-/// `line` as a chart draws it, in `color`.
 fn series(line: &ChartLine, color: Color) -> Series {
     Series {
         label: line.label.to_owned(),

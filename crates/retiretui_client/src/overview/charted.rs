@@ -54,33 +54,26 @@ impl Chart {
     #[must_use]
     pub fn charted(self, projected: &Projected, nominal: bool) -> Charted {
         let years = &projected.projection.years;
-        let line = |label, figure: fn(&YearRow) -> Dollars| ChartLine {
+        let line = |label, figure: &dyn Fn(&YearRow) -> Dollars| ChartLine {
             label,
             points: (years.iter())
                 .map(|row| (row.year, basis_amount(figure(row), row.deflator, nominal)))
                 .collect(),
         };
-        let worth = || line(Metric::NetWorth.title(), |row| row.net_worth);
+        let worth = || line(Metric::NetWorth.title(), &|row| row.net_worth);
         let (stacked, lines) = match self {
             Self::Balances => {
                 let classes = present_classes(&projected.plan).into_iter();
-                let held = classes.map(|class| ChartLine {
-                    label: treatment_word(class),
-                    points: (years.iter())
-                        .map(|row| {
-                            let amount = row.class_totals.get(class);
-                            (row.year, basis_amount(amount, row.deflator, nominal))
-                        })
-                        .collect(),
-                });
+                let held = classes
+                    .map(|class| line(treatment_word(class), &|row| row.class_totals.get(class)));
                 (held.collect(), vec![worth()])
             }
             Self::NetWorth => (Vec::new(), vec![worth()]),
             Self::IncomeTaxes => (
                 Vec::new(),
                 vec![
-                    line(Metric::Income.title(), |row| row.total_income),
-                    line(Metric::Taxes.title(), |row| row.taxes.total),
+                    line(Metric::Income.title(), &|row| row.total_income),
+                    line(Metric::Taxes.title(), &|row| row.taxes.total),
                 ],
             ),
             Self::Markets => (Vec::new(), Vec::new()),
