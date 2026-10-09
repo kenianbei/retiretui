@@ -12,6 +12,8 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   page chips is said in the page's place, the header, the navigation and the
   footer still around it. It took them with it. Opening a plan or going to
   another page tries again.
+- In the web app a page scrolled down stays there when a switch is turned, a row
+  is highlighted, or a form is opened or closed. It went back to the top.
 
 ## [0.4.0] - 2026-10-07
 
