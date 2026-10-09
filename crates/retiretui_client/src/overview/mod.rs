@@ -4,6 +4,7 @@
 //! start the plan does not survive.
 
 mod attention;
+mod charted;
 mod milestones;
 mod rests;
 mod totals;
@@ -15,6 +16,7 @@ pub(crate) mod tests;
 use crate::forms::DomainId;
 
 pub use attention::{FailingStart, NOTHING, attention, failing_start, issue_rows};
+pub use charted::{BandWords, ChartLine, ChartMark, Charted, Spread, band_words};
 pub use milestones::milestones;
 pub use rests::{RESTS_ON, rests_on};
 pub use totals::{Leads, OVER_THE_PLAN, Tool, Total, totals};
