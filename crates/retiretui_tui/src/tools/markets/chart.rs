@@ -6,6 +6,7 @@ use bevy_app::{App, Update};
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Entity, IntoScheduleConfigs, Local, Query, Res};
+use retiretui_client::overview::{Spread, band_words};
 use retiretui_engine::market::{Band, Run, Runs};
 
 use super::views::{View, ViewOf, ViewPart};
@@ -18,9 +19,6 @@ use crate::tools::Tool;
 
 pub(crate) const OUTER: &str = "░";
 pub(crate) const INNER: &str = "▒";
-/// The bands' places in [`retiretui_engine::market::BAND_PERCENTILES`].
-pub(crate) const OUTER_BAND: (usize, usize) = (0, 4);
-pub(crate) const INNER_BAND: (usize, usize) = (1, 3);
 const RUN_SERIES: usize = 0;
 const PLANNED: &str = "As planned";
 
@@ -46,18 +44,13 @@ pub(super) fn spawn_pane<R: MarketTool>(commands: &mut Commands, column: Entity)
     super::views::spawn_parts(commands, pane, R::PAGE);
 }
 
-/// A band between two of the percentiles, year by year.
-pub(crate) fn band(
-    bands: &[Band],
-    (low, high): (usize, usize),
-    symbol: &'static str,
-    theme: &Theme,
-) -> Shade {
+/// The band `spread` names, year by year.
+pub(crate) fn band(bands: &[Band], spread: &Spread, symbol: &'static str, theme: &Theme) -> Shade {
     Shade {
         points: bands
             .iter()
             .map(|band| {
-                let (low, high) = (band.net_worth[low], band.net_worth[high]);
+                let (low, high) = (band.net_worth[spread.low], band.net_worth[spread.high]);
                 (f64::from(band.year), low as f64, high as f64)
             })
             .collect(),
@@ -109,9 +102,10 @@ fn redraw<R: MarketTool>(
         || (PLANNED.to_owned(), &runs.planned),
         |listed| (listed.first, listed.run),
     );
+    let words = band_words();
     let shades = vec![
-        band(&runs.bands, OUTER_BAND, OUTER, &theme),
-        band(&runs.bands, INNER_BAND, INNER, &theme),
+        band(&runs.bands, &words.outer, OUTER, &theme),
+        band(&runs.bands, &words.inner, INNER, &theme),
     ];
     let title = super::views::title(view.0, runs, &label);
     for (mut chart, part, parent) in &mut charts {

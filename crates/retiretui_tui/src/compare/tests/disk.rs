@@ -51,7 +51,7 @@ fn plans_note(app: &mut App) -> String {
 
 /// Whether the variant's name is drawn in the colour of what went wrong.
 fn is_marked(app: &App) -> bool {
-    let (swatch, row) = cell_of(app, "━━ variant.toml");
+    let (swatch, row) = cell_of(app, "── variant.toml");
     let col = swatch + crate::tabulate::SWATCH_COLS;
     cell_fg(app, col, row) == app.world().resource::<Theme>().exceeded().fg
 }

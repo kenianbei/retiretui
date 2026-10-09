@@ -100,9 +100,9 @@ fn d_reads_every_plan_but_the_baseline_as_its_difference_in_the_table() {
         frame.contains("Plans · against plan.toml · today's dollars"),
         "{frame}"
     );
-    let own = line_of(&app, "━━ plan.toml");
+    let own = line_of(&app, "── plan.toml");
     assert!(own.contains(&compact_money(ends)), "absolute: {own}");
-    let row = line_of(&app, "━━ poorer.toml");
+    let row = line_of(&app, "── poorer.toml");
     let fell = signed_money(poorer_ends - ends);
     assert!(fell.starts_with("-$"), "{fell}");
     assert!(row.contains(&fell), "{fell}: {row}");
@@ -112,10 +112,10 @@ fn d_reads_every_plan_but_the_baseline_as_its_difference_in_the_table() {
     press_key(&mut app, KeyCode::Char('b'));
     redrawn(&mut app);
     assert!(composed_frame(&app).contains("Plans · against poorer.toml"));
-    let own = line_of(&app, "━━ plan.toml");
+    let own = line_of(&app, "── plan.toml");
     let rose = signed_money(ends - poorer_ends);
     assert!(own.contains(&rose), "{rose}: {own}");
-    let row = line_of(&app, "━━ poorer.toml");
+    let row = line_of(&app, "── poorer.toml");
     assert!(row.contains(&compact_money(poorer_ends)), "{row}");
 
     press_key(&mut app, KeyCode::Char('d'));

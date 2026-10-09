@@ -6,6 +6,15 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- The Overview's charts are keyed alike in the terminal and the web app. In the
+  terminal, Balances keys only the treatments the plan holds, taxable first and
+  at the bottom of the stack, then net worth, and lines are "Net worth",
+  "Income" and "Taxes". In the web app the market runs' bands are "10th to 90th"
+  and "25th to 75th" and their middle line "median". Compare's table of plans
+  leads each row with the same light stroke as the Overview's key.
+
 ### Fixed
 
 - In the web app a throw on the start screen, in a draft notice or in a group's

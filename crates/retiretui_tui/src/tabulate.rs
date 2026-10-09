@@ -11,6 +11,7 @@ use plurimus::core::ratatui_core::text::{Line, Span};
 use plurimus::ui::{ScrollArea, UiStyle};
 use plurimus::widgets::{ActiveDescendant, TableColumns, table_header, table_row};
 
+use crate::chart::LINE_KEY;
 use crate::layout::CURSOR_COLS;
 
 /// What a table says in place of rows it has none of, and the width it
@@ -129,11 +130,8 @@ pub(super) fn fill(
     spawn_rows(commands, table, cells(leading(header, count), &[0]), body)
 }
 
-/// What leads each of a keyed table's rows: a stroke of the line the row
-/// names, in its colour.
-const SWATCH: &str = "━━";
-
-/// The cells [`SWATCH`] and the space after it take.
+/// The cells [`LINE_KEY`] and the space after it take, leading each of a
+/// keyed table's rows.
 pub(super) const SWATCH_COLS: u16 = 3;
 
 /// As [`columns`], the last column too `gap` wider, for a table whose
@@ -173,9 +171,10 @@ pub(super) fn fill_keyed(
         let mut row = cells(leading(row, count), &[0]);
         if let Some(first) = row.first_mut() {
             first.style = named;
-            first
-                .spans
-                .insert(0, Span::styled(format!("{SWATCH} "), Style::new().fg(key)));
+            first.spans.insert(
+                0,
+                Span::styled(format!("{LINE_KEY} "), Style::new().fg(key)),
+            );
         }
         row
     });

@@ -1,8 +1,4 @@
-import {
-  type Band,
-  bandPercentiles,
-  percentileLabel,
-} from "@wasm/retiretui_wasm.js";
+import { type Band, bandWords } from "@wasm/retiretui_wasm.js";
 
 import { Area } from "recharts";
 
@@ -22,29 +18,25 @@ const SPREAD = "var(--muted-foreground)";
 const spreadAt = (percent: number) =>
   `color-mix(in oklab, ${SPREAD} ${String(percent)}%, transparent)`;
 
-/** The bands' spans and the median, named by their percentiles. */
+const { outer, inner, median } = bandWords();
+
+/** The bands' spans and the median, as every surface names them. */
 export function bandsConfig(): ChartConfig {
-  const [low, lower, median, upper, high] = bandPercentiles();
-  const span = (from: number, to: number) =>
-    `${percentileLabel(from)} – ${percentileLabel(to)}`;
   return {
-    outer: { label: span(low, high), color: spreadAt(18) },
-    inner: { label: span(lower, upper), color: spreadAt(40) },
-    median: { label: percentileLabel(median), color: SPREAD },
+    outer: { label: outer.label, color: spreadAt(18) },
+    inner: { label: inner.label, color: spreadAt(40) },
+    median: { label: median.label, color: SPREAD },
   };
 }
 
 /** Each year's bands as the chart plots them. */
 export function bandData(bands: Band[]) {
-  return bands.map((band) => {
-    const [low, lower, median, upper, high] = band.net_worth;
-    return {
-      year: band.year,
-      outer: [low, high],
-      inner: [lower, upper],
-      median,
-    };
-  });
+  return bands.map(({ year, net_worth: at }) => ({
+    year,
+    outer: [at[outer.low], at[outer.high]],
+    inner: [at[inner.low], at[inner.high]],
+    median: at[median.low],
+  }));
 }
 
 /** The outer and inner bands, the inner drawn darker over the outer. */

@@ -171,7 +171,7 @@ fn every_chart_marks_the_cursor_year_and_names_no_lines() {
     show(&mut app, Page::Overview);
     press_key(&mut app, KeyCode::Char('v'));
     assert!(
-        redrawn(&mut app).contains("── net worth"),
+        redrawn(&mut app).contains("── Net worth"),
         "the Overview keys its lines under the chart"
     );
 }
@@ -191,7 +191,7 @@ fn the_cursor_years_column_follows_the_year_and_the_metric() {
     let frame = composed_frame(&app);
     assert!(frame.contains("Net worth 2040"), "{frame}");
     let value = expected(&app, Metric::NetWorth, 2040);
-    let (_, row) = cell_of(&app, "━━ plan.toml");
+    let (_, row) = cell_of(&app, "── plan.toml");
     let line = frame.lines().nth(usize::from(row)).unwrap();
     assert!(line.contains(&value), "{value}: {line}");
     press_key(&mut app, KeyCode::Right);

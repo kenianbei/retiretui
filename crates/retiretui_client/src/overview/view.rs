@@ -6,7 +6,7 @@
 use retiretui_engine::plan::IncomeKind;
 use retiretui_engine::project::YearRow;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use super::{Place, Row, Total, attention, milestones, rests_on, totals};
 use crate::forms::DomainId;
@@ -29,7 +29,7 @@ const STILL_EARNING: &str = "Earning to the end";
 pub const STALE: &str = "The figures are the last the plan had without its issues.";
 
 /// A chart of the Overview's.
-#[derive(Clone, Copy, PartialEq, Eq, Default, Debug, Serialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Default, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub enum Chart {

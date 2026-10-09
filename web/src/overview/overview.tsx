@@ -41,8 +41,8 @@ export function Overview() {
     [reading, basis],
   );
   const series = useMemo(
-    () => reading.document?.chart(basis === "nominal"),
-    [reading, basis],
+    () => reading.document?.chart(chartOf(search.chart), basis === "nominal"),
+    [reading, basis, search.chart],
   );
   if (!document) return null;
 

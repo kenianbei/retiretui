@@ -1,6 +1,5 @@
 ---
 source: crates/retiretui_tui/src/frames.rs
-assertion_line: 44
 expression: composed_frame(app)
 ---
 ╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                              
@@ -8,8 +7,8 @@ expression: composed_frame(app)
 ┴──────────┴┴────────┴╯         ╰┴───────┴┴──────┴──────────────────────────────────────────────────────────────────────────────
 ╭ Plans · today's dollars ──────────────────────────────────────────────────────────╮╭ Changes · plan.toml ────────────────────╮
 │     Plan          Ends with  Money lasts  Success  Net worth 2026  Lifetime taxes ││▏ The baseline.                          │
-│▌ ━━ plan.toml        $2.17M  Never short     100%          $1.07M           $661k ││                                         │
-│  ━━ richer.toml      $4.06M  Never short     100%          $1.70M           $735k ││                                         │
+│▌ ── plan.toml        $2.17M  Never short     100%          $1.07M           $661k ││                                         │
+│  ── richer.toml      $4.06M  Never short     100%          $1.70M           $735k ││                                         │
 │                                                                                   ││                                         │
 │                                                                                   ││                                         │
 │                                                                                   ││                                         │

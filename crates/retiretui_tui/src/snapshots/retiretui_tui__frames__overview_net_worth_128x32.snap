@@ -1,6 +1,5 @@
 ---
 source: crates/retiretui_tui/src/frames.rs
-assertion_line: 45
 expression: composed_frame(app)
 ---
 ╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                              
@@ -32,6 +31,6 @@ expression: composed_frame(app)
 │0     │                ┊                                                    ││  Returns        stocks 6%, bonds 4%, cash 2.5% │
 │      └─────────────────────────────────────────────────────────────────────││  Filing status  Married filing jointly         │
 │   2026           retire 2037          2050                             2074││  Lives in       Oregon                         │
-│── net worth                                                                ││  Success is     Never running short            │
+│── Net worth                                                                ││  Success is     Never running short            │
 ╰────────────────────────────────────────────────────────────────────────────╯╰────────────────────────────────────────────────╯
  ⏎ markets  ⇥ pane  v chart  e edit  ctrl-s save  r reload  q quit  ctrl-↓ tab  n dollars                    : commands  ? help

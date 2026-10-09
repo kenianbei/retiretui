@@ -96,7 +96,8 @@ fn reply<T: Serialize>(answer: Result<T, String>) -> Result<JsValue, JsError> {
 
 #[wasm_bindgen(typescript_custom_section)]
 const TYPES: &str = r#"import type {
-  ActionsReply, ChartSeries, Claim, ClaimWords, ClaimsOptions, CompareView, CompareWords,
+  ActionsReply, BandWords, Chart, Charted, Claim, ClaimWords, ClaimsOptions, CompareView,
+  CompareWords,
   Domain, DomainTable,
   Example, FieldView, Issue, LadderWords, LadderYear, LaddersReply,
   Ledger, MarketRuns, MarketWords, Metric, OrderOptions, OrderWords, OverviewView, PersonAction,
@@ -315,7 +316,7 @@ mod bindings {
     use crate::compare::{CompareView, CompareWords, Searched, YearFigure};
     use crate::domain::DomainTable;
     use crate::ladders::{LadderWords, LaddersReply};
-    use crate::ledger::{ChartSeries, Ledger, ViewWords};
+    use crate::ledger::{Ledger, ViewWords};
     use crate::markets::{MarketRuns, MarketWords};
     use crate::orders::{OrderOptions, OrderWords};
     use crate::overview::OverviewView;
@@ -325,6 +326,7 @@ mod bindings {
     use crate::view::FieldView;
     use crate::vocabulary::Domain;
     use retiretui_client::ledger::Year;
+    use retiretui_client::overview::{BandWords, Charted};
     use retiretui_client::setup::Step;
     use retiretui_client::tax_tables::{TablesView, YearTables};
 
@@ -361,7 +363,8 @@ mod bindings {
         FieldView::export_all,
         Ledger::export_all,
         Year::export_all,
-        ChartSeries::export_all,
+        Charted::export_all,
+        BandWords::export_all,
         ViewWords::export_all,
         OverviewView::export_all,
         TablesView::export_all,
