@@ -18,7 +18,7 @@ import { MarketCharts } from "@/tools/markets/charts";
 import { ZONE_CLASS } from "@/tools/markets/zone";
 import { type OptionRow, Options } from "@/tools/options";
 import type { ToolSearch } from "@/tools/search";
-import { keptSearch } from "@/year/search";
+import { IN_PLACE, keptSearch } from "@/year/search";
 
 const WORDS = marketWords();
 /** The runs table's column a phone's row shows beside its name. */
@@ -170,7 +170,7 @@ export function MarketsPage({
                 highlight={(run) => {
                   void navigate({
                     search: (kept) => ({ ...kept, run: run.key }),
-                    replace: true,
+                    ...IN_PLACE,
                   });
                 }}
               />

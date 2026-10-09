@@ -6,6 +6,7 @@ import {
   isPhone,
   rowNamed,
   SEARCH,
+  scrollDown,
   searchesDone,
   seed,
   test,
@@ -49,9 +50,12 @@ test("both ceilings are found, one taken and written, and another target searche
     await expect(rows.nth(2)).toContainText(FULL_MONEY);
   }
 
-  await rowNamed(page, testInfo, "In its own market").click();
+  const top = await scrollDown(page);
+  await rowNamed(page, testInfo, "In its own market").dispatchEvent("click");
   await page.waitForURL(/ceiling=planned/);
   await expect(page.getByText(/spends it all by its end/)).toBeVisible();
+  const highlighted = await page.evaluate(() => window.scrollY);
+  expect(highlighted, "a highlight leaves the reader there").toBe(top);
   await expect(
     page.getByRole("link", { name: "Edit Leave at least" }),
   ).toBeVisible();

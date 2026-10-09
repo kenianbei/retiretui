@@ -37,6 +37,7 @@ export function SettingsRead({ settings }: { settings: Settings }) {
             from="/tools/$page"
             to="."
             search={(held) => ({ ...held, edit: true })}
+            resetScroll={false}
           >
             <Pencil aria-hidden />
             Edit
@@ -64,6 +65,7 @@ export function SettingsForm({ settings }: { settings: Settings }) {
   const close = () => {
     void navigate({
       search: (held) => ({ ...held, edit: undefined }),
+      resetScroll: false,
     });
   };
 

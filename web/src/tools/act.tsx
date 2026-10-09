@@ -18,7 +18,7 @@ import { NameDialog } from "@/files/name-dialog";
 import { messageOf } from "@/lib/utils";
 import { useSession } from "@/session";
 import { pathOf, planName } from "@/workspace";
-import { keptSearch } from "@/year/search";
+import { IN_PLACE, keptSearch } from "@/year/search";
 
 /** What the last action did: said, and a file to open where it wrote one. */
 interface Done {
@@ -100,7 +100,7 @@ export function SearchActions({
               path,
             ]),
           }),
-          replace: true,
+          ...IN_PLACE,
         });
       });
     });

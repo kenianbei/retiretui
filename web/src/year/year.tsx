@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { isHeld } from "@/lib/keys";
 import { cn } from "@/lib/utils";
 import { BASIS_LABEL } from "@/overview/view-words";
-import { basisIn, basisOf, type YearSearch } from "@/year/search";
+import { basisIn, basisOf, IN_PLACE, type YearSearch } from "@/year/search";
 import type { ShownYear } from "@/year/use-year";
 
 /** ← and → step the year wherever nothing else holds the key. */
@@ -115,7 +115,7 @@ export function Segmented({
           key={choice.label}
           to="."
           search={choice.search}
-          replace
+          {...IN_PLACE}
           aria-current={choice.isCurrent ? "true" : undefined}
           className={cn(
             "max-md:touch-target relative rounded px-3 py-1",

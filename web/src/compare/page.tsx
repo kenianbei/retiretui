@@ -32,7 +32,7 @@ import { NEW_PLAN_START } from "@/onboarding/steps";
 import { BASIS_LABEL } from "@/overview/view-words";
 import { useSession } from "@/session";
 import { nameOf, pathOf } from "@/workspace";
-import { basisOf } from "@/year/search";
+import { basisOf, IN_PLACE } from "@/year/search";
 import { BasisSwitch } from "@/year/year";
 
 const WORDS = compareWords();
@@ -168,7 +168,7 @@ export function ComparePage() {
   const place = (search: Record<string, unknown>) => {
     void navigate({
       search: (prev) => ({ ...prev, ...search }),
-      replace: true,
+      ...IN_PLACE,
     });
   };
   const pathOr = (path: string) => (path === own ? undefined : path);

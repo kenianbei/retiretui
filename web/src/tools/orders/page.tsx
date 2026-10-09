@@ -15,7 +15,7 @@ import { type Chosen, SearchActions } from "@/tools/act";
 import { type OptionRow, Options } from "@/tools/options";
 import type { ToolSearch } from "@/tools/search";
 import { offeredName } from "@/workspace";
-import { basisOf } from "@/year/search";
+import { basisOf, IN_PLACE } from "@/year/search";
 import { BasisSwitch } from "@/year/year";
 
 const WORDS = orderWords();
@@ -122,7 +122,7 @@ export function OrdersPage({ title }: { title: string }) {
             highlight={(option) => {
               void navigate({
                 search: (kept) => ({ ...kept, order: option.key }),
-                replace: true,
+                ...IN_PLACE,
               });
             }}
           />

@@ -58,7 +58,7 @@ export function Conversions({
       label={`${option.label} conversions`}
       columns={columns}
       rows={rows}
-      rowKey={(cells) => cells.join("|")}
+      rowKey={(_cells, at) => String(at)}
       className="max-h-[28rem]"
     />
   );

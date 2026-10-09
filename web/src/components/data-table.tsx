@@ -9,7 +9,7 @@ interface DataTableProps<Row extends RowData> {
   label: string;
   columns: TableColumns<Row>;
   rows: readonly Row[];
-  rowKey: (row: Row) => string;
+  rowKey: (row: Row, at: number) => string;
   isSelected?: (row: Row) => boolean;
   /** A click or ⏎ on a row; rows are not focusable without it. */
   onSelect?: (row: Row) => void;

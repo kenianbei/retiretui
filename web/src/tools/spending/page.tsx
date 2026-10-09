@@ -19,7 +19,7 @@ import { type OptionRow, Options } from "@/tools/options";
 import type { ToolSearch } from "@/tools/search";
 import { type Settings, SettingsForm, SettingsRead } from "@/tools/settings";
 import { offeredName } from "@/workspace";
-import { basisOf } from "@/year/search";
+import { basisOf, IN_PLACE } from "@/year/search";
 import { BasisSwitch } from "@/year/year";
 
 const WORDS = spendingWords();
@@ -152,7 +152,7 @@ export function SpendingPage({ title }: { title: string }) {
             highlight={(option) => {
               void navigate({
                 search: (kept) => ({ ...kept, ceiling: option.key }),
-                replace: true,
+                ...IN_PLACE,
               });
             }}
           />
@@ -175,7 +175,7 @@ export function SpendingPage({ title }: { title: string }) {
               label={`Expenses ${highlighted.held_to.toLowerCase()}`}
               columns={ITEM_COLUMNS}
               rows={highlighted.items}
-              rowKey={(cells) => cells.join("|")}
+              rowKey={(_cells, at) => String(at)}
             />
             {highlighted.note && (
               <p className="text-muted-foreground text-sm">

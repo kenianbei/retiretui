@@ -1,12 +1,12 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import type { Offer, TaxSection } from "@wasm/retiretui_wasm.js";
 import { useMemo } from "react";
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn, INPUT } from "@/lib/utils";
 import { useSession } from "@/session";
 import { ToolAbout } from "@/tools/about";
 import type { ToolSearch } from "@/tools/search";
+import { IN_PLACE } from "@/year/search";
 import { useYear } from "@/year/use-year";
 import { YearStepper } from "@/year/year";
 
@@ -158,7 +158,7 @@ export function TaxTablesPage({ title }: { title: string }) {
   const place = (picked: Pick<ToolSearch, "status" | "state">) => {
     void navigate({
       search: (prev) => ({ ...prev, ...picked }),
-      replace: true,
+      ...IN_PLACE,
     });
   };
 
