@@ -209,7 +209,8 @@ test("a monthly benefit and what a claim does against the plan are said in full"
     "/robin.toml",
     "#/tools/ssa-benefits",
   );
-  await expect(rowNamed(page, testInfo, "Robin")).toContainText(FULL_MONEY);
+  const people = page.getByRole("region", { name: "People" });
+  await expect(rowNamed(people, testInfo, "Robin")).toContainText(FULL_MONEY);
   const claims = page.getByRole("region", { name: "Claim options" });
   await expect(
     claims.getByRole("button", { name: "Take these claims" }),
