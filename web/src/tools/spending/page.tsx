@@ -175,7 +175,7 @@ export function SpendingPage({ title }: { title: string }) {
               label={`Expenses ${highlighted.held_to.toLowerCase()}`}
               columns={ITEM_COLUMNS}
               rows={highlighted.items}
-              rowKey={(cells) => cells.join("|")}
+              rowKey={(_cells, at) => String(at)}
             />
             {highlighted.note && (
               <p className="text-muted-foreground text-sm">

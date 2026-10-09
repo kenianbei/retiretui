@@ -78,20 +78,21 @@ export function isPhone(testInfo: TestInfo): boolean {
 
 /** A row by what its name begins with: a table's, or on a phone its list's button. */
 export function rowNamed(
-  page: Page,
+  within: Page | Locator,
   testInfo: TestInfo,
   name: string,
 ): Locator {
   const named = new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`);
   return isPhone(testInfo)
-    ? page.getByRole("button", { name: named })
-    : page.getByRole("row", { name: named });
+    ? within.getByRole("button", { name: named })
+    : within.getByRole("row", { name: named });
 }
 
-/** Scrolls the window down a page long enough to scroll, and gives where it came to. */
+/** Scrolls the window down, short of the page's end, and gives where it came to. */
 export async function scrollDown(page: Page): Promise<number> {
   const top = await page.evaluate(() => {
-    window.scrollTo(0, 300);
+    const end = document.documentElement.scrollHeight - window.innerHeight;
+    window.scrollTo(0, Math.min(300, end / 2));
     return window.scrollY;
   });
   expect(top, "the page is long enough to scroll").toBeGreaterThan(0);
