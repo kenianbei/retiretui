@@ -9,18 +9,17 @@ use plurimus::core::ratatui_core::text::{Line, Span};
 use plurimus::term::CursorCell;
 use plurimus::ui::ComputedWidgetArea;
 use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
+use retiretui_client::overview::ChartLine;
 use retiretui_client::present::money;
 use retiretui_engine::plan::Dollars;
 
 use super::charts::OverviewChart;
-use crate::chart::{Series, SeriesChart};
+use crate::chart::{LINE_KEY, SeriesChart};
 use crate::present::compact_money;
 use crate::theme::Theme;
 
 /// How many of its glyph a mark is keyed by.
 const KEY_SWATCH: usize = 2;
-/// What a line is keyed by.
-const LINE: &str = "─";
 
 /// A mark the key names, and what it reads each year: one figure, or the
 /// two a band lies between.
@@ -32,13 +31,12 @@ pub(super) struct Keyed {
 }
 
 impl Keyed {
-    pub fn of(swatch: Span<'static>, series: &Series) -> Self {
-        let reads = series.points.iter();
+    pub fn of(swatch: Span<'static>, line: &ChartLine) -> Self {
         Self {
             swatch,
-            label: series.label.clone(),
-            reads: reads
-                .map(|&(year, amount)| (year as i16, amount as Dollars, amount as Dollars))
+            label: line.label.to_owned(),
+            reads: (line.points.iter())
+                .map(|&(year, amount)| (year, amount, amount))
                 .collect(),
         }
     }
@@ -119,12 +117,14 @@ pub(super) fn swatch(symbol: &str, style: Style) -> Span<'static> {
 
 /// A line as the key shows it, in `style`.
 pub(super) fn line_swatch(style: Style) -> Span<'static> {
-    swatch(LINE, style)
+    Span::styled(LINE_KEY, style)
 }
 
 #[cfg(test)]
 mod tests {
-    use super::super::charts::{balances, income_taxes, lines, markets};
+    use retiretui_client::overview::Chart;
+
+    use super::super::charts::{INCOME_SERIES, balances, lines, markets};
     use super::*;
     use crate::support::{projected_from, test_projected};
 
@@ -139,10 +139,10 @@ mod tests {
     fn the_key_names_each_mark_and_reads_it_at_the_pointer_s_year() {
         let projected = test_projected();
         let theme = Theme::terminal();
-        let (_, keyed) = balances(&projected.projection, true, &theme);
+        let (_, keyed) = balances(&Chart::Balances.charted(&projected, true), &theme);
         assert_eq!(
             said(&key_line(&keyed, None, money)),
-            "██ HSA  ░░ pre-tax  ▒▒ Roth  ▓▓ taxable  "
+            "▓▓ taxable  ░░ pre-tax  ── Net worth  "
         );
         let row = projected.projection.row(2040).unwrap();
         let read = said(&key_line(&keyed, Some(2040), money));
@@ -164,13 +164,14 @@ mod tests {
     fn a_line_chart_is_keyed_by_its_lines() {
         let projected = test_projected();
         let theme = Theme::terminal();
-        let (chart, keyed) = lines(income_taxes(&projected.projection, true, &theme), &theme);
+        let charted = Chart::IncomeTaxes.charted(&projected, true);
+        let (chart, keyed) = lines(&charted.lines, INCOME_SERIES, &theme);
         assert_eq!(chart.series.len(), 2);
         let row = projected.projection.row(2030).unwrap();
         assert_eq!(
             said(&key_line(&keyed, Some(2030), money)),
             format!(
-                "── income {}  ── taxes {}  ",
+                "── Income {}  ── Taxes {}  ",
                 money(row.total_income),
                 money(row.taxes.total)
             )

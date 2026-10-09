@@ -15,9 +15,6 @@ use plurimus::term::CursorCell;
 use plurimus::ui::{ComputedWidgetArea, Hovered, PointerPress, PressFocusDisabled};
 use plurimus::widgets::ratatui_widgets::chart::{Axis, Chart, Dataset, GraphType};
 use retiretui_engine::plan::Dollars;
-use retiretui_engine::project::{Projection, YearRow};
-
-use crate::table::basis_amount;
 
 mod marks;
 mod shades;
@@ -35,6 +32,10 @@ const AXIS_ROWS: u16 = 2;
 
 /// How far above the highest value the scale reaches.
 const HEADROOM: f64 = 1.05;
+
+/// What keys a line wherever its name is set beside it: the Overview's key
+/// and Compare's table of plans.
+pub(crate) const LINE_KEY: &str = "──";
 
 pub fn plugin(app: &mut App) {
     app.add_systems(Update, (draw_charts, read_out));
@@ -77,31 +78,6 @@ pub struct Series {
     pub label: String,
     pub color: Color,
     pub points: Vec<(f64, f64)>,
-}
-
-impl Series {
-    /// `value` of every projected year, on the basis asked for.
-    pub fn of(
-        label: impl Into<String>,
-        color: Color,
-        projection: &Projection,
-        nominal: bool,
-        value: impl Fn(&YearRow) -> Dollars,
-    ) -> Self {
-        let points = projection
-            .years
-            .iter()
-            .map(|row| {
-                let amount = basis_amount(value(row), row.deflator, nominal);
-                (f64::from(row.year), amount as f64)
-            })
-            .collect();
-        Self {
-            label: label.into(),
-            color,
-            points,
-        }
-    }
 }
 
 impl SeriesChart {
@@ -382,7 +358,7 @@ mod tests {
             frame.contains("╭ Balances by tax treatment · today's dollars ─"),
             "{frame}"
         );
-        assert!(frame.contains("░░ pre-tax  ▒▒ Roth"), "{frame}");
+        assert!(frame.contains("▓▓ taxable  ░░ pre-tax  ── Net worth"), "{frame}");
         click(&mut app, column(2038), row);
         assert_eq!(app.world().resource::<YearCursor>().0, Some(2038));
     }

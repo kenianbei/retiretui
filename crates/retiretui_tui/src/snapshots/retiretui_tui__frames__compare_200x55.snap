@@ -1,6 +1,5 @@
 ---
 source: crates/retiretui_tui/src/frames.rs
-assertion_line: 45
 expression: composed_frame(app)
 ---
 ╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                                                                                                      
@@ -8,7 +7,7 @@ expression: composed_frame(app)
 ┴──────────┴┴────────┴╯         ╰┴───────┴┴──────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭ Plans · today's dollars ──────────────────────────────────────────────────────────────────────────────────────────────────────────╮╭ Changes · full.toml ────────────────────────────────────────────╮
 │     Plan        Ends with  Money lasts  Success  Net worth 2026  Lifetime taxes        Peaks at  Medicare  Lifetime conversions   ││▏ The baseline.                                                  │
-│▌ ━━ full.toml      $2.17M  Never short     100%          $1.07M           $661k  $2.17M in 2074        $0                 $330k   ││                                                                 │
+│▌ ── full.toml      $2.17M  Never short     100%          $1.07M           $661k  $2.17M in 2074        $0                 $330k   ││                                                                 │
 │                                                                                                                                   ││                                                                 │
 │                                                                                                                                   ││                                                                 │
 │                                                                                                                                   ││                                                                 │

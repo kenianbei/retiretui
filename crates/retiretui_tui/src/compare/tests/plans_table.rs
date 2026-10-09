@@ -39,8 +39,8 @@ fn picking_a_file_compares_it_and_picking_it_again_stops() {
 #[test]
 fn each_row_is_led_by_its_lines_colour_the_document_first() {
     let app = comparing_variant(SIZE);
-    let (doc_col, doc_row) = cell_of(&app, "━━ plan.toml");
-    let (variant_col, variant_row) = cell_of(&app, "━━ variant.toml");
+    let (doc_col, doc_row) = cell_of(&app, "── plan.toml");
+    let (variant_col, variant_row) = cell_of(&app, "── variant.toml");
     assert_eq!(variant_row, doc_row + 1, "{}", composed_frame(&app));
     let theme = app.world().resource::<Theme>();
     assert_eq!(cell_fg(&app, doc_col, doc_row), Some(theme.series(0)));

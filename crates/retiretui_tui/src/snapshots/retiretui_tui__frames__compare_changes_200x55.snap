@@ -1,6 +1,5 @@
 ---
 source: crates/retiretui_tui/src/frames.rs
-assertion_line: 45
 expression: composed_frame(app)
 ---
 ╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                                                                                                      
@@ -8,8 +7,8 @@ expression: composed_frame(app)
 ┴──────────┴┴────────┴╯         ╰┴───────┴┴──────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭ Plans · today's dollars ──────────────────────────────────────────────────────────────────────────────────────────────────────────╮╭ Changes · changed.toml against plan.toml ───────────────────────╮
 │     Plan           Ends with  Money lasts  Success  Net worth 2026  Lifetime taxes        Peaks at  Medicare                      ││▏ Income › ss-jordan › Starts: jordan at 67 → jordan at 70       │
-│  ━━ plan.toml         $2.17M  Never short     100%          $1.07M           $661k  $2.17M in 2074        $0                      ││  Expenses › travel: removed                                     │
-│▌ ━━ changed.toml      $2.58M  Never short     100%          $1.07M           $630k  $2.58M in 2074        $0                      ││  Conversions › roth-2027: added                                 │
+│  ── plan.toml         $2.17M  Never short     100%          $1.07M           $661k  $2.17M in 2074        $0                      ││  Expenses › travel: removed                                     │
+│▌ ── changed.toml      $2.58M  Never short     100%          $1.07M           $630k  $2.58M in 2074        $0                      ││  Conversions › roth-2027: added                                 │
 │                                                                                                                                   ││                                                                 │
 │                                                                                                                                   ││                                                                 │
 │                                                                                                                                   ││                                                                 │

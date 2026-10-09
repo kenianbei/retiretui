@@ -158,15 +158,15 @@ fn an_issue_row_opens_its_item_on_enter() {
 fn v_turns_the_chart_through_its_views_and_back_each_keyed() {
     let mut app = headless_app(SIZE);
     let views = [
-        ("Net worth · ", "── net worth"),
-        ("Income against taxes · ", "── income  ── taxes"),
+        ("Net worth · ", "── Net worth"),
+        ("Income against taxes · ", "── Income  ── Taxes"),
         (
             "Net worth through random markets · today's dollars",
             " waiting",
         ),
         (
             "Balances by tax treatment · ",
-            "██ HSA  ░░ pre-tax  ▒▒ Roth  ▓▓ taxable",
+            "▓▓ taxable  ░░ pre-tax  ── Net worth",
         ),
     ];
     for (title, key) in views {
