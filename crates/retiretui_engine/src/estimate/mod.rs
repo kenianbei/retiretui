@@ -28,11 +28,13 @@ const MONTHS_PER_YEAR: i32 = 12;
 
 /// What the exports say the plan spends.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct Estimate {
     /// The whole months the window covers, twelve at most.
     pub months: u8,
     /// The latest row's date: the window ends with its month.
+    #[cfg_attr(feature = "schemars", schemars(with = "Option<String>"))]
     #[cfg_attr(feature = "ts", ts(type = "string | null"))]
     pub through: Option<PlanDate>,
     /// One per spending category seen, in the vocabulary's order.
@@ -47,6 +49,7 @@ pub struct Estimate {
 
 /// One category's spending as the amount of one expense.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct Proposal {
     /// What the rows were for.
@@ -64,6 +67,7 @@ pub struct Proposal {
     /// Each payee and what it adds up to, largest first.
     pub payees: Vec<(String, Dollars)>,
     /// The latest row's date.
+    #[cfg_attr(feature = "schemars", schemars(with = "String"))]
     #[cfg_attr(feature = "ts", ts(type = "string"))]
     pub last: PlanDate,
     /// Added as a one-time expense on `last` for `total`, not annualized.
@@ -74,6 +78,7 @@ pub struct Proposal {
 
 /// What a proposal does to an expense stated in phases.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[serde(rename_all = "kebab-case")]
 pub enum Phases {
@@ -88,6 +93,7 @@ pub enum Phases {
 
 /// A payee the patterns did not name.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct Unknown {
     /// The normalized payee.

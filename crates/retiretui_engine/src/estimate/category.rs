@@ -7,6 +7,7 @@ use crate::plan::Expense;
 
 /// What a row was for.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[serde(rename_all = "kebab-case")]
 #[allow(missing_docs, reason = "each variant is its own word")]
