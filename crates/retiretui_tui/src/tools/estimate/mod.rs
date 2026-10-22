@@ -21,7 +21,6 @@ use plurimus::core::UiWidget;
 use plurimus::core::ratatui_core::text::Line;
 use plurimus::ui::ScrollArea;
 use plurimus::widgets::{ActiveDescendant, list_item};
-use retiretui_client::environment::load_patterns;
 use retiretui_client::estimate::{
     self, ABOUT, COLUMNS, Exports, NOTHING_READ, PROPOSAL_FIELDS, ProposalAnswers, UNKNOWN_FIELDS,
     UnknownAnswers, listed, summary, take_question, taken,
@@ -62,12 +61,10 @@ const NO_PROPOSALS: &str = "nothing proposed yet";
 
 pub fn plugin(app: &mut App) {
     app.init_resource::<Held>();
+    app.init_resource::<HeldPatterns>();
     app.init_resource::<Estimated>();
     app.init_resource::<Cursor>();
-    app.add_systems(
-        Startup,
-        (spawn_page.after(layout::spawn_frame), hold_patterns),
-    );
+    app.add_systems(Startup, spawn_page.after(layout::spawn_frame));
     app.add_systems(Update, estimate_by_itself.before(Repainted));
     app.add_systems(
         Update,
@@ -89,9 +86,16 @@ pub fn plugin(app: &mut App) {
 #[derive(Resource, Default)]
 pub struct Held(pub Exports);
 
-/// The patterns in force: the embedded table under the user's own.
+/// The patterns in force: the embedded table under the user's own, as the
+/// launch supplies them, and under what the session names a payee for.
 #[derive(Resource)]
 pub struct HeldPatterns(pub Patterns);
+
+impl Default for HeldPatterns {
+    fn default() -> Self {
+        Self(Patterns::embedded())
+    }
+}
 
 /// What the exports say the draft spends.
 #[derive(Resource, Default)]
@@ -141,14 +145,6 @@ fn spawn_page(bodies: Query<Entity, With<Body>>, mut commands: Commands) {
     if let Ok(body) = bodies.single() {
         super::spawn_tool(&mut commands, body, &PAGE);
     }
-}
-
-fn hold_patterns(mut commands: Commands) {
-    let patterns = load_patterns(None).unwrap_or_else(|error| {
-        journal::warn(format!("patterns: {error:#}"));
-        Patterns::embedded()
-    });
-    commands.insert_resource(HeldPatterns(patterns));
 }
 
 /// The proposals, beside the files over the highlighted row read out.
