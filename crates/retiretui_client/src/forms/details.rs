@@ -3,12 +3,13 @@
 
 use retiretui_engine::plan::Plan;
 use serde::Serialize;
-use toml::Table;
+use toml::{Table, Value};
 
 use super::cells::Shown;
 use super::lists::is_gate_open;
 use super::offers::NAME_KEY;
 use super::{FieldSpec, Form, ListOps, applies};
+use crate::codec::get_path;
 
 /// Whether the domain's items say more than its columns show: a field no
 /// column shows, or a record. The identity is known to the table whether
@@ -41,14 +42,34 @@ pub struct ReadRow {
     pub group: Option<&'static str>,
 }
 
+/// Whether the list row a field reaches into by number holds anything. The
+/// form offers the next row to fill; the read-out says only what is held.
+fn is_row_held(key: &str, item: &Table) -> bool {
+    let mut row = String::new();
+    for part in key.split('.') {
+        if !row.is_empty() {
+            row.push('.');
+        }
+        row.push_str(part);
+        if part.parse::<usize>().is_ok() {
+            let held = get_path(item, &row).and_then(Value::as_table);
+            return held.is_some_and(|table| !table.is_empty());
+        }
+    }
+    true
+}
+
 /// The item's rows: each field it has a use for - shown by its own rule,
-/// and by the tick whose table it is in - labelled and phrased as the
-/// form phrases it, then the record where the domain keeps one.
+/// by the tick whose table it is in, and by the list row holding anything
+/// where it reaches into one - labelled and phrased as the form phrases it,
+/// then the record where the domain keeps one.
 #[must_use]
 pub fn rows(form: &Form, item: &Table, plan: &Plan) -> Vec<ReadRow> {
     let opened = applies::opened(form, item);
     let is_used = |spec: &&FieldSpec| {
-        spec.is_shown_for(&opened) && is_gate_open(form.fields, spec.key, &opened)
+        spec.is_shown_for(&opened)
+            && is_gate_open(form.fields, spec.key, &opened)
+            && is_row_held(spec.key, &opened)
     };
     let mut rows: Vec<ReadRow> = form
         .fields

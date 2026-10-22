@@ -13,9 +13,10 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   a cost that changes with a move or with age is one expense rather than one per
   period. The year a phase fires in is split by months where the trigger has
   one; `start`, `end` and `on` keep their whole-year meaning, and `on` excludes
-  phases. The Expenses form offers a phase after the last one filled, the table
-  counts them, the Overview marks an implausible phase amount, and the spending
-  ceiling scales every phase with its expense.
+  phases. The Expenses form offers a phase after the last one filled, the
+  read-out lists the filled ones alone, the table counts them, the Overview
+  marks an implausible phase amount, and the spending ceiling scales every phase
+  with its expense.
 
 ### Changed
 

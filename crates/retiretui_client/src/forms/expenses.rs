@@ -205,7 +205,7 @@ mod tests {
     }
 
     #[test]
-    fn the_read_out_lists_each_phase_after_the_last_filled_one() {
+    fn the_read_out_lists_the_filled_phases_alone() {
         let plan = Plan::from_toml_str(crate::overview::tests::TEST_PLAN).unwrap();
         let item: Table = "amount = 1\nphases = [{ from = { date = 2030-07-01 }, amount = 2 }]"
             .parse()
@@ -221,10 +221,8 @@ mod tests {
             [
                 ("Phase 2 from".to_owned(), "Jul 2030".to_owned()),
                 ("  Amount".to_owned(), "$2".to_owned()),
-                ("Phase 3 from".to_owned(), String::new()),
-                ("  Amount".to_owned(), String::new()),
             ],
-            "every filled phase, then the one offered next",
+            "the filled phase, not the one the form offers next",
         );
     }
 
