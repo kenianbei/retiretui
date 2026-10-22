@@ -221,8 +221,8 @@ pub fn spending_overlay(
     expenses: &[ScaledExpense],
 ) -> Result<String, PlanError> {
     #[derive(Serialize)]
-    struct Fragment {
-        id: String,
+    struct Fragment<'a> {
+        id: &'a str,
         amount: Dollars,
         #[serde(skip_serializing_if = "Vec::is_empty")]
         phases: Vec<Phase>,
@@ -231,17 +231,21 @@ pub fn spending_overlay(
     struct OverlayDocument<'a> {
         schema: u32,
         base: &'a str,
-        expenses: Vec<Fragment>,
+        expenses: Vec<Fragment<'a>>,
     }
-    let mut applied = plan.clone();
-    apply_spending(&mut applied, expenses);
-    let fragments = expenses.iter().filter_map(|scaled| {
-        let expense = applied.expenses.iter().find(|it| it.id == scaled.id)?;
-        Some(Fragment {
-            id: scaled.id.clone(),
+    let fragments = expenses.iter().map(|scaled| {
+        let stated = plan.expenses.iter().find(|it| it.id == scaled.id);
+        let phases = stated.into_iter().flat_map(|it| &it.phases).enumerate();
+        Fragment {
+            id: &scaled.id,
             amount: scaled.amount,
-            phases: expense.phases.clone(),
-        })
+            phases: phases
+                .map(|(at, phase)| Phase {
+                    from: phase.from.clone(),
+                    amount: scaled.phases.get(at).copied().unwrap_or(phase.amount),
+                })
+                .collect(),
+        }
     });
     Ok(toml::to_string_pretty(&OverlayDocument {
         schema: SCHEMA_VERSION,
