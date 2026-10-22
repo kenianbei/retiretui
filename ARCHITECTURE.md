@@ -67,20 +67,20 @@ depends on UI.
   fixed return, or the year's class returns blended by the mix it holds that
   year, a glide path stepping between mixes as triggers fire - credited before
   anything draws on it, escalation and the deflator following the market's
-  inflation, scheduled transfers, RMDs, income and expense windows - an
-  expense's amount restated at triggers of its own, the year one fires in spent
-  at each amount for its months - (a Social Security benefit left unstated is
-  computed the year it is claimed, at the month of the date or age its start
-  rests on, from the owner's record - or, where they have none, a career before
-  the plan at the salary its first year pays them - extended with the nominal
-  salary the walk has paid them, and carried from their age-62 year by the COLAs
-  SSA has published so that the income's own escalation carries those still to
-  come; every Social Security benefit pays its first year from the month it
-  starts), contributions, Roth conversions, a tax-aware withdrawal fixed point -
-  the year's taxable income kept by person and by where it came from, which the
-  state's tax is figured from with the year's federal tax and income - that also
-  settles the year's MAGI-driven costs (IRMAA surcharges priced from the
-  household MAGI two years earlier, declared cliffs crossed by the current
+  inflation, scheduled transfers, RMDs, income and expense windows (a Social
+  Security benefit left unstated is computed the year it is claimed, at the
+  month of the date or age its start rests on, from the owner's record - or,
+  where they have none, a career before the plan at the salary its first year
+  pays them - extended with the nominal salary the walk has paid them, and
+  carried from their age-62 year by the COLAs SSA has published so that the
+  income's own escalation carries those still to come; every Social Security
+  benefit pays its first year from the month it starts), an expense's amount
+  restated at triggers of its own - the year one fires in spent at each amount
+  for its months - contributions, Roth conversions, a tax-aware withdrawal fixed
+  point - the year's taxable income kept by person and by where it came from,
+  which the state's tax is figured from with the year's federal tax and income -
+  that also settles the year's MAGI-driven costs (IRMAA surcharges priced from
+  the household MAGI two years earlier, declared cliffs crossed by the current
   year's MAGI) and the MAGI-driven deduction of a traditional IRA contribution
   by a person a workplace plan covers - through a salary that says so, or what
   they pay into one - or by their spouse, surplus sweeping - emits one row per
