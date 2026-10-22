@@ -400,7 +400,7 @@ fn optimize_spending_json_names_its_fields() {
             ]
         );
         assert_eq!(fields(&ceiling["summary"]), fields(&spending["baseline"]));
-        assert_eq!(fields(&ceiling["expenses"][0]), ["amount", "id"]);
+        assert_eq!(fields(&ceiling["expenses"][0]), ["amount", "id", "phases"]);
         assert_eq!(ceiling["expenses"][0]["amount"], ceiling["flexible"]);
         assert_eq!(ceiling["is_capped"], false);
         assert_eq!(ceiling["summary"]["lifetime_unfunded"], 0, "{spending}");

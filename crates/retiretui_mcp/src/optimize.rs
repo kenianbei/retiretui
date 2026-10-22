@@ -235,7 +235,7 @@ impl PlanServer {
         .map_err(run_refusal)?;
         let (scenario_toml, written) =
             self.emit_overlay(&args.path, args.write_to.as_deref(), |base| {
-                spending_overlay(base, &found.at_target.expenses)
+                spending_overlay(base, &plan, &found.at_target.expenses)
             })?;
         Ok(Json(WithOverlay {
             reply: SpendingReply::new(&found, &plan, !args.nominal),

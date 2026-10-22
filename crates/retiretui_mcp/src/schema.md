@@ -203,6 +203,17 @@ disability exceptions.
 - `essential` (bool, default false) - spending the household could not cut.
   `optimize_spending` scales every recurring expense not marked `essential`, and
   leaves a one-time (`on`) expense as stated either way.
+- `[[expenses.phases]]` (optional, repeated) - the amount restated from a
+  trigger on: `from` (trigger, required) and `amount` (dollars, required), in
+  today's dollars and escalated by the expense's `cola` as its own amount is.
+  The expense's `amount` is spent until the first phase fires; the phase fired
+  latest is in force, a later-listed one winning a tie. The year a phase fires
+  in is split by months where its trigger has one - the old amount for the
+  months before and the new from the trigger's month, a date's or an age's, an
+  event or income trigger carrying the month of what it rests on - so a move in
+  October spends nine twelfths of the old amount and three of the new. `start`,
+  `end` and `on` keep their whole-year meaning. `on` excludes `phases`.
+  `optimize_spending` scales a phase with its expense.
 
 An HSA is drawn untaxed up to the year's `medical` spending, across the
 household. What it pays beyond that is ordinary income, and pays a 20% penalty
@@ -482,6 +493,10 @@ amount = 48000
 id = "housing"
 amount = 18000
 essential = true      # the spending ceiling leaves this as it is
+
+[[expenses.phases]]   # a smaller place from 70 on, that year split by months
+from = { age = 70, owner = "alex" }
+amount = 12000
 
 [[expenses]]
 id = "health"

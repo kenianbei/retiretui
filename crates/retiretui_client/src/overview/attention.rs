@@ -176,7 +176,8 @@ fn implausible(plan: &Plan) -> Vec<Row> {
         }),
         stated(Income, &plan.income, ("an income", flow), |it| it.amount),
         stated(Expenses, &plan.expenses, ("an expense", flow), |it| {
-            Some(it.amount)
+            let phases = it.phases.iter().map(|phase| phase.amount);
+            Some(phases.fold(it.amount, Dollars::max))
         }),
         stated(
             Contributions,
@@ -320,6 +321,21 @@ start = {{ age = 67, owner = \"me\" }}
         for row in expected {
             assert!(said.contains(&row), "{row:?} in {said:?}");
         }
+    }
+
+    #[test]
+    fn an_amount_past_the_likely_in_a_phase_marks_its_expense() {
+        let plan = format!(
+            "{TEST_PLAN}\n[[expenses.phases]]\nfrom = {{ date = 2040-01-01 }}\namount = 10000000\n"
+        );
+        let projected = projected_from(&plan);
+        let expense = projected.plan.expenses.last().unwrap().display_name();
+        let at = projected.plan.expenses.len() - 1;
+        let row = (
+            format!("{expense}: an expense of $10.00M - check the amount"),
+            Some((DomainId::Expenses, Some(at))),
+        );
+        assert!(said(&projected).contains(&row), "{:?}", said(&projected));
     }
 
     #[test]

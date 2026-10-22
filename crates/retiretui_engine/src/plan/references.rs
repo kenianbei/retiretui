@@ -119,6 +119,11 @@ fn collect_triggers(plan: &Plan) -> Vec<(String, &Trigger)> {
     collect_account_triggers(plan, &mut all);
     collect_window_triggers(plan, &mut all);
     collect_flow_triggers(plan, &mut all);
+    for (i, expense) in plan.expenses.iter().enumerate() {
+        for (at, phase) in expense.phases.iter().enumerate() {
+            all.push((format!("expenses[{i}].phases[{at}].from"), &phase.from));
+        }
+    }
     all
 }
 

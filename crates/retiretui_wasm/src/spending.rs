@@ -178,7 +178,7 @@ impl Document {
         expenses: &[ScaledExpense],
     ) -> Result<String, String> {
         let base = self.scenario_base(out)?;
-        spending_overlay(&base, expenses).map_err(|error| error.to_string())
+        spending_overlay(&base, &self.draft().plan, expenses).map_err(|error| error.to_string())
     }
 }
 

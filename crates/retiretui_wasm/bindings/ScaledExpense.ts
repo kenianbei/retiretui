@@ -11,4 +11,8 @@ id: string,
 /**
  * Its annual amount at the ceiling, in today's dollars.
  */
-amount: number, };
+amount: number, 
+/**
+ * Each of its phases' amount at the ceiling, in the plan's order.
+ */
+phases: Array<number>, };

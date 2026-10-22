@@ -37,6 +37,21 @@ pub struct Expense {
     /// leaves it as stated.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub essential: bool,
+    /// The amount restated from later triggers; excludes `on`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub phases: Vec<Phase>,
+}
+
+/// An expense's amount from a trigger on: the year it fires is spent at
+/// the old amount for the months before and the new from the trigger's
+/// month, where it has one.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Phase {
+    /// When the amount changes.
+    pub from: Trigger,
+    /// The annual amount from then on, in today's dollars.
+    pub amount: Dollars,
 }
 
 impl Expense {

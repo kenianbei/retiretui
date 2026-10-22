@@ -48,6 +48,7 @@ fn spending(plan: &Plan, id: &str, amount: i64) -> Plan {
         &[ScaledExpense {
             id: id.to_owned(),
             amount,
+            phases: Vec::new(),
         }],
     );
     changed
@@ -235,7 +236,7 @@ fn a_cancelled_search_answers_cancelled() {
 fn overlay_round_trips_into_the_ceilings_projection() {
     let plan = plan_from(RETIREE);
     let found = ceiling_of(&plan, Measure::Planned).unwrap();
-    let overlay = spending_overlay("base.toml", &found.expenses).unwrap();
+    let overlay = spending_overlay("base.toml", &plan, &found.expenses).unwrap();
     assert!(
         overlay.starts_with("schema = 1\nbase = \"base.toml\"\n\n[[expenses]]\nid = \"living\"\n"),
         "{overlay}"

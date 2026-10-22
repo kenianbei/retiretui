@@ -243,3 +243,30 @@ test("a Roth account says what was paid in, a Roth plan when its job is left, an
   await expect(basis).toBeVisible();
   await expect(left).toBeVisible();
 });
+
+test("an expense offers a phase after the last one filled", async ({
+  page,
+}) => {
+  await seed(
+    page,
+    { "/starter.toml": example("starter.toml") },
+    "/starter.toml",
+    "#/plan/expenses?edit=0",
+  );
+  const sheet = page.getByRole("dialog");
+  const second = sheet.getByLabel("Phase 2 from", { exact: true });
+  const third = sheet.getByLabel("Phase 3 from", { exact: true });
+  await expect(second).toBeVisible();
+  await expect(third).toHaveCount(0);
+  await second.selectOption({ label: "Event" });
+  await sheet
+    .getByLabel(/^The event it follows/)
+    .selectOption({ label: "Sam retires" });
+  await sheet.getByLabel("Amount", { exact: true }).first().fill("24000");
+  await expect(third).toBeVisible();
+  await expectAccessible(page);
+  await sheet.getByRole("button", { name: "Apply" }).click();
+  await expect(sheet).toHaveCount(0);
+  await expect(page.locator("main")).toContainText("Phase 2 from");
+  await expect(page.locator("main")).toContainText("$24,000");
+});

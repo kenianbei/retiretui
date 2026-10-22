@@ -38,7 +38,7 @@ pub use dates::PlanDate;
 pub use diff::{Change, ChangeKind, diff};
 pub use escalation::{ColaAnchor, ColaSpec};
 pub use events::Event;
-pub use expenses::Expense;
+pub use expenses::{Expense, Phase};
 pub use flows::{Conversion, Transfer};
 pub use households::{FilingStatus, Household, Person, Residency};
 pub use incomes::{Income, IncomeKind};

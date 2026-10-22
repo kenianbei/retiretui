@@ -9,7 +9,7 @@ use super::collect::{default_cliff_end, seed_magi_lookback};
 use super::invest::Holding;
 use super::ira::IraBand;
 use super::residence;
-use super::resolve::Resolver;
+use super::resolve::{self, Resolver};
 use super::{Action, ClassTotals, MarketPath, Projection, Taxes, YearRow, horizon_year};
 
 pub(crate) struct Simulation<'a> {
@@ -19,6 +19,8 @@ pub(crate) struct Simulation<'a> {
     pub(super) resolver: Resolver,
     /// How each account's return is found, by account index.
     pub(super) holdings: Vec<Holding>,
+    /// Each expense's phases that fire, by expense index.
+    pub(super) phases: Vec<Vec<(i32, Dollars)>>,
     pub(super) index_of: BTreeMap<&'a str, usize>,
     pub(super) start_year: i16,
     pub(super) end_year: i16,
@@ -126,6 +128,7 @@ impl<'a> Simulation<'a> {
             path,
             resolver,
             holdings,
+            phases: resolve::phase_months(plan),
             index_of,
             start_year: plan.plan.start_year,
             end_year: horizon_year(plan),

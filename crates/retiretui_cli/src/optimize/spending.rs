@@ -54,7 +54,7 @@ pub fn run(args: &SpendingArgs) -> anyhow::Result<()> {
         OutputFormat::Table => print!("{}", spending_text(&plan, &found, deflated)),
     }
     if let Some(out) = &args.write {
-        write_at_target(out, &args.plan, &found)?;
+        write_at_target(out, &args.plan, &plan, &found)?;
         println!("wrote {}", out.display());
     }
     Ok(())
@@ -108,9 +108,9 @@ fn spending_text(plan: &Plan, found: &Found, deflated: bool) -> String {
     format!("{ceilings}\n{}", align(&header, &expenses))
 }
 
-fn write_at_target(out: &Path, plan_path: &Path, found: &Found) -> anyhow::Result<()> {
+fn write_at_target(out: &Path, plan_path: &Path, plan: &Plan, found: &Found) -> anyhow::Result<()> {
     let base = retiretui_client::files::overlay_base(&DiskStore, out, plan_path)?;
-    let overlay = spending_overlay(&base, &found.at_target.expenses)?;
+    let overlay = spending_overlay(&base, plan, &found.at_target.expenses)?;
     retiretui_client::files::write_atomic(out, &overlay)?;
     Ok(())
 }

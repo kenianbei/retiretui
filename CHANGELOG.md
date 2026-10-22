@@ -6,6 +6,23 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- An expense's amount can change at triggers of its own, as
+  `[[expenses.phases]]` rows of a `from` trigger and the amount from then on, so
+  a cost that changes with a move or with age is one expense rather than one per
+  period. The year a phase fires in is split by months where the trigger has
+  one; `start`, `end` and `on` keep their whole-year meaning, and `on` excludes
+  phases. The Expenses form offers a phase after the last one filled, the
+  read-out lists the filled ones alone, the table counts them, the Overview
+  marks an implausible phase amount, and the spending ceiling scales every phase
+  with its expense.
+
+### Changed
+
+- `retiretui_engine`: `Expense` gains `phases`, `ScaledExpense` each phase's
+  amount at the ceiling, and `spending_overlay` takes the plan it restates.
+
 ## [0.4.1] - 2026-10-09
 
 ### Changed
