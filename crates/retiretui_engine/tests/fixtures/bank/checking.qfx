@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?OFX OFXHEADER="200" VERSION="220" SECURITY="NONE" OLDFILEUID="NONE" NEWFILEUID="NONE"?>
+<OFX>
+  <CREDITCARDMSGSRSV1>
+    <CCSTMTTRNRS>
+      <CCSTMTRS>
+        <CURDEF>USD</CURDEF>
+        <BANKTRANLIST>
+          <STMTTRN>
+            <TRNTYPE>DEBIT</TRNTYPE>
+            <DTPOSTED>20261018</DTPOSTED>
+            <TRNAMT>-71.22</TRNAMT>
+            <FITID>20261018-c3</FITID>
+            <NAME>CITY OF SAN JOSE WATER</NAME>
+            <MEMO>autopay</MEMO>
+          </STMTTRN>
+        </BANKTRANLIST>
+        <LEDGERBAL>
+          <BALAMT>-1250.00</BALAMT>
+          <DTASOF>20261018</DTASOF>
+        </LEDGERBAL>
+      </CCSTMTRS>
+    </CCSTMTTRNRS>
+  </CREDITCARDMSGSRSV1>
+</OFX>

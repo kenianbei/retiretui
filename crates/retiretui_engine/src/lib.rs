@@ -1,6 +1,7 @@
 //! Plan model, tax engine, and deterministic projection for the retirement
 //! planner.
 
+pub mod estimate;
 pub mod market;
 pub mod optimize;
 pub mod params;

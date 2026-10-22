@@ -22,6 +22,7 @@ pub use benefit::benefit_params;
 pub use path::MarketPath;
 use residence::check_modeled_states;
 pub use residence::state_lived_in;
+pub(crate) use resolve::trigger_month;
 pub use resolve::{Timeline, Window};
 
 use std::collections::BTreeMap;
