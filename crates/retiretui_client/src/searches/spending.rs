@@ -381,6 +381,7 @@ mod tests {
             .map(|expense| retiretui_engine::optimize::ScaledExpense {
                 id: expense.id.clone(),
                 amount: expense.amount,
+                phases: Vec::new(),
             })
             .collect();
         assert_eq!(at_plan.listed()[0].change(&plan), "same");

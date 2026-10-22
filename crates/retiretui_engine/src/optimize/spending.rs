@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use super::measure::{Judged, Measure, judge};
 use crate::market::History;
 use crate::params::TaxTables;
-use crate::plan::{Dollars, Plan, PlanError, SCHEMA_VERSION};
+use crate::plan::{Dollars, Phase, Plan, PlanError, SCHEMA_VERSION};
 use crate::search::{Progress, RunError};
 
 /// The most plans a search judges.
@@ -27,6 +27,9 @@ pub struct ScaledExpense {
     pub id: String,
     /// Its annual amount at the ceiling, in today's dollars.
     pub amount: Dollars,
+    /// Each of its phases' amount at the ceiling, in the plan's order.
+    #[serde(default)]
+    pub phases: Vec<Dollars>,
 }
 
 /// The most flexible spending a measure allows.
@@ -129,10 +132,16 @@ fn refused(message: &str) -> RunError {
 /// the dollar.
 fn scaled(plan: &Plan, factor: f64) -> Vec<ScaledExpense> {
     let flexible = plan.expenses.iter().filter(|expense| expense.is_flexible());
+    let at = |amount: Dollars| (amount as f64 * factor).floor() as Dollars;
     flexible
         .map(|expense| ScaledExpense {
             id: expense.id.clone(),
-            amount: (expense.amount as f64 * factor).floor() as Dollars,
+            amount: at(expense.amount),
+            phases: expense
+                .phases
+                .iter()
+                .map(|phase| at(phase.amount))
+                .collect(),
         })
         .collect()
 }
@@ -185,32 +194,58 @@ pub fn spending_ceiling(
     })
 }
 
-/// What a ceiling does to a plan: each scaled expense's `amount` restated.
+/// What a ceiling does to a plan: each scaled expense's `amount` restated,
+/// and each of its phases'.
 pub fn apply_spending(plan: &mut Plan, expenses: &[ScaledExpense]) {
     for scaled in expenses {
         let stated = plan.expenses.iter_mut().find(|it| it.id == scaled.id);
         if let Some(expense) = stated {
             expense.amount = scaled.amount;
+            for (phase, &amount) in expense.phases.iter_mut().zip(&scaled.phases) {
+                phase.amount = amount;
+            }
         }
     }
 }
 
-/// The scenario overlay for a ceiling, as canonical TOML: `base` plus one
-/// `[[expenses]]` fragment per scaled expense, its `id` and `amount`.
+/// The scenario overlay for a ceiling over `plan`, as canonical TOML:
+/// `base` plus one `[[expenses]]` fragment per scaled expense, its `id`
+/// and `amount`, and its `phases` whole where it has any.
 ///
 /// # Errors
 ///
 /// Returns [`PlanError::Serialize`] when serialization fails.
-pub fn spending_overlay(base: &str, expenses: &[ScaledExpense]) -> Result<String, PlanError> {
+pub fn spending_overlay(
+    base: &str,
+    plan: &Plan,
+    expenses: &[ScaledExpense],
+) -> Result<String, PlanError> {
+    #[derive(Serialize)]
+    struct Fragment {
+        id: String,
+        amount: Dollars,
+        #[serde(skip_serializing_if = "Vec::is_empty")]
+        phases: Vec<Phase>,
+    }
     #[derive(Serialize)]
     struct OverlayDocument<'a> {
         schema: u32,
         base: &'a str,
-        expenses: &'a [ScaledExpense],
+        expenses: Vec<Fragment>,
     }
+    let mut applied = plan.clone();
+    apply_spending(&mut applied, expenses);
+    let fragments = expenses.iter().filter_map(|scaled| {
+        let expense = applied.expenses.iter().find(|it| it.id == scaled.id)?;
+        Some(Fragment {
+            id: scaled.id.clone(),
+            amount: scaled.amount,
+            phases: expense.phases.clone(),
+        })
+    });
     Ok(toml::to_string_pretty(&OverlayDocument {
         schema: SCHEMA_VERSION,
         base,
-        expenses,
+        expenses: fragments.collect(),
     })?)
 }

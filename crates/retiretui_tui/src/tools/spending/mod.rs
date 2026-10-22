@@ -304,7 +304,8 @@ pub fn write_overlay(In(path): In<PathBuf>, world: &mut World) {
             .resource::<Spending>()
             .chosen()
             .ok_or_else(|| NOTHING_SEARCHED_YET.to_owned())?;
-        spending_overlay(&base, &listed.ceiling.expenses)
+        let plan = &world.resource::<Draft>().plan;
+        spending_overlay(&base, plan, &listed.ceiling.expenses)
             .map_err(|error| format!("not written: {error}"))
     });
     write::write(world, path, text);

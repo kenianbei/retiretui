@@ -226,7 +226,12 @@ fn t_and_enter_ask_then_take_the_chosen_ceiling_as_one_step() {
 #[test]
 fn w_writes_the_highlighted_ceiling_and_compares_it() {
     let (dir, mut app) = workspace_app(RETIREE);
-    let expected = spending_overlay("plan.toml", &ceilings(&app).at_target.expenses).unwrap();
+    let expected = spending_overlay(
+        "plan.toml",
+        &app.world().resource::<Draft>().plan,
+        &ceilings(&app).at_target.expenses,
+    )
+    .unwrap();
     let write = app.world_mut().run_system_cached(write_picker).unwrap();
     assert_eq!(write, Outcome::Done);
     assert!(redrawn(&mut app).contains("Write overlay"));

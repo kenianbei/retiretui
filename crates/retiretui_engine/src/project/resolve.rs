@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use crate::plan::{Allocation, Node, Plan, Span, Trigger, TriggerForm};
+use crate::plan::{Allocation, Dollars, Node, Plan, Span, Trigger, TriggerForm};
 use crate::tax;
 
 /// Trigger-to-year resolution, memoized over the plan's events and income
@@ -142,6 +142,37 @@ impl Timeline {
             glide_steps: glide_steps.collect(),
         }
     }
+}
+
+/// Each expense's phases that fire, as the month each fires in and its
+/// amount, in month order, a later-listed phase after an earlier one at
+/// the same month so that it wins.
+pub(super) fn phase_months(plan: &Plan) -> Vec<Vec<(i32, Dollars)>> {
+    plan.expenses
+        .iter()
+        .map(|expense| {
+            let mut fired: Vec<(i32, Dollars)> = expense
+                .phases
+                .iter()
+                .filter_map(|phase| Some((trigger_month(plan, &phase.from)?, phase.amount)))
+                .collect();
+            fired.sort_by_key(|&(month, _)| month);
+            fired
+        })
+        .collect()
+}
+
+/// What an expense spends in `year` in today's dollars: its `base` until
+/// the first of `phases` fires, each phase's amount from its month on,
+/// the year a phase fires in split by months.
+pub(super) fn phased_amount(base: Dollars, phases: &[(i32, Dollars)], year: i16) -> f64 {
+    let mut spent = base as f64;
+    let mut in_force = base as f64;
+    for &(month, amount) in phases {
+        spent += (amount as f64 - in_force) * tax::claim_year_share(month, year);
+        in_force = amount as f64;
+    }
+    spent
 }
 
 /// How deep a chain of references is followed before it is taken to never

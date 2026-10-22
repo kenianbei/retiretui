@@ -329,6 +329,17 @@ impl<'a> Checker<'a> {
             if expense.amount < 0 {
                 self.push(format!("{path}.amount"), "must not be negative");
             }
+            if expense.on.is_some() && !expense.phases.is_empty() {
+                self.push(format!("{path}.phases"), "`on` excludes `phases`");
+            }
+            for (at, phase) in expense.phases.iter().enumerate() {
+                if phase.amount < 0 {
+                    self.push(
+                        format!("{path}.phases[{at}].amount"),
+                        "must not be negative",
+                    );
+                }
+            }
             check_span(&mut self.issues, &path, expense.span(), expense.cola);
         }
     }

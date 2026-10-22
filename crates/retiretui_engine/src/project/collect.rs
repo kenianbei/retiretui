@@ -5,7 +5,7 @@ use crate::params::{Source, TaxParams};
 use crate::plan::{Cliff, Dollars, IncomeKind, Plan};
 use crate::tax;
 
-use super::resolve::Resolver;
+use super::resolve::{self, Resolver};
 use super::year::{Simulation, YearAcc};
 use super::{Taxes, scale};
 
@@ -45,11 +45,12 @@ impl Simulation<'_> {
     }
 
     pub(super) fn collect_expenses(&mut self, year: i16, acc: &mut YearAcc) {
-        for expense in &self.plan.expenses {
+        for (i, expense) in self.plan.expenses.iter().enumerate() {
             if !self.item_active(year, expense.span()) {
                 continue;
             }
-            let spent = scale(expense.amount, self.cola_factor(expense.cola, year));
+            let amount = resolve::phased_amount(expense.amount, &self.phases[i], year);
+            let spent = (amount * self.cola_factor(expense.cola, year)).round() as Dollars;
             acc.expenses += spent;
             if spent != 0 {
                 acc.spending.insert(expense.id.clone(), spent);
