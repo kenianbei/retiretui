@@ -6,7 +6,6 @@ use retiretui_engine::optimize::{
     OptimizeOptions, claims_overlay, ladder_overlay, optimize_claims, optimize_conversions,
     optimize_order, order_overlay, spending_overlay, sweep_brackets,
 };
-use retiretui_engine::plan::PlanError;
 use rmcp::handler::server::wrapper::{Json, Parameters};
 use rmcp::{tool, tool_router};
 use schemars::JsonSchema;
@@ -250,11 +249,11 @@ impl PlanServer {
     /// path relative to where the overlay is stored, or the path itself when
     /// it is not - and whether it was stored at `write_to` through the
     /// validated write gate.
-    fn emit_overlay(
+    pub(super) fn emit_overlay<E: std::fmt::Display>(
         &self,
         plan_path: &str,
         write_to: Option<&str>,
-        serialize: impl FnOnce(&str) -> Result<String, PlanError>,
+        serialize: impl FnOnce(&str) -> Result<String, E>,
     ) -> Result<(String, bool), String> {
         let base = write_to.map_or_else(
             || plan_path.to_owned(),

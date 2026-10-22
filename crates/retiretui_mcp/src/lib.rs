@@ -3,6 +3,7 @@
 //! project and search them. Internal to the planner's own crates; it makes
 //! no promise of a stable API.
 
+mod estimate;
 mod files;
 mod markets;
 mod optimize;
@@ -76,7 +77,8 @@ impl PlanServer {
             router: Self::tool_router()
                 + Self::query_router()
                 + Self::optimize_router()
-                + Self::markets_router(),
+                + Self::markets_router()
+                + Self::estimate_router(),
         }
     }
 

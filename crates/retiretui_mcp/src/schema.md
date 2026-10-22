@@ -215,6 +215,14 @@ disability exceptions.
   `end` and `on` keep their whole-year meaning. `on` excludes `phases`.
   `optimize_spending` scales a phase with its expense.
 
+`estimate_spending` proposes each expense's `amount` from a bank's exports - the
+latest twelve months' spending in a category, annualized in start-year dollars,
+matched to the expense whose `id` or `name` is for that category (`groceries`,
+`dining`, `utilities`, `housing`, `fuel`, `transit`, `insurance`, `medical`,
+`pharmacy`, `subscriptions`, `phone`, `internet`, `shopping`, `clothing`,
+`travel`, `entertainment`, `gifts`, `pets`, `childcare`, `education`, `fees`) -
+and adds an expense under the category's slug where the plan has none.
+
 An HSA is drawn untaxed up to the year's `medical` spending, across the
 household. What it pays beyond that is ordinary income, and pays a 20% penalty
 besides until the year its owner turns 65, so a plan that marks nothing
@@ -555,5 +563,5 @@ or `monte_carlo` table replaces the base's whole. Within a matched item each
 stated field replaces the base field entirely - triggers never merge internally.
 `replace = true` substitutes the stated item wholesale, which is also how an
 optional field is cleared. `write_plan` accepts scenario documents and validates
-them fully resolved; `optimize_conversions`, `optimize_claims`, `optimize_order`
-and `optimize_spending` each emit one.
+them fully resolved; `optimize_conversions`, `optimize_claims`,
+`optimize_order`, `optimize_spending` and `estimate_spending` each emit one.

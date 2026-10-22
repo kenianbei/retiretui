@@ -429,3 +429,38 @@ fn theme_dump_refuses_the_terminals_own_and_a_name_that_is_no_theme() {
         assert!(stderr.contains(said), "{stderr}");
     }
 }
+
+const BANK_EXPORTS: &str = "../retiretui_engine/tests/fixtures/bank";
+
+#[test]
+fn estimate_proposes_the_plans_spending_from_a_banks_exports() {
+    let dir = scratch_dir("cli-estimate", "plan.toml", &[]);
+    let plan = dir.join("plan.toml");
+    let plan = plan.to_str().unwrap();
+    let chase = format!("{BANK_EXPORTS}/chase.csv");
+    let ofx = format!("{BANK_EXPORTS}/checking.ofx");
+    let qfx = format!("{BANK_EXPORTS}/checking.qfx");
+    let out = dir.join("estimated.toml");
+    let out = out.to_str().unwrap();
+    let ok = retiretui(&["estimate", plan, &chase, &ofx, &qfx, "--write", out]);
+    assert!(ok.status.success(), "{ok:?}");
+    let stdout = String::from_utf8(ok.stdout).unwrap();
+    assert!(stdout.contains("1 month through Oct 2026"), "{stdout}");
+    assert!(stdout.contains("groceries"), "{stdout}");
+    assert!(stdout.contains("utilities"), "{stdout}");
+    assert!(stdout.contains("(new)"), "{stdout}");
+    assert!(stdout.contains(&format!("wrote {out}")), "{stdout}");
+    let written = std::fs::read_to_string(out).unwrap();
+    assert!(written.contains("id = \"groceries\""), "{written}");
+    let valid = retiretui(&["validate", out]);
+    assert!(valid.status.success(), "{valid:?}");
+    let json = retiretui(&["estimate", plan, &chase, "--format", "json"]);
+    assert!(json.status.success(), "{json:?}");
+    let reply: serde_json::Value = serde_json::from_slice(&json.stdout).unwrap();
+    assert_eq!(reply["months"], 1);
+    assert_eq!(reply["proposals"][0]["category"], "groceries");
+    let refused = retiretui(&["estimate", plan, &format!("{BANK_EXPORTS}/visa.csv")]);
+    assert!(!refused.status.success());
+    let stderr = String::from_utf8(refused.stderr).unwrap();
+    assert!(stderr.contains("cannot tell the columns apart"), "{stderr}");
+}

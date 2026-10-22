@@ -416,3 +416,35 @@ fn projection_and_tax_parameters_state_their_output_shapes() {
     let issues = &schema_of("validate_plan")["properties"]["issues"];
     assert!(issues["items"].is_object(), "{issues}");
 }
+
+#[test]
+fn estimate_spending_proposes_from_exports_and_writes_the_overlay() {
+    let root = scratch_dir("mcp-estimate", "plan.toml", &[]);
+    let bank = "../retiretui_engine/tests/fixtures/bank";
+    let chase = std::fs::read_to_string(format!("{bank}/chase.csv")).unwrap();
+    let ofx = std::fs::read_to_string(format!("{bank}/checking.ofx")).unwrap();
+    let mut client = McpClient::spawn(&root);
+    let patterns = "patterns = [{ match = \"SAFEWAY\", category = \"dining\" }]";
+    let reply = client.call(
+        "estimate_spending",
+        json!({
+            "path": "plan.toml",
+            "files": [{"name": "chase.csv", "text": chase}, {"name": "checking.ofx", "text": ofx}],
+            "patterns": patterns,
+            "write_to": "nested/estimated.toml",
+        }),
+    );
+    assert_eq!(reply["months"], 1, "{reply}");
+    assert_eq!(reply["proposals"][0]["category"], "dining", "{reply}");
+    assert_eq!(reply["proposals"][1]["category"], "utilities", "{reply}");
+    assert_eq!(reply["written"], true, "{reply}");
+    let text = client.call("read_plan", json!({"path": "nested/estimated.toml"}));
+    let text = text["text"].as_str().unwrap();
+    assert!(text.contains("base = \"../plan.toml\""), "{text}");
+    assert!(text.contains("id = \"dining\""), "{text}");
+    let refused = client.call_expecting_error(
+        "estimate_spending",
+        json!({"path": "plan.toml", "files": [{"name": "x.xlsx", "text": ""}]}),
+    );
+    assert!(refused.contains("not a .csv"), "{refused}");
+}
