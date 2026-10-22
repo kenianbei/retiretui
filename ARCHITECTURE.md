@@ -67,28 +67,29 @@ depends on UI.
   fixed return, or the year's class returns blended by the mix it holds that
   year, a glide path stepping between mixes as triggers fire - credited before
   anything draws on it, escalation and the deflator following the market's
-  inflation, scheduled transfers, RMDs, income and expense windows (a Social
-  Security benefit left unstated is computed the year it is claimed, at the
-  month of the date or age its start rests on, from the owner's record - or,
-  where they have none, a career before the plan at the salary its first year
-  pays them - extended with the nominal salary the walk has paid them, and
-  carried from their age-62 year by the COLAs SSA has published so that the
-  income's own escalation carries those still to come; every Social Security
-  benefit pays its first year from the month it starts), contributions, Roth
-  conversions, a tax-aware withdrawal fixed point - the year's taxable income
-  kept by person and by where it came from, which the state's tax is figured
-  from with the year's federal tax and income - that also settles the year's
-  MAGI-driven costs (IRMAA surcharges priced from the household MAGI two years
-  earlier, declared cliffs crossed by the current year's MAGI) and the
-  MAGI-driven deduction of a traditional IRA contribution by a person a
-  workplace plan covers - through a salary that says so, or what they pay into
-  one - or by their spouse, surplus sweeping - emits one row per year, and
-  aggregates a projection into headline summary figures in either dollar basis.
-  A contribution is an item of its own that names the account it pays into, who
-  pays, and one amount - dollars, a share of a named income, the year's legal
-  maximum, or an employer's match on what the employee paid - and the law's
-  limits are applied rather than refused: employee amounts are held to each
-  person's pooled limit in the order the plan lists them, each plan to its
+  inflation, scheduled transfers, RMDs, income and expense windows - an
+  expense's amount restated at triggers of its own, the year one fires in spent
+  at each amount for its months - (a Social Security benefit left unstated is
+  computed the year it is claimed, at the month of the date or age its start
+  rests on, from the owner's record - or, where they have none, a career before
+  the plan at the salary its first year pays them - extended with the nominal
+  salary the walk has paid them, and carried from their age-62 year by the COLAs
+  SSA has published so that the income's own escalation carries those still to
+  come; every Social Security benefit pays its first year from the month it
+  starts), contributions, Roth conversions, a tax-aware withdrawal fixed point -
+  the year's taxable income kept by person and by where it came from, which the
+  state's tax is figured from with the year's federal tax and income - that also
+  settles the year's MAGI-driven costs (IRMAA surcharges priced from the
+  household MAGI two years earlier, declared cliffs crossed by the current
+  year's MAGI) and the MAGI-driven deduction of a traditional IRA contribution
+  by a person a workplace plan covers - through a salary that says so, or what
+  they pay into one - or by their spouse, surplus sweeping - emits one row per
+  year, and aggregates a projection into headline summary figures in either
+  dollar basis. A contribution is an item of its own that names the account it
+  pays into, who pays, and one amount - dollars, a share of a named income, the
+  year's legal maximum, or an employer's match on what the employee paid - and
+  the law's limits are applied rather than refused: employee amounts are held to
+  each person's pooled limit in the order the plan lists them, each plan to its
   yearly cap, and what an account holds after tax comes back untaxed whenever it
   is drawn - pro rata, save from a person's Roth IRAs before they are drawn
   untaxed whole, which give it up first, then what was converted into them,
@@ -106,29 +107,29 @@ depends on UI.
   every order they can be drained in, a class it leaves out left out, and the
   orders that project alike kept as one - each search ranking what it finds by
   what the household ends with - and the most the plan could spend: every
-  recurring expense not marked essential scaled alike, up from what the plan
-  states or down from it, until the plan no longer succeeds in its own market or
-  in a target share of its random markets, as the market runs count success,
-  every candidate walked through the same markets; beside the claim search, a
-  person's benefit is estimated at the ages that frame the choice, by
-  projection; each search emits its answer as a scenario overlay through the
-  schema's own serialization. Each projected row also records the actions the
-  engine executed - transfers, RMDs, contributions, conversion steps, funding
-  withdrawals, the surplus swept - with post-clamp nominal amounts, what each
-  account grew and what each expense spent, so every surface can answer "what do
-  I actually do this year" and where every account's money went without
-  re-deriving execution. `market` makes the markets a plan is walked through -
-  correlated draws from the plan's `[market]` assumptions on a seeded generator
-  of the engine's own, so a saved seed draws the same markets, historical years
-  bootstrapped in blocks, or history replayed from a start year - from an
-  embedded yearly record of U.S. returns and inflation since 1871 that a user
-  file may replace, and runs a plan through many of them at once across the
-  machine's threads where it has more than one, keeping of each run only what
-  the tools show: success, ending, shortfall and net worth by year in that run's
-  own today's dollars, with percentile bands and the runs singled out. `search`
-  is what every search shares: a way to follow it and to stop it at its next
-  step, and the machine's threads, where there are any, to run its independent
-  steps across - a market's runs, a sweep's brackets.
+  recurring expense not marked essential scaled alike, its phases with it, up
+  from what the plan states or down from it, until the plan no longer succeeds
+  in its own market or in a target share of its random markets, as the market
+  runs count success, every candidate walked through the same markets; beside
+  the claim search, a person's benefit is estimated at the ages that frame the
+  choice, by projection; each search emits its answer as a scenario overlay
+  through the schema's own serialization. Each projected row also records the
+  actions the engine executed - transfers, RMDs, contributions, conversion
+  steps, funding withdrawals, the surplus swept - with post-clamp nominal
+  amounts, what each account grew and what each expense spent, so every surface
+  can answer "what do I actually do this year" and where every account's money
+  went without re-deriving execution. `market` makes the markets a plan is
+  walked through - correlated draws from the plan's `[market]` assumptions on a
+  seeded generator of the engine's own, so a saved seed draws the same markets,
+  historical years bootstrapped in blocks, or history replayed from a start
+  year - from an embedded yearly record of U.S. returns and inflation since 1871
+  that a user file may replace, and runs a plan through many of them at once
+  across the machine's threads where it has more than one, keeping of each run
+  only what the tools show: success, ending, shortfall and net worth by year in
+  that run's own today's dollars, with percentile bands and the runs singled
+  out. `search` is what every search shares: a way to follow it and to stop it
+  at its next step, and the machine's threads, where there are any, to run its
+  independent steps across - a market's runs, a sweep's brackets.
 - `retiretui_client` - what every interface shares over the engine, and draws in
   its own way; it depends on none of their own crates. The words a plan is said
   in - a value, a table, an action, and an issue read back as the domain, item
