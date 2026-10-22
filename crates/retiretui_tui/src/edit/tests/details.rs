@@ -14,7 +14,9 @@ use crate::edit::draft::Draft;
 use crate::edit::table::{DomainTable, Row};
 use crate::nav::Page;
 use crate::present::money;
-use crate::support::{SIZE, commit_edit, composed_frame, press_key, redrawn, show, type_text};
+use crate::support::{
+    ROOMY, SIZE, commit_edit, composed_frame, press_key, redrawn, show, type_text,
+};
 
 #[test]
 fn the_details_show_the_row_under_the_cursor_in_the_forms_words() {
@@ -144,7 +146,7 @@ fn an_arrow_on_an_empty_domain_moves_no_cursor_onto_its_line() {
 
 #[test]
 fn a_name_shows_in_place_of_the_id_wherever_the_item_is_named() {
-    let mut app = fixture_app();
+    let mut app = fixture_app_sized(ROOMY);
     commit_edit(&mut app, |plan| {
         plan.transfers[0].name = Some("Pension rollover".to_owned());
         plan.events[0].name = Some("Retirement".to_owned());
