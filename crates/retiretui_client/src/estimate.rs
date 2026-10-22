@@ -13,8 +13,8 @@ use serde::{Deserialize, Serialize};
 use toml::Table;
 
 use crate::codec::{from_table, to_table};
-use crate::forms::FieldSpec;
 use crate::forms::offers::{RefSource, Vocabulary, held_word};
+use crate::forms::{FieldSpec, ToolAnswers};
 use crate::present::{MoneyForm, counted};
 
 /// What the tool is for, in a line.
@@ -185,7 +185,7 @@ pub fn summary(estimate: &Estimate, form: MoneyForm) -> String {
         return NOTHING_READ.to_owned();
     };
     format!(
-        "{} through {}: {} of income and {} of transfers a year, {} nothing names.",
+        "{} through {}: {} of income, {} in transfers a year; {} unnamed.",
         counted(estimate.months.into(), "month", "months"),
         through.0.strftime("%b %-Y"),
         form.money(estimate.income),
@@ -283,8 +283,9 @@ pub const UNKNOWN_FIELDS: &[FieldSpec] =
             .help("What the payee's rows were for; every row of it is sorted so."),
     ];
 
+/// The proposal form's answers, held beside the plan while it is edited.
 #[derive(Serialize, Deserialize)]
-struct ProposalAnswers {
+pub struct ProposalAnswers {
     #[serde(skip_serializing_if = "Option::is_none")]
     expense: Option<String>,
     name: String,
@@ -293,9 +294,18 @@ struct ProposalAnswers {
     phases: Phases,
 }
 
-#[derive(Deserialize)]
-struct UnknownAnswers {
+impl ToolAnswers for ProposalAnswers {
+    const SLOT: &'static str = "estimate-proposal";
+}
+
+/// The payee form's answer, held the same way.
+#[derive(Serialize, Deserialize)]
+pub struct UnknownAnswers {
     category: Option<Category>,
+}
+
+impl ToolAnswers for UnknownAnswers {
+    const SLOT: &'static str = "estimate-payee";
 }
 
 /// The proposal as its form holds it.
@@ -412,7 +422,7 @@ mod tests {
         );
         assert_eq!(
             summary(&found, MoneyForm::Full),
-            "1 month through Oct 2026: $0 of income and $0 of transfers a year, 1 payee nothing names."
+            "1 month through Oct 2026: $0 of income, $0 in transfers a year; 1 payee unnamed."
         );
         assert_eq!(
             take_question(&found),

@@ -45,8 +45,8 @@ pub fn plugin(app: &mut App) {
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct FilePick {
     pub(super) title: &'static str,
-    /// The extension of the files listed; directories always are.
-    pub(super) extension: &'static str,
+    /// The extensions of the files listed; directories always are.
+    pub(super) extensions: &'static [&'static str],
     /// Whether a name no file has is offered as a file to write.
     pub(super) accepts_new: bool,
     pub(super) badges: Badges,
@@ -162,7 +162,7 @@ fn sync_browse(
 
 fn look(pick: &FilePick, dim: Style) -> FilePickerLook {
     FilePickerLook::default()
-        .with_extensions([pick.extension])
+        .with_extensions(pick.extensions.iter().copied())
         .with_accepts_new(pick.accepts_new)
         .with_prompt(Line::styled(PROMPT, dim))
 }

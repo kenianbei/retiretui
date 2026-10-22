@@ -18,6 +18,9 @@ pub const WRITE_ORDER: &str = "write-order";
 pub const TAKE_ORDER: &str = "take-order";
 pub const WRITE_SPENDING: &str = "write-spending";
 pub const TAKE_SPENDING: &str = "take-spending";
+pub const WRITE_ESTIMATE: &str = "write-estimate";
+pub const TAKE_ESTIMATE: &str = "take-estimate";
+pub const EDIT_PROPOSAL: &str = "edit-proposal";
 
 /// Every row the Tools tab's pages add to the command table.
 pub(super) fn commands() -> Vec<CommandSpec> {
@@ -29,6 +32,7 @@ pub(super) fn commands() -> Vec<CommandSpec> {
         market::<MonteCarlo>(),
         market::<Runs>(),
         spending(),
+        estimate(),
         tax(),
     ]
     .into_iter()
@@ -180,6 +184,52 @@ fn spending() -> Vec<CommandSpec> {
             keys: vec![character("t")],
             hint: Some("take"),
             register: Box::new(|world| world.register_system(tools::spending::adopt)),
+        },
+    ]
+}
+
+/// The Spending Estimate page's rows.
+fn estimate() -> Vec<CommandSpec> {
+    vec![
+        CommandSpec {
+            name: "add-export",
+            scope: Scope::On(Page::SpendingEstimate),
+            doc: "read a bank's export (CSV, OFX or QFX) into the estimate",
+            keys: vec![character("f")],
+            hint: Some("add file"),
+            register: Box::new(|world| world.register_system(tools::estimate::add_picker)),
+        },
+        CommandSpec {
+            name: "remove-export",
+            scope: Scope::On(Page::SpendingEstimate),
+            doc: "drop the export under the cursor from the estimate",
+            keys: vec![character("x")],
+            hint: Some("remove"),
+            register: Box::new(|world| world.register_system(tools::estimate::remove_export)),
+        },
+        CommandSpec {
+            name: EDIT_PROPOSAL,
+            scope: Scope::On(Page::SpendingEstimate),
+            doc: "edit the highlighted proposal, or name what the highlighted payee was for",
+            keys: vec![],
+            hint: None,
+            register: Box::new(|world| world.register_system(tools::estimate::edit_row)),
+        },
+        CommandSpec {
+            name: WRITE_ESTIMATE,
+            scope: Scope::On(Page::SpendingEstimate),
+            doc: "write the proposals applied as a scenario over the document",
+            keys: vec![character("w")],
+            hint: Some("write"),
+            register: Box::new(|world| world.register_system(tools::estimate::write_picker)),
+        },
+        CommandSpec {
+            name: TAKE_ESTIMATE,
+            scope: Scope::On(Page::SpendingEstimate),
+            doc: "take the proposals into the plan as its expenses' amounts",
+            keys: vec![character("t")],
+            hint: Some("take"),
+            register: Box::new(|world| world.register_system(tools::estimate::adopt)),
         },
     ]
 }

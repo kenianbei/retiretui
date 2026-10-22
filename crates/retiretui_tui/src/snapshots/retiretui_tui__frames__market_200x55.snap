@@ -1,60 +1,59 @@
 ---
 source: crates/retiretui_tui/src/frames.rs
-assertion_line: 45
 expression: composed_frame(app)
 ---
 ╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                                                                                                      
 │1 Overview││2 Ledger││3 Compare││4 Tools││5 Plan│                                                                                                                                          full.toml ● 
 ┴──────────┴┴────────┴┴─────────┴┴───────┴╯      ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-╭ Plan ─────────────╮╭ Market ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│  Accounts       7 ││                                                                                                                                                                                 │
-│  Income         4 ││▌ Success                                                                                                                                                                        │
-│  Expenses       2 ││    Leave at least        Nothing                                                                                                                                                │
-│  Cliffs         0 ││  Stocks                                                                                                                                                                         │
-│  Transfers      1 ││    Mean return           6%, the default                                                                                                                                        │
-│  Conversions    1 ││    Spread                16%, the default                                                                                                                                       │
-│  Contributions  3 ││  Bonds                                                                                                                                                                          │
-│  Events         1 ││    Mean return           4%, the default                                                                                                                                        │
-│  People         2 ││    Spread                6%, the default                                                                                                                                        │
-│  Residency      1 ││  Cash                                                                                                                                                                           │
-│  Household        ││    Mean return           2.5%, the default                                                                                                                                      │
-│  Settings         ││    Spread                1%, the default                                                                                                                                        │
-│▏ Market           ││  Inflation                                                                                                                                                                      │
-│                   ││    Spread                1.5%, the default                                                                                                                                      │
-│                   ││    Persistence           60%, the default                                                                                                                                       │
-│                   ││  Correlations                                                                                                                                                                   │
-│                   ││    Stocks and bonds      0.1, the default                                                                                                                                       │
-│                   ││    Stocks and cash       0, the default                                                                                                                                         │
-│                   ││    Stocks and inflation  -0.1, the default                                                                                                                                      │
-│                   ││    Bonds and cash        0, the default                                                                                                                                         │
-│                   ││    Bonds and inflation   -0.2, the default                                                                                                                                      │
-│                   ││    Cash and inflation    0.5, the default                                                                                                                                       │
-│                   ││  Monte Carlo                                                                                                                                                                    │
-│                   ││    Draws from            Your return assumptions                                                                                                                                │
-│                   ││    Trials                20                                                                                                                                                     │
-│                   ││    Seed                  42, the default                                                                                                                                        │
-│                   ││  Historical                                                                                                                                                                     │
-│                   ││    From                  1871, the default                                                                                                                                      │
-│                   ││    To                    2025, the default                                                                                                                                      │
-│                   ││    Wrap                  ✓                                                                                                                                                      │
-│                   ││                                                                                                                                                                                 │
-│                   ││                                                                                                                                                                                 │
-│                   ││                                                                                                                                                                                 │
-│                   ││                                                                                                                                                                                 │
-│                   ││                                                                                                                                                                                 │
-│                   ││                                                                                                                                                                                 │
-│                   ││                                                                                                                                                                                 │
-│                   ││                                                                                                                                                                                 │
-│                   ││                                                                                                                                                                                 │
-│                   ││                                                                                                                                                                                 │
-│                   ││                                                                                                                                                                                 │
-│                   ││                                                                                                                                                                                 │
-│                   ││                                                                                                                                                                                 │
-│                   ││                                                                                                                                                                                 │
-│                   ││                                                                                                                                                                                 │
-│                   ││                                                                                                                                                                                 │
-│                   ││                                                                                                                                                                                 │
-│                   ││                                                                                                                                                                                 │
-│                   ││                                                                                                                                                                                 │
-╰───────────────────╯╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭ Plan ──────────────╮╭ Market ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│  Accounts        7 ││                                                                                                                                                                                │
+│  Income          4 ││▌ Success                                                                                                                                                                       │
+│  Expenses        2 ││    Leave at least        Nothing                                                                                                                                               │
+│  Cliffs          0 ││  Stocks                                                                                                                                                                        │
+│  Transfers       1 ││    Mean return           6%, the default                                                                                                                                       │
+│  Conversions     1 ││    Spread                16%, the default                                                                                                                                      │
+│  Contributions   3 ││  Bonds                                                                                                                                                                         │
+│  Events          1 ││    Mean return           4%, the default                                                                                                                                       │
+│  People          2 ││    Spread                6%, the default                                                                                                                                       │
+│  Residency       1 ││  Cash                                                                                                                                                                          │
+│  Household         ││    Mean return           2.5%, the default                                                                                                                                     │
+│  Settings          ││    Spread                1%, the default                                                                                                                                       │
+│▏ Market            ││  Inflation                                                                                                                                                                     │
+│                    ││    Spread                1.5%, the default                                                                                                                                     │
+│                    ││    Persistence           60%, the default                                                                                                                                      │
+│                    ││  Correlations                                                                                                                                                                  │
+│                    ││    Stocks and bonds      0.1, the default                                                                                                                                      │
+│                    ││    Stocks and cash       0, the default                                                                                                                                        │
+│                    ││    Stocks and inflation  -0.1, the default                                                                                                                                     │
+│                    ││    Bonds and cash        0, the default                                                                                                                                        │
+│                    ││    Bonds and inflation   -0.2, the default                                                                                                                                     │
+│                    ││    Cash and inflation    0.5, the default                                                                                                                                      │
+│                    ││  Monte Carlo                                                                                                                                                                   │
+│                    ││    Draws from            Your return assumptions                                                                                                                               │
+│                    ││    Trials                20                                                                                                                                                    │
+│                    ││    Seed                  42, the default                                                                                                                                       │
+│                    ││  Historical                                                                                                                                                                    │
+│                    ││    From                  1871, the default                                                                                                                                     │
+│                    ││    To                    2025, the default                                                                                                                                     │
+│                    ││    Wrap                  ✓                                                                                                                                                     │
+│                    ││                                                                                                                                                                                │
+│                    ││                                                                                                                                                                                │
+│                    ││                                                                                                                                                                                │
+│                    ││                                                                                                                                                                                │
+│                    ││                                                                                                                                                                                │
+│                    ││                                                                                                                                                                                │
+│                    ││                                                                                                                                                                                │
+│                    ││                                                                                                                                                                                │
+│                    ││                                                                                                                                                                                │
+│                    ││                                                                                                                                                                                │
+│                    ││                                                                                                                                                                                │
+│                    ││                                                                                                                                                                                │
+│                    ││                                                                                                                                                                                │
+│                    ││                                                                                                                                                                                │
+│                    ││                                                                                                                                                                                │
+│                    ││                                                                                                                                                                                │
+│                    ││                                                                                                                                                                                │
+│                    ││                                                                                                                                                                                │
+│                    ││                                                                                                                                                                                │
+╰────────────────────╯╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
  ⏎ edit  esc domains  ⇥ pane  ctrl-s save  r reload  q quit  ctrl-↓ tab  n dollars                                                                                                   : commands  ? help

@@ -36,6 +36,8 @@ pub const SIDEBAR_COLS: u16 = pane::BORDERS + layout::CURSOR_COLS + widest_row()
 /// A count of two digits, with the cell a list keeps clear either side of
 /// one.
 const COUNT_COLS: usize = 4;
+/// The cell a list keeps clear after a row without a count.
+const CLEAR_COLS: usize = 1;
 
 /// The widest grouped page's row: its name, and on a domain's the count.
 const fn widest_row() -> u16 {
@@ -43,7 +45,11 @@ const fn widest_row() -> u16 {
     let mut at = 0;
     while at < Page::ALL.len() {
         let page = Page::ALL[at];
-        let count = if page.is_domain() { COUNT_COLS } else { 0 };
+        let count = if page.is_domain() {
+            COUNT_COLS
+        } else {
+            CLEAR_COLS
+        };
         let width = page.title().len() + count;
         if page.group().is_some() && width > widest {
             widest = width;
