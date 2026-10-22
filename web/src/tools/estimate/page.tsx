@@ -1,0 +1,186 @@
+import { useNavigate, useSearch } from "@tanstack/react-router";
+import {
+  type EstimateRow,
+  type EstimateView,
+  Estimator,
+  estimateWords,
+} from "@wasm/retiretui_wasm.js";
+import { FileUp, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+import { Button } from "@/components/ui/button";
+import { useFilePicker } from "@/files/picker";
+import { messageOf } from "@/lib/utils";
+import { useSession } from "@/session";
+import { ToolAbout } from "@/tools/about";
+import { type Chosen, SearchActions } from "@/tools/act";
+import { type OptionRow, Options } from "@/tools/options";
+import type { ToolSearch } from "@/tools/search";
+import { type Settings, SettingsForm, SettingsRead } from "@/tools/settings";
+import { offeredName } from "@/workspace";
+import { IN_PLACE } from "@/year/search";
+
+const WORDS = estimateWords();
+
+/** The exports read this session, kept across the pages shown. */
+const ESTIMATOR = new Estimator();
+
+/** The column a phone's row shows beside a row's category. */
+const PER_YEAR = 3;
+
+/** Each row of the estimate, keyed by its place. */
+function rowsOf(view: EstimateView): OptionRow<EstimateRow>[] {
+  return view.rows.map((row, at) => ({
+    key: String(at),
+    cells: row.cells,
+    narrow: row.cells[0],
+    option: row,
+  }));
+}
+
+/** The proposals, as they are taken or written. */
+function chosenProposals(path: string | null, question: string): Chosen {
+  return {
+    noun: "these proposals",
+    question,
+    described:
+      "The proposals are written as a scenario over this plan, to a file of this name in your workspace.",
+    offered: offeredName(path, "estimate"),
+    take: (document) => ESTIMATOR.take(document),
+    scenario: (document, out) => ESTIMATOR.scenario(document, out),
+  };
+}
+
+/**
+ * The Spending Estimate tool: a bank's exports read for the session, what
+ * they say the plan spends proposed for its expenses, the highlighted
+ * proposal read out and edited, and the proposals taken or written as a
+ * scenario.
+ */
+export function EstimatePage({ title }: { title: string }) {
+  const search: ToolSearch = useSearch({ from: "/tools/$page" });
+  const navigate = useNavigate({ from: "/tools/$page" });
+  const { reading, path } = useSession();
+  const [view, setView] = useState<EstimateView | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
+  const refresh = useCallback(() => {
+    if (reading.document) setView(ESTIMATOR.estimate(reading.document));
+  }, [reading]);
+  useEffect(refresh, [refresh]);
+  const picker = useFilePicker(WORDS.accept, "Bank export", async (file) => {
+    try {
+      ESTIMATOR.addExport(file.name, await file.text());
+      setProblem(null);
+    } catch (thrown) {
+      setProblem(messageOf(thrown));
+    }
+    refresh();
+  });
+  const remove = (name: string) => {
+    ESTIMATOR.removeExport(name);
+    refresh();
+  };
+  const rows = useMemo(() => (view ? rowsOf(view) : []), [view]);
+  const at = Math.min(search.row ?? 0, rows.length - 1);
+  const highlighted = rows[at]?.option;
+  const proposal: Settings = useMemo(
+    () => ({
+      heading: highlighted?.is_proposal ? "Proposal" : "Payee",
+      read: () => highlighted?.read ?? [],
+      open: (document) => ESTIMATOR.openRow(document, at),
+      apply: (document, editor) => {
+        ESTIMATOR.applyRow(document, editor, at);
+        refresh();
+      },
+    }),
+    [highlighted, at, refresh],
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+        <ToolAbout about={WORDS.about} />
+      </div>
+      <section aria-labelledby="files" className="space-y-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 id="files" className="mr-auto text-lg font-semibold">
+            Files
+          </h2>
+          <Button size="sm" variant="outline" onClick={picker.open}>
+            <FileUp aria-hidden />
+            Add export
+          </Button>
+          {picker.element}
+        </div>
+        {view && view.files.length > 0 ? (
+          <ul className="bg-card divide-y rounded-md border text-sm">
+            {view.files.map(([name, count]) => (
+              <li
+                key={name}
+                className="flex items-center justify-between gap-3 px-4 py-2"
+              >
+                <span>
+                  {name}{" "}
+                  <span className="text-muted-foreground">
+                    {count} {count === 1 ? "row" : "rows"}
+                  </span>
+                </span>
+                <Button
+                  size="icon-sm"
+                  variant="ghost"
+                  aria-label={`Remove ${name}`}
+                  onClick={() => {
+                    remove(name);
+                  }}
+                >
+                  <X aria-hidden />
+                </Button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-muted-foreground">{WORDS.nothing_read}</p>
+        )}
+        {problem && (
+          <p role="alert" className="text-destructive text-sm">
+            {problem}
+          </p>
+        )}
+      </section>
+      {view && rows.length > 0 && (
+        <section aria-labelledby="proposals" className="min-w-0 space-y-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <h2 id="proposals" className="text-lg font-semibold">
+              Proposals
+            </h2>
+            {view.question && (
+              <SearchActions
+                chosen={chosenProposals(path, view.question)}
+                isCurrent
+              />
+            )}
+          </div>
+          <p className="text-muted-foreground text-sm">{view.summary}</p>
+          <Options
+            label="Proposals"
+            columns={view.columns}
+            rows={rows}
+            narrowFigure={PER_YEAR}
+            words={2}
+            highlighted={highlighted}
+            highlight={(row) => {
+              const place = rows.findIndex((each) => each.option === row);
+              void navigate({
+                search: (kept) => ({ ...kept, row: place }),
+                ...IN_PLACE,
+              });
+            }}
+          />
+          {highlighted && <SettingsRead settings={proposal} />}
+        </section>
+      )}
+      {search.edit && highlighted && <SettingsForm settings={proposal} />}
+    </div>
+  );
+}

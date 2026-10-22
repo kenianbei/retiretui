@@ -34,6 +34,9 @@ export const HISTORICAL = "historical";
 /** The Spending Ceiling tool's page. */
 export const SPENDING_CEILING = "spending-ceiling";
 
+/** The Spending Estimate tool's page. */
+export const SPENDING_ESTIMATE = "spending-estimate";
+
 /** The Tax Tables tool's page. */
 export const TAX_TABLES = "tax-tables";
 
@@ -68,6 +71,11 @@ export const TOOLS: readonly Page[] = [
     slug: SPENDING_CEILING,
     title: "Spending Ceiling",
     holds: "How much you could spend and still last.",
+  },
+  {
+    slug: SPENDING_ESTIMATE,
+    title: "Spending Estimate",
+    holds: "Your expenses estimated from a bank's exports.",
   },
   {
     slug: TAX_TABLES,

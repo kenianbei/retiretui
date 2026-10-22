@@ -7,6 +7,7 @@ mod compare;
 mod document;
 mod domain;
 mod edits;
+mod estimate;
 mod ladders;
 mod ledger;
 mod markets;
@@ -99,7 +100,7 @@ const TYPES: &str = r#"import type {
   ActionsReply, BandWords, Chart, Charted, Claim, ClaimWords, ClaimsOptions, CompareView,
   CompareWords,
   Domain, DomainTable,
-  Example, FieldView, Issue, LadderWords, LadderYear, LaddersReply,
+  EstimateRow, EstimateView, EstimateWords, Example, FieldView, Issue, LadderWords, LadderYear, LaddersReply,
   Ledger, MarketRuns, MarketWords, Metric, OrderOptions, OrderWords, OverviewView, PersonAction,
   PersonRow, PlacedIssue,
   NewPlanMade, OpenFailure,
@@ -315,6 +316,7 @@ mod bindings {
 
     use crate::compare::{CompareView, CompareWords, Searched, YearFigure};
     use crate::domain::DomainTable;
+    use crate::estimate::{EstimateView, EstimateWords};
     use crate::ladders::{LadderWords, LaddersReply};
     use crate::ledger::{Ledger, ViewWords};
     use crate::markets::{MarketRuns, MarketWords};
@@ -350,6 +352,8 @@ mod bindings {
         OrderWords::export_all,
         SpendingOptions::export_all,
         SpendingWords::export_all,
+        EstimateView::export_all,
+        EstimateWords::export_all,
         MarketRuns::export_all,
         MarketWords::export_all,
         CompareView::export_all,

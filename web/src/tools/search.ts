@@ -10,6 +10,8 @@ export interface ToolSearch extends YearSearch {
   order?: string;
   /** The highlighted spending ceiling, by its key; the one the search leads with where none. */
   ceiling?: string;
+  /** The highlighted estimate row, by place; the first where none. */
+  row?: number;
   /** The highlighted person, by place in the household; the first where none. */
   person?: number;
   /** The highlighted market run: `planned`, `p90`, `worst`, a start year; the plan's own where none. */
@@ -32,6 +34,7 @@ export function toolSearch(search: Record<string, unknown>): ToolSearch {
   const claim = textOf(search.claim);
   const order = textOf(search.order);
   const ceiling = textOf(search.ceiling);
+  const row = wholeOf(search.row);
   const run = textOf(search.run);
   const status = textOf(search.status);
   const state = textOf(search.state);
@@ -41,6 +44,7 @@ export function toolSearch(search: Record<string, unknown>): ToolSearch {
     ...(claim !== undefined && CLAIM_KEY.test(claim) && { claim }),
     ...(order !== undefined && ORDER_KEY.test(order) && { order }),
     ...(ceiling !== undefined && { ceiling }),
+    ...(row !== undefined && row >= 0 && { row }),
     ...(person !== undefined && person >= 0 && { person }),
     ...(run !== undefined && { run }),
     ...((search.edit === true || search.edit === "true") && { edit: true }),
