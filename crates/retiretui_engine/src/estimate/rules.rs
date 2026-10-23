@@ -41,6 +41,8 @@ pub enum Outcome {
     Category(Category),
     /// Counted nowhere.
     Ignore,
+    /// In the bucket, as a payee nothing names is.
+    Bucket,
 }
 
 /// What a rule tests of the payee, uppercased.
@@ -177,14 +179,21 @@ pub(super) struct RuleText {
     category: Option<Category>,
     #[serde(default)]
     ignore: bool,
+    #[serde(default)]
+    bucket: bool,
 }
 
 impl RuleText {
     pub(super) fn rule(self) -> Result<Rule, String> {
-        let outcome = match (self.category, self.ignore) {
-            (Some(category), false) => Outcome::Category(category),
-            (None, true) => Outcome::Ignore,
-            _ => return Err("needs a category or `ignore = true`, not both".to_owned()),
+        let outcome = match (self.category, self.ignore, self.bucket) {
+            (Some(category), false, false) => Outcome::Category(category),
+            (None, true, false) => Outcome::Ignore,
+            (None, false, true) => Outcome::Bucket,
+            _ => {
+                return Err(
+                    "needs one of a category, `ignore = true` or `bucket = true`".to_owned(),
+                );
+            }
         };
         let payee = PayeeText {
             r#match: self.r#match,

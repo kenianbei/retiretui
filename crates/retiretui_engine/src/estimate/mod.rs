@@ -263,7 +263,7 @@ fn tally<'a>(plan: &Plan, rows: impl Iterator<Item = &'a Row>, patterns: &Patter
         let tally = match outcome {
             Some(Outcome::Category(category)) => tallied.by_category.entry(category).or_default(),
             Some(Outcome::Ignore) => &mut tallied.ignored,
-            None => tallied.unknown.entry(payee.clone()).or_default(),
+            None | Some(Outcome::Bucket) => tallied.unknown.entry(payee.clone()).or_default(),
         };
         tally.total += deflated;
         tally.rows += 1;

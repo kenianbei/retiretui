@@ -22,4 +22,8 @@ rows: Array<EstimateRow>,
  * What is asked before the proposals are taken; none where there are
  * none.
  */
-question: string | null, };
+question: string | null, 
+/**
+ * What the bucket is called.
+ */
+bucket: string, };

@@ -49,6 +49,8 @@ pub struct EstimateView {
     /// What is asked before the proposals are taken; none where there are
     /// none.
     pub question: Option<String>,
+    /// What the bucket is called.
+    pub bucket: String,
 }
 
 /// What the Spending Estimate tool says of itself.
@@ -89,6 +91,7 @@ fn view(estimator: &mut Estimator, document: &Document) -> EstimateView {
         summary: summary(found, MoneyForm::Full),
         rows,
         question: (!found.proposals.is_empty()).then(|| take_question(found)),
+        bucket: estimator.bucket_name(),
     }
 }
 

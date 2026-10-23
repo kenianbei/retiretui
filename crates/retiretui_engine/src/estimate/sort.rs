@@ -103,7 +103,8 @@ impl<'a> Sorter<'a> {
                 let banks = row.category.as_deref().and_then(Category::from_text);
                 banks.or(row.kind).map(Outcome::Category)
             })
-            .or(named.embedded);
+            .or(named.embedded)
+            .filter(|outcome| *outcome != Outcome::Bucket);
         (&named.name, outcome)
     }
 }

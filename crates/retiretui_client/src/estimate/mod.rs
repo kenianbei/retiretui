@@ -24,7 +24,7 @@ pub use act::{Action, reached, record_menu, starting_words};
 pub use behind::Behind;
 pub use forms::{RowForm, SETTINGS_FORM, assign};
 pub use rows::{Listed, listed, summary, take_question, taken};
-pub use rules::{Change, Record};
+pub use rules::{Change, Record, To};
 
 use crate::draft::Draft;
 use crate::present::MoneyForm;

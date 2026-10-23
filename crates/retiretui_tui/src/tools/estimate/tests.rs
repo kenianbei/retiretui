@@ -374,6 +374,24 @@ fn a_payee_is_moved_by_its_category_number_or_its_words_from_the_menu() {
 }
 
 #[test]
+fn c_0_sends_a_payee_to_the_bucket() {
+    let (dir, mut app) = workspace_app();
+    let file = dir.join("config").join("patterns.toml");
+    app.world_mut()
+        .insert_resource(PatternsFile(Some(file.clone())));
+    add(&mut app, "chase.csv", CHASE);
+    let at = groceries_row(&app);
+    on_record(&mut app, at, &[KeyCode::Char('c'), KeyCode::Char('0')]);
+    let written = std::fs::read_to_string(&file).unwrap();
+    assert!(written.contains("bucket = true"), "0 is at once: {written}");
+    assert!(
+        said(&app)
+            .iter()
+            .any(|line| line.contains("goes to the bucket"))
+    );
+}
+
+#[test]
 fn payees_containing_a_records_words_are_moved_from_its_menu() {
     let (dir, mut app) = workspace_app();
     let file = dir.join("config").join("patterns.toml");

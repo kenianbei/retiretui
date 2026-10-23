@@ -80,6 +80,7 @@ export type { TableRow } from "./TableRow";
 export type { TablesView } from "./TablesView";
 export type { TaxSection } from "./TaxSection";
 export type { Taxes } from "./Taxes";
+export type { To } from "./To";
 export type { TotalLeads } from "./TotalLeads";
 export type { TreatmentClass } from "./TreatmentClass";
 export type { TriggerView } from "./TriggerView";

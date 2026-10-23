@@ -99,6 +99,21 @@ test("exports are read, a proposal edited, and the proposals taken and written",
   await menu.getByRole("menuitem", { name: /is…$/ }).click();
   await page.getByRole("menuitem", { name: "18 Pets" }).click();
   await expect(page.getByRole("status")).toContainText("is Pets");
+  await rowNamed(page, testInfo, "Pets").last().click();
+  const toBucket = await menuOf(
+    page.getByRole("table", { name: "Records: Pets" }),
+  );
+  await toBucket.getByRole("menuitem", { name: /is…$/ }).click();
+  await page.getByRole("menuitem", { name: /^0 .*\(bucket\)$/ }).click();
+  await expect(page.getByRole("status")).toContainText("goes to the bucket");
+  await rowNamed(page, testInfo, "CITY OF SAN JOSE WATER").click();
+  const unnamed = page.getByRole("table", {
+    name: "Records: CITY OF SAN JOSE WATER",
+  });
+  const back = await menuOf(unnamed);
+  await back.getByRole("menuitem", { name: /is…$/ }).click();
+  await page.getByRole("menuitem", { name: "18 Pets" }).click();
+  await expect(page.getByRole("status")).toContainText("is Pets");
   await expectAccessible(page);
   await rowNamed(page, testInfo, "Pets").last().click();
   const pets = page.getByRole("table", { name: "Records: Pets" });

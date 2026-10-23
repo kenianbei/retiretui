@@ -123,6 +123,7 @@ export function EstimatePage({ title }: { title: string }) {
   const acts: RecordActs = useMemo(
     () => ({
       categories: WORDS.categories,
+      bucket: view?.bucket ?? "",
       act: (record, action) => {
         try {
           setSaid(ESTIMATOR.act(at, record, action));
@@ -135,7 +136,7 @@ export function EstimatePage({ title }: { title: string }) {
       ask: setAsking,
       reach: (words) => ESTIMATOR.reach(words),
     }),
-    [at, refresh],
+    [at, refresh, view?.bucket],
   );
   const behind = useMemo(
     () => (view && highlighted ? ESTIMATOR.behindRow(at) : null),

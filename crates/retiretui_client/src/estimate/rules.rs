@@ -5,6 +5,7 @@
 
 use retiretui_engine::estimate::{Category, Cents, Patterns};
 use retiretui_engine::plan::PlanDate;
+use serde::Deserialize;
 use toml_edit::{
     Array, ArrayOfTables, Date, Datetime, DocumentMut, InlineTable, Item, TableLike, Value,
 };
@@ -17,6 +18,7 @@ const SPENT: &str = "spent";
 const IGNORE: &str = "ignore";
 const NAME: &str = "name";
 const CATEGORY: &str = "category";
+const BUCKET: &str = "bucket";
 const ONE_OF: &str = "one_of";
 /// What an un-ignore says where no rule of the page's shape ignores it.
 const HAND_WRITTEN: &str =
@@ -29,8 +31,8 @@ pub enum Change {
     Name {
         /// The payee, by the name it is listed under.
         payee: String,
-        /// What its rows are for.
-        category: Category,
+        /// Where its rows go.
+        to: To,
     },
     /// The payee is listed under a name, with any others given it.
     Merge {
@@ -43,8 +45,8 @@ pub enum Change {
     Contains {
         /// The words.
         part: String,
-        /// What the rows are for.
-        category: Category,
+        /// Where the rows go.
+        to: To,
     },
     /// Every row of the payee is counted nowhere.
     IgnorePayee {
@@ -56,6 +58,38 @@ pub enum Change {
     /// An ignored record counted again: the page's rule for it, else its
     /// payee's, taken out.
     Unignore(Record),
+}
+
+/// Where a payee's rows go: a category, or the bucket as a payee nothing
+/// names goes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+#[serde(rename_all = "kebab-case")]
+pub enum To {
+    /// The category.
+    Category(Category),
+    /// The bucket.
+    Bucket,
+}
+
+impl To {
+    /// Writes where the rows go into `rule`.
+    fn write(self, rule: &mut InlineTable) {
+        match self {
+            Self::Category(category) => rule.insert(CATEGORY, category.slug().into()),
+            Self::Bucket => rule.insert(BUCKET, true.into()),
+        };
+    }
+
+    /// Where the rows go, said after one payee or several.
+    fn said(self, is_several: bool) -> String {
+        match (self, is_several) {
+            (Self::Category(category), false) => format!("is {}", category.title()),
+            (Self::Category(category), true) => format!("are {}", category.title()),
+            (Self::Bucket, false) => "goes to the bucket".to_owned(),
+            (Self::Bucket, true) => "go to the bucket".to_owned(),
+        }
+    }
 }
 
 /// One record, as a rule singles it out.
@@ -82,16 +116,16 @@ impl Change {
             .parse()
             .map_err(|error| format!("the patterns file is not TOML: {error}"))?;
         match self {
-            Self::Name { payee, category } => {
+            Self::Name { payee, to } => {
                 let mut rule = InlineTable::new();
                 rule.insert(IS, payee.as_str().into());
-                rule.insert(CATEGORY, category.slug().into());
+                to.write(&mut rule);
                 replace_payees(&mut file, payee, rule)?;
             }
-            Self::Contains { part, category } => {
+            Self::Contains { part, to } => {
                 let mut rule = InlineTable::new();
                 rule.insert("match", part.as_str().into());
-                rule.insert(CATEGORY, category.slug().into());
+                to.write(&mut rule);
                 push(&mut file, PATTERNS, rule)?;
             }
             Self::Merge { payee, name } => merge(&mut file, payee, name)?,
@@ -113,10 +147,8 @@ impl Change {
     #[must_use]
     pub fn said(&self) -> String {
         match self {
-            Self::Name { payee, category } => format!("{payee} is {}", category.title()),
-            Self::Contains { part, category } => {
-                format!("payees containing {part} are {}", category.title())
-            }
+            Self::Name { payee, to } => format!("{payee} {}", to.said(false)),
+            Self::Contains { part, to } => format!("payees containing {part} {}", to.said(true)),
             Self::Merge { payee, name } => format!("{payee} is listed as {name}"),
             Self::IgnorePayee { payee } => format!("{payee} is ignored"),
             Self::IgnoreRecord(record) => format!("{} on {} is ignored", record.payee, record.on.0),
@@ -164,7 +196,9 @@ fn replace_payees(file: &mut DocumentMut, payee: &str, rule: InlineTable) -> Res
 fn is_for_payee(entry: &dyn TableLike, payee: &str) -> bool {
     let is_payee =
         (entry.get(IS).and_then(Item::as_str)).is_some_and(|held| held.eq_ignore_ascii_case(payee));
-    let says = entry.get(CATEGORY).is_some() || is_ignoring(entry, payee, None);
+    let says = entry.get(CATEGORY).is_some()
+        || entry.get(BUCKET).is_some()
+        || is_ignoring(entry, payee, None);
     is_payee && entry.len() == 2 && says
 }
 

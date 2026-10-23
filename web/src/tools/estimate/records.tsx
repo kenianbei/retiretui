@@ -4,6 +4,7 @@ import {
   type RecordAction,
   recordMenu,
   startingWords,
+  type To,
 } from "@wasm/retiretui_wasm.js";
 import { Ellipsis } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -23,6 +24,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { NameDialog } from "@/files/name-dialog";
 
+/** What the dialog's category select keeps for the bucket. */
+const BUCKET = "bucket";
+
 /** What the record menu asks for in a dialog of its own. */
 export interface Asking {
   kind: "words" | "name";
@@ -36,6 +40,8 @@ export interface Asking {
 export interface RecordActs {
   /** Each category, by the value kept and its words, numbered from one. */
   categories: [Category, string][];
+  /** What the bucket is called; it is numbered 0. */
+  bucket: string;
   act: (record: number, action: RecordAction) => void;
   ask: (asking: Asking) => void;
   /** How far a rule on some words reaches, in the client's words. */
@@ -133,11 +139,18 @@ function RecordMenu({
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>{is}</DropdownMenuSubTrigger>
           <DropdownMenuSubContent>
+            <DropdownMenuItem
+              onSelect={() => {
+                acts.act(record, { "payee-is": "bucket" });
+              }}
+            >
+              0 {acts.bucket} (bucket)
+            </DropdownMenuItem>
             {acts.categories.map(([category, label], at) => (
               <DropdownMenuItem
                 key={category}
                 onSelect={() => {
-                  acts.act(record, { "payee-is": category });
+                  acts.act(record, { "payee-is": { category } });
                 }}
               >
                 {at + 1} {label}
@@ -212,11 +225,11 @@ export function AskDialog({
           setProblem("Pick a category.");
           return;
         }
+        const to: To =
+          category === BUCKET ? "bucket" : { category: category as Category };
         acts.act(
           asking.record,
-          isWords
-            ? { containing: [typed, category as Category] }
-            : { name: typed },
+          isWords ? { containing: [typed, to] } : { name: typed },
         );
         close();
       }}
@@ -231,6 +244,7 @@ export function AskDialog({
             value={category}
             options={[
               { value: "", label: "Pick one" },
+              { value: BUCKET, label: `0 ${acts.bucket} (bucket)` },
               ...acts.categories.map(([value, label], at) => ({
                 value,
                 label: `${String(at + 1)} ${label}`,

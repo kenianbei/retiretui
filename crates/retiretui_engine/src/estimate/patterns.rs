@@ -145,7 +145,7 @@ mod tests {
             (patterns.user(payee, &row)).or_else(|| patterns.embedded_outcome(payee, &row));
         match outcome? {
             Outcome::Category(category) => Some(category),
-            Outcome::Ignore => None,
+            Outcome::Ignore | Outcome::Bucket => None,
         }
     }
 
@@ -197,7 +197,7 @@ mod tests {
             refused("[[patterns]]\nis = \"X\"\nmatch = \"X\"\ncategory = \"pets\"\n")
                 .contains("more than one way")
         );
-        assert!(refused("[[patterns]]\nis = \"X\"\n").contains("needs a category"));
+        assert!(refused("[[patterns]]\nis = \"X\"\n").contains("needs one of"));
         assert!(
             refused("[[patterns]]\nmatches = \"(\"\ncategory = \"pets\"\n")
                 .contains("not a regular expression")

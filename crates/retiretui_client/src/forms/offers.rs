@@ -57,7 +57,7 @@ pub enum Vocabulary {
     GainsRate,
     /// What a bank's row was for.
     Category,
-    /// What a payee's rows are: a category, or ignored.
+    /// What a payee's rows are: a category, the bucket, or ignored.
     PayeeOutcome,
     /// What a spending proposal does to an expense stated in phases.
     Phases,
@@ -163,14 +163,22 @@ impl Vocabulary {
 
 /// What a payee's outcome field keeps where its rows are ignored.
 pub const IGNORE_PAYEE: &str = "ignore";
+/// What a payee's outcome field keeps where its rows go to the bucket.
+pub const BUCKET_PAYEE: &str = "bucket";
 
 /// Each category, then ignoring the payee's rows.
 fn payee_outcome_offers() -> Vec<Offer> {
     let mut offered = category_offers();
-    offered.push(Offer {
-        value: IGNORE_PAYEE.to_owned(),
-        label: "Ignored".to_owned(),
-    });
+    offered.extend([
+        Offer {
+            value: BUCKET_PAYEE.to_owned(),
+            label: "The bucket".to_owned(),
+        },
+        Offer {
+            value: IGNORE_PAYEE.to_owned(),
+            label: "Ignored".to_owned(),
+        },
+    ]);
     offered
 }
 

@@ -123,7 +123,7 @@ fn an_expense_a_category_and_a_payee_each_open_their_own_form() {
         applied,
         Applied::Changed(vec![Change::Name {
             payee: "SOMEONE".to_owned(),
-            category: Category::Pets,
+            to: To::Category(Category::Pets),
         }])
     );
     assert!(estimator.refresh(&plan), "a named payee estimates again");
@@ -182,7 +182,7 @@ fn a_move_and_the_settings_are_kept_in_the_plan() {
 fn a_change_is_made_to_the_users_patterns_as_they_wrote_them() {
     let named = Change::Name {
         payee: "AL'S \"PLACE\"".to_owned(),
-        category: Category::Dining,
+        to: To::Category(Category::Dining),
     };
     let file = "# mine\n[[patterns]]\nmatch = \"SAFEWAY\"\ncategory = \"groceries\"\n";
     let text = named.applied(file).unwrap();
@@ -305,13 +305,17 @@ fn a_payee_is_moved_named_or_ignored_from_its_record_and_alike_ones_by_words() {
     let mut estimator = estimated(&plan);
     let dining = 3;
     let moved = estimator
-        .act(dining, Some(0), Action::PayeeIs(Category::Travel))
+        .act(
+            dining,
+            Some(0),
+            Action::PayeeIs(To::Category(Category::Travel)),
+        )
         .unwrap();
     assert_eq!(
         moved,
         Change::Name {
             payee: "TAQUERIA SOL".to_owned(),
-            category: Category::Travel,
+            to: To::Category(Category::Travel),
         }
     );
     assert!(estimator.refresh(&plan));
@@ -331,13 +335,17 @@ fn a_payee_is_moved_named_or_ignored_from_its_record_and_alike_ones_by_words() {
         .act(
             0,
             None,
-            Action::Containing(" rocket ".to_owned(), Category::Housing),
+            Action::Containing(" rocket ".to_owned(), To::Category(Category::Housing)),
         )
         .unwrap();
     assert_eq!(contains.said(), "payees containing rocket are Housing");
     assert!(
         estimator
-            .act(0, None, Action::Containing(" ".to_owned(), Category::Pets))
+            .act(
+                0,
+                None,
+                Action::Containing(" ".to_owned(), To::Category(Category::Pets))
+            )
             .is_err()
     );
     assert!(
@@ -350,7 +358,7 @@ fn a_payee_is_moved_named_or_ignored_from_its_record_and_alike_ones_by_words() {
 fn a_payee_moved_again_goes_where_it_was_last_sent() {
     let to = |category| Change::Name {
         payee: "SAFEWAY".to_owned(),
-        category,
+        to: To::Category(category),
     };
     let text = to(Category::Dining).applied("").unwrap();
     let text = Change::IgnorePayee {
@@ -370,4 +378,36 @@ fn a_payee_moved_again_goes_where_it_was_last_sent() {
         text.contains("pets"),
         "a rule written by hand stays: {text}"
     );
+}
+
+#[test]
+fn a_payee_sent_to_the_bucket_is_listed_unnamed_beneath_it() {
+    let plan = retired();
+    let mut estimator = estimated(&plan);
+    let dining = 3;
+    let sent = estimator
+        .act(dining, Some(0), Action::PayeeIs(To::Bucket))
+        .unwrap();
+    assert_eq!(sent.said(), "TAQUERIA SOL goes to the bucket");
+    assert!(estimator.refresh(&plan));
+    assert_eq!(estimator.bucket_name(), "Other");
+    let names: Vec<String> = cells(&estimator)
+        .into_iter()
+        .map(|[name, ..]| name)
+        .collect();
+    assert!(names.contains(&"    TAQUERIA SOL".to_owned()), "{names:?}");
+    let text = Change::Name {
+        payee: "TAQUERIA SOL".to_owned(),
+        to: To::Category(Category::Dining),
+    }
+    .applied(
+        &Change::Name {
+            payee: "TAQUERIA SOL".to_owned(),
+            to: To::Bucket,
+        }
+        .applied("")
+        .unwrap(),
+    )
+    .unwrap();
+    assert!(!text.contains("bucket"), "replaced: {text}");
 }

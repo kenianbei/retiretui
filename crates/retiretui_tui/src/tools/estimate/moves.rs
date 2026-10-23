@@ -7,7 +7,7 @@ use bevy_app::{App, Startup};
 use bevy_ecs::prelude::{Commands, In, Query, Res, ResMut, Resource, With, World};
 use bevy_input_focus::InputFocus;
 use plurimus::widgets::ActiveDescendant;
-use retiretui_client::estimate::{Action, Listed, reached, record_menu, starting_words};
+use retiretui_client::estimate::{Action, Listed, To, reached, record_menu, starting_words};
 use retiretui_engine::estimate::Category;
 
 use super::edits::remember;
@@ -226,33 +226,38 @@ pub fn pick_category(
     Outcome::Done
 }
 
-/// Every category by its number, those whose number starts with the
-/// digits typed, else those whose name matches.
-fn list_categories(In(query): In<String>) -> Vec<Offered> {
-    let offered = Category::ALL
-        .iter()
+/// The bucket as 0, then every category by its number from 1: those whose
+/// number starts with the digits typed, else those whose name matches.
+fn list_categories(In(query): In<String>, held: Res<Held>) -> Vec<Offered> {
+    let bucket = format!("{} (bucket)", held.0.bucket_name());
+    let names = std::iter::once(bucket).chain(Category::ALL.iter().map(|it| it.title()));
+    let offered = names
         .enumerate()
-        .map(|(at, category)| Offered::new(at, format!("{:>2} {}", at + 1, category.title())));
+        .map(|(number, name)| Offered::new(number, format!("{number:>2} {name}")));
     if !query.is_empty() && query.chars().all(|c| c.is_ascii_digit()) {
         return offered
-            .filter(|row| (row.id + 1).to_string().starts_with(&query))
+            .filter(|row| row.id.to_string().starts_with(&query))
             .collect();
     }
     ranked(&query, offered)
 }
 
 fn chose_category(
-    In(at): In<usize>,
+    In(number): In<usize>,
     (memory, session): (Res<PatternsFile>, Res<Session>),
     mut acting: ResMut<Acting>,
     mut held: ResMut<Held>,
 ) {
-    let (Some(&category), Some(target)) = (Category::ALL.get(at), acting.target) else {
+    let to = match number.checked_sub(1) {
+        None => Some(To::Bucket),
+        Some(at) => Category::ALL.get(at).copied().map(To::Category),
+    };
+    let (Some(to), Some(target)) = (to, acting.target) else {
         return;
     };
     let action = match acting.words.take() {
-        Some(words) => Action::Containing(words, category),
-        None => Action::PayeeIs(category),
+        Some(words) => Action::Containing(words, to),
+        None => Action::PayeeIs(to),
     };
     if let Outcome::Refused(reason) = act((&mut *held, &memory, &session), target, action) {
         crate::journal::warn(reason);

@@ -7,10 +7,10 @@ use retiretui_engine::plan::{Assign, Dollars, EstimateSettings, Lean, Plan};
 use serde::{Deserialize, Serialize};
 use toml::{Table, Value};
 
-use super::{Applied, Change, Listed, UNKNOWN};
+use super::{Applied, Change, Listed, To, UNKNOWN};
 use crate::codec::{from_table, to_table};
 use crate::draft::Draft;
-use crate::forms::offers::{IGNORE_PAYEE, RefSource, Vocabulary, held_word};
+use crate::forms::offers::{BUCKET_PAYEE, IGNORE_PAYEE, RefSource, Vocabulary, held_word};
 use crate::forms::{FieldSpec, Form, Target, ToolAnswers};
 
 /// What a category's expense field reads as while the estimate places it.
@@ -248,11 +248,17 @@ fn payee_changes(payee: &str, answers: PayeeAnswers) -> Result<Applied, String> 
     match answers.category.as_deref() {
         None | Some("") => {}
         Some(IGNORE_PAYEE) => changes.push(Change::IgnorePayee { payee: listed }),
+        Some(BUCKET_PAYEE) => changes.push(Change::Name {
+            payee: listed,
+            to: To::Bucket,
+        }),
         Some(slug) => changes.push(Change::Name {
             payee: listed,
-            category: Value::String(slug.to_owned())
-                .try_into()
-                .map_err(|_| format!("`{slug}` is not a category"))?,
+            to: To::Category(
+                Value::String(slug.to_owned())
+                    .try_into()
+                    .map_err(|_| format!("`{slug}` is not a category"))?,
+            ),
         }),
     }
     Ok(if changes.is_empty() {

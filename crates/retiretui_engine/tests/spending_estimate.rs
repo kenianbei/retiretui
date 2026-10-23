@@ -466,3 +466,21 @@ payees = [{ name = "Acme", one_of = ["ACME HELP", "ACME SHOP"] }]
         "another export's check"
     );
 }
+
+#[test]
+fn a_payee_sent_to_the_bucket_lands_there_whatever_the_bank_says() {
+    let csv = "Date,Description,Category,Amount\n2026-10-01,ART STUDIO,Home,-110.00\n2026-10-02,SAFEWAY,Groceries,-50.00\n";
+    let mut patterns = Patterns::embedded();
+    patterns
+        .add("[[patterns]]\nis = \"ART STUDIO\"\nbucket = true\n")
+        .unwrap();
+    let found = estimate(&plan(GROCERIES), &read("x.csv", csv).unwrap(), &patterns);
+    let bucket = found.proposals.iter().find(|p| p.is_bucket).unwrap();
+    assert_eq!(bucket.unknown, 1320);
+    assert_eq!(found.unknown[0].payee, "ART STUDIO");
+    assert!(
+        Patterns::default()
+            .add("[[patterns]]\nis = \"X\"\nbucket = true\nignore = true\n")
+            .is_err()
+    );
+}

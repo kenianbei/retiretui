@@ -2,16 +2,17 @@
 //! record ignored or counted again, a payee ignored, said to be for a
 //! category or named, and every payee containing some words sorted alike.
 
-use retiretui_engine::estimate::{Category, Reach, Row, normalize, reach, records};
+use retiretui_engine::estimate::{Reach, Row, normalize, reach, records};
 
 use serde::Deserialize;
 
-use super::{Change, Estimator, Listed, Record};
+use super::{Change, Estimator, Listed, Record, To};
 use crate::present::{MoneyForm, counted};
 
 const NO_RECORD: &str = "no record there to ignore";
 const NO_PAYEE: &str = "no payee here to act on";
 const NO_WORDS: &str = "say which words the payees contain";
+const BUCKET: &str = "the bucket";
 
 /// What can be done with a record or a payee.
 #[derive(Debug, Deserialize)]
@@ -22,10 +23,11 @@ pub enum Action {
     IgnoreRecord,
     /// Every record of the payee ignored.
     IgnorePayee,
-    /// Every record of the payee for the category.
-    PayeeIs(Category),
-    /// Every record of each payee containing the words for the category.
-    Containing(String, Category),
+    /// Every record of the payee to a category or the bucket.
+    PayeeIs(To),
+    /// Every record of each payee containing the words to a category or
+    /// the bucket.
+    Containing(String, To),
     /// The payee listed under the name.
     Name(String),
 }
@@ -97,16 +99,16 @@ impl Estimator {
             Action::IgnorePayee => Change::IgnorePayee {
                 payee: self.target(at, record)?.named,
             },
-            Action::PayeeIs(category) => Change::Name {
+            Action::PayeeIs(to) => Change::Name {
                 payee: self.target(at, record)?.named,
-                category,
+                to,
             },
-            Action::Containing(part, category) => Change::Contains {
+            Action::Containing(part, to) => Change::Contains {
                 part: Some(part.trim())
                     .filter(|part| !part.is_empty())
                     .ok_or(NO_WORDS)?
                     .to_owned(),
-                category,
+                to,
             },
             Action::Name(name) => Change::Merge {
                 payee: self.target(at, record)?.normalized,
@@ -122,6 +124,14 @@ impl Estimator {
     #[must_use]
     pub fn payee(&self, at: usize, record: Option<usize>) -> Option<String> {
         self.target(at, record).ok().map(|target| target.named)
+    }
+
+    /// What the bucket is called: its expense's name, where the estimate
+    /// proposes one.
+    #[must_use]
+    pub fn bucket_name(&self) -> String {
+        let bucket = self.estimate.proposals.iter().find(|p| p.is_bucket);
+        bucket.map_or_else(|| BUCKET.to_owned(), |p| p.name.clone())
     }
 
     /// How far a rule on payees containing `part` reaches.
