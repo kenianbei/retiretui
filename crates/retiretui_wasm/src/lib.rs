@@ -104,7 +104,7 @@ const TYPES: &str = r#"import type {
   Ledger, MarketRuns, MarketWords, Metric, OrderOptions, OrderWords, OverviewView, PersonAction,
   PersonRow, PlacedIssue,
   NewPlanMade, OpenFailure,
-  Projection, ReadRow, RothOwner, ScaledExpense, Searched, Sort, SpendingOptions,
+  Projection, ReadRow, RecordAction, RothOwner, ScaledExpense, Searched, Sort, SpendingOptions,
   SpendingWords, Step, Summary, TablesView,
   TreatmentClass, ViewWords, Year, YearFigure, YearTables,
 } from "../bindings/index";
@@ -311,7 +311,7 @@ mod bindings {
     use crate::claims::{ClaimWords, ClaimsOptions, PersonRow, RothOwner};
     use crate::document::PlacedIssue;
     use crate::unopened::{OpenFailure, Written};
-    use retiretui_client::estimate::Behind;
+    use retiretui_client::estimate::{Action, Behind};
     use retiretui_client::forms::details::ReadRow;
     use retiretui_client::forms::sort::Sort;
 
@@ -356,6 +356,7 @@ mod bindings {
         EstimateView::export_all,
         EstimateWords::export_all,
         Behind::export_all,
+        Action::export_all,
         MarketRuns::export_all,
         MarketWords::export_all,
         CompareView::export_all,

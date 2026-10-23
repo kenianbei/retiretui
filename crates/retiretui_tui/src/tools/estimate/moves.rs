@@ -7,7 +7,8 @@ use bevy_app::{App, Startup};
 use bevy_ecs::prelude::{Commands, In, Query, Res, ResMut, Resource, With, World};
 use bevy_input_focus::InputFocus;
 use plurimus::widgets::ActiveDescendant;
-use retiretui_client::estimate::{Action, Listed};
+use retiretui_client::estimate::{Action, Listed, reached};
+use retiretui_client::present::MoneyForm;
 use retiretui_engine::estimate::Category;
 
 use super::edits::remember;
@@ -291,12 +292,7 @@ fn list_words(In(query): In<String>, mut acting: ResMut<Acting>, held: Res<Held>
     let Some(words) = &acting.words else {
         return Vec::new();
     };
-    let reach = held.0.reach(words);
-    let said = format!(
-        "{}, {} a year",
-        retiretui_client::present::counted(reach.payees, "payee", "payees"),
-        retiretui_client::present::money(reach.spent),
-    );
+    let said = reached(held.0.reach(words), MoneyForm::Full);
     vec![Offered::new(0, said)]
 }
 

@@ -1,6 +1,5 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import {
-  type Behind,
   type EstimateRow,
   type EstimateView,
   Estimator,
@@ -9,14 +8,18 @@ import {
 import { FileUp, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { columnsFor } from "@/components/columns";
-import { DataTable } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import { useFilePicker } from "@/files/picker";
 import { messageOf } from "@/lib/utils";
 import { useSession } from "@/session";
 import { ToolAbout } from "@/tools/about";
 import { type Chosen, SearchActions } from "@/tools/act";
+import {
+  AskDialog,
+  type Asking,
+  BehindTable,
+  type RecordActs,
+} from "@/tools/estimate/records";
 import { type OptionRow, Options } from "@/tools/options";
 import type { ToolSearch } from "@/tools/search";
 import { type Settings, SettingsForm, SettingsRead } from "@/tools/settings";
@@ -54,61 +57,6 @@ function rowsOf(view: EstimateView): OptionRow<EstimateRow>[] {
       option: row,
     };
   });
-}
-
-/**
- * What lies behind the highlighted row, its last column the figure, and
- * where they are records a button on each that ignores it or counts it
- * again.
- */
-function BehindTable({
-  behind,
-  toggle,
-}: {
-  behind: Behind;
-  toggle: (index: number) => void;
-}) {
-  const columns = useMemo(() => {
-    const column = columnsFor<string[]>();
-    const cells = behind.columns.map((header, at) =>
-      column.display({
-        id: String(at),
-        header,
-        meta: { isNumeric: at === behind.columns.length - 1 },
-        cell: ({ row }) => row.original[at],
-      }),
-    );
-    const word = behind.toggle;
-    if (!word) return cells;
-    const action = column.display({
-      id: "toggle",
-      header: () => <span className="sr-only">Record</span>,
-      cell: ({ row }) => (
-        <Button
-          size="sm"
-          variant="ghost"
-          aria-label={`${word} ${row.original[1] ?? ""} on ${row.original[0] ?? ""}`}
-          onClick={() => {
-            toggle(row.index);
-          }}
-        >
-          {word}
-        </Button>
-      ),
-    });
-    return [...cells, action];
-  }, [behind.columns, behind.toggle, toggle]);
-  return (
-    <div className="min-w-0 space-y-3">
-      <h3 className="font-semibold">{behind.title}</h3>
-      <DataTable
-        label={behind.title}
-        columns={columns}
-        rows={behind.rows}
-        rowKey={(_cells, at) => String(at)}
-      />
-    </div>
-  );
 }
 
 /** The proposals, as they are taken or written. */
@@ -170,16 +118,23 @@ export function EstimatePage({ title }: { title: string }) {
     }),
     [highlighted, at, refresh],
   );
-  const toggleRecord = useCallback(
-    (index: number) => {
-      try {
-        ESTIMATOR.toggleRecord(at, index);
-        setProblem(null);
-      } catch (thrown) {
-        setProblem(messageOf(thrown));
-      }
-      refresh();
-    },
+  const [said, setSaid] = useState<string | null>(null);
+  const [asking, setAsking] = useState<Asking | null>(null);
+  const acts: RecordActs = useMemo(
+    () => ({
+      categories: WORDS.categories,
+      act: (record, action) => {
+        try {
+          setSaid(ESTIMATOR.act(at, record, action));
+          setProblem(null);
+        } catch (thrown) {
+          setProblem(messageOf(thrown));
+        }
+        refresh();
+      },
+      ask: setAsking,
+      payee: (record) => ESTIMATOR.payee(at, record) ?? "",
+    }),
     [at, refresh],
   );
   const behind = useMemo(
@@ -250,6 +205,11 @@ export function EstimatePage({ title }: { title: string }) {
             )}
           </div>
           <p className="text-muted-foreground text-sm">{view.summary}</p>
+          {said && (
+            <p role="status" className="text-sm">
+              {said}
+            </p>
+          )}
           <Options
             label="Proposals"
             columns={WORDS.columns}
@@ -267,7 +227,18 @@ export function EstimatePage({ title }: { title: string }) {
           />
           {highlighted && <SettingsRead settings={proposal} />}
           {behind && behind.rows.length > 0 && (
-            <BehindTable behind={behind} toggle={toggleRecord} />
+            <BehindTable behind={behind} acts={acts} />
+          )}
+          {asking && (
+            <AskDialog
+              key={`${asking.kind}-${String(asking.record)}`}
+              asking={asking}
+              close={() => {
+                setAsking(null);
+              }}
+              acts={acts}
+              reach={(words) => ESTIMATOR.reach(words)}
+            />
           )}
         </section>
       )}

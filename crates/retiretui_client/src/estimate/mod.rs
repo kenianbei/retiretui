@@ -20,7 +20,7 @@ use schemars::JsonSchema;
 use serde::Serialize;
 use toml::Table;
 
-pub use act::Action;
+pub use act::{Action, reached};
 pub use behind::Behind;
 pub use forms::{RowForm, SETTINGS_FORM, assign};
 pub use rows::{Listed, listed, summary, take_question, taken};

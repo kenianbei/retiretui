@@ -4,14 +4,19 @@
 
 use retiretui_engine::estimate::{Category, Reach, normalize, reach, records};
 
+use serde::Deserialize;
+
 use super::{Change, Estimator, Listed, Record};
+use crate::present::{MoneyForm, counted};
 
 const NO_RECORD: &str = "no record there to ignore";
 const NO_PAYEE: &str = "no payee here to act on";
 const NO_WORDS: &str = "say which words the payees contain";
 
 /// What can be done with a record or a payee.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(rename = "RecordAction"))]
+#[serde(rename_all = "kebab-case")]
 pub enum Action {
     /// The record ignored, or counted again behind the ignored row.
     IgnoreRecord,
@@ -23,6 +28,17 @@ pub enum Action {
     Containing(String, Category),
     /// The payee listed under the name.
     Name(String),
+}
+
+/// How far a rule on some words reaches, in words: `4 payees, $1,230 a
+/// year`.
+#[must_use]
+pub fn reached(reach: Reach, form: MoneyForm) -> String {
+    format!(
+        "{}, {} a year",
+        counted(reach.payees, "payee", "payees"),
+        form.money(reach.spent)
+    )
 }
 
 /// The payee an action is done to: as the rules name it, and as the

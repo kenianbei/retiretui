@@ -5,19 +5,19 @@
 //! written as a scenario.
 
 use retiretui_client::estimate::{
-    ABOUT, Action, Applied, COLUMNS, EXTENSIONS, Estimator, NOTHING_READ, SETTINGS_FORM, assign,
+    ABOUT, Action, Applied, COLUMNS, reached, EXTENSIONS, Estimator, NOTHING_READ, SETTINGS_FORM, assign,
     listed, overlay, summary, take_question, taken,
 };
 use retiretui_client::forms::details::{self, ReadRow};
 use retiretui_client::forms::edit::Entry;
 use retiretui_client::present::{MoneyForm, counted};
-use retiretui_engine::estimate::{Patterns, apply};
+use retiretui_engine::estimate::{Category, Patterns, apply};
 use serde::Serialize;
 use wasm_bindgen::prelude::{JsError, JsValue, wasm_bindgen};
 
 use crate::document::Document;
 use crate::edits::JsEditor;
-use crate::{JsDocument, refused, to_js};
+use crate::{JsDocument, from_js, refused, to_js};
 
 const NOTHING_TO_EDIT: &str = "nothing to edit on this row";
 
@@ -61,6 +61,9 @@ pub struct EstimateWords {
     pub nothing_read: &'static str,
     /// The columns the rows are tabled under.
     pub columns: [&'static str; 5],
+    /// Each category a payee can be said to be for, by the value kept and
+    /// its words, numbered from one in this order.
+    pub categories: Vec<(Category, String)>,
     /// What the file dialog accepts: `.csv,.ofx,.qfx`.
     pub accept: String,
 }
@@ -209,19 +212,37 @@ impl JsEstimator {
         to_js(&self.0.behind(at, MoneyForm::Full).unwrap_or_default())
     }
 
-    /// Ignores the record at `index` behind the row at `at` for the
-    /// session, or counts it again behind the ignored row, answering what
-    /// was done.
+    /// Does `action` for the session to the record at `record` behind the
+    /// row at `at`, or with none to the row's payee, answering what was
+    /// done.
     ///
     /// # Errors
     ///
-    /// Where no record lies there, or the change cannot be made.
-    #[wasm_bindgen(js_name = toggleRecord)]
-    pub fn toggle_record(&mut self, at: usize, index: usize) -> Result<String, JsError> {
+    /// Where the action does not read, no record or payee lies there, or
+    /// the change cannot be made.
+    pub fn act(
+        &mut self,
+        at: usize,
+        record: Option<usize>,
+        #[wasm_bindgen(unchecked_param_type = "RecordAction")] action: JsValue,
+    ) -> Result<String, JsError> {
+        let action: Action = from_js(action)?;
         self.0
-            .act(at, Some(index), Action::IgnoreRecord)
+            .act(at, record, action)
             .map(|change| change.said())
             .map_err(refused)
+    }
+
+    /// How far a rule on payees containing `words` reaches, in words.
+    #[must_use]
+    pub fn reach(&self, words: &str) -> String {
+        reached(self.0.reach(words), MoneyForm::Full)
+    }
+
+    /// The payee an action at `at`, or at `record` behind it, is done to.
+    #[must_use]
+    pub fn payee(&self, at: usize, record: Option<usize>) -> Option<String> {
+        self.0.payee(at, record)
     }
 
     /// The row at `at` open in its form, its answers held beside
@@ -318,6 +339,10 @@ pub fn estimate_words() -> Result<JsValue, JsError> {
         about: ABOUT,
         nothing_read: NOTHING_READ,
         columns: COLUMNS,
+        categories: Category::ALL
+            .iter()
+            .map(|&category| (category, category.title()))
+            .collect(),
         accept: accept.join(","),
     })
 }

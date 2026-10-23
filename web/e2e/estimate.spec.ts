@@ -75,16 +75,47 @@ test("exports are read, a proposal edited, and the proposals taken and written",
   const records = page.getByRole("table", { name: "Records: Utilities" });
   await expect(records).toContainText("2026-10-");
   await expect(records).toContainText("$");
-  await expectAccessible(page);
-  await records
-    .getByRole("button", { name: /^Ignore / })
-    .first()
+  const menuOf = async (table: typeof records) => {
+    await table
+      .getByRole("button", { name: /^Actions for / })
+      .first()
+      .click();
+    return page.getByRole("menu");
+  };
+  await (
+    await menuOf(records)
+  )
+    .getByRole("menuitem", { name: "Ignore this record" })
     .click();
   await expect(page.getByText(/1 record ignored/)).toBeVisible();
+  await expect(page.getByRole("status")).toContainText("is ignored");
   await rowNamed(page, testInfo, "Ignored").click();
   const ignored = page.getByRole("table", { name: "Records: ignored" });
-  await ignored.getByRole("button", { name: /^Count / }).click();
+  await (
+    await menuOf(ignored)
+  )
+    .getByRole("menuitem", { name: "Count this record again" })
+    .click();
   await expect(page.getByText(/record ignored/)).toHaveCount(0);
+
+  await rowNamed(page, testInfo, "Utilities").last().click();
+  const menu = await menuOf(records);
+  await menu.getByRole("menuitem", { name: /is…$/ }).click();
+  await page.getByRole("menuitem", { name: "18 Pets" }).click();
+  await expect(page.getByRole("status")).toContainText("is Pets");
+  await expectAccessible(page);
+  await rowNamed(page, testInfo, "Pets").last().click();
+  const pets = page.getByRole("table", { name: "Records: Pets" });
+  await (
+    await menuOf(pets)
+  )
+    .getByRole("menuitem", { name: "Payees containing…" })
+    .click();
+  const words = page.getByRole("alertdialog");
+  await expect(words.getByRole("status")).toContainText("a year");
+  await words.getByLabel("Category").selectOption({ label: "12 Internet" });
+  await words.getByRole("button", { name: "Apply" }).click();
+  await expect(page.getByRole("status")).toContainText("are Internet");
 
   await proposals.getByRole("button", { name: "Write as a scenario" }).click();
   const asked = page.getByRole("alertdialog");
