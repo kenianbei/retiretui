@@ -65,6 +65,9 @@ pub struct Proposal {
     pub name: String,
     /// Whether it collects what fits nowhere else.
     pub is_bucket: bool,
+    /// What the plan's expense spends a year over the window, as the plan
+    /// states it; none for a new one.
+    pub now: Option<Dollars>,
     /// Annual, in the plan's start-year dollars.
     pub amount: Dollars,
     /// What the rows add up to over the window, in the same dollars.
@@ -158,24 +161,94 @@ struct Group {
     unknown: f64,
 }
 
+/// Whose transactions [`records`] lists.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Of {
+    /// The rows sorted into a category.
+    Category(Category),
+    /// The rows of one payee nothing names, normalized.
+    Payee(String),
+    /// The rows of every payee nothing names.
+    Unnamed,
+}
+
+/// The latest twelve whole months the rows reach, as month indexes.
+#[derive(Debug, Clone, Copy)]
+struct Window {
+    start: i32,
+    end: i32,
+}
+
+fn month_of(on: PlanDate) -> i32 {
+    month_index(on.year(), on.0.month())
+}
+
+impl Window {
+    fn of(rows: &[Row]) -> Option<Self> {
+        let end = rows.iter().map(|row| month_of(row.on)).max()?;
+        let earliest = rows.iter().map(|row| month_of(row.on)).min().unwrap_or(end);
+        Some(Self {
+            start: earliest.max(end - (MONTHS_PER_YEAR - 1)),
+            end,
+        })
+    }
+
+    const fn months(self) -> i32 {
+        self.end - self.start + 1
+    }
+
+    fn holds(self, row: &Row) -> bool {
+        (self.start..=self.end).contains(&month_of(row.on))
+    }
+
+    fn annual(self, dollars: f64) -> Dollars {
+        (dollars * f64::from(MONTHS_PER_YEAR) / f64::from(self.months())).round() as Dollars
+    }
+}
+
+/// The row's category: the bank's own column, its transaction type, or
+/// what its payee's words `matched`.
+fn sorted(row: &Row, matched: Option<Category>) -> Option<Category> {
+    row.category
+        .as_deref()
+        .and_then(Category::from_text)
+        .or(row.kind)
+        .or(matched)
+}
+
+/// The rows within the estimate's window that are `of`'s, newest first.
+#[must_use]
+pub fn records<'a>(rows: &'a [Row], patterns: &Patterns, of: &Of) -> Vec<&'a Row> {
+    let Some(window) = Window::of(rows) else {
+        return Vec::new();
+    };
+    let is_of = |row: &Row| {
+        let payee = normalize(&row.payee);
+        let category = sorted(row, patterns.category(&payee));
+        match of {
+            Of::Category(wanted) => category == Some(*wanted),
+            Of::Payee(wanted) => category.is_none() && payee == *wanted,
+            Of::Unnamed => category.is_none(),
+        }
+    };
+    let mut found: Vec<&Row> = rows
+        .iter()
+        .filter(|row| window.holds(row) && is_of(row))
+        .collect();
+    found.sort_by_key(|row| std::cmp::Reverse(row.on));
+    found
+}
+
 /// What `rows` say the plan spends, the latest twelve whole months taken
 /// and deflated to the plan's start-year dollars by its inflation.
 #[must_use]
 pub fn estimate(plan: &Plan, rows: &[Row], patterns: &Patterns) -> Estimate {
-    let Some(through) = rows.iter().map(|row| row.on).max() else {
+    let (Some(window), Some(through)) = (Window::of(rows), rows.iter().map(|row| row.on).max())
+    else {
         return Estimate::default();
     };
-    let month = |on: PlanDate| month_index(on.year(), on.0.month());
-    let end = month(through);
-    let earliest = rows.iter().map(|row| month(row.on)).min().unwrap_or(end);
-    let start = earliest.max(end - (MONTHS_PER_YEAR - 1));
-    let months = end - start + 1;
-    let annual = |dollars: f64| {
-        (dollars * f64::from(MONTHS_PER_YEAR) / f64::from(months)).round() as Dollars
-    };
-    let in_window = rows
-        .iter()
-        .filter(|row| (start..=end).contains(&month(row.on)));
+    let annual = |dollars: f64| window.annual(dollars);
+    let in_window = rows.iter().filter(|row| window.holds(row));
     let (mut by_category, unknown) = tally(plan, in_window, patterns);
     let mut listed: Vec<Unknown> = unknown
         .iter()
@@ -190,13 +263,13 @@ pub fn estimate(plan: &Plan, rows: &[Row], patterns: &Patterns) -> Estimate {
     let (groups, bucket) = grouped(plan, by_category, unknown);
     let proposals = groups
         .into_iter()
-        .map(|(target, group)| proposal(plan, (target, target == bucket), group, &annual))
+        .map(|(target, group)| proposal(plan, (target, target == bucket), group, window))
         .collect();
     listed
         .sort_by(|a, b| (b.amount.abs().cmp(&a.amount.abs())).then_with(|| a.payee.cmp(&b.payee)));
     let tallied = |tally: Option<Tally>| tally.map_or(0, |t| annual(t.total));
     Estimate {
-        months: months as u8,
+        months: window.months() as u8,
         through: Some(through),
         proposals,
         unknown: listed,
@@ -254,13 +327,7 @@ fn tally<'a>(
         let payee = payee.clone();
         let deflated =
             row.amount.0 as f64 / CENTS_PER_DOLLAR as f64 / inflation_factor(plan, row.on.year());
-        let category = row
-            .category
-            .as_deref()
-            .and_then(Category::from_text)
-            .or(row.kind)
-            .or(*matched);
-        let tally = match category {
+        let tally = match sorted(row, *matched) {
             Some(category) => by_category.entry(category).or_default(),
             None => unknown.entry(payee.clone()).or_default(),
         };
@@ -281,8 +348,9 @@ fn proposal(
     plan: &Plan,
     (target, is_bucket): (place::Target, bool),
     group: Group,
-    annual: &impl Fn(f64) -> Dollars,
+    window: Window,
 ) -> Proposal {
+    let annual = |dollars: f64| window.annual(dollars);
     let mut payees: Vec<(String, Dollars)> = group
         .tally
         .payees
@@ -296,23 +364,13 @@ fn proposal(
         .map(|(category, dollars, why)| (category, annual(dollars), why))
         .collect();
     categories.sort_by(|a, b| largest_first(&(a.0, a.1), &(b.0, b.1)));
-    let (id, is_new, name) = match target {
-        place::Target::Expense(at) => {
-            let stated = &plan.expenses[at];
-            (stated.id.clone(), false, stated.display_name().to_owned())
-        }
-        place::Target::New(category) => (category.slug().to_owned(), true, category.title()),
-        place::Target::NewBucket => (
-            place::NEW_BUCKET_ID.to_owned(),
-            true,
-            place::NEW_BUCKET_NAME.to_owned(),
-        ),
-    };
+    let (id, now, name) = identified(plan, target, window.end);
     Proposal {
         id,
-        is_new,
+        is_new: now.is_none(),
         name,
         is_bucket,
+        now,
         amount: annual(-group.tally.total),
         total: (-group.tally.total).round() as Dollars,
         rows: group.tally.rows,
@@ -332,6 +390,28 @@ fn proposal(
     }
 }
 
+/// The id, the amount in force at `end` and the name of the expense
+/// `target` sets, or of the one it adds.
+fn identified(plan: &Plan, target: place::Target, end: i32) -> (String, Option<Dollars>, String) {
+    match target {
+        place::Target::Expense(at) => {
+            let stated = &plan.expenses[at];
+            let now = in_force_amount(plan, stated, end);
+            (
+                stated.id.clone(),
+                Some(now),
+                stated.display_name().to_owned(),
+            )
+        }
+        place::Target::New(category) => (category.slug().to_owned(), None, category.title()),
+        place::Target::NewBucket => (
+            place::NEW_BUCKET_ID.to_owned(),
+            None,
+            place::NEW_BUCKET_NAME.to_owned(),
+        ),
+    }
+}
+
 /// The expense what fits nowhere else goes to: the one the plan's
 /// `[estimate]` names, else one whose id or name says misc, other or
 /// general; none where a new one would be proposed.
@@ -344,9 +424,7 @@ pub fn bucket(plan: &Plan) -> Option<&Expense> {
 /// has none for; the proposals left as they came set nothing they did not
 /// propose.
 pub fn apply(plan: &mut Plan, estimate: &Estimate) {
-    let end = estimate
-        .through
-        .map(|on| month_index(on.year(), on.0.month() + 1) - 1);
+    let end = estimate.through.map(month_of);
     for proposal in &estimate.proposals {
         let at = (!proposal.is_new)
             .then(|| plan.expenses.iter().position(|e| e.id == proposal.id))
@@ -359,6 +437,11 @@ pub fn apply(plan: &mut Plan, estimate: &Estimate) {
             None => plan.expenses.push(new_expense(proposal)),
         }
     }
+}
+
+/// What `expense` spends a year in the month `end`.
+fn in_force_amount(plan: &Plan, expense: &Expense, end: i32) -> Dollars {
+    phase_in_force(plan, expense, end).map_or(expense.amount, |at| expense.phases[at].amount)
 }
 
 /// The index of the last phase fired by the window's `end` month, or none

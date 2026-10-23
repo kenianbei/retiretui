@@ -1,6 +1,7 @@
 # What a payee's words say it was for, matched by substring on the
 # normalized payee - uppercased, without store numbers, card suffixes,
-# reference numbers, a trailing state or anything after a comma - the
+# reference numbers, codes after the first word, a trailing state or
+# anything after a comma, a processor's `*` read as a space - the
 # first match winning. A copy of this file as patterns.toml in the
 # application's config directory is read before it.
 
@@ -293,7 +294,8 @@ patterns = [
   { match = "MAX.COM", category = "subscriptions" },
   { match = "APPLE.COM/BILL", category = "subscriptions" },
   { match = "APPLE.COM BILL", category = "subscriptions" },
-  { match = "GOOGLE *", category = "subscriptions" },
+  { match = "GOOGLE CLOUD", category = "subscriptions" },
+  { match = "GOOGLE PLAY", category = "subscriptions" },
   { match = "GOOGLE STORAGE", category = "subscriptions" },
   { match = "GOOGLE ONE", category = "subscriptions" },
   { match = "AMAZON PRIME", category = "subscriptions" },
@@ -311,7 +313,7 @@ patterns = [
   { match = "ICLOUD", category = "subscriptions" },
   { match = "DROPBOX", category = "subscriptions" },
   { match = "MICROSOFT 365", category = "subscriptions" },
-  { match = "MICROSOFT*", category = "subscriptions" },
+  { match = "MICROSOFT", category = "subscriptions" },
   { match = "ADOBE", category = "subscriptions" },
   { match = "OPENAI", category = "subscriptions" },
   { match = "CHATGPT", category = "subscriptions" },

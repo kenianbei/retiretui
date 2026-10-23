@@ -2,8 +2,8 @@
 //! spending sorted, annualized and deflated, and the proposals applied.
 
 use retiretui_engine::estimate::{
-    BankError, Category, Cents, Estimate, Patterns, Phases, Proposal, Why, apply, estimate, merge,
-    read,
+    BankError, Category, Cents, Estimate, Of, Patterns, Phases, Proposal, Why, apply, estimate,
+    merge, read, records,
 };
 use retiretui_engine::plan::Plan;
 
@@ -256,9 +256,12 @@ fn a_phased_expense_is_set_in_the_phase_in_force_scaled_or_whole() {
             "{phases:?}"
         );
     }
+    let found = estimated(&plan(PHASED_HOUSING), csv);
+    assert_eq!(found.proposals[0].now, Some(15000), "the phase in force");
     let before = "Date,Description,Amount\n2026-03-01,ROCKET MORTGAGE,-1500.00\n";
     let mut plan = plan(PHASED_HOUSING);
     let found = estimated(&plan, before);
+    assert_eq!(found.proposals[0].now, Some(12000), "the base amount");
     apply(&mut plan, &found);
     assert_eq!(
         (plan.expenses[0].amount, plan.expenses[0].phases[0].amount),
@@ -386,4 +389,25 @@ fn the_estimate_table_is_checked_against_the_plans_expenses() {
             "estimate.assign[2].category",
         ]
     );
+}
+
+#[test]
+fn records_are_a_categorys_or_a_payees_rows_in_the_window_newest_first() {
+    let csv = "Date,Description,Amount\n2025-01-05,SAFEWAY,-1.00\n2026-09-01,SAFEWAY,-50.00\n2026-10-01,SAFEWAY,-60.00\n2026-10-02,SOMEONE,-30.00\n2026-10-03,ELSEWHERE,-20.00\n";
+    let rows = read("x.csv", csv).unwrap();
+    let patterns = Patterns::embedded();
+    let amounts = |of: &Of| -> Vec<i64> {
+        records(&rows, &patterns, of)
+            .iter()
+            .map(|row| row.amount.0)
+            .collect()
+    };
+    assert_eq!(
+        amounts(&Of::Category(Category::Groceries)),
+        [-6000, -5000],
+        "the row a year before the window is left out"
+    );
+    assert_eq!(amounts(&Of::Payee("SOMEONE".to_owned())), [-3000]);
+    assert_eq!(amounts(&Of::Unnamed), [-2000, -3000]);
+    assert!(records(&[], &patterns, &Of::Unnamed).is_empty());
 }
