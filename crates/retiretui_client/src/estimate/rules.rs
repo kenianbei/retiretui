@@ -38,6 +38,13 @@ pub enum Change {
         /// The name.
         name: String,
     },
+    /// Every row of each payee containing the words is for the category.
+    Contains {
+        /// The words.
+        part: String,
+        /// What the rows are for.
+        category: Category,
+    },
     /// Every row of the payee is counted nowhere.
     IgnorePayee {
         /// The payee, by the name it is listed under.
@@ -80,6 +87,12 @@ impl Change {
                 rule.insert("category", category.slug().into());
                 push(&mut file, PATTERNS, rule)?;
             }
+            Self::Contains { part, category } => {
+                let mut rule = InlineTable::new();
+                rule.insert("match", part.as_str().into());
+                rule.insert("category", category.slug().into());
+                push(&mut file, PATTERNS, rule)?;
+            }
             Self::Merge { payee, name } => merge(&mut file, payee, name)?,
             Self::IgnorePayee { payee } => push(&mut file, PATTERNS, ignoring(payee, None))?,
             Self::IgnoreRecord(record) => {
@@ -100,6 +113,9 @@ impl Change {
     pub fn said(&self) -> String {
         match self {
             Self::Name { payee, category } => format!("{payee} is {}", category.title()),
+            Self::Contains { part, category } => {
+                format!("payees containing {part} are {}", category.title())
+            }
             Self::Merge { payee, name } => format!("{payee} is listed as {name}"),
             Self::IgnorePayee { payee } => format!("{payee} is ignored"),
             Self::IgnoreRecord(record) => format!("{} on {} is ignored", record.payee, record.on.0),

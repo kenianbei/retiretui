@@ -3,11 +3,15 @@
 //! the user's rules, the bank's own column, its transaction type, then the
 //! embedded table.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
+use serde::Serialize;
+
+use super::payee::starred_as_spaces;
 use super::rules::Outcome;
 use super::{Category, Patterns, Row};
-use crate::plan::{Dollars, PlanDate};
+use crate::plan::{Dollars, Plan, PlanDate};
+use crate::project::inflation_factor;
 use crate::tax::month_index;
 
 const MONTHS_PER_YEAR: i32 = 12;
@@ -127,4 +131,40 @@ pub fn records<'a>(rows: &'a [Row], patterns: &Patterns, of: &Of) -> Vec<&'a Row
         .collect();
     found.sort_by_key(|row| std::cmp::Reverse(row.on));
     found
+}
+
+/// How far a rule matching payees that contain some words reaches.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+pub struct Reach {
+    /// How many payees, by the names they are listed under.
+    pub payees: usize,
+    /// What they spent a year, in the plan's start-year dollars.
+    pub spent: Dollars,
+}
+
+/// How far a `match` on `part` reaches among `rows` in the estimate's
+/// window, payees named as `patterns` name them.
+#[must_use]
+pub fn reach(plan: &Plan, rows: &[Row], patterns: &Patterns, part: &str) -> Reach {
+    let part = starred_as_spaces(&part.trim().to_ascii_uppercase());
+    let Some(window) = Window::of(rows).filter(|_| !part.is_empty()) else {
+        return Reach::default();
+    };
+    let mut names: HashMap<&str, String> = HashMap::new();
+    let mut payees = HashSet::new();
+    let mut spent = 0.0;
+    for row in rows.iter().filter(|row| window.holds(row)) {
+        let name = names
+            .entry(&row.payee)
+            .or_insert_with(|| patterns.name_of(&row.payee).to_ascii_uppercase());
+        if name.contains(part.as_str()) {
+            payees.insert(name.clone());
+            spent += row.spent().dollars() / inflation_factor(plan, row.on.year());
+        }
+    }
+    Reach {
+        payees: payees.len(),
+        spent: window.annual(spent),
+    }
 }

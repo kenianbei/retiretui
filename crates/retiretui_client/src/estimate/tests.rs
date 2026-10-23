@@ -238,7 +238,9 @@ fn a_record_is_ignored_and_counted_again_on_the_ignored_row() {
     let plan = retired();
     let mut estimator = estimated(&plan);
     let dining = 3;
-    let change = estimator.toggle_record(dining, 0).unwrap();
+    let change = estimator
+        .act(dining, Some(0), Action::IgnoreRecord)
+        .unwrap();
     assert!(matches!(change, Change::IgnoreRecord(_)), "{change:?}");
     assert!(estimator.refresh(&plan));
     let found = estimator.estimate();
@@ -252,13 +254,13 @@ fn a_record_is_ignored_and_counted_again_on_the_ignored_row() {
         Some("Count")
     );
     assert!(matches!(
-        estimator.toggle_record(at, 0).unwrap(),
+        estimator.act(at, Some(0), Action::IgnoreRecord).unwrap(),
         Change::Unignore(_)
     ));
     assert!(estimator.refresh(&plan));
     assert_eq!(estimator.estimate().ignored_rows, 0);
     assert!(
-        estimator.toggle_record(0, 0).is_err(),
+        estimator.act(0, Some(0), Action::IgnoreRecord).is_err(),
         "an expense's payees"
     );
 }
@@ -295,4 +297,51 @@ fn a_row_says_what_it_changes_why_and_what_lies_behind_it() {
     assert_eq!(dining.rows, [["2026-10-04", "TAQUERIA SOL", "$40.00"]]);
     let unnamed = estimator.behind(5, MoneyForm::Full).unwrap();
     assert_eq!(unnamed.rows, [["2026-10-03", "SOMEONE", "$30.00"]]);
+}
+
+#[test]
+fn a_payee_is_moved_named_or_ignored_from_its_record_and_alike_ones_by_words() {
+    let plan = retired();
+    let mut estimator = estimated(&plan);
+    let dining = 3;
+    let moved = estimator
+        .act(dining, Some(0), Action::PayeeIs(Category::Travel))
+        .unwrap();
+    assert_eq!(
+        moved,
+        Change::Name {
+            payee: "TAQUERIA SOL".to_owned(),
+            category: Category::Travel,
+        }
+    );
+    assert!(estimator.refresh(&plan));
+    let reach = estimator.reach("taqueria");
+    assert_eq!((reach.payees, reach.spent), (1, 480));
+    assert_eq!(estimator.reach("  ").payees, 0);
+
+    let someone = listed(estimator.estimate())
+        .position(|row| matches!(row, Listed::Payee(_)))
+        .unwrap();
+    let ignored = estimator.act(someone, None, Action::IgnorePayee).unwrap();
+    assert_eq!(ignored.said(), "SOMEONE is ignored");
+    assert!(estimator.refresh(&plan));
+    assert_eq!(estimator.estimate().ignored_rows, 1);
+
+    let contains = estimator
+        .act(
+            0,
+            None,
+            Action::Containing(" rocket ".to_owned(), Category::Housing),
+        )
+        .unwrap();
+    assert_eq!(contains.said(), "payees containing rocket are Housing");
+    assert!(
+        estimator
+            .act(0, None, Action::Containing(" ".to_owned(), Category::Pets))
+            .is_err()
+    );
+    assert!(
+        estimator.act(0, None, Action::IgnorePayee).is_err(),
+        "an expense has no payee"
+    );
 }

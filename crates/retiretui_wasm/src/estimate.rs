@@ -5,8 +5,8 @@
 //! written as a scenario.
 
 use retiretui_client::estimate::{
-    ABOUT, Applied, COLUMNS, EXTENSIONS, Estimator, NOTHING_READ, SETTINGS_FORM, assign, listed,
-    overlay, summary, take_question, taken,
+    ABOUT, Action, Applied, COLUMNS, EXTENSIONS, Estimator, NOTHING_READ, SETTINGS_FORM, assign,
+    listed, overlay, summary, take_question, taken,
 };
 use retiretui_client::forms::details::{self, ReadRow};
 use retiretui_client::forms::edit::Entry;
@@ -219,7 +219,7 @@ impl JsEstimator {
     #[wasm_bindgen(js_name = toggleRecord)]
     pub fn toggle_record(&mut self, at: usize, index: usize) -> Result<String, JsError> {
         self.0
-            .toggle_record(at, index)
+            .act(at, Some(index), Action::IgnoreRecord)
             .map(|change| change.said())
             .map_err(refused)
     }
@@ -352,12 +352,17 @@ mod tests {
         );
         assert!(shown.question.is_some());
         assert_eq!(read(&estimator, 0)[0].label, "Expense");
-        let said = estimator.toggle_record(1, 0).expect("a record").said();
+        let said = estimator
+            .act(1, Some(0), Action::IgnoreRecord)
+            .expect("a record")
+            .said();
         assert!(said.ends_with("is ignored"), "{said}");
         view(&mut estimator, &document);
         assert_eq!(estimator.estimate().ignored_rows, 1);
         let ignored = listed(estimator.estimate()).count() - 1;
-        estimator.toggle_record(ignored, 0).expect("counted again");
+        estimator
+            .act(ignored, Some(0), Action::IgnoreRecord)
+            .expect("counted again");
         view(&mut estimator, &document);
         assert_eq!(estimator.estimate().ignored_rows, 0);
         assert_eq!(
