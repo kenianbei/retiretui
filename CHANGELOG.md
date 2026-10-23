@@ -36,7 +36,7 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   menu. The terminal keeps these in `estimate/patterns.toml` in the config
   directory, whose rules can also test the exact payee, a regex, the amount, the
   export and the date, the most specific match winning over the bank's own
-  category.
+  category; a space at either end of a `match` marks the edge of a word.
 
 ### Changed
 

@@ -168,6 +168,26 @@ mod tests {
     }
 
     #[test]
+    fn a_space_at_either_end_of_a_match_is_the_edge_of_a_word() {
+        let patterns = Patterns::embedded();
+        assert_eq!(sorted(&patterns, "ATT WIRELESS"), Some(Category::Phone));
+        assert_eq!(sorted(&patterns, "ATT"), Some(Category::Phone));
+        assert_eq!(sorted(&patterns, "SEATTLE LOCKSMITH"), None);
+        assert_eq!(
+            sorted(&patterns, "VSP VISION CARE"),
+            Some(Category::Medical)
+        );
+        assert_eq!(sorted(&patterns, "VISION WORKS"), Some(Category::Medical));
+        assert_eq!(sorted(&patterns, "DIVISION LOCKSMITH"), None);
+        assert_eq!(sorted(&patterns, "XCEL ENERGY"), Some(Category::Utilities));
+        assert_eq!(sorted(&patterns, "T-MOBILE"), Some(Category::Phone));
+        assert_eq!(sorted(&patterns, "MOBIL 0412"), Some(Category::Fuel));
+        assert_eq!(sorted(&patterns, "SHELLFISH SHACK"), None);
+        assert_eq!(sorted(&patterns, "TRAVIS COUNTY"), None);
+        assert_eq!(sorted(&patterns, "EXCELSIOR LOCKSMITH"), None);
+    }
+
+    #[test]
     fn the_most_specific_rule_wins_and_the_earliest_on_a_tie() {
         let patterns = with(
             r#"patterns = [

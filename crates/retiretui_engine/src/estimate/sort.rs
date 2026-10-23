@@ -144,7 +144,7 @@ pub struct Reach {
 /// window, payees named as `patterns` name them.
 #[must_use]
 pub fn reach(plan: &Plan, rows: &[Row], patterns: &Patterns, part: &str) -> Reach {
-    let part = rules::said(part);
+    let part = rules::said(part.trim());
     let Some(window) = Window::of(rows).filter(|_| !part.is_empty()) else {
         return Reach::default();
     };
@@ -155,7 +155,7 @@ pub fn reach(plan: &Plan, rows: &[Row], patterns: &Patterns, part: &str) -> Reac
         let name = names
             .entry(&row.payee)
             .or_insert_with(|| patterns.name_of(&row.payee).to_ascii_uppercase());
-        if name.contains(part.as_str()) {
+        if rules::contains_part(name, &part) {
             payees.insert(name.clone());
             spent += row.spent().dollars() / inflation_factor(plan, row.on.year());
         }

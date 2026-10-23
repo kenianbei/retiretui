@@ -58,7 +58,7 @@ enum PayeeTest {
 impl PayeeTest {
     fn holds(&self, payee: &str) -> bool {
         match self {
-            Self::Contains(part) => payee.contains(part.as_str()),
+            Self::Contains(part) => contains_part(payee, part),
             Self::Is(whole) => payee == whole,
             Self::OneOf(wholes) => wholes.iter().any(|whole| whole == payee),
             Self::Matches(pattern) => pattern.is_match(payee),
@@ -130,9 +130,22 @@ pub(super) fn best<T>(found: impl Iterator<Item = (u32, T)>) -> Option<T> {
         .map(|(_, it)| it)
 }
 
-/// Words as a rule matches them against a payee.
+/// Words as a rule matches them against a payee, a space at either end
+/// kept to mark the edge of a word.
 pub(super) fn said(words: &str) -> String {
-    starred_as_spaces(&words.trim().to_ascii_uppercase())
+    starred_as_spaces(&words.to_ascii_uppercase())
+}
+
+/// Whether `payee` contains `part`, a space at either end of `part` met by
+/// a space or by the payee's own start or end: `ATT ` holds of `ATT
+/// WIRELESS` and `ATT`, never `SEATTLE`.
+pub(super) fn contains_part(payee: &str, part: &str) -> bool {
+    let core = part.trim();
+    payee.match_indices(core).any(|(at, _)| {
+        let end = at + core.len();
+        (!part.starts_with(' ') || payee[..at].is_empty() || payee[..at].ends_with(' '))
+            && (!part.ends_with(' ') || payee[end..].is_empty() || payee[end..].starts_with(' '))
+    })
 }
 
 /// The payee keys of a rule or a merge, at most one of them stated.
