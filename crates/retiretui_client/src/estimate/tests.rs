@@ -119,13 +119,13 @@ fn an_expense_a_category_and_a_payee_each_open_their_own_form() {
     named.insert("category".to_owned(), Value::String("pets".to_owned()));
     hold(&mut draft, RowForm::Payee, named);
     let applied = estimator.apply(6, &draft).unwrap();
-    assert!(matches!(
+    assert_eq!(
         applied,
-        Applied::Named {
+        Applied::Changed(vec![Change::Name {
+            payee: "SOMEONE".to_owned(),
             category: Category::Pets,
-            ..
-        }
-    ));
+        }])
+    );
     assert!(estimator.refresh(&plan), "a named payee estimates again");
     assert!(estimator.estimate().unknown.is_empty());
 }
@@ -179,14 +179,85 @@ fn a_move_and_the_settings_are_kept_in_the_plan() {
 }
 
 #[test]
-fn a_payee_is_appended_to_the_users_patterns_and_still_reads() {
-    let first = with_payee(None, "SOMEONE", Category::Pets).unwrap();
+fn a_change_is_made_to_the_users_patterns_as_they_wrote_them() {
+    let named = Change::Name {
+        payee: "AL'S \"PLACE\"".to_owned(),
+        category: Category::Dining,
+    };
+    let file = "# mine\n[[patterns]]\nmatch = \"SAFEWAY\"\ncategory = \"groceries\"\n";
+    let text = named.applied(file).unwrap();
+    assert!(text.starts_with(file), "{text}");
     let mut patterns = Patterns::default();
-    patterns.add(&first).unwrap();
-    assert_eq!(patterns.category("SOMEONE"), Some(Category::Pets));
-    let second = with_payee(Some(&first), "AL'S \"PLACE\"", Category::Dining).unwrap();
-    assert!(second.starts_with(&first));
-    assert!(with_payee(Some("patterns = ["), "X", Category::Pets).is_err());
+    patterns.add(&text).unwrap();
+    assert_eq!(patterns.category("AL'S \"PLACE\""), Some(Category::Dining));
+
+    let merge = |payee: &str| Change::Merge {
+        payee: payee.to_owned(),
+        name: "Acme".to_owned(),
+    };
+    let text = merge("ACME HELP").applied("").unwrap();
+    let text = merge("ACME SHOP").applied(&text).unwrap();
+    assert_eq!(text.matches("name = ").count(), 1, "{text}");
+    let mut patterns = Patterns::default();
+    patterns.add(&text).unwrap();
+    assert_eq!(patterns.name_of("ACME SHOP"), "Acme");
+
+    let inline = "patterns = [{ match = \"X\", category = \"pets\" }]\n";
+    let text = named.applied(inline).unwrap();
+    assert!(text.contains("{ is = "), "kept inline: {text}");
+    assert!(named.applied("patterns = 3").is_err());
+}
+
+#[test]
+fn an_ignore_the_page_wrote_is_taken_back_and_a_hand_written_one_is_not() {
+    let record = Record {
+        payee: "SOMEONE".to_owned(),
+        on: retiretui_engine::plan::PlanDate(jiff::civil::date(2026, 10, 3)),
+        spent: retiretui_engine::estimate::Cents(3010),
+    };
+    let ignored = Change::IgnoreRecord(record.clone()).applied("").unwrap();
+    assert!(ignored.contains("spent = [30.1, 30.1]"), "{ignored}");
+    let counted = Change::Unignore(record.clone()).applied(&ignored).unwrap();
+    assert!(!counted.contains("ignore"), "{counted}");
+    let payee = Change::IgnorePayee {
+        payee: "someone".to_owned(),
+    };
+    let counted = Change::Unignore(record.clone())
+        .applied(&payee.applied("").unwrap())
+        .unwrap();
+    assert!(!counted.contains("ignore"), "the payee's, else: {counted}");
+    let by_hand = "[[patterns]]\nmatch = \"SOME\"\nignore = true\n";
+    assert!(Change::Unignore(record).applied(by_hand).is_err());
+}
+
+#[test]
+fn a_record_is_ignored_and_counted_again_on_the_ignored_row() {
+    let plan = retired();
+    let mut estimator = estimated(&plan);
+    let dining = 3;
+    let change = estimator.toggle_record(dining, 0).unwrap();
+    assert!(matches!(change, Change::IgnoreRecord(_)), "{change:?}");
+    assert!(estimator.refresh(&plan));
+    let found = estimator.estimate();
+    assert_eq!((found.ignored, found.ignored_rows), (480, 1));
+    let last = listed(found).last().unwrap();
+    assert_eq!(last.cells(MoneyForm::Full)[0], "Ignored");
+    assert!(summary(found, MoneyForm::Full).ends_with("; 1 record ignored, $480 a year."));
+    let at = listed(found).count() - 1;
+    assert_eq!(
+        estimator.behind(at, MoneyForm::Full).unwrap().toggle,
+        Some("Count")
+    );
+    assert!(matches!(
+        estimator.toggle_record(at, 0).unwrap(),
+        Change::Unignore(_)
+    ));
+    assert!(estimator.refresh(&plan));
+    assert_eq!(estimator.estimate().ignored_rows, 0);
+    assert!(
+        estimator.toggle_record(0, 0).is_err(),
+        "an expense's payees"
+    );
 }
 
 #[test]

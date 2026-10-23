@@ -5,7 +5,7 @@
 use serde::Deserialize;
 
 use super::rules::{Merge, MergeText, Outcome, PatternError, Rule, RuleText, best};
-use super::{Category, Row};
+use super::{Category, Row, normalize};
 
 const EMBEDDED: &str = include_str!("patterns.toml");
 
@@ -62,6 +62,14 @@ impl Patterns {
     #[must_use]
     pub fn text(&self) -> &str {
         &self.text
+    }
+
+    /// The name a payee as the bank wrote it is listed under: merged,
+    /// else normalized.
+    #[must_use]
+    pub fn name_of(&self, payee: &str) -> String {
+        let payee = normalize(payee);
+        self.merged(&payee).map_or(payee, str::to_owned)
     }
 
     /// The name the payee is merged under, where a merge takes it.

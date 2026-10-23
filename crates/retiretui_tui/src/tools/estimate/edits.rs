@@ -7,10 +7,10 @@ use std::path::{Path, PathBuf};
 use bevy_ecs::prelude::{Commands, In, Query, Res, ResMut, With, World};
 use plurimus::widgets::ActiveDescendant;
 use retiretui_client::estimate::{
-    self, Applied, RowForm, SETTINGS_FORM, assign, take_question, taken, with_payee,
+    self, Applied, Change, RowForm, SETTINGS_FORM, assign, take_question, taken,
 };
 use retiretui_client::present::counted;
-use retiretui_engine::estimate::{Category, Estimate, apply};
+use retiretui_engine::estimate::{Estimate, apply};
 
 use super::{Cursor, FileList, FileRow, Held, PatternsFile};
 use crate::command::Outcome;
@@ -141,23 +141,28 @@ pub(super) fn apply_row(
             assign(&mut editor.draft.plan, category, expense);
             editor.commit();
         }
-        Ok(Applied::Named { payee, category }) => {
-            if let Some(path) = &memory.0 {
-                remember(&session, path, &payee, category);
-            }
-        }
+        Ok(Applied::Changed(changes)) => remember(&session, memory.0.as_deref(), &changes),
     }
 }
 
-/// Appends `payee`, named for `category`, to the user's patterns file.
-fn remember(session: &Session, path: &Path, payee: &str, category: Category) {
-    let text = session.store.read(path).ok();
-    let written = with_payee(text.as_deref(), payee, category).and_then(|file| {
-        settings::write(session.store.as_ref(), path, &file).map_err(|error| error.to_string())
-    });
+/// Makes `changes` to the user's patterns file, where the launch names
+/// one, and says what was made.
+pub(super) fn remember(session: &Session, path: Option<&Path>, changes: &[Change]) {
+    let said: Vec<String> = changes.iter().map(Change::said).collect();
+    let said = said.join("; ");
+    let Some(path) = path else {
+        journal::say(said);
+        return;
+    };
+    let text = session.store.read(path).unwrap_or_default();
+    let written = (changes.iter())
+        .try_fold(text, |text, change| change.applied(&text))
+        .and_then(|file| {
+            settings::write(session.store.as_ref(), path, &file).map_err(|error| error.to_string())
+        });
     match written {
-        Ok(()) => journal::say(format!("{payee} remembered in {}", path.display())),
-        Err(reason) => journal::warn(format!("{payee} not remembered: {reason}")),
+        Ok(()) => journal::say(format!("{said}, kept in {}", path.display())),
+        Err(reason) => journal::warn(format!("{said}, but not kept: {reason}")),
     }
 }
 

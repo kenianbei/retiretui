@@ -16,4 +16,9 @@ columns: Array<string>,
 /**
  * Each record's cells.
  */
-rows: Array<Array<string>>, };
+rows: Array<Array<string>>, 
+/**
+ * What choosing one of the records does - ignores it or counts it
+ * again - where they are records.
+ */
+toggle: string | null, };

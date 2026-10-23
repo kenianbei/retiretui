@@ -255,11 +255,11 @@ fn a_named_payee_is_remembered_in_the_patterns_file_the_launch_names() {
     };
     apply_at(&mut app, at, RowForm::Payee, answer("category", "pets"));
     let written = std::fs::read_to_string(&file).unwrap();
-    assert!(written.contains("match = \"SOMEONE\""), "{written}");
+    assert!(written.contains("is = \"SOMEONE\""), "{written}");
     assert!(
         said(&app)
             .iter()
-            .any(|line| line.contains("SOMEONE remembered"))
+            .any(|line| line.contains("SOMEONE is Pets, kept in"))
     );
     assert!(
         app.world()

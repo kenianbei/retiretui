@@ -6,7 +6,7 @@
 use std::collections::HashMap;
 
 use super::rules::Outcome;
-use super::{Category, Patterns, Row, normalize};
+use super::{Category, Patterns, Row};
 use crate::plan::{Dollars, PlanDate};
 use crate::tax::month_index;
 
@@ -87,8 +87,7 @@ impl<'a> Sorter<'a> {
     pub(super) fn sort(&mut self, row: &'a Row) -> (&str, Option<Outcome>) {
         let patterns = self.patterns;
         let named = self.named.entry(&row.payee).or_insert_with(|| {
-            let payee = normalize(&row.payee);
-            let name = patterns.merged(&payee).map_or(payee, str::to_owned);
+            let name = patterns.name_of(&row.payee);
             let key = name.to_ascii_uppercase();
             let embedded = patterns.embedded_outcome(&key, row);
             Named {

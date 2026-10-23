@@ -6,19 +6,21 @@
 
 mod forms;
 mod rows;
+mod rules;
 #[cfg(test)]
 mod tests;
 
 use retiretui_engine::estimate::{
-    BankError, Estimate, Patterns, Row, apply, estimate, merge, read,
+    BankError, Cents, Estimate, Patterns, Row, apply, estimate, merge, read, records,
 };
 use retiretui_engine::plan::{self, Plan, Scenario};
 use schemars::JsonSchema;
 use serde::Serialize;
 use toml::Table;
 
-pub use forms::{RowForm, SETTINGS_FORM, assign, with_payee};
+pub use forms::{RowForm, SETTINGS_FORM, assign};
 pub use rows::{Behind, Listed, listed, summary, take_question, taken};
+pub use rules::{Change, Record};
 
 use crate::draft::Draft;
 use crate::present::MoneyForm;
@@ -35,6 +37,7 @@ pub const EXTENSIONS: [&str; 3] = ["csv", "ofx", "qfx"];
 /// What a payee's category reads as while nothing names it.
 pub const UNKNOWN: &str = "Unknown";
 const NO_ROW: &str = "nothing to edit on this row";
+const NO_RECORD: &str = "no record there to ignore";
 
 /// The exports a session holds, each by its name, read once, and their
 /// rows merged as each is added or dropped.
@@ -105,19 +108,15 @@ impl Exports {
 pub enum Applied {
     /// Nothing more: the estimate holds the edit, or there was none.
     Held,
+    /// The user's rules changed, in the order made, which a surface may
+    /// remember.
+    Changed(Vec<Change>),
     /// The category goes to `expense`, or back to where it is placed.
     Moved {
         /// The category moved.
         category: retiretui_engine::estimate::Category,
         /// The expense, or none to drop the assignment.
         expense: Option<String>,
-    },
-    /// The payee's rows are for `category` now.
-    Named {
-        /// The payee, normalized.
-        payee: String,
-        /// What it is for.
-        category: retiretui_engine::estimate::Category,
     },
 }
 
@@ -224,12 +223,51 @@ impl Estimator {
             return Ok(Applied::Held);
         }
         let applied = forms::applied(row, draft)?;
-        if let Applied::Named { payee, category } = &applied {
-            let rule = with_payee(None, payee, *category)?;
-            self.patterns.add(&rule).map_err(|error| error.to_string())?;
-            self.over = None;
+        if let Applied::Changed(changes) = &applied {
+            for change in changes {
+                self.make(change)?;
+            }
         }
         Ok(applied)
+    }
+
+    /// Makes `change` to the rules the session holds, estimating again.
+    ///
+    /// # Errors
+    ///
+    /// Where the change cannot be made to them, in its words.
+    pub fn make(&mut self, change: &Change) -> Result<(), String> {
+        let text = change.applied(self.patterns.text())?;
+        let mut patterns = Patterns::embedded();
+        patterns.add(&text).map_err(|error| error.to_string())?;
+        self.patterns = patterns;
+        self.over = None;
+        Ok(())
+    }
+
+    /// Ignores the record at `index` behind the row at `at`, or counts it
+    /// again behind the ignored row, answering the change made.
+    ///
+    /// # Errors
+    ///
+    /// Where no record lies there, or the change cannot be made.
+    pub fn toggle_record(&mut self, at: usize, index: usize) -> Result<Change, String> {
+        let row = self.row(at).ok_or(NO_RECORD)?;
+        let (of, _) = row.of().ok_or(NO_RECORD)?;
+        let found = records(self.exports.rows(), &self.patterns, &of);
+        let picked = found.get(index).ok_or(NO_RECORD)?;
+        let record = Record {
+            payee: self.patterns.name_of(&picked.payee),
+            on: picked.on,
+            spent: Cents(-picked.amount.0),
+        };
+        let change = if matches!(row, Listed::Ignored { .. }) {
+            Change::Unignore(record)
+        } else {
+            Change::IgnoreRecord(record)
+        };
+        self.make(&change)?;
+        Ok(change)
     }
 }
 

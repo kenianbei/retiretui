@@ -26,8 +26,13 @@ pub struct EstimateToolArgs {
     /// by the same bank id, else the same date, amount and payee, is
     /// dropped.
     pub files: Vec<Export>,
-    /// A `[[patterns]]` TOML text of `match` and `category` rows read
-    /// before the embedded table.
+    /// The user's rules as TOML: `[[patterns]]` rows testing the payee by
+    /// `match` (contains), `is`, `one_of` or `matches` (a regex), and
+    /// optionally `spent = [low, high]` in statement dollars, `export`
+    /// (part of the file name) and `on` (a date), each with a `category`
+    /// or `ignore = true`, the most specific match winning and every rule
+    /// before the bank's own category; and `[[payees]]` rows merging
+    /// payees under a `name` by the same payee keys.
     pub patterns: Option<String>,
     /// Store the proposals applied as a scenario overlay at this path
     /// (`.toml`, relative to the served directory); its `base` points back

@@ -1,7 +1,7 @@
 //! The estimate as rows: each expense a proposal sets or adds, the
-//! categories it gathers beneath it, and beneath the bucket the payees
-//! nothing names; each said in a row, read out, and with the records
-//! behind it.
+//! categories it gathers beneath it, beneath the bucket the payees nothing
+//! names, and last what the user's rules ignore; each said in a row, read
+//! out, and with the records behind it.
 
 use retiretui_engine::estimate::{
     CENTS_PER_DOLLAR, Cents, Estimate, Gathered, Of, Patterns, Proposal, Row, Unknown, Why, records,
@@ -27,6 +27,10 @@ const UNNAMED: &str = "Unnamed payees";
 const PAYEE_COLUMNS: [&str; 2] = ["Payee", "Per year"];
 /// The columns a row's transactions are tabled under.
 const RECORD_COLUMNS: [&str; 3] = ["Date", "Payee", "Amount"];
+const IGNORED: &str = "Ignored";
+/// What choosing a record does, where it is counted and where ignored.
+const IGNORE_RECORD: &str = "Ignore";
+const COUNT_RECORD: &str = "Count";
 
 /// One row of the table.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -49,11 +53,18 @@ pub enum Listed<'a> {
     },
     /// A payee the patterns did not name.
     Payee(&'a Unknown),
+    /// The records the user's rules ignore.
+    Ignored {
+        /// What they spent a year.
+        amount: Dollars,
+        /// How many there are.
+        rows: usize,
+    },
 }
 
 /// The table's rows: each expense with what it gathers beneath it, the
-/// bucket's last the payees nothing names; where no expense takes them,
-/// those payees come last.
+/// bucket's last the payees nothing names - where no expense takes them,
+/// those payees after the expenses - then what the user's rules ignore.
 pub fn listed(estimate: &Estimate) -> impl Iterator<Item = Listed<'_>> {
     let mut rows = Vec::new();
     let payees = estimate.unknown.iter().map(Listed::Payee);
@@ -75,6 +86,12 @@ pub fn listed(estimate: &Estimate) -> impl Iterator<Item = Listed<'_>> {
     }
     if !has_payees {
         rows.extend(payees);
+    }
+    if estimate.ignored_rows > 0 {
+        rows.push(Listed::Ignored {
+            amount: estimate.ignored,
+            rows: estimate.ignored_rows,
+        });
     }
     rows.into_iter()
 }
@@ -125,6 +142,7 @@ impl Listed<'_> {
                 why_word(gathered.why),
             ),
             Self::Unnamed { amount, .. } => figure(format!("{INDENT}{UNNAMED}"), *amount, ""),
+            Self::Ignored { amount, .. } => figure(IGNORED.to_owned(), *amount, ""),
             Self::Payee(unknown) => figure(
                 format!("{PAYEE_INDENT}{}", unknown.payee),
                 unknown.amount,
@@ -136,13 +154,13 @@ impl Listed<'_> {
     /// Whether the row is one of those an expense gathers.
     #[must_use]
     pub const fn is_nested(&self) -> bool {
-        !matches!(self, Self::Expense(_))
+        !matches!(self, Self::Expense(_) | Self::Ignored { .. })
     }
 
     /// Whether a form edits the row.
     #[must_use]
     pub const fn is_editable(&self) -> bool {
-        !matches!(self, Self::Unnamed { .. })
+        !matches!(self, Self::Unnamed { .. } | Self::Ignored { .. })
     }
 
     /// What the row is, as its read-out is headed.
@@ -153,6 +171,7 @@ impl Listed<'_> {
             Self::Category { .. } => "Category",
             Self::Unnamed { .. } => "Payees",
             Self::Payee(_) => "Payee",
+            Self::Ignored { .. } => IGNORED,
         }
     }
 
@@ -171,6 +190,10 @@ impl Listed<'_> {
             Self::Unnamed { amount, into } => vec![
                 own("Payees", UNNAMED.to_owned()),
                 own("Goes to", marked(into)),
+                own("Spent", format!("{} a year", form.money(amount))),
+            ],
+            Self::Ignored { amount, rows } => vec![
+                own(IGNORED, counted(rows, "record", "records")),
                 own("Spent", format!("{} a year", form.money(amount))),
             ],
             Self::Payee(unknown) => {
@@ -228,20 +251,44 @@ pub struct Behind {
     pub columns: Vec<String>,
     /// Each record's cells.
     pub rows: Vec<Vec<String>>,
+    /// What choosing one of the records does - ignores it or counts it
+    /// again - where they are records.
+    pub toggle: Option<&'static str>,
 }
 
 impl Listed<'_> {
+    /// Whose records lie behind the row, and what they are called; none
+    /// for an expense, behind which lie its payees.
+    #[must_use]
+    pub fn of(&self) -> Option<(Of, String)> {
+        Some(match self {
+            Self::Expense(_) => return None,
+            Self::Category { gathered, .. } => {
+                (Of::Category(gathered.category), gathered.category.title())
+            }
+            Self::Unnamed { .. } => (Of::Unnamed, UNNAMED.to_owned()),
+            Self::Payee(unknown) => (Of::Payee(unknown.payee.clone()), unknown.payee.clone()),
+            Self::Ignored { .. } => (Of::Ignored, IGNORED.to_lowercase()),
+        })
+    }
+
     /// What lies behind the row, among `rows` as `patterns` sort them.
     #[must_use]
     pub fn behind(&self, rows: &[Row], patterns: &Patterns, form: MoneyForm) -> Behind {
-        let of = |what: &str, of: Of| records_behind(what, &records(rows, patterns, &of));
-        match self {
-            Self::Expense(proposal) => payees_behind(proposal, form),
-            Self::Category { gathered, .. } => {
-                of(&gathered.category.title(), Of::Category(gathered.category))
-            }
-            Self::Unnamed { .. } => of(UNNAMED, Of::Unnamed),
-            Self::Payee(unknown) => of(&unknown.payee, Of::Payee(unknown.payee.clone())),
+        let Some((of, what)) = self.of() else {
+            let Self::Expense(proposal) = self else {
+                return Behind::default();
+            };
+            return payees_behind(proposal, form);
+        };
+        let toggle = if of == Of::Ignored {
+            COUNT_RECORD
+        } else {
+            IGNORE_RECORD
+        };
+        Behind {
+            toggle: Some(toggle),
+            ..records_behind(&what, &records(rows, patterns, &of))
         }
     }
 }
@@ -256,6 +303,7 @@ fn payees_behind(proposal: &Proposal, form: MoneyForm) -> Behind {
             .iter()
             .map(|(payee, amount)| vec![payee.clone(), form.money(*amount)])
             .collect(),
+        toggle: None,
     }
 }
 
@@ -275,6 +323,7 @@ fn records_behind(what: &str, records: &[&Row]) -> Behind {
                 ]
             })
             .collect(),
+        toggle: None,
     }
 }
 
@@ -323,8 +372,17 @@ pub fn summary(estimate: &Estimate, form: MoneyForm) -> String {
     };
     let spent = estimate.proposals.iter().map(|p| p.amount).sum();
     let unnamed = estimate.proposals.iter().map(|p| p.unknown).sum();
+    let ignored = if estimate.ignored_rows > 0 {
+        format!(
+            "; {} ignored, {} a year",
+            counted(estimate.ignored_rows, "record", "records"),
+            form.money(estimate.ignored)
+        )
+    } else {
+        String::new()
+    };
     format!(
-        "{} through {}: {} spent, {} of income, {} in transfers a year; {} unnamed, {} a year.",
+        "{} through {}: {} spent, {} of income, {} in transfers a year; {} unnamed, {} a year{ignored}.",
         counted(estimate.months.into(), "month", "months"),
         month(through),
         form.money(spent),
