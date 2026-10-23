@@ -21,7 +21,6 @@ pub const TAKE_SPENDING: &str = "take-spending";
 pub const WRITE_ESTIMATE: &str = "write-estimate";
 pub const TAKE_ESTIMATE: &str = "take-estimate";
 pub const EDIT_PROPOSAL: &str = "edit-proposal";
-pub const TOGGLE_RECORD: &str = "toggle-record";
 
 /// Every row the Tools tab's pages add to the command table.
 pub(super) fn commands() -> Vec<CommandSpec> {
@@ -34,6 +33,8 @@ pub(super) fn commands() -> Vec<CommandSpec> {
         market::<Runs>(),
         spending(),
         estimate(),
+        estimate_moves(),
+        estimate_menu(),
         tax(),
     ]
     .into_iter()
@@ -217,14 +218,6 @@ fn estimate() -> Vec<CommandSpec> {
             register: Box::new(|world| world.register_system(tools::estimate::edit_row)),
         },
         CommandSpec {
-            name: TOGGLE_RECORD,
-            scope: Scope::On(Page::SpendingEstimate),
-            doc: "ignore the highlighted record, or count an ignored one again",
-            keys: vec![],
-            hint: None,
-            register: Box::new(|world| world.register_system(tools::estimate::toggle_record)),
-        },
-        CommandSpec {
             name: WRITE_ESTIMATE,
             scope: Scope::On(Page::SpendingEstimate),
             doc: "write the proposals applied as a scenario over the document",
@@ -239,6 +232,74 @@ fn estimate() -> Vec<CommandSpec> {
             keys: vec![character("t")],
             hint: Some("take"),
             register: Box::new(|world| world.register_system(tools::estimate::adopt)),
+        },
+    ]
+}
+
+/// The Spending Estimate page's rows that move or ignore spending.
+fn estimate_moves() -> Vec<CommandSpec> {
+    vec![
+        CommandSpec {
+            name: tools::estimate::IGNORE,
+            scope: Scope::On(Page::SpendingEstimate),
+            doc: "ignore the highlighted record or unnamed payee, or count an ignored record again",
+            keys: vec![character("i")],
+            hint: Some("ignore"),
+            register: Box::new(|world| world.register_system(tools::estimate::ignore)),
+        },
+        CommandSpec {
+            name: tools::estimate::MOVE_PAYEE,
+            scope: Scope::On(Page::SpendingEstimate),
+            doc: "move every record of the highlighted payee to a category picked by its number",
+            keys: vec![character("c")],
+            hint: Some("move"),
+            register: Box::new(|world| world.register_system(tools::estimate::move_payee)),
+        },
+        CommandSpec {
+            name: tools::estimate::RECORD_ACTIONS,
+            scope: Scope::On(Page::SpendingEstimate),
+            doc: "offer what can be done with the highlighted record",
+            keys: vec![],
+            hint: None,
+            register: Box::new(|world| world.register_system(tools::estimate::record_actions)),
+        },
+    ]
+}
+
+/// The rows the Spending Estimate's record menu runs.
+fn estimate_menu() -> Vec<CommandSpec> {
+    vec![
+        CommandSpec {
+            name: tools::estimate::MOVE_CONTAINING,
+            scope: Scope::On(Page::SpendingEstimate),
+            doc: "move every payee containing some words to a category",
+            keys: vec![],
+            hint: None,
+            register: Box::new(|world| world.register_system(tools::estimate::move_containing)),
+        },
+        CommandSpec {
+            name: tools::estimate::PICK_CATEGORY,
+            scope: Scope::On(Page::SpendingEstimate),
+            doc: "pick the category for the payees containing the words typed",
+            keys: vec![],
+            hint: None,
+            register: Box::new(|world| world.register_system(tools::estimate::pick_category)),
+        },
+        CommandSpec {
+            name: tools::estimate::IGNORE_PAYEE,
+            scope: Scope::On(Page::SpendingEstimate),
+            doc: "ignore every record of the highlighted payee",
+            keys: vec![],
+            hint: None,
+            register: Box::new(|world| world.register_system(tools::estimate::ignore_payee)),
+        },
+        CommandSpec {
+            name: tools::estimate::NAME_PAYEE,
+            scope: Scope::On(Page::SpendingEstimate),
+            doc: "list the highlighted payee under a name, with any others given it",
+            keys: vec![],
+            hint: None,
+            register: Box::new(|world| world.register_system(tools::estimate::name_payee)),
         },
     ]
 }

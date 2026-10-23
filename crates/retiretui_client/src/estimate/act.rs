@@ -72,6 +72,13 @@ impl Estimator {
         Ok(change)
     }
 
+    /// The payee an action at `at`, or at `record` behind it, is done
+    /// to, as the rules name it.
+    #[must_use]
+    pub fn payee(&self, at: usize, record: Option<usize>) -> Option<String> {
+        self.target(at, record).ok().map(|target| target.named)
+    }
+
     /// How far a rule on payees containing `part` reaches.
     #[must_use]
     pub fn reach(&self, part: &str) -> Reach {

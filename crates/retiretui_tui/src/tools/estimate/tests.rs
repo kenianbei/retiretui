@@ -272,8 +272,8 @@ fn a_named_payee_is_remembered_in_the_patterns_file_the_launch_names() {
 }
 
 /// Puts the cursor on the row at `at` and the keyboard on the Records
-/// pane, then presses ⏎.
-fn enter_record(app: &mut App, at: usize) {
+/// pane, then types `keys`.
+fn on_record(app: &mut App, at: usize, keys: &[KeyCode]) {
     app.world_mut().insert_resource(Cursor(at));
     for _ in 0..SETTLING_TICKS {
         app.update();
@@ -285,9 +285,11 @@ fn enter_record(app: &mut App, at: usize) {
         .unwrap();
     app.world_mut()
         .insert_resource(InputFocus::from_entity(records));
-    press_key(app, KeyCode::Enter);
-    for _ in 0..SETTLING_TICKS {
-        app.update();
+    for &key in keys {
+        press_key(app, key);
+        for _ in 0..SETTLING_TICKS {
+            app.update();
+        }
     }
 }
 
@@ -304,7 +306,7 @@ fn a_record_is_ignored_from_the_records_pane_and_counted_again() {
             .position(|row| matches!(row, retiretui_client::estimate::Listed::Category { .. }))
             .unwrap()
     };
-    enter_record(&mut app, groceries);
+    on_record(&mut app, groceries, &[KeyCode::Char('i')]);
     let found = app.world().resource::<Held>().0.estimate().clone();
     assert_eq!(found.ignored_rows, 1);
     assert!(
@@ -314,7 +316,89 @@ fn a_record_is_ignored_from_the_records_pane_and_counted_again() {
     );
     assert!(composed_frame(&app).contains("Ignored"));
 
-    enter_record(&mut app, listed(&found).count() - 1);
+    on_record(&mut app, listed(&found).count() - 1, &[KeyCode::Char('i')]);
     assert_eq!(app.world().resource::<Held>().0.estimate().ignored_rows, 0);
     assert!(!std::fs::read_to_string(&file).unwrap().contains("ignore"));
+}
+
+fn is_picking(app: &App) -> bool {
+    app.world().resource::<crate::picker::Picking>().is_open()
+}
+
+/// The first category row of the estimate.
+fn groceries_row(app: &App) -> usize {
+    let found = app.world().resource::<Held>().0.estimate().clone();
+    listed(&found)
+        .position(|row| matches!(row, retiretui_client::estimate::Listed::Category { .. }))
+        .unwrap()
+}
+
+#[test]
+fn a_payee_is_moved_by_its_category_number_or_its_words_from_the_menu() {
+    let (dir, mut app) = workspace_app();
+    let file = dir.join("config").join("patterns.toml");
+    app.world_mut()
+        .insert_resource(PatternsFile(Some(file.clone())));
+    add(&mut app, "chase.csv", CHASE);
+    let at = groceries_row(&app);
+    on_record(&mut app, at, &[KeyCode::Char('c'), KeyCode::Char('3')]);
+    let written = std::fs::read_to_string(&file).unwrap();
+    assert!(
+        written.contains("category = \"utilities\""),
+        "3 is at once: {written}"
+    );
+    assert!(said(&app).iter().any(|line| line.contains("is Utilities")));
+
+    let at = groceries_row(&app);
+    on_record(&mut app, at, &[KeyCode::Char('c'), KeyCode::Char('1')]);
+    assert!(is_picking(&app), "1 could still be 10 to 19");
+    type_text(&mut app, "2");
+    for _ in 0..SETTLING_TICKS {
+        app.update();
+    }
+    assert!(!is_picking(&app), "12 is one number");
+    let written = std::fs::read_to_string(&file).unwrap();
+    assert!(written.contains("category = \"internet\""), "{written}");
+
+    let at = groceries_row(&app);
+    on_record(
+        &mut app,
+        at,
+        &[KeyCode::Char('c'), KeyCode::Char('1'), KeyCode::Enter],
+    );
+    let written = std::fs::read_to_string(&file).unwrap();
+    assert!(
+        written.contains("category = \"groceries\""),
+        "1 then ⏎: {written}"
+    );
+}
+
+#[test]
+fn payees_containing_a_records_words_are_moved_from_its_menu() {
+    let (dir, mut app) = workspace_app();
+    let file = dir.join("config").join("patterns.toml");
+    app.world_mut()
+        .insert_resource(PatternsFile(Some(file.clone())));
+    add(&mut app, "chase.csv", CHASE);
+    let at = groceries_row(&app);
+    on_record(&mut app, at, &[KeyCode::Enter]);
+    assert!(composed_frame(&app).contains("Payees containing…"));
+    type_text(&mut app, "payees containing");
+    press_key(&mut app, KeyCode::Enter);
+    for _ in 0..SETTLING_TICKS {
+        app.update();
+    }
+    let frame = composed_frame(&app);
+    assert!(frame.contains("1 payee, $1,706 a year"), "{frame}");
+    press_key(&mut app, KeyCode::Enter);
+    for _ in 0..SETTLING_TICKS {
+        app.update();
+    }
+    type_text(&mut app, "18");
+    for _ in 0..SETTLING_TICKS {
+        app.update();
+    }
+    let written = std::fs::read_to_string(&file).unwrap();
+    assert!(written.contains("match = "), "{written}");
+    assert!(written.contains("category = \"pets\""), "{written}");
 }

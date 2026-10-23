@@ -345,3 +345,29 @@ fn a_payee_is_moved_named_or_ignored_from_its_record_and_alike_ones_by_words() {
         "an expense has no payee"
     );
 }
+
+#[test]
+fn a_payee_moved_again_goes_where_it_was_last_sent() {
+    let to = |category| Change::Name {
+        payee: "SAFEWAY".to_owned(),
+        category,
+    };
+    let text = to(Category::Dining).applied("").unwrap();
+    let text = Change::IgnorePayee {
+        payee: "safeway".to_owned(),
+    }
+    .applied(&text)
+    .unwrap();
+    let text = to(Category::Groceries).applied(&text).unwrap();
+    assert_eq!(text.matches("SAFEWAY").count(), 1, "{text}");
+    assert!(
+        text.contains("groceries") && !text.contains("ignore"),
+        "{text}"
+    );
+    let by_hand = "[[patterns]]\nis = \"SAFEWAY\"\nspent = [1, 2]\ncategory = \"pets\"\n";
+    let text = to(Category::Dining).applied(by_hand).unwrap();
+    assert!(
+        text.contains("pets"),
+        "a rule written by hand stays: {text}"
+    );
+}

@@ -56,4 +56,4 @@ expression: composed_frame(app)
 │                    ││                                                                                                                                                                                │
 │                    │╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╰────────────────────╯The plan's expenses from what a bank's exports say the household spent.                                                                                                           
- ↑↓ row  ⏎ edit  ⇥ pane  f add file  x remove  ctrl-s save  r reload  q quit  ctrl-↓ tab  n dollars                                                                                  : commands  ? help
+ ↑↓ row  ⏎ edit  ⇥ pane  f add file  x remove  i ignore  c move  ctrl-s save  r reload  q quit  ctrl-↓ tab  n dollars                                                                : commands  ? help

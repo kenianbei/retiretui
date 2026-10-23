@@ -7,12 +7,12 @@ use std::path::{Path, PathBuf};
 use bevy_ecs::prelude::{Commands, In, Query, Res, ResMut, With, World};
 use plurimus::widgets::ActiveDescendant;
 use retiretui_client::estimate::{
-    self, Action, Applied, Change, RowForm, SETTINGS_FORM, assign, take_question, taken,
+    self, Applied, Change, RowForm, SETTINGS_FORM, assign, take_question, taken,
 };
 use retiretui_client::present::counted;
 use retiretui_engine::estimate::{Estimate, apply};
 
-use super::{BehindTable, Cursor, FileList, FileRow, Held, PatternsFile, RecordRow, record_at};
+use super::{Cursor, FileList, FileRow, Held, PatternsFile};
 use crate::command::Outcome;
 use crate::confirm::{Answer, Confirm};
 use crate::documents::{Browsing, Pickers};
@@ -24,7 +24,6 @@ use crate::settings;
 use crate::tools::write;
 
 const ACTIONS: [&str; 2] = ["Discard", "Apply"];
-const NO_RECORD: &str = "no record highlighted";
 const PAGE: Option<Page> = Some(Page::SpendingEstimate);
 
 /// The form `row_form` is edited in on this page.
@@ -143,29 +142,6 @@ pub(super) fn apply_row(
             editor.commit();
         }
         Ok(Applied::Changed(changes)) => remember(&session, memory.0.as_deref(), &changes),
-    }
-}
-
-/// The `toggle-record` command: ignores the record under the Records
-/// pane's cursor, or counts it again behind the Ignored row, remembered
-/// where the launch names a patterns file.
-pub fn toggle_record(
-    (cursor, memory, session): (Res<Cursor>, Res<PatternsFile>, Res<Session>),
-    (tables, records): (
-        Query<&ActiveDescendant, With<BehindTable>>,
-        Query<&RecordRow>,
-    ),
-    mut held: ResMut<Held>,
-) -> Outcome {
-    let Some(index) = record_at(&tables, &records) else {
-        return Outcome::Refused(NO_RECORD.to_owned());
-    };
-    match held.0.act(cursor.0, Some(index), Action::IgnoreRecord) {
-        Ok(change) => {
-            remember(&session, memory.0.as_deref(), &[change]);
-            Outcome::Done
-        }
-        Err(reason) => Outcome::Refused(reason),
     }
 }
 

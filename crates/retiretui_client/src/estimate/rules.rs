@@ -16,6 +16,7 @@ const ON: &str = "on";
 const SPENT: &str = "spent";
 const IGNORE: &str = "ignore";
 const NAME: &str = "name";
+const CATEGORY: &str = "category";
 const ONE_OF: &str = "one_of";
 /// What an un-ignore says where no rule of the page's shape ignores it.
 const HAND_WRITTEN: &str =
@@ -84,17 +85,17 @@ impl Change {
             Self::Name { payee, category } => {
                 let mut rule = InlineTable::new();
                 rule.insert(IS, payee.as_str().into());
-                rule.insert("category", category.slug().into());
-                push(&mut file, PATTERNS, rule)?;
+                rule.insert(CATEGORY, category.slug().into());
+                replace_payees(&mut file, payee, rule)?;
             }
             Self::Contains { part, category } => {
                 let mut rule = InlineTable::new();
                 rule.insert("match", part.as_str().into());
-                rule.insert("category", category.slug().into());
+                rule.insert(CATEGORY, category.slug().into());
                 push(&mut file, PATTERNS, rule)?;
             }
             Self::Merge { payee, name } => merge(&mut file, payee, name)?,
-            Self::IgnorePayee { payee } => push(&mut file, PATTERNS, ignoring(payee, None))?,
+            Self::IgnorePayee { payee } => replace_payees(&mut file, payee, ignoring(payee, None))?,
             Self::IgnoreRecord(record) => {
                 let rule = ignoring(&record.payee, Some((record.on, record.spent)));
                 push(&mut file, PATTERNS, rule)?;
@@ -145,6 +146,26 @@ fn ignoring(payee: &str, record: Option<(PlanDate, Cents)>) -> InlineTable {
     }
     rule.insert(IGNORE, true.into());
     rule
+}
+
+/// Puts `rule` in place of the rules the page wrote for all of `payee` - a
+/// category or an ignore - so a payee moved again goes where it was last
+/// sent.
+fn replace_payees(file: &mut DocumentMut, payee: &str, rule: InlineTable) -> Result<(), String> {
+    while let Some(at) =
+        (entries(file, PATTERNS).iter()).position(|entry| is_for_payee(&**entry, payee))
+    {
+        remove(file, at);
+    }
+    push(file, PATTERNS, rule)
+}
+
+/// Whether `entry` is a rule the page writes for all of `payee`.
+fn is_for_payee(entry: &dyn TableLike, payee: &str) -> bool {
+    let is_payee =
+        (entry.get(IS).and_then(Item::as_str)).is_some_and(|held| held.eq_ignore_ascii_case(payee));
+    let says = entry.get(CATEGORY).is_some() || is_ignoring(entry, payee, None);
+    is_payee && entry.len() == 2 && says
 }
 
 /// Appends `entry` to the list or tables at `key`, made where there are

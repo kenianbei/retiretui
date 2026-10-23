@@ -4,6 +4,7 @@
 //! and the proposals taken into the draft or written as a scenario.
 
 mod edits;
+mod moves;
 #[cfg(test)]
 mod tests;
 
@@ -26,13 +27,16 @@ use retiretui_client::present::counted;
 use retiretui_engine::estimate::Patterns;
 
 pub use edits::{
-    add_export, add_picker, adopt, edit_row, remove_export, toggle_record, write_overlay,
-    write_picker,
+    add_export, add_picker, adopt, edit_row, remove_export, write_overlay, write_picker,
+};
+pub use moves::{
+    IGNORE, IGNORE_PAYEE, MOVE_CONTAINING, MOVE_PAYEE, NAME_PAYEE, PICK_CATEGORY, RECORD_ACTIONS,
+    ignore, ignore_payee, move_containing, move_payee, name_payee, pick_category, record_actions,
 };
 
 use super::options::say_instead;
 use super::{EnterRuns, HelpLine, ToolPage, show_help, writes_it};
-use crate::command::{EDIT_PROPOSAL, Keymap, TOGGLE_RECORD, WRITE_ESTIMATE};
+use crate::command::{EDIT_PROPOSAL, Keymap, WRITE_ESTIMATE};
 use crate::edit::{self, Draft, table_bundle};
 use crate::hints::Hints;
 use crate::layout::{self, Body, clipped_middle, filling, growing, placed};
@@ -67,6 +71,7 @@ pub fn plugin(app: &mut App) {
     app.init_resource::<Held>();
     app.init_resource::<Cursor>();
     app.init_resource::<PatternsFile>();
+    moves::plugin(app);
     app.add_systems(Startup, spawn_page.after(layout::spawn_frame));
     app.add_systems(
         Update,
@@ -112,7 +117,7 @@ pub struct FileList;
 pub struct FileRow(usize);
 
 #[derive(Component)]
-struct ProposalsTable;
+pub struct ProposalsTable;
 
 #[derive(Component, Clone, Copy)]
 struct ProposalRow(usize);
@@ -175,9 +180,9 @@ fn spawn_panes(commands: &mut Commands, row: Entity) {
         .spawn((
             table_bundle(),
             BehindTable,
-            EnterRuns(TOGGLE_RECORD),
+            EnterRuns(RECORD_ACTIONS),
             FocusStop,
-            Hints(&[("↑↓", "record"), ("⏎", "ignore or count")]),
+            Hints(&[("↑↓", "record"), ("⏎", "actions")]),
             layout::Rests,
             filling(),
             placed(),
