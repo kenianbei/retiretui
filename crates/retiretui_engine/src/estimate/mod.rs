@@ -1,10 +1,12 @@
 //! The plan's expenses estimated from a bank's exports: each row sorted
-//! into a category by the bank's own column, its transaction type or its
-//! payee's words, the latest twelve months' spending in each annualized in
+//! into a category, or ignored, by the user's rules, the bank's own column,
+//! its transaction type or its payee's words, the latest twelve months'
+//! spending in each annualized in
 //! the plan's dollars, and each category placed, as the plan's
 //! `[estimate]` table leans, in the expense that is for it, one of its
 //! family, a new one, or the bucket - one proposal per expense.
 
+mod apply;
 mod bank;
 mod category;
 mod csv;
@@ -12,23 +14,25 @@ mod ofx;
 mod patterns;
 mod payee;
 mod place;
+mod rules;
+mod sort;
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 
+pub use apply::apply;
 pub use bank::{BankError, CENTS_PER_DOLLAR, Cents, Row, merge, read};
 pub use category::{Category, Family};
 pub use patterns::Patterns;
 pub use payee::normalize;
 pub use place::Why;
+pub use rules::{Outcome, PatternError};
+pub use sort::{Of, records};
 
 use serde::{Deserialize, Serialize};
 
-use crate::params::scale;
-use crate::plan::{ColaSpec, Dollars, Expense, Item, Plan, PlanDate, Trigger};
-use crate::project::{inflation_factor, trigger_month};
-use crate::tax::month_index;
-
-const MONTHS_PER_YEAR: i32 = 12;
+use crate::plan::{Dollars, Expense, Item, Plan, PlanDate};
+use crate::project::inflation_factor;
+use sort::{Sorter, Window};
 
 /// What the exports say the plan spends.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -49,6 +53,10 @@ pub struct Estimate {
     pub income: Dollars,
     /// What moved without being spent over the window, net, annualized.
     pub transfers: Dollars,
+    /// What the rows the user's rules ignore spent, net, annualized.
+    pub ignored: Dollars,
+    /// How many rows the user's rules ignore.
+    pub ignored_rows: usize,
 }
 
 /// What the spending landing in one expense comes to.
@@ -160,105 +168,6 @@ struct Group {
     unknown: f64,
 }
 
-/// Whose transactions [`records`] lists.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Of {
-    /// The rows sorted into a category.
-    Category(Category),
-    /// The rows of one payee nothing names, normalized.
-    Payee(String),
-    /// The rows of every payee nothing names.
-    Unnamed,
-}
-
-/// The latest twelve whole months the rows reach, as month indexes.
-#[derive(Debug, Clone, Copy)]
-struct Window {
-    start: i32,
-    end: i32,
-}
-
-fn month_of(on: PlanDate) -> i32 {
-    month_index(on.year(), on.0.month())
-}
-
-impl Window {
-    fn of(rows: &[Row]) -> Option<Self> {
-        let end = rows.iter().map(|row| month_of(row.on)).max()?;
-        let earliest = rows.iter().map(|row| month_of(row.on)).min().unwrap_or(end);
-        Some(Self {
-            start: earliest.max(end - (MONTHS_PER_YEAR - 1)),
-            end,
-        })
-    }
-
-    const fn months(self) -> i32 {
-        self.end - self.start + 1
-    }
-
-    fn holds(self, row: &Row) -> bool {
-        (self.start..=self.end).contains(&month_of(row.on))
-    }
-
-    fn annual(self, dollars: f64) -> Dollars {
-        (dollars * f64::from(MONTHS_PER_YEAR) / f64::from(self.months())).round() as Dollars
-    }
-}
-
-/// Sorts rows by the bank's own column, their transaction type, or what
-/// their payee's words say, each payee normalized and matched once.
-struct Sorter<'a> {
-    patterns: &'a Patterns,
-    named: HashMap<&'a str, (String, Option<Category>)>,
-}
-
-impl<'a> Sorter<'a> {
-    fn new(patterns: &'a Patterns) -> Self {
-        Self {
-            patterns,
-            named: HashMap::new(),
-        }
-    }
-
-    /// The row's normalized payee and its category.
-    fn sort(&mut self, row: &'a Row) -> (&str, Option<Category>) {
-        let patterns = self.patterns;
-        let (payee, matched) = self.named.entry(&row.payee).or_insert_with(|| {
-            let payee = normalize(&row.payee);
-            let matched = patterns.category(&payee);
-            (payee, matched)
-        });
-        let category = row
-            .category
-            .as_deref()
-            .and_then(Category::from_text)
-            .or(row.kind)
-            .or(*matched);
-        (payee, category)
-    }
-}
-
-/// The rows within the estimate's window that are `of`'s, newest first.
-#[must_use]
-pub fn records<'a>(rows: &'a [Row], patterns: &Patterns, of: &Of) -> Vec<&'a Row> {
-    let Some(window) = Window::of(rows) else {
-        return Vec::new();
-    };
-    let mut sorter = Sorter::new(patterns);
-    let mut is_of = |row: &'a Row| match (of, sorter.sort(row)) {
-        (Of::Category(wanted), (_, category)) => category == Some(*wanted),
-        (Of::Payee(wanted), (payee, None)) => payee == wanted,
-        (Of::Payee(_), (_, Some(_))) => false,
-        (Of::Unnamed, (_, category)) => category.is_none(),
-    };
-    let mut found: Vec<&Row> = rows
-        .iter()
-        .filter(|row| window.holds(row) && is_of(row))
-        .collect();
-    found.sort_by_key(|row| std::cmp::Reverse(row.on));
-    found
-}
-
 /// What `rows` say the plan spends, the latest twelve whole months taken
 /// and deflated to the plan's start-year dollars by its inflation.
 #[must_use]
@@ -268,7 +177,11 @@ pub fn estimate(plan: &Plan, rows: &[Row], patterns: &Patterns) -> Estimate {
         return Estimate::default();
     };
     let in_window = rows.iter().filter(|row| window.holds(row));
-    let (mut by_category, unknown) = tally(plan, in_window, patterns);
+    let Tallied {
+        mut by_category,
+        unknown,
+        ignored,
+    } = tally(plan, in_window, patterns);
     let mut listed: Vec<Unknown> = unknown
         .iter()
         .map(|(payee, tally)| Unknown {
@@ -280,10 +193,11 @@ pub fn estimate(plan: &Plan, rows: &[Row], patterns: &Patterns) -> Estimate {
     let income = by_category.remove(&Category::Income);
     let transfers = by_category.remove(&Category::Transfer);
     let (groups, bucket) = grouped(plan, by_category, unknown);
-    let proposals = groups
+    let mut proposals: Vec<Proposal> = groups
         .into_iter()
         .map(|(target, group)| proposal(plan, (target, target == bucket), group, window))
         .collect();
+    proposals.sort_by_key(|proposal| proposal.is_bucket);
     listed
         .sort_by(|a, b| (b.amount.abs().cmp(&a.amount.abs())).then_with(|| a.payee.cmp(&b.payee)));
     let tallied = |tally: Option<Tally>| tally.map_or(0, |t| window.annual(t.total));
@@ -294,6 +208,8 @@ pub fn estimate(plan: &Plan, rows: &[Row], patterns: &Patterns) -> Estimate {
         unknown: listed,
         income: tallied(income),
         transfers: tallied(transfers),
+        ignored: window.annual(-ignored.total),
+        ignored_rows: ignored.rows,
     }
 }
 
@@ -327,31 +243,35 @@ fn grouped(
     (groups, placer.bucket())
 }
 
-/// Each row's deflated amount under its category, or under its payee
-/// where nothing names one; a payee is normalized and matched once.
-fn tally<'a>(
-    plan: &Plan,
-    rows: impl Iterator<Item = &'a Row>,
-    patterns: &Patterns,
-) -> (BTreeMap<Category, Tally>, BTreeMap<String, Tally>) {
-    let mut by_category: BTreeMap<Category, Tally> = BTreeMap::new();
-    let mut unknown: BTreeMap<String, Tally> = BTreeMap::new();
+/// The rows' deflated amounts under each category, each payee nothing
+/// names, and those the user's rules ignore.
+#[derive(Default)]
+struct Tallied {
+    by_category: BTreeMap<Category, Tally>,
+    unknown: BTreeMap<String, Tally>,
+    ignored: Tally,
+}
+
+/// Each row's deflated amount under what it is sorted as.
+fn tally<'a>(plan: &Plan, rows: impl Iterator<Item = &'a Row>, patterns: &Patterns) -> Tallied {
+    let mut tallied = Tallied::default();
     let mut sorter = Sorter::new(patterns);
     for row in rows {
-        let (payee, category) = sorter.sort(row);
+        let (payee, outcome) = sorter.sort(row);
         let payee = payee.to_owned();
         let deflated =
             row.amount.0 as f64 / CENTS_PER_DOLLAR as f64 / inflation_factor(plan, row.on.year());
-        let tally = match category {
-            Some(category) => by_category.entry(category).or_default(),
-            None => unknown.entry(payee.clone()).or_default(),
+        let tally = match outcome {
+            Some(Outcome::Category(category)) => tallied.by_category.entry(category).or_default(),
+            Some(Outcome::Ignore) => &mut tallied.ignored,
+            None => tallied.unknown.entry(payee.clone()).or_default(),
         };
         tally.total += deflated;
         tally.rows += 1;
         *tally.payees.entry(payee).or_default() += deflated;
         tally.last = tally.last.max(Some(row.on));
     }
-    (by_category, unknown)
+    tallied
 }
 
 /// Largest first, ties by their key.
@@ -410,7 +330,7 @@ fn identified(plan: &Plan, target: place::Target, end: i32) -> (String, Option<D
     match target {
         place::Target::Expense(at) => {
             let stated = &plan.expenses[at];
-            let now = in_force_amount(plan, stated, end);
+            let now = apply::in_force_amount(plan, stated, end);
             (
                 stated.id.clone(),
                 Some(now),
@@ -432,92 +352,4 @@ fn identified(plan: &Plan, target: place::Target, end: i32) -> (String, Option<D
 #[must_use]
 pub fn bucket(plan: &Plan) -> Option<&Expense> {
     place::bucket_position(plan).map(|at| &plan.expenses[at])
-}
-
-/// Sets each proposal's expense to its amount, or adds the expense the plan
-/// has none for; the proposals left as they came set nothing they did not
-/// propose.
-pub fn apply(plan: &mut Plan, estimate: &Estimate) {
-    let end = estimate.through.map(month_of);
-    for proposal in &estimate.proposals {
-        let at = (!proposal.is_new)
-            .then(|| plan.expenses.iter().position(|e| e.id == proposal.id))
-            .flatten();
-        match at {
-            Some(at) => {
-                let in_force = end.and_then(|end| phase_in_force(plan, &plan.expenses[at], end));
-                set_amount(&mut plan.expenses[at], proposal, in_force);
-            }
-            None => plan.expenses.push(new_expense(proposal)),
-        }
-    }
-}
-
-/// What `expense` spends a year in the month `end`.
-fn in_force_amount(plan: &Plan, expense: &Expense, end: i32) -> Dollars {
-    phase_in_force(plan, expense, end).map_or(expense.amount, |at| expense.phases[at].amount)
-}
-
-/// The index of the last phase fired by the window's `end` month, or none
-/// where the base amount is still in force.
-fn phase_in_force(plan: &Plan, expense: &Expense, end: i32) -> Option<usize> {
-    expense
-        .phases
-        .iter()
-        .rposition(|phase| trigger_month(plan, &phase.from).is_some_and(|month| month <= end))
-}
-
-fn set_amount(expense: &mut Expense, proposal: &Proposal, in_force: Option<usize>) {
-    let current = in_force.map_or(expense.amount, |at| expense.phases[at].amount);
-    let scale = |amount: Dollars| {
-        if current == 0 {
-            proposal.amount
-        } else {
-            scale(amount, proposal.amount as f64 / current as f64)
-        }
-    };
-    match proposal.phases {
-        Phases::This => match in_force {
-            Some(at) => expense.phases[at].amount = proposal.amount,
-            None => expense.amount = proposal.amount,
-        },
-        Phases::Scaled => {
-            expense.amount = scale(expense.amount);
-            for phase in &mut expense.phases {
-                phase.amount = scale(phase.amount);
-            }
-        }
-        Phases::All => {
-            expense.amount = proposal.amount;
-            for phase in &mut expense.phases {
-                phase.amount = proposal.amount;
-            }
-        }
-    }
-}
-
-fn new_expense(proposal: &Proposal) -> Expense {
-    Expense {
-        id: proposal.id.clone(),
-        name: Some(proposal.name.clone()),
-        amount: if proposal.one_time {
-            proposal.total
-        } else {
-            proposal.amount
-        },
-        start: None,
-        end: None,
-        on: proposal.one_time.then_some(Trigger {
-            date: Some(proposal.last),
-            age: None,
-            owner: None,
-            event: None,
-            income: None,
-            offset: None,
-        }),
-        cola: ColaSpec::default(),
-        medical: false,
-        essential: false,
-        phases: Vec::new(),
-    }
 }

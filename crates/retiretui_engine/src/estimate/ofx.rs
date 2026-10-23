@@ -54,6 +54,7 @@ fn row(name: &str, row: usize, chunk: &str) -> Result<Row, BankError> {
         category: None,
         kind: leaf(chunk, KIND).and_then(kind_of),
         bank_id: leaf(chunk, BANK_ID).map(str::to_owned),
+        export: String::new(),
     })
 }
 

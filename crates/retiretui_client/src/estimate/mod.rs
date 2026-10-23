@@ -225,7 +225,8 @@ impl Estimator {
         }
         let applied = forms::applied(row, draft)?;
         if let Applied::Named { payee, category } = &applied {
-            self.patterns.assign(payee, *category);
+            let rule = with_payee(None, payee, *category)?;
+            self.patterns.add(&rule).map_err(|error| error.to_string())?;
             self.over = None;
         }
         Ok(applied)

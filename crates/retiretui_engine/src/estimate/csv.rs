@@ -131,6 +131,7 @@ impl Columns {
             category: optional(self.category),
             kind: self.kind.map(field).and_then(kind_of),
             bank_id: None,
+            export: String::new(),
         })
     }
 }

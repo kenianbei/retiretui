@@ -73,6 +73,8 @@ pub struct Row {
     pub kind: Option<Category>,
     /// The bank's id for the transaction, where the file states one.
     pub bank_id: Option<String>,
+    /// The name of the export it was read from.
+    pub export: String,
 }
 
 /// Why a file did not read.
@@ -115,11 +117,15 @@ pub fn read(name: &str, text: &str) -> Result<Vec<Row>, BankError> {
     let extension = name
         .rsplit_once('.')
         .map(|(_, ext)| ext.to_ascii_lowercase());
-    match extension.as_deref() {
+    let mut rows = match extension.as_deref() {
         Some("csv") => csv::rows(name, text),
         Some("ofx" | "qfx") => ofx::rows(name, text),
         _ => Err(BankError::Unknown(name.to_owned())),
+    }?;
+    for row in &mut rows {
+        name.clone_into(&mut row.export);
     }
+    Ok(rows)
 }
 
 /// Adds a file's rows to those read so far, dropping each row a row

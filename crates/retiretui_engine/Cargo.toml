@@ -22,6 +22,7 @@ serde.workspace = true
 thiserror = "2.0.21"
 ts-rs = { version = "12.0.1", optional = true }
 toml.workspace = true
+regex-lite = "0.1.9"
 
 [dev-dependencies]
 serde_json.workspace = true

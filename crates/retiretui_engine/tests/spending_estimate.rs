@@ -325,14 +325,18 @@ fn leaning_large_proposes_a_new_expense_only_past_the_share() {
             .map(|(id, ..)| id.to_owned())
             .collect::<Vec<_>>()
     };
-    assert_eq!(with(""), ["grocery", "misc", "dining"], "dining is 22%");
+    assert_eq!(
+        with(""),
+        ["grocery", "dining", "misc"],
+        "dining is 22%, the bucket last"
+    );
     assert_eq!(with("large_share = 0.5\n"), ["grocery", "misc"]);
     let always = format!("{GROCERY_AND_MISC}\n[estimate]\nlean = \"new\"\n");
     let ids: Vec<String> = landed(&estimated(&plan(&always), MIXED))
         .into_iter()
         .map(|(id, ..)| id.to_owned())
         .collect();
-    assert_eq!(ids, ["grocery", "misc", "dining", "subscriptions"]);
+    assert_eq!(ids, ["grocery", "dining", "subscriptions", "misc"]);
 }
 
 #[test]
@@ -414,4 +418,51 @@ fn records_are_a_categorys_or_a_payees_rows_in_the_window_newest_first() {
     assert_eq!(amounts(&Of::Payee("SOMEONE".to_owned())), [-3000]);
     assert_eq!(amounts(&Of::Unnamed), [-2000, -3000]);
     assert!(records(&[], &patterns, &Of::Unnamed).is_empty());
+}
+
+#[test]
+fn the_users_rules_outrank_the_bank_merge_payees_and_ignore_rows() {
+    let csv = "Date,Description,Category,Amount\n2026-10-01,SAFEWAY,Food & Drink,-50.00\n2026-10-02,CHECK PAID,,-1500.00\n2026-10-03,CHECK PAID,,-40.00\n2026-10-04,ACME HELP,,-10.00\n2026-10-05,ACME SHOP,,-20.00\n2026-10-06,REFUNDED THING,,-30.00\n2026-10-07,REFUNDED THING,,-31.00\n2026-10-08,NEVER,,-5.00\n";
+    let rules = r#"
+patterns = [
+  { is = "SAFEWAY", category = "groceries" },
+  { is = "CHECK PAID", spent = [1400, 1600], export = "joint", category = "housing" },
+  { is = "REFUNDED THING", on = 2026-10-06, spent = [30, 30], ignore = true },
+  { is = "NEVER", ignore = true },
+]
+payees = [{ name = "Acme", one_of = ["ACME HELP", "ACME SHOP"] }]
+"#;
+    let mut patterns = Patterns::embedded();
+    patterns.add(rules).unwrap();
+    let rows = read("joint.csv", csv).unwrap();
+    let found = estimate(&plan(GROCERIES), &rows, &patterns);
+    assert_eq!(
+        proposal_amount(&found, Category::Groceries),
+        Some(600),
+        "the rule over the bank's dining"
+    );
+    assert_eq!(proposal_amount(&found, Category::Housing), Some(18_000));
+    let unknown: Vec<(&str, i64)> = (found.unknown.iter())
+        .map(|it| (it.payee.as_str(), it.amount))
+        .collect();
+    assert_eq!(
+        unknown,
+        [("CHECK PAID", 480), ("REFUNDED THING", 372), ("Acme", 360)]
+    );
+    assert_eq!((found.ignored, found.ignored_rows), (420, 2));
+    let amounts = |of: Of| -> Vec<i64> {
+        records(&rows, &patterns, &of)
+            .iter()
+            .map(|row| row.amount.0)
+            .collect()
+    };
+    assert_eq!(amounts(Of::Ignored), [-500, -3000]);
+    assert_eq!(amounts(Of::Payee("Acme".to_owned())), [-2000, -1000]);
+    let elsewhere = read("card.csv", csv).unwrap();
+    let found = estimate(&plan(GROCERIES), &elsewhere, &patterns);
+    assert_eq!(
+        proposal_amount(&found, Category::Housing),
+        None,
+        "another export's check"
+    );
 }
