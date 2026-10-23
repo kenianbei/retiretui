@@ -19,4 +19,4 @@ title: string,
 /**
  * The row under the columns.
  */
-cells: [string, string, string], };
+cells: [string, string, string, string, string], };

@@ -1,7 +1,7 @@
 //! The Spending Estimate tool: a bank's exports read for the session, each
 //! category's spending proposed as the amount of the expense that is for
-//! it, beside the highlighted proposal read out, and the proposals taken
-//! into the draft or written as a scenario.
+//! it, over what lies behind the highlighted row and beside it read out,
+//! and the proposals taken into the draft or written as a scenario.
 
 mod edits;
 #[cfg(test)]
@@ -18,6 +18,7 @@ use bevy_ecs::prelude::{
 use bevy_input_focus::InputFocus;
 use bevy_ui::{FlexDirection, Node, Val};
 use plurimus::core::UiWidget;
+use plurimus::core::ratatui_core::layout::Constraint;
 use plurimus::core::ratatui_core::style::Style;
 use plurimus::ui::ScrollArea;
 use plurimus::widgets::ActiveDescendant;
@@ -34,15 +35,18 @@ use super::{EnterRuns, HelpLine, ToolPage, show_help, writes_it};
 use crate::command::{EDIT_PROPOSAL, Keymap, WRITE_ESTIMATE};
 use crate::edit::{self, Draft, table_bundle};
 use crate::hints::Hints;
-use crate::layout::{self, Body, filling, placed};
+use crate::layout::{self, Body, clipped_middle, filling, growing, placed};
 use crate::nav::{self, FocusStop, Page, ShownSurface};
-use crate::pane::Pane;
+use crate::pane::{BORDERS, Framed, Pane};
 use crate::present::MoneyForm;
 use crate::tabulate;
 use crate::theme::{Repainted, Theme};
 
 const FILES_TITLE: &str = "Files";
 const PROPOSALS_TITLE: &str = "Proposals";
+const RECORDS_TITLE: &str = "Records";
+/// The proposals' share of the page's height against the records'.
+const PROPOSALS_SHARE: f32 = 3.0;
 const READ_OUT_TITLE: &str = "Proposal";
 const SETTINGS_TITLE: &str = "Settings";
 /// The right column's width, borders included.
@@ -53,6 +57,8 @@ const FILES_ROWS: f32 = 6.0;
 /// bucket.
 const SETTINGS_ROWS: f32 = 6.0;
 const GAP: u16 = 1;
+/// The cells an export's name and row count have in the Files list.
+const FILE_COLS: u16 = SIDE_COLS as u16 - BORDERS - layout::CURSOR_COLS - layout::SCROLL_BAR_COLS;
 const ON_PROPOSALS: &str = "⏎ edits the row; t takes the proposals into the plan, after asking";
 const NOTHING_HIGHLIGHTED: &str = "nothing highlighted";
 const NO_FILES: &str = "none yet";
@@ -70,6 +76,7 @@ pub fn plugin(app: &mut App) {
             table_proposals,
             follow_cursor,
             show_read_out,
+            show_behind,
             say_help,
         )
             .chain()
@@ -113,6 +120,9 @@ struct ProposalRow(usize);
 #[derive(Component)]
 struct ReadOut;
 
+#[derive(Component)]
+struct BehindTable;
+
 static PAGE: ToolPage = ToolPage {
     surface: Page::SpendingEstimate,
     panes: spawn_panes,
@@ -124,9 +134,24 @@ fn spawn_page(bodies: Query<Entity, With<Body>>, mut commands: Commands) {
     }
 }
 
-/// The proposals, beside the files over the highlighted row read out.
+/// The proposals beside the files over the highlighted row read out, over
+/// what lies behind that row across the page, so the panes are walked as
+/// they are read.
 fn spawn_panes(commands: &mut Commands, row: Entity) {
-    let proposals = Pane::new(PROPOSALS_TITLE).spawn(commands, row);
+    let page = Node {
+        flex_direction: FlexDirection::Column,
+        ..growing()
+    };
+    let page = commands.spawn((page, ChildOf(row))).id();
+    let top = Node {
+        flex_direction: FlexDirection::Row,
+        flex_grow: PROPOSALS_SHARE,
+        flex_basis: Val::Px(0.0),
+        min_height: Val::Px(0.0),
+        ..Node::default()
+    };
+    let top = commands.spawn((top, ChildOf(page))).id();
+    let proposals = Pane::new(PROPOSALS_TITLE).spawn(commands, top);
     commands
         .spawn((
             table_bundle(),
@@ -140,7 +165,18 @@ fn spawn_panes(commands: &mut Commands, row: Entity) {
             ChildOf(proposals),
         ))
         .observe(super::handle_enter);
-    spawn_column(commands, row);
+    spawn_column(commands, top);
+    let behind = Pane::new(RECORDS_TITLE).sharing(1.0).spawn(commands, page);
+    commands.spawn((
+        table_bundle(),
+        BehindTable,
+        FocusStop,
+        Hints(&[("↑↓", "record")]),
+        layout::Rests,
+        filling(),
+        placed(),
+        ChildOf(behind),
+    ));
 }
 
 /// The files over the highlighted row read out, over the plan's
@@ -200,7 +236,9 @@ fn list_files(
     }
     let exports = held.0.exports();
     let files = exports.listed().enumerate().map(|(at, (name, count))| {
-        let said = format!("{name}  {}", counted(count, "row", "rows"));
+        let count = counted(count, "row", "rows");
+        let room = FILE_COLS.saturating_sub(layout::cells_of(&count) + GAP * 2);
+        let said = format!("{}  {count}", clipped_middle(name.to_owned(), room));
         (at, said, Style::default())
     });
     let lines: Vec<_> = if exports.is_empty() {
@@ -236,7 +274,7 @@ fn table_proposals(
     }
     let found = held.0.estimate();
     let rows: Vec<Vec<String>> = listed(found)
-        .map(|row| row.cells(found.months, MoneyForm::Full).to_vec())
+        .map(|row| row.cells(MoneyForm::Full).to_vec())
         .collect();
     let header = COLUMNS.map(str::to_owned);
     for (table, mut scroll) in &mut tables {
@@ -248,7 +286,12 @@ fn table_proposals(
         commands
             .entity(table)
             .insert(tabulate::columns((&header, &rows), GAP));
-        let spawned = tabulate::refill(&mut commands, (table, &mut scroll), (&header, &rows), &[0]);
+        let spawned = tabulate::refill(
+            &mut commands,
+            (table, &mut scroll),
+            (&header, &rows),
+            &[0, 4],
+        );
         for (at, &row) in spawned.iter().enumerate() {
             commands.entity(row).insert(ProposalRow(at));
         }
@@ -272,7 +315,7 @@ fn follow_cursor(
 }
 
 fn show_read_out(
-    (held, cursor, draft, shown): (Res<Held>, Res<Cursor>, Res<Draft>, ShownSurface),
+    (held, cursor, shown): (Res<Held>, Res<Cursor>, ShownSurface),
     mut outs: Query<(Entity, &mut ScrollArea), With<ReadOut>>,
     mut commands: Commands,
 ) {
@@ -288,7 +331,7 @@ fn show_read_out(
             continue;
         };
         let rows: Vec<Vec<String>> = row
-            .read_out(&draft.plan, months, MoneyForm::Full)
+            .read_out(months, MoneyForm::Full)
             .into_iter()
             .map(|(label, text)| vec![label, text])
             .collect();
@@ -300,6 +343,48 @@ fn show_read_out(
             (table, &mut scroll),
             (&header, &rows),
             &[0, 1],
+        );
+    }
+}
+
+/// What lies behind the highlighted row, its pane titled for it; the
+/// column before the figure takes what the others leave.
+fn show_behind(
+    (held, cursor, shown): (Res<Held>, Res<Cursor>, ShownSurface),
+    mut tables: Query<(Entity, &ChildOf, &mut ScrollArea), With<BehindTable>>,
+    mut frames: Query<&mut Framed>,
+    mut commands: Commands,
+) {
+    if !(held.is_changed() || cursor.is_changed() || shown.is_changed()) {
+        return;
+    }
+    let behind = held.0.behind(cursor.0, MoneyForm::Full).unwrap_or_default();
+    for (table, pane, mut scroll) in &mut tables {
+        if let Ok(mut framed) = frames.get_mut(pane.parent()) {
+            let title = if behind.title.is_empty() {
+                RECORDS_TITLE
+            } else {
+                &behind.title
+            };
+            Framed::retitle(&mut framed, title);
+        }
+        if behind.rows.is_empty() {
+            commands.entity(table).despawn_related::<Children>();
+            say_instead(&mut commands, table, NOTHING_HIGHLIGHTED.to_owned());
+            continue;
+        }
+        let figure = behind.columns.len().saturating_sub(1);
+        let mut columns = tabulate::columns((&behind.columns, &behind.rows), GAP);
+        if let Some(name) = figure.checked_sub(1).and_then(|at| columns.0.get_mut(at)) {
+            *name = Constraint::Fill(1);
+        }
+        commands.entity(table).insert(columns);
+        let text: Vec<usize> = (0..figure).collect();
+        tabulate::refill(
+            &mut commands,
+            (table, &mut scroll),
+            (&behind.columns, &behind.rows),
+            &text,
         );
     }
 }

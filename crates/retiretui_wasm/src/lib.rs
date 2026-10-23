@@ -97,7 +97,7 @@ fn reply<T: Serialize>(answer: Result<T, String>) -> Result<JsValue, JsError> {
 
 #[wasm_bindgen(typescript_custom_section)]
 const TYPES: &str = r#"import type {
-  ActionsReply, BandWords, Chart, Charted, Claim, ClaimWords, ClaimsOptions, CompareView,
+  ActionsReply, BandWords, Behind, Chart, Charted, Claim, ClaimWords, ClaimsOptions, CompareView,
   CompareWords,
   Domain, DomainTable,
   EstimateRow, EstimateView, EstimateWords, Example, FieldView, Issue, LadderWords, LadderYear, LaddersReply,
@@ -311,6 +311,7 @@ mod bindings {
     use crate::claims::{ClaimWords, ClaimsOptions, PersonRow, RothOwner};
     use crate::document::PlacedIssue;
     use crate::unopened::{OpenFailure, Written};
+    use retiretui_client::estimate::Behind;
     use retiretui_client::forms::details::ReadRow;
     use retiretui_client::forms::sort::Sort;
 
@@ -354,6 +355,7 @@ mod bindings {
         SpendingWords::export_all,
         EstimateView::export_all,
         EstimateWords::export_all,
+        Behind::export_all,
         MarketRuns::export_all,
         MarketWords::export_all,
         CompareView::export_all,

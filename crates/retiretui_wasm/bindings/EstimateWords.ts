@@ -15,7 +15,7 @@ nothing_read: string,
 /**
  * The columns the rows are tabled under.
  */
-columns: [string, string, string], 
+columns: [string, string, string, string, string], 
 /**
  * What the file dialog accepts: `.csv,.ofx,.qfx`.
  */

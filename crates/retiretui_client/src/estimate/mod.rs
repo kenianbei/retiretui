@@ -18,9 +18,10 @@ use serde::Serialize;
 use toml::Table;
 
 pub use forms::{RowForm, SETTINGS_FORM, assign, with_payee};
-pub use rows::{Listed, listed, summary, take_question, taken};
+pub use rows::{Behind, Listed, listed, summary, take_question, taken};
 
 use crate::draft::Draft;
+use crate::present::MoneyForm;
 
 /// What the tool is for, in a line.
 pub const ABOUT: &str = "The plan's expenses from what a bank's exports say the household spent.";
@@ -28,7 +29,7 @@ pub const ABOUT: &str = "The plan's expenses from what a bank's exports say the 
 pub const NOTHING_READ: &str =
     "Add a bank's CSV, OFX or QFX export and the plan's spending is estimated from it.";
 /// The columns the rows are tabled under.
-pub const COLUMNS: [&str; 3] = ["Expense", "Months", "Per year"];
+pub const COLUMNS: [&str; 5] = ["Expense", "Now", "Proposed", "Change", "Why"];
 /// The extensions an export may have.
 pub const EXTENSIONS: [&str; 3] = ["csv", "ofx", "qfx"];
 /// What a payee's category reads as while nothing names it.
@@ -190,6 +191,14 @@ impl Estimator {
     #[must_use]
     pub fn row(&self, at: usize) -> Option<Listed<'_>> {
         listed(&self.estimate).nth(at)
+    }
+
+    /// What lies behind the row at `at`.
+    #[must_use]
+    pub fn behind(&self, at: usize, form: MoneyForm) -> Option<Behind> {
+        let row = self.row(at)?;
+        let months = self.estimate.months;
+        Some(row.behind((self.exports.rows(), &self.patterns), months, form))
     }
 
     /// The form the row at `at` is edited in, and the answers it opens

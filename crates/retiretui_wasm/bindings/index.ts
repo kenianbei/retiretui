@@ -5,6 +5,7 @@ export type { AssumptionRow } from "./AssumptionRow";
 export type { Band } from "./Band";
 export type { BandWords } from "./BandWords";
 export type { Bases } from "./Bases";
+export type { Behind } from "./Behind";
 export type { CeilingOption } from "./CeilingOption";
 export type { Cell } from "./Cell";
 export type { Chart } from "./Chart";

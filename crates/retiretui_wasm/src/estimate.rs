@@ -32,7 +32,7 @@ pub struct EstimateRow {
     /// What it is, as its read-out is headed.
     pub title: &'static str,
     /// The row under the columns.
-    pub cells: [String; 3],
+    pub cells: [String; 5],
 }
 
 /// What the exports say the draft spends.
@@ -60,7 +60,7 @@ pub struct EstimateWords {
     /// What the table says before any export is read.
     pub nothing_read: &'static str,
     /// The columns the rows are tabled under.
-    pub columns: [&'static str; 3],
+    pub columns: [&'static str; 5],
     /// What the file dialog accepts: `.csv,.ofx,.qfx`.
     pub accept: String,
 }
@@ -76,7 +76,7 @@ fn view(estimator: &mut Estimator, document: &Document) -> EstimateView {
             is_nested: row.is_nested(),
             is_editable: row.is_editable(),
             title: row.title(),
-            cells: row.cells(found.months, MoneyForm::Full),
+            cells: row.cells(MoneyForm::Full),
         })
         .collect();
     EstimateView {
@@ -102,12 +102,11 @@ fn read_rows(rows: Vec<(String, String)>) -> Vec<ReadRow> {
 }
 
 /// The row at `at` read out, its label beside what it says.
-fn read(estimator: &Estimator, document: &Document, at: usize) -> Vec<ReadRow> {
+fn read(estimator: &Estimator, at: usize) -> Vec<ReadRow> {
     let Some(row) = estimator.row(at) else {
         return Vec::new();
     };
-    let months = estimator.estimate().months;
-    read_rows(row.read_out(&document.draft().plan, months, MoneyForm::Full))
+    read_rows(row.read_out(estimator.estimate().months, MoneyForm::Full))
 }
 
 /// The row at `at` open in its form, its answers held beside `document`'s
@@ -195,8 +194,19 @@ impl JsEstimator {
     ///
     /// Where the rows do not convert.
     #[wasm_bindgen(js_name = readRow, unchecked_return_type = "ReadRow[]")]
-    pub fn read_row(&self, document: &JsDocument, at: usize) -> Result<JsValue, JsError> {
-        to_js(&read(&self.0, &document.0, at))
+    pub fn read_row(&self, at: usize) -> Result<JsValue, JsError> {
+        to_js(&read(&self.0, at))
+    }
+
+    /// What lies behind the row at `at`: an expense's payees, or the
+    /// transactions of a category, a payee or the unnamed payees.
+    ///
+    /// # Errors
+    ///
+    /// Where the records do not convert.
+    #[wasm_bindgen(js_name = behindRow, unchecked_return_type = "Behind")]
+    pub fn behind_row(&self, at: usize) -> Result<JsValue, JsError> {
+        to_js(&self.0.behind(at, MoneyForm::Full).unwrap_or_default())
     }
 
     /// The row at `at` open in its form, its answers held beside
@@ -326,7 +336,11 @@ mod tests {
             ("Expense", "Category")
         );
         assert!(shown.question.is_some());
-        assert_eq!(read(&estimator, &document, 0)[0].label, "Expense");
+        assert_eq!(read(&estimator, 0)[0].label, "Expense");
+        assert_eq!(
+            estimator.behind(1, MoneyForm::Full).expect("a row").columns,
+            ["Date", "Payee", "Amount"]
+        );
         let mut editor = open_row(&estimator, &mut document, 0).expect("opens");
         editor.set("amount", None, "$2,400").expect("a field");
         apply_row(&mut estimator, &mut document, &mut editor, 0).expect("applied");

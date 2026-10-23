@@ -80,7 +80,13 @@ fn the_page_says_what_to_add_until_an_export_is_read() {
     app.update();
     let frame = composed_frame(&app);
     assert!(frame.contains("CITY OF SAN JOSE WATER"), "{frame}");
+    assert!(frame.contains("╭ Payees: Utilities "), "{frame}");
     assert!(frame.contains("1 month through Oct 2026"), "{frame}");
+    app.world_mut().insert_resource(Cursor(3));
+    app.update();
+    let frame = composed_frame(&app);
+    assert!(frame.contains("╭ Records: Utilities "), "{frame}");
+    assert!(frame.contains("2026-10-"), "a record's date: {frame}");
 }
 
 #[test]
@@ -218,7 +224,7 @@ fn a_category_moved_is_kept_in_the_plan_as_one_step() {
     let rows: Vec<String> = {
         let found = app.world().resource::<Held>().0.estimate().clone();
         listed(&found)
-            .map(|row| row.cells(found.months, MoneyForm::Full)[0].clone())
+            .map(|row| row.cells(MoneyForm::Full)[0].clone())
             .collect()
     };
     let at = rows.iter().position(|row| row == "  Groceries").unwrap();

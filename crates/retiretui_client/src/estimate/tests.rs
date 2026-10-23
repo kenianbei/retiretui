@@ -15,10 +15,10 @@ fn retired() -> Plan {
     Plan::from_toml_str(text).expect("the example parses")
 }
 
-fn cells(estimator: &Estimator) -> Vec<[String; 3]> {
+fn cells(estimator: &Estimator) -> Vec<[String; 5]> {
     let found = estimator.estimate();
     listed(found)
-        .map(|row| row.cells(found.months, MoneyForm::Full))
+        .map(|row| row.cells(MoneyForm::Full))
         .collect()
 }
 
@@ -51,14 +51,14 @@ fn each_expense_is_a_row_with_what_it_gathers_beneath_it() {
             "Other (new bucket)",
             "  Dining",
             "  Subscriptions",
-            "  payees nothing names",
-            "SOMEONE",
+            "  Unnamed payees",
+            "    SOMEONE",
         ]
     );
     let found = estimator.estimate();
     let rows: Vec<Listed> = listed(found).collect();
     assert_eq!(rows[3].title(), "Category");
-    let read = rows[3].read_out(&plan, found.months, MoneyForm::Full);
+    let read = rows[3].read_out(found.months, MoneyForm::Full);
     assert_eq!(read[1].1, "Other (new bucket)");
     assert_eq!(
         read[2].1, "nothing else fits it",
@@ -66,7 +66,7 @@ fn each_expense_is_a_row_with_what_it_gathers_beneath_it() {
     );
     assert_eq!(
         summary(found, MoneyForm::Full),
-        "1 month through Oct 2026: $0 of income, $0 in transfers a year; 1 payee unnamed."
+        "1 month through Oct 2026: $7,080 spent, $0 of income, $0 in transfers a year; 1 payee unnamed, $360 a year."
     );
     assert_eq!(
         take_question(found),
@@ -147,7 +147,7 @@ fn a_move_and_the_settings_are_kept_in_the_plan() {
         })
         .unwrap();
     assert_eq!(
-        dining.read_out(&plan, found.months, MoneyForm::Full)[2].1,
+        dining.read_out(found.months, MoneyForm::Full)[2].1,
         "assigned in the plan"
     );
     assign(&mut plan, Category::Dining, None);
@@ -196,4 +196,29 @@ fn the_overlay_states_what_the_proposals_change() {
     let text = overlay("base.toml", &plan, estimator.estimate()).unwrap();
     assert!(text.contains("base = \"base.toml\""), "{text}");
     assert!(text.contains("id = \"other\""), "{text}");
+}
+
+#[test]
+fn a_row_says_what_it_changes_why_and_what_lies_behind_it() {
+    let estimator = estimated(&retired());
+    let rows = cells(&estimator);
+    let now = estimator.estimate().proposals[0].now.unwrap();
+    assert_eq!(
+        rows[0][1..4],
+        [
+            MoneyForm::Full.money(now),
+            "$6,000".to_owned(),
+            MoneyForm::Full.signed(6000 - now)
+        ]
+    );
+    assert_eq!(rows[2][1..4], ["-", "$1,080", "+$1,080"], "a new bucket");
+    assert_eq!(rows[3][4], "bucket");
+    let payees = estimator.behind(0, MoneyForm::Full).unwrap();
+    assert_eq!(payees.title, "Payees: Housing");
+    assert_eq!(payees.rows, [["ROCKET MORTGAGE", "$6,000"]]);
+    let dining = estimator.behind(3, MoneyForm::Full).unwrap();
+    assert_eq!(dining.title, "Records: Dining");
+    assert_eq!(dining.rows, [["2026-10-04", "TAQUERIA SOL", "$40.00"]]);
+    let unnamed = estimator.behind(5, MoneyForm::Full).unwrap();
+    assert_eq!(unnamed.rows, [["2026-10-03", "SOMEONE", "$30.00"]]);
 }

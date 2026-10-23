@@ -74,13 +74,13 @@ pub fn run(args: &EstimateArgs) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Each expense with what it gathers beneath it, then each payee nothing
-/// names, under the summary line; the first column left-aligned so the
+/// Each expense with what it gathers beneath it, the bucket's last the
+/// payees nothing names, under the summary line; the first column left-aligned so the
 /// nesting shows.
 fn estimate_text(found: &Estimate) -> String {
     let header: Vec<String> = estimate::COLUMNS.map(str::to_lowercase).to_vec();
     let mut rows: Vec<Vec<String>> = listed(found)
-        .map(|row| row.cells(found.months, MoneyForm::Full).to_vec())
+        .map(|row| row.cells(MoneyForm::Full).to_vec())
         .collect();
     let width = rows
         .iter()
