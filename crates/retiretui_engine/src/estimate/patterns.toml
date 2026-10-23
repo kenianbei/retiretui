@@ -2,8 +2,11 @@
 # normalized payee - uppercased, without store numbers, card suffixes,
 # reference numbers, codes after the first word, a trailing state or
 # anything after a comma, a processor's `*` read as a space - the
-# first match winning. A copy of this file as patterns.toml in the
-# application's config directory is read before it.
+# first match winning. A patterns.toml of the user's own, in the
+# application's config directory, is read before the bank's own category
+# and this table; its rules may also test `is`, `one_of`, `matches`,
+# `spent`, `export` and `on`, say `ignore = true`, and merge payees under
+# a name in `payees`, the most specific of its matches winning.
 
 patterns = [
   { match = "UBER EATS", category = "dining" },
