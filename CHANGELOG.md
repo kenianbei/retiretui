@@ -17,14 +17,16 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   read-out lists the filled ones alone, the table counts them, the Overview
   marks an implausible phase amount, and the spending ceiling scales every phase
   with its expense.
-- A Spending Estimate tool reads a bank's CSV, OFX or QFX exports and proposes
-  the plan's expenses from the latest twelve months of spending: each category
-  sets the expense it is for, or is proposed as a new one. A proposal can be
-  edited, an unnamed payee given a category, and the proposals taken into the
-  plan or written as a scenario. It is a Tools page in the terminal and the web
-  app, `retiretui estimate`, and `estimate_spending` over MCP. An
-  `estimate/patterns.toml` in the config directory names payees before the
-  built-in table. Exports are held for the session only.
+- A Spending Estimate tool proposes the plan's expenses from a bank's CSV, OFX
+  or QFX exports - the latest twelve months, one proposal per expense with its
+  categories beneath it. A category lands in the expense named for it, else in
+  one of its family, a new one, or a bucket that also takes unnamed payees, as
+  an optional `[estimate]` table leans (existing only, new past a share of
+  spending, or always new); the table also names the bucket and assigns
+  categories outright. Proposals can be edited and taken or written as a
+  scenario, in the terminal, the web app, `retiretui estimate` and
+  `estimate_spending` over MCP. A payee named in the terminal is kept in
+  `estimate/patterns.toml` in the config directory.
 
 ### Changed
 

@@ -6,17 +6,18 @@ status, each person's covered earnings where a Social Security statement has
 been imported, accounts with tax treatments and what each is invested in,
 contributions into them, income sources, expenses and which of them it could not
 cut, named milestones, opt-in Medicare surcharge modeling and MAGI-cliff
-declarations, and what it assumes of the market - and the program answers with a
-deterministic year-by-year projection of that household's finances under U.S.
-federal tax law and the tax of the state it lives in, year by year, and with how
-that projection fares across many markets. All amounts are entered as annual
-today's dollars and escalate per item - at plan inflation by default, frozen
-nominal, or at a fixed rate of their own - save an income stated as what it pays
-in its first year, which escalates from that year; the engine computes in
-nominal dollars and carries a per-year deflator so results read in either basis.
-A projection walks through a market - each year's return on each asset class and
-that year's inflation - and the ledger is the one market the plan states: each
-class's mean return and the plan's inflation, every year.
+declarations, what it assumes of the market, and how a bank's spending is fitted
+to its expenses - and the program answers with a deterministic year-by-year
+projection of that household's finances under U.S. federal tax law and the tax
+of the state it lives in, year by year, and with how that projection fares
+across many markets. All amounts are entered as annual today's dollars and
+escalate per item - at plan inflation by default, frozen nominal, or at a fixed
+rate of their own - save an income stated as what it pays in its first year,
+which escalates from that year; the engine computes in nominal dollars and
+carries a per-year deflator so results read in either basis. A projection walks
+through a market - each year's return on each asset class and that year's
+inflation - and the ledger is the one market the plan states: each class's mean
+return and the plan's inflation, every year.
 
 A plan variant is a scenario: a TOML file naming a `base` document and stating
 only deltas. Items are addressed by identity - the `id` every listed item
@@ -129,14 +130,17 @@ depends on UI.
   that run's own today's dollars, with percentile bands and the runs singled
   out. `estimate` reads a bank's exports - CSV sniffed from its header, OFX or
   QFX - each file's rows merged over the ones before it, one row answering for
-  one, sorts each row into a category by the bank's own column or by its payee's
-  words against a table of patterns a user's own may precede, and proposes each
-  category's latest twelve months of spending, in the plan's start-year dollars,
-  as the amount of the expense it is for or a new expense - on a phased expense,
-  the phase in force, every phase scaled, or every phase alike. `search` is what
-  every search shares: a way to follow it and to stop it at its next step, and
-  the machine's threads, where there are any, to run its independent steps
-  across - a market's runs, a sweep's brackets.
+  one, sorts each row into a category by the bank's own column, its transaction
+  type, or its payee's words against a table of patterns a user's own may
+  precede, takes the latest twelve months in the plan's start-year dollars, and
+  places each category, as the plan's `[estimate]` table leans and assigns, in
+  the expense named for it, a new one, one of its family, or the bucket that
+  also takes the payees nothing names - saying why - and proposes what lands in
+  each expense as its amount: on a phased expense, the phase in force, every
+  phase scaled, or every phase alike. `search` is what every search shares: a
+  way to follow it and to stop it at its next step, and the machine's threads,
+  where there are any, to run its independent steps across - a market's runs, a
+  sweep's brackets.
 - `retiretui_client` - what every interface shares over the engine, and draws in
   its own way; it depends on none of their own crates. The words a plan is said
   in - a value, a table, an action, and an issue read back as the domain, item
@@ -169,39 +173,41 @@ depends on UI.
   A first plan from the new-plan answers - asked of a partner only where the
   household files jointly, in the steps a page asks them in - or an example; a
   statement's earnings recorded on a person; the spending estimate's words - the
-  exports a session holds and what they say the plan spends, each proposal or
-  unnamed payee a row and read out, edited in a form of its own, what is asked
-  before the proposals are taken and the scenario they make; the searches the
-  tools and the overview share, the words their options and what the overview
-  finds better are said in - the market runs' among them: how the plan fared and
-  in which zone, what the runs were made under and where each is edited, how
-  they end, and the market a run went through as an address keeps it and as it
-  is named, and the spending ceiling's: the target share it is held to, each
-  ceiling against the plan with the expenses it scales, and what the one at the
-  target comes to beside what the plan spends - and what can be done for a
-  person beside the claim search, each edit said and refused in its own words;
-  what the Overview says of a plan as a whole - how long its money lasts and
-  where it first runs short, the lowest its net worth falls after the last
-  salary, what it ends with, what its years add up to - income, withdrawals,
-  spending, taxes, conversions, required distributions and Medicare's
-  surcharges, each with what it is made of and the page, tool or year it leads
-  to - what it rests on, each assumption at the field it is edited at, the
-  charts it turns through and the lines each draws - the treatments it holds
-  stacked taxable first, then net worth - and what the market runs' bands are
-  called, each as every surface keys it, and what it lists - the draft's issues,
-  the years the plan pays Medicare's surcharges, the contributions it could not
-  make as stated, a benefit estimated without its record, an amount too large to
-  be likely, and the plan's milestones - each row led by its year or the item
-  behind it, the worst historical start the plan does not survive with how many
-  do not, and a year's actions and warnings in either dollar basis; what plans
-  compared side by side are said in - each one's figures, or its differences
-  from a baseline's, a metric year by year, and what one changes of another; a
-  year's tax tables as a plan's projection applies them - for its filing status
-  and the state it lives in that year, or any other picked, the plan's own
-  offered first - in the words its other tables are said in; and the shapes a
-  search or a year's actions are replied in as data. Where there is a machine
-  beneath it, what that machine supplies: the user's own tax tables, market
-  history and directories.
+  exports a session holds and what they say the plan spends, each expense a row
+  with what it gathers beneath it and each payee nothing names after them, read
+  out and edited in a form for each kind of row - a category moved kept in the
+  plan's `[estimate]` table, which is itself a form over the plan - what is
+  asked before the proposals are taken, the scenario they make, and a named
+  payee as a line of the user's patterns file; the searches the tools and the
+  overview share, the words their options and what the overview finds better are
+  said in - the market runs' among them: how the plan fared and in which zone,
+  what the runs were made under and where each is edited, how they end, and the
+  market a run went through as an address keeps it and as it is named, and the
+  spending ceiling's: the target share it is held to, each ceiling against the
+  plan with the expenses it scales, and what the one at the target comes to
+  beside what the plan spends - and what can be done for a person beside the
+  claim search, each edit said and refused in its own words; what the Overview
+  says of a plan as a whole - how long its money lasts and where it first runs
+  short, the lowest its net worth falls after the last salary, what it ends
+  with, what its years add up to - income, withdrawals, spending, taxes,
+  conversions, required distributions and Medicare's surcharges, each with what
+  it is made of and the page, tool or year it leads to - what it rests on, each
+  assumption at the field it is edited at, the charts it turns through and the
+  lines each draws - the treatments it holds stacked taxable first, then net
+  worth - and what the market runs' bands are called, each as every surface keys
+  it, and what it lists - the draft's issues, the years the plan pays Medicare's
+  surcharges, the contributions it could not make as stated, a benefit estimated
+  without its record, an amount too large to be likely, and the plan's
+  milestones - each row led by its year or the item behind it, the worst
+  historical start the plan does not survive with how many do not, and a year's
+  actions and warnings in either dollar basis; what plans compared side by side
+  are said in - each one's figures, or its differences from a baseline's, a
+  metric year by year, and what one changes of another; a year's tax tables as a
+  plan's projection applies them - for its filing status and the state it lives
+  in that year, or any other picked, the plan's own offered first - in the words
+  its other tables are said in; and the shapes a search or a year's actions are
+  replied in as data. Where there is a machine beneath it, what that machine
+  supplies: the user's own tax tables, market history and directories.
 - `retiretui_tui` - the interactive planner described under `tui` below, as a
   library over the client and above whatever backend draws it, mapping each
   editing domain to its page. It runs each search beside the frames: on a thread
@@ -317,28 +323,30 @@ depends on UI.
   conversions of its own, in place of the ladder taken before, a set of Social
   Security claims as each searched income's start, adding the incomes the search
   made up, an order as the plan's withdrawal order, a ceiling as the amount of
-  each expense it scales - the spending estimate's proposals beside the exports
-  read through the file picker for the session and the highlighted row read out,
-  a proposal or an unnamed payee's category edited in a form of its own, the
-  proposals taken into the draft after asking or written as a scenario, and the
-  year's tax tables, their sections listed beside the highlighted one's table,
-  in the Ledger's year, for the plan's filing status and the state it lives in
-  or any other picked, each tried on as a picker's cursor reaches it. Viewing
-  and editing are distinct: a domain with many items is a table, shown in the
-  plan's order or ordered by a column for the view alone, with the row under the
-  cursor read out beside it, every field the item has a use for in the form's
-  words - a list's rows as far as they are filled - wherever the columns do not
-  say everything - a person's ending with their earnings record - and a domain
-  there is exactly one of is that read-out alone. Nothing on a page edits: one
-  item at a time is the editing session, a form standing over the page as tall
-  as the fields on show and scrolling what the body cannot hold, opened by ⏎ on
-  a row or on the read-out and left by esc or by applying, the keyboard going
-  back to what opened it; its fields work on a snapshot that reaches the working
-  draft only when the whole item is applied. Edits no one applied are never
-  dropped silently - the form keeps every key while it stands, and a press
-  outside it asks what is to become of them - and never applied to an item the
-  plan has changed underneath; an unsaved draft is asked about the same way
-  before another document takes its place. Every applied item is one step of a
+  each expense it scales - the spending estimate's expenses, each with its
+  categories nested beneath it, beside the exports read through the file picker
+  for the session, the highlighted row read out, and the plan's `[estimate]`
+  table, each row edited in its own form - a moved category written to the plan,
+  a named payee to the user's patterns file the launch names - the proposals
+  taken into the draft after asking or written as a scenario, and the year's tax
+  tables, their sections listed beside the highlighted one's table, in the
+  Ledger's year, for the plan's filing status and the state it lives in or any
+  other picked, each tried on as a picker's cursor reaches it. Viewing and
+  editing are distinct: a domain with many items is a table, shown in the plan's
+  order or ordered by a column for the view alone, with the row under the cursor
+  read out beside it, every field the item has a use for in the form's words - a
+  list's rows as far as they are filled - wherever the columns do not say
+  everything - a person's ending with their earnings record - and a domain there
+  is exactly one of is that read-out alone. Nothing on a page edits: one item at
+  a time is the editing session, a form standing over the page as tall as the
+  fields on show and scrolling what the body cannot hold, opened by ⏎ on a row
+  or on the read-out and left by esc or by applying, the keyboard going back to
+  what opened it; its fields work on a snapshot that reaches the working draft
+  only when the whole item is applied. Edits no one applied are never dropped
+  silently - the form keeps every key while it stands, and a press outside it
+  asks what is to become of them - and never applied to an item the plan has
+  changed underneath; an unsaved draft is asked about the same way before
+  another document takes its place. Every applied item is one step of a
   whole-plan history the draft walks back and forward through, dropped with the
   document and kept across a save; a statement picked on the People page or
   beside the claim search, through the same file picker, lands its earnings on
@@ -447,7 +455,8 @@ depends on UI.
   withdrawal order or spending ceiling taken into the draft as one more step or
   made a scenario beside the document's saved file, as are the proposals of the
   Spending Estimate tool's exports, held for the session beside any document,
-  each row read out and edited in its form, never over a file it was made from;
+  each row read out and edited in its form - a moved category and the plan's
+  `[estimate]` table a step of history - never over a file it was made from;
   each person's row of the SSA Benefits page, their benefit estimated once for
   each projection, and what is done for them as one more step; and a first plan
   made from the new-plan questions, answered a field at a time and kept as text
@@ -559,18 +568,20 @@ depends on UI.
   opens in the Ledger, which shows the plan replayed through its market, named
   by it and kept in the address through the year, the basis and edits, until a
   link returns it to the plan's own. Its Spending Estimate page reads a bank's
-  exports picked through the browser's file dialog for the session, tables what
-  they propose for the plan's expenses, the highlighted row - kept in the
-  address - read out and edited in the same sheet as an item, and takes or
-  writes the proposals the same way. Its Tax Tables page reads out the tables
-  the plan's projection applies in the shared year, for the plan's filing status
-  and the state it lives in, or for any status or modeled state picked in the
-  address. The Compare tab sets the document beside the workspace files chosen
-  from a menu: each plan's figures and its success through random markets, or
-  their differences from the one chosen as the baseline, what the highlighted
-  plan changes of the baseline, and one metric year by year, charted and tabled
-  at once - a plan alone offered another file, or an example written beside it;
-  a compared plan opened takes the document's place, the document joining the
+  exports picked through the browser's file dialog for the session, tables the
+  expenses they propose for the plan with their categories nested beneath, the
+  highlighted row - kept in the address - read out and edited in the same sheet
+  as an item, reads out and edits the plan's `[estimate]` table beside them, and
+  takes or writes the proposals the same way; a tool's address names which of
+  its forms is open. Its Tax Tables page reads out the tables the plan's
+  projection applies in the shared year, for the plan's filing status and the
+  state it lives in, or for any status or modeled state picked in the address.
+  The Compare tab sets the document beside the workspace files chosen from a
+  menu: each plan's figures and its success through random markets, or their
+  differences from the one chosen as the baseline, what the highlighted plan
+  changes of the baseline, and one metric year by year, charted and tabled at
+  once - a plan alone offered another file, or an example written beside it; a
+  compared plan opened takes the document's place, the document joining the
   compared, and any other plan opened leaves nothing compared. The compared
   files are opened again whenever the workspace is written, here or in another
   tab. What is applied is a step of the draft's history, undone and redone from
