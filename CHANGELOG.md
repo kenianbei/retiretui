@@ -31,11 +31,12 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   can be named, merged with its variants under one name, or ignored, as can a
   single record; ignored records are counted nowhere and listed last, after the
   bucket. In the terminal `i` ignores and `c` moves a payee to a category typed
-  by its number, and ⏎ on a record offers these and sorting every payee
-  containing its words; the web gives each record the same menu. The terminal
-  keeps these in `estimate/patterns.toml` in the config directory, whose rules
-  can also test the exact payee, a regex, the amount, the export and the date,
-  the most specific match winning over the bank's own category.
+  by its number, or to the bucket as 0, and ⏎ on a record offers these and
+  sorting every payee containing its words; the web gives each record the same
+  menu. The terminal keeps these in `estimate/patterns.toml` in the config
+  directory, whose rules can also test the exact payee, a regex, the amount, the
+  export and the date, the most specific match winning over the bank's own
+  category.
 
 ### Changed
 

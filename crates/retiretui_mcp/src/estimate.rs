@@ -29,8 +29,8 @@ pub struct EstimateToolArgs {
     /// The user's rules as TOML: `[[patterns]]` rows testing the payee by
     /// `match` (contains), `is`, `one_of` or `matches` (a regex), and
     /// optionally `spent = [low, high]` in statement dollars, `export`
-    /// (part of the file name) and `on` (a date), each with a `category`
-    /// or `ignore = true`, the most specific match winning and every rule
+    /// (part of the file name) and `on` (a date), each with a `category`,
+    /// `ignore = true` or `bucket = true`, the most specific match winning and every rule
     /// before the bank's own category; and `[[payees]]` rows merging
     /// payees under a `name` by the same payee keys.
     pub patterns: Option<String>,

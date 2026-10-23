@@ -104,7 +104,7 @@ test("exports are read, a proposal edited, and the proposals taken and written",
     page.getByRole("table", { name: "Records: Pets" }),
   );
   await toBucket.getByRole("menuitem", { name: /is…$/ }).click();
-  await page.getByRole("menuitem", { name: /^0 .*\(bucket\)$/ }).click();
+  await page.getByRole("menuitem", { name: /^0 / }).click();
   await expect(page.getByRole("status")).toContainText("goes to the bucket");
   await rowNamed(page, testInfo, "CITY OF SAN JOSE WATER").click();
   const unnamed = page.getByRole("table", {
