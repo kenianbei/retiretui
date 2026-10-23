@@ -454,3 +454,52 @@ fn estimate_spending_proposes_from_exports_and_writes_the_overlay() {
     );
     assert!(refused.contains("not a .csv"), "{refused}");
 }
+
+#[test]
+fn estimate_records_reads_exports_and_rules_by_path_and_says_what_sorted_each() {
+    let bank = "../retiretui_engine/tests/fixtures/bank";
+    let chase = std::fs::read_to_string(format!("{bank}/chase.csv")).unwrap();
+    let dining = "patterns = [{ match = \"SAFEWAY\", category = \"dining\" }]\n";
+    let root = scratch_dir(
+        "mcp-estimate-records",
+        "plan.toml",
+        &[("chase.csv", &chase), ("proposed.toml", dining)],
+    );
+    let user = root.join("config/retiretui/estimate");
+    std::fs::create_dir_all(&user).unwrap();
+    let ignoring = "patterns = [{ is = \"ATM WITHDRAWAL\", ignore = true }]\n";
+    std::fs::write(user.join("patterns.toml"), ignoring).unwrap();
+    let mut client = McpClient::spawn(&root);
+    let records = |client: &mut McpClient, which: serde_json::Value, extra: serde_json::Value| {
+        let mut args = json!({
+            "path": "plan.toml",
+            "files": [{"path": "chase.csv"}],
+            "patterns_path": "proposed.toml",
+            "which": which,
+        });
+        args.as_object_mut()
+            .unwrap()
+            .extend(extra.as_object().unwrap().clone());
+        client.call("estimate_records", args)
+    };
+    let safeway = records(&mut client, json!({"payee": "safeway"}), json!({}));
+    assert_eq!(safeway["count"], 1, "{safeway}");
+    let record = &safeway["records"][0];
+    assert_eq!(record["sorted"], "dining", "{record}");
+    assert_eq!(
+        record["by"],
+        json!({"rule": {"file": "proposed.toml", "at": 1}})
+    );
+    assert_eq!(record["export"], "chase.csv");
+    let ignored = records(&mut client, json!("ignored"), json!({}));
+    assert_eq!(ignored["count"], 2, "{ignored}");
+    let alone = records(&mut client, json!("ignored"), json!({"user_patterns": false}));
+    assert_eq!(alone["count"], 0, "{alone}");
+    let income = records(&mut client, json!({"category": "income"}), json!({}));
+    assert_eq!(income["records"][0]["by"], json!({"embedded": "PAYROLL"}));
+    let refused = client.call_expecting_error(
+        "estimate_records",
+        json!({"path": "plan.toml", "files": [{"path": "../chase.csv"}], "which": "unnamed"}),
+    );
+    assert!(refused.contains("../chase.csv"), "{refused}");
+}

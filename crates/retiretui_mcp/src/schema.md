@@ -227,7 +227,9 @@ expense under its slug, to the first expense of its family (food: groceries,
 dining; home: housing, utilities, phone, internet; health: medical, pharmacy,
 insurance; transport: fuel, transit, travel; the rest personal), or to the
 bucket, which also collects the payees nothing names. Each proposal is one
-expense and what it gathers.
+expense and what it gathers. `estimate_records` lists the transactions behind a
+category, a payee, the unnamed or the ignored, each with the rule, bank
+category, transaction type or embedded entry that sorted it.
 
 An HSA is drawn untaxed up to the year's `medical` spending, across the
 household. What it pays beyond that is ordinary income, and pays a 20% penalty
