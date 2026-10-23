@@ -25,8 +25,8 @@ use crate::store::Store;
 use crate::tools;
 use crate::watch::Watch;
 
-const EXTENSIONS: &[&str] = &["toml"];
-const STATEMENT_EXTENSIONS: &[&str] = &["xml"];
+const PLAN_EXTENSION: &str = "toml";
+const STATEMENT_EXTENSION: &str = "xml";
 const SAVE_OVER: &str = "Overwrite {}?";
 const COMPARED: &str = "compared";
 
@@ -75,7 +75,7 @@ pub(super) fn decorate(
         Badges::Compared => compared.paths().map(Path::to_path_buf).collect(),
     };
     Some(FilePickerDecorator(Box::new(move |path| {
-        if path.extension() != Some(OsStr::new(EXTENSIONS[0])) {
+        if path.extension() != Some(OsStr::new(PLAN_EXTENSION)) {
             return RowDecoration::default();
         }
         if compared.iter().any(|held| held == path) {
@@ -113,21 +113,21 @@ pub fn register(world: &mut World) {
     let pickers = Pickers {
         open: FilePick {
             title: "Open",
-            extensions: EXTENSIONS,
+            extensions: &[PLAN_EXTENSION],
             accepts_new: false,
             badges: Badges::Kind,
             chosen: world.register_system(open_chosen),
         },
         save_as: FilePick {
             title: "Save as",
-            extensions: EXTENSIONS,
+            extensions: &[PLAN_EXTENSION],
             accepts_new: true,
             badges: Badges::Kind,
             chosen: world.register_system(save_as_chosen),
         },
         compare: FilePick {
             title: "Compare with",
-            extensions: EXTENSIONS,
+            extensions: &[PLAN_EXTENSION],
             accepts_new: false,
             badges: Badges::Compared,
             chosen: world.register_system(compare_chosen),
@@ -139,7 +139,7 @@ pub fn register(world: &mut World) {
         new_plan: writing(world, "New plan as", setup::write_new, SAVE_OVER),
         earnings: FilePick {
             title: "Import earnings from",
-            extensions: STATEMENT_EXTENSIONS,
+            extensions: &[STATEMENT_EXTENSION],
             accepts_new: false,
             badges: Badges::None,
             chosen: world.register_system(edit::record_statement),
@@ -168,7 +168,7 @@ pub fn workspace_holds_a_plan(session: &Session) -> bool {
         .flatten()
         .filter(|entry| !entry.is_dir)
         .map(|entry| workspace.join(entry.name))
-        .filter(|path| path.extension() == Some(OsStr::new(EXTENSIONS[0])))
+        .filter(|path| path.extension() == Some(OsStr::new(PLAN_EXTENSION)))
         .any(|path| Kind::of(session.store.as_ref(), &path) != Kind::Invalid)
 }
 
@@ -258,7 +258,7 @@ fn writing<M: 'static>(
     };
     FilePick {
         title,
-        extensions: EXTENSIONS,
+        extensions: &[PLAN_EXTENSION],
         accepts_new: true,
         badges: Badges::Kind,
         chosen: world.register_system(chosen),

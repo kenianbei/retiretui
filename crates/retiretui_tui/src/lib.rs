@@ -125,7 +125,9 @@ pub fn build(app: &mut App, launch: Launch) -> Result<(), String> {
     app.insert_resource(projected);
     app.insert_resource(watch::Watch::new(launch.store, files));
     app.insert_resource(tools::markets::MarketHistory(launch.history));
-    app.insert_resource(tools::estimate::HeldPatterns(launch.patterns));
+    app.insert_resource(tools::estimate::Held(
+        retiretui_client::estimate::Estimator::new(launch.patterns),
+    ));
     if let Some(exchange) = launch.exchange {
         app.insert_resource(exchange::Edge(exchange));
     }

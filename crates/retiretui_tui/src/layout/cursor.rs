@@ -20,6 +20,9 @@ const CURSOR_BAR: &str = "\u{258c} ";
 /// not get, and what everything drawn beside the rows lines up under.
 pub const CURSOR_COLS: u16 = 2;
 
+/// The column a scrolled list or table keeps for its scrollbar.
+pub const SCROLL_BAR_COLS: u16 = 1;
+
 /// The cursor every table draws, shared so two tables cannot drift.
 #[must_use]
 pub fn table_cursor() -> TableCursor {

@@ -86,7 +86,7 @@ export function EstimatePage({ title }: { title: string }) {
   const proposal: Settings = useMemo(
     () => ({
       heading: highlighted?.is_proposal ? "Proposal" : "Payee",
-      read: () => highlighted?.read ?? [],
+      read: (document) => ESTIMATOR.readRow(document, at),
       open: (document) => ESTIMATOR.openRow(document, at),
       apply: (document, editor) => {
         ESTIMATOR.applyRow(document, editor, at);
@@ -115,16 +115,13 @@ export function EstimatePage({ title }: { title: string }) {
         </div>
         {view && view.files.length > 0 ? (
           <ul className="bg-card divide-y rounded-md border text-sm">
-            {view.files.map(([name, count]) => (
+            {view.files.map(([name, rows]) => (
               <li
                 key={name}
                 className="flex items-center justify-between gap-3 px-4 py-2"
               >
                 <span>
-                  {name}{" "}
-                  <span className="text-muted-foreground">
-                    {count} {count === 1 ? "row" : "rows"}
-                  </span>
+                  {name} <span className="text-muted-foreground">{rows}</span>
                 </span>
                 <Button
                   size="icon-sm"
@@ -164,7 +161,7 @@ export function EstimatePage({ title }: { title: string }) {
           <p className="text-muted-foreground text-sm">{view.summary}</p>
           <Options
             label="Proposals"
-            columns={view.columns}
+            columns={WORDS.columns}
             rows={rows}
             narrowFigure={PER_YEAR}
             words={2}

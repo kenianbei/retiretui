@@ -6,17 +6,13 @@ import type { EstimateRow } from "./EstimateRow";
  */
 export type EstimateView = { 
 /**
- * Each export's name and how many rows it holds.
+ * Each export's name and how many rows it holds, in words.
  */
-files: Array<[string, number]>, 
+files: Array<[string, string]>, 
 /**
  * The window read, its income and transfers, or what to add.
  */
 summary: string, 
-/**
- * The columns the rows are tabled under.
- */
-columns: [string, string, string, string], 
 /**
  * The proposals, then the unnamed payees.
  */

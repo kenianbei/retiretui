@@ -2,7 +2,7 @@
 //! spending sorted, annualized and deflated, and the proposals applied.
 
 use retiretui_engine::estimate::{
-    BankError, Category, Estimate, Patterns, Phases, apply, estimate, merge, read,
+    BankError, Category, Cents, Estimate, Patterns, Phases, apply, estimate, merge, read,
 };
 use retiretui_engine::plan::Plan;
 
@@ -105,7 +105,7 @@ fn the_same_statement_in_both_ofx_forms_merges_to_its_rows() {
     merge(&mut rows, read("checking.qfx", QFX).unwrap());
     assert_eq!(rows.len(), 2);
     assert_eq!(rows[1].payee, "CITY OF SAN JOSE WATER");
-    assert_eq!(rows[1].amount.to_string(), "-71.22");
+    assert_eq!(rows[1].amount, Cents(-7122));
     assert_eq!(rows[1].bank_id.as_deref(), Some("20261018-c3"));
     assert_eq!(
         read("x.ofx", "nothing").unwrap_err(),

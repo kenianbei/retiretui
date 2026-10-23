@@ -267,7 +267,7 @@ pub(crate) fn parse_growth(text: &str) -> Option<Value> {
 }
 
 /// A date to the month, which is as fine as a plan's years resolve.
-fn month(date: PlanDate) -> String {
+pub(crate) fn month(date: PlanDate) -> String {
     date.0.strftime("%b %-Y").to_string()
 }
 

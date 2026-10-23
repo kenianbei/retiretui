@@ -78,7 +78,7 @@ pub struct Idle<'w> {
     claims: Res<'w, Claims>,
     orders: Res<'w, Orders>,
     spending: Res<'w, Spending>,
-    estimate: Res<'w, estimate::Estimated>,
+    estimate: Res<'w, estimate::Held>,
 }
 
 impl Idle<'_> {
@@ -93,7 +93,7 @@ impl Idle<'_> {
             WRITE_CLAIMS | TAKE_CLAIMS => self.claims.found().is_none(),
             WRITE_ORDER | TAKE_ORDER => self.orders.found().is_none(),
             WRITE_SPENDING | TAKE_SPENDING => self.spending.found().is_none(),
-            WRITE_ESTIMATE | TAKE_ESTIMATE => self.estimate.0.proposals.is_empty(),
+            WRITE_ESTIMATE | TAKE_ESTIMATE => self.estimate.0.estimate().proposals.is_empty(),
             LEDGER_PLAN => self.run.0.is_none(),
             _ => false,
         }

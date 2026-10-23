@@ -12,8 +12,6 @@ use retiretui_engine::plan::Plan;
 
 use crate::project::OutputFormat;
 
-const NEW: &str = "(new)";
-
 /// Arguments of the `estimate` subcommand.
 #[derive(Args, Debug)]
 pub struct EstimateArgs {
@@ -61,10 +59,13 @@ pub fn run(args: &EstimateArgs) -> anyhow::Result<()> {
     match args.format {
         OutputFormat::Json => println!(
             "{}",
-            serde_json::to_string_pretty(&EstimateReply::new(found, written))?
+            serde_json::to_string_pretty(&EstimateReply {
+                estimate: found,
+                written
+            })?
         ),
         OutputFormat::Table => {
-            print!("{}", estimate_text(&plan, &found));
+            print!("{}", estimate_text(&found));
             if let Some(out) = written {
                 println!("wrote {out}");
             }
@@ -74,30 +75,23 @@ pub fn run(args: &EstimateArgs) -> anyhow::Result<()> {
 }
 
 /// Each proposal and unknown payee a row, under the summary line.
-fn estimate_text(plan: &Plan, found: &Estimate) -> String {
+fn estimate_text(found: &Estimate) -> String {
     let header: Vec<String> = ["category", "expense", "months", "per year", "rows"]
         .map(str::to_owned)
         .to_vec();
     let rows: Vec<Vec<String>> = listed(found)
         .iter()
         .map(|row| {
-            let (expense, count) = match row {
-                estimate::Listed::Proposal(p) => {
-                    (p.expense.clone().unwrap_or_else(|| NEW.to_owned()), p.rows)
-                }
-                estimate::Listed::Unknown(u) => (u.payee.clone(), u.rows),
+            let count = match row {
+                estimate::Listed::Proposal(p) => p.rows,
+                estimate::Listed::Unknown(u) => u.rows,
             };
-            let [category, _, months, amount] = row.cells(found.months, MoneyForm::Full);
-            vec![
-                category.to_lowercase(),
-                expense,
-                months,
-                amount,
-                count.to_string(),
-            ]
+            let mut cells = row.cells(found.months, MoneyForm::Full).to_vec();
+            cells[0] = cells[0].to_lowercase();
+            cells.push(count.to_string());
+            cells
         })
         .collect();
-    let _ = plan;
     format!(
         "{}\n{}",
         estimate::summary(found, MoneyForm::Full),

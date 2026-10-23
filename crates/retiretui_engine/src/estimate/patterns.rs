@@ -45,14 +45,14 @@ impl Patterns {
     /// # Errors
     ///
     /// The file is not a `[[patterns]]` table of `match` and `category`.
-    pub fn add(&mut self, text: &str) -> Result<&mut Self, toml::de::Error> {
+    pub fn add(&mut self, text: &str) -> Result<(), toml::de::Error> {
         let file: File = toml::from_str(text)?;
         let rows = file
             .patterns
             .into_iter()
             .map(|p| (p.r#match.to_ascii_uppercase(), p.category));
         self.rows.splice(0..0, rows);
-        Ok(self)
+        Ok(())
     }
 
     /// Puts one payee's category first, as the page assigns it.

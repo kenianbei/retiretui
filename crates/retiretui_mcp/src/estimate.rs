@@ -70,7 +70,10 @@ impl PlanServer {
                 retiretui_client::estimate::overlay(base, &plan, &found)
             })?;
         Ok(Json(WithOverlay {
-            reply: EstimateReply::new(found, written.then(|| args.write_to.clone()).flatten()),
+            reply: EstimateReply {
+                estimate: found,
+                written: written.then(|| args.write_to.clone()).flatten(),
+            },
             scenario_toml,
             written,
         }))

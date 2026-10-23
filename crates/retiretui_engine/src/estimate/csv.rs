@@ -14,7 +14,6 @@ const DATE_SEPARATORS: [char; 3] = ['-', '/', '.'];
 /// What a header calls each column, lowercased, in the order tried.
 const DATE_NAMES: [&str; 1] = ["date"];
 const PAYEE_NAMES: [&str; 3] = ["payee", "description", "name"];
-const MEMO_NAMES: [&str; 1] = ["memo"];
 const AMOUNT_NAMES: [&str; 1] = ["amount"];
 const OUTFLOW_NAMES: [&str; 3] = ["debit", "withdrawal", "outflow"];
 const INFLOW_NAMES: [&str; 3] = ["credit", "deposit", "inflow"];
@@ -25,11 +24,15 @@ struct Columns {
     date: usize,
     date_format: DateFormat,
     payee: usize,
-    memo: Option<usize>,
-    amount: Option<usize>,
-    outflow: Option<usize>,
-    inflow: Option<usize>,
+    amount: Amount,
     category: Option<usize>,
+}
+
+/// Where the money stands: one signed column, or what left and what came
+/// in apart.
+enum Amount {
+    Signed(usize),
+    Split { outflow: usize, inflow: usize },
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -69,10 +72,12 @@ impl Columns {
             })
         };
         let date = column(&DATE_NAMES)?;
-        let amount = column(&AMOUNT_NAMES);
-        let (outflow, inflow) = match amount {
-            Some(_) => (None, None),
-            None => (Some(column(&OUTFLOW_NAMES)?), Some(column(&INFLOW_NAMES)?)),
+        let amount = match column(&AMOUNT_NAMES) {
+            Some(at) => Amount::Signed(at),
+            None => Amount::Split {
+                outflow: column(&OUTFLOW_NAMES)?,
+                inflow: column(&INFLOW_NAMES)?,
+            },
         };
         let first_date = first_row
             .and_then(|fields| fields.get(date))
@@ -81,10 +86,7 @@ impl Columns {
             date,
             date_format: guess_format(first_date),
             payee: column(&PAYEE_NAMES)?,
-            memo: column(&MEMO_NAMES),
             amount,
-            outflow,
-            inflow,
             category: column(&CATEGORY_NAMES),
         })
     }
@@ -107,10 +109,9 @@ impl Columns {
             }
             Cents::parse(text).ok_or_else(|| malformed(text, "amount"))
         };
-        let amount = match (self.amount, self.outflow, self.inflow) {
-            (Some(at), _, _) => cents(at)?,
-            (None, Some(out), Some(into)) => cents(into)? - cents(out)?,
-            _ => Cents(0),
+        let amount = match self.amount {
+            Amount::Signed(at) => cents(at)?,
+            Amount::Split { outflow, inflow } => cents(inflow)? - cents(outflow)?,
         };
         let optional =
             |at: Option<usize>| at.map(field).filter(|t| !t.is_empty()).map(str::to_owned);
@@ -118,7 +119,6 @@ impl Columns {
             on,
             amount,
             payee: field(self.payee).to_owned(),
-            memo: optional(self.memo),
             category: optional(self.category),
             bank_id: None,
         })

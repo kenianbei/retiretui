@@ -13,9 +13,10 @@ use serde::{Deserialize, Serialize};
 use toml::Table;
 
 use crate::codec::{from_table, to_table};
+use crate::draft::Draft;
 use crate::forms::offers::{RefSource, Vocabulary, held_word};
 use crate::forms::{FieldSpec, ToolAnswers};
-use crate::present::{MoneyForm, counted};
+use crate::present::{MoneyForm, counted, month};
 
 /// What the tool is for, in a line.
 pub const ABOUT: &str = "The plan's expenses from what a bank's exports say the household spent.";
@@ -32,10 +33,12 @@ pub const NEW_EXPENSE: &str = "New expense";
 pub const UNKNOWN: &str = "Unknown";
 const NOTHING: &str = "-";
 
-/// The exports a session holds, each by its name, read once.
+/// The exports a session holds, each by its name, read once, and their
+/// rows merged as each is added or dropped.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Exports {
     files: Vec<(String, Vec<Row>)>,
+    merged: Vec<Row>,
 }
 
 impl Exports {
@@ -47,14 +50,23 @@ impl Exports {
     pub fn add(&mut self, name: &str, text: &str) -> Result<usize, BankError> {
         let rows = read(name, text)?;
         let count = rows.len();
-        self.remove(name);
+        self.files.retain(|(held, _)| held != name);
         self.files.push((name.to_owned(), rows));
+        self.merge();
         Ok(count)
     }
 
     /// Drops the export `name`.
     pub fn remove(&mut self, name: &str) {
         self.files.retain(|(held, _)| held != name);
+        self.merge();
+    }
+
+    fn merge(&mut self) {
+        self.merged.clear();
+        for (_, file) in &self.files {
+            merge(&mut self.merged, file.clone());
+        }
     }
 
     /// Each export's name and how many rows it holds, in the order added.
@@ -72,20 +84,133 @@ impl Exports {
 
     /// The exports' rows, each file's merged over the ones before it.
     #[must_use]
-    pub fn rows(&self) -> Vec<Row> {
-        let mut rows = Vec::new();
-        for (_, file) in &self.files {
-            merge(&mut rows, file.clone());
-        }
-        rows
+    pub fn rows(&self) -> &[Row] {
+        &self.merged
     }
 
     /// What the exports say `plan` spends.
     #[must_use]
     pub fn estimate(&self, plan: &Plan, patterns: &Patterns) -> Estimate {
-        estimate(plan, &self.rows(), patterns)
+        estimate(plan, &self.merged, patterns)
     }
 }
+
+/// What a session holds for the tool: the exports, the patterns that name
+/// their payees, and what they say the plan last estimated over spends,
+/// with whatever its rows were edited to since.
+#[derive(Debug, Clone)]
+pub struct Estimator {
+    exports: Exports,
+    patterns: Patterns,
+    estimate: Estimate,
+    /// The plan last estimated over; none since the exports or the
+    /// patterns moved.
+    over: Option<Plan>,
+}
+
+impl Estimator {
+    /// Holding no export, naming payees by `patterns`.
+    #[must_use]
+    pub fn new(patterns: Patterns) -> Self {
+        Self {
+            exports: Exports::default(),
+            patterns,
+            estimate: Estimate::default(),
+            over: None,
+        }
+    }
+
+    /// The exports held.
+    #[must_use]
+    pub const fn exports(&self) -> &Exports {
+        &self.exports
+    }
+
+    /// The estimate as it stands.
+    #[must_use]
+    pub const fn estimate(&self) -> &Estimate {
+        &self.estimate
+    }
+
+    /// Reads `text` as the export `name`, as [`Exports::add`] does.
+    ///
+    /// # Errors
+    ///
+    /// As the file fails to read, by name.
+    pub fn add(&mut self, name: &str, text: &str) -> Result<usize, BankError> {
+        let count = self.exports.add(name, text)?;
+        self.over = None;
+        Ok(count)
+    }
+
+    /// Drops the export `name`.
+    pub fn remove(&mut self, name: &str) {
+        self.exports.remove(name);
+        self.over = None;
+    }
+
+    /// Estimates again over `plan` where it, the exports or the patterns
+    /// moved since the last estimate, answering whether it did; edits to
+    /// the rows last until then.
+    pub fn refresh(&mut self, plan: &Plan) -> bool {
+        if self.over.as_ref() == Some(plan) {
+            return false;
+        }
+        self.estimate = self.exports.estimate(plan, &self.patterns);
+        self.over = Some(plan.clone());
+        true
+    }
+
+    /// The row at `at` of [`listed`].
+    #[must_use]
+    pub fn row(&self, at: usize) -> Option<Listed<'_>> {
+        let proposals = &self.estimate.proposals;
+        match proposals.get(at) {
+            Some(proposal) => Some(Listed::Proposal(proposal)),
+            None => self
+                .estimate
+                .unknown
+                .get(at - proposals.len())
+                .map(Listed::Unknown),
+        }
+    }
+
+    /// The answers the row at `at` is edited from: the proposal's, or an
+    /// unknown payee's, which names no category yet.
+    #[must_use]
+    pub fn answers(&self, at: usize) -> Option<Table> {
+        Some(match self.row(at)? {
+            Listed::Proposal(proposal) => proposal_table(proposal),
+            Listed::Unknown(_) => Table::new(),
+        })
+    }
+
+    /// Writes what `draft` holds as the row at `at`'s answers into it: a
+    /// proposal's expense, name, amount and phases, or the category a
+    /// payee's rows are for, which estimates them again.
+    ///
+    /// # Errors
+    ///
+    /// Where there is no row at `at`, or the schema's complaint about a
+    /// value.
+    pub fn apply(&mut self, at: usize, draft: &Draft) -> Result<(), String> {
+        let payee = match self.row(at).ok_or(NO_ROW)? {
+            Listed::Proposal(_) => {
+                let proposal = &mut self.estimate.proposals[at];
+                return proposal_from(draft.answers::<ProposalAnswers>(), proposal);
+            }
+            Listed::Unknown(unknown) => unknown.payee.clone(),
+        };
+        let answers: UnknownAnswers = from_table(draft.answers::<UnknownAnswers>())?;
+        if let Some(category) = answers.category {
+            self.patterns.assign(&payee, category);
+            self.over = None;
+        }
+        Ok(())
+    }
+}
+
+const NO_ROW: &str = "nothing highlighted";
 
 /// One row of the table: a category proposed, or a payee nothing named.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -187,7 +312,7 @@ pub fn summary(estimate: &Estimate, form: MoneyForm) -> String {
     format!(
         "{} through {}: {} of income, {} in transfers a year; {} unnamed.",
         counted(estimate.months.into(), "month", "months"),
-        through.0.strftime("%b %-Y"),
+        month(through),
         form.money(estimate.income),
         form.money(estimate.transfers),
         counted(estimate.unknown.len(), "payee", "payees"),
@@ -308,9 +433,7 @@ impl ToolAnswers for UnknownAnswers {
     const SLOT: &'static str = "estimate-payee";
 }
 
-/// The proposal as its form holds it.
-#[must_use]
-pub fn proposal_table(proposal: &Proposal) -> Table {
+fn proposal_table(proposal: &Proposal) -> Table {
     to_table(&ProposalAnswers {
         expense: proposal.expense.clone(),
         name: proposal.name.clone(),
@@ -320,12 +443,7 @@ pub fn proposal_table(proposal: &Proposal) -> Table {
     })
 }
 
-/// Writes the form's `table` into `proposal`.
-///
-/// # Errors
-///
-/// The schema's complaint about a value.
-pub fn proposal_from(table: Table, proposal: &mut Proposal) -> Result<(), String> {
+fn proposal_from(table: Table, proposal: &mut Proposal) -> Result<(), String> {
     let answers: ProposalAnswers = from_table(table)?;
     proposal.expense = answers.expense.filter(|id| !id.is_empty());
     proposal.name = answers.name;
@@ -335,50 +453,16 @@ pub fn proposal_from(table: Table, proposal: &mut Proposal) -> Result<(), String
     Ok(())
 }
 
-/// The category the form's `table` assigns, if any.
-///
-/// # Errors
-///
-/// The schema's complaint about a value.
-pub fn category_from(table: Table) -> Result<Option<Category>, String> {
-    let answers: UnknownAnswers = from_table(table)?;
-    Ok(answers.category)
-}
-
 /// The estimate as `estimate` and `estimate_spending` reply.
 #[derive(Serialize, JsonSchema)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct EstimateReply {
-    /// The whole months the window covers, twelve at most.
-    pub months: u8,
-    /// The latest row's date, `YYYY-MM-DD`; none where no row was read.
-    pub through: Option<String>,
-    /// What came in over the window, annualized in the plan's dollars.
-    pub income: Dollars,
-    /// What moved without being spent, net, annualized.
-    pub transfers: Dollars,
-    /// One per spending category seen.
-    pub proposals: Vec<Proposal>,
-    /// Each payee nothing named, largest first.
-    pub unknown: Vec<Unknown>,
+    /// The estimate.
+    #[serde(flatten)]
+    #[cfg_attr(feature = "ts", ts(flatten))]
+    pub estimate: Estimate,
     /// The scenario written with the proposals applied, where one was.
     pub written: Option<String>,
-}
-
-impl EstimateReply {
-    /// The reply for `estimate`, written to `written` where it was.
-    #[must_use]
-    pub fn new(estimate: Estimate, written: Option<String>) -> Self {
-        Self {
-            months: estimate.months,
-            through: estimate.through.map(|on| on.0.to_string()),
-            income: estimate.income,
-            transfers: estimate.transfers,
-            proposals: estimate.proposals,
-            unknown: estimate.unknown,
-            written,
-        }
-    }
 }
 
 #[cfg(test)]
@@ -438,31 +522,40 @@ mod tests {
     }
 
     #[test]
-    fn the_forms_edit_a_proposal_and_name_a_payee() {
+    fn the_estimator_edits_a_proposal_and_names_a_payee() {
         let plan = retired();
-        let mut exports = Exports::default();
-        exports.add("x.csv", CSV).unwrap();
-        let mut found = exports.estimate(&plan, &Patterns::embedded());
-        let mut table = proposal_table(&found.proposals[1]);
+        let mut draft = Draft::new(plan.clone(), false);
+        let mut estimator = Estimator::new(Patterns::embedded());
+        estimator.add("x.csv", CSV).unwrap();
+        assert!(estimator.refresh(&plan));
+        assert!(!estimator.refresh(&plan), "nothing moved");
+        let mut table = estimator.answers(1).unwrap();
         assert!(is_new(&table));
         table.insert("name".to_owned(), Value::String("Streaming".to_owned()));
         table.insert("one_time".to_owned(), Value::Boolean(true));
-        proposal_from(table, &mut found.proposals[1]).unwrap();
-        assert_eq!(found.proposals[1].name, "Streaming");
-        assert!(found.proposals[1].one_time);
-        let mut table = proposal_table(&found.proposals[0]);
+        draft.set_answers::<ProposalAnswers>(table);
+        estimator.apply(1, &draft).unwrap();
+        assert_eq!(estimator.estimate().proposals[1].name, "Streaming");
+        assert!(estimator.estimate().proposals[1].one_time);
+        let mut table = estimator.answers(0).unwrap();
         assert!(is_set(&table));
         table.insert("phases".to_owned(), Value::String("all".to_owned()));
-        proposal_from(table, &mut found.proposals[0]).unwrap();
-        assert_eq!(found.proposals[0].phases, Phases::All);
+        draft.set_answers::<ProposalAnswers>(table);
+        estimator.apply(0, &draft).unwrap();
+        assert_eq!(estimator.estimate().proposals[0].phases, Phases::All);
+        assert!(matches!(estimator.row(2), Some(Listed::Unknown(_))));
+        assert_eq!(estimator.answers(2), Some(Table::new()));
         let mut answers = Table::new();
         answers.insert("category".to_owned(), Value::String("pets".to_owned()));
-        assert_eq!(category_from(answers), Ok(Some(Category::Pets)));
-        assert_eq!(category_from(Table::new()), Ok(None));
-        let text = overlay("base.toml", &plan, &found).unwrap();
+        draft.set_answers::<UnknownAnswers>(answers);
+        estimator.apply(2, &draft).unwrap();
+        assert!(estimator.refresh(&plan), "a named payee estimates again");
+        let found = estimator.estimate();
+        assert!(found.unknown.is_empty(), "{found:?}");
+        assert!(found.proposals.iter().any(|p| p.category == Category::Pets));
+        assert!(estimator.row(3).is_none() && estimator.apply(3, &draft).is_err());
+        let text = overlay("base.toml", &plan, estimator.estimate()).unwrap();
         assert!(text.contains("base = \"base.toml\""), "{text}");
-        assert!(text.contains("id = \"subscriptions\""), "{text}");
-        let reply = EstimateReply::new(found, None);
-        assert_eq!(reply.through.as_deref(), Some("2026-10-03"));
+        assert!(text.contains("id = \"pets\""), "{text}");
     }
 }

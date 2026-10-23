@@ -2,26 +2,18 @@
 //! told apart by the file's extension.
 
 use std::collections::{BTreeMap, HashMap};
-use std::fmt;
-use std::iter::Sum;
-use std::ops::{Add, Neg, Sub};
+use std::ops::Sub;
 
 use super::{csv, ofx, payee};
-use crate::plan::{Dollars, PlanDate};
+use crate::plan::PlanDate;
 
-const CENTS_PER_DOLLAR: i64 = 100;
+pub(super) const CENTS_PER_DOLLAR: i64 = 100;
 
 /// Money in whole cents, negative where it left the account.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Cents(pub i64);
 
 impl Cents {
-    /// Whole dollars, rounded half away from zero.
-    #[must_use]
-    pub const fn to_dollars(self) -> Dollars {
-        (self.0 + self.0.signum() * CENTS_PER_DOLLAR / 2) / CENTS_PER_DOLLAR
-    }
-
     /// Reads `12.34`, `-12.3`, `12`, `.5`, `(12.34)`, `$1,234.56`, with
     /// surrounding whitespace; a third decimal rounds.
     #[must_use]
@@ -57,39 +49,10 @@ impl Cents {
     }
 }
 
-impl fmt::Display for Cents {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let sign = if self.0 < 0 { "-" } else { "" };
-        let abs = self.0.unsigned_abs();
-        let per = CENTS_PER_DOLLAR.unsigned_abs();
-        write!(f, "{sign}{}.{:02}", abs / per, abs % per)
-    }
-}
-
-impl Add for Cents {
-    type Output = Self;
-    fn add(self, other: Self) -> Self {
-        Self(self.0 + other.0)
-    }
-}
-
 impl Sub for Cents {
     type Output = Self;
     fn sub(self, other: Self) -> Self {
         Self(self.0 - other.0)
-    }
-}
-
-impl Neg for Cents {
-    type Output = Self;
-    fn neg(self) -> Self {
-        Self(-self.0)
-    }
-}
-
-impl Sum for Cents {
-    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.fold(Self(0), Add::add)
     }
 }
 
@@ -102,8 +65,6 @@ pub struct Row {
     pub amount: Cents,
     /// The payee text, as written.
     pub payee: String,
-    /// The memo, where the file has one.
-    pub memo: Option<String>,
     /// The bank's own category, where the file has a column of them.
     pub category: Option<String>,
     /// The bank's id for the transaction, where the file states one.
@@ -199,9 +160,6 @@ mod tests {
         assert_eq!(Cents::parse(".5"), Some(Cents(50)));
         assert_eq!(Cents::parse("12.345"), Some(Cents(1235)));
         assert_eq!(Cents::parse("abc"), None);
-        assert_eq!(Cents(-14217).to_dollars(), -142);
-        assert_eq!(Cents(150).to_dollars(), 2);
-        assert_eq!(Cents(-14217).to_string(), "-142.17");
     }
 
     #[test]

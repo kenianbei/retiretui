@@ -74,7 +74,7 @@ pub(super) fn spawn_pane(commands: &mut Commands, ledger: Entity) {
     let heads = Node {
         margin: UiRect {
             left: Val::Px(f32::from(layout::CURSOR_COLS)),
-            right: Val::Px(f32::from(SCROLL_BAR_COLS)),
+            right: Val::Px(f32::from(layout::SCROLL_BAR_COLS)),
             ..UiRect::default()
         },
         height: Val::Px(HEADER_ROWS),
@@ -216,13 +216,13 @@ const HEADER_ROWS: f32 = 1.0;
 const YEAR_COLS: u16 = 5;
 const AGE_COLS: u16 = 6;
 const MARK_COLS: u16 = 2;
-const SCROLL_BAR_COLS: u16 = 1;
 /// The year, the ages and the marks, which lead every row.
 const LEADING: [u16; 3] = [YEAR_COLS, AGE_COLS, MARK_COLS];
 /// The cells the leading columns take, each with the one after it.
 const LEADING_COLS: u16 = YEAR_COLS + AGE_COLS + MARK_COLS + LEADING.len() as u16;
 /// Columns of the pane the figures never get.
-const LEDGER_CHROME: u16 = pane::BORDERS + layout::CURSOR_COLS + SCROLL_BAR_COLS + LEADING_COLS;
+const LEDGER_CHROME: u16 =
+    pane::BORDERS + layout::CURSOR_COLS + layout::SCROLL_BAR_COLS + LEADING_COLS;
 /// The cells a figure written short takes: `-$1.23M`.
 const COMPACT_COLS: usize = 7;
 

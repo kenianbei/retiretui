@@ -11,8 +11,9 @@ mod ofx;
 mod patterns;
 mod payee;
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
+use bank::CENTS_PER_DOLLAR;
 pub use bank::{BankError, Cents, Row, merge, read};
 pub use category::Category;
 pub use patterns::Patterns;
@@ -20,8 +21,9 @@ pub use payee::normalize;
 
 use serde::{Deserialize, Serialize};
 
+use crate::params::scale;
 use crate::plan::{ColaSpec, Dollars, Expense, Plan, PlanDate, Trigger};
-use crate::project::trigger_month;
+use crate::project::{inflation_factor, trigger_month};
 use crate::tax::month_index;
 
 const MONTHS_PER_YEAR: i32 = 12;
@@ -104,6 +106,7 @@ pub struct Unknown {
     pub rows: usize,
 }
 
+/// Deflated dollars under one category or payee.
 #[derive(Default)]
 struct Tally {
     total: f64,
@@ -124,8 +127,8 @@ pub fn estimate(plan: &Plan, rows: &[Row], patterns: &Patterns) -> Estimate {
     let earliest = rows.iter().map(|row| month(row.on)).min().unwrap_or(end);
     let start = earliest.max(end - (MONTHS_PER_YEAR - 1));
     let months = end - start + 1;
-    let annual = |cents: f64| {
-        (cents * f64::from(MONTHS_PER_YEAR) / f64::from(months) / 100.0).round() as Dollars
+    let annual = |dollars: f64| {
+        (dollars * f64::from(MONTHS_PER_YEAR) / f64::from(months)).round() as Dollars
     };
     let in_window = rows
         .iter()
@@ -146,7 +149,8 @@ pub fn estimate(plan: &Plan, rows: &[Row], patterns: &Patterns) -> Estimate {
             rows: tally.rows,
         })
         .collect();
-    unknown.sort_by_key(|u| (-u.amount.abs(), u.payee.clone()));
+    unknown
+        .sort_by(|a, b| (b.amount.abs().cmp(&a.amount.abs())).then_with(|| a.payee.cmp(&b.payee)));
     let mut tallied = |category| by_category.remove(&category).map_or(0, |t| annual(t.total));
     Estimate {
         months: months as u8,
@@ -159,7 +163,7 @@ pub fn estimate(plan: &Plan, rows: &[Row], patterns: &Patterns) -> Estimate {
 }
 
 /// Each row's deflated amount under its category, or under its payee
-/// where nothing names one.
+/// where nothing names one; a payee is normalized and matched once.
 fn tally<'a>(
     plan: &Plan,
     rows: impl Iterator<Item = &'a Row>,
@@ -167,14 +171,21 @@ fn tally<'a>(
 ) -> (BTreeMap<Category, Tally>, BTreeMap<String, Tally>) {
     let mut by_category: BTreeMap<Category, Tally> = BTreeMap::new();
     let mut unknown: BTreeMap<String, Tally> = BTreeMap::new();
+    let mut named: HashMap<&str, (String, Option<Category>)> = HashMap::new();
     for row in rows {
-        let payee = normalize(&row.payee);
-        let deflated = row.amount.0 as f64 / deflator(plan, row.on.year());
+        let (payee, matched) = named.entry(&row.payee).or_insert_with(|| {
+            let payee = normalize(&row.payee);
+            let matched = patterns.category(&payee);
+            (payee, matched)
+        });
+        let payee = payee.clone();
+        let deflated =
+            row.amount.0 as f64 / CENTS_PER_DOLLAR as f64 / inflation_factor(plan, row.on.year());
         let category = row
             .category
             .as_deref()
             .and_then(Category::from_text)
-            .or_else(|| patterns.category(&payee));
+            .or(*matched);
         let tally = match category {
             Some(category) => by_category.entry(category).or_default(),
             None => unknown.entry(payee.clone()).or_default(),
@@ -197,9 +208,9 @@ fn proposal(
     let mut payees: Vec<(String, Dollars)> = tally
         .payees
         .into_iter()
-        .map(|(payee, cents)| (payee, (-cents / 100.0).round() as Dollars))
+        .map(|(payee, dollars)| (payee, (-dollars).round() as Dollars))
         .collect();
-    payees.sort_by_key(|(payee, amount)| (-*amount, payee.clone()));
+    payees.sort_by(|(a, a_amount), (b, b_amount)| b_amount.cmp(a_amount).then_with(|| a.cmp(b)));
     Proposal {
         category,
         expense: expense.map(|e| e.id.clone()),
@@ -207,20 +218,13 @@ fn proposal(
             .and_then(|e| e.name.clone())
             .unwrap_or_else(|| category.title()),
         amount: annual(-tally.total),
-        total: (-tally.total / 100.0).round() as Dollars,
+        total: (-tally.total).round() as Dollars,
         rows: tally.rows,
         payees,
         last: tally.last.expect("a tally holds a row"),
         one_time: false,
         phases: Phases::default(),
     }
-}
-
-/// What a dollar of `year` is in start-year dollars: the plan's inflation
-/// compounded over the years between, as the projection's deflator holds
-/// it for the years it walks.
-fn deflator(plan: &Plan, year: i16) -> f64 {
-    (1.0 + plan.plan.inflation).powi(i32::from(year - plan.plan.start_year))
 }
 
 /// Sets each proposal's expense to its amount, or adds the expense the plan
@@ -260,7 +264,7 @@ fn set_amount(expense: &mut Expense, proposal: &Proposal, in_force: Option<usize
         if current == 0 {
             proposal.amount
         } else {
-            (amount as f64 * proposal.amount as f64 / current as f64).round() as Dollars
+            scale(amount, proposal.amount as f64 / current as f64)
         }
     };
     match proposal.phases {

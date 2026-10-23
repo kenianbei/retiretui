@@ -162,16 +162,15 @@ impl Category {
             .copied()
     }
 
-    /// Whether the expense is this category's: its id or name is one of
-    /// its words, or holds one.
+    /// Whether the expense is this category's: its id or name holds one of
+    /// its words.
     #[must_use]
     pub fn matches(self, expense: &Expense) -> bool {
         let id = expense.id.replace('-', " ").to_lowercase();
         let name = expense.name.as_deref().unwrap_or_default().to_lowercase();
-        let words = self.words();
-        words.contains(&id.as_str())
-            || words.contains(&name.as_str())
-            || words.iter().any(|w| id.contains(w) || name.contains(w))
+        self.words()
+            .iter()
+            .any(|w| id.contains(w) || name.contains(w))
     }
 }
 

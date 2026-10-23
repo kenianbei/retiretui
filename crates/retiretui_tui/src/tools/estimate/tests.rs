@@ -29,7 +29,7 @@ fn add(app: &mut App, name: &str, text: &str) {
         .0
         .add(name, text)
         .unwrap();
-    for _ in 0..2 * SETTLING_TICKS {
+    for _ in 0..SETTLING_TICKS {
         app.update();
     }
 }
@@ -159,7 +159,7 @@ fn the_highlighted_row_opens_its_form_and_the_edit_lasts() {
     assert!(frame.contains("Groceries"), "{frame}");
     press_key(&mut app, KeyCode::Esc);
     app.update();
-    let proposed = app.world().resource::<Estimated>().0.proposals[0].amount;
+    let proposed = app.world().resource::<Held>().0.estimate().proposals[0].amount;
     assert!(proposed > 0);
 }
 

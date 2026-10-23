@@ -14,7 +14,6 @@ const POSTED: &str = "<DTPOSTED>";
 const AMOUNT: &str = "<TRNAMT>";
 const BANK_ID: &str = "<FITID>";
 const NAME: &str = "<NAME>";
-const MEMO: &str = "<MEMO>";
 /// `YYYYMMDD`, which every OFX date starts with.
 const DATE_DIGITS: usize = 8;
 
@@ -47,7 +46,6 @@ fn row(name: &str, row: usize, chunk: &str) -> Result<Row, BankError> {
         on,
         amount,
         payee: leaf(chunk, NAME).unwrap_or_default().to_owned(),
-        memo: leaf(chunk, MEMO).map(str::to_owned),
         category: None,
         bank_id: leaf(chunk, BANK_ID).map(str::to_owned),
     })

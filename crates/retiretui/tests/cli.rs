@@ -448,7 +448,7 @@ fn estimate_proposes_the_plans_spending_from_a_banks_exports() {
     assert!(stdout.contains("1 month through Oct 2026"), "{stdout}");
     assert!(stdout.contains("groceries"), "{stdout}");
     assert!(stdout.contains("utilities"), "{stdout}");
-    assert!(stdout.contains("(new)"), "{stdout}");
+    assert!(stdout.contains("New expense"), "{stdout}");
     assert!(stdout.contains(&format!("wrote {out}")), "{stdout}");
     let written = std::fs::read_to_string(out).unwrap();
     assert!(written.contains("id = \"groceries\""), "{written}");
