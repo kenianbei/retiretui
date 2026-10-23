@@ -18,7 +18,6 @@ use bevy_ecs::prelude::{
 use bevy_input_focus::InputFocus;
 use bevy_ui::{FlexDirection, Node, Val};
 use plurimus::core::UiWidget;
-use plurimus::core::ratatui_core::layout::Constraint;
 use plurimus::core::ratatui_core::style::Style;
 use plurimus::ui::ScrollArea;
 use plurimus::widgets::ActiveDescendant;
@@ -347,8 +346,7 @@ fn show_read_out(
     }
 }
 
-/// What lies behind the highlighted row, its pane titled for it; the
-/// column before the figure takes what the others leave.
+/// What lies behind the highlighted row, its pane titled for it.
 fn show_behind(
     (held, cursor, shown): (Res<Held>, Res<Cursor>, ShownSurface),
     mut tables: Query<(Entity, &ChildOf, &mut ScrollArea), With<BehindTable>>,
@@ -373,13 +371,10 @@ fn show_behind(
             say_instead(&mut commands, table, NOTHING_HIGHLIGHTED.to_owned());
             continue;
         }
-        let figure = behind.columns.len().saturating_sub(1);
-        let mut columns = tabulate::columns((&behind.columns, &behind.rows), GAP);
-        if let Some(name) = figure.checked_sub(1).and_then(|at| columns.0.get_mut(at)) {
-            *name = Constraint::Fill(1);
-        }
-        commands.entity(table).insert(columns);
-        let text: Vec<usize> = (0..figure).collect();
+        commands
+            .entity(table)
+            .insert(tabulate::columns((&behind.columns, &behind.rows), GAP));
+        let text: Vec<usize> = (0..behind.columns.len().saturating_sub(1)).collect();
         tabulate::refill(
             &mut commands,
             (table, &mut scroll),
