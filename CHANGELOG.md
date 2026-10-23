@@ -37,6 +37,11 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   directory, whose rules can also test the exact payee, a regex, the amount, the
   export and the date, the most specific match winning over the bank's own
   category; a space at either end of a `match` marks the edge of a word.
+  `retiretui estimate --category`, `--payee`, `--unnamed` or `--ignored`, and
+  `estimate_records` over MCP, list those records, each with the rule, bank
+  category, transaction type or embedded entry that sorted it. `--patterns` is
+  read beside the config directory's file (`--no-user-patterns` leaves it out),
+  and MCP reads that file too, and exports and rules by path.
 
 ### Changed
 
