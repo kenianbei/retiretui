@@ -28,8 +28,12 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   transactions behind it; unnamed payees sit under the bucket, refunds marked.
   Proposals can be edited and taken or written as a scenario, in the terminal,
   the web app, `retiretui estimate` and `estimate_spending` over MCP. A payee
-  named in the terminal is kept in `estimate/patterns.toml` in the config
-  directory.
+  can be named, merged with its variants under one name, or ignored, as can a
+  single record; ignored records are counted nowhere and listed last, after the
+  bucket. The terminal keeps these in `estimate/patterns.toml` in the config
+  directory, whose rules can also test the exact payee, a regex, the amount, the
+  export and the date, the most specific match winning over the bank's own
+  category.
 
 ### Changed
 
