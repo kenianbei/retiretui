@@ -270,3 +270,51 @@ fn a_named_payee_is_remembered_in_the_patterns_file_the_launch_names() {
             .is_empty()
     );
 }
+
+/// Puts the cursor on the row at `at` and the keyboard on the Records
+/// pane, then presses ⏎.
+fn enter_record(app: &mut App, at: usize) {
+    app.world_mut().insert_resource(Cursor(at));
+    for _ in 0..SETTLING_TICKS {
+        app.update();
+    }
+    let records = app
+        .world_mut()
+        .query_filtered::<bevy_ecs::prelude::Entity, With<BehindTable>>()
+        .single(app.world())
+        .unwrap();
+    app.world_mut()
+        .insert_resource(InputFocus::from_entity(records));
+    press_key(app, KeyCode::Enter);
+    for _ in 0..SETTLING_TICKS {
+        app.update();
+    }
+}
+
+#[test]
+fn a_record_is_ignored_from_the_records_pane_and_counted_again() {
+    let (dir, mut app) = workspace_app();
+    let file = dir.join("config").join("patterns.toml");
+    app.world_mut()
+        .insert_resource(PatternsFile(Some(file.clone())));
+    add(&mut app, "chase.csv", CHASE);
+    let groceries = {
+        let found = app.world().resource::<Held>().0.estimate().clone();
+        listed(&found)
+            .position(|row| matches!(row, retiretui_client::estimate::Listed::Category { .. }))
+            .unwrap()
+    };
+    enter_record(&mut app, groceries);
+    let found = app.world().resource::<Held>().0.estimate().clone();
+    assert_eq!(found.ignored_rows, 1);
+    assert!(
+        std::fs::read_to_string(&file)
+            .unwrap()
+            .contains("ignore = true")
+    );
+    assert!(composed_frame(&app).contains("Ignored"));
+
+    enter_record(&mut app, listed(&found).count() - 1);
+    assert_eq!(app.world().resource::<Held>().0.estimate().ignored_rows, 0);
+    assert!(!std::fs::read_to_string(&file).unwrap().contains("ignore"));
+}

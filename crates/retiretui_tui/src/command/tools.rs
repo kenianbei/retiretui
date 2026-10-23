@@ -21,6 +21,7 @@ pub const TAKE_SPENDING: &str = "take-spending";
 pub const WRITE_ESTIMATE: &str = "write-estimate";
 pub const TAKE_ESTIMATE: &str = "take-estimate";
 pub const EDIT_PROPOSAL: &str = "edit-proposal";
+pub const TOGGLE_RECORD: &str = "toggle-record";
 
 /// Every row the Tools tab's pages add to the command table.
 pub(super) fn commands() -> Vec<CommandSpec> {
@@ -214,6 +215,14 @@ fn estimate() -> Vec<CommandSpec> {
             keys: vec![],
             hint: None,
             register: Box::new(|world| world.register_system(tools::estimate::edit_row)),
+        },
+        CommandSpec {
+            name: TOGGLE_RECORD,
+            scope: Scope::On(Page::SpendingEstimate),
+            doc: "ignore the highlighted record, or count an ignored one again",
+            keys: vec![],
+            hint: None,
+            register: Box::new(|world| world.register_system(tools::estimate::toggle_record)),
         },
         CommandSpec {
             name: WRITE_ESTIMATE,

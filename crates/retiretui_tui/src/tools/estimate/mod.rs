@@ -26,12 +26,13 @@ use retiretui_client::present::counted;
 use retiretui_engine::estimate::Patterns;
 
 pub use edits::{
-    add_export, add_picker, adopt, edit_row, remove_export, write_overlay, write_picker,
+    add_export, add_picker, adopt, edit_row, remove_export, toggle_record, write_overlay,
+    write_picker,
 };
 
 use super::options::say_instead;
 use super::{EnterRuns, HelpLine, ToolPage, show_help, writes_it};
-use crate::command::{EDIT_PROPOSAL, Keymap, WRITE_ESTIMATE};
+use crate::command::{EDIT_PROPOSAL, Keymap, TOGGLE_RECORD, WRITE_ESTIMATE};
 use crate::edit::{self, Draft, table_bundle};
 use crate::hints::Hints;
 use crate::layout::{self, Body, clipped_middle, filling, growing, placed};
@@ -120,7 +121,11 @@ struct ProposalRow(usize);
 struct ReadOut;
 
 #[derive(Component)]
-struct BehindTable;
+pub struct BehindTable;
+
+/// The place of a record in the Records pane.
+#[derive(Component, Clone, Copy)]
+pub struct RecordRow(usize);
 
 static PAGE: ToolPage = ToolPage {
     surface: Page::SpendingEstimate,
@@ -166,16 +171,19 @@ fn spawn_panes(commands: &mut Commands, row: Entity) {
         .observe(super::handle_enter);
     spawn_column(commands, top);
     let behind = Pane::new(RECORDS_TITLE).sharing(1.0).spawn(commands, page);
-    commands.spawn((
-        table_bundle(),
-        BehindTable,
-        FocusStop,
-        Hints(&[("↑↓", "record")]),
-        layout::Rests,
-        filling(),
-        placed(),
-        ChildOf(behind),
-    ));
+    commands
+        .spawn((
+            table_bundle(),
+            BehindTable,
+            EnterRuns(TOGGLE_RECORD),
+            FocusStop,
+            Hints(&[("↑↓", "record"), ("⏎", "ignore or count")]),
+            layout::Rests,
+            filling(),
+            placed(),
+            ChildOf(behind),
+        ))
+        .observe(super::handle_enter);
 }
 
 /// The files over the highlighted row read out, over the plan's
@@ -349,15 +357,21 @@ fn show_read_out(
 /// What lies behind the highlighted row, its pane titled for it.
 fn show_behind(
     (held, cursor, shown): (Res<Held>, Res<Cursor>, ShownSurface),
-    mut tables: Query<(Entity, &ChildOf, &mut ScrollArea), With<BehindTable>>,
-    mut frames: Query<&mut Framed>,
+    mut tables: Query<
+        (Entity, &ChildOf, &mut ScrollArea, Option<&ActiveDescendant>),
+        With<BehindTable>,
+    >,
+    (records, mut frames): (Query<&RecordRow>, Query<&mut Framed>),
     mut commands: Commands,
 ) {
     if !(held.is_changed() || cursor.is_changed() || shown.is_changed()) {
         return;
     }
     let behind = held.0.behind(cursor.0, MoneyForm::Full).unwrap_or_default();
-    for (table, pane, mut scroll) in &mut tables {
+    for (table, pane, mut scroll, on) in &mut tables {
+        let kept = (on.and_then(|on| on.0))
+            .and_then(|row| records.get(row).ok())
+            .map_or(0, |row| row.0);
         if let Ok(mut framed) = frames.get_mut(pane.parent()) {
             let title = if behind.title.is_empty() {
                 RECORDS_TITLE
@@ -375,13 +389,29 @@ fn show_behind(
             .entity(table)
             .insert(tabulate::columns((&behind.columns, &behind.rows), GAP));
         let text: Vec<usize> = (0..behind.columns.len().saturating_sub(1)).collect();
-        tabulate::refill(
+        let spawned = tabulate::refill(
             &mut commands,
             (table, &mut scroll),
             (&behind.columns, &behind.rows),
             &text,
         );
+        for (at, &row) in spawned.iter().enumerate() {
+            commands.entity(row).insert(RecordRow(at));
+        }
+        let at = kept.min(spawned.len().saturating_sub(1));
+        commands
+            .entity(table)
+            .insert(ActiveDescendant(spawned.get(at).copied()));
     }
+}
+
+/// The place of the record under the Records pane's cursor.
+fn record_at(
+    tables: &Query<&ActiveDescendant, With<BehindTable>>,
+    records: &Query<&RecordRow>,
+) -> Option<usize> {
+    let on = tables.iter().find_map(|on| on.0)?;
+    records.get(on).ok().map(|row| row.0)
 }
 
 fn say_help(
