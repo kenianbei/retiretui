@@ -13,7 +13,7 @@ use crate::tax::month_index;
 
 const MONTHS_PER_YEAR: i32 = 12;
 
-/// Whose transactions [`records`] lists.
+/// Whose transactions [`sorted_records`] lists.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Of {
     /// The rows sorted into a category.
