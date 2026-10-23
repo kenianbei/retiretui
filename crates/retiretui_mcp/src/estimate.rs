@@ -30,9 +30,9 @@ pub struct EstimateToolArgs {
     /// `match` (contains), `is`, `one_of` or `matches` (a regex), and
     /// optionally `spent = [low, high]` in statement dollars, `export`
     /// (part of the file name) and `on` (a date), each with a `category`,
-    /// `ignore = true` or `bucket = true`, the most specific match winning and every rule
-    /// before the bank's own category; and `[[payees]]` rows merging
-    /// payees under a `name` by the same payee keys.
+    /// `ignore = true` or `bucket = true`, the most specific match winning
+    /// and every rule before the bank's own category; and `[[payees]]` rows
+    /// merging payees under a `name` by the same payee keys.
     pub patterns: Option<String>,
     /// Store the proposals applied as a scenario overlay at this path
     /// (`.toml`, relative to the served directory); its `base` points back
@@ -43,14 +43,17 @@ pub struct EstimateToolArgs {
 #[tool_router(router = estimate_router, vis = "pub(super)")]
 impl PlanServer {
     /// Estimate the plan's expenses from a bank's exports. Each row is
-    /// sorted into a category by the bank's own category column, else by
-    /// its payee's words; the latest twelve whole months are annualized in
-    /// the plan's start-year dollars, each month deflated by its year; and
-    /// each spending category is proposed as the amount of the expense
-    /// whose id or name is for it, or as a new expense. Income and transfers
-    /// are counted, never proposed; a payee nothing names is listed. The
-    /// proposals applied are returned as a scenario overlay document and,
-    /// with `write_to`, stored through the validated write gate.
+    /// sorted into a category, ignored or sent to the bucket by the rules
+    /// in `patterns`, else by the bank's own category column or transaction
+    /// type, else by its payee's words; the latest twelve whole months are
+    /// annualized in the plan's start-year dollars, each month deflated by
+    /// its year; and each spending category is proposed as the amount of
+    /// the expense whose id or name is for it, or as a new expense. Income
+    /// and transfers are counted, never proposed; a payee nothing names is
+    /// listed. The user's own patterns file is not read: pass its text as
+    /// `patterns`. The proposals applied are returned as a scenario overlay
+    /// document and, with `write_to`, stored through the validated write
+    /// gate.
     #[tool]
     fn estimate_spending(
         &self,

@@ -20,8 +20,8 @@ pub struct EstimateArgs {
     /// A bank's exports: CSV with a header row, OFX or QFX.
     #[arg(required = true)]
     pub files: Vec<PathBuf>,
-    /// A `[[patterns]]` file read before the embedded table and the one in
-    /// the config directory's `estimate` folder.
+    /// A patterns file read before the embedded table, in place of the one
+    /// in the config directory's `estimate` folder.
     #[arg(long)]
     pub patterns: Option<PathBuf>,
     /// Write the proposals applied as a scenario overlay file.
