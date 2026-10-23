@@ -6,7 +6,7 @@ use std::sync::{Arc, LazyLock};
 
 use serde::Deserialize;
 
-use super::rules::{Merge, MergeText, Outcome, PatternError, Rule, RuleText, best};
+use super::rules::{Merge, MergeText, PatternError, Rule, RuleText, best};
 use super::{Row, normalize};
 
 const EMBEDDED: &str = include_str!("patterns.toml");
@@ -22,7 +22,7 @@ struct File {
 
 /// The embedded table, read once.
 static EMBEDDED_RULES: LazyLock<Arc<[Rule]>> = LazyLock::new(|| {
-    let (rules, _) = read(EMBEDDED).expect("the embedded pattern table reads");
+    let (rules, _) = read(EMBEDDED, None).expect("the embedded pattern table reads");
     rules.into()
 });
 
@@ -49,16 +49,16 @@ impl Patterns {
         }
     }
 
-    /// Puts a file's rules and merges before those held, so the latest
-    /// file wins a tie.
+    /// Puts the rules and merges of the file named `file` before those
+    /// held, so the latest file wins a tie.
     ///
     /// # Errors
     ///
     /// The file is not TOML of `patterns` and `payees`, or an entry tests
     /// nothing, says nothing, or holds a regular expression that does not
     /// compile.
-    pub fn add(&mut self, text: &str) -> Result<(), PatternError> {
-        let (rules, merges) = read(text)?;
+    pub fn add(&mut self, file: &str, text: &str) -> Result<(), PatternError> {
+        let (rules, merges) = read(text, Some(file))?;
         self.user.splice(0..0, rules);
         self.merges.splice(0..0, merges);
         self.text.insert_str(0, text);
@@ -85,23 +85,21 @@ impl Patterns {
         best(found.map(|merge| (merge.score(), merge.name.as_str())))
     }
 
-    /// What the user's rules say of `row`, whose payee reads `payee`.
-    pub(super) fn user(&self, payee: &str, row: &Row) -> Option<Outcome> {
+    /// The user's rule that says what `row`, whose payee reads `payee`, is.
+    pub(super) fn user(&self, payee: &str, row: &Row) -> Option<&Rule> {
         let found = self.user.iter().filter(|rule| rule.holds(payee, row));
-        best(found.map(|rule| (rule.score, rule.outcome)))
+        best(found.map(|rule| (rule.score, rule)))
     }
 
-    /// What the embedded table says of the payee.
-    pub(super) fn embedded_outcome(&self, payee: &str, row: &Row) -> Option<Outcome> {
-        self.embedded
-            .iter()
-            .find(|rule| rule.holds(payee, row))
-            .map(|rule| rule.outcome)
+    /// The embedded table's rule that says what the payee is.
+    pub(super) fn embedded_rule(&self, payee: &str, row: &Row) -> Option<&Rule> {
+        self.embedded.iter().find(|rule| rule.holds(payee, row))
     }
 }
 
-/// A file's rules and merges, each entry's complaint naming it.
-fn read(text: &str) -> Result<(Vec<Rule>, Vec<Merge>), PatternError> {
+/// A file's rules and merges, each entry's complaint naming it; `name`
+/// names it where it is the user's.
+fn read(text: &str, name: Option<&str>) -> Result<(Vec<Rule>, Vec<Merge>), PatternError> {
     let file: File = toml::from_str(text)?;
     let entry = |table: &'static str, at: usize, why: String| PatternError::Entry {
         table,
@@ -109,7 +107,7 @@ fn read(text: &str) -> Result<(Vec<Rule>, Vec<Merge>), PatternError> {
         why,
     };
     let rules = (file.patterns.into_iter().enumerate())
-        .map(|(at, rule)| rule.rule().map_err(|why| entry("patterns", at, why)))
+        .map(|(at, rule)| (rule.rule(name, at + 1)).map_err(|why| entry("patterns", at, why)))
         .collect::<Result<_, _>>()?;
     let merges = (file.payees.into_iter().enumerate())
         .map(|(at, merge)| merge.merge().map_err(|why| entry("payees", at, why)))
@@ -121,12 +119,12 @@ fn read(text: &str) -> Result<(Vec<Rule>, Vec<Merge>), PatternError> {
 mod tests {
     use super::*;
 
-    use crate::estimate::{Category, Cents};
+    use crate::estimate::{Category, Cents, Outcome};
     use crate::plan::PlanDate;
 
     fn with(text: &str) -> Patterns {
         let mut patterns = Patterns::embedded();
-        patterns.add(text).unwrap();
+        patterns.add("test.toml", text).unwrap();
         patterns
     }
 
@@ -141,9 +139,8 @@ mod tests {
             bank_id: None,
             export: String::new(),
         };
-        let outcome =
-            (patterns.user(payee, &row)).or_else(|| patterns.embedded_outcome(payee, &row));
-        match outcome? {
+        let rule = (patterns.user(payee, &row)).or_else(|| patterns.embedded_rule(payee, &row));
+        match rule?.outcome {
             Outcome::Category(category) => Some(category),
             Outcome::Ignore | Outcome::Bucket => None,
         }
@@ -207,8 +204,13 @@ mod tests {
 
     #[test]
     fn a_file_that_says_nothing_or_too_much_is_refused_by_entry() {
-        let refused = |text: &str| Patterns::default().add(text).unwrap_err().to_string();
-        assert!(Patterns::default().add("nonsense = [").is_err());
+        let refused =
+            |text: &str| (Patterns::default().add("test.toml", text).unwrap_err()).to_string();
+        assert!(
+            Patterns::default()
+                .add("test.toml", "nonsense = [")
+                .is_err()
+        );
         assert_eq!(
             refused("[[patterns]]\ncategory = \"pets\"\n"),
             "patterns entry 1: has no condition"

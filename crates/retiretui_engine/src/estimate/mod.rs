@@ -25,8 +25,8 @@ pub use category::{Category, Family};
 pub use patterns::Patterns;
 pub use payee::normalize;
 pub use place::Why;
-pub use rules::{Outcome, PatternError};
-pub use sort::{Of, Reach, reach, records};
+pub use rules::{By, Outcome, PatternError};
+pub use sort::{Of, Reach, Sorted, reach, records, sorted_records, spent_a_year};
 
 use serde::{Deserialize, Serialize};
 
@@ -257,8 +257,8 @@ fn tally<'a>(plan: &Plan, rows: impl Iterator<Item = &'a Row>, patterns: &Patter
     let mut tallied = Tallied::default();
     let mut sorter = Sorter::new(patterns);
     for row in rows {
-        let (payee, outcome) = sorter.sort(row);
-        let payee = payee.to_owned();
+        let (payee, decided) = sorter.sort(row);
+        let (payee, outcome) = (payee.to_owned(), decided.map(|decided| decided.outcome));
         let deflated = row.amount.dollars() / inflation_factor(plan, row.on.year());
         let tally = match outcome {
             Some(Outcome::Category(category)) => tallied.by_category.entry(category).or_default(),

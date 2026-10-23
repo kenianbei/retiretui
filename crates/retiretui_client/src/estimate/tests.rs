@@ -202,7 +202,7 @@ fn a_change_is_made_to_the_users_patterns_as_they_wrote_them() {
     let text = merge("ACME SHOP").applied(&text).unwrap();
     assert_eq!(text.matches("name = ").count(), 1, "{text}");
     let mut patterns = Patterns::default();
-    patterns.add(&text).unwrap();
+    patterns.add("test.toml", &text).unwrap();
     assert_eq!(patterns.name_of("ACME SHOP"), "Acme");
 
     let inline = "patterns = [{ match = \"X\", category = \"pets\" }]\n";

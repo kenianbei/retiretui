@@ -8,15 +8,13 @@ use std::path::{Path, PathBuf};
 use anyhow::Context as _;
 use etcetera::BaseStrategy as _;
 use retiretui_engine::estimate::Patterns;
+
+use crate::estimate::PATTERNS_FILE;
 use retiretui_engine::market::History;
 use retiretui_engine::params::TaxTables;
 
 /// Where the historical record is read from in place of the embedded one.
 const HISTORY_FILE: &str = "history.toml";
-
-/// Where the user's own spending patterns are read from, before the
-/// embedded table.
-const PATTERNS_FILE: &str = "patterns.toml";
 
 /// The application's own directory in each of the platform's.
 const APPLICATION: &str = "retiretui";
@@ -100,8 +98,11 @@ pub fn load_patterns(explicit: Option<&Path>) -> anyhow::Result<Patterns> {
     };
     let text =
         fs::read_to_string(&path).with_context(|| format!("failed to read {}", path.display()))?;
+    let name = path
+        .file_name()
+        .map_or_else(String::new, |n| n.to_string_lossy().into_owned());
     patterns
-        .add(&text)
+        .add(&name, &text)
         .with_context(|| format!("in {}", path.display()))?;
     Ok(patterns)
 }

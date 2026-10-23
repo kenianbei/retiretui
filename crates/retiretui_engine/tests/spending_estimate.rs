@@ -2,8 +2,8 @@
 //! spending sorted, annualized and deflated, and the proposals applied.
 
 use retiretui_engine::estimate::{
-    BankError, Category, Cents, Estimate, Of, Patterns, Phases, Proposal, Why, apply, estimate,
-    merge, read, records,
+    BankError, By, Category, Cents, Estimate, Of, Outcome, Patterns, Phases, Proposal, Row, Why,
+    apply, estimate, merge, read, records, sorted_records, spent_a_year,
 };
 use retiretui_engine::plan::Plan;
 
@@ -433,7 +433,7 @@ patterns = [
 payees = [{ name = "Acme", one_of = ["ACME HELP", "ACME SHOP"] }]
 "#;
     let mut patterns = Patterns::embedded();
-    patterns.add(rules).unwrap();
+    patterns.add("rules.toml", rules).unwrap();
     let rows = read("joint.csv", csv).unwrap();
     let found = estimate(&plan(GROCERIES), &rows, &patterns);
     assert_eq!(
@@ -472,7 +472,10 @@ fn a_payee_sent_to_the_bucket_lands_there_whatever_the_bank_says() {
     let csv = "Date,Description,Category,Amount\n2026-10-01,ART STUDIO,Home,-110.00\n2026-10-02,SAFEWAY,Groceries,-50.00\n";
     let mut patterns = Patterns::embedded();
     patterns
-        .add("[[patterns]]\nis = \"ART STUDIO\"\nbucket = true\n")
+        .add(
+            "rules.toml",
+            "[[patterns]]\nis = \"ART STUDIO\"\nbucket = true\n",
+        )
         .unwrap();
     let found = estimate(&plan(GROCERIES), &read("x.csv", csv).unwrap(), &patterns);
     let bucket = found.proposals.iter().find(|p| p.is_bucket).unwrap();
@@ -480,7 +483,95 @@ fn a_payee_sent_to_the_bucket_lands_there_whatever_the_bank_says() {
     assert_eq!(found.unknown[0].payee, "ART STUDIO");
     assert!(
         Patterns::default()
-            .add("[[patterns]]\nis = \"X\"\nbucket = true\nignore = true\n")
+            .add(
+                "rules.toml",
+                "[[patterns]]\nis = \"X\"\nbucket = true\nignore = true\n"
+            )
             .is_err()
     );
+}
+
+/// Rows each sorted a different way, under the user's file and a proposed
+/// one read after it.
+fn sorting() -> (Vec<Row>, Patterns) {
+    let csv = "Date,Description,Category,Type,Amount\n\
+        2026-10-01,SAFEWAY #12,Groceries,Sale,-50.00\n\
+        2026-10-02,ATT WIRELESS,,Sale,-80.00\n\
+        2026-10-03,ACME HELP,,Payment,-20.00\n\
+        2026-10-04,ART STUDIO,,Sale,-10.00\n\
+        2026-10-05,QUICK FUEL 9,,Sale,-30.00\n\
+        2026-10-06,SAFEWAY.COM ORDER,,Sale,-40.00\n";
+    let mut patterns = Patterns::embedded();
+    let mine = "patterns = [\n  { is = \"ART STUDIO\", bucket = true },\n  { match = \"FUEL\", category = \"fuel\" },\n]\n";
+    patterns.add("patterns.toml", mine).unwrap();
+    let proposed = "payees = [{ name = \"SAFEWAY\", match = \"SAFEWAY\" }]\n\
+        patterns = [{ match = \"FUEL\", category = \"groceries\" }]\n";
+    patterns.add("proposed.toml", proposed).unwrap();
+    (read("x.csv", csv).unwrap(), patterns)
+}
+
+#[test]
+fn each_record_says_what_sorted_it_and_a_later_file_wins_a_tie() {
+    let (rows, patterns) = sorting();
+    let by_payee = |payee: &str| {
+        let found = sorted_records(&rows, &patterns, &Of::Containing(payee.to_owned()));
+        assert_eq!(found.len(), 1, "{payee}");
+        (found[0].outcome, found[0].by.clone())
+    };
+    let category = |category| Some(Outcome::Category(category));
+    let rule = |file: &str, at| {
+        Some(By::Rule {
+            file: file.to_owned(),
+            at,
+        })
+    };
+    assert_eq!(
+        by_payee("safeway #12"),
+        (
+            category(Category::Groceries),
+            Some(By::Bank("Groceries".to_owned()))
+        )
+    );
+    assert_eq!(
+        by_payee("att"),
+        (
+            category(Category::Phone),
+            Some(By::Embedded("ATT ".to_owned()))
+        )
+    );
+    assert_eq!(
+        by_payee("acme"),
+        (category(Category::Transfer), Some(By::Type))
+    );
+    assert_eq!(
+        by_payee("art studio"),
+        (Some(Outcome::Bucket), rule("patterns.toml", 1))
+    );
+    assert_eq!(
+        by_payee("fuel"),
+        (category(Category::Groceries), rule("proposed.toml", 1)),
+        "the later file wins the tie"
+    );
+}
+
+#[test]
+fn payees_containing_some_words_are_found_by_either_name_wherever_they_went() {
+    let (rows, patterns) = sorting();
+    let every = |of: Of| sorted_records(&rows, &patterns, &of);
+    let safeway = every(Of::Containing("Safeway".to_owned()));
+    assert_eq!(safeway.len(), 2, "by the merged name");
+    assert_eq!(safeway[0].name, "SAFEWAY");
+    assert_eq!(
+        every(Of::Containing(".com".to_owned())).len(),
+        1,
+        "by the text as the bank wrote it"
+    );
+    assert_eq!(
+        records(&rows, &patterns, &Of::Unnamed).len(),
+        1,
+        "the bucketed are counted unnamed"
+    );
+    let groceries = every(Of::Category(Category::Groceries));
+    assert_eq!(groceries.len(), 3);
+    assert_eq!(spent_a_year(&plan(""), &rows, &groceries), 1440);
 }

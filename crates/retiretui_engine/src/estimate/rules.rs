@@ -3,7 +3,7 @@
 //! its rules so the most specific match wins.
 
 use regex_lite::Regex;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use super::payee::starred_as_spaces;
 use super::{Category, Cents, Row};
@@ -13,6 +13,8 @@ const EXACT_SCORE: u32 = 10;
 const ONE_OF_SCORE: u32 = 9;
 const SPENT_SCORE: u32 = 5;
 const EXPORT_SCORE: u32 = 1;
+/// What a rule's regex is prefixed with to match either case.
+const CASELESS: &str = "(?i)";
 /// A rule whose every condition is exact counts double.
 const EXACT_FACTOR: u32 = 2;
 
@@ -43,6 +45,26 @@ pub enum Outcome {
     Ignore,
     /// In the bucket, as a payee nothing names is.
     Bucket,
+}
+
+/// What decided where a row was sorted.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[serde(rename_all = "kebab-case")]
+pub enum By {
+    /// A rule of the user's.
+    Rule {
+        /// The name of the file it is in.
+        file: String,
+        /// Its place among the file's `patterns`, counted from one.
+        at: usize,
+    },
+    /// The bank's own category, as the export writes it.
+    Bank(String),
+    /// The bank's transaction type.
+    Type,
+    /// The embedded table's entry, by the words it tests.
+    Embedded(String),
 }
 
 /// What a rule tests of the payee, uppercased.
@@ -77,6 +99,16 @@ impl PayeeTest {
     const fn is_exact(&self) -> bool {
         matches!(self, Self::Is(_) | Self::OneOf(_))
     }
+
+    /// The words it tests, as the file says them.
+    fn words(&self) -> String {
+        match self {
+            Self::Contains(words) | Self::Is(words) => words.clone(),
+            Self::OneOf(wholes) => wholes.join(", "),
+            Self::Matches(pattern) => pattern.as_str().trim_start_matches(CASELESS).to_owned(),
+            Self::Any => String::new(),
+        }
+    }
 }
 
 /// A rule: its conditions, all of which hold, and what it says the row is.
@@ -88,6 +120,8 @@ pub(super) struct Rule {
     export: Option<String>,
     pub(super) outcome: Outcome,
     pub(super) score: u32,
+    /// Where it was written.
+    pub(super) by: By,
 }
 
 impl Rule {
@@ -165,7 +199,7 @@ impl PayeeText {
             self.one_of
                 .map(|texts| Ok(PayeeTest::OneOf(texts.into_iter().map(said).collect()))),
             self.matches.map(|text| {
-                Regex::new(&format!("(?i){text}"))
+                Regex::new(&format!("{CASELESS}{text}"))
                     .map(PayeeTest::Matches)
                     .map_err(|error| format!("`{text}` is not a regular expression: {error}"))
             }),
@@ -197,7 +231,9 @@ pub(super) struct RuleText {
 }
 
 impl RuleText {
-    pub(super) fn rule(self) -> Result<Rule, String> {
+    /// The rule, written at `at` in `file`, or in the embedded table where
+    /// there is none.
+    pub(super) fn rule(self, file: Option<&str>, at: usize) -> Result<Rule, String> {
         let outcome = match (self.category, self.ignore, self.bucket) {
             (Some(category), false, false) => Outcome::Category(category),
             (None, true, false) => Outcome::Ignore,
@@ -232,6 +268,13 @@ impl RuleText {
         let is_exact = (payee.is_exact() || matches!(payee, PayeeTest::Any))
             && spent.is_none()
             && export.is_none();
+        let by = file.map_or_else(
+            || By::Embedded(payee.words()),
+            |file| By::Rule {
+                file: file.to_owned(),
+                at,
+            },
+        );
         Ok(Rule {
             payee,
             on: self.on,
@@ -239,6 +282,7 @@ impl RuleText {
             export,
             outcome,
             score: if is_exact { sum * EXACT_FACTOR } else { sum },
+            by,
         })
     }
 }

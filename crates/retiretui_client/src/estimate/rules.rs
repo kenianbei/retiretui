@@ -138,7 +138,7 @@ impl Change {
         }
         let text = file.to_string();
         Patterns::default()
-            .add(&text)
+            .add(super::PATTERNS_FILE, &text)
             .map_err(|error| format!("the patterns file does not read: {error}"))?;
         Ok(text)
     }

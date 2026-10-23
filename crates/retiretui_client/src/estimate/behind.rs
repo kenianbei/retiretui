@@ -53,12 +53,7 @@ impl Listed<'_> {
         let Some(of) = self.of() else {
             return Behind::default();
         };
-        let what = match &of {
-            Of::Category(category) => category.title(),
-            Of::Payee(payee) => payee.clone(),
-            Of::Unnamed => UNNAMED.to_owned(),
-            Of::Ignored => IGNORED.to_lowercase(),
-        };
+        let what = what(&of);
         let found = records(rows, patterns, &of);
         Behind {
             ignored: Some(of == Of::Ignored),
@@ -68,6 +63,17 @@ impl Listed<'_> {
                 .collect(),
             ..records_behind(&what, &found)
         }
+    }
+}
+
+/// Whose records `of` selects, as their heading names them.
+pub(super) fn what(of: &Of) -> String {
+    match of {
+        Of::Category(category) => category.title(),
+        Of::Payee(payee) => payee.clone(),
+        Of::Containing(words) => format!("payees containing {}", words.trim()),
+        Of::Unnamed => UNNAMED.to_owned(),
+        Of::Ignored => IGNORED.to_lowercase(),
     }
 }
 

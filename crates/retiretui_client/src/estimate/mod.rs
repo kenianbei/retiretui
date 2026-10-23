@@ -38,6 +38,8 @@ pub const NOTHING_READ: &str =
 pub const COLUMNS: [&str; 5] = ["Expense", "Now", "Proposed", "Change", "Why"];
 /// The extensions an export may have.
 pub const EXTENSIONS: [&str; 3] = ["csv", "ofx", "qfx"];
+/// The name of the user's own spending patterns file.
+pub const PATTERNS_FILE: &str = "patterns.toml";
 /// What a payee's category reads as while nothing names it.
 pub const UNKNOWN: &str = "Unknown";
 const NO_ROW: &str = "nothing to edit on this row";
@@ -242,7 +244,7 @@ impl Estimator {
     fn make(&mut self, change: &Change) -> Result<(), String> {
         let text = change.applied(self.patterns.text())?;
         let mut patterns = Patterns::embedded();
-        patterns.add(&text).map_err(|error| error.to_string())?;
+        (patterns.add(PATTERNS_FILE, &text)).map_err(|error| error.to_string())?;
         self.patterns = patterns;
         self.over = None;
         Ok(())

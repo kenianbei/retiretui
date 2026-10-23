@@ -64,7 +64,7 @@ impl PlanServer {
         let mut patterns = Patterns::embedded();
         if let Some(text) = &args.patterns {
             patterns
-                .add(text)
+                .add("patterns", text)
                 .map_err(|error| format!("patterns: {error}"))?;
         }
         let mut exports = Exports::default();

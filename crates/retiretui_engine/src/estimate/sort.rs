@@ -5,7 +5,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use super::rules::{self, Outcome};
+use super::rules::{self, By, Outcome, Rule};
 use super::{Category, Patterns, Row};
 use crate::plan::{Dollars, Plan, PlanDate};
 use crate::project::inflation_factor;
@@ -20,6 +20,9 @@ pub enum Of {
     Category(Category),
     /// The rows of one payee nothing names, by its name.
     Payee(String),
+    /// The rows of every payee whose name, or whose text as the bank wrote
+    /// it, contains the words, either case, wherever they were sorted.
+    Containing(String),
     /// The rows of every payee nothing names.
     Unnamed,
     /// The rows the user's rules ignore.
@@ -62,18 +65,49 @@ impl Window {
 }
 
 /// A payee as a row is sorted by it: its name, merged or normalized, the
-/// name uppercased as rules match it, and what the embedded table says.
-struct Named {
+/// name uppercased as rules match it, and the embedded table's rule for it.
+struct Named<'a> {
     name: String,
     key: String,
-    embedded: Option<Outcome>,
+    embedded: Option<&'a Rule>,
+}
+
+/// What a row is sorted as, and what decided it.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct Decided<'a> {
+    pub(super) outcome: Outcome,
+    by: Decider<'a>,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum Decider<'a> {
+    Rule(&'a By),
+    Bank(&'a str),
+    Type,
+}
+
+impl<'a> Decided<'a> {
+    fn rule(rule: &'a Rule) -> Self {
+        Self {
+            outcome: rule.outcome,
+            by: Decider::Rule(&rule.by),
+        }
+    }
+
+    fn by(self) -> By {
+        match self.by {
+            Decider::Rule(by) => by.clone(),
+            Decider::Bank(category) => By::Bank(category.to_owned()),
+            Decider::Type => By::Type,
+        }
+    }
 }
 
 /// Sorts rows, each payee normalized, merged and matched against the
 /// embedded table once.
 pub(super) struct Sorter<'a> {
     patterns: &'a Patterns,
-    named: HashMap<&'a str, Named>,
+    named: HashMap<&'a str, Named<'a>>,
 }
 
 impl<'a> Sorter<'a> {
@@ -84,51 +118,109 @@ impl<'a> Sorter<'a> {
         }
     }
 
-    /// The row's payee by name and what it is; none where nothing says.
-    pub(super) fn sort(&mut self, row: &'a Row) -> (&str, Option<Outcome>) {
+    /// The row's payee by name, what it is and what decided it; none
+    /// where nothing says.
+    pub(super) fn sort(&mut self, row: &'a Row) -> (&str, Option<Decided<'a>>) {
         let patterns = self.patterns;
         let named = self.named.entry(&row.payee).or_insert_with(|| {
             let name = patterns.name_of(&row.payee);
             let key = name.to_ascii_uppercase();
-            let embedded = patterns.embedded_outcome(&key, row);
+            let embedded = patterns.embedded_rule(&key, row);
             Named {
                 name,
                 key,
                 embedded,
             }
         });
-        let outcome = patterns
-            .user(&named.key, row)
+        let decided = (patterns.user(&named.key, row).map(Decided::rule))
             .or_else(|| {
-                let banks = row.category.as_deref().and_then(Category::from_text);
-                banks.or(row.kind).map(Outcome::Category)
+                let text = row.category.as_deref()?;
+                Some(Decided {
+                    outcome: Outcome::Category(Category::from_text(text)?),
+                    by: Decider::Bank(text),
+                })
             })
-            .or(named.embedded)
-            .filter(|outcome| *outcome != Outcome::Bucket);
-        (&named.name, outcome)
+            .or_else(|| {
+                Some(Decided {
+                    outcome: Outcome::Category(row.kind?),
+                    by: Decider::Type,
+                })
+            })
+            .or_else(|| named.embedded.map(Decided::rule));
+        (&named.name, decided)
     }
+}
+
+/// A row within the estimate's window, as the estimate sorts it.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Sorted<'a> {
+    /// The row.
+    pub row: &'a Row,
+    /// Its payee, as the rules name it.
+    pub name: String,
+    /// What it is sorted as; none where nothing says.
+    pub outcome: Option<Outcome>,
+    /// What decided it; none where nothing did.
+    pub by: Option<By>,
 }
 
 /// The rows within the estimate's window that are `of`'s, newest first.
 #[must_use]
 pub fn records<'a>(rows: &'a [Row], patterns: &Patterns, of: &Of) -> Vec<&'a Row> {
+    let found = sorted_records(rows, patterns, of);
+    found.into_iter().map(|sorted| sorted.row).collect()
+}
+
+/// The rows within the estimate's window that are `of`'s, newest first,
+/// each with what it is sorted as and what decided it.
+#[must_use]
+pub fn sorted_records<'a>(rows: &'a [Row], patterns: &Patterns, of: &Of) -> Vec<Sorted<'a>> {
     let Some(window) = Window::of(rows) else {
         return Vec::new();
     };
-    let mut sorter = Sorter::new(patterns);
-    let mut is_of = |row: &'a Row| match (of, sorter.sort(row)) {
-        (Of::Category(wanted), (_, outcome)) => outcome == Some(Outcome::Category(*wanted)),
-        (Of::Payee(wanted), (payee, None)) => payee == wanted,
-        (Of::Payee(_), (_, Some(_))) => false,
-        (Of::Unnamed, (_, outcome)) => outcome.is_none(),
-        (Of::Ignored, (_, outcome)) => outcome == Some(Outcome::Ignore),
+    let wanted = match of {
+        Of::Containing(words) => words.trim().to_ascii_uppercase(),
+        _ => String::new(),
     };
-    let mut found: Vec<&Row> = rows
-        .iter()
-        .filter(|row| window.holds(row) && is_of(row))
-        .collect();
-    found.sort_by_key(|row| std::cmp::Reverse(row.on));
+    let mut sorter = Sorter::new(patterns);
+    let mut found: Vec<Sorted> = Vec::new();
+    for row in rows.iter().filter(|row| window.holds(row)) {
+        let (name, decided) = sorter.sort(row);
+        let outcome = decided.map(|decided| decided.outcome);
+        let is_unnamed = matches!(outcome, None | Some(Outcome::Bucket));
+        let is_of = match of {
+            Of::Category(wanted) => outcome == Some(Outcome::Category(*wanted)),
+            Of::Payee(wanted) => is_unnamed && name == wanted,
+            Of::Containing(_) => [name, &row.payee]
+                .iter()
+                .any(|text| text.to_ascii_uppercase().contains(&wanted)),
+            Of::Unnamed => is_unnamed,
+            Of::Ignored => outcome == Some(Outcome::Ignore),
+        };
+        if is_of {
+            found.push(Sorted {
+                row,
+                name: name.to_owned(),
+                outcome,
+                by: decided.map(Decided::by),
+            });
+        }
+    }
+    found.sort_by_key(|sorted| std::cmp::Reverse(sorted.row.on));
     found
+}
+
+/// What `found` spent a year in the plan's start-year dollars, over the
+/// window `rows` reach.
+#[must_use]
+pub fn spent_a_year(plan: &Plan, rows: &[Row], found: &[Sorted]) -> Dollars {
+    let Some(window) = Window::of(rows) else {
+        return 0;
+    };
+    let spent: f64 = (found.iter())
+        .map(|sorted| sorted.row.spent().dollars() / inflation_factor(plan, sorted.row.on.year()))
+        .sum();
+    window.annual(spent)
 }
 
 /// How far a rule matching payees that contain some words reaches.
