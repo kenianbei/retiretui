@@ -3,8 +3,9 @@ use std::path::{Path, PathBuf};
 
 use clap::{ArgGroup, Args};
 use retiretui_client::environment::{load_patterns, load_tables};
-use retiretui_client::estimate::{self, EstimateReply, Exports, RecordsReply, listed};
+use retiretui_client::estimate::{self, EstimateReply, Exports, RecordReply, RecordsReply, listed};
 use retiretui_client::present::MoneyForm;
+use retiretui_client::session::file_name;
 use retiretui_client::store::DiskStore;
 use retiretui_client::table::align;
 use retiretui_engine::estimate::{Category, Estimate, Of};
@@ -12,8 +13,6 @@ use retiretui_engine::plan::Plan;
 
 use crate::project::OutputFormat;
 
-/// The columns records are tabled under.
-const RECORD_COLUMNS: [&str; 5] = ["date", "payee", "amount", "sorted", "by"];
 /// The record columns that hold words, left-aligned.
 const RECORD_TEXT_COLUMNS: [usize; 3] = [1, 3, 4];
 
@@ -94,10 +93,7 @@ pub fn run(args: &EstimateArgs) -> anyhow::Result<()> {
     for path in &args.files {
         let text = fs::read_to_string(path)
             .map_err(|error| anyhow::anyhow!("failed to read {}: {error}", path.display()))?;
-        let name = path
-            .file_name()
-            .map_or_else(String::new, |n| n.to_string_lossy().into_owned());
-        exports.add(&name, &text).map_err(anyhow::Error::msg)?;
+        (exports.add(&file_name(path), &text)).map_err(anyhow::Error::msg)?;
     }
     if let Some(of) = args.selection() {
         let found = exports.records(&plan, &patterns, &of);
@@ -138,6 +134,7 @@ pub fn run(args: &EstimateArgs) -> anyhow::Result<()> {
 /// left-aligned so the nesting shows.
 fn estimate_text(found: &Estimate) -> String {
     let header = estimate::COLUMNS.map(str::to_lowercase);
+    let header: Vec<&str> = header.iter().map(String::as_str).collect();
     let rows: Vec<Vec<String>> = listed(found)
         .map(|row| row.cells(MoneyForm::Full).to_vec())
         .collect();
@@ -154,18 +151,17 @@ fn records_text(found: &RecordsReply) -> String {
     let rows: Vec<Vec<String>> = (found.records.iter())
         .map(|record| record.cells().to_vec())
         .collect();
-    let header = RECORD_COLUMNS.map(str::to_owned);
     format!(
         "{}\n{}",
         found.heading(),
-        tabled(&header, rows, &RECORD_TEXT_COLUMNS)
+        tabled(&RecordReply::COLUMNS, rows, &RECORD_TEXT_COLUMNS)
     )
 }
 
 /// `rows` under `header`, the columns at `left` left-aligned and the rest
 /// right.
-fn tabled(header: &[String], mut rows: Vec<Vec<String>>, left: &[usize]) -> String {
-    let mut header = header.to_vec();
+fn tabled(header: &[&str], mut rows: Vec<Vec<String>>, left: &[usize]) -> String {
+    let mut header: Vec<String> = header.iter().map(|&cell| cell.to_owned()).collect();
     for &at in left {
         let width = (rows.iter().map(|row| row[at].len()))
             .chain([header[at].len()])

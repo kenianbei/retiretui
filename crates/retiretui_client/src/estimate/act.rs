@@ -2,7 +2,7 @@
 //! record ignored or counted again, a payee ignored, said to be for a
 //! category or named, and every payee containing some words sorted alike.
 
-use retiretui_engine::estimate::{Reach, Row, normalize, reach, records};
+use retiretui_engine::estimate::{Reach, Sorted, normalize, reach, sorted_records};
 
 use serde::Deserialize;
 
@@ -145,10 +145,10 @@ impl Estimator {
     }
 
     /// The record at `index` behind the row at `at`, and the row.
-    fn picked(&self, at: usize, index: usize) -> Option<(Listed<'_>, &Row)> {
+    fn picked(&self, at: usize, index: usize) -> Option<(Listed<'_>, Sorted<'_>)> {
         let row = self.row(at)?;
-        let found = records(self.exports.rows(), &self.patterns, &row.of()?);
-        Some((row, found.get(index)?))
+        let found = sorted_records(self.exports.rows(), &self.patterns, &row.of()?);
+        Some((row, found.into_iter().nth(index)?))
     }
 
     /// The payee of the record at `record` behind the row at `at`, else of
@@ -157,8 +157,8 @@ impl Estimator {
         if let Some(index) = record {
             let (_, picked) = self.picked(at, index).ok_or(NO_PAYEE)?;
             return Ok(Target {
-                named: self.patterns.name_of(&picked.payee),
-                normalized: normalize(&picked.payee),
+                normalized: normalize(&picked.row.payee),
+                named: picked.name,
             });
         }
         match self.row(at).ok_or(NO_PAYEE)? {
@@ -175,9 +175,9 @@ impl Estimator {
     fn ignoring(&self, at: usize, index: usize) -> Result<Change, String> {
         let (row, picked) = self.picked(at, index).ok_or(NO_RECORD)?;
         let record = Record {
-            payee: self.patterns.name_of(&picked.payee),
-            on: picked.on,
-            spent: picked.spent(),
+            on: picked.row.on,
+            spent: picked.row.spent(),
+            payee: picked.name,
         };
         Ok(if matches!(row, Listed::Ignored { .. }) {
             Change::Unignore(record)

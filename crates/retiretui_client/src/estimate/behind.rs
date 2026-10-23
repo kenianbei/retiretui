@@ -2,7 +2,9 @@
 //! each adds a year, or the records of a category, a payee, the unnamed
 //! payees or the ignored, each of which can be ignored or counted again.
 
-use retiretui_engine::estimate::{CENTS_PER_DOLLAR, Cents, Of, Patterns, Proposal, Row, records};
+use retiretui_engine::estimate::{
+    CENTS_PER_DOLLAR, Cents, Of, Patterns, Proposal, Row, Sorted, sorted_records,
+};
 use serde::Serialize;
 
 use super::Listed;
@@ -53,14 +55,10 @@ impl Listed<'_> {
         let Some(of) = self.of() else {
             return Behind::default();
         };
-        let found = records(rows, patterns, &of);
+        let found = sorted_records(rows, patterns, &of);
         Behind {
             ignored: Some(of == Of::Ignored),
-            payees: found
-                .iter()
-                .map(|row| patterns.name_of(&row.payee))
-                .collect(),
-            ..records_behind(records_title(&of), &found)
+            ..records_behind(records_title(&of), found)
         }
     }
 }
@@ -93,23 +91,25 @@ fn payees_behind(proposal: &Proposal, form: MoneyForm) -> Behind {
 }
 
 /// `records` under `title`, each its date, its payee as the bank wrote it
-/// and what it spent, a credit negative.
-fn records_behind(title: String, records: &[&Row]) -> Behind {
+/// and what it spent, a credit negative, with its payee as the rules name
+/// it.
+fn records_behind(title: String, records: Vec<Sorted>) -> Behind {
+    let rows = (records.iter())
+        .map(|sorted| {
+            let row = sorted.row;
+            vec![
+                row.on.0.to_string(),
+                row.payee.clone(),
+                spent_cents(row.spent()),
+            ]
+        })
+        .collect();
     Behind {
         title,
         columns: RECORD_COLUMNS.map(str::to_owned).to_vec(),
-        rows: records
-            .iter()
-            .map(|row| {
-                vec![
-                    row.on.0.to_string(),
-                    row.payee.clone(),
-                    spent_cents(row.spent()),
-                ]
-            })
-            .collect(),
+        rows,
         ignored: None,
-        payees: Vec::new(),
+        payees: records.into_iter().map(|sorted| sorted.name).collect(),
     }
 }
 

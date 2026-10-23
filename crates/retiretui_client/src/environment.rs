@@ -10,6 +10,7 @@ use etcetera::BaseStrategy as _;
 use retiretui_engine::estimate::Patterns;
 
 use crate::estimate::PATTERNS_FILE;
+use crate::session::file_name;
 use retiretui_engine::market::History;
 use retiretui_engine::params::TaxTables;
 
@@ -100,11 +101,8 @@ pub fn load_patterns(explicit: Option<&Path>, is_user_read: bool) -> anyhow::Res
 fn add_patterns(patterns: &mut Patterns, path: &Path) -> anyhow::Result<()> {
     let text =
         fs::read_to_string(path).with_context(|| format!("failed to read {}", path.display()))?;
-    let name = path
-        .file_name()
-        .map_or_else(String::new, |n| n.to_string_lossy().into_owned());
     patterns
-        .add(&name, &text)
+        .add(&file_name(path), &text)
         .with_context(|| format!("in {}", path.display()))?;
     Ok(())
 }

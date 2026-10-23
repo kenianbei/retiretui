@@ -26,7 +26,7 @@ pub use patterns::Patterns;
 pub use payee::normalize;
 pub use place::Why;
 pub use rules::{By, Outcome, PatternError};
-pub use sort::{Of, Reach, Sorted, reach, records, sorted_records, spent_a_year};
+pub use sort::{Of, Reach, Sorted, reach, sorted_records, spent_a_year};
 
 use serde::{Deserialize, Serialize};
 

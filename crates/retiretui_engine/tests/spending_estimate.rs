@@ -3,7 +3,7 @@
 
 use retiretui_engine::estimate::{
     BankError, By, Category, Cents, Estimate, Of, Outcome, Patterns, Phases, Proposal, Row, Why,
-    apply, estimate, merge, read, records, sorted_records, spent_a_year,
+    apply, estimate, merge, read, sorted_records, spent_a_year,
 };
 use retiretui_engine::plan::Plan;
 
@@ -11,6 +11,12 @@ const CHASE: &str = include_str!("fixtures/bank/chase.csv");
 const VISA: &str = include_str!("fixtures/bank/visa.csv");
 const OFX: &str = include_str!("fixtures/bank/checking.ofx");
 const QFX: &str = include_str!("fixtures/bank/checking.qfx");
+
+/// The rows `of` selects, as `sorted_records` finds them.
+fn records<'a>(rows: &'a [Row], patterns: &Patterns, of: &Of) -> Vec<&'a Row> {
+    let found = sorted_records(rows, patterns, of);
+    found.into_iter().map(|sorted| sorted.row).collect()
+}
 
 fn plan(expenses: &str) -> Plan {
     Plan::from_toml_str(&format!(
@@ -513,43 +519,32 @@ fn sorting() -> (Vec<Row>, Patterns) {
 #[test]
 fn each_record_says_what_sorted_it_and_a_later_file_wins_a_tie() {
     let (rows, patterns) = sorting();
-    let by_payee = |payee: &str| {
+    let decided = |payee: &str| {
         let found = sorted_records(&rows, &patterns, &Of::Containing(payee.to_owned()));
         assert_eq!(found.len(), 1, "{payee}");
-        (found[0].outcome, found[0].by.clone())
+        found[0].decided.clone()
     };
-    let category = |category| Some(Outcome::Category(category));
-    let rule = |file: &str, at| {
-        Some(By::Rule {
-            file: file.to_owned(),
-            at,
-        })
+    let category = |category, by| Some((Outcome::Category(category), by));
+    let rule = |file: &str, at| By::Rule {
+        file: file.to_owned(),
+        at,
     };
     assert_eq!(
-        by_payee("safeway #12"),
-        (
-            category(Category::Groceries),
-            Some(By::Bank("Groceries".to_owned()))
-        )
+        decided("safeway #12"),
+        category(Category::Groceries, By::Bank)
     );
     assert_eq!(
-        by_payee("att"),
-        (
-            category(Category::Phone),
-            Some(By::Embedded("ATT ".to_owned()))
-        )
+        decided("att"),
+        category(Category::Phone, By::Embedded("ATT ".to_owned()))
+    );
+    assert_eq!(decided("acme"), category(Category::Transfer, By::Type));
+    assert_eq!(
+        decided("art studio"),
+        Some((Outcome::Bucket, rule("patterns.toml", 1)))
     );
     assert_eq!(
-        by_payee("acme"),
-        (category(Category::Transfer), Some(By::Type))
-    );
-    assert_eq!(
-        by_payee("art studio"),
-        (Some(Outcome::Bucket), rule("patterns.toml", 1))
-    );
-    assert_eq!(
-        by_payee("fuel"),
-        (category(Category::Groceries), rule("proposed.toml", 1)),
+        decided("fuel"),
+        category(Category::Groceries, rule("proposed.toml", 1)),
         "the later file wins the tie"
     );
 }

@@ -1,8 +1,8 @@
-use std::borrow::Cow;
 use std::path::Path;
 
 use retiretui_client::environment::load_patterns;
 use retiretui_client::estimate::{EstimateReply, Exports, RecordsReply};
+use retiretui_client::session::file_name;
 use retiretui_engine::estimate::{Category, Of, Patterns};
 use retiretui_engine::plan::Plan;
 use rmcp::handler::server::wrapper::{Json, Parameters};
@@ -167,16 +167,13 @@ impl PlanServer {
         }
         let mut exports = Exports::default();
         for file in &inputs.files {
-            let (name, text) = match file {
-                Export::Text { name, text } => (Cow::from(name.as_str()), Cow::from(text.as_str())),
+            let added = match file {
+                Export::Text { name, text } => exports.add(name, text),
                 Export::Path { path } => {
-                    let name = Path::new(path).file_name().map(|n| n.to_string_lossy());
-                    (name.unwrap_or_default(), Cow::from(self.store.read(path)?))
+                    exports.add(&file_name(Path::new(path)), &self.store.read(path)?)
                 }
             };
-            exports
-                .add(&name, &text)
-                .map_err(|error| error.to_string())?;
+            added.map_err(|error| error.to_string())?;
         }
         Ok((plan, exports, patterns))
     }

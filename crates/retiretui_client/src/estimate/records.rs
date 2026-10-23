@@ -22,8 +22,6 @@ const BUCKET: &str = "bucket";
 pub struct RecordsReply {
     /// What they are: `Records: Groceries`.
     pub title: String,
-    /// How many there are.
-    pub count: usize,
     /// What they spend a year in the plan's start-year dollars, a credit
     /// negative.
     pub per_year: Dollars,
@@ -61,7 +59,6 @@ impl Exports {
         let found = sorted_records(self.rows(), patterns, of);
         RecordsReply {
             title: records_title(of),
-            count: found.len(),
             per_year: spent_a_year(plan, self.rows(), &found),
             records: found.into_iter().map(record).collect(),
         }
@@ -70,19 +67,20 @@ impl Exports {
 
 fn record(sorted: Sorted) -> RecordReply {
     let row = sorted.row;
+    let (outcome, by) = sorted.decided.unzip();
     RecordReply {
         on: row.on.0.to_string(),
         payee: row.payee.clone(),
         named: sorted.name,
         spent: row.spent().dollars(),
-        sorted: match sorted.outcome {
+        sorted: match outcome {
             Some(Outcome::Category(category)) => category.slug(),
             Some(Outcome::Ignore) => IGNORED,
             Some(Outcome::Bucket) => BUCKET,
             None => UNNAMED,
         }
         .to_owned(),
-        by: sorted.by,
+        by,
         export: row.export.clone(),
         bank_category: row.category.clone(),
     }
@@ -95,13 +93,16 @@ impl RecordsReply {
         format!(
             "{} - {}, {} a year",
             self.title,
-            counted(self.count, "record", "records"),
+            counted(self.records.len(), "record", "records"),
             MoneyForm::Full.money(self.per_year)
         )
     }
 }
 
 impl RecordReply {
+    /// The columns its cells are tabled under.
+    pub const COLUMNS: [&str; 5] = ["date", "payee", "amount", "sorted", "by"];
+
     /// Its date, payee as the bank wrote it, what it spent, where it was
     /// sorted and what decided it, as a table's cells.
     #[must_use]
@@ -111,19 +112,19 @@ impl RecordReply {
             self.payee.clone(),
             spent_cents(Cents::from_dollars(self.spent)),
             self.sorted.clone(),
-            said_by(self.by.as_ref()),
+            self.said_by(),
         ]
     }
-}
 
-/// What decided a sort, in words: `rule 12 in patterns.toml`, `the bank's
-/// Groceries`, `the transaction type`, `embedded "ATT "`.
-fn said_by(by: Option<&By>) -> String {
-    match by {
-        Some(By::Rule { file, at }) => format!("rule {at} in {file}"),
-        Some(By::Bank(category)) => format!("the bank's {category}"),
-        Some(By::Type) => "the transaction type".to_owned(),
-        Some(By::Embedded(words)) => format!("embedded \"{words}\""),
-        None => String::new(),
+    /// What decided its sort, in words: `rule 12 in patterns.toml`, `the
+    /// bank's Groceries`, `the transaction type`, `embedded "ATT "`.
+    fn said_by(&self) -> String {
+        match &self.by {
+            Some(By::Rule { file, at }) => format!("rule {at} in {file}"),
+            Some(By::Bank) => format!("the bank's {}", self.bank_category.as_deref().unwrap_or("")),
+            Some(By::Type) => "the transaction type".to_owned(),
+            Some(By::Embedded(words)) => format!("embedded \"{words}\""),
+            None => String::new(),
+        }
     }
 }

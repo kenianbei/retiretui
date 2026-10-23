@@ -13,8 +13,6 @@ const EXACT_SCORE: u32 = 10;
 const ONE_OF_SCORE: u32 = 9;
 const SPENT_SCORE: u32 = 5;
 const EXPORT_SCORE: u32 = 1;
-/// What a rule's regex is prefixed with to match either case.
-const CASELESS: &str = "(?i)";
 /// A rule whose every condition is exact counts double.
 const EXACT_FACTOR: u32 = 2;
 
@@ -59,8 +57,8 @@ pub enum By {
         /// Its place among the file's `patterns`, counted from one.
         at: usize,
     },
-    /// The bank's own category, as the export writes it.
-    Bank(String),
+    /// The bank's own category column.
+    Bank,
     /// The bank's transaction type.
     Type,
     /// The embedded table's entry, by the words it tests.
@@ -70,7 +68,7 @@ pub enum By {
 /// What a rule tests of the payee, uppercased.
 #[derive(Debug, Clone)]
 enum PayeeTest {
-    Contains(String),
+    Contains(Part),
     Is(String),
     OneOf(Vec<String>),
     Matches(Regex),
@@ -80,7 +78,7 @@ enum PayeeTest {
 impl PayeeTest {
     fn holds(&self, payee: &str) -> bool {
         match self {
-            Self::Contains(part) => contains_part(payee, part),
+            Self::Contains(part) => part.holds(payee),
             Self::Is(whole) => payee == whole,
             Self::OneOf(wholes) => wholes.iter().any(|whole| whole == payee),
             Self::Matches(pattern) => pattern.is_match(payee),
@@ -98,16 +96,6 @@ impl PayeeTest {
 
     const fn is_exact(&self) -> bool {
         matches!(self, Self::Is(_) | Self::OneOf(_))
-    }
-
-    /// The words it tests, as the file says them.
-    fn words(&self) -> String {
-        match self {
-            Self::Contains(words) | Self::Is(words) => words.clone(),
-            Self::OneOf(wholes) => wholes.join(", "),
-            Self::Matches(pattern) => pattern.as_str().trim_start_matches(CASELESS).to_owned(),
-            Self::Any => String::new(),
-        }
     }
 }
 
@@ -164,22 +152,42 @@ pub(super) fn best<T>(found: impl Iterator<Item = (u32, T)>) -> Option<T> {
         .map(|(_, it)| it)
 }
 
-/// Words as a rule matches them against a payee, a space at either end
-/// kept to mark the edge of a word.
+/// Words as a rule matches them against a payee.
 pub(super) fn said(words: &str) -> String {
-    starred_as_spaces(&words.to_ascii_uppercase())
+    starred_as_spaces(&words.trim().to_ascii_uppercase())
 }
 
-/// Whether `payee` contains `part`, a space at either end of `part` met by
-/// a space or by the payee's own start or end: `ATT ` holds of `ATT
-/// WIRELESS` and `ATT`, never `SEATTLE`.
-pub(super) fn contains_part(payee: &str, part: &str) -> bool {
-    let core = part.trim();
-    payee.match_indices(core).any(|(at, _)| {
-        let end = at + core.len();
-        (!part.starts_with(' ') || payee[..at].is_empty() || payee[..at].ends_with(' '))
-            && (!part.ends_with(' ') || payee[end..].is_empty() || payee[end..].starts_with(' '))
-    })
+/// Words a payee contains, a space at either end marking the edge of a
+/// word: `ATT ` holds of `ATT WIRELESS` and `ATT`, never `SEATTLE`.
+#[derive(Debug, Clone)]
+pub(super) struct Part {
+    words: String,
+    is_left_edge: bool,
+    is_right_edge: bool,
+}
+
+impl Part {
+    pub(super) fn new(text: &str) -> Self {
+        Self {
+            words: said(text),
+            is_left_edge: text.starts_with(' '),
+            is_right_edge: text.ends_with(' '),
+        }
+    }
+
+    pub(super) const fn is_empty(&self) -> bool {
+        self.words.is_empty()
+    }
+
+    /// Whether the uppercased `payee` contains it, each edge met by a space
+    /// or by the payee's own start or end.
+    pub(super) fn holds(&self, payee: &str) -> bool {
+        payee.match_indices(&self.words).any(|(at, _)| {
+            let (before, after) = (&payee[..at], &payee[at + self.words.len()..]);
+            (!self.is_left_edge || before.is_empty() || before.ends_with(' '))
+                && (!self.is_right_edge || after.is_empty() || after.starts_with(' '))
+        })
+    }
 }
 
 /// The payee keys of a rule or a merge, at most one of them stated.
@@ -194,12 +202,13 @@ impl PayeeText {
     fn test(self) -> Result<PayeeTest, String> {
         let said = |text: String| said(&text);
         let tests = [
-            self.r#match.map(|text| Ok(PayeeTest::Contains(said(text)))),
+            self.r#match
+                .map(|text| Ok(PayeeTest::Contains(Part::new(&text)))),
             self.is.map(|text| Ok(PayeeTest::Is(said(text)))),
             self.one_of
                 .map(|texts| Ok(PayeeTest::OneOf(texts.into_iter().map(said).collect()))),
             self.matches.map(|text| {
-                Regex::new(&format!("{CASELESS}{text}"))
+                Regex::new(&format!("(?i){text}"))
                     .map(PayeeTest::Matches)
                     .map_err(|error| format!("`{text}` is not a regular expression: {error}"))
             }),
@@ -244,6 +253,13 @@ impl RuleText {
                 );
             }
         };
+        let by = file.map_or_else(
+            || By::Embedded(self.r#match.clone().unwrap_or_default()),
+            |file| By::Rule {
+                file: file.to_owned(),
+                at,
+            },
+        );
         let payee = PayeeText {
             r#match: self.r#match,
             is: self.is,
@@ -268,13 +284,6 @@ impl RuleText {
         let is_exact = (payee.is_exact() || matches!(payee, PayeeTest::Any))
             && spent.is_none()
             && export.is_none();
-        let by = file.map_or_else(
-            || By::Embedded(payee.words()),
-            |file| By::Rule {
-                file: file.to_owned(),
-                at,
-            },
-        );
         Ok(Rule {
             payee,
             on: self.on,

@@ -501,7 +501,7 @@ fn estimate_lists_the_records_asked_for_and_what_sorted_each() {
         "{table}"
     );
     let ignored = json_of(&run(&["--ignored", "--format", "json"]));
-    assert_eq!(ignored["count"], 2, "{ignored}");
+    assert_eq!(ignored["records"].as_array().unwrap().len(), 2, "{ignored}");
     assert_eq!(
         ignored["records"][0]["by"],
         serde_json::json!({ "rule": { "file": "patterns.toml", "at": 1 } })
@@ -512,7 +512,7 @@ fn estimate_lists_the_records_asked_for_and_what_sorted_each() {
         "--format",
         "json",
     ]));
-    assert_eq!(alone["count"], 0, "{alone}");
+    assert_eq!(alone["records"].as_array().unwrap().len(), 0, "{alone}");
     let refused = run(&["--category", "groceries", "--write", "x.toml"]);
     assert!(!refused.status.success());
     let refused = run(&["--category", "nonsense"]);

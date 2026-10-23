@@ -5,7 +5,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use super::rules::{self, By, Outcome, Rule};
+use super::rules::{By, Outcome, Part, Rule};
 use super::{Category, Patterns, Row};
 use crate::plan::{Dollars, Plan, PlanDate};
 use crate::project::inflation_factor;
@@ -76,29 +76,14 @@ struct Named<'a> {
 #[derive(Debug, Clone, Copy)]
 pub(super) struct Decided<'a> {
     pub(super) outcome: Outcome,
-    by: Decider<'a>,
-}
-
-#[derive(Debug, Clone, Copy)]
-enum Decider<'a> {
-    Rule(&'a By),
-    Bank(&'a str),
-    Type,
+    by: &'a By,
 }
 
 impl<'a> Decided<'a> {
     fn rule(rule: &'a Rule) -> Self {
         Self {
             outcome: rule.outcome,
-            by: Decider::Rule(&rule.by),
-        }
-    }
-
-    fn by(self) -> By {
-        match self.by {
-            Decider::Rule(by) => by.clone(),
-            Decider::Bank(category) => By::Bank(category.to_owned()),
-            Decider::Type => By::Type,
+            by: &rule.by,
         }
     }
 }
@@ -134,16 +119,16 @@ impl<'a> Sorter<'a> {
         });
         let decided = (patterns.user(&named.key, row).map(Decided::rule))
             .or_else(|| {
-                let text = row.category.as_deref()?;
+                let banks = row.category.as_deref().and_then(Category::from_text)?;
                 Some(Decided {
-                    outcome: Outcome::Category(Category::from_text(text)?),
-                    by: Decider::Bank(text),
+                    outcome: Outcome::Category(banks),
+                    by: &By::Bank,
                 })
             })
             .or_else(|| {
                 Some(Decided {
                     outcome: Outcome::Category(row.kind?),
-                    by: Decider::Type,
+                    by: &By::Type,
                 })
             })
             .or_else(|| named.embedded.map(Decided::rule));
@@ -158,17 +143,8 @@ pub struct Sorted<'a> {
     pub row: &'a Row,
     /// Its payee, as the rules name it.
     pub name: String,
-    /// What it is sorted as; none where nothing says.
-    pub outcome: Option<Outcome>,
-    /// What decided it; none where nothing did.
-    pub by: Option<By>,
-}
-
-/// The rows within the estimate's window that are `of`'s, newest first.
-#[must_use]
-pub fn records<'a>(rows: &'a [Row], patterns: &Patterns, of: &Of) -> Vec<&'a Row> {
-    let found = sorted_records(rows, patterns, of);
-    found.into_iter().map(|sorted| sorted.row).collect()
+    /// What it is sorted as and what decided it; none where nothing did.
+    pub decided: Option<(Outcome, By)>,
 }
 
 /// The rows within the estimate's window that are `of`'s, newest first,
@@ -179,8 +155,8 @@ pub fn sorted_records<'a>(rows: &'a [Row], patterns: &Patterns, of: &Of) -> Vec<
         return Vec::new();
     };
     let wanted = match of {
-        Of::Containing(words) => words.trim().to_ascii_uppercase(),
-        _ => String::new(),
+        Of::Containing(words) => Part::new(words),
+        _ => Part::new(""),
     };
     let mut sorter = Sorter::new(patterns);
     let mut found: Vec<Sorted> = Vec::new();
@@ -193,7 +169,7 @@ pub fn sorted_records<'a>(rows: &'a [Row], patterns: &Patterns, of: &Of) -> Vec<
             Of::Payee(wanted) => is_unnamed && name == wanted,
             Of::Containing(_) => [name, &row.payee]
                 .iter()
-                .any(|text| text.to_ascii_uppercase().contains(&wanted)),
+                .any(|text| wanted.holds(&text.to_ascii_uppercase())),
             Of::Unnamed => is_unnamed,
             Of::Ignored => outcome == Some(Outcome::Ignore),
         };
@@ -201,8 +177,7 @@ pub fn sorted_records<'a>(rows: &'a [Row], patterns: &Patterns, of: &Of) -> Vec<
             found.push(Sorted {
                 row,
                 name: name.to_owned(),
-                outcome,
-                by: decided.map(Decided::by),
+                decided: decided.map(|decided| (decided.outcome, decided.by.clone())),
             });
         }
     }
@@ -236,7 +211,7 @@ pub struct Reach {
 /// window, payees named as `patterns` name them.
 #[must_use]
 pub fn reach(plan: &Plan, rows: &[Row], patterns: &Patterns, part: &str) -> Reach {
-    let part = rules::said(part.trim());
+    let part = Part::new(part.trim());
     let Some(window) = Window::of(rows).filter(|_| !part.is_empty()) else {
         return Reach::default();
     };
@@ -247,7 +222,7 @@ pub fn reach(plan: &Plan, rows: &[Row], patterns: &Patterns, part: &str) -> Reac
         let name = names
             .entry(&row.payee)
             .or_insert_with(|| patterns.name_of(&row.payee).to_ascii_uppercase());
-        if rules::contains_part(name, &part) {
+        if part.holds(name) {
             payees.insert(name.clone());
             spent += row.spent().dollars() / inflation_factor(plan, row.on.year());
         }

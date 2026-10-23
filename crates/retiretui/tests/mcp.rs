@@ -483,7 +483,7 @@ fn estimate_records_reads_exports_and_rules_by_path_and_says_what_sorted_each() 
         client.call("estimate_records", args)
     };
     let safeway = records(&mut client, json!({"payee": "safeway"}), json!({}));
-    assert_eq!(safeway["count"], 1, "{safeway}");
+    assert_eq!(safeway["records"].as_array().unwrap().len(), 1, "{safeway}");
     let record = &safeway["records"][0];
     assert_eq!(record["sorted"], "dining", "{record}");
     assert_eq!(
@@ -492,9 +492,13 @@ fn estimate_records_reads_exports_and_rules_by_path_and_says_what_sorted_each() 
     );
     assert_eq!(record["export"], "chase.csv");
     let ignored = records(&mut client, json!("ignored"), json!({}));
-    assert_eq!(ignored["count"], 2, "{ignored}");
-    let alone = records(&mut client, json!("ignored"), json!({"user_patterns": false}));
-    assert_eq!(alone["count"], 0, "{alone}");
+    assert_eq!(ignored["records"].as_array().unwrap().len(), 2, "{ignored}");
+    let alone = records(
+        &mut client,
+        json!("ignored"),
+        json!({"user_patterns": false}),
+    );
+    assert_eq!(alone["records"].as_array().unwrap().len(), 0, "{alone}");
     let income = records(&mut client, json!({"category": "income"}), json!({}));
     assert_eq!(income["records"][0]["by"], json!({"embedded": "PAYROLL"}));
     let refused = client.call_expecting_error(
