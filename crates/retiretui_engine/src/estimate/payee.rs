@@ -9,9 +9,8 @@ const REFERENCE_DIGITS: usize = 6;
 /// Uppercased, cut at its first comma, without store numbers, card
 /// suffixes, reference numbers and a trailing state, its whitespace
 /// collapsed.
-///
-/// ponytail: no city list, so a payee written with its city and without
-/// are two payees; the pattern table matches either by substring.
+// ponytail: no city list, so a payee written with its city and without
+// are two payees; the pattern table matches either by substring.
 #[must_use]
 pub fn normalize(text: &str) -> String {
     let upper = text.to_ascii_uppercase();
