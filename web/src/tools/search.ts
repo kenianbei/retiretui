@@ -18,6 +18,8 @@ export interface ToolSearch extends YearSearch {
   run?: string;
   /** Whether the tool's own settings are open in their form. */
   edit?: true;
+  /** Whether a tool's second form, its settings beside an item's, is open. */
+  editSettings?: true;
   /** The filing status whose tax tables are shown; the plan's where none. */
   status?: string;
   /** The state whose tax tables are shown; the plan's that year where none. */
@@ -48,6 +50,9 @@ export function toolSearch(search: Record<string, unknown>): ToolSearch {
     ...(person !== undefined && person >= 0 && { person }),
     ...(run !== undefined && { run }),
     ...((search.edit === true || search.edit === "true") && { edit: true }),
+    ...((search.editSettings === true || search.editSettings === "true") && {
+      editSettings: true,
+    }),
     ...(status && { status }),
     ...(state && { state }),
   };

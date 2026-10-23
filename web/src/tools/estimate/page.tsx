@@ -25,17 +25,32 @@ const WORDS = estimateWords();
 /** The exports read this session, kept across the pages shown. */
 const ESTIMATOR = new Estimator();
 
-/** The column a phone's row shows beside a row's category. */
-const PER_YEAR = 3;
+/** The column a phone's row shows beside a row's name. */
+const PER_YEAR = 2;
 
-/** Each row of the estimate, keyed by its place. */
+/** How the plan's `[estimate]` table is read out, opened and held. */
+const ESTIMATE_SETTINGS: Settings = {
+  heading: "Settings",
+  read: (document) => document.estimateSettingsRead(),
+  open: (document) => document.openEstimateSettings(),
+  apply: (document, editor) => {
+    document.applyEstimateSettings(editor);
+  },
+  flag: "editSettings",
+};
+
+/** Each row of the estimate, keyed by its place, its nesting a mark. */
 function rowsOf(view: EstimateView): OptionRow<EstimateRow>[] {
-  return view.rows.map((row, at) => ({
-    key: String(at),
-    cells: row.cells,
-    narrow: row.cells[0],
-    option: row,
-  }));
+  return view.rows.map((row, at) => {
+    const name = row.cells[0].trimStart();
+    return {
+      key: String(at),
+      cells: [name, ...row.cells.slice(1)],
+      narrow: name,
+      isNested: row.is_nested,
+      option: row,
+    };
+  });
 }
 
 /** The proposals, as they are taken or written. */
@@ -83,9 +98,17 @@ export function EstimatePage({ title }: { title: string }) {
   const rows = useMemo(() => (view ? rowsOf(view) : []), [view]);
   const at = Math.min(search.row ?? 0, rows.length - 1);
   const highlighted = rows[at]?.option;
+  const heading = useMemo(
+    () =>
+      reading.document && highlighted
+        ? (ESTIMATOR.readRow(reading.document, at)[0]?.label ?? "Row")
+        : "Row",
+    [reading, highlighted, at],
+  );
   const proposal: Settings = useMemo(
     () => ({
-      heading: highlighted?.is_proposal ? "Proposal" : "Payee",
+      heading,
+      isEditable: highlighted?.is_editable ?? false,
       read: (document) => ESTIMATOR.readRow(document, at),
       open: (document) => ESTIMATOR.openRow(document, at),
       apply: (document, editor) => {
@@ -93,7 +116,7 @@ export function EstimatePage({ title }: { title: string }) {
         refresh();
       },
     }),
-    [highlighted, at, refresh],
+    [heading, highlighted, at, refresh],
   );
 
   return (
@@ -164,7 +187,7 @@ export function EstimatePage({ title }: { title: string }) {
             columns={WORDS.columns}
             rows={rows}
             narrowFigure={PER_YEAR}
-            words={2}
+            words={1}
             highlighted={highlighted}
             highlight={(row) => {
               const place = rows.findIndex((each) => each.option === row);
@@ -177,7 +200,9 @@ export function EstimatePage({ title }: { title: string }) {
           {highlighted && <SettingsRead settings={proposal} />}
         </section>
       )}
+      <SettingsRead settings={ESTIMATE_SETTINGS} />
       {search.edit && highlighted && <SettingsForm settings={proposal} />}
+      {search.editSettings && <SettingsForm settings={ESTIMATE_SETTINGS} />}
     </div>
   );
 }

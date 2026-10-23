@@ -13,6 +13,8 @@ export interface OptionRow<T> {
   cells: string[];
   /** What a phone's row names it by. */
   narrow: string;
+  /** Whether it is one of those the row above it gathers. */
+  isNested?: boolean;
   /** The option; `null` for the plan's own row. */
   option: T | null;
 }
@@ -62,7 +64,13 @@ export function Options<T>({
         cell: ({ row }) => {
           const text = row.original.cells[at];
           return at === 0 ? (
-            <span title={text} className="block max-w-72 truncate">
+            <span
+              title={text}
+              className={cn(
+                "block max-w-72 truncate",
+                row.original.isNested && "text-muted-foreground pl-4",
+              )}
+            >
               {text}
             </span>
           ) : (
@@ -90,7 +98,14 @@ export function Options<T>({
           const isChosen = row.option === highlighted;
           const content = (
             <>
-              <span className="font-medium">{row.narrow}</span>
+              <span
+                className={cn(
+                  "font-medium",
+                  row.isNested && "text-muted-foreground pl-4 font-normal",
+                )}
+              >
+                {row.narrow}
+              </span>
               <span className="tabular-nums">{row.cells[narrowFigure]}</span>
             </>
           );

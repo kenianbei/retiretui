@@ -48,13 +48,14 @@ test("exports are read, a proposal edited, and the proposals taken and written",
   const proposals = page.getByRole("region", { name: "Proposals" });
   if (!isPhone(testInfo)) {
     const rows = proposals.getByRole("table").locator("tbody tr");
-    await expect(rows).toHaveCount(2);
-    await expect(rows.nth(0)).toContainText("Groceries");
-    await expect(rows.nth(1)).toContainText("Utilities");
+    await expect(rows).toHaveCount(4);
+    await expect(rows.nth(0)).toContainText("Groceries (new)");
+    await expect(rows.nth(1)).toContainText("Groceries");
+    await expect(rows.nth(2)).toContainText("Utilities (new)");
   }
-  await rowNamed(page, testInfo, "Utilities").click();
-  await page.waitForURL(/row=1/);
-  const readOut = page.getByRole("region", { name: "Proposal", exact: true });
+  await rowNamed(page, testInfo, "Utilities (new)").click();
+  await page.waitForURL(/row=2/);
+  const readOut = page.getByRole("region", { name: "Expense", exact: true });
   await expect(readOut).toContainText("CITY OF SAN JOSE WATER");
   await readOut.getByRole("link", { name: "Edit" }).click();
   await page.waitForURL(/edit=true/);
@@ -103,4 +104,44 @@ test("an export that does not read is said", async ({ page }) => {
     buffer: Buffer.from("just a line\n"),
   });
   await expect(page.getByRole("alert")).toContainText("notes.csv");
+});
+
+test("the plan's estimate settings fold categories into its expenses", async ({
+  page,
+}) => {
+  await seed(
+    page,
+    { "/retired.toml": RETIRED },
+    "/retired.toml",
+    "#/tools/spending-estimate",
+  );
+  const picker = page.getByLabel("Bank export");
+  await picker.setInputFiles(CHASE);
+  await picker.setInputFiles(OFX);
+  const proposals = page.getByRole("region", { name: "Proposals" });
+  await expect(
+    proposals.getByText("Utilities (new)").filter({ visible: true }),
+  ).toBeVisible();
+
+  const settings = page.getByRole("region", { name: "Settings" });
+  await expect(settings).toContainText("New ones for large categories");
+  await settings.getByRole("link", { name: "Edit" }).click();
+  await page.waitForURL(/editSettings=true/);
+  const sheet = page.getByRole("dialog");
+  await sheet
+    .getByLabel("Lean", { exact: true })
+    .selectOption({ label: "Existing expenses only" });
+  await sheet.getByRole("button", { name: "Apply" }).click();
+  await expect(settings).toContainText("Existing expenses only");
+  await expect(
+    proposals.getByText("Housing").filter({ visible: true }).first(),
+  ).toBeVisible();
+  await expect(
+    proposals.getByText("Other (new bucket)").filter({ visible: true }),
+  ).toBeVisible();
+  await expect(proposals.getByText("Utilities (new)")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Undo" }).first(),
+  ).toBeEnabled();
+  await expectAccessible(page);
 });
