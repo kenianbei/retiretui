@@ -76,6 +76,15 @@ test("exports are read, a proposal edited, and the proposals taken and written",
   await expect(records).toContainText("2026-10-");
   await expect(records).toContainText("$");
   await expectAccessible(page);
+  await records
+    .getByRole("button", { name: /^Ignore / })
+    .first()
+    .click();
+  await expect(page.getByText(/1 record ignored/)).toBeVisible();
+  await rowNamed(page, testInfo, "Ignored").click();
+  const ignored = page.getByRole("table", { name: "Records: ignored" });
+  await ignored.getByRole("button", { name: /^Count / }).click();
+  await expect(page.getByText(/record ignored/)).toHaveCount(0);
 
   await proposals.getByRole("button", { name: "Write as a scenario" }).click();
   const asked = page.getByRole("alertdialog");

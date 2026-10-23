@@ -120,7 +120,7 @@ fn open_row(estimator: &Estimator, document: &mut Document, at: usize) -> Result
 
 /// Applies what `editor` holds to the row at `at`: into the proposal, a
 /// moved category into the plan as a step of its history, or a payee
-/// named for the session.
+/// named, merged or ignored for the session.
 fn apply_row(
     estimator: &mut Estimator,
     document: &mut Document,
@@ -207,6 +207,21 @@ impl JsEstimator {
     #[wasm_bindgen(js_name = behindRow, unchecked_return_type = "Behind")]
     pub fn behind_row(&self, at: usize) -> Result<JsValue, JsError> {
         to_js(&self.0.behind(at, MoneyForm::Full).unwrap_or_default())
+    }
+
+    /// Ignores the record at `index` behind the row at `at` for the
+    /// session, or counts it again behind the ignored row, answering what
+    /// was done.
+    ///
+    /// # Errors
+    ///
+    /// Where no record lies there, or the change cannot be made.
+    #[wasm_bindgen(js_name = toggleRecord)]
+    pub fn toggle_record(&mut self, at: usize, index: usize) -> Result<String, JsError> {
+        self.0
+            .toggle_record(at, index)
+            .map(|change| change.said())
+            .map_err(refused)
     }
 
     /// The row at `at` open in its form, its answers held beside
@@ -337,6 +352,14 @@ mod tests {
         );
         assert!(shown.question.is_some());
         assert_eq!(read(&estimator, 0)[0].label, "Expense");
+        let said = estimator.toggle_record(1, 0).expect("a record").said();
+        assert!(said.ends_with("is ignored"), "{said}");
+        view(&mut estimator, &document);
+        assert_eq!(estimator.estimate().ignored_rows, 1);
+        let ignored = listed(estimator.estimate()).count() - 1;
+        estimator.toggle_record(ignored, 0).expect("counted again");
+        view(&mut estimator, &document);
+        assert_eq!(estimator.estimate().ignored_rows, 0);
         assert_eq!(
             estimator.behind(1, MoneyForm::Full).expect("a row").columns,
             ["Date", "Payee", "Amount"]

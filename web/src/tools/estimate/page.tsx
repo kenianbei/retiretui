@@ -56,11 +56,21 @@ function rowsOf(view: EstimateView): OptionRow<EstimateRow>[] {
   });
 }
 
-/** What lies behind the highlighted row, its last column the figure. */
-function BehindTable({ behind }: { behind: Behind }) {
+/**
+ * What lies behind the highlighted row, its last column the figure, and
+ * where they are records a button on each that ignores it or counts it
+ * again.
+ */
+function BehindTable({
+  behind,
+  toggle,
+}: {
+  behind: Behind;
+  toggle: (index: number) => void;
+}) {
   const columns = useMemo(() => {
     const column = columnsFor<string[]>();
-    return behind.columns.map((header, at) =>
+    const cells = behind.columns.map((header, at) =>
       column.display({
         id: String(at),
         header,
@@ -68,7 +78,26 @@ function BehindTable({ behind }: { behind: Behind }) {
         cell: ({ row }) => row.original[at],
       }),
     );
-  }, [behind.columns]);
+    const word = behind.toggle;
+    if (!word) return cells;
+    const action = column.display({
+      id: "toggle",
+      header: () => <span className="sr-only">Record</span>,
+      cell: ({ row }) => (
+        <Button
+          size="sm"
+          variant="ghost"
+          aria-label={`${word} ${row.original[1] ?? ""} on ${row.original[0] ?? ""}`}
+          onClick={() => {
+            toggle(row.index);
+          }}
+        >
+          {word}
+        </Button>
+      ),
+    });
+    return [...cells, action];
+  }, [behind.columns, behind.toggle, toggle]);
   return (
     <div className="min-w-0 space-y-3">
       <h3 className="font-semibold">{behind.title}</h3>
@@ -140,6 +169,18 @@ export function EstimatePage({ title }: { title: string }) {
       },
     }),
     [highlighted, at, refresh],
+  );
+  const toggleRecord = useCallback(
+    (index: number) => {
+      try {
+        ESTIMATOR.toggleRecord(at, index);
+        setProblem(null);
+      } catch (thrown) {
+        setProblem(messageOf(thrown));
+      }
+      refresh();
+    },
+    [at, refresh],
   );
   const behind = useMemo(
     () => (view && highlighted ? ESTIMATOR.behindRow(at) : null),
@@ -225,7 +266,9 @@ export function EstimatePage({ title }: { title: string }) {
             }}
           />
           {highlighted && <SettingsRead settings={proposal} />}
-          {behind && behind.rows.length > 0 && <BehindTable behind={behind} />}
+          {behind && behind.rows.length > 0 && (
+            <BehindTable behind={behind} toggle={toggleRecord} />
+          )}
         </section>
       )}
       <SettingsRead settings={ESTIMATE_SETTINGS} />
