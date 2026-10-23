@@ -10,12 +10,12 @@ export type EstimateView = {
  */
 files: Array<[string, string]>, 
 /**
- * The window read, its income and transfers, or what to add.
+ * The window read, its spending, income and transfers, or what to add.
  */
 summary: string, 
 /**
- * Each expense, what it gathers beneath it, then the payees nothing
- * names.
+ * Each expense with what it gathers beneath it, the bucket's last the
+ * payees nothing names.
  */
 rows: Array<EstimateRow>, 
 /**

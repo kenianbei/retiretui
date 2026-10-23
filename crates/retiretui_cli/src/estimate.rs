@@ -75,8 +75,8 @@ pub fn run(args: &EstimateArgs) -> anyhow::Result<()> {
 }
 
 /// Each expense with what it gathers beneath it, the bucket's last the
-/// payees nothing names, under the summary line; the first column left-aligned so the
-/// nesting shows.
+/// payees nothing names, under the summary line; the first column
+/// left-aligned so the nesting shows.
 fn estimate_text(found: &Estimate) -> String {
     let header: Vec<String> = estimate::COLUMNS.map(str::to_lowercase).to_vec();
     let mut rows: Vec<Vec<String>> = listed(found)

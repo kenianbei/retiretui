@@ -41,10 +41,10 @@ pub struct EstimateRow {
 pub struct EstimateView {
     /// Each export's name and how many rows it holds, in words.
     pub files: Vec<(String, String)>,
-    /// The window read, its income and transfers, or what to add.
+    /// The window read, its spending, income and transfers, or what to add.
     pub summary: String,
-    /// Each expense, what it gathers beneath it, then the payees nothing
-    /// names.
+    /// Each expense with what it gathers beneath it, the bucket's last the
+    /// payees nothing names.
     pub rows: Vec<EstimateRow>,
     /// What is asked before the proposals are taken; none where there are
     /// none.
