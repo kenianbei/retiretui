@@ -2,7 +2,7 @@
 //! record ignored or counted again, a payee ignored, said to be for a
 //! category or named, and every payee containing some words sorted alike.
 
-use retiretui_engine::estimate::{Category, Reach, normalize, reach, records};
+use retiretui_engine::estimate::{Category, Reach, Row, normalize, reach, records};
 
 use serde::Deserialize;
 
@@ -14,7 +14,7 @@ const NO_PAYEE: &str = "no payee here to act on";
 const NO_WORDS: &str = "say which words the payees contain";
 
 /// What can be done with a record or a payee.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(rename = "RecordAction"))]
 #[serde(rename_all = "kebab-case")]
 pub enum Action {
@@ -30,15 +30,44 @@ pub enum Action {
     Name(String),
 }
 
+/// How many of a payee's words a rule on its words starts from.
+const STARTING_WORDS: usize = 2;
+
 /// How far a rule on some words reaches, in words: `4 payees, $1,230 a
 /// year`.
 #[must_use]
-pub fn reached(reach: Reach, form: MoneyForm) -> String {
+pub fn reached(reach: Reach) -> String {
     format!(
         "{}, {} a year",
         counted(reach.payees, "payee", "payees"),
-        form.money(reach.spent)
+        MoneyForm::Full.money(reach.spent)
     )
+}
+
+/// The words a rule on payees like `payee` starts from: its first two.
+#[must_use]
+pub fn starting_words(payee: &str) -> String {
+    let words: Vec<&str> = payee.split_whitespace().take(STARTING_WORDS).collect();
+    words.join(" ")
+}
+
+/// What a record's menu offers, in its order: the record ignored or
+/// counted again, its payee for a category, payees containing its words,
+/// every record of the payee ignored, and the payee named.
+#[must_use]
+pub fn record_menu(payee: &str, is_ignored: bool) -> [String; 5] {
+    let record = if is_ignored {
+        "Count this record again"
+    } else {
+        "Ignore this record"
+    };
+    [
+        record.to_owned(),
+        format!("{payee} is…"),
+        "Payees containing…".to_owned(),
+        format!("Ignore every {payee} record"),
+        format!("Name {payee}…"),
+    ]
 }
 
 /// The payee an action is done to: as the rules name it, and as the
@@ -104,20 +133,24 @@ impl Estimator {
         })
     }
 
+    /// The record at `index` behind the row at `at`, and the row.
+    fn picked(&self, at: usize, index: usize) -> Option<(Listed<'_>, &Row)> {
+        let row = self.row(at)?;
+        let found = records(self.exports.rows(), &self.patterns, &row.of()?);
+        Some((row, found.get(index)?))
+    }
+
     /// The payee of the record at `record` behind the row at `at`, else of
     /// the row itself.
     fn target(&self, at: usize, record: Option<usize>) -> Result<Target, String> {
-        let row = self.row(at).ok_or(NO_PAYEE)?;
         if let Some(index) = record {
-            let of = row.of().ok_or(NO_PAYEE)?;
-            let found = records(self.exports.rows(), &self.patterns, &of);
-            let picked = found.get(index).ok_or(NO_PAYEE)?;
+            let (_, picked) = self.picked(at, index).ok_or(NO_PAYEE)?;
             return Ok(Target {
                 named: self.patterns.name_of(&picked.payee),
                 normalized: normalize(&picked.payee),
             });
         }
-        match row {
+        match self.row(at).ok_or(NO_PAYEE)? {
             Listed::Payee(unknown) => Ok(Target {
                 named: unknown.payee.clone(),
                 normalized: unknown.payee.clone(),
@@ -129,10 +162,7 @@ impl Estimator {
     /// The record at `index` behind the row at `at` ignored, or counted
     /// again behind the ignored row.
     fn ignoring(&self, at: usize, index: usize) -> Result<Change, String> {
-        let row = self.row(at).ok_or(NO_RECORD)?;
-        let of = row.of().ok_or(NO_RECORD)?;
-        let found = records(self.exports.rows(), &self.patterns, &of);
-        let picked = found.get(index).ok_or(NO_RECORD)?;
+        let (row, picked) = self.picked(at, index).ok_or(NO_RECORD)?;
         let record = Record {
             payee: self.patterns.name_of(&picked.payee),
             on: picked.on,

@@ -5,8 +5,8 @@
 //! written as a scenario.
 
 use retiretui_client::estimate::{
-    ABOUT, Action, Applied, COLUMNS, reached, EXTENSIONS, Estimator, NOTHING_READ, SETTINGS_FORM, assign,
-    listed, overlay, summary, take_question, taken,
+    ABOUT, Action, Applied, COLUMNS, EXTENSIONS, Estimator, NOTHING_READ, SETTINGS_FORM, assign,
+    listed, overlay, reached, record_menu, starting_words, summary, take_question, taken,
 };
 use retiretui_client::forms::details::{self, ReadRow};
 use retiretui_client::forms::edit::Entry;
@@ -236,13 +236,7 @@ impl JsEstimator {
     /// How far a rule on payees containing `words` reaches, in words.
     #[must_use]
     pub fn reach(&self, words: &str) -> String {
-        reached(self.0.reach(words), MoneyForm::Full)
-    }
-
-    /// The payee an action at `at`, or at `record` behind it, is done to.
-    #[must_use]
-    pub fn payee(&self, at: usize, record: Option<usize>) -> Option<String> {
-        self.0.payee(at, record)
+        reached(self.0.reach(words))
     }
 
     /// The row at `at` open in its form, its answers held beside
@@ -325,6 +319,22 @@ impl JsDocument {
     pub fn estimate_settings(&self) -> JsEditor {
         JsEditor(Entry::open(SETTINGS_FORM, self.0.draft(), Some(0)))
     }
+}
+
+/// What a record's menu offers for `payee`, in its order: the record
+/// ignored or counted again, the payee for a category, payees containing
+/// its words, every record of the payee ignored, and the payee named.
+#[wasm_bindgen(js_name = recordMenu)]
+#[must_use]
+pub fn record_menu_words(payee: &str, is_ignored: bool) -> Vec<String> {
+    record_menu(payee, is_ignored).to_vec()
+}
+
+/// The words a rule on payees like `payee` starts from.
+#[wasm_bindgen(js_name = startingWords)]
+#[must_use]
+pub fn starting_words_of(payee: &str) -> String {
+    starting_words(payee)
 }
 
 /// What the Spending Estimate tool says of itself.

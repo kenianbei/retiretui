@@ -133,7 +133,7 @@ export function EstimatePage({ title }: { title: string }) {
         refresh();
       },
       ask: setAsking,
-      payee: (record) => ESTIMATOR.payee(at, record) ?? "",
+      reach: (words) => ESTIMATOR.reach(words),
     }),
     [at, refresh],
   );
@@ -237,7 +237,6 @@ export function EstimatePage({ title }: { title: string }) {
                 setAsking(null);
               }}
               acts={acts}
-              reach={(words) => ESTIMATOR.reach(words)}
             />
           )}
         </section>

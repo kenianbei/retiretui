@@ -17,7 +17,11 @@ columns: Array<string>,
  */
 rows: Array<Array<string>>, 
 /**
- * What choosing one of the records does - ignores it or counts it
- * again - where they are records.
+ * Whether the records are those ignored; none where they are an
+ * expense's payees rather than records.
  */
-toggle: string | null, };
+ignored: boolean | null, 
+/**
+ * Each record's payee, as the rules name it.
+ */
+payees: Array<string>, };

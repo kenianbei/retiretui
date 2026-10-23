@@ -128,6 +128,11 @@ pub(super) fn best<T>(found: impl Iterator<Item = (u32, T)>) -> Option<T> {
         .map(|(_, it)| it)
 }
 
+/// Words as a rule matches them against a payee.
+pub(super) fn said(words: &str) -> String {
+    starred_as_spaces(&words.trim().to_ascii_uppercase())
+}
+
 /// The payee keys of a rule or a merge, at most one of them stated.
 struct PayeeText {
     r#match: Option<String>,
@@ -138,7 +143,7 @@ struct PayeeText {
 
 impl PayeeText {
     fn test(self) -> Result<PayeeTest, String> {
-        let said = |text: String| starred_as_spaces(&text.to_ascii_uppercase());
+        let said = |text: String| said(&text);
         let tests = [
             self.r#match.map(|text| Ok(PayeeTest::Contains(said(text)))),
             self.is.map(|text| Ok(PayeeTest::Is(said(text)))),

@@ -13,9 +13,6 @@ use crate::present::{MoneyForm, money};
 const PAYEE_COLUMNS: [&str; 2] = ["Payee", "Per year"];
 /// The columns a row's records are tabled under.
 const RECORD_COLUMNS: [&str; 3] = ["Date", "Payee", "Amount"];
-/// What choosing a record does, where it is counted and where ignored.
-const IGNORE_RECORD: &str = "Ignore";
-const COUNT_RECORD: &str = "Count";
 
 /// What lies behind a row.
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize)]
@@ -27,9 +24,11 @@ pub struct Behind {
     pub columns: Vec<String>,
     /// Each record's cells.
     pub rows: Vec<Vec<String>>,
-    /// What choosing one of the records does - ignores it or counts it
-    /// again - where they are records.
-    pub toggle: Option<&'static str>,
+    /// Whether the records are those ignored; none where they are an
+    /// expense's payees rather than records.
+    pub ignored: Option<bool>,
+    /// Each record's payee, as the rules name it.
+    pub payees: Vec<String>,
 }
 
 impl Listed<'_> {
@@ -54,13 +53,21 @@ impl Listed<'_> {
         let Some(of) = self.of() else {
             return Behind::default();
         };
-        let (what, toggle) = match &of {
-            Of::Category(category) => (category.title(), IGNORE_RECORD),
-            Of::Payee(payee) => (payee.clone(), IGNORE_RECORD),
-            Of::Unnamed => (UNNAMED.to_owned(), IGNORE_RECORD),
-            Of::Ignored => (IGNORED.to_lowercase(), COUNT_RECORD),
+        let what = match &of {
+            Of::Category(category) => category.title(),
+            Of::Payee(payee) => payee.clone(),
+            Of::Unnamed => UNNAMED.to_owned(),
+            Of::Ignored => IGNORED.to_lowercase(),
         };
-        records_behind(&what, &records(rows, patterns, &of), toggle)
+        let found = records(rows, patterns, &of);
+        Behind {
+            ignored: Some(of == Of::Ignored),
+            payees: found
+                .iter()
+                .map(|row| patterns.name_of(&row.payee))
+                .collect(),
+            ..records_behind(&what, &found)
+        }
     }
 }
 
@@ -74,13 +81,14 @@ fn payees_behind(proposal: &Proposal, form: MoneyForm) -> Behind {
             .iter()
             .map(|(payee, amount)| vec![payee.clone(), form.money(*amount)])
             .collect(),
-        toggle: None,
+        ignored: None,
+        payees: Vec::new(),
     }
 }
 
 /// `records` of `what`, each its date, its payee as the bank wrote it and
-/// what it spent, a credit negative, and `toggle` what choosing one does.
-fn records_behind(what: &str, records: &[&Row], toggle: &'static str) -> Behind {
+/// what it spent, a credit negative.
+fn records_behind(what: &str, records: &[&Row]) -> Behind {
     Behind {
         title: format!("Records: {what}"),
         columns: RECORD_COLUMNS.map(str::to_owned).to_vec(),
@@ -94,7 +102,8 @@ fn records_behind(what: &str, records: &[&Row], toggle: &'static str) -> Behind 
                 ]
             })
             .collect(),
-        toggle: Some(toggle),
+        ignored: None,
+        payees: Vec::new(),
     }
 }
 

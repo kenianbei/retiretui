@@ -250,8 +250,8 @@ fn a_record_is_ignored_and_counted_again_on_the_ignored_row() {
     assert!(summary(found, MoneyForm::Full).ends_with("; 1 record ignored, $480 a year."));
     let at = listed(found).count() - 1;
     assert_eq!(
-        estimator.behind(at, MoneyForm::Full).unwrap().toggle,
-        Some("Count")
+        estimator.behind(at, MoneyForm::Full).unwrap().ignored,
+        Some(true)
     );
     assert!(matches!(
         estimator.act(at, Some(0), Action::IgnoreRecord).unwrap(),

@@ -23,9 +23,13 @@ interface NameDialogProps {
   /** Why the last name given was refused. */
   problem?: string | null;
   named: (name: string) => void;
+  /** What the field asks for. */
+  label?: string;
+  /** Said and asked beneath the field. */
+  children?: ReactNode;
 }
 
-/** Asks for a file name, and hands it over once one is given. */
+/** Asks for a file name, or `label`, and hands it over once one is given. */
 export function NameDialog({
   name,
   setName,
@@ -34,6 +38,8 @@ export function NameDialog({
   verb,
   problem,
   named,
+  label = "File name",
+  children,
 }: NameDialogProps) {
   return (
     <AlertDialog
@@ -60,7 +66,7 @@ export function NameDialog({
             </p>
           )}
           <label className="grid gap-1.5 text-sm font-medium">
-            File name
+            {label}
             <input
               autoFocus
               className={INPUT}
@@ -70,6 +76,7 @@ export function NameDialog({
               }}
             />
           </label>
+          {children}
           <AlertDialogFooter>
             <AlertDialogCancel type="button">Cancel</AlertDialogCancel>
             <Button type="submit" disabled={name?.trim() === ""}>

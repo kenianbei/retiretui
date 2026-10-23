@@ -82,18 +82,14 @@ test("exports are read, a proposal edited, and the proposals taken and written",
       .click();
     return page.getByRole("menu");
   };
-  await (
-    await menuOf(records)
-  )
+  await (await menuOf(records))
     .getByRole("menuitem", { name: "Ignore this record" })
     .click();
   await expect(page.getByText(/1 record ignored/)).toBeVisible();
   await expect(page.getByRole("status")).toContainText("is ignored");
   await rowNamed(page, testInfo, "Ignored").click();
   const ignored = page.getByRole("table", { name: "Records: ignored" });
-  await (
-    await menuOf(ignored)
-  )
+  await (await menuOf(ignored))
     .getByRole("menuitem", { name: "Count this record again" })
     .click();
   await expect(page.getByText(/record ignored/)).toHaveCount(0);
@@ -106,9 +102,7 @@ test("exports are read, a proposal edited, and the proposals taken and written",
   await expectAccessible(page);
   await rowNamed(page, testInfo, "Pets").last().click();
   const pets = page.getByRole("table", { name: "Records: Pets" });
-  await (
-    await menuOf(pets)
-  )
+  await (await menuOf(pets))
     .getByRole("menuitem", { name: "Payees containing…" })
     .click();
   const words = page.getByRole("alertdialog");

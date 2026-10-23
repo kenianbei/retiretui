@@ -5,10 +5,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use serde::Serialize;
-
-use super::payee::starred_as_spaces;
-use super::rules::Outcome;
+use super::rules::{self, Outcome};
 use super::{Category, Patterns, Row};
 use crate::plan::{Dollars, Plan, PlanDate};
 use crate::project::inflation_factor;
@@ -134,8 +131,7 @@ pub fn records<'a>(rows: &'a [Row], patterns: &Patterns, of: &Of) -> Vec<&'a Row
 }
 
 /// How far a rule matching payees that contain some words reaches.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize)]
-#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct Reach {
     /// How many payees, by the names they are listed under.
     pub payees: usize,
@@ -147,7 +143,7 @@ pub struct Reach {
 /// window, payees named as `patterns` name them.
 #[must_use]
 pub fn reach(plan: &Plan, rows: &[Row], patterns: &Patterns, part: &str) -> Reach {
-    let part = starred_as_spaces(&part.trim().to_ascii_uppercase());
+    let part = rules::said(part);
     let Some(window) = Window::of(rows).filter(|_| !part.is_empty()) else {
         return Reach::default();
     };

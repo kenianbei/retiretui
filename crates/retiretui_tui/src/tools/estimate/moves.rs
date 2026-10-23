@@ -7,8 +7,7 @@ use bevy_app::{App, Startup};
 use bevy_ecs::prelude::{Commands, In, Query, Res, ResMut, Resource, With, World};
 use bevy_input_focus::InputFocus;
 use plurimus::widgets::ActiveDescendant;
-use retiretui_client::estimate::{Action, Listed, reached};
-use retiretui_client::present::MoneyForm;
+use retiretui_client::estimate::{Action, Listed, reached, record_menu, starting_words};
 use retiretui_engine::estimate::Category;
 
 use super::edits::remember;
@@ -27,8 +26,6 @@ pub const PICK_CATEGORY: &str = "pick-category";
 
 const NOTHING_HERE: &str = "highlight a record, or an unnamed payee's row, first";
 const NO_WORDS: &str = "type the words the payees contain first";
-/// How many of the payee's words a rule on its words starts from.
-const STARTING_WORDS: usize = 2;
 
 pub fn plugin(app: &mut App) {
     app.init_resource::<Acting>();
@@ -36,7 +33,7 @@ pub fn plugin(app: &mut App) {
 }
 
 /// The pickers moving spending opens.
-#[derive(Resource, Clone, Copy)]
+#[derive(Resource)]
 pub struct MovePickers {
     categories: Picker,
     actions: Picker,
@@ -45,10 +42,11 @@ pub struct MovePickers {
 }
 
 /// What a picker acts on: the row, and the record behind it where there
-/// is one, and the words or name typed so far.
+/// is one, its payee, and the words or name typed so far.
 #[derive(Resource, Default)]
 pub struct Acting {
     target: Option<(usize, Option<usize>)>,
+    payee: String,
     words: Option<String>,
     name: String,
 }
@@ -144,14 +142,15 @@ pub fn ignore_payee(
 
 /// Opens `picker` over `target`, with `query` typed.
 fn open(
-    (acting, picking): (&mut Acting, &mut Picking),
+    (acting, picking, held): (&mut Acting, &mut Picking, &Held),
     target: Option<(usize, Option<usize>)>,
     (picker, query): (Picker, &str),
 ) -> Outcome {
-    if target.is_none() {
+    let Some((at, record)) = target else {
         return Outcome::Refused(NOTHING_HERE.to_owned());
-    }
+    };
     acting.target = target;
+    acting.payee = held.0.payee(at, record).unwrap_or_default();
     picking.open_with(picker, query);
     Outcome::Done
 }
@@ -165,7 +164,7 @@ pub fn move_payee(
     acting.words = None;
     let target = target(&keyboard, *cursor, &held);
     open(
-        (&mut acting, &mut picking),
+        (&mut acting, &mut picking, &held),
         target,
         (pickers.categories, ""),
     )
@@ -178,7 +177,11 @@ pub fn record_actions(
     (pickers, mut acting, mut picking): (Res<MovePickers>, ResMut<Acting>, ResMut<Picking>),
 ) -> Outcome {
     let target = target(&keyboard, *cursor, &held).filter(|(_, record)| record.is_some());
-    open((&mut acting, &mut picking), target, (pickers.actions, ""))
+    open(
+        (&mut acting, &mut picking, &held),
+        target,
+        (pickers.actions, ""),
+    )
 }
 
 /// The `move-containing` command: types the words payees like the one
@@ -189,12 +192,12 @@ pub fn move_containing(
 ) -> Outcome {
     let target = target(&keyboard, *cursor, &held);
     let payee = target.and_then(|(at, record)| held.0.payee(at, record));
-    let words: Vec<&str> = payee
-        .iter()
-        .flat_map(|payee| payee.split_whitespace())
-        .collect();
-    let start = words[..words.len().min(STARTING_WORDS)].join(" ");
-    open((&mut acting, &mut picking), target, (pickers.words, &start))
+    let start = starting_words(&payee.unwrap_or_default());
+    open(
+        (&mut acting, &mut picking, &held),
+        target,
+        (pickers.words, &start),
+    )
 }
 
 /// The `name-payee` command: types the name the payee under the keyboard
@@ -204,7 +207,11 @@ pub fn name_payee(
     (pickers, mut acting, mut picking): (Res<MovePickers>, ResMut<Acting>, ResMut<Picking>),
 ) -> Outcome {
     let target = target(&keyboard, *cursor, &held);
-    open((&mut acting, &mut picking), target, (pickers.name, ""))
+    open(
+        (&mut acting, &mut picking, &held),
+        target,
+        (pickers.name, ""),
+    )
 }
 
 /// The `pick-category` command: picks the category the payees containing
@@ -252,36 +259,32 @@ fn chose_category(
     }
 }
 
-/// What can be done with a record, in the menu's order.
-const RECORD_MENU: [(&str, &str); 5] = [
-    ("Ignore this record", IGNORE),
-    ("is…", MOVE_PAYEE),
-    ("Payees containing…", MOVE_CONTAINING),
-    ("Ignore every record of", IGNORE_PAYEE),
-    ("Name…", NAME_PAYEE),
+/// The command each of a record's menu items runs, in its order.
+const RECORD_MENU: [&str; 5] = [
+    IGNORE,
+    MOVE_PAYEE,
+    MOVE_CONTAINING,
+    IGNORE_PAYEE,
+    NAME_PAYEE,
 ];
 
 fn list_actions(In(query): In<String>, acting: Res<Acting>, held: Res<Held>) -> Vec<Offered> {
-    let Some((at, record)) = acting.target else {
+    let Some((at, _)) = acting.target else {
         return Vec::new();
     };
-    let payee = held.0.payee(at, record).unwrap_or_default();
     let is_ignored = matches!(held.0.row(at), Some(Listed::Ignored { .. }));
-    let offered = RECORD_MENU.iter().enumerate().map(|(id, (label, _))| {
-        let text = match id {
-            0 if is_ignored => "Count this record again".to_owned(),
-            1 => format!("{payee} {label}"),
-            3 => format!("{label} {payee}"),
-            4 => format!("Name {payee}…"),
-            _ => (*label).to_owned(),
-        };
-        Offered::new(id, text)
-    });
-    ranked(&query, offered)
+    let labels = record_menu(&acting.payee, is_ignored);
+    ranked(
+        &query,
+        labels
+            .into_iter()
+            .enumerate()
+            .map(|(id, text)| Offered::new(id, text)),
+    )
 }
 
 fn chose_action(In(id): In<usize>, mut commands: Commands) {
-    if let Some(&(_, name)) = RECORD_MENU.get(id) {
+    if let Some(&name) = RECORD_MENU.get(id) {
         command::defer_named(&mut commands, name);
     }
 }
@@ -292,7 +295,7 @@ fn list_words(In(query): In<String>, mut acting: ResMut<Acting>, held: Res<Held>
     let Some(words) = &acting.words else {
         return Vec::new();
     };
-    let said = reached(held.0.reach(words), MoneyForm::Full);
+    let said = reached(held.0.reach(words));
     vec![Offered::new(0, said)]
 }
 
