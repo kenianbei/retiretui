@@ -21,21 +21,18 @@ use plurimus::core::UiWidget;
 use plurimus::core::ratatui_core::style::Style;
 use plurimus::ui::ScrollArea;
 use plurimus::widgets::ActiveDescendant;
-use retiretui_client::estimate::{
-    ABOUT, COLUMNS, Estimator, NOTHING_READ, listed, settings_read, summary,
-};
+use retiretui_client::estimate::{ABOUT, COLUMNS, Estimator, NOTHING_READ, listed, summary};
 use retiretui_client::present::counted;
 use retiretui_engine::estimate::Patterns;
 
 pub use edits::{
-    add_export, add_picker, adopt, edit_row, edit_settings, remove_export, write_overlay,
-    write_picker,
+    add_export, add_picker, adopt, edit_row, remove_export, write_overlay, write_picker,
 };
 
 use super::options::say_instead;
 use super::{EnterRuns, HelpLine, ToolPage, show_help, writes_it};
-use crate::command::{EDIT_ESTIMATE_SETTINGS, EDIT_PROPOSAL, Keymap, WRITE_ESTIMATE};
-use crate::edit::{Draft, table_bundle};
+use crate::command::{EDIT_PROPOSAL, Keymap, WRITE_ESTIMATE};
+use crate::edit::{self, Draft, table_bundle};
 use crate::hints::Hints;
 use crate::layout::{self, Body, filling, placed};
 use crate::nav::{self, FocusStop, Page, ShownSurface};
@@ -52,8 +49,9 @@ const SETTINGS_TITLE: &str = "Settings";
 const SIDE_COLS: f32 = 48.0;
 /// Borders, and the exports a session is likely to hold.
 const FILES_ROWS: f32 = 6.0;
-/// Borders, and the lean, the large share and the bucket.
-const SETTINGS_ROWS: f32 = 5.0;
+/// Borders, the read-out's header, and the lean, the large share and the
+/// bucket.
+const SETTINGS_ROWS: f32 = 6.0;
 const GAP: u16 = 1;
 const ON_PROPOSALS: &str = "⏎ edits the row; t takes the proposals into the plan, after asking";
 const NOTHING_HIGHLIGHTED: &str = "nothing highlighted";
@@ -72,7 +70,6 @@ pub fn plugin(app: &mut App) {
             table_proposals,
             follow_cursor,
             show_read_out,
-            show_settings,
             say_help,
         )
             .chain()
@@ -115,9 +112,6 @@ struct ProposalRow(usize);
 
 #[derive(Component)]
 struct ReadOut;
-
-#[derive(Component)]
-struct SettingsOut;
 
 static PAGE: ToolPage = ToolPage {
     surface: Page::SpendingEstimate,
@@ -181,19 +175,7 @@ fn spawn_column(commands: &mut Commands, row: Entity) {
     let settings = Pane::new(SETTINGS_TITLE)
         .tall(SETTINGS_ROWS)
         .spawn(commands, column);
-    commands
-        .spawn((
-            table_bundle(),
-            SettingsOut,
-            EnterRuns(EDIT_ESTIMATE_SETTINGS),
-            FocusStop,
-            Hints(&[("⏎", "edit")]),
-            layout::Rests,
-            filling(),
-            placed(),
-            ChildOf(settings),
-        ))
-        .observe(super::handle_enter);
+    edit::spawn_details(commands, settings, edits::SETTINGS_OPS);
 }
 
 /// Estimates again whenever the plan, the exports or the patterns move;
@@ -254,7 +236,6 @@ fn table_proposals(
     }
     let found = held.0.estimate();
     let rows: Vec<Vec<String>> = listed(found)
-        .iter()
         .map(|row| row.cells(found.months, MoneyForm::Full).to_vec())
         .collect();
     let header = COLUMNS.map(str::to_owned);
@@ -311,32 +292,6 @@ fn show_read_out(
             .into_iter()
             .map(|(label, text)| vec![label, text])
             .collect();
-        commands
-            .entity(table)
-            .insert(tabulate::labelled(&rows, GAP));
-        tabulate::refill(
-            &mut commands,
-            (table, &mut scroll),
-            (&header, &rows),
-            &[0, 1],
-        );
-    }
-}
-
-fn show_settings(
-    (draft, shown): (Res<Draft>, ShownSurface),
-    mut outs: Query<(Entity, &mut ScrollArea), With<SettingsOut>>,
-    mut commands: Commands,
-) {
-    if !(draft.is_changed() || shown.is_changed()) {
-        return;
-    }
-    let header: [String; 0] = [];
-    let rows: Vec<Vec<String>> = settings_read(&draft.plan)
-        .into_iter()
-        .map(|(label, text)| vec![label, text])
-        .collect();
-    for (table, mut scroll) in &mut outs {
         commands
             .entity(table)
             .insert(tabulate::labelled(&rows, GAP));

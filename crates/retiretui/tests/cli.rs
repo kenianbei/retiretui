@@ -457,7 +457,10 @@ fn estimate_proposes_the_plans_spending_from_a_banks_exports() {
     assert!(json.status.success(), "{json:?}");
     let reply: serde_json::Value = serde_json::from_slice(&json.stdout).unwrap();
     assert_eq!(reply["months"], 1);
-    assert_eq!(reply["proposals"][0]["categories"][0][0], "groceries");
+    assert_eq!(
+        reply["proposals"][0]["categories"][0]["category"],
+        "groceries"
+    );
     assert_eq!(reply["proposals"][0]["id"], "groceries");
     let refused = retiretui(&["estimate", plan, &format!("{BANK_EXPORTS}/visa.csv")]);
     assert!(!refused.status.success());

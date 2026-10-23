@@ -3,6 +3,8 @@ use std::path::PathBuf;
 use bevy_app::App;
 use plurimus::term::KeyCode;
 
+use retiretui_client::estimate::RowForm;
+
 use super::edits::NO_EXPORTS;
 use super::*;
 use crate::compare::Compared;
@@ -193,17 +195,12 @@ fn writing_the_proposals_makes_a_scenario_over_the_document() {
 const NAMELESS: &str =
     "Date,Description,Amount\n2026-10-01,SAFEWAY,-300.00\n2026-10-02,SOMEONE,-30.00\n";
 
-/// Puts the cursor on the row at `at` and applies `answers` to it as the
-/// row's form would.
-fn apply_at<T: retiretui_client::forms::ToolAnswers>(
-    app: &mut App,
-    at: usize,
-    answers: toml::Table,
-) {
+/// Puts the cursor on the row at `at` and applies `answers` to it as its
+/// form, `row_form`, would.
+fn apply_at(app: &mut App, at: usize, row_form: RowForm, answers: toml::Table) {
     app.world_mut().resource_mut::<Cursor>().0 = at;
-    app.world_mut()
-        .resource_mut::<Draft>()
-        .set_answers::<T>(answers);
+    let mut draft = app.world_mut().resource_mut::<Draft>();
+    (row_form.form().store)(&mut draft, 0, answers).unwrap();
     app.world_mut().run_system_cached(edits::apply_row).unwrap();
     app.update();
 }
@@ -221,12 +218,11 @@ fn a_category_moved_is_kept_in_the_plan_as_one_step() {
     let rows: Vec<String> = {
         let found = app.world().resource::<Held>().0.estimate().clone();
         listed(&found)
-            .iter()
             .map(|row| row.cells(found.months, MoneyForm::Full)[0].clone())
             .collect()
     };
     let at = rows.iter().position(|row| row == "  Groceries").unwrap();
-    apply_at::<retiretui_client::estimate::MoveAnswers>(&mut app, at, answer("expense", "living"));
+    apply_at(&mut app, at, RowForm::Move, answer("expense", "living"));
     let draft = app.world().resource::<Draft>();
     let assigned = &draft.plan.estimate.as_ref().unwrap().assign;
     assert_eq!(assigned[0].expense, "living");
@@ -248,11 +244,10 @@ fn a_named_payee_is_remembered_in_the_patterns_file_the_launch_names() {
     let at = {
         let found = app.world().resource::<Held>().0.estimate().clone();
         listed(&found)
-            .iter()
             .position(|row| matches!(row, retiretui_client::estimate::Listed::Payee(_)))
             .unwrap()
     };
-    apply_at::<retiretui_client::estimate::PayeeAnswers>(&mut app, at, answer("category", "pets"));
+    apply_at(&mut app, at, RowForm::Payee, answer("category", "pets"));
     let written = std::fs::read_to_string(&file).unwrap();
     assert!(written.contains("match = \"SOMEONE\""), "{written}");
     assert!(

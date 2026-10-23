@@ -17,11 +17,7 @@ use schemars::JsonSchema;
 use serde::Serialize;
 use toml::Table;
 
-pub use forms::{
-    MoveAnswers, NEW_FIELDS, NewAnswers, PAYEE_FIELDS, PayeeAnswers, RowForm, SET_FIELDS,
-    SETTINGS_FIELDS, SetAnswers, SettingsAnswers, assign, settings_read, settings_table,
-    take_settings, with_payee,
-};
+pub use forms::{RowForm, SETTINGS_FORM, assign, with_payee};
 pub use rows::{Listed, listed, summary, take_question, taken};
 
 use crate::draft::Draft;
@@ -106,7 +102,7 @@ impl Exports {
 /// surface may remember.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Applied {
-    /// The estimate holds the edit.
+    /// Nothing more: the estimate holds the edit, or there was none.
     Held,
     /// The category goes to `expense`, or back to where it is placed.
     Moved {
@@ -193,7 +189,7 @@ impl Estimator {
     /// The row at `at` of [`listed`].
     #[must_use]
     pub fn row(&self, at: usize) -> Option<Listed<'_>> {
-        listed(&self.estimate).into_iter().nth(at)
+        listed(&self.estimate).nth(at)
     }
 
     /// The form the row at `at` is edited in, and the answers it opens
@@ -213,21 +209,16 @@ impl Estimator {
     /// value.
     pub fn apply(&mut self, at: usize, draft: &Draft) -> Result<Applied, String> {
         let row = self.row(at).ok_or(NO_ROW)?;
+        if let Listed::Expense(proposal) = row {
+            let id = proposal.id.clone();
+            let proposal = self.estimate.proposals.iter_mut().find(|p| p.id == id);
+            forms::hold(proposal.ok_or(NO_ROW)?, draft)?;
+            return Ok(Applied::Held);
+        }
         let applied = forms::applied(row, draft)?;
-        match &applied {
-            Applied::Held => {
-                let Listed::Expense(proposal) = row else {
-                    return Err(NO_ROW.to_owned());
-                };
-                let id = proposal.id.clone();
-                let proposal = self.estimate.proposals.iter_mut().find(|p| p.id == id);
-                forms::hold(proposal.ok_or(NO_ROW)?, draft)?;
-            }
-            Applied::Named { payee, category } => {
-                self.patterns.assign(payee, *category);
-                self.over = None;
-            }
-            Applied::Moved { .. } => {}
+        if let Applied::Named { payee, category } = &applied {
+            self.patterns.assign(payee, *category);
+            self.over = None;
         }
         Ok(applied)
     }

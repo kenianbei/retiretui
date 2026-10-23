@@ -30,13 +30,13 @@ const PER_YEAR = 2;
 
 /** How the plan's `[estimate]` table is read out, opened and held. */
 const ESTIMATE_SETTINGS: Settings = {
+  id: "settings",
   heading: "Settings",
   read: (document) => document.estimateSettingsRead(),
-  open: (document) => document.openEstimateSettings(),
+  open: (document) => document.estimateSettings(),
   apply: (document, editor) => {
-    document.applyEstimateSettings(editor);
+    document.apply(editor);
   },
-  flag: "editSettings",
 };
 
 /** Each row of the estimate, keyed by its place, its nesting a mark. */
@@ -98,16 +98,10 @@ export function EstimatePage({ title }: { title: string }) {
   const rows = useMemo(() => (view ? rowsOf(view) : []), [view]);
   const at = Math.min(search.row ?? 0, rows.length - 1);
   const highlighted = rows[at]?.option;
-  const heading = useMemo(
-    () =>
-      reading.document && highlighted
-        ? (ESTIMATOR.readRow(reading.document, at)[0]?.label ?? "Row")
-        : "Row",
-    [reading, highlighted, at],
-  );
   const proposal: Settings = useMemo(
     () => ({
-      heading,
+      id: "row",
+      heading: highlighted?.title ?? "Row",
       isEditable: highlighted?.is_editable ?? false,
       read: (document) => ESTIMATOR.readRow(document, at),
       open: (document) => ESTIMATOR.openRow(document, at),
@@ -116,7 +110,7 @@ export function EstimatePage({ title }: { title: string }) {
         refresh();
       },
     }),
-    [heading, highlighted, at, refresh],
+    [highlighted, at, refresh],
   );
 
   return (
@@ -201,8 +195,12 @@ export function EstimatePage({ title }: { title: string }) {
         </section>
       )}
       <SettingsRead settings={ESTIMATE_SETTINGS} />
-      {search.edit && highlighted && <SettingsForm settings={proposal} />}
-      {search.editSettings && <SettingsForm settings={ESTIMATE_SETTINGS} />}
+      {search.edit === proposal.id && highlighted && (
+        <SettingsForm settings={proposal} />
+      )}
+      {search.edit === ESTIMATE_SETTINGS.id && (
+        <SettingsForm settings={ESTIMATE_SETTINGS} />
+      )}
     </div>
   );
 }

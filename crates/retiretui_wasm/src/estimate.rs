@@ -5,12 +5,10 @@
 //! written as a scenario.
 
 use retiretui_client::estimate::{
-    ABOUT, Applied, COLUMNS, EXTENSIONS, Estimator, MoveAnswers, NOTHING_READ, NewAnswers,
-    PayeeAnswers, RowForm, SETTINGS_FIELDS, SetAnswers, SettingsAnswers, assign, listed, overlay,
-    settings_read, settings_table, summary, take_question, take_settings, taken,
+    ABOUT, Applied, COLUMNS, EXTENSIONS, Estimator, NOTHING_READ, SETTINGS_FORM, assign, listed,
+    overlay, summary, take_question, taken,
 };
-use retiretui_client::forms::Form;
-use retiretui_client::forms::details::ReadRow;
+use retiretui_client::forms::details::{self, ReadRow};
 use retiretui_client::forms::edit::Entry;
 use retiretui_client::present::{MoneyForm, counted};
 use retiretui_engine::estimate::{Patterns, apply};
@@ -21,12 +19,6 @@ use crate::document::Document;
 use crate::edits::JsEditor;
 use crate::{JsDocument, refused, to_js};
 
-static SET_FORM: Form = Form::tool::<SetAnswers>(RowForm::Set.title(), RowForm::Set.fields());
-static NEW_FORM: Form = Form::tool::<NewAnswers>(RowForm::New.title(), RowForm::New.fields());
-static MOVE_FORM: Form = Form::tool::<MoveAnswers>(RowForm::Move.title(), RowForm::Move.fields());
-static PAYEE_FORM: Form =
-    Form::tool::<PayeeAnswers>(RowForm::Payee.title(), RowForm::Payee.fields());
-static SETTINGS_FORM: Form = Form::tool::<SettingsAnswers>("Settings", SETTINGS_FIELDS);
 const NOTHING_TO_EDIT: &str = "nothing to edit on this row";
 
 /// One row of the estimate.
@@ -37,6 +29,8 @@ pub struct EstimateRow {
     pub is_nested: bool,
     /// Whether a form edits it.
     pub is_editable: bool,
+    /// What it is, as its read-out is headed.
+    pub title: &'static str,
     /// The row under the columns.
     pub cells: [String; 3],
 }
@@ -78,11 +72,10 @@ fn view(estimator: &mut Estimator, document: &Document) -> EstimateView {
     let found = estimator.estimate();
     let files = estimator.exports().listed();
     let rows = listed(found)
-        .iter()
-        .enumerate()
-        .map(|(at, row)| EstimateRow {
+        .map(|row| EstimateRow {
             is_nested: row.is_nested(),
-            is_editable: estimator.form(at).is_some(),
+            is_editable: row.is_editable(),
+            title: row.title(),
             cells: row.cells(found.months, MoneyForm::Full),
         })
         .collect();
@@ -120,25 +113,9 @@ fn read(estimator: &Estimator, document: &Document, at: usize) -> Vec<ReadRow> {
 /// The row at `at` open in its form, its answers held beside `document`'s
 /// draft.
 fn open_row(estimator: &Estimator, document: &mut Document, at: usize) -> Result<Entry, String> {
-    let (form, answers) = estimator.form(at).ok_or(NOTHING_TO_EDIT)?;
-    let form = match form {
-        RowForm::Set => {
-            document.hold_answers::<SetAnswers>(answers);
-            SET_FORM
-        }
-        RowForm::New => {
-            document.hold_answers::<NewAnswers>(answers);
-            NEW_FORM
-        }
-        RowForm::Move => {
-            document.hold_answers::<MoveAnswers>(answers);
-            MOVE_FORM
-        }
-        RowForm::Payee => {
-            document.hold_answers::<PayeeAnswers>(answers);
-            PAYEE_FORM
-        }
-    };
+    let (row_form, answers) = estimator.form(at).ok_or(NOTHING_TO_EDIT)?;
+    let form = row_form.form();
+    document.hold_form(&form, answers)?;
     Ok(Entry::open(form, document.draft(), Some(0)))
 }
 
@@ -159,21 +136,6 @@ fn apply_row(
         })?;
     }
     Ok(())
-}
-
-/// The plan's `[estimate]` table open in its form.
-fn open_settings(document: &mut Document) -> Entry {
-    let table = settings_table(&document.draft().plan);
-    document.hold_answers::<SettingsAnswers>(table);
-    Entry::open(SETTINGS_FORM, document.draft(), Some(0))
-}
-
-/// Writes what `editor` holds into the plan's `[estimate]` table as a step
-/// of its history.
-fn apply_settings(document: &mut Document, editor: &mut Entry) -> Result<(), String> {
-    document.hold(editor)?;
-    let table = document.draft().answers::<SettingsAnswers>();
-    document.step(|plan| take_settings(plan, table))
 }
 
 /// The exports a page holds for its session, and what they say the draft
@@ -297,7 +259,7 @@ impl JsEstimator {
 
 #[wasm_bindgen(js_class = Document)]
 impl JsDocument {
-    /// The plan's `[estimate]` table read out: its label beside what it
+    /// The plan's `[estimate]` table read out: each label beside what it
     /// says.
     ///
     /// # Errors
@@ -305,25 +267,17 @@ impl JsDocument {
     /// Where the rows do not convert.
     #[wasm_bindgen(js_name = estimateSettingsRead, unchecked_return_type = "ReadRow[]")]
     pub fn estimate_settings_read(&self) -> Result<JsValue, JsError> {
-        to_js(&read_rows(settings_read(&self.0.draft().plan)))
+        let draft = self.0.draft();
+        let item = (SETTINGS_FORM.item)(draft, 0).unwrap_or_default();
+        to_js(&details::rows(&SETTINGS_FORM, &item, &draft.plan))
     }
 
-    /// The plan's `[estimate]` table open in its form.
-    #[wasm_bindgen(js_name = openEstimateSettings)]
+    /// The plan's `[estimate]` table open in its form, applied as any
+    /// item is.
+    #[wasm_bindgen(js_name = estimateSettings)]
     #[must_use]
-    pub fn open_estimate_settings(&mut self) -> JsEditor {
-        JsEditor(open_settings(&mut self.0))
-    }
-
-    /// Writes what `editor` holds into the plan's `[estimate]` table as a
-    /// step of the draft's history.
-    ///
-    /// # Errors
-    ///
-    /// Where the draft is read-only, or why the table was not taken.
-    #[wasm_bindgen(js_name = applyEstimateSettings)]
-    pub fn apply_estimate_settings(&mut self, editor: &mut JsEditor) -> Result<(), JsError> {
-        apply_settings(&mut self.0, &mut editor.0).map_err(refused)
+    pub fn estimate_settings(&self) -> JsEditor {
+        JsEditor(Entry::open(SETTINGS_FORM, self.0.draft(), Some(0)))
     }
 }
 
@@ -367,6 +321,10 @@ mod tests {
         assert_eq!(shown.files, [("chase.csv".to_owned(), "5 rows".to_owned())]);
         assert_eq!(shown.rows[0].cells[0], "Groceries (new)", "{shown:?}");
         assert!(shown.rows[1].is_nested && shown.rows[1].is_editable);
+        assert_eq!(
+            (shown.rows[0].title, shown.rows[1].title),
+            ("Expense", "Category")
+        );
         assert!(shown.question.is_some());
         assert_eq!(read(&estimator, &document, 0)[0].label, "Expense");
         let mut editor = open_row(&estimator, &mut document, 0).expect("opens");
@@ -385,15 +343,13 @@ mod tests {
     }
 
     #[test]
-    fn the_estimate_table_is_read_out_and_set_as_a_step() {
+    fn the_estimate_table_is_set_as_a_step() {
         let mut document = opened();
-        let mut editor = open_settings(&mut document);
+        let mut editor = Entry::open(SETTINGS_FORM, document.draft(), Some(0));
         editor.set("lean", None, "existing").expect("a field");
-        apply_settings(&mut document, &mut editor).expect("taken");
+        document.apply(&mut editor).expect("taken");
         let settings = document.draft().plan.estimate.clone().expect("a table");
         assert_eq!(settings.lean, retiretui_engine::plan::Lean::Existing);
         assert!(document.draft().can_undo());
-        let read = read_rows(settings_read(&document.draft().plan));
-        assert_eq!(read[0].text, "Existing expenses only");
     }
 }

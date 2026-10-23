@@ -20,6 +20,7 @@ pub use bank::{BankError, Cents, Row, merge, read};
 pub use category::{Category, Family};
 pub use patterns::Patterns;
 pub use payee::normalize;
+pub use place::Why;
 
 use serde::{Deserialize, Serialize};
 
@@ -56,11 +57,10 @@ pub struct Estimate {
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct Proposal {
-    /// The plan expense it sets, or none to add one.
-    pub expense: Option<String>,
-    /// The id a new expense is added under; the expense's own where it is
-    /// the plan's.
+    /// The plan expense it sets, or the id a new one is added under.
     pub id: String,
+    /// Whether it adds an expense rather than setting one the plan holds.
+    pub is_new: bool,
     /// The expense's name, or the one a new expense is given.
     pub name: String,
     /// Whether it collects what fits nowhere else.
@@ -71,9 +71,8 @@ pub struct Proposal {
     pub total: Dollars,
     /// How many rows.
     pub rows: usize,
-    /// Each category it gathers and what it adds up to a year, largest
-    /// first.
-    pub categories: Vec<(Category, Dollars)>,
+    /// Each category it gathers, largest first.
+    pub categories: Vec<Gathered>,
     /// What the payees nothing names add up to a year, where it is the
     /// bucket.
     pub unknown: Dollars,
@@ -87,6 +86,19 @@ pub struct Proposal {
     pub one_time: bool,
     /// Which of a phased expense's amounts the proposal sets.
     pub phases: Phases,
+}
+
+/// A category's spending gathered into a proposal.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+pub struct Gathered {
+    /// The category.
+    pub category: Category,
+    /// What it adds a year.
+    pub amount: Dollars,
+    /// Why it landed in this expense.
+    pub why: Why,
 }
 
 /// What a proposal does to an expense stated in phases.
@@ -142,7 +154,7 @@ impl Tally {
 #[derive(Default)]
 struct Group {
     tally: Tally,
-    categories: Vec<(Category, f64)>,
+    categories: Vec<(Category, f64, Why)>,
     unknown: f64,
 }
 
@@ -178,11 +190,7 @@ pub fn estimate(plan: &Plan, rows: &[Row], patterns: &Patterns) -> Estimate {
     let (groups, bucket) = grouped(plan, by_category, unknown);
     let proposals = groups
         .into_iter()
-        .map(|(target, group)| {
-            let mut proposal = proposal(plan, target, group, &annual);
-            proposal.is_bucket = target == bucket;
-            proposal
-        })
+        .map(|(target, group)| proposal(plan, (target, target == bucket), group, &annual))
         .collect();
     listed
         .sort_by(|a, b| (b.amount.abs().cmp(&a.amount.abs())).then_with(|| a.payee.cmp(&b.payee)));
@@ -214,10 +222,9 @@ fn grouped(
     let placer = place::Placer::new(plan, spending);
     let mut groups: BTreeMap<place::Target, Group> = BTreeMap::new();
     for (category, tally) in by_category.into_iter().filter(|(_, t)| t.total < 0.0) {
-        let group = groups
-            .entry(placer.place(category, spent(&tally)))
-            .or_default();
-        group.categories.push((category, -tally.total));
+        let (target, why) = placer.place(category, spent(&tally));
+        let group = groups.entry(target).or_default();
+        group.categories.push((category, -tally.total, why));
         group.tally.absorb(tally);
     }
     for tally in unknown.into_values().filter(|t| t.total < 0.0) {
@@ -265,14 +272,17 @@ fn tally<'a>(
     (by_category, unknown)
 }
 
+/// Largest first, ties by their key.
+fn largest_first<K: Ord>(a: &(K, Dollars), b: &(K, Dollars)) -> std::cmp::Ordering {
+    b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0))
+}
+
 fn proposal(
     plan: &Plan,
-    target: place::Target,
+    (target, is_bucket): (place::Target, bool),
     group: Group,
     annual: &impl Fn(f64) -> Dollars,
 ) -> Proposal {
-    let largest_first =
-        |a: &(String, Dollars), b: &(String, Dollars)| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0));
     let mut payees: Vec<(String, Dollars)> = group
         .tally
         .payees
@@ -280,34 +290,40 @@ fn proposal(
         .map(|(payee, dollars)| (payee, (-dollars).round() as Dollars))
         .collect();
     payees.sort_by(largest_first);
-    let mut categories: Vec<(Category, Dollars)> = group
+    let mut categories: Vec<(Category, Dollars, Why)> = group
         .categories
         .into_iter()
-        .map(|(category, dollars)| (category, annual(dollars)))
+        .map(|(category, dollars, why)| (category, annual(dollars), why))
         .collect();
-    categories.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
-    let (expense, id, name) = match target {
+    categories.sort_by(|a, b| largest_first(&(a.0, a.1), &(b.0, b.1)));
+    let (id, is_new, name) = match target {
         place::Target::Expense(at) => {
             let stated = &plan.expenses[at];
-            let id = stated.id.clone();
-            (Some(id.clone()), id, stated.display_name().to_owned())
+            (stated.id.clone(), false, stated.display_name().to_owned())
         }
-        place::Target::New(category) => (None, category.slug().to_owned(), category.title()),
+        place::Target::New(category) => (category.slug().to_owned(), true, category.title()),
         place::Target::NewBucket => (
-            None,
             place::NEW_BUCKET_ID.to_owned(),
+            true,
             place::NEW_BUCKET_NAME.to_owned(),
         ),
     };
     Proposal {
-        expense,
         id,
+        is_new,
         name,
-        is_bucket: false,
+        is_bucket,
         amount: annual(-group.tally.total),
         total: (-group.tally.total).round() as Dollars,
         rows: group.tally.rows,
-        categories,
+        categories: categories
+            .into_iter()
+            .map(|(category, amount, why)| Gathered {
+                category,
+                amount,
+                why,
+            })
+            .collect(),
         unknown: annual(group.unknown),
         payees,
         last: group.tally.last.expect("a group holds a row"),
@@ -332,10 +348,9 @@ pub fn apply(plan: &mut Plan, estimate: &Estimate) {
         .through
         .map(|on| month_index(on.year(), on.0.month() + 1) - 1);
     for proposal in &estimate.proposals {
-        let at = proposal
-            .expense
-            .as_deref()
-            .and_then(|id| plan.expenses.iter().position(|e| e.id == *id));
+        let at = (!proposal.is_new)
+            .then(|| plan.expenses.iter().position(|e| e.id == proposal.id))
+            .flatten();
         match at {
             Some(at) => {
                 let in_force = end.and_then(|end| phase_in_force(plan, &plan.expenses[at], end));

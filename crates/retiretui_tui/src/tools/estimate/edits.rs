@@ -1,15 +1,13 @@
 //! What the Spending Estimate page's commands do: an export read or
-//! dropped, a row or the plan's `[estimate]` table opened in its form and
-//! applied, a named payee remembered, and the proposals taken or written.
+//! dropped, a row opened in its form and applied, a named payee
+//! remembered, and the proposals taken or written.
 
 use std::path::{Path, PathBuf};
 
 use bevy_ecs::prelude::{Commands, In, Query, Res, ResMut, With, World};
 use plurimus::widgets::ActiveDescendant;
 use retiretui_client::estimate::{
-    self, Applied, MoveAnswers, NEW_FIELDS, NewAnswers, PAYEE_FIELDS, PayeeAnswers, RowForm,
-    SET_FIELDS, SETTINGS_FIELDS, SetAnswers, SettingsAnswers, assign, settings_table,
-    take_question, take_settings, taken, with_payee,
+    self, Applied, RowForm, SETTINGS_FORM, assign, take_question, taken, with_payee,
 };
 use retiretui_client::present::counted;
 use retiretui_engine::estimate::{Category, Estimate, apply};
@@ -22,26 +20,35 @@ use crate::edit::{self, Draft, DraftEditor, FormButton, Ops, Row, Slot};
 use crate::journal;
 use crate::nav::Page;
 use crate::session::{self, Session};
+use crate::settings;
 use crate::tools::write;
 
 const ACTIONS: [&str; 2] = ["Discard", "Apply"];
 const PAGE: Option<Page> = Some(Page::SpendingEstimate);
-const SET_OPS: Ops =
-    Ops::tool::<SetAnswers>(PAGE, RowForm::Set.title(), SET_FIELDS).acting(ACTIONS, after_row);
-const NEW_OPS: Ops =
-    Ops::tool::<NewAnswers>(PAGE, RowForm::New.title(), NEW_FIELDS).acting(ACTIONS, after_row);
-const MOVE_OPS: Ops = Ops::tool::<MoveAnswers>(PAGE, RowForm::Move.title(), RowForm::Move.fields())
-    .acting(ACTIONS, after_row);
-const PAYEE_OPS: Ops = Ops::tool::<PayeeAnswers>(PAGE, RowForm::Payee.title(), PAYEE_FIELDS)
-    .acting(ACTIONS, after_row);
-const SETTINGS_OPS: Ops =
-    Ops::tool::<SettingsAnswers>(PAGE, "Settings", SETTINGS_FIELDS).acting(ACTIONS, after_settings);
+
+/// The form `row_form` is edited in on this page.
+const fn row_ops(row_form: RowForm) -> Ops {
+    Ops {
+        form: row_form.form(),
+        surface: PAGE,
+        actions: ACTIONS,
+        after: Some(after_row),
+    }
+}
+
+/// The plan's `[estimate]` table, applied as a step of the draft's history.
+pub(super) const SETTINGS_OPS: Ops = Ops {
+    form: SETTINGS_FORM,
+    surface: PAGE,
+    actions: ACTIONS,
+    after: None,
+};
 const _: () = assert!(
-    edit::help_fits(SET_FIELDS)
-        && edit::help_fits(NEW_FIELDS)
-        && edit::help_fits(RowForm::Move.fields())
-        && edit::help_fits(PAYEE_FIELDS)
-        && edit::help_fits(SETTINGS_FIELDS),
+    edit::help_fits(RowForm::Set.form().fields)
+        && edit::help_fits(RowForm::New.form().fields)
+        && edit::help_fits(RowForm::Move.form().fields)
+        && edit::help_fits(RowForm::Payee.form().fields)
+        && edit::help_fits(SETTINGS_FORM.fields),
     "a field's help is missing or too long"
 );
 
@@ -98,27 +105,13 @@ pub fn edit_row(
     mut draft: ResMut<Draft>,
     mut commands: Commands,
 ) -> Outcome {
-    let Some((form, answers)) = held.0.form(cursor.0) else {
+    let Some((row_form, answers)) = held.0.form(cursor.0) else {
         return Outcome::Refused(NOTHING_TO_EDIT.to_owned());
     };
-    let ops = match form {
-        RowForm::Set => {
-            draft.set_answers::<SetAnswers>(answers);
-            SET_OPS
-        }
-        RowForm::New => {
-            draft.set_answers::<NewAnswers>(answers);
-            NEW_OPS
-        }
-        RowForm::Move => {
-            draft.set_answers::<MoveAnswers>(answers);
-            MOVE_OPS
-        }
-        RowForm::Payee => {
-            draft.set_answers::<PayeeAnswers>(answers);
-            PAYEE_OPS
-        }
-    };
+    let ops = row_ops(row_form);
+    if let Err(reason) = (ops.store)(&mut draft, 0, answers) {
+        return Outcome::Refused(reason);
+    }
     commands.run_system_cached_with(edit::open_item, (ops, None, Slot::At(Row(0))));
     Outcome::Done
 }
@@ -160,48 +153,11 @@ pub(super) fn apply_row(
 fn remember(session: &Session, path: &Path, payee: &str, category: Category) {
     let text = session.store.read(path).ok();
     let written = with_payee(text.as_deref(), payee, category).and_then(|file| {
-        if let Some(directory) = path.parent() {
-            session
-                .store
-                .create_dir_all(directory)
-                .map_err(|error| error.to_string())?;
-        }
-        session
-            .store
-            .write(path, &file)
-            .map_err(|error| error.to_string())
+        settings::write(session.store.as_ref(), path, &file).map_err(|error| error.to_string())
     });
     match written {
         Ok(()) => journal::say(format!("{payee} remembered in {}", path.display())),
         Err(reason) => journal::warn(format!("{payee} not remembered: {reason}")),
-    }
-}
-
-/// The `edit-estimate-settings` command: opens the plan's `[estimate]`
-/// table in its form.
-pub fn edit_settings(mut draft: ResMut<Draft>, mut commands: Commands) -> Outcome {
-    let table = settings_table(&draft.plan);
-    draft.set_answers::<SettingsAnswers>(table);
-    commands.run_system_cached_with(edit::open_item, (SETTINGS_OPS, None, Slot::At(Row(0))));
-    Outcome::Done
-}
-
-fn after_settings(button: FormButton, commands: &mut Commands) {
-    if matches!(button, FormButton::Apply) {
-        commands.run_system_cached(apply_settings);
-    }
-}
-
-/// Writes the settings form's answers into the plan as one step.
-fn apply_settings(mut editor: DraftEditor) {
-    if let Some(refusal) = editor.draft.refuse_if_read_only() {
-        journal::warn(refusal);
-        return;
-    }
-    let table = editor.draft.answers::<SettingsAnswers>();
-    match take_settings(&mut editor.draft.plan, table) {
-        Ok(()) => editor.commit(),
-        Err(reason) => journal::warn(reason),
     }
 }
 

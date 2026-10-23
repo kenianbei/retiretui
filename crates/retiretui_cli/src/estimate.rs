@@ -80,7 +80,6 @@ pub fn run(args: &EstimateArgs) -> anyhow::Result<()> {
 fn estimate_text(found: &Estimate) -> String {
     let header: Vec<String> = estimate::COLUMNS.map(str::to_lowercase).to_vec();
     let mut rows: Vec<Vec<String>> = listed(found)
-        .iter()
         .map(|row| row.cells(found.months, MoneyForm::Full).to_vec())
         .collect();
     let width = rows

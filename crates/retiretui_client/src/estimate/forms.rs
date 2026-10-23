@@ -4,24 +4,23 @@
 
 use std::fmt::Write;
 
-use retiretui_engine::estimate::{self, Category, Phases, Proposal};
-use retiretui_engine::plan::{Assign, Dollars, EstimateSettings, Item, Lean, Plan};
+use retiretui_engine::estimate::{Category, Patterns, Phases, Proposal};
+use retiretui_engine::plan::{Assign, Dollars, EstimateSettings, Lean, Plan};
 use serde::{Deserialize, Serialize};
 use toml::{Table, Value};
 
 use super::{Applied, Listed, UNKNOWN};
 use crate::codec::{from_table, to_table};
 use crate::draft::Draft;
-use crate::forms::offers::{LEANS, RefSource, Vocabulary, held_word};
-use crate::forms::{FieldSpec, ToolAnswers};
-use crate::table::rate;
+use crate::forms::offers::{RefSource, Vocabulary, held_word};
+use crate::forms::{FieldSpec, Form, Target, ToolAnswers};
 
 /// What a category's expense field reads as while the estimate places it.
 const PLACED: &str = "Where the estimate places it";
 /// What the bucket field reads as while the plan names none.
-const DETECTED: &str = "Detected";
+const DETECTED: &str = "Detected by its name";
 const LEAN: &str = "lean";
-const NOTHING_PICKED: &str = "nothing picked";
+const ESTIMATE: &str = "estimate";
 
 /// The form a row is edited in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -37,37 +36,27 @@ pub enum RowForm {
 }
 
 impl RowForm {
-    /// The form's fields.
+    /// The form, its answers held beside the plan while it is open.
     #[must_use]
-    pub const fn fields(self) -> &'static [FieldSpec] {
+    pub const fn form(self) -> Form {
         match self {
-            Self::Set => SET_FIELDS,
-            Self::New => NEW_FIELDS,
-            Self::Move => MOVE_FIELDS,
-            Self::Payee => PAYEE_FIELDS,
-        }
-    }
-
-    /// What the form is titled.
-    #[must_use]
-    pub const fn title(self) -> &'static str {
-        match self {
-            Self::Set | Self::New => "Expense",
-            Self::Move => "Category",
-            Self::Payee => "Payee",
+            Self::Set => Form::tool::<SetAnswers>(EXPENSE_TITLE, SET_FIELDS),
+            Self::New => Form::tool::<NewAnswers>(EXPENSE_TITLE, NEW_FIELDS),
+            Self::Move => Form::tool::<MoveAnswers>("Category", MOVE_FIELDS),
+            Self::Payee => Form::tool::<PayeeAnswers>("Payee", PAYEE_FIELDS),
         }
     }
 }
 
-/// An expense the plan holds.
-pub const SET_FIELDS: &[FieldSpec] = &[
+const EXPENSE_TITLE: &str = "Expense";
+
+const SET_FIELDS: &[FieldSpec] = &[
     FieldSpec::money("amount", "Amount").help("A year, in today's dollars."),
     FieldSpec::choice("phases", "Phases", Vocabulary::Phases)
         .help("Which of the expense's amounts are set, where it states phases."),
 ];
 
-/// An expense to add.
-pub const NEW_FIELDS: &[FieldSpec] = &[
+const NEW_FIELDS: &[FieldSpec] = &[
     FieldSpec::text("name", "Name").help("What the new expense is called."),
     FieldSpec::money("amount", "Amount").help("A year, in today's dollars."),
     FieldSpec::flag("one_time", "Once")
@@ -78,8 +67,7 @@ const MOVE_FIELDS: &[FieldSpec] = &[FieldSpec::refers("expense", "Goes to", RefS
     .blank(PLACED)
     .help("The expense its spending goes to, kept in the plan.")];
 
-/// A payee nothing names.
-pub const PAYEE_FIELDS: &[FieldSpec] =
+const PAYEE_FIELDS: &[FieldSpec] =
     &[
         FieldSpec::choice("category", "Category", Vocabulary::Category)
             .blank(UNKNOWN)
@@ -90,21 +78,59 @@ fn is_large(table: &Table) -> bool {
     held_word(table.get(LEAN)).is_none_or(|lean| lean == Lean::Large.slug())
 }
 
-/// The plan's `[estimate]` table.
-pub const SETTINGS_FIELDS: &[FieldSpec] = &[
+const SETTINGS_FIELDS: &[FieldSpec] = &[
     FieldSpec::choice(LEAN, "Lean", Vocabulary::Lean)
         .help("How readily a category with no expense of its own gets one."),
     FieldSpec::share("large_share", "Large share")
         .shown_when(is_large)
+        .defaults_to("10%")
         .help("The share of the year's spending a category needs for its own."),
     FieldSpec::refers("bucket", "Bucket", RefSource::Expense)
         .blank(DETECTED)
         .help("The expense what fits nowhere else goes to."),
 ];
 
-/// An expense the plan holds, as its form holds it.
+/// The plan's `[estimate]` table: applying it is a step of the draft's
+/// history, its assignments kept as they are.
+pub const SETTINGS_FORM: Form = Form {
+    domain: None,
+    title: "Settings",
+    target: Target::Draft,
+    paths: &[ESTIMATE],
+    fields: SETTINGS_FIELDS,
+    item: settings_item,
+    store: settings_store,
+    typed: settings_typed,
+    list: None,
+};
+
+fn settings_item(draft: &Draft, index: usize) -> Option<Table> {
+    let mut settings = draft.plan.estimate.clone().unwrap_or_default();
+    settings.assign.clear();
+    (index == 0).then(|| to_table(&settings))
+}
+
+fn settings_store(draft: &mut Draft, _: usize, table: Table) -> Result<(), String> {
+    let mut settings: EstimateSettings = from_table(table)?;
+    settings.bucket = settings.bucket.filter(|id| !id.is_empty());
+    settings.assign = draft
+        .plan
+        .estimate
+        .take()
+        .map(|it| it.assign)
+        .unwrap_or_default();
+    draft.plan.estimate = (settings != EstimateSettings::default()).then_some(settings);
+    Ok(())
+}
+
+fn settings_typed(table: Table) -> Option<Table> {
+    from_table::<EstimateSettings>(table)
+        .ok()
+        .map(|it| to_table(&it))
+}
+
 #[derive(Serialize, Deserialize)]
-pub struct SetAnswers {
+struct SetAnswers {
     amount: Dollars,
     phases: Phases,
 }
@@ -113,9 +139,8 @@ impl ToolAnswers for SetAnswers {
     const SLOT: &'static str = "estimate-set";
 }
 
-/// An expense to add, as its form holds it.
 #[derive(Serialize, Deserialize)]
-pub struct NewAnswers {
+struct NewAnswers {
     name: String,
     amount: Dollars,
     one_time: bool,
@@ -125,9 +150,8 @@ impl ToolAnswers for NewAnswers {
     const SLOT: &'static str = "estimate-new";
 }
 
-/// Where a category goes, as its form holds it.
 #[derive(Serialize, Deserialize)]
-pub struct MoveAnswers {
+struct MoveAnswers {
     #[serde(skip_serializing_if = "Option::is_none")]
     expense: Option<String>,
 }
@@ -136,9 +160,8 @@ impl ToolAnswers for MoveAnswers {
     const SLOT: &'static str = "estimate-move";
 }
 
-/// What a payee is for, as its form holds it.
 #[derive(Serialize, Deserialize)]
-pub struct PayeeAnswers {
+struct PayeeAnswers {
     category: Option<Category>,
 }
 
@@ -146,24 +169,15 @@ impl ToolAnswers for PayeeAnswers {
     const SLOT: &'static str = "estimate-payee";
 }
 
-/// The plan's `[estimate]` table, as its form holds it.
-#[derive(Serialize, Deserialize)]
-pub struct SettingsAnswers {
-    lean: Lean,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    large_share: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    bucket: Option<String>,
-}
-
-impl ToolAnswers for SettingsAnswers {
-    const SLOT: &'static str = "estimate-settings";
+/// The plan expense a proposal sets, none where it adds one.
+fn stated(proposal: &Proposal) -> Option<String> {
+    (!proposal.is_new).then(|| proposal.id.clone())
 }
 
 /// The form `row` is edited in, and the answers it opens on.
 pub(super) fn opened(row: Listed<'_>) -> Option<(RowForm, Table)> {
     Some(match row {
-        Listed::Expense(proposal) if proposal.expense.is_some() => {
+        Listed::Expense(proposal) if !proposal.is_new => {
             let answers = SetAnswers {
                 amount: proposal.amount,
                 phases: proposal.phases,
@@ -180,7 +194,7 @@ pub(super) fn opened(row: Listed<'_>) -> Option<(RowForm, Table)> {
         }
         Listed::Category { into, .. } => {
             let answers = MoveAnswers {
-                expense: into.expense.clone(),
+                expense: stated(into),
             };
             (RowForm::Move, to_table(&answers))
         }
@@ -189,42 +203,46 @@ pub(super) fn opened(row: Listed<'_>) -> Option<(RowForm, Table)> {
     })
 }
 
-/// What applying `row`'s form, its answers in `draft`, comes to.
+/// What applying the form of `row`, other than an expense's, comes to with
+/// its answers in `draft`.
 pub(super) fn applied(row: Listed<'_>, draft: &Draft) -> Result<Applied, String> {
-    match row {
-        Listed::Expense(_) => Ok(Applied::Held),
-        Listed::Category { category, into, .. } => {
+    Ok(match row {
+        Listed::Category { gathered, into } => {
             let answers: MoveAnswers = from_table(draft.answers::<MoveAnswers>())?;
             let expense = answers.expense.filter(|id| !id.is_empty());
-            if expense == into.expense {
-                return Ok(Applied::Held);
+            if expense == stated(into) {
+                Applied::Held
+            } else {
+                Applied::Moved {
+                    category: gathered.category,
+                    expense,
+                }
             }
-            Ok(Applied::Moved { category, expense })
         }
         Listed::Payee(unknown) => {
             let answers: PayeeAnswers = from_table(draft.answers::<PayeeAnswers>())?;
-            Ok(answers
+            answers
                 .category
                 .map_or(Applied::Held, |category| Applied::Named {
                     payee: unknown.payee.clone(),
                     category,
-                }))
+                })
         }
-        Listed::Unnamed { .. } => Err(NOTHING_PICKED.to_owned()),
-    }
+        Listed::Expense(_) | Listed::Unnamed { .. } => Applied::Held,
+    })
 }
 
 /// Writes the expense form's answers in `draft` into `proposal`.
 pub(super) fn hold(proposal: &mut Proposal, draft: &Draft) -> Result<(), String> {
-    if proposal.expense.is_some() {
-        let answers: SetAnswers = from_table(draft.answers::<SetAnswers>())?;
-        proposal.amount = answers.amount;
-        proposal.phases = answers.phases;
-    } else {
+    if proposal.is_new {
         let answers: NewAnswers = from_table(draft.answers::<NewAnswers>())?;
         proposal.name = answers.name;
         proposal.amount = answers.amount;
         proposal.one_time = answers.one_time;
+    } else {
+        let answers: SetAnswers = from_table(draft.answers::<SetAnswers>())?;
+        proposal.amount = answers.amount;
+        proposal.phases = answers.phases;
     }
     Ok(())
 }
@@ -238,54 +256,6 @@ pub fn assign(plan: &mut Plan, category: Category, expense: Option<String>) {
         settings.assign.push(Assign { category, expense });
     }
     plan.estimate = (settings != EstimateSettings::default()).then_some(settings);
-}
-
-/// `plan`'s `[estimate]` table as its form holds it.
-#[must_use]
-pub fn settings_table(plan: &Plan) -> Table {
-    let settings = plan.estimate.clone().unwrap_or_default();
-    to_table(&SettingsAnswers {
-        lean: settings.lean,
-        large_share: settings.large_share,
-        bucket: settings.bucket,
-    })
-}
-
-/// Writes the settings form's `table` into `plan`'s `[estimate]`, keeping
-/// its assignments.
-///
-/// # Errors
-///
-/// The schema's complaint about a value.
-pub fn take_settings(plan: &mut Plan, table: Table) -> Result<(), String> {
-    let answers: SettingsAnswers = from_table(table)?;
-    let mut settings = plan.estimate.take().unwrap_or_default();
-    settings.lean = answers.lean;
-    settings.large_share = answers.large_share;
-    settings.bucket = answers.bucket.filter(|id| !id.is_empty());
-    plan.estimate = (settings != EstimateSettings::default()).then_some(settings);
-    Ok(())
-}
-
-/// `plan`'s `[estimate]` table read out, each label beside what it says.
-#[must_use]
-pub fn settings_read(plan: &Plan) -> Vec<(String, String)> {
-    let settings = plan.estimate.clone().unwrap_or_default();
-    let lean = LEANS
-        .iter()
-        .find(|(slug, _)| *slug == settings.lean.slug())
-        .map_or(settings.lean.slug(), |(_, words)| words);
-    let mut rows = vec![("Lean".to_owned(), lean.to_owned())];
-    if settings.lean == Lean::Large {
-        rows.push(("Large share".to_owned(), rate(settings.large_share())));
-    }
-    let bucket = match (estimate::bucket(plan), &settings.bucket) {
-        (Some(expense), Some(_)) => expense.display_name().to_owned(),
-        (Some(expense), None) => format!("{}, detected", expense.display_name()),
-        (None, _) => "a new Other expense".to_owned(),
-    };
-    rows.push(("Bucket".to_owned(), bucket));
-    rows
 }
 
 /// The user's patterns file `text`, none where it does not exist yet, with
@@ -305,7 +275,7 @@ pub fn with_payee(text: Option<&str>, payee: &str, category: Category) -> Result
         "\n[[patterns]]\nmatch = {quoted}\ncategory = \"{}\"\n",
         category.slug()
     );
-    retiretui_engine::estimate::Patterns::default()
+    Patterns::default()
         .add(&file)
         .map_err(|error| format!("the patterns file does not read: {error}"))?;
     Ok(file)

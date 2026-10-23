@@ -35,6 +35,7 @@ const LEAVE_AT_LEAST = {
 
 /** The share of random markets the ceiling is held to. */
 const TARGET: Settings = {
+  id: "target",
   heading: "Target",
   read: (document) => document.targetRead(),
   open: (document) => document.target(),
@@ -194,7 +195,7 @@ export function SpendingPage({ title }: { title: string }) {
         )}
         <SettingsRead settings={TARGET} />
       </div>
-      {search.edit && <SettingsForm settings={TARGET} />}
+      {search.edit === TARGET.id && <SettingsForm settings={TARGET} />}
     </div>
   );
 }

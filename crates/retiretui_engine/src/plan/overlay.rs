@@ -5,8 +5,8 @@ use toml::{Table, Value};
 
 use super::diff::sections;
 use super::scenario::{
-    BASE_KEY, HOUSEHOLD_KEY, ID_KEY, PEOPLE_KEY, REMOVE_KEY, REPLACE_KEY, SCHEMA_KEY, is_keyed,
-    split_household,
+    BASE_KEY, HOUSEHOLD_KEY, ID_KEY, PEOPLE_KEY, REMOVE_KEY, REPLACE_KEY, SCHEMA_KEY, is_fields,
+    is_keyed, split_household,
 };
 use super::validate::push_issue;
 use super::{Issue, SCHEMA_VERSION, Scenario};
@@ -66,7 +66,7 @@ impl Scenario {
 
 fn state_section(section: &str, sides: Sides<'_>, issues: &mut Vec<Issue>) -> Option<Value> {
     match section {
-        "plan" | "market" | "estimate" => state_fields(section, sides, issues).map(Value::Table),
+        _ if is_fields(section) => state_fields(section, sides, issues).map(Value::Table),
         HOUSEHOLD_KEY => state_household(sides, issues),
         _ if is_keyed(section) => state_items(sides),
         _ => state_whole(section, sides, issues),

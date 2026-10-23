@@ -16,14 +16,11 @@ export interface Settings {
   read: (document: Document) => ReadRow[];
   open: (document: Document) => Editor;
   apply: (document: Document, editor: Editor) => void;
-  /** The address flag that holds the form open; `edit` where unstated. */
-  flag?: SettingsFlag;
+  /** What the address names the form by while it is open. */
+  id: string;
   /** Whether there is anything to edit; true where unstated. */
   isEditable?: boolean;
 }
-
-/** The address flags a tool's forms are held open by. */
-export type SettingsFlag = "edit" | "editSettings";
 
 /** A tool's settings read out, and Edit. */
 export function SettingsRead({ settings }: { settings: Settings }) {
@@ -44,7 +41,7 @@ export function SettingsRead({ settings }: { settings: Settings }) {
             <Link
               from="/tools/$page"
               to="."
-              search={(held) => ({ ...held, [settings.flag ?? "edit"]: true })}
+              search={(held) => ({ ...held, edit: settings.id })}
               resetScroll={false}
             >
               <Pencil aria-hidden />
@@ -68,13 +65,12 @@ export function SettingsForm({ settings }: { settings: Settings }) {
     [document, settings],
   );
   const [refusal, setRefusal] = useState<string | null>(null);
-  const flag = settings.flag ?? "edit";
 
   if (!editor) return null;
 
   const close = () => {
     void navigate({
-      search: (held) => ({ ...held, [flag]: undefined }),
+      search: (held) => ({ ...held, edit: undefined }),
       resetScroll: false,
     });
   };
@@ -94,7 +90,7 @@ export function SettingsForm({ settings }: { settings: Settings }) {
   return (
     <FormSheet
       editor={editor}
-      isStaying={(next) => (next.search as ToolSearch)[flag] === true}
+      isStaying={(next) => (next.search as ToolSearch).edit === settings.id}
       refusal={refusal}
       apply={apply}
       close={close}

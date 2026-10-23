@@ -13,6 +13,10 @@ is_nested: boolean,
  */
 is_editable: boolean, 
 /**
+ * What it is, as its read-out is headed.
+ */
+title: string, 
+/**
  * The row under the columns.
  */
 cells: [string, string, string], };

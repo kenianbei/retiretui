@@ -5,9 +5,9 @@ import { heldIn, heldOf, keptSearch } from "@/year/search";
 
 describe("toolSearch", () => {
   it("keeps a whole bracket, the nominal basis, and an open form", () => {
-    expect(toolSearch({ bracket: "22", basis: "nominal", edit: true })).toEqual(
-      { bracket: 22, basis: "nominal", edit: true },
-    );
+    expect(
+      toolSearch({ bracket: "22", basis: "nominal", edit: "constraints" }),
+    ).toEqual({ bracket: 22, basis: "nominal", edit: "constraints" });
   });
 
   it("drops what does not read", () => {

@@ -4,7 +4,7 @@
 use retiretui_engine::estimate::Category;
 use retiretui_engine::optimize::GainsRate;
 use retiretui_engine::plan::{
-    AccountKind, COUNTRIES, ColaAnchor, Draw, FilingStatus, IncomeKind, Item, Payer, Plan,
+    AccountKind, COUNTRIES, ColaAnchor, Draw, FilingStatus, IncomeKind, Item, Lean, Payer, Plan,
     TreatmentClass, TriggerBasis, US_STATES,
 };
 use serde::Serialize;
@@ -67,13 +67,6 @@ const PHASES: &[(&str, &str)] = &[
     ("this", "This phase alone"),
     ("scaled", "Every phase, scaled alike"),
     ("all", "Every phase, this amount"),
-];
-
-/// Each lean and the words it is offered and read out in.
-pub(crate) const LEANS: &[(&str, &str)] = &[
-    ("existing", "Existing expenses only"),
-    ("large", "New ones for large categories"),
-    ("new", "A new one for every category"),
 ];
 
 const TIMINGS: &[(&str, &str)] = &[(applies::EVERY_YEAR, "Every year"), (applies::ONCE, "Once")];
@@ -160,7 +153,7 @@ impl Vocabulary {
             Self::GainsRate => offers(GainsRate::ALL, GainsRate::as_str, present::gains_rate),
             Self::Category => category_offers(),
             Self::Phases => offers(PHASES, |phases| phases.0, |phases| phases.1),
-            Self::Lean => offers(LEANS, |lean| lean.0, |lean| lean.1),
+            Self::Lean => offers(&Lean::ALL, Lean::slug, present::lean),
         }
     }
 }

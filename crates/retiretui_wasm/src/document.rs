@@ -238,6 +238,16 @@ impl Document {
         self.draft.set_answers::<T>(answers);
     }
 
+    /// Holds `answers` as `form`'s, as opening it does, through the form's
+    /// own store.
+    ///
+    /// # Errors
+    ///
+    /// The schema's complaint about a value.
+    pub(crate) fn hold_form(&mut self, form: &Form, answers: toml::Table) -> Result<(), String> {
+        (form.store)(&mut self.draft, 0, answers)
+    }
+
     /// Stores what the tool form `editor` holds as that tool's answers,
     /// outside the plan's history.
     ///

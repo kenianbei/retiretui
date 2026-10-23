@@ -2,7 +2,8 @@
 //! spending sorted, annualized and deflated, and the proposals applied.
 
 use retiretui_engine::estimate::{
-    BankError, Category, Cents, Estimate, Patterns, Phases, Proposal, apply, estimate, merge, read,
+    BankError, Category, Cents, Estimate, Patterns, Phases, Proposal, Why, apply, estimate, merge,
+    read,
 };
 use retiretui_engine::plan::Plan;
 
@@ -72,7 +73,7 @@ fn gathers(proposal: &Proposal, category: Category) -> bool {
     proposal
         .categories
         .iter()
-        .any(|(each, _)| *each == category)
+        .any(|each| each.category == category)
 }
 
 /// Each proposal's id, the categories it gathers, what the unknown payees
@@ -82,7 +83,7 @@ fn landed(found: &Estimate) -> Vec<(&str, Vec<Category>, i64, i64, bool)> {
         .proposals
         .iter()
         .map(|p| {
-            let categories = p.categories.iter().map(|(c, _)| *c).collect();
+            let categories = p.categories.iter().map(|it| it.category).collect();
             (p.id.as_str(), categories, p.unknown, p.amount, p.is_bucket)
         })
         .collect()
@@ -112,7 +113,10 @@ fn a_csv_sorts_its_rows_and_names_the_expense_each_sets() {
     let [groceries] = &found.proposals[..] else {
         panic!("{:?}", found.proposals)
     };
-    assert_eq!(groceries.expense.as_deref(), Some("groceries"));
+    assert_eq!(
+        (groceries.id.as_str(), groceries.is_new),
+        ("groceries", false)
+    );
     assert_eq!(
         groceries.name, "groceries",
         "the expense as the plan names it"
@@ -197,7 +201,7 @@ fn a_banks_own_category_wins_and_a_payee_nothing_names_is_listed() {
         ("SOMEONE", 720, 2)
     );
     let dining = &found.proposals[0];
-    assert_eq!(dining.expense, None);
+    assert!(dining.is_new);
     assert_eq!(dining.name, "Dining");
     assert!(found.proposals[1].is_bucket && found.proposals[1].unknown == 720);
 }
@@ -286,6 +290,12 @@ fn leaning_on_existing_folds_each_category_into_its_family_else_the_bucket() {
         1,
         "a payee in the bucket is still listed"
     );
+    let whys: Vec<Why> = found
+        .proposals
+        .iter()
+        .flat_map(|p| p.categories.iter().map(|it| it.why))
+        .collect();
+    assert_eq!(whys, [Why::Named, Why::Family, Why::Bucket]);
 }
 
 #[test]
@@ -323,10 +333,7 @@ fn a_plan_without_a_bucket_is_proposed_one_and_the_named_one_wins() {
     let mut taken = plan(&format!("{GROCERIES}\n[estimate]\nlean = \"existing\"\n"));
     let found = estimated(&taken, MIXED);
     let bucket = found.proposals.last().unwrap();
-    assert_eq!(
-        (bucket.id.as_str(), bucket.expense.as_deref()),
-        ("other", None)
-    );
+    assert_eq!((bucket.id.as_str(), bucket.is_new), ("other", true));
     assert!(bucket.is_bucket && gathers(bucket, Category::Subscriptions));
     apply(&mut taken, &found);
     assert_eq!(

@@ -77,7 +77,7 @@ test("both ceilings are found, one taken and written, and another target searche
   const target = page.getByRole("region", { name: "Target" });
   await expect(target).toContainText("90%, the default");
   await target.getByRole("link", { name: "Edit" }).click();
-  await page.waitForURL(/edit=true/);
+  await page.waitForURL(/edit=target/);
   const sheet = page.getByRole("dialog");
   await sheet.getByRole("textbox", { name: "Target success" }).fill("75%");
   await sheet.getByRole("button", { name: "Apply" }).click();

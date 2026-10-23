@@ -2,7 +2,7 @@
 //! categories it gathers beneath it, what the bucket takes of the payees
 //! nothing names, and then those payees; each said in a row and read out.
 
-use retiretui_engine::estimate::{Category, Estimate, Proposal, Unknown};
+use retiretui_engine::estimate::{Estimate, Gathered, Proposal, Unknown, Why};
 use retiretui_engine::plan::{Dollars, Plan};
 
 use super::{NOTHING_READ, UNKNOWN};
@@ -23,10 +23,8 @@ pub enum Listed<'a> {
     Expense(&'a Proposal),
     /// A category gathered into the expense above it.
     Category {
-        /// The category.
-        category: Category,
-        /// What it adds a year.
-        amount: Dollars,
+        /// The category, what it adds, and why it landed here.
+        gathered: &'a Gathered,
         /// The expense it goes to.
         into: &'a Proposal,
     },
@@ -43,38 +41,33 @@ pub enum Listed<'a> {
 
 /// The table's rows: each expense with what it gathers beneath it, then
 /// the payees nothing names.
-#[must_use]
-pub fn listed(estimate: &Estimate) -> Vec<Listed<'_>> {
-    let mut rows = Vec::new();
-    for proposal in &estimate.proposals {
-        rows.push(Listed::Expense(proposal));
+pub fn listed(estimate: &Estimate) -> impl Iterator<Item = Listed<'_>> {
+    let expenses = estimate.proposals.iter().flat_map(|proposal| {
         let gathered = proposal
             .categories
             .iter()
-            .map(|&(category, amount)| Listed::Category {
-                category,
-                amount,
+            .map(move |gathered| Listed::Category {
+                gathered,
                 into: proposal,
             });
-        rows.extend(gathered);
-        if proposal.unknown > 0 {
-            rows.push(Listed::Unnamed {
-                amount: proposal.unknown,
-                into: proposal,
-            });
-        }
-    }
-    rows.extend(estimate.unknown.iter().map(Listed::Payee));
-    rows
+        let unnamed = (proposal.unknown > 0).then_some(Listed::Unnamed {
+            amount: proposal.unknown,
+            into: proposal,
+        });
+        std::iter::once(Listed::Expense(proposal))
+            .chain(gathered)
+            .chain(unnamed)
+    });
+    expenses.chain(estimate.unknown.iter().map(Listed::Payee))
 }
 
 /// The expense's name, marked where it is new or the bucket.
 fn marked(proposal: &Proposal) -> String {
-    let mark = match (proposal.expense.is_some(), proposal.is_bucket) {
-        (true, true) => BUCKET_MARK,
-        (true, false) => "",
-        (false, true) => NEW_BUCKET_MARK,
-        (false, false) => NEW_MARK,
+    let mark = match (proposal.is_new, proposal.is_bucket) {
+        (false, true) => BUCKET_MARK,
+        (false, false) => "",
+        (true, true) => NEW_BUCKET_MARK,
+        (true, false) => NEW_MARK,
     };
     format!("{}{mark}", proposal.name)
 }
@@ -89,12 +82,10 @@ impl Listed<'_> {
                 months.to_string(),
                 form.money(proposal.amount),
             ],
-            Self::Category {
-                category, amount, ..
-            } => [
-                format!("{INDENT}{}", category.title()),
+            Self::Category { gathered, .. } => [
+                format!("{INDENT}{}", gathered.category.title()),
                 String::new(),
-                form.money(*amount),
+                form.money(gathered.amount),
             ],
             Self::Unnamed { amount, .. } => [
                 format!("{INDENT}{UNNAMED}"),
@@ -115,21 +106,34 @@ impl Listed<'_> {
         matches!(self, Self::Category { .. } | Self::Unnamed { .. })
     }
 
+    /// Whether a form edits the row.
+    #[must_use]
+    pub const fn is_editable(&self) -> bool {
+        !matches!(self, Self::Unnamed { .. })
+    }
+
+    /// What the row is, as its read-out is headed.
+    #[must_use]
+    pub const fn title(&self) -> &'static str {
+        match self {
+            Self::Expense(_) => "Expense",
+            Self::Category { .. } => "Category",
+            Self::Unnamed { .. } => "Payees",
+            Self::Payee(_) => "Payee",
+        }
+    }
+
     /// The row read out beside the table.
     #[must_use]
     pub fn read_out(&self, plan: &Plan, months: u8, form: MoneyForm) -> Vec<(String, String)> {
         let own = |label: &str, text: String| (label.to_owned(), text);
         match *self {
             Self::Expense(proposal) => expense_read(plan, proposal, months, form),
-            Self::Category {
-                category,
-                amount,
-                into,
-            } => vec![
-                own("Category", category.title()),
+            Self::Category { gathered, into } => vec![
+                own("Category", gathered.category.title()),
                 own("Goes to", marked(into)),
-                own("Because", reason(plan, category, into).to_owned()),
-                own("Spent", format!("{} a year", form.money(amount))),
+                own("Because", because(gathered.why).to_owned()),
+                own("Spent", format!("{} a year", form.money(gathered.amount))),
             ],
             Self::Unnamed { amount, into } => vec![
                 own("Payees", UNNAMED.to_owned()),
@@ -152,10 +156,9 @@ fn expense_read(
     months: u8,
     form: MoneyForm,
 ) -> Vec<(String, String)> {
-    let stated = proposal
-        .expense
-        .as_deref()
-        .and_then(|id| plan.expenses.iter().find(|e| e.id == id));
+    let stated = (!proposal.is_new)
+        .then(|| plan.expenses.iter().find(|e| e.id == proposal.id))
+        .flatten();
     let mut rows = vec![
         ("Expense".to_owned(), marked(proposal)),
         (
@@ -182,23 +185,15 @@ fn expense_read(
     rows
 }
 
-/// Why `category` landed in `into`.
-fn reason(plan: &Plan, category: Category, into: &Proposal) -> &'static str {
-    let assigns = plan.estimate.iter().flat_map(|it| &it.assign);
-    let stated = into
-        .expense
-        .as_deref()
-        .and_then(|id| plan.expenses.iter().find(|e| e.id == id));
-    if assigns.into_iter().any(|it| it.category == category) {
-        "assigned in the plan"
-    } else if stated.is_some_and(|e| category.matches(e)) {
-        "the expense is named for it"
-    } else if into.is_bucket {
-        "nothing else fits it"
-    } else if stated.is_some() {
-        "the expense is of its family"
-    } else {
-        "it is large enough for its own"
+/// Why a category landed where it did, in words.
+const fn because(why: Why) -> &'static str {
+    match why {
+        Why::Assigned => "assigned in the plan",
+        Why::Named => "the expense is named for it",
+        Why::Family => "the expense is of its family",
+        Why::Bucket => "nothing else fits it",
+        Why::Large => "it is large enough for its own",
+        Why::Always => "the plan leans to a new one for each",
     }
 }
 
@@ -220,11 +215,7 @@ pub fn summary(estimate: &Estimate, form: MoneyForm) -> String {
 }
 
 fn counts(estimate: &Estimate) -> (usize, usize) {
-    let set = estimate
-        .proposals
-        .iter()
-        .filter(|p| p.expense.is_some())
-        .count();
+    let set = estimate.proposals.iter().filter(|p| !p.is_new).count();
     (set, estimate.proposals.len() - set)
 }
 

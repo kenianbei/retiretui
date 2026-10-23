@@ -58,7 +58,7 @@ test("exports are read, a proposal edited, and the proposals taken and written",
   const readOut = page.getByRole("region", { name: "Expense", exact: true });
   await expect(readOut).toContainText("CITY OF SAN JOSE WATER");
   await readOut.getByRole("link", { name: "Edit" }).click();
-  await page.waitForURL(/edit=true/);
+  await page.waitForURL(/edit=row/);
   const sheet = page.getByRole("dialog");
   const amount = sheet.getByLabel("Amount", { exact: true });
   await amount.focus();
@@ -126,7 +126,7 @@ test("the plan's estimate settings fold categories into its expenses", async ({
   const settings = page.getByRole("region", { name: "Settings" });
   await expect(settings).toContainText("New ones for large categories");
   await settings.getByRole("link", { name: "Edit" }).click();
-  await page.waitForURL(/editSettings=true/);
+  await page.waitForURL(/edit=settings/);
   const sheet = page.getByRole("dialog");
   await sheet
     .getByLabel("Lean", { exact: true })

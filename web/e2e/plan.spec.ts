@@ -63,7 +63,7 @@ test("edits not applied are asked about before they are left", async ({
     ["#/plan/settings", "#/plan/settings?edit=0", "Inflation"],
     [
       "#/tools/roth-conversions",
-      "#/tools/roth-conversions?edit=true",
+      "#/tools/roth-conversions?edit=constraints",
       "Headroom",
     ],
   ] as const) {

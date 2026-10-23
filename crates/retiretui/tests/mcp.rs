@@ -436,11 +436,11 @@ fn estimate_spending_proposes_from_exports_and_writes_the_overlay() {
     );
     assert_eq!(reply["months"], 1, "{reply}");
     assert_eq!(
-        reply["proposals"][0]["categories"][0][0], "dining",
+        reply["proposals"][0]["categories"][0]["category"], "dining",
         "{reply}"
     );
     assert_eq!(
-        reply["proposals"][1]["categories"][0][0], "utilities",
+        reply["proposals"][1]["categories"][0]["category"], "utilities",
         "{reply}"
     );
     assert_eq!(reply["written"], true, "{reply}");

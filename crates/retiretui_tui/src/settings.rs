@@ -168,7 +168,9 @@ fn with_key(text: &str, key: &[&str], value: Value) -> Result<String, String> {
     Ok(document.to_string())
 }
 
-fn write(store: &dyn Store, path: &std::path::Path, text: &str) -> std::io::Result<()> {
+/// Writes `text` at `path` in `store`, making its directory where there is
+/// none.
+pub(crate) fn write(store: &dyn Store, path: &std::path::Path, text: &str) -> std::io::Result<()> {
     if let Some(directory) = path.parent() {
         store.create_dir_all(directory)?;
     }

@@ -4,7 +4,7 @@
 
 use retiretui_engine::optimize::GainsRate;
 use retiretui_engine::plan::{
-    AccountKind, COUNTRIES, ColaAnchor, Dollars, Draw, FilingStatus, IncomeKind, Payer, Plan,
+    AccountKind, COUNTRIES, ColaAnchor, Dollars, Draw, FilingStatus, IncomeKind, Lean, Payer, Plan,
     PlanDate, Residency, TreatmentClass, Trigger, TriggerBasis, TriggerForm, US_STATES, place_name,
 };
 use retiretui_engine::project::Summary;
@@ -47,6 +47,16 @@ pub const fn draw(draw: Draw) -> &'static str {
     match draw {
         Draw::Assumptions => "Your return assumptions",
         Draw::History => "Historical years",
+    }
+}
+
+/// How readily the spending estimate proposes a new expense, in words.
+#[must_use]
+pub const fn lean(lean: Lean) -> &'static str {
+    match lean {
+        Lean::Existing => "Existing expenses only",
+        Lean::Large => "New ones for large categories",
+        Lean::New => "A new one for every category",
     }
 }
 

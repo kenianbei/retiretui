@@ -7,7 +7,7 @@ use crate::plan::Expense;
 
 /// Categories that land in one another's expense where they have none of
 /// their own.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[allow(missing_docs, reason = "each variant is its own word")]
 pub enum Family {
     Food,
@@ -101,7 +101,7 @@ impl Category {
     /// expense for.
     #[must_use]
     pub const fn is_spending(self) -> bool {
-        !matches!(self, Self::Income | Self::Transfer)
+        self.family().is_some()
     }
 
     /// The slug first, then what else a bank or a plan calls it.
@@ -200,12 +200,16 @@ impl Category {
     /// its words.
     #[must_use]
     pub fn matches(self, expense: &Expense) -> bool {
-        let id = expense.id.replace('-', " ").to_lowercase();
-        let name = expense.name.as_deref().unwrap_or_default().to_lowercase();
-        self.words()
-            .iter()
-            .any(|w| id.contains(w) || name.contains(w))
+        names_any(expense, self.words())
     }
+}
+
+/// Whether the expense's id, its hyphens read as spaces, or its name holds
+/// one of `words`, lowercase.
+pub(super) fn names_any(expense: &Expense, words: &[&str]) -> bool {
+    let id = expense.id.replace('-', " ").to_lowercase();
+    let name = expense.name.as_deref().unwrap_or_default().to_lowercase();
+    words.iter().any(|w| id.contains(w) || name.contains(w))
 }
 
 #[cfg(test)]
@@ -214,15 +218,9 @@ mod tests {
     use crate::plan::Plan;
 
     #[test]
-    fn every_spending_category_has_a_family_and_nothing_else_does() {
-        for category in Category::ALL {
-            assert_eq!(
-                category.family().is_some(),
-                category.is_spending(),
-                "{category:?}"
-            );
-        }
+    fn a_category_and_its_kin_share_a_family() {
         assert_eq!(Category::Dining.family(), Category::Groceries.family());
+        assert_eq!(Category::Transfer.family(), None);
     }
 
     #[test]
