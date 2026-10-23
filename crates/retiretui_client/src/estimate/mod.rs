@@ -2,11 +2,13 @@
 //! holds, each proposed expense with the categories it gathers and each
 //! payee nothing names as a row and read out, the forms each kind of row
 //! and the plan's `[estimate]` table are edited in, what is asked and said
-//! when the proposals are taken, and the shape they are replied in.
+//! when the proposals are taken, and the shapes they and the records behind
+//! them are replied in.
 
 mod act;
 mod behind;
 mod forms;
+mod records;
 mod rows;
 mod rules;
 #[cfg(test)]
@@ -23,6 +25,7 @@ use toml::Table;
 pub use act::{Action, reached, record_menu, starting_words};
 pub use behind::Behind;
 pub use forms::{RowForm, SETTINGS_FORM, assign};
+pub use records::{RecordReply, RecordsReply};
 pub use rows::{Listed, listed, summary, take_question, taken};
 pub use rules::{Change, Record, To};
 

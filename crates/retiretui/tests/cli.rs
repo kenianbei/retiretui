@@ -467,3 +467,54 @@ fn estimate_proposes_the_plans_spending_from_a_banks_exports() {
     let stderr = String::from_utf8(refused.stderr).unwrap();
     assert!(stderr.contains("cannot tell the columns apart"), "{stderr}");
 }
+
+#[test]
+fn estimate_lists_the_records_asked_for_and_what_sorted_each() {
+    let dir = scratch_dir("cli-estimate-records", "plan.toml", &[]);
+    let user = dir.join("config/retiretui/estimate");
+    std::fs::create_dir_all(&user).unwrap();
+    let ignoring = "patterns = [{ is = \"ATM WITHDRAWAL\", ignore = true }]\n";
+    std::fs::write(user.join("patterns.toml"), ignoring).unwrap();
+    let proposed = dir.join("proposed.toml");
+    let dining = "patterns = [{ match = \"SAFEWAY\", category = \"dining\" }]\n";
+    std::fs::write(&proposed, dining).unwrap();
+    let plan = dir.join("plan.toml");
+    let chase = format!("{BANK_EXPORTS}/chase.csv");
+    let run = |args: &[&str]| {
+        Command::new(env!("CARGO_BIN_EXE_retiretui"))
+            .args(["estimate", plan.to_str().unwrap(), &chase])
+            .args(["--patterns", proposed.to_str().unwrap()])
+            .args(args)
+            .env("XDG_CONFIG_HOME", dir.join("config"))
+            .output()
+            .unwrap()
+    };
+    let table = run(&["--payee", "safeway"]);
+    assert!(table.status.success(), "{table:?}");
+    let table = text_of(&table.stdout);
+    assert!(
+        table.starts_with("Records: payees containing safeway - 1 record, $"),
+        "{table}"
+    );
+    assert!(
+        table.contains("SAFEWAY #1234, SAN JOSE  $142.17  dining  rule 1 in proposed.toml"),
+        "{table}"
+    );
+    let ignored = json_of(&run(&["--ignored", "--format", "json"]));
+    assert_eq!(ignored["count"], 2, "{ignored}");
+    assert_eq!(
+        ignored["records"][0]["by"],
+        serde_json::json!({ "rule": { "file": "patterns.toml", "at": 1 } })
+    );
+    let alone = json_of(&run(&[
+        "--ignored",
+        "--no-user-patterns",
+        "--format",
+        "json",
+    ]));
+    assert_eq!(alone["count"], 0, "{alone}");
+    let refused = run(&["--category", "groceries", "--write", "x.toml"]);
+    assert!(!refused.status.success());
+    let refused = run(&["--category", "nonsense"]);
+    assert!(text_of(&refused.stderr).contains("one of groceries"));
+}

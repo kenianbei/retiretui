@@ -53,7 +53,6 @@ impl Listed<'_> {
         let Some(of) = self.of() else {
             return Behind::default();
         };
-        let what = what(&of);
         let found = records(rows, patterns, &of);
         Behind {
             ignored: Some(of == Of::Ignored),
@@ -61,20 +60,21 @@ impl Listed<'_> {
                 .iter()
                 .map(|row| patterns.name_of(&row.payee))
                 .collect(),
-            ..records_behind(&what, &found)
+            ..records_behind(records_title(&of), &found)
         }
     }
 }
 
-/// Whose records `of` selects, as their heading names them.
-pub(super) fn what(of: &Of) -> String {
-    match of {
+/// The heading of the records `of` selects: `Records: Groceries`.
+pub(super) fn records_title(of: &Of) -> String {
+    let what = match of {
         Of::Category(category) => category.title(),
         Of::Payee(payee) => payee.clone(),
         Of::Containing(words) => format!("payees containing {}", words.trim()),
         Of::Unnamed => UNNAMED.to_owned(),
         Of::Ignored => IGNORED.to_lowercase(),
-    }
+    };
+    format!("Records: {what}")
 }
 
 /// An expense's payees, each with what it adds a year.
@@ -92,11 +92,11 @@ fn payees_behind(proposal: &Proposal, form: MoneyForm) -> Behind {
     }
 }
 
-/// `records` of `what`, each its date, its payee as the bank wrote it and
-/// what it spent, a credit negative.
-fn records_behind(what: &str, records: &[&Row]) -> Behind {
+/// `records` under `title`, each its date, its payee as the bank wrote it
+/// and what it spent, a credit negative.
+fn records_behind(title: String, records: &[&Row]) -> Behind {
     Behind {
-        title: format!("Records: {what}"),
+        title,
         columns: RECORD_COLUMNS.map(str::to_owned).to_vec(),
         rows: records
             .iter()
@@ -114,7 +114,7 @@ fn records_behind(what: &str, records: &[&Row]) -> Behind {
 }
 
 /// What a row spent, in dollars and cents: `$42.10`, `-$5.00` for money in.
-fn spent_cents(spent: Cents) -> String {
+pub(super) fn spent_cents(spent: Cents) -> String {
     let sign = if spent.0 < 0 { "-" } else { "" };
     let whole = spent.0.abs();
     format!(

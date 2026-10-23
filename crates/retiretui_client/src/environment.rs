@@ -81,28 +81,30 @@ pub fn patterns_path() -> Option<PathBuf> {
     config_dir("estimate").map(|dir| dir.join(PATTERNS_FILE))
 }
 
-/// The embedded spending patterns, with those at `explicit`, else the
-/// user's own where they keep one, before them.
+/// The embedded spending patterns, with the user's own before them where
+/// `is_user_read` and they keep one, and those at `explicit` before both.
 ///
 /// # Errors
 ///
-/// Where the file cannot be read or parsed.
-pub fn load_patterns(explicit: Option<&Path>) -> anyhow::Result<Patterns> {
+/// Where a file cannot be read or parsed.
+pub fn load_patterns(explicit: Option<&Path>, is_user_read: bool) -> anyhow::Result<Patterns> {
     let mut patterns = Patterns::embedded();
-    let user = patterns_path();
-    let Some(path) = explicit
-        .map(Path::to_path_buf)
-        .or_else(|| user.filter(|path| path.is_file()))
-    else {
-        return Ok(patterns);
-    };
+    let user = patterns_path().filter(|path| is_user_read && path.is_file());
+    for path in user.as_deref().into_iter().chain(explicit) {
+        add_patterns(&mut patterns, path)?;
+    }
+    Ok(patterns)
+}
+
+/// Puts the patterns file at `path` before those `patterns` hold.
+fn add_patterns(patterns: &mut Patterns, path: &Path) -> anyhow::Result<()> {
     let text =
-        fs::read_to_string(&path).with_context(|| format!("failed to read {}", path.display()))?;
+        fs::read_to_string(path).with_context(|| format!("failed to read {}", path.display()))?;
     let name = path
         .file_name()
         .map_or_else(String::new, |n| n.to_string_lossy().into_owned());
     patterns
         .add(&name, &text)
         .with_context(|| format!("in {}", path.display()))?;
-    Ok(patterns)
+    Ok(())
 }

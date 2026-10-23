@@ -47,7 +47,7 @@ pub fn run(args: &TuiArgs) -> anyhow::Result<()> {
         path: args.path.clone(),
         tables: load_tables(&args.tax_dir)?,
         history: load_history(None)?,
-        patterns: load_patterns(None)?,
+        patterns: load_patterns(None, true)?,
         patterns_file: patterns_path(),
         store: Arc::new(DiskStore),
         settings: config_dir(CONFIG_FILE),
