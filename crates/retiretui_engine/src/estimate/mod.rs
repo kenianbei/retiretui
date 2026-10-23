@@ -1,8 +1,9 @@
 //! The plan's expenses estimated from a bank's exports: each row sorted
-//! into a category by the bank's own column or by its payee's words, the
-//! latest twelve months' spending in each annualized in the plan's dollars,
-//! and each category proposed as the amount of the expense that is for it,
-//! or as a new expense where the plan has none.
+//! into a category by the bank's own column, its transaction type or its
+//! payee's words, the latest twelve months' spending in each annualized in
+//! the plan's dollars, and each category placed, as the plan's
+//! `[estimate]` table leans, in the expense that is for it, one of its
+//! family, a new one, or the bucket - one proposal per expense.
 
 mod bank;
 mod category;
@@ -10,19 +11,20 @@ mod csv;
 mod ofx;
 mod patterns;
 mod payee;
+mod place;
 
 use std::collections::{BTreeMap, HashMap};
 
 use bank::CENTS_PER_DOLLAR;
 pub use bank::{BankError, Cents, Row, merge, read};
-pub use category::Category;
+pub use category::{Category, Family};
 pub use patterns::Patterns;
 pub use payee::normalize;
 
 use serde::{Deserialize, Serialize};
 
 use crate::params::scale;
-use crate::plan::{ColaSpec, Dollars, Expense, Plan, PlanDate, Trigger};
+use crate::plan::{ColaSpec, Dollars, Expense, Item, Plan, PlanDate, Trigger};
 use crate::project::{inflation_factor, trigger_month};
 use crate::tax::month_index;
 
@@ -49,23 +51,32 @@ pub struct Estimate {
     pub transfers: Dollars,
 }
 
-/// One category's spending as the amount of one expense.
+/// What the spending landing in one expense comes to.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct Proposal {
-    /// What the rows were for.
-    pub category: Category,
     /// The plan expense it sets, or none to add one.
     pub expense: Option<String>,
+    /// The id a new expense is added under; the expense's own where it is
+    /// the plan's.
+    pub id: String,
     /// The expense's name, or the one a new expense is given.
     pub name: String,
+    /// Whether it collects what fits nowhere else.
+    pub is_bucket: bool,
     /// Annual, in the plan's start-year dollars.
     pub amount: Dollars,
     /// What the rows add up to over the window, in the same dollars.
     pub total: Dollars,
     /// How many rows.
     pub rows: usize,
+    /// Each category it gathers and what it adds up to a year, largest
+    /// first.
+    pub categories: Vec<(Category, Dollars)>,
+    /// What the payees nothing names add up to a year, where it is the
+    /// bucket.
+    pub unknown: Dollars,
     /// Each payee and what it adds up to, largest first.
     pub payees: Vec<(String, Dollars)>,
     /// The latest row's date.
@@ -115,6 +126,26 @@ struct Tally {
     last: Option<PlanDate>,
 }
 
+impl Tally {
+    fn absorb(&mut self, other: Self) {
+        self.total += other.total;
+        self.rows += other.rows;
+        for (payee, dollars) in other.payees {
+            *self.payees.entry(payee).or_default() += dollars;
+        }
+        self.last = self.last.max(other.last);
+    }
+}
+
+/// The tallies landing in one target, and what of them each category and
+/// the unknown payees bring.
+#[derive(Default)]
+struct Group {
+    tally: Tally,
+    categories: Vec<(Category, f64)>,
+    unknown: f64,
+}
+
 /// What `rows` say the plan spends, the latest twelve whole months taken
 /// and deflated to the plan's start-year dollars by its inflation.
 #[must_use]
@@ -134,32 +165,67 @@ pub fn estimate(plan: &Plan, rows: &[Row], patterns: &Patterns) -> Estimate {
         .iter()
         .filter(|row| (start..=end).contains(&month(row.on)));
     let (mut by_category, unknown) = tally(plan, in_window, patterns);
-    let proposals = Category::ALL
-        .into_iter()
-        .filter(|category| category.is_spending())
-        .filter_map(|category| by_category.remove(&category).map(|tally| (category, tally)))
-        .filter(|(_, tally)| tally.total < 0.0)
-        .map(|(category, tally)| proposal(plan, category, tally, annual))
-        .collect();
-    let mut unknown: Vec<Unknown> = unknown
-        .into_iter()
+    let mut listed: Vec<Unknown> = unknown
+        .iter()
         .map(|(payee, tally)| Unknown {
-            payee,
+            payee: payee.clone(),
             amount: annual(-tally.total),
             rows: tally.rows,
         })
         .collect();
-    unknown
+    let income = by_category.remove(&Category::Income);
+    let transfers = by_category.remove(&Category::Transfer);
+    let (groups, bucket) = grouped(plan, by_category, unknown);
+    let proposals = groups
+        .into_iter()
+        .map(|(target, group)| {
+            let mut proposal = proposal(plan, target, group, &annual);
+            proposal.is_bucket = target == bucket;
+            proposal
+        })
+        .collect();
+    listed
         .sort_by(|a, b| (b.amount.abs().cmp(&a.amount.abs())).then_with(|| a.payee.cmp(&b.payee)));
-    let mut tallied = |category| by_category.remove(&category).map_or(0, |t| annual(t.total));
+    let tallied = |tally: Option<Tally>| tally.map_or(0, |t| annual(t.total));
     Estimate {
         months: months as u8,
         through: Some(through),
         proposals,
-        unknown,
-        income: tallied(Category::Income),
-        transfers: tallied(Category::Transfer),
+        unknown: listed,
+        income: tallied(income),
+        transfers: tallied(transfers),
     }
+}
+
+/// Each spending category's net spending, and the unknown payees', in the
+/// target the plan's `[estimate]` places it in, and which target is the
+/// bucket.
+fn grouped(
+    plan: &Plan,
+    by_category: BTreeMap<Category, Tally>,
+    unknown: BTreeMap<String, Tally>,
+) -> (BTreeMap<place::Target, Group>, place::Target) {
+    let spent = |tally: &Tally| (-tally.total).max(0.0);
+    let spending = by_category
+        .values()
+        .chain(unknown.values())
+        .map(spent)
+        .sum();
+    let placer = place::Placer::new(plan, spending);
+    let mut groups: BTreeMap<place::Target, Group> = BTreeMap::new();
+    for (category, tally) in by_category.into_iter().filter(|(_, t)| t.total < 0.0) {
+        let group = groups
+            .entry(placer.place(category, spent(&tally)))
+            .or_default();
+        group.categories.push((category, -tally.total));
+        group.tally.absorb(tally);
+    }
+    for tally in unknown.into_values().filter(|t| t.total < 0.0) {
+        let group = groups.entry(placer.bucket()).or_default();
+        group.unknown -= tally.total;
+        group.tally.absorb(tally);
+    }
+    (groups, placer.bucket())
 }
 
 /// Each row's deflated amount under its category, or under its payee
@@ -185,6 +251,7 @@ fn tally<'a>(
             .category
             .as_deref()
             .and_then(Category::from_text)
+            .or(row.kind)
             .or(*matched);
         let tally = match category {
             Some(category) => by_category.entry(category).or_default(),
@@ -200,31 +267,61 @@ fn tally<'a>(
 
 fn proposal(
     plan: &Plan,
-    category: Category,
-    tally: Tally,
-    annual: impl Fn(f64) -> Dollars,
+    target: place::Target,
+    group: Group,
+    annual: &impl Fn(f64) -> Dollars,
 ) -> Proposal {
-    let expense = plan.expenses.iter().find(|e| category.matches(e));
-    let mut payees: Vec<(String, Dollars)> = tally
+    let largest_first =
+        |a: &(String, Dollars), b: &(String, Dollars)| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0));
+    let mut payees: Vec<(String, Dollars)> = group
+        .tally
         .payees
         .into_iter()
         .map(|(payee, dollars)| (payee, (-dollars).round() as Dollars))
         .collect();
-    payees.sort_by(|(a, a_amount), (b, b_amount)| b_amount.cmp(a_amount).then_with(|| a.cmp(b)));
+    payees.sort_by(largest_first);
+    let mut categories: Vec<(Category, Dollars)> = group
+        .categories
+        .into_iter()
+        .map(|(category, dollars)| (category, annual(dollars)))
+        .collect();
+    categories.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+    let (expense, id, name) = match target {
+        place::Target::Expense(at) => {
+            let stated = &plan.expenses[at];
+            let id = stated.id.clone();
+            (Some(id.clone()), id, stated.display_name().to_owned())
+        }
+        place::Target::New(category) => (None, category.slug().to_owned(), category.title()),
+        place::Target::NewBucket => (
+            None,
+            place::NEW_BUCKET_ID.to_owned(),
+            place::NEW_BUCKET_NAME.to_owned(),
+        ),
+    };
     Proposal {
-        category,
-        expense: expense.map(|e| e.id.clone()),
-        name: expense
-            .and_then(|e| e.name.clone())
-            .unwrap_or_else(|| category.title()),
-        amount: annual(-tally.total),
-        total: (-tally.total).round() as Dollars,
-        rows: tally.rows,
+        expense,
+        id,
+        name,
+        is_bucket: false,
+        amount: annual(-group.tally.total),
+        total: (-group.tally.total).round() as Dollars,
+        rows: group.tally.rows,
+        categories,
+        unknown: annual(group.unknown),
         payees,
-        last: tally.last.expect("a tally holds a row"),
+        last: group.tally.last.expect("a group holds a row"),
         one_time: false,
         phases: Phases::default(),
     }
+}
+
+/// The expense what fits nowhere else goes to: the one the plan's
+/// `[estimate]` names, else one whose id or name says misc, other or
+/// general; none where a new one would be proposed.
+#[must_use]
+pub fn bucket(plan: &Plan) -> Option<&Expense> {
+    place::bucket_position(plan).map(|at| &plan.expenses[at])
 }
 
 /// Sets each proposal's expense to its amount, or adds the expense the plan
@@ -289,7 +386,7 @@ fn set_amount(expense: &mut Expense, proposal: &Proposal, in_force: Option<usize
 
 fn new_expense(proposal: &Proposal) -> Expense {
     Expense {
-        id: proposal.category.slug().to_owned(),
+        id: proposal.id.clone(),
         name: Some(proposal.name.clone()),
         amount: if proposal.one_time {
             proposal.total

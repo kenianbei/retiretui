@@ -82,6 +82,9 @@ pub struct Launch {
     pub history: History,
     /// The patterns the Spending Estimate tool names payees' categories by.
     pub patterns: Patterns,
+    /// The user's patterns file a payee named on that page is remembered
+    /// in; none where there is no machine to keep one.
+    pub patterns_file: Option<PathBuf>,
     /// Where the plan files are kept.
     pub store: Arc<dyn retiretui_client::store::Store>,
     /// The settings file in `store`; none for a session that keeps
@@ -128,6 +131,7 @@ pub fn build(app: &mut App, launch: Launch) -> Result<(), String> {
     app.insert_resource(tools::estimate::Held(
         retiretui_client::estimate::Estimator::new(launch.patterns),
     ));
+    app.insert_resource(tools::estimate::PatternsFile(launch.patterns_file));
     if let Some(exchange) = launch.exchange {
         app.insert_resource(exchange::Edge(exchange));
     }

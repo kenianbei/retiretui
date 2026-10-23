@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use bevy_app::App;
 use plurimus::term::KeyCode;
 
+use super::edits::NO_EXPORTS;
 use super::*;
 use crate::compare::Compared;
 use crate::support::{
@@ -62,13 +63,16 @@ fn the_page_says_what_to_add_until_an_export_is_read() {
     assert!(frame.contains("checking.ofx  2 rows"), "{frame}");
     assert!(frame.contains("Groceries"), "{frame}");
     assert!(frame.contains("Utilities"), "{frame}");
-    assert!(frame.contains("New expense"), "{frame}");
+    assert!(frame.contains("Groceries (new)"), "{frame}");
+    assert!(frame.contains("╭ Settings "), "{frame}");
+    assert!(frame.contains("Large share  10%"), "{frame}");
     assert!(frame.contains("SAFEWAY"), "{frame}");
     assert!(frame.contains(ON_PROPOSALS), "{frame}");
     assert!(
         frame.contains("t take") && frame.contains("w write"),
         "{frame}"
     );
+    press_key(&mut app, KeyCode::Down);
     press_key(&mut app, KeyCode::Down);
     press_key(&mut app, KeyCode::Tab);
     app.update();
@@ -182,5 +186,86 @@ fn writing_the_proposals_makes_a_scenario_over_the_document() {
             .resource::<Compared>()
             .paths()
             .any(|path| path.ends_with("estimated.toml"))
+    );
+}
+
+/// Groceries, and a payee nothing names.
+const NAMELESS: &str =
+    "Date,Description,Amount\n2026-10-01,SAFEWAY,-300.00\n2026-10-02,SOMEONE,-30.00\n";
+
+/// Puts the cursor on the row at `at` and applies `answers` to it as the
+/// row's form would.
+fn apply_at<T: retiretui_client::forms::ToolAnswers>(
+    app: &mut App,
+    at: usize,
+    answers: toml::Table,
+) {
+    app.world_mut().resource_mut::<Cursor>().0 = at;
+    app.world_mut()
+        .resource_mut::<Draft>()
+        .set_answers::<T>(answers);
+    app.world_mut().run_system_cached(edits::apply_row).unwrap();
+    app.update();
+}
+
+fn answer(key: &str, value: &str) -> toml::Table {
+    let mut table = toml::Table::new();
+    table.insert(key.to_owned(), toml::Value::String(value.to_owned()));
+    table
+}
+
+#[test]
+fn a_category_moved_is_kept_in_the_plan_as_one_step() {
+    let (_, mut app) = workspace_app();
+    add(&mut app, "nameless.csv", NAMELESS);
+    let rows: Vec<String> = {
+        let found = app.world().resource::<Held>().0.estimate().clone();
+        listed(&found)
+            .iter()
+            .map(|row| row.cells(found.months, MoneyForm::Full)[0].clone())
+            .collect()
+    };
+    let at = rows.iter().position(|row| row == "  Groceries").unwrap();
+    apply_at::<retiretui_client::estimate::MoveAnswers>(&mut app, at, answer("expense", "living"));
+    let draft = app.world().resource::<Draft>();
+    let assigned = &draft.plan.estimate.as_ref().unwrap().assign;
+    assert_eq!(assigned[0].expense, "living");
+    assert!(draft.is_dirty() && draft.can_undo());
+    let found = app.world().resource::<Held>().0.estimate();
+    assert_eq!(
+        found.proposals[0].id, "living",
+        "estimated again over the plan"
+    );
+}
+
+#[test]
+fn a_named_payee_is_remembered_in_the_patterns_file_the_launch_names() {
+    let (dir, mut app) = workspace_app();
+    let file = dir.join("config").join("patterns.toml");
+    app.world_mut()
+        .insert_resource(PatternsFile(Some(file.clone())));
+    add(&mut app, "nameless.csv", NAMELESS);
+    let at = {
+        let found = app.world().resource::<Held>().0.estimate().clone();
+        listed(&found)
+            .iter()
+            .position(|row| matches!(row, retiretui_client::estimate::Listed::Payee(_)))
+            .unwrap()
+    };
+    apply_at::<retiretui_client::estimate::PayeeAnswers>(&mut app, at, answer("category", "pets"));
+    let written = std::fs::read_to_string(&file).unwrap();
+    assert!(written.contains("match = \"SOMEONE\""), "{written}");
+    assert!(
+        said(&app)
+            .iter()
+            .any(|line| line.contains("SOMEONE remembered"))
+    );
+    assert!(
+        app.world()
+            .resource::<Held>()
+            .0
+            .estimate()
+            .unknown
+            .is_empty()
     );
 }

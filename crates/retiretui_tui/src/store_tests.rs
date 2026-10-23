@@ -100,6 +100,7 @@ fn launched(store: Arc<dyn Store>) -> App {
         tables: TaxTables::embedded(),
         history: History::embedded().clone(),
         patterns: Patterns::embedded(),
+        patterns_file: None,
         store,
         settings: Some(PathBuf::from(CONFIG)),
         is_light: false,

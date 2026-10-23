@@ -46,6 +46,7 @@ fn run() -> Result<(), String> {
         tables: TaxTables::embedded(),
         history: History::embedded().clone(),
         patterns: Patterns::embedded(),
+        patterns_file: None,
         store,
         settings: Some(PathBuf::from(SETTINGS)),
         is_light: prefers_light(),

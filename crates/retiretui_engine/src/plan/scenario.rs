@@ -99,7 +99,9 @@ impl Scenario {
         for (section, value) in &self.document {
             match section.as_str() {
                 SCHEMA_KEY | BASE_KEY => {}
-                "plan" | "market" => merge_fields(&mut base, section, value, &mut issues),
+                "plan" | "market" | "estimate" => {
+                    merge_fields(&mut base, section, value, &mut issues);
+                }
                 HOUSEHOLD_KEY => merge_household(&mut base, value, &mut issues),
                 _ if is_keyed(section) => {
                     let items = ItemSection {

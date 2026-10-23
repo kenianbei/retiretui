@@ -66,7 +66,7 @@ impl Scenario {
 
 fn state_section(section: &str, sides: Sides<'_>, issues: &mut Vec<Issue>) -> Option<Value> {
     match section {
-        "plan" | "market" => state_fields(section, sides, issues).map(Value::Table),
+        "plan" | "market" | "estimate" => state_fields(section, sides, issues).map(Value::Table),
         HOUSEHOLD_KEY => state_household(sides, issues),
         _ if is_keyed(section) => state_items(sides),
         _ => state_whole(section, sides, issues),

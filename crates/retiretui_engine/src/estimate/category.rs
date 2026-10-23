@@ -5,6 +5,18 @@ use serde::{Deserialize, Serialize};
 
 use crate::plan::Expense;
 
+/// Categories that land in one another's expense where they have none of
+/// their own.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(missing_docs, reason = "each variant is its own word")]
+pub enum Family {
+    Food,
+    Home,
+    Health,
+    Transport,
+    Personal,
+}
+
 /// What a row was for.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
@@ -162,6 +174,28 @@ impl Category {
             .copied()
     }
 
+    /// The family a spending category folds into an expense by; none for
+    /// income and transfers.
+    #[must_use]
+    pub const fn family(self) -> Option<Family> {
+        Some(match self {
+            Self::Groceries | Self::Dining => Family::Food,
+            Self::Housing | Self::Utilities | Self::Phone | Self::Internet => Family::Home,
+            Self::Medical | Self::Pharmacy | Self::Insurance => Family::Health,
+            Self::Fuel | Self::Transit | Self::Travel => Family::Transport,
+            Self::Shopping
+            | Self::Clothing
+            | Self::Entertainment
+            | Self::Subscriptions
+            | Self::Gifts
+            | Self::Pets
+            | Self::Childcare
+            | Self::Education
+            | Self::Fees => Family::Personal,
+            Self::Income | Self::Transfer => return None,
+        })
+    }
+
     /// Whether the expense is this category's: its id or name holds one of
     /// its words.
     #[must_use]
@@ -178,6 +212,18 @@ impl Category {
 mod tests {
     use super::Category;
     use crate::plan::Plan;
+
+    #[test]
+    fn every_spending_category_has_a_family_and_nothing_else_does() {
+        for category in Category::ALL {
+            assert_eq!(
+                category.family().is_some(),
+                category.is_spending(),
+                "{category:?}"
+            );
+        }
+        assert_eq!(Category::Dining.family(), Category::Groceries.family());
+    }
 
     #[test]
     fn a_banks_category_text_reads_exactly_before_by_part() {

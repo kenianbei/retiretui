@@ -4,7 +4,7 @@
 use std::collections::{BTreeMap, HashMap};
 use std::ops::Sub;
 
-use super::{csv, ofx, payee};
+use super::{Category, csv, ofx, payee};
 use crate::plan::PlanDate;
 
 pub(super) const CENTS_PER_DOLLAR: i64 = 100;
@@ -67,6 +67,9 @@ pub struct Row {
     pub payee: String,
     /// The bank's own category, where the file has a column of them.
     pub category: Option<String>,
+    /// What the bank's transaction type says the row is, where it says it
+    /// is money moved or money in.
+    pub kind: Option<Category>,
     /// The bank's id for the transaction, where the file states one.
     pub bank_id: Option<String>,
 }

@@ -4,6 +4,7 @@
 
 use jiff::civil::Date;
 
+use super::Category;
 use super::bank::{BankError, Cents, Row};
 use crate::plan::PlanDate;
 
@@ -14,6 +15,10 @@ const POSTED: &str = "<DTPOSTED>";
 const AMOUNT: &str = "<TRNAMT>";
 const BANK_ID: &str = "<FITID>";
 const NAME: &str = "<NAME>";
+const KIND: &str = "<TRNTYPE>";
+/// The `TRNTYPE`s that are money moved or money in, never spending.
+const TRANSFER_KINDS: [&str; 1] = ["XFER"];
+const INCOME_KINDS: [&str; 2] = ["INT", "DIV"];
 /// `YYYYMMDD`, which every OFX date starts with.
 const DATE_DIGITS: usize = 8;
 
@@ -47,8 +52,19 @@ fn row(name: &str, row: usize, chunk: &str) -> Result<Row, BankError> {
         amount,
         payee: leaf(chunk, NAME).unwrap_or_default().to_owned(),
         category: None,
+        kind: leaf(chunk, KIND).and_then(kind_of),
         bank_id: leaf(chunk, BANK_ID).map(str::to_owned),
     })
+}
+
+fn kind_of(text: &str) -> Option<Category> {
+    if TRANSFER_KINDS.contains(&text) {
+        Some(Category::Transfer)
+    } else if INCOME_KINDS.contains(&text) {
+        Some(Category::Income)
+    } else {
+        None
+    }
 }
 
 /// The text after the first `tag` in `chunk`, up to the next tag or line

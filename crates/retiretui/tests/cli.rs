@@ -446,9 +446,8 @@ fn estimate_proposes_the_plans_spending_from_a_banks_exports() {
     assert!(ok.status.success(), "{ok:?}");
     let stdout = String::from_utf8(ok.stdout).unwrap();
     assert!(stdout.contains("1 month through Oct 2026"), "{stdout}");
-    assert!(stdout.contains("groceries"), "{stdout}");
-    assert!(stdout.contains("utilities"), "{stdout}");
-    assert!(stdout.contains("New expense"), "{stdout}");
+    assert!(stdout.contains("Groceries (new)"), "{stdout}");
+    assert!(stdout.contains("\n  Utilities "), "{stdout}");
     assert!(stdout.contains(&format!("wrote {out}")), "{stdout}");
     let written = std::fs::read_to_string(out).unwrap();
     assert!(written.contains("id = \"groceries\""), "{written}");
@@ -458,7 +457,8 @@ fn estimate_proposes_the_plans_spending_from_a_banks_exports() {
     assert!(json.status.success(), "{json:?}");
     let reply: serde_json::Value = serde_json::from_slice(&json.stdout).unwrap();
     assert_eq!(reply["months"], 1);
-    assert_eq!(reply["proposals"][0]["category"], "groceries");
+    assert_eq!(reply["proposals"][0]["categories"][0][0], "groceries");
+    assert_eq!(reply["proposals"][0]["id"], "groceries");
     let refused = retiretui(&["estimate", plan, &format!("{BANK_EXPORTS}/visa.csv")]);
     assert!(!refused.status.success());
     let stderr = String::from_utf8(refused.stderr).unwrap();

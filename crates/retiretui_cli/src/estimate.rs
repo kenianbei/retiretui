@@ -74,24 +74,26 @@ pub fn run(args: &EstimateArgs) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Each proposal and unknown payee a row, under the summary line.
+/// Each expense with what it gathers beneath it, then each payee nothing
+/// names, under the summary line; the first column left-aligned so the
+/// nesting shows.
 fn estimate_text(found: &Estimate) -> String {
-    let header: Vec<String> = ["category", "expense", "months", "per year", "rows"]
-        .map(str::to_owned)
-        .to_vec();
-    let rows: Vec<Vec<String>> = listed(found)
+    let header: Vec<String> = estimate::COLUMNS.map(str::to_lowercase).to_vec();
+    let mut rows: Vec<Vec<String>> = listed(found)
         .iter()
-        .map(|row| {
-            let count = match row {
-                estimate::Listed::Proposal(p) => p.rows,
-                estimate::Listed::Unknown(u) => u.rows,
-            };
-            let mut cells = row.cells(found.months, MoneyForm::Full).to_vec();
-            cells[0] = cells[0].to_lowercase();
-            cells.push(count.to_string());
-            cells
-        })
+        .map(|row| row.cells(found.months, MoneyForm::Full).to_vec())
         .collect();
+    let width = rows
+        .iter()
+        .map(|row| row[0].len())
+        .chain([header[0].len()])
+        .max()
+        .unwrap_or_default();
+    for row in &mut rows {
+        row[0] = format!("{:<width$}", row[0]);
+    }
+    let mut header = header;
+    header[0] = format!("{:<width$}", header[0]);
     format!(
         "{}\n{}",
         estimate::summary(found, MoneyForm::Full),

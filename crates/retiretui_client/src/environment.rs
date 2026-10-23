@@ -76,6 +76,13 @@ pub fn load_history(explicit: Option<&Path>) -> anyhow::Result<History> {
     History::from_toml_str(&text).with_context(|| format!("in {}", path.display()))
 }
 
+/// The user's own spending patterns file, read before the embedded table,
+/// whether or not it exists yet.
+#[must_use]
+pub fn patterns_path() -> Option<PathBuf> {
+    config_dir("estimate").map(|dir| dir.join(PATTERNS_FILE))
+}
+
 /// The embedded spending patterns, with those at `explicit`, else the
 /// user's own where they keep one, before them.
 ///
@@ -84,7 +91,7 @@ pub fn load_history(explicit: Option<&Path>) -> anyhow::Result<History> {
 /// Where the file cannot be read or parsed.
 pub fn load_patterns(explicit: Option<&Path>) -> anyhow::Result<Patterns> {
     let mut patterns = Patterns::embedded();
-    let user = config_dir("estimate").map(|dir| dir.join(PATTERNS_FILE));
+    let user = patterns_path();
     let Some(path) = explicit
         .map(Path::to_path_buf)
         .or_else(|| user.filter(|path| path.is_file()))

@@ -3,6 +3,7 @@
 //! it, beside the highlighted proposal read out, and the proposals taken
 //! into the draft or written as a scenario.
 
+mod edits;
 #[cfg(test)]
 mod tests;
 
@@ -12,8 +13,7 @@ use bevy_app::{App, Startup, Update};
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
 use bevy_ecs::hierarchy::{ChildOf, Children};
 use bevy_ecs::prelude::{
-    Changed, Commands, Component, Entity, In, IntoScheduleConfigs, Query, Res, ResMut, Resource,
-    With, World,
+    Changed, Commands, Component, Entity, IntoScheduleConfigs, Query, Res, ResMut, Resource, With,
 };
 use bevy_input_focus::InputFocus;
 use bevy_ui::{FlexDirection, Node, Val};
@@ -22,45 +22,47 @@ use plurimus::core::ratatui_core::style::Style;
 use plurimus::ui::ScrollArea;
 use plurimus::widgets::ActiveDescendant;
 use retiretui_client::estimate::{
-    self, ABOUT, COLUMNS, Estimator, Listed, NOTHING_READ, PROPOSAL_FIELDS, ProposalAnswers,
-    UNKNOWN_FIELDS, UnknownAnswers, listed, summary, take_question, taken,
+    ABOUT, COLUMNS, Estimator, NOTHING_READ, listed, settings_read, summary,
 };
 use retiretui_client::present::counted;
-use retiretui_engine::estimate::{Estimate, Patterns, apply};
+use retiretui_engine::estimate::Patterns;
+
+pub use edits::{
+    add_export, add_picker, adopt, edit_row, edit_settings, remove_export, write_overlay,
+    write_picker,
+};
 
 use super::options::say_instead;
-use super::{EnterRuns, HelpLine, ToolPage, show_help, write, writes_it};
-use crate::command::{EDIT_PROPOSAL, Keymap, Outcome, WRITE_ESTIMATE};
-use crate::confirm::{Answer, Confirm};
-use crate::documents::{Browsing, Pickers};
-use crate::edit::{self, Draft, DraftEditor, FormButton, Ops, Row, Slot, table_bundle};
+use super::{EnterRuns, HelpLine, ToolPage, show_help, writes_it};
+use crate::command::{EDIT_ESTIMATE_SETTINGS, EDIT_PROPOSAL, Keymap, WRITE_ESTIMATE};
+use crate::edit::{Draft, table_bundle};
 use crate::hints::Hints;
-use crate::journal;
 use crate::layout::{self, Body, filling, placed};
 use crate::nav::{self, FocusStop, Page, ShownSurface};
 use crate::pane::Pane;
 use crate::present::MoneyForm;
-use crate::session::{self, Session};
 use crate::tabulate;
 use crate::theme::{Repainted, Theme};
 
 const FILES_TITLE: &str = "Files";
 const PROPOSALS_TITLE: &str = "Proposals";
 const READ_OUT_TITLE: &str = "Proposal";
+const SETTINGS_TITLE: &str = "Settings";
 /// The right column's width, borders included.
 const SIDE_COLS: f32 = 48.0;
 /// Borders, and the exports a session is likely to hold.
 const FILES_ROWS: f32 = 6.0;
+/// Borders, and the lean, the large share and the bucket.
+const SETTINGS_ROWS: f32 = 5.0;
 const GAP: u16 = 1;
 const ON_PROPOSALS: &str = "⏎ edits the row; t takes the proposals into the plan, after asking";
 const NOTHING_HIGHLIGHTED: &str = "nothing highlighted";
-const NO_EXPORTS: &str = "no export to drop";
 const NO_FILES: &str = "none yet";
-const NO_PROPOSALS: &str = "nothing proposed yet";
 
 pub fn plugin(app: &mut App) {
     app.init_resource::<Held>();
     app.init_resource::<Cursor>();
+    app.init_resource::<PatternsFile>();
     app.add_systems(Startup, spawn_page.after(layout::spawn_frame));
     app.add_systems(
         Update,
@@ -70,6 +72,7 @@ pub fn plugin(app: &mut App) {
             table_proposals,
             follow_cursor,
             show_read_out,
+            show_settings,
             say_help,
         )
             .chain()
@@ -89,8 +92,12 @@ impl Default for Held {
     }
 }
 
-/// The place of the highlighted row among the proposals, then the unknown
-/// payees.
+/// The user's patterns file a payee named on the page is remembered in;
+/// none where there is no machine to keep one.
+#[derive(Resource, Default)]
+pub struct PatternsFile(pub Option<PathBuf>);
+
+/// The place of the highlighted row in the table.
 #[derive(Resource, Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Cursor(usize);
 
@@ -109,20 +116,8 @@ struct ProposalRow(usize);
 #[derive(Component)]
 struct ReadOut;
 
-const PROPOSAL_OPS: Ops = Ops::tool::<ProposalAnswers>(
-    Some(Page::SpendingEstimate),
-    READ_OUT_TITLE,
-    PROPOSAL_FIELDS,
-)
-.acting(ACTIONS, after_row);
-const UNKNOWN_OPS: Ops =
-    Ops::tool::<UnknownAnswers>(Some(Page::SpendingEstimate), "Payee", UNKNOWN_FIELDS)
-        .acting(ACTIONS, after_row);
-const ACTIONS: [&str; 2] = ["Discard", "Apply"];
-const _: () = assert!(
-    edit::help_fits(PROPOSAL_OPS.form.fields) && edit::help_fits(UNKNOWN_OPS.form.fields),
-    "a field's help is missing or too long"
-);
+#[derive(Component)]
+struct SettingsOut;
 
 static PAGE: ToolPage = ToolPage {
     surface: Page::SpendingEstimate,
@@ -151,6 +146,12 @@ fn spawn_panes(commands: &mut Commands, row: Entity) {
             ChildOf(proposals),
         ))
         .observe(super::handle_enter);
+    spawn_column(commands, row);
+}
+
+/// The files over the highlighted row read out, over the plan's
+/// `[estimate]` table.
+fn spawn_column(commands: &mut Commands, row: Entity) {
     let column = Node {
         flex_direction: FlexDirection::Column,
         width: Val::Px(SIDE_COLS),
@@ -177,6 +178,22 @@ fn spawn_panes(commands: &mut Commands, row: Entity) {
         placed(),
         ChildOf(read_out),
     ));
+    let settings = Pane::new(SETTINGS_TITLE)
+        .tall(SETTINGS_ROWS)
+        .spawn(commands, column);
+    commands
+        .spawn((
+            table_bundle(),
+            SettingsOut,
+            EnterRuns(EDIT_ESTIMATE_SETTINGS),
+            FocusStop,
+            Hints(&[("⏎", "edit")]),
+            layout::Rests,
+            filling(),
+            placed(),
+            ChildOf(settings),
+        ))
+        .observe(super::handle_enter);
 }
 
 /// Estimates again whenever the plan, the exports or the patterns move;
@@ -250,12 +267,7 @@ fn table_proposals(
         commands
             .entity(table)
             .insert(tabulate::columns((&header, &rows), GAP));
-        let spawned = tabulate::refill(
-            &mut commands,
-            (table, &mut scroll),
-            (&header, &rows),
-            &[0, 1],
-        );
+        let spawned = tabulate::refill(&mut commands, (table, &mut scroll), (&header, &rows), &[0]);
         for (at, &row) in spawned.iter().enumerate() {
             commands.entity(row).insert(ProposalRow(at));
         }
@@ -311,6 +323,32 @@ fn show_read_out(
     }
 }
 
+fn show_settings(
+    (draft, shown): (Res<Draft>, ShownSurface),
+    mut outs: Query<(Entity, &mut ScrollArea), With<SettingsOut>>,
+    mut commands: Commands,
+) {
+    if !(draft.is_changed() || shown.is_changed()) {
+        return;
+    }
+    let header: [String; 0] = [];
+    let rows: Vec<Vec<String>> = settings_read(&draft.plan)
+        .into_iter()
+        .map(|(label, text)| vec![label, text])
+        .collect();
+    for (table, mut scroll) in &mut outs {
+        commands
+            .entity(table)
+            .insert(tabulate::labelled(&rows, GAP));
+        tabulate::refill(
+            &mut commands,
+            (table, &mut scroll),
+            (&header, &rows),
+            &[0, 1],
+        );
+    }
+}
+
 fn say_help(
     (held, focus, shown): (Res<Held>, Res<InputFocus>, ShownSurface),
     (theme, keymap): (Res<Theme>, Res<Keymap>),
@@ -330,137 +368,4 @@ fn say_help(
         ABOUT.to_owned()
     };
     show_help(&mut lines, Page::SpendingEstimate, &text, &theme);
-}
-
-/// The `add-export` command: asks which export to read.
-pub fn add_picker(pickers: Res<Pickers>, mut browsing: ResMut<Browsing>) -> Outcome {
-    browsing.open(pickers.export);
-    Outcome::Done
-}
-
-/// Reads the export at `path` into the session, in place of one of the
-/// same name.
-pub fn add_export(In(path): In<PathBuf>, session: Res<Session>, mut held: ResMut<Held>) {
-    let name = session::file_name(&path).into_owned();
-    let read = session
-        .store
-        .read(&path)
-        .map_err(|error| format!("{}: {error}", path.display()))
-        .and_then(|text| held.0.add(&name, &text).map_err(|error| error.to_string()));
-    match read {
-        Ok(count) => journal::say(format!(
-            "read {} from {name}",
-            counted(count, "row", "rows")
-        )),
-        Err(reason) => journal::warn(format!("not read: {reason}")),
-    }
-}
-
-/// The `remove-export` command: drops the export under the files' cursor.
-pub fn remove_export(
-    lists: Query<&ActiveDescendant, With<FileList>>,
-    rows: Query<&FileRow>,
-    mut held: ResMut<Held>,
-) -> Outcome {
-    let at = lists
-        .iter()
-        .find_map(|on| on.0.and_then(|row| rows.get(row).ok()))
-        .map(|row| row.0);
-    let listed = at.and_then(|at| held.0.exports().listed().nth(at));
-    let Some(name) = listed.map(|(name, _)| name.to_owned()) else {
-        return Outcome::Refused(NO_EXPORTS.to_owned());
-    };
-    held.0.remove(&name);
-    journal::say(format!("dropped {name}"));
-    Outcome::Done
-}
-
-/// The `edit-proposal` command: opens the highlighted proposal's form, or
-/// the payee's, over the page.
-pub fn edit_row(
-    (held, cursor): (Res<Held>, Res<Cursor>),
-    mut draft: ResMut<Draft>,
-    mut commands: Commands,
-) -> Outcome {
-    let (Some(row), Some(answers)) = (held.0.row(cursor.0), held.0.answers(cursor.0)) else {
-        return Outcome::Refused(NOTHING_HIGHLIGHTED.to_owned());
-    };
-    let ops = match row {
-        Listed::Proposal(_) => {
-            draft.set_answers::<ProposalAnswers>(answers);
-            PROPOSAL_OPS
-        }
-        Listed::Unknown(_) => {
-            draft.set_answers::<UnknownAnswers>(answers);
-            UNKNOWN_OPS
-        }
-    };
-    commands.run_system_cached_with(edit::open_item, (ops, None, Slot::At(Row(0))));
-    Outcome::Done
-}
-
-fn after_row(button: FormButton, commands: &mut Commands) {
-    if matches!(button, FormButton::Apply) {
-        commands.run_system_cached(apply_row);
-    }
-}
-
-/// Writes the form's answers into the highlighted row.
-fn apply_row(draft: Res<Draft>, cursor: Res<Cursor>, mut held: ResMut<Held>) {
-    if let Err(reason) = held.0.apply(cursor.0, &draft) {
-        journal::warn(reason);
-    }
-}
-
-/// The `take-estimate` command: asks before the proposals set the plan's
-/// expenses. The answer carries the proposals asked about, so an estimate
-/// that moves under the question changes nothing.
-pub fn adopt(held: Res<Held>, draft: Res<Draft>, mut confirm: ResMut<Confirm>) -> Outcome {
-    if let Some(refusal) = draft.refuse_if_read_only() {
-        return Outcome::Refused(refusal);
-    }
-    let found = held.0.estimate();
-    if found.proposals.is_empty() {
-        return Outcome::Refused(NO_PROPOSALS.to_owned());
-    }
-    let asked = found.clone();
-    let answers = vec![
-        Answer::closing("Cancel"),
-        Answer::running("Take", move |commands| {
-            commands.run_system_cached_with(take, asked);
-        })
-        .primary(),
-    ];
-    confirm.ask_among(take_question(found), answers);
-    Outcome::Done
-}
-
-fn take(In(estimate): In<Estimate>, mut editor: DraftEditor) {
-    apply(&mut editor.draft.plan, &estimate);
-    editor.commit();
-    journal::say(taken(&estimate));
-}
-
-/// The `write-estimate` command: asks where to write the proposals applied.
-pub fn write_picker(
-    pickers: Res<Pickers>,
-    held: Res<Held>,
-    draft: Res<Draft>,
-    mut browsing: ResMut<Browsing>,
-) -> Outcome {
-    if held.0.estimate().proposals.is_empty() {
-        return Outcome::Refused(NO_PROPOSALS.to_owned());
-    }
-    write::open_picker(pickers.estimate, &draft, &mut browsing)
-}
-
-/// Writes the proposals applied at `path` as a scenario over the document,
-/// and compares the file written.
-pub fn write_overlay(In(path): In<PathBuf>, world: &mut World) {
-    let text = write::base_of(world, &path).and_then(|base| {
-        let found = world.resource::<Held>().0.estimate();
-        let plan = &world.resource::<Draft>().plan;
-        estimate::overlay(&base, plan, found).map_err(|error| format!("not written: {error}"))
-    });
-    write::write(world, path, text);
 }

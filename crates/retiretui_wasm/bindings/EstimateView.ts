@@ -14,7 +14,8 @@ files: Array<[string, string]>,
  */
 summary: string, 
 /**
- * The proposals, then the unnamed payees.
+ * Each expense, what it gathers beneath it, then the payees nothing
+ * names.
  */
 rows: Array<EstimateRow>, 
 /**

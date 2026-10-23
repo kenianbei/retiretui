@@ -4,6 +4,7 @@
 
 use jiff::civil::Date;
 
+use super::Category;
 use super::bank::{BankError, Cents, Row};
 use crate::plan::PlanDate;
 
@@ -18,6 +19,12 @@ const AMOUNT_NAMES: [&str; 1] = ["amount"];
 const OUTFLOW_NAMES: [&str; 3] = ["debit", "withdrawal", "outflow"];
 const INFLOW_NAMES: [&str; 3] = ["credit", "deposit", "inflow"];
 const CATEGORY_NAMES: [&str; 1] = ["category"];
+const TYPE_NAMES: [&str; 1] = ["type"];
+/// What a CSV's type column says of a row, lowercased words matched within
+/// it: a card's payment and an account's transfer move money; interest,
+/// dividends and rebates bring it in.
+const TRANSFER_TYPES: [&str; 2] = ["transfer", "payment"];
+const INCOME_TYPES: [&str; 4] = ["interest", "intadjust", "dividend", "rebate"];
 
 /// Where each column stands, resolved once from the header.
 struct Columns {
@@ -26,6 +33,7 @@ struct Columns {
     payee: usize,
     amount: Amount,
     category: Option<usize>,
+    kind: Option<usize>,
 }
 
 /// Where the money stands: one signed column, or what left and what came
@@ -88,6 +96,7 @@ impl Columns {
             payee: column(&PAYEE_NAMES)?,
             amount,
             category: column(&CATEGORY_NAMES),
+            kind: column(&TYPE_NAMES),
         })
     }
 
@@ -120,8 +129,21 @@ impl Columns {
             amount,
             payee: field(self.payee).to_owned(),
             category: optional(self.category),
+            kind: self.kind.map(field).and_then(kind_of),
             bank_id: None,
         })
+    }
+}
+
+fn kind_of(text: &str) -> Option<Category> {
+    let text = text.to_lowercase();
+    let says = |words: &[&str]| words.iter().any(|word| text.contains(word));
+    if says(&TRANSFER_TYPES) {
+        Some(Category::Transfer)
+    } else if says(&INCOME_TYPES) {
+        Some(Category::Income)
+    } else {
+        None
     }
 }
 

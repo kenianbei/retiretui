@@ -58,6 +58,9 @@ pub(crate) fn validate(plan: &Plan) -> Vec<Issue> {
     if let Some(market) = &plan.market {
         super::market::check_market(market, &mut checker.issues);
     }
+    if let Some(settings) = &plan.estimate {
+        super::estimate::check_estimate(plan, settings, &mut checker.issues);
+    }
     checker.check_income();
     checker.check_expenses();
     checker.check_cliffs();
