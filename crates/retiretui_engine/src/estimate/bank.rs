@@ -50,6 +50,20 @@ impl Cents {
     }
 }
 
+impl Cents {
+    /// `dollars` to the nearest cent.
+    #[must_use]
+    pub fn from_dollars(dollars: f64) -> Self {
+        Self((dollars * CENTS_PER_DOLLAR as f64).round() as i64)
+    }
+
+    /// In dollars.
+    #[must_use]
+    pub fn dollars(self) -> f64 {
+        self.0 as f64 / CENTS_PER_DOLLAR as f64
+    }
+}
+
 impl Sub for Cents {
     type Output = Self;
     fn sub(self, other: Self) -> Self {
@@ -75,6 +89,14 @@ pub struct Row {
     pub bank_id: Option<String>,
     /// The name of the export it was read from.
     pub export: String,
+}
+
+impl Row {
+    /// What it spent, a credit negative.
+    #[must_use]
+    pub const fn spent(&self) -> Cents {
+        Cents(-self.amount.0)
+    }
 }
 
 /// Why a file did not read.

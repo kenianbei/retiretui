@@ -15,7 +15,6 @@ const SPENT_SCORE: u32 = 5;
 const EXPORT_SCORE: u32 = 1;
 /// A rule whose every condition is exact counts double.
 const EXACT_FACTOR: u32 = 2;
-const CENTS_PER_DOLLAR: f64 = 100.0;
 
 /// Why a patterns file did not read.
 #[derive(Debug, thiserror::Error)]
@@ -90,19 +89,9 @@ pub(super) struct Rule {
 }
 
 impl Rule {
-    /// Whether the payee alone decides it.
-    pub(super) const fn is_payee_only(&self) -> bool {
-        self.on.is_none() && self.spent.is_none() && self.export.is_none()
-    }
-
-    /// Whether its payee test holds of `payee`.
-    pub(super) fn holds_payee(&self, payee: &str) -> bool {
-        self.payee.holds(payee)
-    }
-
     /// Whether it holds of `row`, whose payee reads `payee`.
     pub(super) fn holds(&self, payee: &str, row: &Row) -> bool {
-        let spent = Cents(-row.amount.0);
+        let spent = row.spent();
         self.payee.holds(payee)
             && self.on.is_none_or(|on| on == row.on)
             && self
@@ -135,10 +124,7 @@ impl Merge {
 /// The highest scoring of `found`, the earliest on a tie.
 pub(super) fn best<T>(found: impl Iterator<Item = (u32, T)>) -> Option<T> {
     found
-        .fold(None, |kept: Option<(u32, T)>, (score, it)| match kept {
-            Some((best, _)) if best >= score => kept,
-            _ => Some((score, it)),
-        })
+        .min_by_key(|&(score, _)| std::cmp::Reverse(score))
         .map(|(_, it)| it)
 }
 
@@ -202,8 +188,8 @@ impl RuleText {
             matches: self.matches,
         }
         .test()?;
-        let cents = |dollars: f64| Cents((dollars * CENTS_PER_DOLLAR).round() as i64);
-        let spent = self.spent.map(|[low, high]| (cents(low), cents(high)));
+        let spent =
+            (self.spent).map(|[low, high]| (Cents::from_dollars(low), Cents::from_dollars(high)));
         let export = self.export.map(|part| part.to_ascii_uppercase());
         if matches!(payee, PayeeTest::Any)
             && self.on.is_none()

@@ -28,7 +28,7 @@ retiretui_engine = { workspace = true, features = ["schemars"] }
 schemars.workspace = true
 serde.workspace = true
 toml.workspace = true
-toml_edit = "0.25.15"
+toml_edit.workspace = true
 ts-rs = { version = "12.0.1", optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]

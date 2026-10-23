@@ -5,12 +5,12 @@
 use retiretui_engine::estimate::{Category, Phases, Proposal};
 use retiretui_engine::plan::{Assign, Dollars, EstimateSettings, Lean, Plan};
 use serde::{Deserialize, Serialize};
-use toml::Table;
+use toml::{Table, Value};
 
 use super::{Applied, Change, Listed, UNKNOWN};
 use crate::codec::{from_table, to_table};
 use crate::draft::Draft;
-use crate::forms::offers::{RefSource, Vocabulary, held_word};
+use crate::forms::offers::{IGNORE_PAYEE, RefSource, Vocabulary, held_word};
 use crate::forms::{FieldSpec, Form, Target, ToolAnswers};
 
 /// What a category's expense field reads as while the estimate places it.
@@ -21,7 +21,6 @@ const LEAN: &str = "lean";
 const ESTIMATE: &str = "estimate";
 /// What a payee's name field reads as while it keeps its bank's text.
 const AS_WRITTEN: &str = "As the bank writes it";
-const IGNORED_OR_NAMED: &str = "a payee is ignored or given a category, not both";
 
 /// The form a row is edited in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -72,11 +71,9 @@ const PAYEE_FIELDS: &[FieldSpec] = &[
     FieldSpec::text("name", "Name")
         .blank(AS_WRITTEN)
         .help("What the payee is listed as; payees given one name are one."),
-    FieldSpec::choice("category", "Category", Vocabulary::Category)
+    FieldSpec::choice("category", "Category", Vocabulary::PayeeOutcome)
         .blank(UNKNOWN)
-        .help("What the payee's rows were for; every row of it is sorted so."),
-    FieldSpec::flag("ignore", "Ignore")
-        .help("Counts none of the payee's rows, in spending or anywhere else."),
+        .help("What the payee's rows were for, or Ignored to count none of them."),
 ];
 
 fn is_large(table: &Table) -> bool {
@@ -169,10 +166,9 @@ impl ToolAnswers for MoveAnswers {
 struct PayeeAnswers {
     #[serde(skip_serializing_if = "Option::is_none")]
     name: Option<String>,
+    /// A category's slug, or [`IGNORE_PAYEE`].
     #[serde(skip_serializing_if = "Option::is_none")]
-    category: Option<Category>,
-    #[serde(default)]
-    ignore: bool,
+    category: Option<String>,
 }
 
 impl ToolAnswers for PayeeAnswers {
@@ -249,14 +245,15 @@ fn payee_changes(payee: &str, answers: PayeeAnswers) -> Result<Applied, String> 
         });
     }
     let listed = name.unwrap_or(payee).to_owned();
-    match (answers.category, answers.ignore) {
-        (Some(_), true) => return Err(IGNORED_OR_NAMED.to_owned()),
-        (Some(category), false) => changes.push(Change::Name {
+    match answers.category.as_deref() {
+        None | Some("") => {}
+        Some(IGNORE_PAYEE) => changes.push(Change::IgnorePayee { payee: listed }),
+        Some(slug) => changes.push(Change::Name {
             payee: listed,
-            category,
+            category: Value::String(slug.to_owned())
+                .try_into()
+                .map_err(|_| format!("`{slug}` is not a category"))?,
         }),
-        (None, true) => changes.push(Change::IgnorePayee { payee: listed }),
-        (None, false) => {}
     }
     Ok(if changes.is_empty() {
         Applied::Held

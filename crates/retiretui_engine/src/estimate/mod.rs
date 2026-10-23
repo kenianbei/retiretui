@@ -259,8 +259,7 @@ fn tally<'a>(plan: &Plan, rows: impl Iterator<Item = &'a Row>, patterns: &Patter
     for row in rows {
         let (payee, outcome) = sorter.sort(row);
         let payee = payee.to_owned();
-        let deflated =
-            row.amount.0 as f64 / CENTS_PER_DOLLAR as f64 / inflation_factor(plan, row.on.year());
+        let deflated = row.amount.dollars() / inflation_factor(plan, row.on.year());
         let tally = match outcome {
             Some(Outcome::Category(category)) => tallied.by_category.entry(category).or_default(),
             Some(Outcome::Ignore) => &mut tallied.ignored,

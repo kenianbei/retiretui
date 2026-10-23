@@ -3,14 +3,11 @@
 //! names, and last what the user's rules ignore; each said in a row, read
 //! out, and with the records behind it.
 
-use retiretui_engine::estimate::{
-    CENTS_PER_DOLLAR, Cents, Estimate, Gathered, Of, Patterns, Proposal, Row, Unknown, Why, records,
-};
+use retiretui_engine::estimate::{Estimate, Gathered, Proposal, Unknown, Why};
 use retiretui_engine::plan::Dollars;
-use serde::Serialize;
 
 use super::{NOTHING_READ, UNKNOWN};
-use crate::present::{MoneyForm, counted, money, month};
+use crate::present::{MoneyForm, counted, month};
 
 const NOTHING: &str = "-";
 const INDENT: &str = "  ";
@@ -22,15 +19,8 @@ const NEW_MARK: &str = " (new)";
 const BUCKET_MARK: &str = " (bucket)";
 const NEW_BUCKET_MARK: &str = " (new bucket)";
 /// What the bucket's row for the payees nothing names says.
-const UNNAMED: &str = "Unnamed payees";
-/// The columns an expense's payees are tabled under.
-const PAYEE_COLUMNS: [&str; 2] = ["Payee", "Per year"];
-/// The columns a row's transactions are tabled under.
-const RECORD_COLUMNS: [&str; 3] = ["Date", "Payee", "Amount"];
-const IGNORED: &str = "Ignored";
-/// What choosing a record does, where it is counted and where ignored.
-const IGNORE_RECORD: &str = "Ignore";
-const COUNT_RECORD: &str = "Count";
+pub(super) const UNNAMED: &str = "Unnamed payees";
+pub(super) const IGNORED: &str = "Ignored";
 
 /// One row of the table.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -238,105 +228,6 @@ fn expense_read(proposal: &Proposal, months: u8, form: MoneyForm) -> Vec<(String
             ),
         ),
     ]
-}
-
-/// What lies behind a row: an expense's payees with what each adds a
-/// year, or the transactions of a category, a payee or the unnamed payees.
-#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize)]
-#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
-pub struct Behind {
-    /// What the records are, as their pane is headed.
-    pub title: String,
-    /// The columns they are tabled under.
-    pub columns: Vec<String>,
-    /// Each record's cells.
-    pub rows: Vec<Vec<String>>,
-    /// What choosing one of the records does - ignores it or counts it
-    /// again - where they are records.
-    pub toggle: Option<&'static str>,
-}
-
-impl Listed<'_> {
-    /// Whose records lie behind the row, and what they are called; none
-    /// for an expense, behind which lie its payees.
-    #[must_use]
-    pub fn of(&self) -> Option<(Of, String)> {
-        Some(match self {
-            Self::Expense(_) => return None,
-            Self::Category { gathered, .. } => {
-                (Of::Category(gathered.category), gathered.category.title())
-            }
-            Self::Unnamed { .. } => (Of::Unnamed, UNNAMED.to_owned()),
-            Self::Payee(unknown) => (Of::Payee(unknown.payee.clone()), unknown.payee.clone()),
-            Self::Ignored { .. } => (Of::Ignored, IGNORED.to_lowercase()),
-        })
-    }
-
-    /// What lies behind the row, among `rows` as `patterns` sort them.
-    #[must_use]
-    pub fn behind(&self, rows: &[Row], patterns: &Patterns, form: MoneyForm) -> Behind {
-        let Some((of, what)) = self.of() else {
-            let Self::Expense(proposal) = self else {
-                return Behind::default();
-            };
-            return payees_behind(proposal, form);
-        };
-        let toggle = if of == Of::Ignored {
-            COUNT_RECORD
-        } else {
-            IGNORE_RECORD
-        };
-        Behind {
-            toggle: Some(toggle),
-            ..records_behind(&what, &records(rows, patterns, &of))
-        }
-    }
-}
-
-/// An expense's payees, each with what it adds a year.
-fn payees_behind(proposal: &Proposal, form: MoneyForm) -> Behind {
-    Behind {
-        title: format!("Payees: {}", proposal.name),
-        columns: PAYEE_COLUMNS.map(str::to_owned).to_vec(),
-        rows: proposal
-            .payees
-            .iter()
-            .map(|(payee, amount)| vec![payee.clone(), form.money(*amount)])
-            .collect(),
-        toggle: None,
-    }
-}
-
-/// `records` of `what`, each its date, its payee as the bank wrote it and
-/// what it spent, a credit negative.
-fn records_behind(what: &str, records: &[&Row]) -> Behind {
-    Behind {
-        title: format!("Records: {what}"),
-        columns: RECORD_COLUMNS.map(str::to_owned).to_vec(),
-        rows: records
-            .iter()
-            .map(|row| {
-                vec![
-                    row.on.0.to_string(),
-                    row.payee.clone(),
-                    spent_cents(row.amount),
-                ]
-            })
-            .collect(),
-        toggle: None,
-    }
-}
-
-/// What a row spent, in dollars and cents: `$42.10`, `-$5.00` for money in.
-fn spent_cents(amount: Cents) -> String {
-    let spent = -amount.0;
-    let sign = if spent < 0 { "-" } else { "" };
-    let whole = spent.abs();
-    format!(
-        "{sign}{}.{:02}",
-        money(whole / CENTS_PER_DOLLAR),
-        whole % CENTS_PER_DOLLAR
-    )
 }
 
 /// Why a category landed where it did, in a word.

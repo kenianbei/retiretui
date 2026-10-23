@@ -187,9 +187,12 @@ fn a_change_is_made_to_the_users_patterns_as_they_wrote_them() {
     let file = "# mine\n[[patterns]]\nmatch = \"SAFEWAY\"\ncategory = \"groceries\"\n";
     let text = named.applied(file).unwrap();
     assert!(text.starts_with(file), "{text}");
-    let mut patterns = Patterns::default();
-    patterns.add(&text).unwrap();
-    assert_eq!(patterns.category("AL'S \"PLACE\""), Some(Category::Dining));
+    let written: Table = text.parse().unwrap();
+    assert_eq!(
+        written["patterns"][1]["is"].as_str(),
+        Some("AL'S \"PLACE\""),
+        "{text}"
+    );
 
     let merge = |payee: &str| Change::Merge {
         payee: payee.to_owned(),

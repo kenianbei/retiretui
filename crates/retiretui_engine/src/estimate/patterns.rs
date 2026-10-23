@@ -2,10 +2,12 @@
 //! winning, the merges that gather a payee's variants under one name, and
 //! the embedded table of substrings, first match winning.
 
+use std::sync::{Arc, LazyLock};
+
 use serde::Deserialize;
 
 use super::rules::{Merge, MergeText, Outcome, PatternError, Rule, RuleText, best};
-use super::{Category, Row, normalize};
+use super::{Row, normalize};
 
 const EMBEDDED: &str = include_str!("patterns.toml");
 
@@ -18,12 +20,18 @@ struct File {
     payees: Vec<MergeText>,
 }
 
+/// The embedded table, read once.
+static EMBEDDED_RULES: LazyLock<Arc<[Rule]>> = LazyLock::new(|| {
+    let (rules, _) = read(EMBEDDED).expect("the embedded pattern table reads");
+    rules.into()
+});
+
 /// The rules and merges in force.
 #[derive(Debug, Clone, Default)]
 pub struct Patterns {
     user: Vec<Rule>,
     merges: Vec<Merge>,
-    embedded: Vec<Rule>,
+    embedded: Arc<[Rule]>,
     text: String,
 }
 
@@ -35,9 +43,8 @@ impl Patterns {
     /// Never: the embedded table is asserted to read by a test.
     #[must_use]
     pub fn embedded() -> Self {
-        let (embedded, _) = read(EMBEDDED).expect("the embedded pattern table reads");
         Self {
-            embedded,
+            embedded: Arc::clone(&EMBEDDED_RULES),
             ..Self::default()
         }
     }
@@ -91,20 +98,6 @@ impl Patterns {
             .find(|rule| rule.holds(payee, row))
             .map(|rule| rule.outcome)
     }
-
-    /// The category the payee alone is given, by the rules that test
-    /// nothing else.
-    #[must_use]
-    pub fn category(&self, payee: &str) -> Option<Category> {
-        let alone = |rule: &&Rule| rule.is_payee_only() && rule.holds_payee(payee);
-        let user = self.user.iter().filter(alone);
-        let outcome = best(user.map(|rule| (rule.score, rule.outcome)))
-            .or_else(|| self.embedded.iter().find(alone).map(|rule| rule.outcome));
-        match outcome? {
-            Outcome::Category(category) => Some(category),
-            Outcome::Ignore => None,
-        }
-    }
 }
 
 /// A file's rules and merges, each entry's complaint naming it.
@@ -128,28 +121,50 @@ fn read(text: &str) -> Result<(Vec<Rule>, Vec<Merge>), PatternError> {
 mod tests {
     use super::*;
 
+    use crate::estimate::{Category, Cents};
+    use crate::plan::PlanDate;
+
     fn with(text: &str) -> Patterns {
         let mut patterns = Patterns::embedded();
         patterns.add(text).unwrap();
         patterns
     }
 
+    /// What `patterns` make of a row of `payee`, as the estimate sorts it.
+    fn sorted(patterns: &Patterns, payee: &str) -> Option<Category> {
+        let row = Row {
+            on: PlanDate(jiff::civil::date(2026, 10, 1)),
+            amount: Cents(-100),
+            payee: payee.to_owned(),
+            category: None,
+            kind: None,
+            bank_id: None,
+            export: String::new(),
+        };
+        let outcome =
+            (patterns.user(payee, &row)).or_else(|| patterns.embedded_outcome(payee, &row));
+        match outcome? {
+            Outcome::Category(category) => Some(category),
+            Outcome::Ignore => None,
+        }
+    }
+
     #[test]
     fn the_embedded_table_sorts_the_common_payees_and_the_users_rows_win() {
         let patterns = Patterns::embedded();
-        assert_eq!(patterns.category("SAFEWAY"), Some(Category::Groceries));
-        assert_eq!(patterns.category("UBER EATS"), Some(Category::Dining));
-        assert_eq!(patterns.category("UBER TRIP"), Some(Category::Transit));
+        assert_eq!(sorted(&patterns, "SAFEWAY"), Some(Category::Groceries));
+        assert_eq!(sorted(&patterns, "UBER EATS"), Some(Category::Dining));
+        assert_eq!(sorted(&patterns, "UBER TRIP"), Some(Category::Transit));
         assert_eq!(
-            patterns.category("ACME CORP PAYROLL"),
+            sorted(&patterns, "ACME CORP PAYROLL"),
             Some(Category::Income)
         );
-        assert_eq!(patterns.category("VISA PAYMENT"), Some(Category::Transfer));
-        assert_eq!(patterns.category("ZZZ"), None);
+        assert_eq!(sorted(&patterns, "VISA PAYMENT"), Some(Category::Transfer));
+        assert_eq!(sorted(&patterns, "ZZZ"), None);
         let patterns = with("[[patterns]]\nmatch = \"safeway\"\ncategory = \"dining\"\n");
-        assert_eq!(patterns.category("SAFEWAY"), Some(Category::Dining));
+        assert_eq!(sorted(&patterns, "SAFEWAY"), Some(Category::Dining));
         let patterns = with("[[patterns]]\nmatch = \"acme*\"\ncategory = \"pets\"\n");
-        assert_eq!(patterns.category("ACME WIDGETS"), Some(Category::Pets));
+        assert_eq!(sorted(&patterns, "ACME WIDGETS"), Some(Category::Pets));
     }
 
     #[test]
@@ -162,12 +177,12 @@ mod tests {
 ]"#,
         );
         assert_eq!(
-            patterns.category("CATAN"),
+            sorted(&patterns, "CATAN"),
             Some(Category::Entertainment),
             "exact beats contains, wherever it is written"
         );
-        assert_eq!(patterns.category("CATS"), Some(Category::Pets), "a tie");
-        assert_eq!(patterns.category("CAR"), Some(Category::Gifts));
+        assert_eq!(sorted(&patterns, "CATS"), Some(Category::Pets), "a tie");
+        assert_eq!(sorted(&patterns, "CAR"), Some(Category::Gifts));
     }
 
     #[test]

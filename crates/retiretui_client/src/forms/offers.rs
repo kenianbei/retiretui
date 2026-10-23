@@ -57,6 +57,8 @@ pub enum Vocabulary {
     GainsRate,
     /// What a bank's row was for.
     Category,
+    /// What a payee's rows are: a category, or ignored.
+    PayeeOutcome,
     /// What a spending proposal does to an expense stated in phases.
     Phases,
     /// How readily the spending estimate proposes a new expense.
@@ -152,10 +154,24 @@ impl Vocabulary {
             Self::Draw => offers(Draw::ALL, Draw::as_str, present::draw),
             Self::GainsRate => offers(GainsRate::ALL, GainsRate::as_str, present::gains_rate),
             Self::Category => category_offers(),
+            Self::PayeeOutcome => payee_outcome_offers(),
             Self::Phases => offers(PHASES, |phases| phases.0, |phases| phases.1),
             Self::Lean => offers(&Lean::ALL, Lean::slug, present::lean),
         }
     }
+}
+
+/// What a payee's outcome field keeps where its rows are ignored.
+pub const IGNORE_PAYEE: &str = "ignore";
+
+/// Each category, then ignoring the payee's rows.
+fn payee_outcome_offers() -> Vec<Offer> {
+    let mut offered = category_offers();
+    offered.push(Offer {
+        value: IGNORE_PAYEE.to_owned(),
+        label: "Ignored".to_owned(),
+    });
+    offered
 }
 
 fn category_offers() -> Vec<Offer> {

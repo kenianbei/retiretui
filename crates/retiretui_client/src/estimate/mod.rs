@@ -4,6 +4,7 @@
 //! and the plan's `[estimate]` table are edited in, what is asked and said
 //! when the proposals are taken, and the shape they are replied in.
 
+mod behind;
 mod forms;
 mod rows;
 mod rules;
@@ -11,15 +12,16 @@ mod rules;
 mod tests;
 
 use retiretui_engine::estimate::{
-    BankError, Cents, Estimate, Patterns, Row, apply, estimate, merge, read, records,
+    BankError, Estimate, Patterns, Row, apply, estimate, merge, read, records,
 };
 use retiretui_engine::plan::{self, Plan, Scenario};
 use schemars::JsonSchema;
 use serde::Serialize;
 use toml::Table;
 
+pub use behind::Behind;
 pub use forms::{RowForm, SETTINGS_FORM, assign};
-pub use rows::{Behind, Listed, listed, summary, take_question, taken};
+pub use rows::{Listed, listed, summary, take_question, taken};
 pub use rules::{Change, Record};
 
 use crate::draft::Draft;
@@ -236,7 +238,7 @@ impl Estimator {
     /// # Errors
     ///
     /// Where the change cannot be made to them, in its words.
-    pub fn make(&mut self, change: &Change) -> Result<(), String> {
+    fn make(&mut self, change: &Change) -> Result<(), String> {
         let text = change.applied(self.patterns.text())?;
         let mut patterns = Patterns::embedded();
         patterns.add(&text).map_err(|error| error.to_string())?;
@@ -253,13 +255,13 @@ impl Estimator {
     /// Where no record lies there, or the change cannot be made.
     pub fn toggle_record(&mut self, at: usize, index: usize) -> Result<Change, String> {
         let row = self.row(at).ok_or(NO_RECORD)?;
-        let (of, _) = row.of().ok_or(NO_RECORD)?;
+        let of = row.of().ok_or(NO_RECORD)?;
         let found = records(self.exports.rows(), &self.patterns, &of);
         let picked = found.get(index).ok_or(NO_RECORD)?;
         let record = Record {
             payee: self.patterns.name_of(&picked.payee),
             on: picked.on,
-            spent: Cents(-picked.amount.0),
+            spent: picked.spent(),
         };
         let change = if matches!(row, Listed::Ignored { .. }) {
             Change::Unignore(record)

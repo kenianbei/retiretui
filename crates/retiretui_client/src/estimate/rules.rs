@@ -3,9 +3,11 @@
 //! and an ignore it wrote taken back, each made to the file's text so the
 //! rest of it stays as the user wrote it.
 
-use retiretui_engine::estimate::{CENTS_PER_DOLLAR, Category, Cents, Patterns};
+use retiretui_engine::estimate::{Category, Cents, Patterns};
 use retiretui_engine::plan::PlanDate;
-use toml_edit::{Array, ArrayOfTables, DocumentMut, InlineTable, Item, TableLike, Value};
+use toml_edit::{
+    Array, ArrayOfTables, Date, Datetime, DocumentMut, InlineTable, Item, TableLike, Value,
+};
 
 const PATTERNS: &str = "patterns";
 const PAYEES: &str = "payees";
@@ -111,13 +113,18 @@ fn ignoring(payee: &str, record: Option<(PlanDate, Cents)>) -> InlineTable {
     let mut rule = InlineTable::new();
     rule.insert(IS, payee.into());
     if let Some((on, spent)) = record {
-        rule.insert(
-            ON,
-            on.0.to_string()
-                .parse::<Value>()
-                .expect("a date reads as TOML"),
-        );
-        let dollars = spent.0 as f64 / CENTS_PER_DOLLAR as f64;
+        let date = Date {
+            year: on.0.year() as u16,
+            month: on.0.month() as u8,
+            day: on.0.day() as u8,
+        };
+        let on = Datetime {
+            date: Some(date),
+            time: None,
+            offset: None,
+        };
+        rule.insert(ON, on.into());
+        let dollars = spent.dollars();
         rule.insert(SPENT, Value::Array(Array::from_iter([dollars, dollars])));
     }
     rule.insert(IGNORE, true.into());
@@ -190,30 +197,25 @@ fn unignore(file: &mut DocumentMut, record: &Record) -> Result<(), String> {
     Err(HAND_WRITTEN.to_owned())
 }
 
-/// Whether `entry` is the page's rule ignoring `payee`, or one record of
-/// it, and nothing more.
+/// Whether `entry` is the rule the page writes ignoring `payee`, or one
+/// record of it, and nothing more.
 fn is_ignoring(entry: &dyn TableLike, payee: &str, record: Option<(PlanDate, Cents)>) -> bool {
-    let is = |key: &str| entry.get(key).and_then(Item::as_value);
-    let keys = if record.is_some() { 4 } else { 2 };
-    let is_payee = is(IS)
-        .and_then(Value::as_str)
-        .is_some_and(|held| held.eq_ignore_ascii_case(payee));
-    let is_record = record.is_none_or(|(on, spent)| {
-        let date = is(ON).map(|value| value.to_string().trim().to_owned());
-        let range = is(SPENT).and_then(Value::as_array).map(|range| {
-            let cents = |value: &Value| {
-                (value.as_float())
-                    .or_else(|| value.as_integer().map(|whole| whole as f64))
-                    .map(|dollars| (dollars * CENTS_PER_DOLLAR as f64).round() as i64)
-            };
-            range.iter().map(cents).collect::<Vec<_>>()
-        });
-        date == Some(on.0.to_string()) && range == Some(vec![Some(spent.0); 2])
-    });
-    entry.len() == keys
-        && is(IGNORE).and_then(Value::as_bool) == Some(true)
-        && is_payee
-        && is_record
+    let wanted = ignoring(payee, record);
+    entry.len() == wanted.len()
+        && wanted.iter().all(|(key, value)| {
+            let held = entry.get(key).and_then(Item::as_value);
+            held.is_some_and(|held| is_same(held, value))
+        })
+}
+
+/// Whether two values say the same, letters of either case alike.
+fn is_same(held: &Value, wanted: &Value) -> bool {
+    if let (Some(held), Some(wanted)) = (held.as_array(), wanted.as_array()) {
+        return held.len() == wanted.len()
+            && held.iter().zip(wanted.iter()).all(|(a, b)| is_same(a, b));
+    }
+    let said = |value: &Value| value.to_string().trim().to_owned();
+    said(held).eq_ignore_ascii_case(&said(wanted))
 }
 
 fn remove(file: &mut DocumentMut, at: usize) {
