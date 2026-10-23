@@ -64,6 +64,20 @@ fn is_code(word: &str) -> bool {
     is_mixed || is_unvoiced
 }
 
+/// A pattern read as payees are, where it holds a processor's `*`.
+#[must_use]
+pub(super) fn starred_as_spaces(pattern: &str) -> String {
+    if !pattern.contains('*') {
+        return pattern.to_owned();
+    }
+    let words: Vec<&str> = pattern
+        .split_whitespace()
+        .flat_map(pieces)
+        .filter(|word| !word.is_empty())
+        .collect();
+    words.join(" ")
+}
+
 fn is_noise(word: &str) -> bool {
     let digits = word.chars().filter(char::is_ascii_digit).count();
     word.starts_with('#')

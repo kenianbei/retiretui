@@ -5,6 +5,7 @@
 use serde::Deserialize;
 
 use super::category::Category;
+use super::payee::starred_as_spaces;
 
 const EMBEDDED: &str = include_str!("patterns.toml");
 
@@ -47,10 +48,12 @@ impl Patterns {
     /// The file is not a `[[patterns]]` table of `match` and `category`.
     pub fn add(&mut self, text: &str) -> Result<(), toml::de::Error> {
         let file: File = toml::from_str(text)?;
-        let rows = file
-            .patterns
-            .into_iter()
-            .map(|p| (p.r#match.to_ascii_uppercase(), p.category));
+        let rows = file.patterns.into_iter().map(|p| {
+            (
+                starred_as_spaces(&p.r#match.to_ascii_uppercase()),
+                p.category,
+            )
+        });
         self.rows.splice(0..0, rows);
         Ok(())
     }
@@ -90,6 +93,10 @@ mod tests {
             .add("[[patterns]]\nmatch = \"safeway\"\ncategory = \"dining\"\n")
             .unwrap();
         assert_eq!(patterns.category("SAFEWAY"), Some(Category::Dining));
+        patterns
+            .add("[[patterns]]\nmatch = \"acme*\"\ncategory = \"pets\"\n")
+            .unwrap();
+        assert_eq!(patterns.category("ACME WIDGETS"), Some(Category::Pets));
         patterns.assign("ZZZ", Category::Pets);
         assert_eq!(patterns.category("ZZZ"), Some(Category::Pets));
         assert!(Patterns::default().add("nonsense = [").is_err());

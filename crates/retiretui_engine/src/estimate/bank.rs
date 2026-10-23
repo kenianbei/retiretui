@@ -7,7 +7,8 @@ use std::ops::Sub;
 use super::{Category, csv, ofx, payee};
 use crate::plan::PlanDate;
 
-pub(super) const CENTS_PER_DOLLAR: i64 = 100;
+/// Cents in a dollar.
+pub const CENTS_PER_DOLLAR: i64 = 100;
 
 /// Money in whole cents, negative where it left the account.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]

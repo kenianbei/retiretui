@@ -123,7 +123,11 @@ fn a_csv_sorts_its_rows_and_names_the_expense_each_sets() {
     );
     assert_eq!(groceries.amount, 142 * 12 + 2);
     assert_eq!(groceries.total, 142);
-    assert_eq!(groceries.payees, vec![("SAFEWAY".to_owned(), 142)]);
+    assert_eq!(
+        groceries.payees,
+        vec![("SAFEWAY".to_owned(), groceries.amount)],
+        "a year of it"
+    );
     assert_eq!(found.income, 4213 * 12 - 5);
     assert_eq!(found.transfers, -(1850 + 120) * 12);
     assert!(found.unknown.is_empty());

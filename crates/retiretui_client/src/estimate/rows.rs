@@ -4,7 +4,7 @@
 //! behind it.
 
 use retiretui_engine::estimate::{
-    Cents, Estimate, Gathered, Of, Patterns, Proposal, Row, Unknown, Why, records,
+    CENTS_PER_DOLLAR, Cents, Estimate, Gathered, Of, Patterns, Proposal, Row, Unknown, Why, records,
 };
 use retiretui_engine::plan::Dollars;
 use serde::Serialize;
@@ -17,8 +17,7 @@ const INDENT: &str = "  ";
 const PAYEE_INDENT: &str = "    ";
 /// What a payee's row says where money came in from it, uncounted.
 const REFUND: &str = "refund";
-const CENTS_PER_DOLLAR: i64 = 100;
-const MONTHS_PER_YEAR: Dollars = 12;
+
 const NEW_MARK: &str = " (new)";
 const BUCKET_MARK: &str = " (bucket)";
 const NEW_BUCKET_MARK: &str = " (new bucket)";
@@ -58,21 +57,23 @@ pub enum Listed<'a> {
 pub fn listed(estimate: &Estimate) -> impl Iterator<Item = Listed<'_>> {
     let mut rows = Vec::new();
     let payees = estimate.unknown.iter().map(Listed::Payee);
+    let mut has_payees = false;
     for proposal in &estimate.proposals {
         rows.push(Listed::Expense(proposal));
         rows.extend(proposal.categories.iter().map(|gathered| Listed::Category {
             gathered,
             into: proposal,
         }));
-        if proposal.is_bucket && proposal.unknown > 0 {
+        if proposal.is_bucket && !estimate.unknown.is_empty() {
             rows.push(Listed::Unnamed {
                 amount: proposal.unknown,
                 into: proposal,
             });
             rows.extend(payees.clone());
+            has_payees = true;
         }
     }
-    if !rows.iter().any(|row| matches!(row, Listed::Unnamed { .. })) {
+    if !has_payees {
         rows.extend(payees);
     }
     rows.into_iter()
@@ -173,14 +174,12 @@ impl Listed<'_> {
                 own("Spent", format!("{} a year", form.money(amount))),
             ],
             Self::Payee(unknown) => {
-                let spent = if unknown.amount < 0 {
-                    format!(
-                        "{} a year, a refund, not counted",
-                        form.money(unknown.amount)
-                    )
+                let refund = if unknown.amount < 0 {
+                    ", a refund, not counted"
                 } else {
-                    format!("{} a year", form.money(unknown.amount))
+                    ""
                 };
+                let spent = format!("{} a year{refund}", form.money(unknown.amount));
                 vec![
                     own("Payee", unknown.payee.clone()),
                     own("Category", UNKNOWN.to_owned()),
@@ -232,18 +231,12 @@ pub struct Behind {
 }
 
 impl Listed<'_> {
-    /// What lies behind the row, among `rows` as `patterns` sort them,
-    /// over a window of `months`.
+    /// What lies behind the row, among `rows` as `patterns` sort them.
     #[must_use]
-    pub fn behind(
-        &self,
-        (rows, patterns): (&[Row], &Patterns),
-        months: u8,
-        form: MoneyForm,
-    ) -> Behind {
+    pub fn behind(&self, rows: &[Row], patterns: &Patterns, form: MoneyForm) -> Behind {
         let of = |what: &str, of: Of| records_behind(what, &records(rows, patterns, &of));
         match self {
-            Self::Expense(proposal) => payees_behind(proposal, months, form),
+            Self::Expense(proposal) => payees_behind(proposal, form),
             Self::Category { gathered, .. } => {
                 of(&gathered.category.title(), Of::Category(gathered.category))
             }
@@ -253,17 +246,15 @@ impl Listed<'_> {
     }
 }
 
-/// An expense's payees, each with what it adds a year over a window of
-/// `months`.
-fn payees_behind(proposal: &Proposal, months: u8, form: MoneyForm) -> Behind {
-    let annual = |total: Dollars| total * MONTHS_PER_YEAR / Dollars::from(months);
+/// An expense's payees, each with what it adds a year.
+fn payees_behind(proposal: &Proposal, form: MoneyForm) -> Behind {
     Behind {
         title: format!("Payees: {}", proposal.name),
         columns: PAYEE_COLUMNS.map(str::to_owned).to_vec(),
         rows: proposal
             .payees
             .iter()
-            .map(|(payee, total)| vec![payee.clone(), form.money(annual(*total))])
+            .map(|(payee, amount)| vec![payee.clone(), form.money(*amount)])
             .collect(),
     }
 }

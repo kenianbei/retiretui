@@ -15,8 +15,7 @@ mod place;
 
 use std::collections::{BTreeMap, HashMap};
 
-use bank::CENTS_PER_DOLLAR;
-pub use bank::{BankError, Cents, Row, merge, read};
+pub use bank::{BankError, CENTS_PER_DOLLAR, Cents, Row, merge, read};
 pub use category::{Category, Family};
 pub use patterns::Patterns;
 pub use payee::normalize;
@@ -79,7 +78,7 @@ pub struct Proposal {
     /// What the payees nothing names add up to a year, where it is the
     /// bucket.
     pub unknown: Dollars,
-    /// Each payee and what it adds up to, largest first.
+    /// Each payee and what it adds a year, largest first.
     pub payees: Vec<(String, Dollars)>,
     /// The latest row's date.
     #[cfg_attr(feature = "schemars", schemars(with = "String"))]
@@ -206,14 +205,37 @@ impl Window {
     }
 }
 
-/// The row's category: the bank's own column, its transaction type, or
-/// what its payee's words `matched`.
-fn sorted(row: &Row, matched: Option<Category>) -> Option<Category> {
-    row.category
-        .as_deref()
-        .and_then(Category::from_text)
-        .or(row.kind)
-        .or(matched)
+/// Sorts rows by the bank's own column, their transaction type, or what
+/// their payee's words say, each payee normalized and matched once.
+struct Sorter<'a> {
+    patterns: &'a Patterns,
+    named: HashMap<&'a str, (String, Option<Category>)>,
+}
+
+impl<'a> Sorter<'a> {
+    fn new(patterns: &'a Patterns) -> Self {
+        Self {
+            patterns,
+            named: HashMap::new(),
+        }
+    }
+
+    /// The row's normalized payee and its category.
+    fn sort(&mut self, row: &'a Row) -> (&str, Option<Category>) {
+        let patterns = self.patterns;
+        let (payee, matched) = self.named.entry(&row.payee).or_insert_with(|| {
+            let payee = normalize(&row.payee);
+            let matched = patterns.category(&payee);
+            (payee, matched)
+        });
+        let category = row
+            .category
+            .as_deref()
+            .and_then(Category::from_text)
+            .or(row.kind)
+            .or(*matched);
+        (payee, category)
+    }
 }
 
 /// The rows within the estimate's window that are `of`'s, newest first.
@@ -222,14 +244,12 @@ pub fn records<'a>(rows: &'a [Row], patterns: &Patterns, of: &Of) -> Vec<&'a Row
     let Some(window) = Window::of(rows) else {
         return Vec::new();
     };
-    let is_of = |row: &Row| {
-        let payee = normalize(&row.payee);
-        let category = sorted(row, patterns.category(&payee));
-        match of {
-            Of::Category(wanted) => category == Some(*wanted),
-            Of::Payee(wanted) => category.is_none() && payee == *wanted,
-            Of::Unnamed => category.is_none(),
-        }
+    let mut sorter = Sorter::new(patterns);
+    let mut is_of = |row: &'a Row| match (of, sorter.sort(row)) {
+        (Of::Category(wanted), (_, category)) => category == Some(*wanted),
+        (Of::Payee(wanted), (payee, None)) => payee == wanted,
+        (Of::Payee(_), (_, Some(_))) => false,
+        (Of::Unnamed, (_, category)) => category.is_none(),
     };
     let mut found: Vec<&Row> = rows
         .iter()
@@ -247,14 +267,13 @@ pub fn estimate(plan: &Plan, rows: &[Row], patterns: &Patterns) -> Estimate {
     else {
         return Estimate::default();
     };
-    let annual = |dollars: f64| window.annual(dollars);
     let in_window = rows.iter().filter(|row| window.holds(row));
     let (mut by_category, unknown) = tally(plan, in_window, patterns);
     let mut listed: Vec<Unknown> = unknown
         .iter()
         .map(|(payee, tally)| Unknown {
             payee: payee.clone(),
-            amount: annual(-tally.total),
+            amount: window.annual(-tally.total),
             rows: tally.rows,
         })
         .collect();
@@ -267,7 +286,7 @@ pub fn estimate(plan: &Plan, rows: &[Row], patterns: &Patterns) -> Estimate {
         .collect();
     listed
         .sort_by(|a, b| (b.amount.abs().cmp(&a.amount.abs())).then_with(|| a.payee.cmp(&b.payee)));
-    let tallied = |tally: Option<Tally>| tally.map_or(0, |t| annual(t.total));
+    let tallied = |tally: Option<Tally>| tally.map_or(0, |t| window.annual(t.total));
     Estimate {
         months: window.months() as u8,
         through: Some(through),
@@ -317,17 +336,13 @@ fn tally<'a>(
 ) -> (BTreeMap<Category, Tally>, BTreeMap<String, Tally>) {
     let mut by_category: BTreeMap<Category, Tally> = BTreeMap::new();
     let mut unknown: BTreeMap<String, Tally> = BTreeMap::new();
-    let mut named: HashMap<&str, (String, Option<Category>)> = HashMap::new();
+    let mut sorter = Sorter::new(patterns);
     for row in rows {
-        let (payee, matched) = named.entry(&row.payee).or_insert_with(|| {
-            let payee = normalize(&row.payee);
-            let matched = patterns.category(&payee);
-            (payee, matched)
-        });
-        let payee = payee.clone();
+        let (payee, category) = sorter.sort(row);
+        let payee = payee.to_owned();
         let deflated =
             row.amount.0 as f64 / CENTS_PER_DOLLAR as f64 / inflation_factor(plan, row.on.year());
-        let tally = match sorted(row, *matched) {
+        let tally = match category {
             Some(category) => by_category.entry(category).or_default(),
             None => unknown.entry(payee.clone()).or_default(),
         };
@@ -350,18 +365,17 @@ fn proposal(
     group: Group,
     window: Window,
 ) -> Proposal {
-    let annual = |dollars: f64| window.annual(dollars);
     let mut payees: Vec<(String, Dollars)> = group
         .tally
         .payees
         .into_iter()
-        .map(|(payee, dollars)| (payee, (-dollars).round() as Dollars))
+        .map(|(payee, dollars)| (payee, window.annual(-dollars)))
         .collect();
     payees.sort_by(largest_first);
     let mut categories: Vec<(Category, Dollars, Why)> = group
         .categories
         .into_iter()
-        .map(|(category, dollars, why)| (category, annual(dollars), why))
+        .map(|(category, dollars, why)| (category, window.annual(dollars), why))
         .collect();
     categories.sort_by(|a, b| largest_first(&(a.0, a.1), &(b.0, b.1)));
     let (id, now, name) = identified(plan, target, window.end);
@@ -371,7 +385,7 @@ fn proposal(
         name,
         is_bucket,
         now,
-        amount: annual(-group.tally.total),
+        amount: window.annual(-group.tally.total),
         total: (-group.tally.total).round() as Dollars,
         rows: group.tally.rows,
         categories: categories
@@ -382,7 +396,7 @@ fn proposal(
                 why,
             })
             .collect(),
-        unknown: annual(group.unknown),
+        unknown: window.annual(group.unknown),
         payees,
         last: group.tally.last.expect("a group holds a row"),
         one_time: false,

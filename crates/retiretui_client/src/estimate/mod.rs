@@ -197,8 +197,7 @@ impl Estimator {
     #[must_use]
     pub fn behind(&self, at: usize, form: MoneyForm) -> Option<Behind> {
         let row = self.row(at)?;
-        let months = self.estimate.months;
-        Some(row.behind((self.exports.rows(), &self.patterns), months, form))
+        Some(row.behind(self.exports.rows(), &self.patterns, form))
     }
 
     /// The form the row at `at` is edited in, and the answers it opens
