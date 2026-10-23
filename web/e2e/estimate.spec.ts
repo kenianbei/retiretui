@@ -47,7 +47,9 @@ test("exports are read, a proposal edited, and the proposals taken and written",
 
   const proposals = page.getByRole("region", { name: "Proposals" });
   if (!isPhone(testInfo)) {
-    const rows = proposals.getByRole("table").locator("tbody tr");
+    const rows = proposals
+      .getByRole("table", { name: "Proposals" })
+      .locator("tbody tr");
     await expect(rows).toHaveCount(4);
     await expect(rows.nth(0)).toContainText("Groceries (new)");
     await expect(rows.nth(1)).toContainText("Groceries");
@@ -56,7 +58,9 @@ test("exports are read, a proposal edited, and the proposals taken and written",
   await rowNamed(page, testInfo, "Utilities (new)").click();
   await page.waitForURL(/row=2/);
   const readOut = page.getByRole("region", { name: "Expense", exact: true });
-  await expect(readOut).toContainText("CITY OF SAN JOSE WATER");
+  await expect(
+    page.getByRole("table", { name: "Payees: Utilities" }),
+  ).toContainText("CITY OF SAN JOSE WATER");
   await readOut.getByRole("link", { name: "Edit" }).click();
   await page.waitForURL(/edit=row/);
   const sheet = page.getByRole("dialog");
@@ -65,6 +69,13 @@ test("exports are read, a proposal edited, and the proposals taken and written",
   await amount.fill("1200");
   await sheet.getByRole("button", { name: "Apply" }).click();
   await expect(readOut).toContainText("$1,200 a year");
+
+  await rowNamed(page, testInfo, "Utilities").last().click();
+  await page.waitForURL(/row=3/);
+  const records = page.getByRole("table", { name: "Records: Utilities" });
+  await expect(records).toContainText("2026-10-");
+  await expect(records).toContainText("$");
+  await expectAccessible(page);
 
   await proposals.getByRole("button", { name: "Write as a scenario" }).click();
   const asked = page.getByRole("alertdialog");

@@ -1,5 +1,6 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import {
+  type Behind,
   type EstimateRow,
   type EstimateView,
   Estimator,
@@ -8,6 +9,8 @@ import {
 import { FileUp, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { columnsFor } from "@/components/columns";
+import { DataTable } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import { useFilePicker } from "@/files/picker";
 import { messageOf } from "@/lib/utils";
@@ -26,7 +29,7 @@ const WORDS = estimateWords();
 const ESTIMATOR = new Estimator();
 
 /** The column a phone's row shows beside a row's name. */
-const PER_YEAR = 2;
+const PROPOSED = 2;
 
 /** How the plan's `[estimate]` table is read out, opened and held. */
 const ESTIMATE_SETTINGS: Settings = {
@@ -51,6 +54,32 @@ function rowsOf(view: EstimateView): OptionRow<EstimateRow>[] {
       option: row,
     };
   });
+}
+
+/** What lies behind the highlighted row, its last column the figure. */
+function BehindTable({ behind }: { behind: Behind }) {
+  const columns = useMemo(() => {
+    const column = columnsFor<string[]>();
+    return behind.columns.map((header, at) =>
+      column.display({
+        id: String(at),
+        header,
+        meta: { isNumeric: at === behind.columns.length - 1 },
+        cell: ({ row }) => row.original[at],
+      }),
+    );
+  }, [behind.columns]);
+  return (
+    <div className="min-w-0 space-y-3">
+      <h3 className="font-semibold">{behind.title}</h3>
+      <DataTable
+        label={behind.title}
+        columns={columns}
+        rows={behind.rows}
+        rowKey={(_cells, at) => String(at)}
+      />
+    </div>
+  );
 }
 
 /** The proposals, as they are taken or written. */
@@ -103,7 +132,7 @@ export function EstimatePage({ title }: { title: string }) {
       id: "row",
       heading: highlighted?.title ?? "Row",
       isEditable: highlighted?.is_editable ?? false,
-      read: (document) => ESTIMATOR.readRow(document, at),
+      read: () => ESTIMATOR.readRow(at),
       open: (document) => ESTIMATOR.openRow(document, at),
       apply: (document, editor) => {
         ESTIMATOR.applyRow(document, editor, at);
@@ -111,6 +140,10 @@ export function EstimatePage({ title }: { title: string }) {
       },
     }),
     [highlighted, at, refresh],
+  );
+  const behind = useMemo(
+    () => (view && highlighted ? ESTIMATOR.behindRow(at) : null),
+    [view, highlighted, at],
   );
 
   return (
@@ -180,7 +213,7 @@ export function EstimatePage({ title }: { title: string }) {
             label="Proposals"
             columns={WORDS.columns}
             rows={rows}
-            narrowFigure={PER_YEAR}
+            narrowFigure={PROPOSED}
             words={1}
             highlighted={highlighted}
             highlight={(row) => {
@@ -192,6 +225,7 @@ export function EstimatePage({ title }: { title: string }) {
             }}
           />
           {highlighted && <SettingsRead settings={proposal} />}
+          {behind && behind.rows.length > 0 && <BehindTable behind={behind} />}
         </section>
       )}
       <SettingsRead settings={ESTIMATE_SETTINGS} />
