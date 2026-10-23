@@ -23,10 +23,13 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   one of its family, a new one, or a bucket that also takes unnamed payees, as
   an optional `[estimate]` table leans (existing only, new past a share of
   spending, or always new); the table also names the bucket and assigns
-  categories outright. Proposals can be edited and taken or written as a
-  scenario, in the terminal, the web app, `retiretui estimate` and
-  `estimate_spending` over MCP. A payee named in the terminal is kept in
-  `estimate/patterns.toml` in the config directory.
+  categories outright. Each expense shows its amount now, proposed and the
+  change and the payees behind it, each category why it landed there and the
+  transactions behind it; unnamed payees sit under the bucket, refunds marked.
+  Proposals can be edited and taken or written as a scenario, in the terminal,
+  the web app, `retiretui estimate` and `estimate_spending` over MCP. A payee
+  named in the terminal is kept in `estimate/patterns.toml` in the config
+  directory.
 
 ### Changed
 
