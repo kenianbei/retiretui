@@ -229,8 +229,8 @@ pub fn pick_category(
 /// The bucket as 0, then every category by its number from 1: those whose
 /// number starts with the digits typed, else those whose name matches.
 fn list_categories(In(query): In<String>, held: Res<Held>) -> Vec<Offered> {
-    let bucket = format!("{} (bucket)", held.0.bucket_name());
-    let names = std::iter::once(bucket).chain(Category::ALL.iter().map(|it| it.title()));
+    let names =
+        std::iter::once(held.0.bucket_name()).chain(Category::ALL.iter().map(|it| it.title()));
     let offered = names
         .enumerate()
         .map(|(number, name)| Offered::new(number, format!("{number:>2} {name}")));

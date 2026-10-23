@@ -6,6 +6,7 @@ use retiretui_engine::estimate::{Reach, Row, normalize, reach, records};
 
 use serde::Deserialize;
 
+use super::rows::BUCKET_MARK;
 use super::{Change, Estimator, Listed, Record, To};
 use crate::present::{MoneyForm, counted};
 
@@ -126,12 +127,12 @@ impl Estimator {
         self.target(at, record).ok().map(|target| target.named)
     }
 
-    /// What the bucket is called: its expense's name, where the estimate
-    /// proposes one.
+    /// What the bucket is called: its expense's name, marked as the
+    /// bucket, where the estimate proposes one.
     #[must_use]
     pub fn bucket_name(&self) -> String {
         let bucket = self.estimate.proposals.iter().find(|p| p.is_bucket);
-        bucket.map_or_else(|| BUCKET.to_owned(), |p| p.name.clone())
+        bucket.map_or_else(|| BUCKET.to_owned(), |p| format!("{}{BUCKET_MARK}", p.name))
     }
 
     /// How far a rule on payees containing `part` reaches.

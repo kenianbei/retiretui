@@ -390,7 +390,7 @@ fn a_payee_sent_to_the_bucket_is_listed_unnamed_beneath_it() {
         .unwrap();
     assert_eq!(sent.said(), "TAQUERIA SOL goes to the bucket");
     assert!(estimator.refresh(&plan));
-    assert_eq!(estimator.bucket_name(), "Other");
+    assert_eq!(estimator.bucket_name(), "Other (bucket)");
     let names: Vec<String> = cells(&estimator)
         .into_iter()
         .map(|[name, ..]| name)

@@ -25,7 +25,7 @@ import {
 import { NameDialog } from "@/files/name-dialog";
 
 /** What the dialog's category select keeps for the bucket. */
-const BUCKET = "bucket";
+const BUCKET = "bucket" satisfies To;
 
 /** What the record menu asks for in a dialog of its own. */
 export interface Asking {
@@ -141,10 +141,10 @@ function RecordMenu({
           <DropdownMenuSubContent>
             <DropdownMenuItem
               onSelect={() => {
-                acts.act(record, { "payee-is": "bucket" });
+                acts.act(record, { "payee-is": BUCKET });
               }}
             >
-              0 {acts.bucket} (bucket)
+              0 {acts.bucket}
             </DropdownMenuItem>
             {acts.categories.map(([category, label], at) => (
               <DropdownMenuItem
@@ -226,7 +226,7 @@ export function AskDialog({
           return;
         }
         const to: To =
-          category === BUCKET ? "bucket" : { category: category as Category };
+          category === BUCKET ? BUCKET : { category: category as Category };
         acts.act(
           asking.record,
           isWords ? { containing: [typed, to] } : { name: typed },
@@ -244,7 +244,7 @@ export function AskDialog({
             value={category}
             options={[
               { value: "", label: "Pick one" },
-              { value: BUCKET, label: `0 ${acts.bucket} (bucket)` },
+              { value: BUCKET, label: `0 ${acts.bucket}` },
               ...acts.categories.map(([value, label], at) => ({
                 value,
                 label: `${String(at + 1)} ${label}`,

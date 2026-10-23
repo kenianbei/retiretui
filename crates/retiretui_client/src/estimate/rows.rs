@@ -16,7 +16,7 @@ const PAYEE_INDENT: &str = "    ";
 const REFUND: &str = "refund";
 
 const NEW_MARK: &str = " (new)";
-const BUCKET_MARK: &str = " (bucket)";
+pub(super) const BUCKET_MARK: &str = " (bucket)";
 const NEW_BUCKET_MARK: &str = " (new bucket)";
 /// What the bucket's row for the payees nothing names says.
 pub(super) const UNNAMED: &str = "Unnamed payees";
