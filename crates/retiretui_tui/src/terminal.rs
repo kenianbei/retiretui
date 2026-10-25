@@ -12,7 +12,7 @@ use clap::{Args, Subcommand};
 use plurimus::core::CorePlugin;
 use plurimus::crossterm::CrosstermPlugin;
 use retiretui_client::environment::{
-    config_dir, load_history, load_patterns, load_tables, patterns_path, state_dir,
+    config_dir, load_history, load_tables, patterns_path, state_dir,
 };
 use retiretui_client::store::DiskStore;
 
@@ -47,7 +47,6 @@ pub fn run(args: &TuiArgs) -> anyhow::Result<()> {
         path: args.path.clone(),
         tables: load_tables(&args.tax_dir)?,
         history: load_history(None)?,
-        patterns: load_patterns(None, true)?,
         patterns_file: patterns_path(),
         store: Arc::new(DiskStore),
         settings: config_dir(CONFIG_FILE),

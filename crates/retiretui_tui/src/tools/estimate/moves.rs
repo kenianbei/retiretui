@@ -296,7 +296,7 @@ fn chose_action(In(id): In<usize>, mut commands: Commands) {
 
 /// The one row the words typed make: how far a rule on them reaches.
 fn list_words(In(query): In<String>, mut acting: ResMut<Acting>, held: Res<Held>) -> Vec<Offered> {
-    acting.words = Some(query.trim().to_owned()).filter(|words| !words.is_empty());
+    acting.words = Some(query).filter(|words| !words.trim().is_empty());
     let Some(words) = &acting.words else {
         return Vec::new();
     };

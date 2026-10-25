@@ -2,15 +2,17 @@
 //! dropped, a row opened in its form and applied, a named payee
 //! remembered, and the proposals taken or written.
 
+use std::io;
 use std::path::{Path, PathBuf};
 
 use bevy_ecs::prelude::{Commands, In, Query, Res, ResMut, With, World};
 use plurimus::widgets::ActiveDescendant;
 use retiretui_client::estimate::{
-    self, Applied, Change, RowForm, SETTINGS_FORM, assign, take_question, taken,
+    self, Applied, Change, Estimator, RowForm, SETTINGS_FORM, assign, take_question, taken,
 };
 use retiretui_client::present::counted;
-use retiretui_engine::estimate::{Estimate, apply};
+use retiretui_client::store::Store;
+use retiretui_engine::estimate::{Estimate, Patterns, apply};
 
 use super::{Cursor, FileList, FileRow, Held, PatternsFile};
 use crate::command::Outcome;
@@ -154,15 +156,47 @@ pub(super) fn remember(session: &Session, path: Option<&Path>, changes: &[Change
         journal::say(said);
         return;
     };
-    let text = session.store.read(path).unwrap_or_default();
-    let written = (changes.iter())
-        .try_fold(text, |text, change| change.applied(&text))
+    let written = (patterns_text(session.store.as_ref(), path))
+        .map(Option::unwrap_or_default)
+        .and_then(|text| (changes.iter()).try_fold(text, |text, change| change.applied(&text)))
         .and_then(|file| {
             settings::write(session.store.as_ref(), path, &file).map_err(|error| error.to_string())
         });
     match written {
         Ok(()) => journal::say(format!("{said}, kept in {}", path.display())),
         Err(reason) => journal::warn(format!("{said}, but not kept: {reason}")),
+    }
+}
+
+/// The text of the user's patterns file at `path`; none where there is no
+/// such file yet.
+fn patterns_text(store: &dyn Store, path: &Path) -> Result<Option<String>, String> {
+    match store.read(path) {
+        Ok(text) => Ok(Some(text)),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
+        Err(error) => Err(error.to_string()),
+    }
+}
+
+/// Reads the user's patterns file the launch names into the page's
+/// patterns, once the journal can say why one that does not read is left
+/// out.
+pub(super) fn read_user_patterns(
+    session: Res<Session>,
+    file: Res<PatternsFile>,
+    mut held: ResMut<Held>,
+) {
+    let Some(path) = file.0.as_deref() else {
+        return;
+    };
+    let mut patterns = Patterns::embedded();
+    let added = patterns_text(session.store.as_ref(), path).and_then(|text| {
+        let Some(text) = text else { return Ok(()) };
+        (patterns.add(&session::file_name(path), &text)).map_err(|error| error.to_string())
+    });
+    match added {
+        Ok(()) => held.0 = Estimator::new(patterns),
+        Err(reason) => journal::warn(format!("{} is left out: {reason}", path.display())),
     }
 }
 

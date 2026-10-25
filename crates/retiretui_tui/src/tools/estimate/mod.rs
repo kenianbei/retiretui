@@ -72,7 +72,13 @@ pub fn plugin(app: &mut App) {
     app.init_resource::<Cursor>();
     app.init_resource::<PatternsFile>();
     moves::plugin(app);
-    app.add_systems(Startup, spawn_page.after(layout::spawn_frame));
+    app.add_systems(
+        Startup,
+        (
+            spawn_page.after(layout::spawn_frame),
+            edits::read_user_patterns,
+        ),
+    );
     app.add_systems(
         Update,
         (
@@ -91,7 +97,7 @@ pub fn plugin(app: &mut App) {
 }
 
 /// The exports the session holds and what they say the draft spends,
-/// named by the launch's patterns.
+/// named by the user's patterns.
 #[derive(Resource)]
 pub struct Held(pub Estimator);
 

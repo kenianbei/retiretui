@@ -66,7 +66,6 @@ use std::sync::Arc;
 use bevy_app::{App, Startup, Update};
 use plurimus::widgets::WidgetsPlugin;
 use plurimus_filepicker::FilePickerPlugin;
-use retiretui_engine::estimate::Patterns;
 use retiretui_engine::market::History;
 use retiretui_engine::params::TaxTables;
 
@@ -80,8 +79,6 @@ pub struct Launch {
     pub tables: TaxTables,
     /// The historical market record the market tools draw from.
     pub history: History,
-    /// The patterns the Spending Estimate tool names payees' categories by.
-    pub patterns: Patterns,
     /// The user's patterns file a payee named on that page is remembered
     /// in; none where there is no machine to keep one.
     pub patterns_file: Option<PathBuf>,
@@ -128,9 +125,6 @@ pub fn build(app: &mut App, launch: Launch) -> Result<(), String> {
     app.insert_resource(projected);
     app.insert_resource(watch::Watch::new(launch.store, files));
     app.insert_resource(tools::markets::MarketHistory(launch.history));
-    app.insert_resource(tools::estimate::Held(
-        retiretui_client::estimate::Estimator::new(launch.patterns),
-    ));
     app.insert_resource(tools::estimate::PatternsFile(launch.patterns_file));
     if let Some(exchange) = launch.exchange {
         app.insert_resource(exchange::Edge(exchange));

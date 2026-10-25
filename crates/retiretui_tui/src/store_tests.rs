@@ -7,7 +7,6 @@ use std::sync::Arc;
 use bevy_app::App;
 use plurimus::core::CorePlugin;
 use plurimus::term::{InputCapabilities, KeyCode};
-use retiretui_engine::estimate::Patterns;
 use retiretui_engine::market::History;
 use retiretui_engine::params::TaxTables;
 
@@ -99,7 +98,6 @@ fn launched(store: Arc<dyn Store>) -> App {
         path: PathBuf::from(WORKSPACE),
         tables: TaxTables::embedded(),
         history: History::embedded().clone(),
-        patterns: Patterns::embedded(),
         patterns_file: None,
         store,
         settings: Some(PathBuf::from(CONFIG)),

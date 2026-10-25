@@ -420,3 +420,65 @@ fn payees_containing_a_records_words_are_moved_from_its_menu() {
     assert!(written.contains("match = "), "{written}");
     assert!(written.contains("category = \"pets\""), "{written}");
 }
+
+/// The place of the first payee nothing names among the held rows.
+fn first_payee(app: &App) -> usize {
+    let found = app.world().resource::<Held>().0.estimate().clone();
+    listed(&found)
+        .position(|row| matches!(row, retiretui_client::estimate::Listed::Payee(_)))
+        .unwrap()
+}
+
+#[test]
+fn a_patterns_file_that_cannot_be_read_is_left_as_it_was() {
+    let (dir, mut app) = workspace_app();
+    let file = dir.join("patterns.toml");
+    let unreadable = b"patterns = []\n# \xff\n";
+    std::fs::write(&file, unreadable).unwrap();
+    app.world_mut()
+        .insert_resource(PatternsFile(Some(file.clone())));
+    add(&mut app, "nameless.csv", NAMELESS);
+    let at = first_payee(&app);
+    apply_at(&mut app, at, RowForm::Payee, answer("category", "pets"));
+    assert_eq!(std::fs::read(&file).unwrap(), unreadable);
+    assert!(
+        said(&app)
+            .iter()
+            .any(|line| line.contains("SOMEONE is Pets, but not kept")),
+        "{:?}",
+        said(&app)
+    );
+}
+
+#[test]
+fn the_users_patterns_are_read_at_launch_and_one_that_does_not_parse_is_left_out() {
+    let (dir, mut app) = workspace_app();
+    let file = dir.join("patterns.toml");
+    app.world_mut()
+        .insert_resource(PatternsFile(Some(file.clone())));
+    std::fs::write(
+        &file,
+        "patterns = [{ is = \"SOMEONE\", catgory = \"pets\" }]\n",
+    )
+    .unwrap();
+    app.world_mut()
+        .run_system_cached(edits::read_user_patterns)
+        .unwrap();
+    app.update();
+    assert!(
+        said(&app).iter().any(|line| line.contains("is left out")),
+        "{:?}",
+        said(&app)
+    );
+    std::fs::write(
+        &file,
+        "patterns = [{ is = \"SOMEONE\", category = \"pets\" }]\n",
+    )
+    .unwrap();
+    app.world_mut()
+        .run_system_cached(edits::read_user_patterns)
+        .unwrap();
+    add(&mut app, "nameless.csv", NAMELESS);
+    let held = app.world().resource::<Held>();
+    assert!(held.0.estimate().unknown.is_empty());
+}
