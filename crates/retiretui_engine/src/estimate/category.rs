@@ -5,6 +5,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::plan::Expense;
 
+/// What may follow a word for an expense or a bank to be taken as saying it.
+const PLURAL_ENDINGS: [&str; 3] = ["", "s", "es"];
+
 /// Categories that land in one another's expense where they have none of
 /// their own.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -125,7 +128,7 @@ impl Category {
                 "power",
             ],
             Self::Housing => &["housing", "rent", "mortgage", "home", "hoa"],
-            Self::Fuel => &["fuel", "gas", "gasoline", "automotive", "auto"],
+            Self::Fuel => &["fuel", "gas", "gasoline", "automotive"],
             Self::Transit => &[
                 "transit",
                 "transport",
@@ -135,7 +138,7 @@ impl Category {
                 "tolls",
             ],
             Self::Insurance => &["insurance"],
-            Self::Medical => &["medical", "health", "doctor", "dental", "health & wellness"],
+            Self::Medical => &["medical", "health", "healthcare", "doctor", "dental"],
             Self::Pharmacy => &["pharmacy", "drugstore", "prescriptions", "drugs"],
             Self::Subscriptions => &["subscriptions", "subscription", "streaming"],
             Self::Phone => &["phone", "mobile", "cell", "wireless"],
@@ -155,7 +158,7 @@ impl Category {
     }
 
     /// The category a bank's own category text names: the one a word of
-    /// equals, else the first a word of is found in.
+    /// equals, else the first a word of is found in as whole words.
     #[must_use]
     pub fn from_text(text: &str) -> Option<Self> {
         let text = text.trim().to_lowercase();
@@ -165,11 +168,12 @@ impl Category {
         let exact = Self::ALL
             .iter()
             .find(|c| c.words().contains(&text.as_str()));
+        let held = words_in(&text);
         exact
             .or_else(|| {
                 Self::ALL
                     .iter()
-                    .find(|c| c.words().iter().any(|w| text.contains(w)))
+                    .find(|c| c.words().iter().any(|w| holds(&held, w)))
             })
             .copied()
     }
@@ -204,17 +208,41 @@ impl Category {
     }
 }
 
-/// Whether the expense's id, its hyphens read as spaces, or its name holds
-/// one of `words`, lowercase.
+/// Whether the expense's id or its name holds one of `words` as whole
+/// words.
 pub(super) fn names_any(expense: &Expense, words: &[&str]) -> bool {
-    let id = expense.id.replace('-', " ").to_lowercase();
-    let name = expense.name.as_deref().unwrap_or_default().to_lowercase();
-    words.iter().any(|w| id.contains(w) || name.contains(w))
+    let id = words_in(&expense.id);
+    let name = words_in(expense.name.as_deref().unwrap_or_default());
+    words.iter().any(|w| holds(&id, w) || holds(&name, w))
+}
+
+/// The words of `text`, lowercase: each a run of letters, digits or `&`.
+fn words_in(text: &str) -> Vec<String> {
+    let text = text.to_lowercase();
+    let words = text.split(|c: char| !c.is_alphanumeric() && c != '&');
+    words.filter(|w| !w.is_empty()).map(str::to_owned).collect()
+}
+
+/// Whether `held` holds the words of `entry` in a run, each word or its
+/// plural.
+fn holds(held: &[String], entry: &str) -> bool {
+    let entry = words_in(entry);
+    let is_word = |held: &String, word: &String| {
+        let rest = held.strip_prefix(word.as_str());
+        rest.is_some_and(|rest| PLURAL_ENDINGS.contains(&rest))
+    };
+    held.windows(entry.len()).any(|run| {
+        run.iter()
+            .zip(&entry)
+            .all(|(held, word)| is_word(held, word))
+    })
 }
 
 #[cfg(test)]
 mod tests {
-    use super::Category;
+    use std::fmt::Write as _;
+
+    use super::{Category, names_any};
     use crate::plan::Plan;
 
     #[test]
@@ -232,37 +260,42 @@ mod tests {
             Some(Category::Utilities)
         );
         assert_eq!(Category::from_text("Gas"), Some(Category::Fuel));
+        assert_eq!(
+            Category::from_text("Fees & Adjustments"),
+            Some(Category::Fees)
+        );
+        assert_eq!(
+            Category::from_text("Supermarkets"),
+            Some(Category::Groceries)
+        );
+        assert_eq!(
+            Category::from_text("Fun Money"),
+            Some(Category::Entertainment)
+        );
+        assert_eq!(
+            Category::from_text("Funds Transfer"),
+            Some(Category::Transfer)
+        );
         assert_eq!(Category::from_text("Somesuch"), None);
         assert_eq!(Category::from_text(""), None);
     }
 
+    /// A plan holding `expenses`, each `(id, name)` with an amount of 1.
+    fn plan_of(expenses: &[(&str, &str)]) -> Plan {
+        let mut text = "schema = 1\n[plan]\nstart_year = 2026\nhorizon_age = 90\ninflation = 0.03\n[household]\nfiling = \"single\"\n[[household.people]]\nid = \"me\"\nbirth = 1960-01-01\n".to_owned();
+        for (id, name) in expenses {
+            writeln!(
+                text,
+                "[[expenses]]\nid = \"{id}\"\nname = \"{name}\"\namount = 1"
+            )
+            .unwrap();
+        }
+        Plan::from_toml_str(&text).unwrap()
+    }
+
     #[test]
     fn an_expense_matches_by_id_or_name() {
-        let plan = Plan::from_toml_str(
-            r#"
-schema = 1
-[plan]
-start_year = 2026
-horizon_age = 90
-inflation = 0.03
-[household]
-filing = "single"
-[[household.people]]
-id = "me"
-birth = 1960-01-01
-[[expenses]]
-id = "groceries"
-amount = 1
-[[expenses]]
-id = "eating-out"
-amount = 1
-[[expenses]]
-id = "x"
-name = "Cell phone"
-amount = 1
-"#,
-        )
-        .unwrap();
+        let plan = plan_of(&[("groceries", ""), ("eating-out", ""), ("x", "Cell phone")]);
         let [groceries, eating_out, phone] = &plan.expenses[..] else {
             panic!()
         };
@@ -272,5 +305,24 @@ amount = 1
         assert!(Category::Phone.matches(phone));
         assert_eq!(Category::Groceries.title(), "Groceries");
         assert_eq!(Category::Transfer.slug(), "transfer");
+    }
+
+    #[test]
+    fn a_word_matches_whole_or_as_its_plural_never_within_another() {
+        let plan = plan_of(&[
+            ("coffee", "Coffee"),
+            ("college-fund", ""),
+            ("auto-insurance", ""),
+            ("care", "Mother's care"),
+            ("restaurants", ""),
+        ]);
+        let [coffee, fund, insurance, care, restaurants] = &plan.expenses[..] else {
+            panic!()
+        };
+        assert!(Category::Dining.matches(coffee) && !Category::Fees.matches(coffee));
+        assert!(!Category::Entertainment.matches(fund));
+        assert!(Category::Insurance.matches(insurance) && !Category::Fuel.matches(insurance));
+        assert!(!names_any(care, &["other"]));
+        assert!(Category::Dining.matches(restaurants));
     }
 }

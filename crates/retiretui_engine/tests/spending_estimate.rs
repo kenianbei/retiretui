@@ -108,14 +108,14 @@ amount = 3000
 
 /// Groceries, dining by the bank's own column, a subscription, and a payee
 /// nothing names: $300, $100, $20 and $30 in one month.
-const MIXED: &str = "Date,Description,Category,Amount\n2026-10-01,SAFEWAY,,-300.00\n2026-10-02,LUIGI'S,Food & Drink,-100.00\n2026-10-03,NETFLIX,,-20.00\n2026-10-04,SOMEONE,,-30.00\n";
+const MIXED: &str = "Date,Description,Category,Amount\n2026-10-01,SAFEWAY,,-300.00\n2026-10-02,LUIGI'S,Food & Drink,-100.00\n2026-10-03,NETFLIX,,-20.00\n2026-10-31,SOMEONE,,-30.00\n";
 
 #[test]
 fn a_csv_sorts_its_rows_and_names_the_expense_each_sets() {
     let plan = plan(GROCERIES);
     let found = estimated(&plan, CHASE);
     assert_eq!(found.months, 1);
-    assert_eq!(found.through.unwrap().0.to_string(), "2026-10-15");
+    assert_eq!(found.through.unwrap().0.to_string(), "2026-10-31");
     let [groceries] = &found.proposals[..] else {
         panic!("{:?}", found.proposals)
     };
@@ -143,7 +143,7 @@ fn a_csv_sorts_its_rows_and_names_the_expense_each_sets() {
 fn an_estimates_dates_are_text_in_json() {
     let found = estimated(&plan(GROCERIES), CHASE);
     let json = serde_json::to_value(&found).unwrap();
-    assert_eq!(json["through"], "2026-10-15");
+    assert_eq!(json["through"], "2026-10-31");
     assert_eq!(json["proposals"][0]["last"], "2026-10-06");
     assert_eq!(serde_json::from_value::<Estimate>(json).unwrap(), found);
 }
@@ -189,12 +189,12 @@ fn twins_in_one_file_both_stay_and_another_files_twin_answers_for_one() {
 #[test]
 fn each_month_is_deflated_by_its_year_and_a_gap_still_counts() {
     let plan = plan(GROCERIES);
-    let later = "Date,Description,Amount\n2026-12-01,SAFEWAY,-100.00\n2027-01-05,SAFEWAY,-103.00\n";
+    let later = "Date,Description,Amount\n2026-12-01,SAFEWAY,-100.00\n2027-01-31,SAFEWAY,-103.00\n";
     let found = estimated(&plan, later);
     assert_eq!(found.months, 2);
     assert_eq!(proposal_amount(&found, Category::Groceries), Some(1200));
 
-    let gap = "Date,Description,Amount\n2026-01-10,SAFEWAY,-120.00\n2026-03-10,SAFEWAY,-120.00\n";
+    let gap = "Date,Description,Amount\n2026-01-01,SAFEWAY,-120.00\n2026-03-31,SAFEWAY,-120.00\n";
     let found = estimated(&plan, gap);
     assert_eq!(found.months, 3);
     assert_eq!(proposal_amount(&found, Category::Groceries), Some(960));
@@ -206,9 +206,33 @@ fn each_month_is_deflated_by_its_year_and_a_gap_still_counts() {
 }
 
 #[test]
+fn a_partial_month_counts_by_the_days_its_rows_cover() {
+    let plan = plan(GROCERIES);
+    let partial =
+        "Date,Description,Amount\n2026-01-15,SAFEWAY,-100.00\n2026-03-03,SAFEWAY,-100.00\n";
+    let found = estimated(&plan, partial);
+    assert_eq!(found.months, 3);
+    assert_eq!(
+        proposal_amount(&found, Category::Groceries),
+        Some(1459),
+        "$200 over 17 days of January, February and 3 days of March: 1 20/31 months"
+    );
+
+    let year_and_days =
+        "Date,Description,Amount\n2025-10-01,SAFEWAY,-9999.00\n2026-10-03,SAFEWAY,-100.00\n";
+    let found = estimated(&plan, year_and_days);
+    assert_eq!(found.months, 12);
+    assert_eq!(
+        proposal_amount(&found, Category::Groceries),
+        Some(108),
+        "$100 over November to October 3rd: 11 3/31 months"
+    );
+}
+
+#[test]
 fn a_banks_own_category_wins_and_a_payee_nothing_names_is_listed() {
     let plan = plan(GROCERIES);
-    let csv = "Date,Description,Category,Amount\n2026-10-01,SAFEWAY,Food & Drink,-50.00\n2026-10-02,SOMEONE,,-30.00\n2026-10-03,SOMEONE,,-30.00\n";
+    let csv = "Date,Description,Category,Amount\n2026-10-01,SAFEWAY,Food & Drink,-50.00\n2026-10-02,SOMEONE,,-30.00\n2026-10-31,SOMEONE,,-30.00\n";
     let found = estimated(&plan, csv);
     assert_eq!(proposal_amount(&found, Category::Dining), Some(600));
     assert_eq!(proposal_amount(&found, Category::Groceries), None);
@@ -228,7 +252,7 @@ fn a_banks_own_category_wins_and_a_payee_nothing_names_is_listed() {
 #[test]
 fn applying_sets_the_matched_expense_and_adds_the_rest() {
     let mut plan = plan(&format!("{GROCERIES}\n[estimate]\nlean = \"new\"\n"));
-    let csv = "Date,Description,Amount\n2026-10-01,SAFEWAY,-500.00\n2026-10-02,NETFLIX,-20.00\n2026-10-03,HOME DEPOT,-1200.00\n";
+    let csv = "Date,Description,Amount\n2026-10-01,SAFEWAY,-500.00\n2026-10-31,NETFLIX,-20.00\n2026-10-03,HOME DEPOT,-1200.00\n";
     let mut found = estimated(&plan, csv);
     found
         .proposals
@@ -259,7 +283,7 @@ fn applying_sets_the_matched_expense_and_adds_the_rest() {
 
 #[test]
 fn a_phased_expense_is_set_in_the_phase_in_force_scaled_or_whole() {
-    let csv = "Date,Description,Amount\n2026-10-01,ROCKET MORTGAGE,-1500.00\n";
+    let csv = "Date,Description,Amount\n2026-10-01,ROCKET MORTGAGE,-750.00\n2026-10-31,ROCKET MORTGAGE,-750.00\n";
     for (phases, base, phase) in [
         (Phases::This, 12000, 18000),
         (Phases::Scaled, 14400, 18000),
@@ -277,7 +301,20 @@ fn a_phased_expense_is_set_in_the_phase_in_force_scaled_or_whole() {
     }
     let found = estimated(&plan(PHASED_HOUSING), csv);
     assert_eq!(found.proposals[0].now, Some(15000), "the phase in force");
-    let before = "Date,Description,Amount\n2026-03-01,ROCKET MORTGAGE,-1500.00\n";
+    let out_of_order = format!(
+        "{PHASED_HOUSING}\n[[expenses.phases]]\nfrom = {{ date = 2026-01-01 }}\namount = 13000\n"
+    );
+    let mut listed = plan(&out_of_order);
+    let found = estimated(&listed, csv);
+    assert_eq!(
+        found.proposals[0].now,
+        Some(15000),
+        "fired latest, not listed last"
+    );
+    apply(&mut listed, &found);
+    let amounts: Vec<i64> = listed.expenses[0].phases.iter().map(|p| p.amount).collect();
+    assert_eq!(amounts, [18000, 13000]);
+    let before = "Date,Description,Amount\n2026-03-01,ROCKET MORTGAGE,-750.00\n2026-03-31,ROCKET MORTGAGE,-750.00\n";
     let mut plan = plan(PHASED_HOUSING);
     let found = estimated(&plan, before);
     assert_eq!(found.proposals[0].now, Some(12000), "the base amount");
@@ -380,7 +417,7 @@ fn a_plan_without_a_bucket_is_proposed_one_and_the_named_one_wins() {
 
 #[test]
 fn a_banks_type_says_what_moved_and_what_came_in() {
-    let csv = "Date,Description,Type,Amount\n2026-10-01,CARD THANK YOU,Payment,500.00\n2026-10-02,MONTHLY INTEREST,INTADJUST,1.25\n2026-10-03,SOMEONE,TRANSFER,-200.00\n";
+    let csv = "Date,Description,Type,Amount\n2026-10-01,CARD THANK YOU,Payment,500.00\n2026-10-02,MONTHLY INTEREST,INTADJUST,1.25\n2026-10-31,SOMEONE,TRANSFER,-200.00\n";
     let rows = read("x.csv", csv).unwrap();
     let kinds: Vec<_> = rows.iter().map(|row| row.kind).collect();
     assert_eq!(
@@ -394,6 +431,19 @@ fn a_banks_type_says_what_moved_and_what_came_in() {
     let found = estimate(&plan(GROCERIES), &rows, &Patterns::embedded());
     assert!(found.unknown.is_empty() && found.proposals.is_empty());
     assert_eq!(found.transfers, 300 * 12);
+
+    let bills = "Date,Description,Type,Debit,Credit\n2026-10-01,CITY WATER,Bill Payment,-71.22,\n2026-10-02,CARD,Interest Charge,12.50,\n2026-10-03,REFUND,ATMREBATE,,2.00\n";
+    let rows = read("x.csv", bills).unwrap();
+    let read_as: Vec<_> = rows.iter().map(|row| (row.kind, row.amount)).collect();
+    assert_eq!(
+        read_as,
+        [
+            (None, Cents(-7122)),
+            (None, Cents(-1250)),
+            (Some(Category::Income), Cents(200))
+        ],
+        "a type read whole, a debit spent whichever its sign"
+    );
 }
 
 #[test]
@@ -437,7 +487,7 @@ fn records_are_a_categorys_or_a_payees_rows_in_the_window_newest_first() {
 
 #[test]
 fn the_users_rules_outrank_the_bank_merge_payees_and_ignore_rows() {
-    let csv = "Date,Description,Category,Amount\n2026-10-01,SAFEWAY,Food & Drink,-50.00\n2026-10-02,CHECK PAID,,-1500.00\n2026-10-03,CHECK PAID,,-40.00\n2026-10-04,ACME HELP,,-10.00\n2026-10-05,ACME SHOP,,-20.00\n2026-10-06,REFUNDED THING,,-30.00\n2026-10-07,REFUNDED THING,,-31.00\n2026-10-08,NEVER,,-5.00\n";
+    let csv = "Date,Description,Category,Amount\n2026-10-01,SAFEWAY,Food & Drink,-50.00\n2026-10-02,CHECK PAID,,-1500.00\n2026-10-03,CHECK PAID,,-40.00\n2026-10-04,ACME HELP,,-10.00\n2026-10-05,ACME SHOP,,-20.00\n2026-10-06,REFUNDED THING,,-30.00\n2026-10-07,REFUNDED THING,,-31.00\n2026-10-31,NEVER,,-5.00\n";
     let rules = r#"
 patterns = [
   { is = "SAFEWAY", category = "groceries" },
@@ -484,7 +534,7 @@ payees = [{ name = "Acme", one_of = ["ACME HELP", "ACME SHOP"] }]
 
 #[test]
 fn a_payee_sent_to_the_bucket_lands_there_whatever_the_bank_says() {
-    let csv = "Date,Description,Category,Amount\n2026-10-01,ART STUDIO,Home,-110.00\n2026-10-02,SAFEWAY,Groceries,-50.00\n";
+    let csv = "Date,Description,Category,Amount\n2026-10-01,ART STUDIO,Home,-110.00\n2026-10-31,SAFEWAY,Groceries,-50.00\n";
     let mut patterns = Patterns::embedded();
     patterns
         .add(
@@ -515,7 +565,7 @@ fn sorting() -> (Vec<Row>, Patterns) {
         2026-10-03,ACME HELP,,Payment,-20.00\n\
         2026-10-04,ART STUDIO,,Sale,-10.00\n\
         2026-10-05,QUICK FUEL 9,,Sale,-30.00\n\
-        2026-10-06,SAFEWAY.COM ORDER,,Sale,-40.00\n";
+        2026-10-31,SAFEWAY.COM ORDER,,Sale,-40.00\n";
     let mut patterns = Patterns::embedded();
     let mine = "patterns = [\n  { is = \"ART STUDIO\", bucket = true },\n  { match = \"FUEL\", category = \"fuel\" },\n]\n";
     patterns.add("patterns.toml", mine).unwrap();

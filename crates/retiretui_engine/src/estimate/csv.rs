@@ -20,11 +20,11 @@ const OUTFLOW_NAMES: [&str; 3] = ["debit", "withdrawal", "outflow"];
 const INFLOW_NAMES: [&str; 3] = ["credit", "deposit", "inflow"];
 const CATEGORY_NAMES: [&str; 1] = ["category"];
 const TYPE_NAMES: [&str; 1] = ["type"];
-/// What a CSV's type column says of a row, lowercased words matched within
-/// it: a card's payment and an account's transfer move money; interest,
-/// dividends and rebates bring it in.
+/// What a CSV's type column says of a row, the type whole and lowercased: a
+/// card's payment and an account's transfer move money; interest, dividends
+/// and rebates bring it in.
 const TRANSFER_TYPES: [&str; 2] = ["transfer", "payment"];
-const INCOME_TYPES: [&str; 4] = ["interest", "intadjust", "dividend", "rebate"];
+const INCOME_TYPES: [&str; 5] = ["interest", "intadjust", "dividend", "rebate", "atmrebate"];
 
 /// Where each column stands, resolved once from the header.
 struct Columns {
@@ -120,7 +120,9 @@ impl Columns {
         };
         let amount = match self.amount {
             Amount::Signed(at) => cents(at)?,
-            Amount::Split { outflow, inflow } => cents(inflow)? - cents(outflow)?,
+            Amount::Split { outflow, inflow } => {
+                Cents(cents(inflow)?.0.abs() - cents(outflow)?.0.abs())
+            }
         };
         let optional =
             |at: Option<usize>| at.map(field).filter(|t| !t.is_empty()).map(str::to_owned);
@@ -137,11 +139,10 @@ impl Columns {
 }
 
 fn kind_of(text: &str) -> Option<Category> {
-    let text = text.to_lowercase();
-    let says = |words: &[&str]| words.iter().any(|word| text.contains(word));
-    if says(&TRANSFER_TYPES) {
+    let text = text.trim().to_lowercase();
+    if TRANSFER_TYPES.contains(&text.as_str()) {
         Some(Category::Transfer)
-    } else if says(&INCOME_TYPES) {
+    } else if INCOME_TYPES.contains(&text.as_str()) {
         Some(Category::Income)
     } else {
         None

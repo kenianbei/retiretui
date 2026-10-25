@@ -32,13 +32,15 @@ pub(super) fn in_force_amount(plan: &Plan, expense: &Expense, end: i32) -> Dolla
     phase_in_force(plan, expense, end).map_or(expense.amount, |at| expense.phases[at].amount)
 }
 
-/// The index of the last phase fired by the window's `end` month, or none
-/// where the base amount is still in force.
+/// The index of the phase fired latest by the window's `end` month, the
+/// later listed on a tie as the projection takes it, or none where the base
+/// amount is still in force.
 fn phase_in_force(plan: &Plan, expense: &Expense, end: i32) -> Option<usize> {
-    expense
-        .phases
-        .iter()
-        .rposition(|phase| trigger_month(plan, &phase.from).is_some_and(|month| month <= end))
+    let fired = expense.phases.iter().enumerate().filter_map(|(at, phase)| {
+        let month = trigger_month(plan, &phase.from).filter(|&month| month <= end)?;
+        Some((month, at))
+    });
+    fired.max_by_key(|&(month, _)| month).map(|(_, at)| at)
 }
 
 fn set_amount(expense: &mut Expense, proposal: &Proposal, in_force: Option<usize>) {

@@ -7,7 +7,7 @@ use crate::present::MoneyForm;
 use crate::setup::examples::named;
 
 /// A mortgage, a streaming service, a restaurant and a payee nothing names.
-const CSV: &str = "Date,Description,Amount\n2026-10-01,ROCKET MORTGAGE,-500.00\n2026-10-02,NETFLIX,-20.00\n2026-10-03,SOMEONE,-30.00\n2026-10-04,TAQUERIA SOL,-40.00\n";
+const CSV: &str = "Date,Description,Amount\n2026-10-01,ROCKET MORTGAGE,-500.00\n2026-10-02,NETFLIX,-20.00\n2026-10-03,SOMEONE,-30.00\n2026-10-31,TAQUERIA SOL,-40.00\n";
 
 /// The retired couple's plan: housing, living, medicare, travel and care.
 fn retired() -> Plan {
@@ -294,7 +294,7 @@ fn a_row_says_what_it_changes_why_and_what_lies_behind_it() {
     assert_eq!(payees.rows, [["ROCKET MORTGAGE", "$6,000"]]);
     let dining = estimator.behind(3, MoneyForm::Full).unwrap();
     assert_eq!(dining.title, "Records: Dining");
-    assert_eq!(dining.rows, [["2026-10-04", "TAQUERIA SOL", "$40.00"]]);
+    assert_eq!(dining.rows, [["2026-10-31", "TAQUERIA SOL", "$40.00"]]);
     let unnamed = estimator.behind(5, MoneyForm::Full).unwrap();
     assert_eq!(unnamed.rows, [["2026-10-03", "SOMEONE", "$30.00"]]);
 }

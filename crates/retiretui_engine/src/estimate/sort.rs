@@ -1,9 +1,11 @@
-//! Which rows the estimate reads and what each is: the latest twelve whole
+//! Which rows the estimate reads and what each is: the latest twelve
 //! months of them, each payee merged under its name and each row sorted by
 //! the user's rules, the bank's own column, its transaction type, then the
 //! embedded table.
 
 use std::collections::{HashMap, HashSet};
+
+use jiff::civil::Date;
 
 use super::rules::{By, Outcome, Part, Rule};
 use super::{Category, Patterns, Row};
@@ -29,11 +31,15 @@ pub enum Of {
     Ignored,
 }
 
-/// The latest twelve whole months the rows reach, as month indexes.
+/// The latest twelve months the rows reach, as month indexes, and how much
+/// of them the rows cover: from the earliest row, or the first of those
+/// months where the rows reach further back, to the latest row, a partial
+/// month counted by its days.
 #[derive(Debug, Clone, Copy)]
 pub(super) struct Window {
     pub(super) start: i32,
     pub(super) end: i32,
+    covered: f64,
 }
 
 /// The month `on` falls in, as an index.
@@ -43,11 +49,25 @@ pub(super) fn month_of(on: PlanDate) -> i32 {
 
 impl Window {
     pub(super) fn of(rows: &[Row]) -> Option<Self> {
-        let end = rows.iter().map(|row| month_of(row.on)).max()?;
-        let earliest = rows.iter().map(|row| month_of(row.on)).min().unwrap_or(end);
+        let latest = rows.iter().map(|row| row.on.0).max()?;
+        let earliest = rows.iter().map(|row| row.on.0).min().unwrap_or(latest);
+        let first_month = (latest.first_of_month())
+            .checked_sub(jiff::Span::new().months(MONTHS_PER_YEAR - 1))
+            .unwrap_or(earliest);
+        let first = earliest.max(first_month);
+        let (start, end) = (month_of(PlanDate(first)), month_of(PlanDate(latest)));
+        let share = |days: i8, of: Date| f64::from(days) / f64::from(of.days_in_month());
+        let covered = if start == end {
+            share(latest.day() - first.day() + 1, latest)
+        } else {
+            share(first.days_in_month() - first.day() + 1, first)
+                + f64::from(end - start - 1)
+                + share(latest.day(), latest)
+        };
         Some(Self {
-            start: earliest.max(end - (MONTHS_PER_YEAR - 1)),
+            start,
             end,
+            covered,
         })
     }
 
@@ -60,7 +80,7 @@ impl Window {
     }
 
     pub(super) fn annual(self, dollars: f64) -> Dollars {
-        (dollars * f64::from(MONTHS_PER_YEAR) / f64::from(self.months())).round() as Dollars
+        (dollars * f64::from(MONTHS_PER_YEAR) / self.covered).round() as Dollars
     }
 }
 
@@ -211,7 +231,7 @@ pub struct Reach {
 /// window, payees named as `patterns` name them.
 #[must_use]
 pub fn reach(plan: &Plan, rows: &[Row], patterns: &Patterns, part: &str) -> Reach {
-    let part = Part::new(part.trim());
+    let part = Part::new(part);
     let Some(window) = Window::of(rows).filter(|_| !part.is_empty()) else {
         return Reach::default();
     };
