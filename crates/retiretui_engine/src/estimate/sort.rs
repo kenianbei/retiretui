@@ -11,9 +11,7 @@ use super::rules::{By, Outcome, Part, Rule};
 use super::{Category, Patterns, Row};
 use crate::plan::{Dollars, Plan, PlanDate};
 use crate::project::inflation_factor;
-use crate::tax::month_index;
-
-const MONTHS_PER_YEAR: i32 = 12;
+use crate::tax::{MONTHS_PER_YEAR, month_index};
 
 /// Whose transactions [`sorted_records`] lists.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -50,20 +48,16 @@ pub(super) fn month_of(on: PlanDate) -> i32 {
 impl Window {
     pub(super) fn of(rows: &[Row]) -> Option<Self> {
         let latest = rows.iter().map(|row| row.on.0).max()?;
-        let earliest = rows.iter().map(|row| row.on.0).min().unwrap_or(latest);
+        let earliest = rows.iter().map(|row| row.on.0).min()?;
         let first_month = (latest.first_of_month())
             .checked_sub(jiff::Span::new().months(MONTHS_PER_YEAR - 1))
             .unwrap_or(earliest);
         let first = earliest.max(first_month);
         let (start, end) = (month_of(PlanDate(first)), month_of(PlanDate(latest)));
         let share = |days: i8, of: Date| f64::from(days) / f64::from(of.days_in_month());
-        let covered = if start == end {
-            share(latest.day() - first.day() + 1, latest)
-        } else {
-            share(first.days_in_month() - first.day() + 1, first)
-                + f64::from(end - start - 1)
-                + share(latest.day(), latest)
-        };
+        let covered = share(first.days_in_month() - first.day() + 1, first)
+            + f64::from(end - start - 1)
+            + share(latest.day(), latest);
         Some(Self {
             start,
             end,

@@ -2,55 +2,18 @@
 //! spending sorted, annualized and deflated, and the proposals applied.
 
 use retiretui_engine::estimate::{
-    BankError, By, Category, Cents, Estimate, Of, Outcome, Patterns, Phases, Proposal, Row, Why,
-    apply, estimate, merge, read, sorted_records, spent_a_year,
+    BankError, Category, Cents, Estimate, Patterns, Phases, Why, apply, estimate, merge, read,
 };
 use retiretui_engine::plan::Plan;
+
+mod common;
+
+use common::{GROCERIES, gathers, proposal_amount, spending_plan};
 
 const CHASE: &str = include_str!("fixtures/bank/chase.csv");
 const VISA: &str = include_str!("fixtures/bank/visa.csv");
 const OFX: &str = include_str!("fixtures/bank/checking.ofx");
 const QFX: &str = include_str!("fixtures/bank/checking.qfx");
-
-/// The rows `of` selects, as `sorted_records` finds them.
-fn records<'a>(rows: &'a [Row], patterns: &Patterns, of: &Of) -> Vec<&'a Row> {
-    let found = sorted_records(rows, patterns, of);
-    found.into_iter().map(|sorted| sorted.row).collect()
-}
-
-fn plan(expenses: &str) -> Plan {
-    Plan::from_toml_str(&format!(
-        r#"
-schema = 1
-
-[plan]
-start_year = 2026
-horizon_age = 90
-inflation = 0.03
-
-[household]
-filing = "single"
-
-[[household.people]]
-id = "me"
-birth = 1960-06-15
-
-[[accounts]]
-id = "cash"
-kind = "cash"
-owner = "me"
-balance = 100000
-{expenses}
-"#
-    ))
-    .unwrap()
-}
-
-const GROCERIES: &str = r#"
-[[expenses]]
-id = "groceries"
-amount = 6000
-"#;
 
 const PHASED_HOUSING: &str = r#"
 [[expenses]]
@@ -65,21 +28,6 @@ amount = 15000
 fn estimated(plan: &Plan, csv: &str) -> Estimate {
     let rows = read("x.csv", csv).unwrap();
     estimate(plan, &rows, &Patterns::embedded())
-}
-
-fn proposal_amount(estimate: &Estimate, category: Category) -> Option<i64> {
-    estimate
-        .proposals
-        .iter()
-        .find(|p| gathers(p, category))
-        .map(|p| p.amount)
-}
-
-fn gathers(proposal: &Proposal, category: Category) -> bool {
-    proposal
-        .categories
-        .iter()
-        .any(|each| each.category == category)
 }
 
 /// Each proposal's id, the categories it gathers, what the unknown payees
@@ -112,7 +60,7 @@ const MIXED: &str = "Date,Description,Category,Amount\n2026-10-01,SAFEWAY,,-300.
 
 #[test]
 fn a_csv_sorts_its_rows_and_names_the_expense_each_sets() {
-    let plan = plan(GROCERIES);
+    let plan = spending_plan(GROCERIES);
     let found = estimated(&plan, CHASE);
     assert_eq!(found.months, 1);
     assert_eq!(found.through.unwrap().0.to_string(), "2026-10-31");
@@ -141,7 +89,7 @@ fn a_csv_sorts_its_rows_and_names_the_expense_each_sets() {
 
 #[test]
 fn an_estimates_dates_are_text_in_json() {
-    let found = estimated(&plan(GROCERIES), CHASE);
+    let found = estimated(&spending_plan(GROCERIES), CHASE);
     let json = serde_json::to_value(&found).unwrap();
     assert_eq!(json["through"], "2026-10-31");
     assert_eq!(json["proposals"][0]["last"], "2026-10-06");
@@ -188,7 +136,7 @@ fn twins_in_one_file_both_stay_and_another_files_twin_answers_for_one() {
 
 #[test]
 fn each_month_is_deflated_by_its_year_and_a_gap_still_counts() {
-    let plan = plan(GROCERIES);
+    let plan = spending_plan(GROCERIES);
     let later = "Date,Description,Amount\n2026-12-01,SAFEWAY,-100.00\n2027-01-31,SAFEWAY,-103.00\n";
     let found = estimated(&plan, later);
     assert_eq!(found.months, 2);
@@ -207,7 +155,7 @@ fn each_month_is_deflated_by_its_year_and_a_gap_still_counts() {
 
 #[test]
 fn a_partial_month_counts_by_the_days_its_rows_cover() {
-    let plan = plan(GROCERIES);
+    let plan = spending_plan(GROCERIES);
     let partial =
         "Date,Description,Amount\n2026-01-15,SAFEWAY,-100.00\n2026-03-03,SAFEWAY,-100.00\n";
     let found = estimated(&plan, partial);
@@ -231,7 +179,7 @@ fn a_partial_month_counts_by_the_days_its_rows_cover() {
 
 #[test]
 fn a_banks_own_category_wins_and_a_payee_nothing_names_is_listed() {
-    let plan = plan(GROCERIES);
+    let plan = spending_plan(GROCERIES);
     let csv = "Date,Description,Category,Amount\n2026-10-01,SAFEWAY,Food & Drink,-50.00\n2026-10-02,SOMEONE,,-30.00\n2026-10-31,SOMEONE,,-30.00\n";
     let found = estimated(&plan, csv);
     assert_eq!(proposal_amount(&found, Category::Dining), Some(600));
@@ -251,7 +199,7 @@ fn a_banks_own_category_wins_and_a_payee_nothing_names_is_listed() {
 
 #[test]
 fn applying_sets_the_matched_expense_and_adds_the_rest() {
-    let mut plan = plan(&format!("{GROCERIES}\n[estimate]\nlean = \"new\"\n"));
+    let mut plan = spending_plan(&format!("{GROCERIES}\n[estimate]\nlean = \"new\"\n"));
     let csv = "Date,Description,Amount\n2026-10-01,SAFEWAY,-500.00\n2026-10-31,NETFLIX,-20.00\n2026-10-03,HOME DEPOT,-1200.00\n";
     let mut found = estimated(&plan, csv);
     let shopping = (found.proposals.iter_mut())
@@ -289,7 +237,7 @@ fn a_phased_expense_is_set_in_the_phase_in_force_scaled_or_whole() {
         (Phases::Scaled, 14400, 18000),
         (Phases::All, 18000, 18000),
     ] {
-        let mut plan = plan(PHASED_HOUSING);
+        let mut plan = spending_plan(PHASED_HOUSING);
         let mut found = estimated(&plan, csv);
         found.proposals[0].phases = phases;
         apply(&mut plan, &found);
@@ -299,12 +247,12 @@ fn a_phased_expense_is_set_in_the_phase_in_force_scaled_or_whole() {
             "{phases:?}"
         );
     }
-    let found = estimated(&plan(PHASED_HOUSING), csv);
+    let found = estimated(&spending_plan(PHASED_HOUSING), csv);
     assert_eq!(found.proposals[0].now, Some(15000), "the phase in force");
     let out_of_order = format!(
         "{PHASED_HOUSING}\n[[expenses.phases]]\nfrom = {{ date = 2026-01-01 }}\namount = 13000\n"
     );
-    let mut listed = plan(&out_of_order);
+    let mut listed = spending_plan(&out_of_order);
     let found = estimated(&listed, csv);
     assert_eq!(
         found.proposals[0].now,
@@ -315,7 +263,7 @@ fn a_phased_expense_is_set_in_the_phase_in_force_scaled_or_whole() {
     let amounts: Vec<i64> = listed.expenses[0].phases.iter().map(|p| p.amount).collect();
     assert_eq!(amounts, [18000, 13000]);
     let before = "Date,Description,Amount\n2026-03-01,ROCKET MORTGAGE,-750.00\n2026-03-31,ROCKET MORTGAGE,-750.00\n";
-    let mut plan = plan(PHASED_HOUSING);
+    let mut plan = spending_plan(PHASED_HOUSING);
     let found = estimated(&plan, before);
     assert_eq!(found.proposals[0].now, Some(12000), "the base amount");
     apply(&mut plan, &found);
@@ -327,7 +275,7 @@ fn a_phased_expense_is_set_in_the_phase_in_force_scaled_or_whole() {
 
 #[test]
 fn leaning_on_existing_folds_each_category_into_its_family_else_the_bucket() {
-    let plan = plan(&format!(
+    let plan = spending_plan(&format!(
         "{GROCERY_AND_MISC}\n[estimate]\nlean = \"existing\"\n"
     ));
     let found = estimated(&plan, MIXED);
@@ -362,7 +310,7 @@ fn an_assignment_wins_over_the_family_and_a_name_match() {
     let assigned = format!(
         "{GROCERY_AND_MISC}\n[estimate]\nlean = \"existing\"\n\n[[estimate.assign]]\ncategory = \"dining\"\nexpense = \"misc\"\n"
     );
-    let found = estimated(&plan(&assigned), MIXED);
+    let found = estimated(&spending_plan(&assigned), MIXED);
     let misc = &found.proposals[1];
     assert_eq!(misc.id, "misc");
     assert!(gathers(misc, Category::Dining) && !gathers(&found.proposals[0], Category::Dining));
@@ -372,7 +320,7 @@ fn an_assignment_wins_over_the_family_and_a_name_match() {
 fn leaning_large_proposes_a_new_expense_only_past_the_share() {
     let with = |share: &str| {
         let lean = format!("{GROCERY_AND_MISC}\n[estimate]\nlean = \"large\"\n{share}");
-        landed(&estimated(&plan(&lean), MIXED))
+        landed(&estimated(&spending_plan(&lean), MIXED))
             .into_iter()
             .map(|(id, ..)| id.to_owned())
             .collect::<Vec<_>>()
@@ -384,7 +332,7 @@ fn leaning_large_proposes_a_new_expense_only_past_the_share() {
     );
     assert_eq!(with("large_share = 0.5\n"), ["grocery", "misc"]);
     let always = format!("{GROCERY_AND_MISC}\n[estimate]\nlean = \"new\"\n");
-    let ids: Vec<String> = landed(&estimated(&plan(&always), MIXED))
+    let ids: Vec<String> = landed(&estimated(&spending_plan(&always), MIXED))
         .into_iter()
         .map(|(id, ..)| id.to_owned())
         .collect();
@@ -393,7 +341,7 @@ fn leaning_large_proposes_a_new_expense_only_past_the_share() {
 
 #[test]
 fn a_plan_without_a_bucket_is_proposed_one_and_the_named_one_wins() {
-    let mut taken = plan(&format!("{GROCERIES}\n[estimate]\nlean = \"existing\"\n"));
+    let mut taken = spending_plan(&format!("{GROCERIES}\n[estimate]\nlean = \"existing\"\n"));
     let found = estimated(&taken, MIXED);
     let bucket = found.proposals.last().unwrap();
     assert_eq!((bucket.id.as_str(), bucket.is_new), ("other", true));
@@ -408,7 +356,7 @@ fn a_plan_without_a_bucket_is_proposed_one_and_the_named_one_wins() {
     let named = format!(
         "{GROCERY_AND_MISC}\n[[expenses]]\nid = \"other-costs\"\namount = 0\n\n[estimate]\nlean = \"existing\"\nbucket = \"other-costs\"\n"
     );
-    let found = estimated(&plan(&named), MIXED);
+    let found = estimated(&spending_plan(&named), MIXED);
     assert_eq!(
         found.proposals.iter().find(|p| p.is_bucket).unwrap().id,
         "other-costs"
@@ -428,7 +376,7 @@ fn a_banks_type_says_what_moved_and_what_came_in() {
             Some(Category::Transfer)
         ]
     );
-    let found = estimate(&plan(GROCERIES), &rows, &Patterns::embedded());
+    let found = estimate(&spending_plan(GROCERIES), &rows, &Patterns::embedded());
     assert!(found.unknown.is_empty() && found.proposals.is_empty());
     assert_eq!(found.transfers, 300 * 12);
 
@@ -451,7 +399,11 @@ fn the_estimate_table_is_checked_against_the_plans_expenses() {
     let bad = format!(
         "{GROCERIES}\n[estimate]\nbucket = \"nowhere\"\nlarge_share = 0.0\n\n[[estimate.assign]]\ncategory = \"income\"\nexpense = \"groceries\"\n\n[[estimate.assign]]\ncategory = \"dining\"\nexpense = \"gone\"\n\n[[estimate.assign]]\ncategory = \"dining\"\nexpense = \"groceries\"\n"
     );
-    let paths: Vec<String> = plan(&bad).validate().into_iter().map(|i| i.path).collect();
+    let paths: Vec<String> = spending_plan(&bad)
+        .validate()
+        .into_iter()
+        .map(|i| i.path)
+        .collect();
     assert_eq!(
         paths,
         [
@@ -462,170 +414,4 @@ fn the_estimate_table_is_checked_against_the_plans_expenses() {
             "estimate.assign[2].category",
         ]
     );
-}
-
-#[test]
-fn records_are_a_categorys_or_a_payees_rows_in_the_window_newest_first() {
-    let csv = "Date,Description,Amount\n2025-01-05,SAFEWAY,-1.00\n2026-09-01,SAFEWAY,-50.00\n2026-10-01,SAFEWAY,-60.00\n2026-10-02,SOMEONE,-30.00\n2026-10-03,ELSEWHERE,-20.00\n";
-    let rows = read("x.csv", csv).unwrap();
-    let patterns = Patterns::embedded();
-    let amounts = |of: &Of| -> Vec<i64> {
-        records(&rows, &patterns, of)
-            .iter()
-            .map(|row| row.amount.0)
-            .collect()
-    };
-    assert_eq!(
-        amounts(&Of::Category(Category::Groceries)),
-        [-6000, -5000],
-        "the row a year before the window is left out"
-    );
-    assert_eq!(amounts(&Of::Payee("SOMEONE".to_owned())), [-3000]);
-    assert_eq!(amounts(&Of::Unnamed), [-2000, -3000]);
-    assert!(records(&[], &patterns, &Of::Unnamed).is_empty());
-}
-
-#[test]
-fn the_users_rules_outrank_the_bank_merge_payees_and_ignore_rows() {
-    let csv = "Date,Description,Category,Amount\n2026-10-01,SAFEWAY,Food & Drink,-50.00\n2026-10-02,CHECK PAID,,-1500.00\n2026-10-03,CHECK PAID,,-40.00\n2026-10-04,ACME HELP,,-10.00\n2026-10-05,ACME SHOP,,-20.00\n2026-10-06,REFUNDED THING,,-30.00\n2026-10-07,REFUNDED THING,,-31.00\n2026-10-31,NEVER,,-5.00\n";
-    let rules = r#"
-patterns = [
-  { is = "SAFEWAY", category = "groceries" },
-  { is = "CHECK PAID", spent = [1400, 1600], export = "joint", category = "housing" },
-  { is = "REFUNDED THING", on = 2026-10-06, spent = [30, 30], ignore = true },
-  { is = "NEVER", ignore = true },
-]
-payees = [{ name = "Acme", one_of = ["ACME HELP", "ACME SHOP"] }]
-"#;
-    let mut patterns = Patterns::embedded();
-    patterns.add("rules.toml", rules).unwrap();
-    let rows = read("joint.csv", csv).unwrap();
-    let found = estimate(&plan(GROCERIES), &rows, &patterns);
-    assert_eq!(
-        proposal_amount(&found, Category::Groceries),
-        Some(600),
-        "the rule over the bank's dining"
-    );
-    assert_eq!(proposal_amount(&found, Category::Housing), Some(18_000));
-    let unknown: Vec<(&str, i64)> = (found.unknown.iter())
-        .map(|it| (it.payee.as_str(), it.amount))
-        .collect();
-    assert_eq!(
-        unknown,
-        [("CHECK PAID", 480), ("REFUNDED THING", 372), ("Acme", 360)]
-    );
-    assert_eq!((found.ignored, found.ignored_rows), (420, 2));
-    let amounts = |of: Of| -> Vec<i64> {
-        records(&rows, &patterns, &of)
-            .iter()
-            .map(|row| row.amount.0)
-            .collect()
-    };
-    assert_eq!(amounts(Of::Ignored), [-500, -3000]);
-    assert_eq!(amounts(Of::Payee("Acme".to_owned())), [-2000, -1000]);
-    let elsewhere = read("card.csv", csv).unwrap();
-    let found = estimate(&plan(GROCERIES), &elsewhere, &patterns);
-    assert_eq!(
-        proposal_amount(&found, Category::Housing),
-        None,
-        "another export's check"
-    );
-}
-
-#[test]
-fn a_payee_sent_to_the_bucket_lands_there_whatever_the_bank_says() {
-    let csv = "Date,Description,Category,Amount\n2026-10-01,ART STUDIO,Home,-110.00\n2026-10-31,SAFEWAY,Groceries,-50.00\n";
-    let mut patterns = Patterns::embedded();
-    patterns
-        .add(
-            "rules.toml",
-            "[[patterns]]\nis = \"ART STUDIO\"\nbucket = true\n",
-        )
-        .unwrap();
-    let found = estimate(&plan(GROCERIES), &read("x.csv", csv).unwrap(), &patterns);
-    let bucket = found.proposals.iter().find(|p| p.is_bucket).unwrap();
-    assert_eq!(bucket.unknown, 1320);
-    assert_eq!(found.unknown[0].payee, "ART STUDIO");
-    assert!(
-        Patterns::default()
-            .add(
-                "rules.toml",
-                "[[patterns]]\nis = \"X\"\nbucket = true\nignore = true\n"
-            )
-            .is_err()
-    );
-}
-
-/// Rows each sorted a different way, under the user's file and a proposed
-/// one read after it.
-fn sorting() -> (Vec<Row>, Patterns) {
-    let csv = "Date,Description,Category,Type,Amount\n\
-        2026-10-01,SAFEWAY #12,Groceries,Sale,-50.00\n\
-        2026-10-02,ATT WIRELESS,,Sale,-80.00\n\
-        2026-10-03,ACME HELP,,Payment,-20.00\n\
-        2026-10-04,ART STUDIO,,Sale,-10.00\n\
-        2026-10-05,QUICK FUEL 9,,Sale,-30.00\n\
-        2026-10-31,SAFEWAY.COM ORDER,,Sale,-40.00\n";
-    let mut patterns = Patterns::embedded();
-    let mine = "patterns = [\n  { is = \"ART STUDIO\", bucket = true },\n  { match = \"FUEL\", category = \"fuel\" },\n]\n";
-    patterns.add("patterns.toml", mine).unwrap();
-    let proposed = "payees = [{ name = \"SAFEWAY\", match = \"SAFEWAY\" }]\n\
-        patterns = [{ match = \"FUEL\", category = \"groceries\" }]\n";
-    patterns.add("proposed.toml", proposed).unwrap();
-    (read("x.csv", csv).unwrap(), patterns)
-}
-
-#[test]
-fn each_record_says_what_sorted_it_and_a_later_file_wins_a_tie() {
-    let (rows, patterns) = sorting();
-    let decided = |payee: &str| {
-        let found = sorted_records(&rows, &patterns, &Of::Containing(payee.to_owned()));
-        assert_eq!(found.len(), 1, "{payee}");
-        found[0].decided.clone()
-    };
-    let category = |category, by| Some((Outcome::Category(category), by));
-    let rule = |file: &str, at| By::Rule {
-        file: file.to_owned(),
-        at,
-    };
-    assert_eq!(
-        decided("safeway #12"),
-        category(Category::Groceries, By::Bank)
-    );
-    assert_eq!(
-        decided("att"),
-        category(Category::Phone, By::Embedded("ATT ".to_owned()))
-    );
-    assert_eq!(decided("acme"), category(Category::Transfer, By::Type));
-    assert_eq!(
-        decided("art studio"),
-        Some((Outcome::Bucket, rule("patterns.toml", 1)))
-    );
-    assert_eq!(
-        decided("fuel"),
-        category(Category::Groceries, rule("proposed.toml", 1)),
-        "the later file wins the tie"
-    );
-}
-
-#[test]
-fn payees_containing_some_words_are_found_by_either_name_wherever_they_went() {
-    let (rows, patterns) = sorting();
-    let every = |of: Of| sorted_records(&rows, &patterns, &of);
-    let safeway = every(Of::Containing("Safeway".to_owned()));
-    assert_eq!(safeway.len(), 2, "by the merged name");
-    assert_eq!(safeway[0].name, "SAFEWAY");
-    assert_eq!(
-        every(Of::Containing(".com".to_owned())).len(),
-        1,
-        "by the text as the bank wrote it"
-    );
-    assert_eq!(
-        records(&rows, &patterns, &Of::Unnamed).len(),
-        1,
-        "the bucketed are counted unnamed"
-    );
-    let groceries = every(Of::Category(Category::Groceries));
-    assert_eq!(groceries.len(), 3);
-    assert_eq!(spent_a_year(&plan(""), &rows, &groceries), 1440);
 }

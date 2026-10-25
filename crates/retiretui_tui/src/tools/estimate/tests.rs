@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use bevy_app::App;
 use plurimus::term::KeyCode;
 
-use retiretui_client::estimate::RowForm;
+use retiretui_client::estimate::{Listed, RowForm};
 
 use super::edits::NO_EXPORTS;
 use super::*;
@@ -247,12 +247,7 @@ fn a_named_payee_is_remembered_in_the_patterns_file_the_launch_names() {
     app.world_mut()
         .insert_resource(PatternsFile(Some(file.clone())));
     add(&mut app, "nameless.csv", NAMELESS);
-    let at = {
-        let found = app.world().resource::<Held>().0.estimate().clone();
-        listed(&found)
-            .position(|row| matches!(row, retiretui_client::estimate::Listed::Payee(_)))
-            .unwrap()
-    };
+    let at = first_payee(&app);
     apply_at(&mut app, at, RowForm::Payee, answer("category", "pets"));
     let written = std::fs::read_to_string(&file).unwrap();
     assert!(written.contains("is = \"SOMEONE\""), "{written}");
@@ -300,12 +295,7 @@ fn a_record_is_ignored_from_the_records_pane_and_counted_again() {
     app.world_mut()
         .insert_resource(PatternsFile(Some(file.clone())));
     add(&mut app, "chase.csv", CHASE);
-    let groceries = {
-        let found = app.world().resource::<Held>().0.estimate().clone();
-        listed(&found)
-            .position(|row| matches!(row, retiretui_client::estimate::Listed::Category { .. }))
-            .unwrap()
-    };
+    let groceries = groceries_row(&app);
     on_record(&mut app, groceries, &[KeyCode::Char('i')]);
     let found = app.world().resource::<Held>().0.estimate().clone();
     assert_eq!(found.ignored_rows, 1);
@@ -325,12 +315,15 @@ fn is_picking(app: &App) -> bool {
     app.world().resource::<crate::picker::Picking>().is_open()
 }
 
+/// The place of the first row `is` holds for among the held rows.
+fn first_row(app: &App, is: impl Fn(&Listed) -> bool) -> usize {
+    let found = app.world().resource::<Held>().0.estimate().clone();
+    listed(&found).position(|row| is(&row)).unwrap()
+}
+
 /// The first category row of the estimate.
 fn groceries_row(app: &App) -> usize {
-    let found = app.world().resource::<Held>().0.estimate().clone();
-    listed(&found)
-        .position(|row| matches!(row, retiretui_client::estimate::Listed::Category { .. }))
-        .unwrap()
+    first_row(app, |row| matches!(row, Listed::Category { .. }))
 }
 
 #[test]
@@ -423,10 +416,7 @@ fn payees_containing_a_records_words_are_moved_from_its_menu() {
 
 /// The place of the first payee nothing names among the held rows.
 fn first_payee(app: &App) -> usize {
-    let found = app.world().resource::<Held>().0.estimate().clone();
-    listed(&found)
-        .position(|row| matches!(row, retiretui_client::estimate::Listed::Payee(_)))
-        .unwrap()
+    first_row(app, |row| matches!(row, Listed::Payee(_)))
 }
 
 #[test]

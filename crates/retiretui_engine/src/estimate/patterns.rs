@@ -229,6 +229,10 @@ mod tests {
                 .contains("unknown field")
         );
         assert!(refused("[[payees]]\nname = \"X\"\n").contains("payees entry 1: names no payee"));
+        assert!(
+            refused("[[patterns]]\nmatch = \"*\"\ncategory = \"pets\"\n").contains("no words"),
+            "a match of nothing would hold every payee"
+        );
     }
 
     #[test]

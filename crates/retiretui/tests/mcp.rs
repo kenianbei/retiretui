@@ -417,12 +417,13 @@ fn projection_and_tax_parameters_state_their_output_shapes() {
     assert!(issues["items"].is_object(), "{issues}");
 }
 
+const BANK_EXPORTS: &str = "../retiretui_engine/tests/fixtures/bank";
+
 #[test]
 fn estimate_spending_proposes_from_exports_and_writes_the_overlay() {
     let root = scratch_dir("mcp-estimate", "plan.toml", &[]);
-    let bank = "../retiretui_engine/tests/fixtures/bank";
-    let chase = std::fs::read_to_string(format!("{bank}/chase.csv")).unwrap();
-    let ofx = std::fs::read_to_string(format!("{bank}/checking.ofx")).unwrap();
+    let chase = std::fs::read_to_string(format!("{BANK_EXPORTS}/chase.csv")).unwrap();
+    let ofx = std::fs::read_to_string(format!("{BANK_EXPORTS}/checking.ofx")).unwrap();
     let mut client = McpClient::spawn(&root);
     let patterns = "patterns = [{ match = \"SAFEWAY\", category = \"dining\" }]";
     let reply = client.call(
@@ -457,8 +458,7 @@ fn estimate_spending_proposes_from_exports_and_writes_the_overlay() {
 
 #[test]
 fn estimate_records_reads_exports_and_rules_by_path_and_says_what_sorted_each() {
-    let bank = "../retiretui_engine/tests/fixtures/bank";
-    let chase = std::fs::read_to_string(format!("{bank}/chase.csv")).unwrap();
+    let chase = std::fs::read_to_string(format!("{BANK_EXPORTS}/chase.csv")).unwrap();
     let dining = "patterns = [{ match = \"SAFEWAY\", category = \"dining\" }]\n";
     let root = scratch_dir(
         "mcp-estimate-records",
@@ -510,8 +510,7 @@ fn estimate_records_reads_exports_and_rules_by_path_and_says_what_sorted_each() 
 
 #[test]
 fn estimate_reads_two_exports_of_one_name_from_two_folders() {
-    let bank = "../retiretui_engine/tests/fixtures/bank";
-    let chase = std::fs::read_to_string(format!("{bank}/chase.csv")).unwrap();
+    let chase = std::fs::read_to_string(format!("{BANK_EXPORTS}/chase.csv")).unwrap();
     let joint = "Date,Description,Amount\n2026-10-09,SAFEWAY #77,-20.00\n";
     let root = scratch_dir(
         "mcp-estimate-same-name",

@@ -168,9 +168,9 @@ impl Category {
         let exact = Self::ALL
             .iter()
             .find(|c| c.words().contains(&text.as_str()));
-        let held = words_in(&text);
         exact
             .or_else(|| {
+                let held = words_in(&text);
                 Self::ALL
                     .iter()
                     .find(|c| c.words().iter().any(|w| holds(&held, w)))
@@ -223,17 +223,16 @@ fn words_in(text: &str) -> Vec<String> {
     words.filter(|w| !w.is_empty()).map(str::to_owned).collect()
 }
 
-/// Whether `held` holds the words of `entry` in a run, each word or its
-/// plural.
+/// Whether `held` holds the words of `entry`, lowercase and spaced, in a
+/// run, each word or its plural.
 fn holds(held: &[String], entry: &str) -> bool {
-    let entry = words_in(entry);
-    let is_word = |held: &String, word: &String| {
-        let rest = held.strip_prefix(word.as_str());
+    let is_word = |held: &String, word: &str| {
+        let rest = held.strip_prefix(word);
         rest.is_some_and(|rest| PLURAL_ENDINGS.contains(&rest))
     };
-    held.windows(entry.len()).any(|run| {
+    held.windows(entry.split(' ').count()).any(|run| {
         run.iter()
-            .zip(&entry)
+            .zip(entry.split(' '))
             .all(|(held, word)| is_word(held, word))
     })
 }

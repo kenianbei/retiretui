@@ -236,3 +236,62 @@ pub fn contribution<'a>(
         })
         .unwrap_or((0, 0, &[]))
 }
+
+/// A groceries expense of $6,000 a year.
+pub const GROCERIES: &str = r#"
+[[expenses]]
+id = "groceries"
+amount = 6000
+"#;
+
+/// A single filer's plan from 2026 with a cash account, and `expenses`.
+pub fn spending_plan(expenses: &str) -> Plan {
+    Plan::from_toml_str(&format!(
+        r#"
+schema = 1
+
+[plan]
+start_year = 2026
+horizon_age = 90
+inflation = 0.03
+
+[household]
+filing = "single"
+
+[[household.people]]
+id = "me"
+birth = 1960-06-15
+
+[[accounts]]
+id = "cash"
+kind = "cash"
+owner = "me"
+balance = 100000
+{expenses}
+"#
+    ))
+    .unwrap()
+}
+
+/// What the proposal gathering `category` sets its expense to a year.
+pub fn proposal_amount(
+    estimate: &retiretui_engine::estimate::Estimate,
+    category: retiretui_engine::estimate::Category,
+) -> Option<i64> {
+    estimate
+        .proposals
+        .iter()
+        .find(|p| gathers(p, category))
+        .map(|p| p.amount)
+}
+
+/// Whether `proposal` gathers `category`.
+pub fn gathers(
+    proposal: &retiretui_engine::estimate::Proposal,
+    category: retiretui_engine::estimate::Category,
+) -> bool {
+    proposal
+        .categories
+        .iter()
+        .any(|each| each.category == category)
+}

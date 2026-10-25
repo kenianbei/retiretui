@@ -202,8 +202,12 @@ impl PayeeText {
     fn test(self) -> Result<PayeeTest, String> {
         let said = |text: String| said(&text);
         let tests = [
-            self.r#match
-                .map(|text| Ok(PayeeTest::Contains(Part::new(&text)))),
+            self.r#match.map(|text| {
+                let part = Part::new(&text);
+                (!part.is_empty())
+                    .then_some(PayeeTest::Contains(part))
+                    .ok_or_else(|| format!("`{text}` has no words to match"))
+            }),
             self.is.map(|text| Ok(PayeeTest::Is(said(text)))),
             self.one_of
                 .map(|texts| Ok(PayeeTest::OneOf(texts.into_iter().map(said).collect()))),
