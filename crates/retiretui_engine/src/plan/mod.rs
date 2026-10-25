@@ -36,6 +36,7 @@ pub use cliffs::Cliff;
 pub use codec::{from_table, to_table};
 pub use contributions::{Contribution, Match, Payer, Step};
 pub use dates::PlanDate;
+pub(crate) use dates::{optional_text, text};
 pub use diff::{Change, ChangeKind, diff};
 pub use escalation::{ColaAnchor, ColaSpec};
 pub use estimate::{Assign, EstimateSettings, LARGE_SHARE, Lean};

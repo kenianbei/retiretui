@@ -47,3 +47,59 @@ impl Serialize for PlanDate {
         .serialize(serializer)
     }
 }
+
+/// A [`PlanDate`] as `YYYY-MM-DD` text, for `#[serde(with)]` on a reply read
+/// as JSON, where the native TOML date would be an object.
+pub(crate) mod text {
+    use serde::de::Error as _;
+
+    use super::{Deserialize, Deserializer, PlanDate, Serializer};
+
+    #[expect(
+        clippy::trivially_copy_pass_by_ref,
+        reason = "serde's `with` signature"
+    )]
+    pub(crate) fn serialize<S: Serializer>(
+        date: &PlanDate,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error> {
+        serializer.collect_str(&date.0)
+    }
+
+    pub(crate) fn deserialize<'de, D: Deserializer<'de>>(
+        deserializer: D,
+    ) -> Result<PlanDate, D::Error> {
+        let text = String::deserialize(deserializer)?;
+        text.parse().map(PlanDate).map_err(D::Error::custom)
+    }
+}
+
+/// [`text`], or null where there is no date.
+pub(crate) mod optional_text {
+    use serde::de::Error as _;
+
+    use super::{Deserialize, Deserializer, PlanDate, Serializer, text};
+
+    #[expect(clippy::ref_option, reason = "serde's `with` signature")]
+    #[allow(
+        clippy::trivially_copy_pass_by_ref,
+        reason = "serde's `with` signature; the lint's size limit varies by target"
+    )]
+    pub(crate) fn serialize<S: Serializer>(
+        date: &Option<PlanDate>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error> {
+        match date {
+            Some(date) => text::serialize(date, serializer),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    pub(crate) fn deserialize<'de, D: Deserializer<'de>>(
+        deserializer: D,
+    ) -> Result<Option<PlanDate>, D::Error> {
+        let text = Option::<String>::deserialize(deserializer)?;
+        text.map(|text| text.parse().map(PlanDate).map_err(D::Error::custom))
+            .transpose()
+    }
+}

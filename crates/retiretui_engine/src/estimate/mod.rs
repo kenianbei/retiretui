@@ -44,6 +44,7 @@ pub struct Estimate {
     /// The latest row's date: the window ends with its month.
     #[cfg_attr(feature = "schemars", schemars(with = "Option<String>"))]
     #[cfg_attr(feature = "ts", ts(type = "string | null"))]
+    #[serde(with = "crate::plan::optional_text")]
     pub through: Option<PlanDate>,
     /// One per spending category seen, in the vocabulary's order.
     pub proposals: Vec<Proposal>,
@@ -91,6 +92,7 @@ pub struct Proposal {
     /// The latest row's date.
     #[cfg_attr(feature = "schemars", schemars(with = "String"))]
     #[cfg_attr(feature = "ts", ts(type = "string"))]
+    #[serde(with = "crate::plan::text")]
     pub last: PlanDate,
     /// Added as a one-time expense on `last` for `total`, not annualized.
     pub one_time: bool,

@@ -140,6 +140,15 @@ fn a_csv_sorts_its_rows_and_names_the_expense_each_sets() {
 }
 
 #[test]
+fn an_estimates_dates_are_text_in_json() {
+    let found = estimated(&plan(GROCERIES), CHASE);
+    let json = serde_json::to_value(&found).unwrap();
+    assert_eq!(json["through"], "2026-10-15");
+    assert_eq!(json["proposals"][0]["last"], "2026-10-06");
+    assert_eq!(serde_json::from_value::<Estimate>(json).unwrap(), found);
+}
+
+#[test]
 fn a_headerless_csv_is_refused_with_its_first_row() {
     assert_eq!(
         read("visa.csv", VISA),
