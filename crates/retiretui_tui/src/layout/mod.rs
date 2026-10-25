@@ -25,7 +25,7 @@ mod cursor;
 mod list;
 
 pub use clip::{cells_of, clipped, clipped_middle, wrapped};
-pub use cursor::{CURSOR_COLS, Rests, list_cursor, table_cursor};
+pub use cursor::{CURSOR_COLS, Rests, SCROLL_BAR_COLS, list_cursor, table_cursor};
 pub use list::{CONTINUED, fill_lines, fill_wrapped, row_width, spawn_scrolled_list};
 
 use super::theme::{Repainted, Theme};

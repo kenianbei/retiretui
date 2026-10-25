@@ -16,6 +16,10 @@ export interface Settings {
   read: (document: Document) => ReadRow[];
   open: (document: Document) => Editor;
   apply: (document: Document, editor: Editor) => void;
+  /** What the address names the form by while it is open. */
+  id: string;
+  /** Whether there is anything to edit; true where unstated. */
+  isEditable?: boolean;
 }
 
 /** A tool's settings read out, and Edit. */
@@ -32,17 +36,19 @@ export function SettingsRead({ settings }: { settings: Settings }) {
         <h2 id={heading} className="mr-auto text-lg font-semibold">
           {settings.heading}
         </h2>
-        <Button variant="outline" size="sm" asChild>
-          <Link
-            from="/tools/$page"
-            to="."
-            search={(held) => ({ ...held, edit: true })}
-            resetScroll={false}
-          >
-            <Pencil aria-hidden />
-            Edit
-          </Link>
-        </Button>
+        {settings.isEditable !== false && (
+          <Button variant="outline" size="sm" asChild>
+            <Link
+              from="/tools/$page"
+              to="."
+              search={(held) => ({ ...held, edit: settings.id })}
+              resetScroll={false}
+            >
+              <Pencil aria-hidden />
+              Edit
+            </Link>
+          </Button>
+        )}
       </div>
       <ReadRows rows={rows} />
     </section>
@@ -84,7 +90,7 @@ export function SettingsForm({ settings }: { settings: Settings }) {
   return (
     <FormSheet
       editor={editor}
-      isStaying={(next) => (next.search as ToolSearch).edit === true}
+      isStaying={(next) => (next.search as ToolSearch).edit === settings.id}
       refusal={refusal}
       apply={apply}
       close={close}

@@ -7,6 +7,10 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Context as _;
 use etcetera::BaseStrategy as _;
+use retiretui_engine::estimate::Patterns;
+
+use crate::estimate::PATTERNS_FILE;
+use crate::session::file_name;
 use retiretui_engine::market::History;
 use retiretui_engine::params::TaxTables;
 
@@ -69,4 +73,36 @@ pub fn load_history(explicit: Option<&Path>) -> anyhow::Result<History> {
     let text =
         fs::read_to_string(&path).with_context(|| format!("failed to read {}", path.display()))?;
     History::from_toml_str(&text).with_context(|| format!("in {}", path.display()))
+}
+
+/// The user's own spending patterns file, read before the embedded table,
+/// whether or not it exists yet.
+#[must_use]
+pub fn patterns_path() -> Option<PathBuf> {
+    config_dir("estimate").map(|dir| dir.join(PATTERNS_FILE))
+}
+
+/// The embedded spending patterns, with the user's own before them where
+/// `is_user_read` and they keep one, and those at `explicit` before both.
+///
+/// # Errors
+///
+/// Where a file cannot be read or parsed.
+pub fn load_patterns(explicit: Option<&Path>, is_user_read: bool) -> anyhow::Result<Patterns> {
+    let mut patterns = Patterns::embedded();
+    let user = patterns_path().filter(|path| is_user_read && path.is_file());
+    for path in user.as_deref().into_iter().chain(explicit) {
+        add_patterns(&mut patterns, path)?;
+    }
+    Ok(patterns)
+}
+
+/// Puts the patterns file at `path` before those `patterns` hold.
+fn add_patterns(patterns: &mut Patterns, path: &Path) -> anyhow::Result<()> {
+    let text =
+        fs::read_to_string(path).with_context(|| format!("failed to read {}", path.display()))?;
+    patterns
+        .add(&file_name(path), &text)
+        .with_context(|| format!("in {}", path.display()))?;
+    Ok(())
 }

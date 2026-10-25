@@ -25,7 +25,7 @@ use crate::store::Store;
 use crate::tools;
 use crate::watch::Watch;
 
-const EXTENSION: &str = "toml";
+const PLAN_EXTENSION: &str = "toml";
 const STATEMENT_EXTENSION: &str = "xml";
 const SAVE_OVER: &str = "Overwrite {}?";
 const COMPARED: &str = "compared";
@@ -75,7 +75,7 @@ pub(super) fn decorate(
         Badges::Compared => compared.paths().map(Path::to_path_buf).collect(),
     };
     Some(FilePickerDecorator(Box::new(move |path| {
-        if path.extension() != Some(OsStr::new(EXTENSION)) {
+        if path.extension() != Some(OsStr::new(PLAN_EXTENSION)) {
             return RowDecoration::default();
         }
         if compared.iter().any(|held| held == path) {
@@ -104,27 +104,30 @@ pub struct Pickers {
     new_plan: FilePick,
     /// The Social Security statement to record on a person.
     pub earnings: FilePick,
+    /// A bank's export to estimate spending from.
+    pub export: FilePick,
+    pub estimate: FilePick,
 }
 
 pub fn register(world: &mut World) {
     let pickers = Pickers {
         open: FilePick {
             title: "Open",
-            extension: EXTENSION,
+            extensions: &[PLAN_EXTENSION],
             accepts_new: false,
             badges: Badges::Kind,
             chosen: world.register_system(open_chosen),
         },
         save_as: FilePick {
             title: "Save as",
-            extension: EXTENSION,
+            extensions: &[PLAN_EXTENSION],
             accepts_new: true,
             badges: Badges::Kind,
             chosen: world.register_system(save_as_chosen),
         },
         compare: FilePick {
             title: "Compare with",
-            extension: EXTENSION,
+            extensions: &[PLAN_EXTENSION],
             accepts_new: false,
             badges: Badges::Compared,
             chosen: world.register_system(compare_chosen),
@@ -136,11 +139,19 @@ pub fn register(world: &mut World) {
         new_plan: writing(world, "New plan as", setup::write_new, SAVE_OVER),
         earnings: FilePick {
             title: "Import earnings from",
-            extension: STATEMENT_EXTENSION,
+            extensions: &[STATEMENT_EXTENSION],
             accepts_new: false,
             badges: Badges::None,
             chosen: world.register_system(edit::record_statement),
         },
+        export: FilePick {
+            title: "Add export",
+            extensions: &retiretui_client::estimate::EXTENSIONS,
+            accepts_new: false,
+            badges: Badges::None,
+            chosen: world.register_system(tools::estimate::add_export),
+        },
+        estimate: overlay(world, tools::estimate::write_overlay),
     };
     world.insert_resource(pickers);
 }
@@ -157,7 +168,7 @@ pub fn workspace_holds_a_plan(session: &Session) -> bool {
         .flatten()
         .filter(|entry| !entry.is_dir)
         .map(|entry| workspace.join(entry.name))
-        .filter(|path| path.extension() == Some(OsStr::new(EXTENSION)))
+        .filter(|path| path.extension() == Some(OsStr::new(PLAN_EXTENSION)))
         .any(|path| Kind::of(session.store.as_ref(), &path) != Kind::Invalid)
 }
 
@@ -247,7 +258,7 @@ fn writing<M: 'static>(
     };
     FilePick {
         title,
-        extension: EXTENSION,
+        extensions: &[PLAN_EXTENSION],
         accepts_new: true,
         badges: Badges::Kind,
         chosen: world.register_system(chosen),

@@ -10,7 +10,7 @@ use super::scenario::{HOUSEHOLD_KEY, ID_KEY, PEOPLE_PATH, SCHEMA_KEY, is_keyed, 
 use super::{Plan, PlanError, to_table};
 
 /// The top-level sections in the order a plan file writes them.
-const SECTIONS: [&str; 13] = [
+const SECTIONS: [&str; 14] = [
     "plan",
     "household",
     "medicare",
@@ -24,6 +24,7 @@ const SECTIONS: [&str; 13] = [
     "contributions",
     "residency",
     "market",
+    "estimate",
 ];
 
 /// One way a plan differs from the plan it is measured against.

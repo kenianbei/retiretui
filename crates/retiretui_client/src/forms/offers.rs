@@ -1,9 +1,10 @@
 //! What a select offers: each value the file keeps under the words shown
 //! for it, from the schema's closed sets and from the plan's own items.
 
+use retiretui_engine::estimate::Category;
 use retiretui_engine::optimize::GainsRate;
 use retiretui_engine::plan::{
-    AccountKind, COUNTRIES, ColaAnchor, Draw, FilingStatus, IncomeKind, Item, Payer, Plan,
+    AccountKind, COUNTRIES, ColaAnchor, Draw, FilingStatus, IncomeKind, Item, Lean, Payer, Plan,
     TreatmentClass, TriggerBasis, US_STATES,
 };
 use serde::Serialize;
@@ -54,7 +55,21 @@ pub enum Vocabulary {
     Draw,
     /// A long-term gains rate a conversion ladder is held to.
     GainsRate,
+    /// What a bank's row was for.
+    Category,
+    /// What a payee's rows are: a category, the bucket, or ignored.
+    PayeeOutcome,
+    /// What a spending proposal does to an expense stated in phases.
+    Phases,
+    /// How readily the spending estimate proposes a new expense.
+    Lean,
 }
+
+const PHASES: &[(&str, &str)] = &[
+    ("this", "This phase alone"),
+    ("scaled", "Every phase, scaled alike"),
+    ("all", "Every phase, this amount"),
+];
 
 const TIMINGS: &[(&str, &str)] = &[(applies::EVERY_YEAR, "Every year"), (applies::ONCE, "Once")];
 
@@ -138,8 +153,43 @@ impl Vocabulary {
             Self::Holding => offers(HOLDINGS, |form| form.0, |form| form.1),
             Self::Draw => offers(Draw::ALL, Draw::as_str, present::draw),
             Self::GainsRate => offers(GainsRate::ALL, GainsRate::as_str, present::gains_rate),
+            Self::Category => category_offers(),
+            Self::PayeeOutcome => payee_outcome_offers(),
+            Self::Phases => offers(PHASES, |phases| phases.0, |phases| phases.1),
+            Self::Lean => offers(&Lean::ALL, Lean::slug, present::lean),
         }
     }
+}
+
+/// What a payee's outcome field keeps where its rows are ignored.
+pub const IGNORE_PAYEE: &str = "ignore";
+/// What a payee's outcome field keeps where its rows go to the bucket.
+pub const BUCKET_PAYEE: &str = "bucket";
+
+/// Each category, then ignoring the payee's rows.
+fn payee_outcome_offers() -> Vec<Offer> {
+    let mut offered = category_offers();
+    offered.extend([
+        Offer {
+            value: BUCKET_PAYEE.to_owned(),
+            label: "The bucket".to_owned(),
+        },
+        Offer {
+            value: IGNORE_PAYEE.to_owned(),
+            label: "Ignored".to_owned(),
+        },
+    ]);
+    offered
+}
+
+fn category_offers() -> Vec<Offer> {
+    Category::ALL
+        .iter()
+        .map(|category| Offer {
+            value: category.slug().to_owned(),
+            label: category.title(),
+        })
+        .collect()
 }
 
 /// Where a reference field's candidates come from.
@@ -157,6 +207,8 @@ pub enum RefSource {
     Event,
     /// An income.
     Income,
+    /// An expense.
+    Expense,
 }
 
 /// What `source` offers, in plan order: each id under the item's display
@@ -175,6 +227,7 @@ pub fn ref_offers(plan: &Plan, source: RefSource) -> Vec<Offer> {
         RefSource::RothAccount => accounts_of(TreatmentClass::Roth),
         RefSource::Event => plan.events.iter().map(offer).collect(),
         RefSource::Income => plan.income.iter().map(offer).collect(),
+        RefSource::Expense => plan.expenses.iter().map(offer).collect(),
     };
     told_apart(offers)
 }

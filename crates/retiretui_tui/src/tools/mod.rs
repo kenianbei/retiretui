@@ -5,6 +5,7 @@
 //! life, the options table and the highlight are shared.
 
 pub mod claims;
+pub mod estimate;
 pub mod ladders;
 pub mod markets;
 mod options;
@@ -60,6 +61,7 @@ pub fn plugin(app: &mut App) {
         orders::plugin,
         markets::plugin,
         spending::plugin,
+        estimate::plugin,
         options::plugin_said,
         tax::plugin,
     ));
@@ -76,20 +78,22 @@ pub struct Idle<'w> {
     claims: Res<'w, Claims>,
     orders: Res<'w, Orders>,
     spending: Res<'w, Spending>,
+    estimate: Res<'w, estimate::Held>,
 }
 
 impl Idle<'_> {
     /// Whether the command named `name` would refuse for want of a result.
     pub fn is_idle(&self, name: &str) -> bool {
         use super::command::{
-            LEDGER_PLAN, TAKE_CLAIMS, TAKE_LADDER, TAKE_ORDER, TAKE_SPENDING, WRITE_CLAIMS,
-            WRITE_LADDER, WRITE_ORDER, WRITE_SPENDING,
+            LEDGER_PLAN, TAKE_CLAIMS, TAKE_ESTIMATE, TAKE_LADDER, TAKE_ORDER, TAKE_SPENDING,
+            WRITE_CLAIMS, WRITE_ESTIMATE, WRITE_LADDER, WRITE_ORDER, WRITE_SPENDING,
         };
         match name {
             WRITE_LADDER | TAKE_LADDER => self.ladders.highlighted_bracket().is_none(),
             WRITE_CLAIMS | TAKE_CLAIMS => self.claims.found().is_none(),
             WRITE_ORDER | TAKE_ORDER => self.orders.found().is_none(),
             WRITE_SPENDING | TAKE_SPENDING => self.spending.found().is_none(),
+            WRITE_ESTIMATE | TAKE_ESTIMATE => self.estimate.0.estimate().proposals.is_empty(),
             LEDGER_PLAN => self.run.0.is_none(),
             _ => false,
         }

@@ -98,6 +98,7 @@ fn launched(store: Arc<dyn Store>) -> App {
         path: PathBuf::from(WORKSPACE),
         tables: TaxTables::embedded(),
         history: History::embedded().clone(),
+        patterns_file: None,
         store,
         settings: Some(PathBuf::from(CONFIG)),
         is_light: false,

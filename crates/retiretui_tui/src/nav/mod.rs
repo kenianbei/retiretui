@@ -51,6 +51,8 @@ pub enum Page {
     Historical,
     /// The most the plan's flexible spending could be, searched.
     SpendingCeiling,
+    /// The plan's spending estimated from a bank's exports.
+    SpendingEstimate,
     /// The year's tax tables, as the projection applies them.
     TaxTables,
     Accounts,
@@ -123,7 +125,7 @@ impl Group {
 
 impl Page {
     /// Every page, in the order the tabs and the sidebars reach them.
-    pub const ALL: [Self; 23] = [
+    pub const ALL: [Self; 24] = [
         Self::Overview,
         Self::Ledger,
         Self::Compare,
@@ -133,6 +135,7 @@ impl Page {
         Self::MonteCarlo,
         Self::Historical,
         Self::SpendingCeiling,
+        Self::SpendingEstimate,
         Self::TaxTables,
         Self::Accounts,
         Self::Income,
@@ -161,6 +164,7 @@ impl Page {
             Self::MonteCarlo => "Monte Carlo",
             Self::Historical => "Historical",
             Self::SpendingCeiling => "Spending Ceiling",
+            Self::SpendingEstimate => "Spending Estimate",
             Self::TaxTables => "Tax Tables",
             Self::Accounts => "Accounts",
             Self::Income => "Income",
@@ -191,6 +195,7 @@ impl Page {
             Self::MonteCarlo => "monte-carlo",
             Self::Historical => "historical",
             Self::SpendingCeiling => "spending-ceiling",
+            Self::SpendingEstimate => "spending-estimate",
             Self::TaxTables => "tax-tables",
             Self::Accounts => "accounts",
             Self::Income => "income",
@@ -220,6 +225,7 @@ impl Page {
             Self::MonteCarlo => "run the plan through random markets",
             Self::Historical => "run the plan from every historical start year",
             Self::SpendingCeiling => "search the most you could spend",
+            Self::SpendingEstimate => "estimate the plan's spending from a bank's exports",
             Self::TaxTables => "read the tax tables the projection applies in the year",
             Self::Accounts => "edit the accounts",
             Self::Income => "edit the income sources",
@@ -263,6 +269,7 @@ impl Page {
             | Self::MonteCarlo
             | Self::Historical
             | Self::SpendingCeiling
+            | Self::SpendingEstimate
             | Self::TaxTables => Some(Group::Tools),
             Self::Accounts
             | Self::Income

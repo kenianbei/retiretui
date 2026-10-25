@@ -44,6 +44,7 @@ fn run() -> Result<(), String> {
         path: PathBuf::from(WORKSPACE),
         tables: TaxTables::embedded(),
         history: History::embedded().clone(),
+        patterns_file: None,
         store,
         settings: Some(PathBuf::from(SETTINGS)),
         is_light: prefers_light(),

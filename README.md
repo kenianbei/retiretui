@@ -129,6 +129,7 @@ python3 -m http.server -d crates/retiretui_web/dist
 | `monte-carlo`     | Run the plan through many random markets            |
 | `historical`      | Run the plan from every historical start year       |
 | `import-earnings` | Record an ssa.gov earnings statement on a person    |
+| `estimate`        | Propose the plan's expenses from a bank's exports   |
 | `tui`             | Open the interactive planner                        |
 | `theme`           | List the planner's themes, or print one to copy     |
 | `mcp`             | Serve plans to AI agents over stdio                 |

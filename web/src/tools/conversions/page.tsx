@@ -61,6 +61,7 @@ function chosenLadder(
 
 /** The constraints the ladders are searched under. */
 const CONSTRAINTS: Settings = {
+  id: "constraints",
   heading: "Constraints",
   read: (document) => document.constraintsRead(),
   open: (document) => document.constraints(),
@@ -191,7 +192,9 @@ export function ConversionsPage() {
         )}
         <SettingsRead settings={CONSTRAINTS} />
       </div>
-      {search.edit && <SettingsForm settings={CONSTRAINTS} />}
+      {search.edit === CONSTRAINTS.id && (
+        <SettingsForm settings={CONSTRAINTS} />
+      )}
     </div>
   );
 }

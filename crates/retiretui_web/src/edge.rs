@@ -10,7 +10,7 @@ use wasm_bindgen_futures::JsFuture;
 use web_sys::{Blob, BlobPropertyBag, Document, HtmlAnchorElement, HtmlInputElement, Url};
 
 /// What the dialog offers: plans, scenarios and SSA statements.
-const ACCEPTED: &str = ".toml,.xml";
+const ACCEPTED: &str = ".toml,.xml,.csv,.ofx,.qfx";
 const TEXT_TYPE: &str = "text/plain";
 
 /// Files the visitor chose, kept until the planner takes them.

@@ -69,12 +69,15 @@ impl Settings {
 
     /// The settings the file at `path` in `store` holds, and a complaint
     /// for each that does not read and so keeps its default. An absent
-    /// file is the defaults, as is one that is not TOML; it is left as it is.
+    /// file is the defaults, as is one that cannot be read or is not TOML;
+    /// it is left as it is.
     pub fn at(store: Arc<dyn Store>, path: PathBuf) -> (Self, Vec<String>) {
         let mut settings = Self::default();
-        let unread = store
-            .read(&path)
-            .map_or_else(|_| Vec::new(), |text| settings.read(&text));
+        let unread = match store.read_if_present(&path) {
+            Ok(Some(text)) => settings.read(&text),
+            Ok(None) => Vec::new(),
+            Err(error) => vec![error.to_string()],
+        };
         let complaints = unread
             .into_iter()
             .map(|complaint| format!("{}: {complaint}", path.display()))
@@ -117,13 +120,15 @@ impl Settings {
     ///
     /// # Errors
     ///
-    /// Where the file holds something that does not read as TOML - it is
-    /// not overwritten - or cannot be written.
+    /// Where the file cannot be read or holds something that does not read
+    /// as TOML - it is not overwritten - or cannot be written.
     pub fn keep(&self, key: &[&str], value: impl Into<Value>) -> Result<(), String> {
         let Some(Kept { store, path }) = &self.kept else {
             return Ok(());
         };
-        let text = store.read(path).unwrap_or_default();
+        let text = (store.read_if_present(path))
+            .map_err(|error| format!("{}: {error}", path.display()))?
+            .unwrap_or_default();
         let kept = with_key(&text, key, value.into())
             .map_err(|error| format!("{}: {error}", path.display()))?;
         write(store.as_ref(), path, &kept).map_err(|error| format!("{}: {error}", path.display()))
@@ -168,7 +173,9 @@ fn with_key(text: &str, key: &[&str], value: Value) -> Result<String, String> {
     Ok(document.to_string())
 }
 
-fn write(store: &dyn Store, path: &std::path::Path, text: &str) -> std::io::Result<()> {
+/// Writes `text` at `path` in `store`, making its directory where there is
+/// none.
+pub(crate) fn write(store: &dyn Store, path: &std::path::Path, text: &str) -> std::io::Result<()> {
     if let Some(directory) = path.parent() {
         store.create_dir_all(directory)?;
     }
@@ -214,6 +221,21 @@ kept = true
         assert!(with_key("[tui", &["motion"], "off".into()).is_err());
         let in_the_way = with_key("tui = 3", &["motion"], "off".into());
         assert_eq!(in_the_way.unwrap_err(), "tui is not a table");
+    }
+
+    #[test]
+    fn a_file_that_cannot_be_read_is_said_and_never_written_over() {
+        let path = std::env::temp_dir().join(format!(
+            "retiretui-settings-unreadable-{}.toml",
+            std::process::id()
+        ));
+        let unreadable = b"[tui]\nmotion = \"off\"\n# \xff\n";
+        std::fs::write(&path, unreadable).unwrap();
+        let (settings, complaints) = Settings::at(Arc::new(DiskStore), path.clone());
+        assert_eq!(complaints.len(), 1, "{complaints:?}");
+        assert!(settings.keep(&["document"], "plan.toml").is_err());
+        assert_eq!(std::fs::read(&path).unwrap(), unreadable);
+        let _ = std::fs::remove_file(path);
     }
 
     #[test]

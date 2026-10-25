@@ -24,6 +24,7 @@ schema = 1        # required, must be 1
 [[contributions]] # optional, repeated
 [[residency]]     # optional, repeated; prices state income tax
 [market]          # optional; what the market tools assume
+[estimate]        # optional; how estimate_spending fits spending to expenses
 ```
 
 Unknown keys are rejected everywhere.
@@ -215,6 +216,21 @@ disability exceptions.
   `end` and `on` keep their whole-year meaning. `on` excludes `phases`.
   `optimize_spending` scales a phase with its expense.
 
+`estimate_spending` proposes each expense's `amount` from a bank's exports - the
+latest twelve months' spending in a category, annualized in start-year dollars,
+matched to the expense whose `id` or `name` is for that category (`groceries`,
+`dining`, `utilities`, `housing`, `fuel`, `transit`, `insurance`, `medical`,
+`pharmacy`, `subscriptions`, `phone`, `internet`, `shopping`, `clothing`,
+`travel`, `entertainment`, `gifts`, `pets`, `childcare`, `education`, `fees`). A
+category with no expense of its own goes, as `[estimate]` leans, to a new
+expense under its slug, to the first expense of its family (food: groceries,
+dining; home: housing, utilities, phone, internet; health: medical, pharmacy,
+insurance; transport: fuel, transit, travel; the rest personal), or to the
+bucket, which also collects the payees nothing names. Each proposal is one
+expense and what it gathers. `estimate_records` lists the transactions behind a
+category, a payee, the unnamed or the ignored, each with the rule, bank
+category, transaction type or embedded entry that sorted it.
+
 An HSA is drawn untaxed up to the year's `medical` spending, across the
 household. What it pays beyond that is ordinary income, and pays a 20% penalty
 besides until the year its owner turns 65, so a plan that marks nothing
@@ -260,6 +276,21 @@ unstated one takes the built-in default shown.
 - `historical` - `from`/`to` (the start years tried, default 1871 to 2025) and
   `wrap` (a history reaching past the data goes on from its start, default
   true).
+
+## [estimate]
+
+How `estimate_spending` fits a bank's spending to the plan's expenses; the
+projection never reads it. Every field is optional.
+
+- `lean` - `"existing"` (never propose a new expense), `"large"` (default: a new
+  expense only for a category of at least `large_share` of the year's spending),
+  or `"new"` (one for every category without its own).
+- `large_share` - over 0 and at most 1, default 0.10.
+- `bucket` - the `id` of the expense what fits nowhere else goes to. Unstated,
+  an expense whose `id` or `name` says misc, other or general; failing that, a
+  new `other` expense is proposed.
+- `[[estimate.assign]]` - `category` (a spending category, once each) and
+  `expense` (an expense `id`): the category goes there outright.
 
 ## [[cliffs]]
 
@@ -550,10 +581,11 @@ on = { date = 2029-06-01 }
 Identity keys: every listed item - people, events, accounts, income, expenses,
 cliffs, transfers, conversions and contributions - matches by `id`, which every
 item must carry; `name` is only what an item is shown as; `residency` replaces
-wholesale; `[market]` merges like `[plan]`, one level deep, so a stated `stocks`
-or `monte_carlo` table replaces the base's whole. Within a matched item each
-stated field replaces the base field entirely - triggers never merge internally.
-`replace = true` substitutes the stated item wholesale, which is also how an
-optional field is cleared. `write_plan` accepts scenario documents and validates
-them fully resolved; `optimize_conversions`, `optimize_claims`, `optimize_order`
-and `optimize_spending` each emit one.
+wholesale; `[market]` and `[estimate]` merge like `[plan]`, one level deep, so a
+stated `stocks` or `monte_carlo` table replaces the base's whole. Within a
+matched item each stated field replaces the base field entirely - triggers never
+merge internally. `replace = true` substitutes the stated item wholesale, which
+is also how an optional field is cleared. `write_plan` accepts scenario
+documents and validates them fully resolved; `optimize_conversions`,
+`optimize_claims`, `optimize_order`, `optimize_spending` and `estimate_spending`
+each emit one.

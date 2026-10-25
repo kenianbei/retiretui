@@ -5,6 +5,7 @@
 
 mod actions;
 mod compare;
+mod estimate;
 mod import;
 mod markets;
 mod optimize;
@@ -21,6 +22,7 @@ use retiretui_engine::plan::Plan;
 
 use actions::ActionsArgs;
 use compare::CompareArgs;
+use estimate::EstimateArgs;
 use import::ImportEarningsArgs;
 use markets::{HistoricalArgs, MonteCarloArgs};
 use optimize::OptimizeCommand;
@@ -54,6 +56,10 @@ pub enum Command {
     /// Pull the earnings record out of a Social Security statement (the
     /// XML from ssa.gov) onto a person, rewriting the plan file.
     ImportEarnings(ImportEarningsArgs),
+    /// Estimate the plan's expenses from a bank's exports (CSV, OFX, QFX):
+    /// the latest twelve months' spending by category, as the amount of
+    /// the expense that is for it or a new one.
+    Estimate(EstimateArgs),
 }
 
 /// Runs `command`, printing what it reports to stdout.
@@ -72,6 +78,7 @@ pub fn run(command: &Command) -> anyhow::Result<()> {
         Command::MonteCarlo(args) => markets::run_monte_carlo(args),
         Command::Historical(args) => markets::run_historical(args),
         Command::ImportEarnings(args) => import::run(args),
+        Command::Estimate(args) => estimate::run(args),
     }
 }
 

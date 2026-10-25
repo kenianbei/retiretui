@@ -8,6 +8,7 @@ mod contributions;
 mod dates;
 mod diff;
 mod escalation;
+mod estimate;
 mod events;
 mod expenses;
 mod flows;
@@ -35,8 +36,10 @@ pub use cliffs::Cliff;
 pub use codec::{from_table, to_table};
 pub use contributions::{Contribution, Match, Payer, Step};
 pub use dates::PlanDate;
+pub(crate) use dates::{optional_text, text};
 pub use diff::{Change, ChangeKind, diff};
 pub use escalation::{ColaAnchor, ColaSpec};
+pub use estimate::{Assign, EstimateSettings, LARGE_SHARE, Lean};
 pub use events::Event;
 pub use expenses::{Expense, Phase};
 pub use flows::{Conversion, Transfer};
@@ -152,6 +155,9 @@ pub struct Plan {
     /// What the market is assumed to do, and how the market tools run.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub market: Option<Market>,
+    /// How the Spending Estimate fits spending to the expenses.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub estimate: Option<EstimateSettings>,
 }
 
 impl Plan {

@@ -100,6 +100,8 @@ pub struct Picker {
     list: SystemId<In<String>, Vec<Offered>>,
     chosen: SystemId<In<usize>>,
     trying: Option<Trying>,
+    /// Whether a query that leaves one row chooses it at once.
+    is_choosing_alone: bool,
 }
 
 /// How a picker lets a row be tried before it is chosen: `reached` is told
@@ -126,7 +128,15 @@ impl Picker {
             list: world.register_system(list),
             chosen: world.register_system(chosen),
             trying: None,
+            is_choosing_alone: false,
         }
+    }
+
+    /// The same picker, a query that leaves one row choosing it at once.
+    #[must_use]
+    pub const fn choosing_alone(mut self) -> Self {
+        self.is_choosing_alone = true;
+        self
     }
 
     /// The same picker, trying each row on as the cursor reaches it.
@@ -155,8 +165,13 @@ pub struct Picking {
 
 impl Picking {
     pub fn open(&mut self, picker: Picker) {
+        self.open_with(picker, "");
+    }
+
+    /// Opens `picker` with `query` already typed.
+    pub fn open_with(&mut self, picker: Picker, query: &str) {
         self.open = Some(picker);
-        self.query.clear();
+        query.clone_into(&mut self.query);
         self.is_stale = true;
     }
 
@@ -223,7 +238,7 @@ fn sync_picker(
         .observe(handle_dismiss);
     commands.spawn((
         Field,
-        TextInput::new(""),
+        TextInput::new(picking.query.clone()),
         query_keys(),
         fixed(1.0),
         UiWidget::default(),
@@ -298,6 +313,14 @@ fn relist(world: &mut World) {
     let rows = world
         .run_system_with(picker.list, query.clone())
         .unwrap_or_default();
+    if let [alone] = rows.as_slice()
+        && picker.is_choosing_alone
+        && !query.is_empty()
+    {
+        world.resource_mut::<Picking>().close();
+        let _ = world.run_system_with(picker.chosen, alone.id);
+        return;
+    }
     let theme = world.resource::<Theme>().clone();
     let first = place_rows(world, results, &rows, &theme);
     if rows.is_empty() {

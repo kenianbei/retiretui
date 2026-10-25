@@ -429,3 +429,124 @@ fn theme_dump_refuses_the_terminals_own_and_a_name_that_is_no_theme() {
         assert!(stderr.contains(said), "{stderr}");
     }
 }
+
+const BANK_EXPORTS: &str = "../retiretui_engine/tests/fixtures/bank";
+
+#[test]
+fn estimate_proposes_the_plans_spending_from_a_banks_exports() {
+    let dir = scratch_dir("cli-estimate", "plan.toml", &[]);
+    let plan = dir.join("plan.toml");
+    let plan = plan.to_str().unwrap();
+    let chase = format!("{BANK_EXPORTS}/chase.csv");
+    let ofx = format!("{BANK_EXPORTS}/checking.ofx");
+    let qfx = format!("{BANK_EXPORTS}/checking.qfx");
+    let out = dir.join("estimated.toml");
+    let out = out.to_str().unwrap();
+    let ok = retiretui(&["estimate", plan, &chase, &ofx, &qfx, "--write", out]);
+    assert!(ok.status.success(), "{ok:?}");
+    let stdout = String::from_utf8(ok.stdout).unwrap();
+    assert!(stdout.contains("1 month through Oct 2026"), "{stdout}");
+    assert!(stdout.contains("Groceries (new)"), "{stdout}");
+    assert!(stdout.contains("\n  Utilities "), "{stdout}");
+    assert!(stdout.contains(&format!("wrote {out}")), "{stdout}");
+    let written = std::fs::read_to_string(out).unwrap();
+    assert!(written.contains("id = \"groceries\""), "{written}");
+    let valid = retiretui(&["validate", out]);
+    assert!(valid.status.success(), "{valid:?}");
+    let json = retiretui(&["estimate", plan, &chase, "--format", "json"]);
+    assert!(json.status.success(), "{json:?}");
+    let reply: serde_json::Value = serde_json::from_slice(&json.stdout).unwrap();
+    assert_eq!(reply["months"], 1);
+    assert_eq!(
+        reply["proposals"][0]["categories"][0]["category"],
+        "groceries"
+    );
+    assert_eq!(reply["proposals"][0]["id"], "groceries");
+    let refused = retiretui(&["estimate", plan, &format!("{BANK_EXPORTS}/visa.csv")]);
+    assert!(!refused.status.success());
+    let stderr = String::from_utf8(refused.stderr).unwrap();
+    assert!(stderr.contains("cannot tell the columns apart"), "{stderr}");
+}
+
+#[test]
+fn estimate_lists_the_records_asked_for_and_what_sorted_each() {
+    let dir = scratch_dir("cli-estimate-records", "plan.toml", &[]);
+    let user = dir.join("config/retiretui/estimate");
+    std::fs::create_dir_all(&user).unwrap();
+    let ignoring = "patterns = [{ is = \"ATM WITHDRAWAL\", ignore = true }]\n";
+    std::fs::write(user.join("patterns.toml"), ignoring).unwrap();
+    let proposed = dir.join("proposed.toml");
+    let dining = "patterns = [{ match = \"SAFEWAY\", category = \"dining\" }]\n";
+    std::fs::write(&proposed, dining).unwrap();
+    let plan = dir.join("plan.toml");
+    let chase = format!("{BANK_EXPORTS}/chase.csv");
+    let run = |args: &[&str]| {
+        Command::new(env!("CARGO_BIN_EXE_retiretui"))
+            .args(["estimate", plan.to_str().unwrap(), &chase])
+            .args(["--patterns", proposed.to_str().unwrap()])
+            .args(args)
+            .env("XDG_CONFIG_HOME", dir.join("config"))
+            .output()
+            .unwrap()
+    };
+    let table = run(&["--payee", "safeway"]);
+    assert!(table.status.success(), "{table:?}");
+    let table = text_of(&table.stdout);
+    assert!(
+        table.starts_with("Records: payees containing safeway - 1 record, $"),
+        "{table}"
+    );
+    assert!(
+        table.contains("SAFEWAY #1234, SAN JOSE  $142.17  dining  rule 1 in proposed.toml"),
+        "{table}"
+    );
+    let ignored = json_of(&run(&["--ignored", "--format", "json"]));
+    assert_eq!(ignored["records"].as_array().unwrap().len(), 2, "{ignored}");
+    assert_eq!(
+        ignored["records"][0]["by"],
+        serde_json::json!({ "rule": { "file": "patterns.toml", "at": 1 } })
+    );
+    let alone = json_of(&run(&[
+        "--ignored",
+        "--no-user-patterns",
+        "--format",
+        "json",
+    ]));
+    assert_eq!(alone["records"].as_array().unwrap().len(), 0, "{alone}");
+    let refused = run(&["--category", "groceries", "--write", "x.toml"]);
+    assert!(!refused.status.success());
+    let refused = run(&["--category", "nonsense"]);
+    assert!(text_of(&refused.stderr).contains("one of groceries"));
+}
+
+#[test]
+fn estimate_reads_two_exports_of_one_name_from_two_folders() {
+    let joint = "Date,Description,Amount\n2026-10-09,SAFEWAY #77,-20.00\n";
+    let dir = scratch_dir(
+        "cli-estimate-same-name",
+        "plan.toml",
+        &[("nested/chase.csv", joint)],
+    );
+    let plan = dir.join("plan.toml");
+    let nested = dir.join("nested/chase.csv");
+    let chase = format!("{BANK_EXPORTS}/chase.csv");
+    let both = json_of(&retiretui(&[
+        "estimate",
+        plan.to_str().unwrap(),
+        &chase,
+        nested.to_str().unwrap(),
+        "--no-user-patterns",
+        "--payee",
+        "safeway",
+        "--format",
+        "json",
+    ]));
+    let exports: Vec<&str> = (both["records"].as_array().unwrap().iter())
+        .map(|record| record["export"].as_str().unwrap())
+        .collect();
+    assert_eq!(
+        exports,
+        [nested.to_str().unwrap(), chase.as_str()],
+        "{both}"
+    );
+}

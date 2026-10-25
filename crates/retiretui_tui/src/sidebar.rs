@@ -29,13 +29,13 @@ use super::nav::{self, Group, LastShown, Page, PageSystems, ShownSurface, Turn};
 use super::pane::{self, Pane};
 use super::theme::{Repainted, Theme};
 
-/// The cells a sidebar takes of the body: its border, the cursor, and the
-/// widest row.
-pub const SIDEBAR_COLS: u16 = pane::BORDERS + layout::CURSOR_COLS + widest_row();
+/// The cells a sidebar takes of the body: its border, the cursor, the
+/// widest row and the scrollbar's column.
+pub const SIDEBAR_COLS: u16 =
+    pane::BORDERS + layout::CURSOR_COLS + widest_row() + layout::SCROLL_BAR_COLS;
 
-/// A count of two digits, with the cell a list keeps clear either side of
-/// one.
-const COUNT_COLS: usize = 4;
+/// A count of two digits, and the cell a list keeps clear before it.
+const COUNT_COLS: usize = 3;
 
 /// The widest grouped page's row: its name, and on a domain's the count.
 const fn widest_row() -> u16 {

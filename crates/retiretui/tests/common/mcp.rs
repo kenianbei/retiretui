@@ -19,6 +19,7 @@ impl McpClient {
     pub fn spawn(root: &Path) -> Self {
         let mut child = Command::new(env!("CARGO_BIN_EXE_retiretui"))
             .args(["mcp", "--dir", root.to_str().unwrap()])
+            .env("XDG_CONFIG_HOME", root.join("config"))
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .spawn()

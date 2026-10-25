@@ -36,7 +36,7 @@ retiretui_engine = { workspace = true, features = ["schemars"] }
 schemars.workspace = true
 serde.workspace = true
 toml.workspace = true
-toml_edit = "0.25.15"
+toml_edit.workspace = true
 tracing = { version = "0.1.44", default-features = false, features = ["std"] }
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 web-time = "1.1.0"

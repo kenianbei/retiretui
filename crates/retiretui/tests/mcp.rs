@@ -416,3 +416,118 @@ fn projection_and_tax_parameters_state_their_output_shapes() {
     let issues = &schema_of("validate_plan")["properties"]["issues"];
     assert!(issues["items"].is_object(), "{issues}");
 }
+
+const BANK_EXPORTS: &str = "../retiretui_engine/tests/fixtures/bank";
+
+#[test]
+fn estimate_spending_proposes_from_exports_and_writes_the_overlay() {
+    let root = scratch_dir("mcp-estimate", "plan.toml", &[]);
+    let chase = std::fs::read_to_string(format!("{BANK_EXPORTS}/chase.csv")).unwrap();
+    let ofx = std::fs::read_to_string(format!("{BANK_EXPORTS}/checking.ofx")).unwrap();
+    let mut client = McpClient::spawn(&root);
+    let patterns = "patterns = [{ match = \"SAFEWAY\", category = \"dining\" }]";
+    let reply = client.call(
+        "estimate_spending",
+        json!({
+            "path": "plan.toml",
+            "files": [{"name": "chase.csv", "text": chase}, {"name": "checking.ofx", "text": ofx}],
+            "patterns": patterns,
+            "write_to": "nested/estimated.toml",
+        }),
+    );
+    assert_eq!(reply["months"], 1, "{reply}");
+    assert_eq!(
+        reply["proposals"][0]["categories"][0]["category"], "dining",
+        "{reply}"
+    );
+    assert_eq!(
+        reply["proposals"][1]["categories"][0]["category"], "utilities",
+        "{reply}"
+    );
+    assert_eq!(reply["written"], true, "{reply}");
+    let text = client.call("read_plan", json!({"path": "nested/estimated.toml"}));
+    let text = text["text"].as_str().unwrap();
+    assert!(text.contains("base = \"../plan.toml\""), "{text}");
+    assert!(text.contains("id = \"dining\""), "{text}");
+    let refused = client.call_expecting_error(
+        "estimate_spending",
+        json!({"path": "plan.toml", "files": [{"name": "x.xlsx", "text": ""}]}),
+    );
+    assert!(refused.contains("not a .csv"), "{refused}");
+}
+
+#[test]
+fn estimate_records_reads_exports_and_rules_by_path_and_says_what_sorted_each() {
+    let chase = std::fs::read_to_string(format!("{BANK_EXPORTS}/chase.csv")).unwrap();
+    let dining = "patterns = [{ match = \"SAFEWAY\", category = \"dining\" }]\n";
+    let root = scratch_dir(
+        "mcp-estimate-records",
+        "plan.toml",
+        &[("chase.csv", &chase), ("proposed.toml", dining)],
+    );
+    let user = root.join("config/retiretui/estimate");
+    std::fs::create_dir_all(&user).unwrap();
+    let ignoring = "patterns = [{ is = \"ATM WITHDRAWAL\", ignore = true }]\n";
+    std::fs::write(user.join("patterns.toml"), ignoring).unwrap();
+    let mut client = McpClient::spawn(&root);
+    let records = |client: &mut McpClient, which: serde_json::Value, extra: serde_json::Value| {
+        let mut args = json!({
+            "path": "plan.toml",
+            "files": [{"path": "chase.csv"}],
+            "patterns_path": "proposed.toml",
+            "which": which,
+        });
+        args.as_object_mut()
+            .unwrap()
+            .extend(extra.as_object().unwrap().clone());
+        client.call("estimate_records", args)
+    };
+    let safeway = records(&mut client, json!({"payee": "safeway"}), json!({}));
+    assert_eq!(safeway["records"].as_array().unwrap().len(), 1, "{safeway}");
+    let record = &safeway["records"][0];
+    assert_eq!(record["sorted"], "dining", "{record}");
+    assert_eq!(
+        record["by"],
+        json!({"rule": {"file": "proposed.toml", "at": 1}})
+    );
+    assert_eq!(record["export"], "chase.csv");
+    let ignored = records(&mut client, json!("ignored"), json!({}));
+    assert_eq!(ignored["records"].as_array().unwrap().len(), 2, "{ignored}");
+    let alone = records(
+        &mut client,
+        json!("ignored"),
+        json!({"user_patterns": false}),
+    );
+    assert_eq!(alone["records"].as_array().unwrap().len(), 0, "{alone}");
+    let income = records(&mut client, json!({"category": "income"}), json!({}));
+    assert_eq!(income["records"][0]["by"], json!({"embedded": "PAYROLL"}));
+    let refused = client.call_expecting_error(
+        "estimate_records",
+        json!({"path": "plan.toml", "files": [{"path": "../chase.csv"}], "which": "unnamed"}),
+    );
+    assert!(refused.contains("../chase.csv"), "{refused}");
+}
+
+#[test]
+fn estimate_reads_two_exports_of_one_name_from_two_folders() {
+    let chase = std::fs::read_to_string(format!("{BANK_EXPORTS}/chase.csv")).unwrap();
+    let joint = "Date,Description,Amount\n2026-10-09,SAFEWAY #77,-20.00\n";
+    let root = scratch_dir(
+        "mcp-estimate-same-name",
+        "plan.toml",
+        &[("chase.csv", &chase), ("nested/chase.csv", joint)],
+    );
+    let mut client = McpClient::spawn(&root);
+    let both = client.call(
+        "estimate_records",
+        json!({
+            "path": "plan.toml",
+            "files": [{"path": "chase.csv"}, {"path": "nested/chase.csv"}],
+            "which": {"payee": "safeway"},
+        }),
+    );
+    let exports: Vec<&str> = (both["records"].as_array().unwrap().iter())
+        .map(|record| record["export"].as_str().unwrap())
+        .collect();
+    assert_eq!(exports, ["nested/chase.csv", "chase.csv"], "{both}");
+}

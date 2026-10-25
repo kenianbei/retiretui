@@ -7,6 +7,7 @@ mod compare;
 mod document;
 mod domain;
 mod edits;
+mod estimate;
 mod ladders;
 mod ledger;
 mod markets;
@@ -96,14 +97,14 @@ fn reply<T: Serialize>(answer: Result<T, String>) -> Result<JsValue, JsError> {
 
 #[wasm_bindgen(typescript_custom_section)]
 const TYPES: &str = r#"import type {
-  ActionsReply, BandWords, Chart, Charted, Claim, ClaimWords, ClaimsOptions, CompareView,
+  ActionsReply, BandWords, Behind, Chart, Charted, Claim, ClaimWords, ClaimsOptions, CompareView,
   CompareWords,
   Domain, DomainTable,
-  Example, FieldView, Issue, LadderWords, LadderYear, LaddersReply,
+  EstimateRow, EstimateView, EstimateWords, Example, FieldView, Issue, LadderWords, LadderYear, LaddersReply,
   Ledger, MarketRuns, MarketWords, Metric, OrderOptions, OrderWords, OverviewView, PersonAction,
   PersonRow, PlacedIssue,
   NewPlanMade, OpenFailure,
-  Projection, ReadRow, RothOwner, ScaledExpense, Searched, Sort, SpendingOptions,
+  Projection, ReadRow, RecordAction, RothOwner, ScaledExpense, Searched, Sort, SpendingOptions,
   SpendingWords, Step, Summary, TablesView,
   TreatmentClass, ViewWords, Year, YearFigure, YearTables,
 } from "../bindings/index";
@@ -310,11 +311,13 @@ mod bindings {
     use crate::claims::{ClaimWords, ClaimsOptions, PersonRow, RothOwner};
     use crate::document::PlacedIssue;
     use crate::unopened::{OpenFailure, Written};
+    use retiretui_client::estimate::{Action, Behind};
     use retiretui_client::forms::details::ReadRow;
     use retiretui_client::forms::sort::Sort;
 
     use crate::compare::{CompareView, CompareWords, Searched, YearFigure};
     use crate::domain::DomainTable;
+    use crate::estimate::{EstimateView, EstimateWords};
     use crate::ladders::{LadderWords, LaddersReply};
     use crate::ledger::{Ledger, ViewWords};
     use crate::markets::{MarketRuns, MarketWords};
@@ -350,6 +353,10 @@ mod bindings {
         OrderWords::export_all,
         SpendingOptions::export_all,
         SpendingWords::export_all,
+        EstimateView::export_all,
+        EstimateWords::export_all,
+        Behind::export_all,
+        Action::export_all,
         MarketRuns::export_all,
         MarketWords::export_all,
         CompareView::export_all,

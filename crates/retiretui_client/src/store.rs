@@ -47,6 +47,19 @@ pub trait Store: fmt::Debug + Send + Sync + 'static {
     /// Where there is no such file, or it cannot be read.
     fn read(&self, path: &Path) -> io::Result<String>;
 
+    /// The file's text; none where there is no such file.
+    ///
+    /// # Errors
+    ///
+    /// Where there is one and it cannot be read.
+    fn read_if_present(&self, path: &Path) -> io::Result<Option<String>> {
+        match self.read(path) {
+            Ok(text) => Ok(Some(text)),
+            Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
+            Err(error) => Err(error),
+        }
+    }
+
     /// Replaces the file's text whole, or leaves it as it was.
     ///
     /// # Errors

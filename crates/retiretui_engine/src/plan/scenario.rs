@@ -99,7 +99,7 @@ impl Scenario {
         for (section, value) in &self.document {
             match section.as_str() {
                 SCHEMA_KEY | BASE_KEY => {}
-                "plan" | "market" => merge_fields(&mut base, section, value, &mut issues),
+                _ if is_fields(section) => merge_fields(&mut base, section, value, &mut issues),
                 HOUSEHOLD_KEY => merge_household(&mut base, value, &mut issues),
                 _ if is_keyed(section) => {
                     let items = ItemSection {
@@ -134,6 +134,12 @@ pub(super) fn split_household(household: Option<&Value>) -> (Value, Option<Value
     let mut own = (household.and_then(Value::as_table).cloned()).unwrap_or_default();
     let people = own.remove(PEOPLE_KEY);
     (Value::Table(own), people)
+}
+
+/// Whether the top-level `section` is one table merged key by key, one
+/// level deep.
+pub(super) fn is_fields(section: &str) -> bool {
+    matches!(section, "plan" | "market" | "estimate")
 }
 
 /// Whether the top-level `section` is a list of items matched by [`ID_KEY`].

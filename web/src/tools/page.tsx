@@ -6,6 +6,7 @@ import {
   pageOf,
   ROTH_CONVERSIONS,
   SPENDING_CEILING,
+  SPENDING_ESTIMATE,
   SSA_BENEFITS,
   TAX_TABLES,
   TOOLS,
@@ -13,6 +14,7 @@ import {
 } from "@/nav";
 import { ClaimsPage } from "@/tools/claims/page";
 import { ConversionsPage } from "@/tools/conversions/page";
+import { EstimatePage } from "@/tools/estimate/page";
 import { MarketsPage } from "@/tools/markets/page";
 import { OrdersPage } from "@/tools/orders/page";
 import { SpendingPage } from "@/tools/spending/page";
@@ -32,6 +34,7 @@ export function ToolPage() {
     return <MarketsPage key={page} kind="historical" title={title} />;
   }
   if (page === SPENDING_CEILING) return <SpendingPage title={title} />;
+  if (page === SPENDING_ESTIMATE) return <EstimatePage title={title} />;
   if (page === TAX_TABLES) return <TaxTablesPage title={title} />;
   return null;
 }
