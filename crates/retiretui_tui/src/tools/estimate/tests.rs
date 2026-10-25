@@ -4,6 +4,7 @@ use bevy_app::App;
 use plurimus::term::KeyCode;
 
 use retiretui_client::estimate::{Listed, RowForm};
+use retiretui_engine::estimate::Unknown;
 
 use super::edits::NO_EXPORTS;
 use super::*;
@@ -256,14 +257,8 @@ fn a_named_payee_is_remembered_in_the_patterns_file_the_launch_names() {
             .iter()
             .any(|line| line.contains("SOMEONE is Pets, kept in"))
     );
-    assert!(
-        app.world()
-            .resource::<Held>()
-            .0
-            .estimate()
-            .unknown
-            .is_empty()
-    );
+    let unknown = &app.world().resource::<Held>().0.estimate().unknown;
+    assert_eq!(*unknown, [] as [Unknown; 0]);
 }
 
 /// Puts the cursor on the row at `at` and the keyboard on the Records
@@ -470,5 +465,5 @@ fn the_users_patterns_are_read_at_launch_and_one_that_does_not_parse_is_left_out
         .unwrap();
     add(&mut app, "nameless.csv", NAMELESS);
     let held = app.world().resource::<Held>();
-    assert!(held.0.estimate().unknown.is_empty());
+    assert_eq!(held.0.estimate().unknown, [] as [Unknown; 0]);
 }

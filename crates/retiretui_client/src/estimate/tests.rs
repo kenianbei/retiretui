@@ -1,4 +1,4 @@
-use retiretui_engine::estimate::{Category, Patterns, Phases};
+use retiretui_engine::estimate::{Category, Patterns, Phases, Unknown};
 use retiretui_engine::plan::{Lean, Plan};
 use toml::{Table, Value};
 
@@ -127,7 +127,7 @@ fn an_expense_a_category_and_a_payee_each_open_their_own_form() {
         }])
     );
     assert!(estimator.refresh(&plan), "a named payee estimates again");
-    assert!(estimator.estimate().unknown.is_empty());
+    assert_eq!(estimator.estimate().unknown, [] as [Unknown; 0]);
 }
 
 #[test]

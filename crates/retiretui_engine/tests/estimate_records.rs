@@ -32,7 +32,7 @@ fn records_are_a_categorys_or_a_payees_rows_in_the_window_newest_first() {
     );
     assert_eq!(amounts(&Of::Payee("SOMEONE".to_owned())), [-3000]);
     assert_eq!(amounts(&Of::Unnamed), [-2000, -3000]);
-    assert!(records(&[], &patterns, &Of::Unnamed).is_empty());
+    assert_eq!(records(&[], &patterns, &Of::Unnamed), [] as [&Row; 0]);
 }
 
 #[test]

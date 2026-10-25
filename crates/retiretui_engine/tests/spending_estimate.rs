@@ -2,7 +2,8 @@
 //! spending sorted, annualized and deflated, and the proposals applied.
 
 use retiretui_engine::estimate::{
-    BankError, Category, Cents, Estimate, Patterns, Phases, Why, apply, estimate, merge, read,
+    BankError, Category, Cents, Estimate, Patterns, Phases, Unknown, Why, apply, estimate, merge,
+    read,
 };
 use retiretui_engine::plan::Plan;
 
@@ -84,7 +85,7 @@ fn a_csv_sorts_its_rows_and_names_the_expense_each_sets() {
     );
     assert_eq!(found.income, 4213 * 12 - 5);
     assert_eq!(found.transfers, -(1850 + 120) * 12);
-    assert!(found.unknown.is_empty());
+    assert_eq!(found.unknown, [] as [Unknown; 0]);
 }
 
 #[test]
