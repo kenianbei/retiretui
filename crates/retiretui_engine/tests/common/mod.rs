@@ -285,7 +285,6 @@ pub fn proposal_amount(
         .map(|p| p.amount)
 }
 
-/// Whether `proposal` gathers `category`.
 pub fn gathers(
     proposal: &retiretui_engine::estimate::Proposal,
     category: retiretui_engine::estimate::Category,
