@@ -76,11 +76,7 @@ fn new_expense(proposal: &Proposal) -> Expense {
     Expense {
         id: proposal.id.clone(),
         name: Some(proposal.name.clone()),
-        amount: if proposal.one_time {
-            proposal.total
-        } else {
-            proposal.amount
-        },
+        amount: proposal.amount,
         start: None,
         end: None,
         on: proposal.one_time.then_some(Trigger {

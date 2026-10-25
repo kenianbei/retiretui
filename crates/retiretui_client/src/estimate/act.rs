@@ -104,13 +104,12 @@ impl Estimator {
                 payee: self.target(at, record)?.named,
                 to,
             },
-            Action::Containing(part, to) => Change::Contains {
-                part: Some(part.trim())
-                    .filter(|part| !part.is_empty())
-                    .ok_or(NO_WORDS)?
-                    .to_owned(),
-                to,
-            },
+            Action::Containing(part, to) => {
+                if part.trim().is_empty() {
+                    return Err(NO_WORDS.to_owned());
+                }
+                Change::Contains { part, to }
+            }
             Action::Name(name) => Change::Merge {
                 payee: self.target(at, record)?.normalized,
                 name: name.trim().to_owned(),

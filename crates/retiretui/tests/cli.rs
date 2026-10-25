@@ -518,3 +518,35 @@ fn estimate_lists_the_records_asked_for_and_what_sorted_each() {
     let refused = run(&["--category", "nonsense"]);
     assert!(text_of(&refused.stderr).contains("one of groceries"));
 }
+
+#[test]
+fn estimate_reads_two_exports_of_one_name_from_two_folders() {
+    let joint = "Date,Description,Amount\n2026-10-09,SAFEWAY #77,-20.00\n";
+    let dir = scratch_dir(
+        "cli-estimate-same-name",
+        "plan.toml",
+        &[("nested/chase.csv", joint)],
+    );
+    let plan = dir.join("plan.toml");
+    let nested = dir.join("nested/chase.csv");
+    let chase = format!("{BANK_EXPORTS}/chase.csv");
+    let both = json_of(&retiretui(&[
+        "estimate",
+        plan.to_str().unwrap(),
+        &chase,
+        nested.to_str().unwrap(),
+        "--no-user-patterns",
+        "--payee",
+        "safeway",
+        "--format",
+        "json",
+    ]));
+    let exports: Vec<&str> = (both["records"].as_array().unwrap().iter())
+        .map(|record| record["export"].as_str().unwrap())
+        .collect();
+    assert_eq!(
+        exports,
+        [nested.to_str().unwrap(), chase.as_str()],
+        "{both}"
+    );
+}

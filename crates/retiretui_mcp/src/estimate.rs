@@ -1,8 +1,5 @@
-use std::path::Path;
-
 use retiretui_client::environment::load_patterns;
 use retiretui_client::estimate::{EstimateReply, Exports, RecordsReply};
-use retiretui_client::session::file_name;
 use retiretui_engine::estimate::{Category, Of, Patterns};
 use retiretui_engine::plan::Plan;
 use rmcp::handler::server::wrapper::{Json, Parameters};
@@ -169,9 +166,7 @@ impl PlanServer {
         for file in &inputs.files {
             let added = match file {
                 Export::Text { name, text } => exports.add(name, text),
-                Export::Path { path } => {
-                    exports.add(&file_name(Path::new(path)), &self.store.read(path)?)
-                }
+                Export::Path { path } => exports.add(path, &self.store.read(path)?),
             };
             added.map_err(|error| error.to_string())?;
         }

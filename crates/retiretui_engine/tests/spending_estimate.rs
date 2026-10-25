@@ -254,19 +254,19 @@ fn applying_sets_the_matched_expense_and_adds_the_rest() {
     let mut plan = plan(&format!("{GROCERIES}\n[estimate]\nlean = \"new\"\n"));
     let csv = "Date,Description,Amount\n2026-10-01,SAFEWAY,-500.00\n2026-10-31,NETFLIX,-20.00\n2026-10-03,HOME DEPOT,-1200.00\n";
     let mut found = estimated(&plan, csv);
-    found
-        .proposals
-        .iter_mut()
+    let shopping = (found.proposals.iter_mut())
         .find(|p| gathers(p, Category::Shopping))
-        .unwrap()
-        .one_time = true;
+        .unwrap();
+    assert_eq!(shopping.amount, 14400, "a year of it until said otherwise");
+    shopping.one_time = true;
+    shopping.amount = 1000;
     apply(&mut plan, &found);
     let ids: Vec<&str> = plan.expenses.iter().map(|e| e.id.as_str()).collect();
     assert_eq!(ids, ["groceries", "subscriptions", "shopping"]);
     assert_eq!(plan.expenses[0].amount, 6000);
     assert_eq!(plan.expenses[1].amount, 240);
     assert_eq!(plan.expenses[1].name.as_deref(), Some("Subscriptions"));
-    assert_eq!(plan.expenses[2].amount, 1200);
+    assert_eq!(plan.expenses[2].amount, 1000, "the amount as typed");
     assert_eq!(
         plan.expenses[2]
             .on

@@ -507,3 +507,28 @@ fn estimate_records_reads_exports_and_rules_by_path_and_says_what_sorted_each() 
     );
     assert!(refused.contains("../chase.csv"), "{refused}");
 }
+
+#[test]
+fn estimate_reads_two_exports_of_one_name_from_two_folders() {
+    let bank = "../retiretui_engine/tests/fixtures/bank";
+    let chase = std::fs::read_to_string(format!("{bank}/chase.csv")).unwrap();
+    let joint = "Date,Description,Amount\n2026-10-09,SAFEWAY #77,-20.00\n";
+    let root = scratch_dir(
+        "mcp-estimate-same-name",
+        "plan.toml",
+        &[("chase.csv", &chase), ("nested/chase.csv", joint)],
+    );
+    let mut client = McpClient::spawn(&root);
+    let both = client.call(
+        "estimate_records",
+        json!({
+            "path": "plan.toml",
+            "files": [{"path": "chase.csv"}, {"path": "nested/chase.csv"}],
+            "which": {"payee": "safeway"},
+        }),
+    );
+    let exports: Vec<&str> = (both["records"].as_array().unwrap().iter())
+        .map(|record| record["export"].as_str().unwrap())
+        .collect();
+    assert_eq!(exports, ["nested/chase.csv", "chase.csv"], "{both}");
+}

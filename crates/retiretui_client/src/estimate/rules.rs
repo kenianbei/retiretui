@@ -148,7 +148,9 @@ impl Change {
     pub fn said(&self) -> String {
         match self {
             Self::Name { payee, to } => format!("{payee} {}", to.said(false)),
-            Self::Contains { part, to } => format!("payees containing {part} {}", to.said(true)),
+            Self::Contains { part, to } => {
+                format!("payees containing {} {}", part.trim(), to.said(true))
+            }
             Self::Merge { payee, name } => format!("{payee} is listed as {name}"),
             Self::IgnorePayee { payee } => format!("{payee} is ignored"),
             Self::IgnoreRecord(record) => format!("{} on {} is ignored", record.payee, record.on.0),

@@ -60,7 +60,7 @@ const NEW_FIELDS: &[FieldSpec] = &[
     FieldSpec::text("name", "Name").help("What the new expense is called."),
     FieldSpec::money("amount", "Amount").help("A year, in today's dollars."),
     FieldSpec::flag("one_time", "Once")
-        .help("The window's total on its last date, in place of a yearly amount."),
+        .help("The amount once, on the window's last date, in place of a year of it."),
 ];
 
 const MOVE_FIELDS: &[FieldSpec] = &[FieldSpec::refers("expense", "Goes to", RefSource::Expense)

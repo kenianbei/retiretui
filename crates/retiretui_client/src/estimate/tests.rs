@@ -355,6 +355,22 @@ fn a_payee_is_moved_named_or_ignored_from_its_record_and_alike_ones_by_words() {
 }
 
 #[test]
+fn a_space_typed_at_either_end_of_some_words_stays_a_words_edge() {
+    let mut estimator = estimated(&retired());
+    assert_eq!(estimator.reach("ROCK").payees, 1);
+    assert_eq!(estimator.reach("ROCK ").payees, 0);
+    let to = To::Category(Category::Housing);
+    let contains = (estimator.act(0, None, Action::Containing(" rocket ".to_owned(), to))).unwrap();
+    assert_eq!(
+        contains,
+        Change::Contains {
+            part: " rocket ".to_owned(),
+            to
+        }
+    );
+}
+
+#[test]
 fn a_payee_moved_again_goes_where_it_was_last_sent() {
     let to = |category| Change::Name {
         payee: "SAFEWAY".to_owned(),

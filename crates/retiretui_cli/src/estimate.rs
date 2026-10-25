@@ -5,7 +5,6 @@ use clap::{ArgGroup, Args};
 use retiretui_client::environment::{load_patterns, load_tables};
 use retiretui_client::estimate::{self, EstimateReply, Exports, RecordReply, RecordsReply, listed};
 use retiretui_client::present::MoneyForm;
-use retiretui_client::session::file_name;
 use retiretui_client::store::DiskStore;
 use retiretui_client::table::align;
 use retiretui_engine::estimate::{Category, Estimate, Of};
@@ -93,7 +92,7 @@ pub fn run(args: &EstimateArgs) -> anyhow::Result<()> {
     for path in &args.files {
         let text = fs::read_to_string(path)
             .map_err(|error| anyhow::anyhow!("failed to read {}: {error}", path.display()))?;
-        (exports.add(&file_name(path), &text)).map_err(anyhow::Error::msg)?;
+        (exports.add(&path.to_string_lossy(), &text)).map_err(anyhow::Error::msg)?;
     }
     if let Some(of) = args.selection() {
         let found = exports.records(&plan, &patterns, &of);
