@@ -18,30 +18,32 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   marks an implausible phase amount, and the spending ceiling scales every phase
   with its expense.
 - A Spending Estimate tool proposes the plan's expenses from a bank's CSV, OFX
-  or QFX exports - the latest twelve months, one proposal per expense with its
-  categories beneath it. A category lands in the expense named for it, else in
-  one of its family, a new one, or a bucket that also takes unnamed payees, as
-  an optional `[estimate]` table leans (existing only, new past a share of
-  spending, or always new); the table also names the bucket and assigns
-  categories outright. Each expense shows its amount now, proposed and the
-  change and the payees behind it, each category why it landed there and the
-  transactions behind it; unnamed payees sit under the bucket, refunds marked.
-  Proposals can be edited and taken or written as a scenario, in the terminal,
-  the web app, `retiretui estimate` and `estimate_spending` over MCP. A payee
-  can be named, merged with its variants under one name, or ignored, as can a
-  single record; ignored records are counted nowhere and listed last, after the
-  bucket. In the terminal `i` ignores and `c` moves a payee to a category typed
-  by its number, or to the bucket as 0, and ⏎ on a record offers these and
-  sorting every payee containing its words; the web gives each record the same
-  menu. The terminal keeps these in `estimate/patterns.toml` in the config
-  directory, whose rules can also test the exact payee, a regex, the amount, the
-  export and the date, the most specific match winning over the bank's own
-  category; a space at either end of a `match` marks the edge of a word.
-  `retiretui estimate --category`, `--payee`, `--unnamed` or `--ignored`, and
-  `estimate_records` over MCP, list those records, each with the rule, bank
+  or QFX exports - the latest twelve months, a partial month counted by its
+  days, one proposal per expense with its categories beneath it. A category
+  lands in the expense named for it, else in one of its family, a new one, or a
+  bucket that also takes unnamed payees, as an optional `[estimate]` table leans
+  (existing only, new past a share of spending, or always new); the table also
+  names the bucket and assigns categories outright. Each expense shows its
+  amount now, proposed and the change and the payees behind it, each category
+  why it landed there and the transactions behind it; unnamed payees sit under
+  the bucket, refunds marked. Proposals can be edited and taken or written as a
+  scenario, in the terminal, the web app, `retiretui estimate` and
+  `estimate_spending` over MCP. A payee can be named, merged with its variants
+  under one name, or ignored, as can a single record; ignored records are
+  counted nowhere and listed last, after the bucket. In the terminal `i` ignores
+  and `c` moves a payee to a category typed by its number, or to the bucket as
+  0, and ⏎ on a record offers these and sorting every payee containing its
+  words; the web gives each record the same menu. The terminal keeps these in
+  `estimate/patterns.toml` in the config directory, whose rules can also test
+  the exact payee, a regex, the amount, the export and the date, the most
+  specific match winning over the bank's own category; a space at either end of
+  a `match` marks the edge of a word. A file that does not read is left out, and
+  said. `retiretui estimate --category`, `--payee`, `--unnamed` or `--ignored`,
+  and `estimate_records` over MCP, list those records, each with the rule, bank
   category, transaction type or embedded entry that sorted it. `--patterns` is
   read beside the config directory's file (`--no-user-patterns` leaves it out),
-  and MCP reads that file too, and exports and rules by path.
+  and MCP reads that file too, and exports and rules by path, each export named
+  by its path.
 
 ### Changed
 

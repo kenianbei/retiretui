@@ -448,7 +448,7 @@ fn the_users_patterns_are_read_at_launch_and_one_that_does_not_parse_is_left_out
         .insert_resource(PatternsFile(Some(file.clone())));
     std::fs::write(
         &file,
-        "patterns = [{ is = \"SOMEONE\", catgory = \"pets\" }]\n",
+        "patterns = [{ is = \"SOMEONE\", colour = \"pets\" }]\n",
     )
     .unwrap();
     app.world_mut()
