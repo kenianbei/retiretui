@@ -82,6 +82,10 @@ test("exports are read, a proposal edited, and the proposals taken and written",
       .click();
     return page.getByRole("menu");
   };
+  // A pointer sent straight from the trigger into the submenu reads as leaving
+  // the menu, which closes it under the click, so the pick is dispatched.
+  const pickCategory = (name: string | RegExp) =>
+    page.getByRole("menuitem", { name }).dispatchEvent("click");
   await (await menuOf(records))
     .getByRole("menuitem", { name: "Ignore this record" })
     .click();
@@ -97,14 +101,14 @@ test("exports are read, a proposal edited, and the proposals taken and written",
   await rowNamed(page, testInfo, "Utilities").last().click();
   const menu = await menuOf(records);
   await menu.getByRole("menuitem", { name: /is…$/ }).click();
-  await page.getByRole("menuitem", { name: "18 Pets" }).click();
+  await pickCategory("18 Pets");
   await expect(page.getByRole("status")).toContainText("is Pets");
   await rowNamed(page, testInfo, "Pets").last().click();
   const toBucket = await menuOf(
     page.getByRole("table", { name: "Records: Pets" }),
   );
   await toBucket.getByRole("menuitem", { name: /is…$/ }).click();
-  await page.getByRole("menuitem", { name: /^0 / }).click();
+  await pickCategory(/^0 /);
   await expect(page.getByRole("status")).toContainText("goes to the bucket");
   await rowNamed(page, testInfo, "CITY OF SAN JOSE WATER").click();
   const unnamed = page.getByRole("table", {
@@ -112,7 +116,7 @@ test("exports are read, a proposal edited, and the proposals taken and written",
   });
   const back = await menuOf(unnamed);
   await back.getByRole("menuitem", { name: /is…$/ }).click();
-  await page.getByRole("menuitem", { name: "18 Pets" }).click();
+  await pickCategory("18 Pets");
   await expect(page.getByRole("status")).toContainText("is Pets");
   await expectAccessible(page);
   await rowNamed(page, testInfo, "Pets").last().click();
