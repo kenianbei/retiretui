@@ -350,7 +350,7 @@ export function Shell() {
             <Button
               variant="outline"
               size="sm"
-              aria-label="Find a page, a plan or an action"
+              aria-label="Find a page, a plan or an action, Ctrl K"
               title="Find a page, a plan or an action (Ctrl K)"
               onClick={() => {
                 setFinding(true);
