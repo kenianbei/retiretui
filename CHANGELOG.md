@@ -58,6 +58,11 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   couple example shows a pre-tax deduction.
 - The Tax Tables page lists the year's payroll rates. `[payroll]` in a tax table
   carries them, the statutory rates where a table leaves it out.
+- A `414k` account takes `by = "after-tax"` contributions, as a 401(k) and a
+  403(b) do: a public pension's individual account can carry the member's
+  after-tax self-pay beside the employer's share. The money is kept as basis,
+  held to the plan's yearly cap after the other payers, and comes back untaxed
+  pro rata on every draw, through a rollover too.
 
 ### Changed
 
