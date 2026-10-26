@@ -64,6 +64,11 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   held to the plan's yearly cap after the other payers, and comes back untaxed
   pro rata on every draw, through a rollover too.
 
+### Fixed
+
+- The header's palette button is named with the "Ctrl K" it shows, as the
+  label-in-name rule asks.
+
 ### Changed
 
 - **Breaking:** every salary pays the employee's payroll tax out of cash -
