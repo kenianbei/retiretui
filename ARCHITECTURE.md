@@ -44,12 +44,13 @@ depends on UI.
   earlier table that has it, and a state's table says what income it leaves
   untaxed, by where it came from and its owner's age, and what it adjusts its
   tax by: federal tax subtracted, a credit for each person, a deduction ended by
-  income or added to by age, an excise on gains - and extended past the last
-  known year by inflating indexed values by the inflation of the market
-  projected through, a rate the law has already set for a later year taken from
-  that year - and the national average wage index, grown past its last published
-  year at an assumed rate a plan may override, from which the benefit formula's
-  wage bases and bend points derive by statute for any year, beside every
+  income or added to by age, an excise on gains - and the payroll rates,
+  statutory where a table leaves them out - and extended past the last known
+  year by inflating indexed values by the inflation of the market projected
+  through, a rate the law has already set for a later year taken from that
+  year - and the national average wage index, grown past its last published year
+  at an assumed rate a plan may override, from which the benefit formula's wage
+  bases and bend points derive by statute for any year, beside every
   cost-of-living adjustment SSA has published. `tax` holds the formulas: rule
   shapes are code, the Social Security benefit's among them - each year's
   covered earnings capped at its own base and indexed to the average wage of the
@@ -59,42 +60,50 @@ depends on UI.
   each month the claim falls before or after full retirement age - credits
   earned in the claim year paid from the next January, save at 70 - and the
   share of the first year paid from the first month paid for, 62 being held
-  throughout it - and a career at one salary filled from the wage index, as SSA
-  fills a record from current earnings. `statement` reads the statement a person
-  downloads from `ssa.gov` to what a plan keeps of it - the birth date and the
-  covered earnings by year, a sum stated for several years spread evenly over
-  them - which replaces a person's record, once. `project` walks the years -
-  trigger resolution, a year's growth on what each account opened with - its
-  fixed return, or the year's class returns blended by the mix it holds that
-  year, a glide path stepping between mixes as triggers fire - credited before
-  anything draws on it, escalation and the deflator following the market's
-  inflation, scheduled transfers, RMDs, income and expense windows (a Social
-  Security benefit left unstated is computed the year it is claimed, at the
-  month of the date or age its start rests on, from the owner's record - or,
-  where they have none, a career before the plan at the salary its first year
-  pays them - extended with the nominal salary the walk has paid them, and
-  carried from their age-62 year by the COLAs SSA has published so that the
-  income's own escalation carries those still to come; every Social Security
-  benefit pays its first year from the month it starts), an expense's amount
-  restated at triggers of its own - the year one fires in spent at each amount
-  for its months - contributions, Roth conversions, a tax-aware withdrawal fixed
-  point - the year's taxable income kept by person and by where it came from,
-  which the state's tax is figured from with the year's federal tax and income -
-  that also settles the year's MAGI-driven costs (IRMAA surcharges priced from
-  the household MAGI two years earlier, declared cliffs crossed by the current
-  year's MAGI) and the MAGI-driven deduction of a traditional IRA contribution
-  by a person a workplace plan covers - through a salary that says so, or what
-  they pay into one - or by their spouse, surplus sweeping - emits one row per
-  year, and aggregates a projection into headline summary figures in either
-  dollar basis. A contribution is an item of its own that names the account it
-  pays into, who pays, and one amount - dollars, a share of a named income, the
-  year's legal maximum, or an employer's match on what the employee paid - and
-  the law's limits are applied rather than refused: employee amounts are held to
-  each person's pooled limit in the order the plan lists them, each plan to its
-  yearly cap, and what an account holds after tax comes back untaxed whenever it
-  is drawn - pro rata, save from a person's Roth IRAs before they are drawn
-  untaxed whole, which give it up first, then what was converted into them,
-  oldest first, then what they earned. Every year's row says how each
+  throughout it - a career at one salary filled from the wage index, as SSA
+  fills a record from current earnings, and the payroll tax a year's earnings
+  pay: the employee's shares on wages up to the wage base, twice them on the
+  taxed share of self-employment earnings up to what the base leaves over the
+  wages, half of that coming off ordinary income, and the Additional Medicare
+  Tax on the household's together over its threshold. `statement` reads the
+  statement a person downloads from `ssa.gov` to what a plan keeps of it - the
+  birth date and the covered earnings by year, a sum stated for several years
+  spread evenly over them - which replaces a person's record, once. `project`
+  walks the years - trigger resolution, a year's growth on what each account
+  opened with - its fixed return, or the year's class returns blended by the mix
+  it holds that year, a glide path stepping between mixes as triggers fire -
+  credited before anything draws on it, escalation and the deflator following
+  the market's inflation, scheduled transfers, RMDs, income and expense windows
+  (a salary reaching cash, taxable wages and the owner's earnings record net of
+  what its employer takes out before tax, and recorded on no record where the
+  job pays into no Social Security; a self-employment income recorded at the
+  share the tax reaches; a Social Security benefit left unstated is computed the
+  year it is claimed, at the month of the date or age its start rests on, from
+  the owner's record - or, where they have none, a career before the plan at the
+  salary its first year pays them - extended with the nominal salary the walk
+  has paid them, and carried from their age-62 year by the COLAs SSA has
+  published so that the income's own escalation carries those still to come;
+  every Social Security benefit pays its first year from the month it starts),
+  an expense's amount restated at triggers of its own - the year one fires in
+  spent at each amount for its months - contributions, Roth conversions, a
+  tax-aware withdrawal fixed point - the year's taxable income kept by person
+  and by where it came from, which the state's tax is figured from with the
+  year's federal tax and income, and the payroll tax among what the year must
+  cover - that also settles the year's MAGI-driven costs (IRMAA surcharges
+  priced from the household MAGI two years earlier, declared cliffs crossed by
+  the current year's MAGI) and the MAGI-driven deduction of a traditional IRA
+  contribution by a person a workplace plan covers - through a salary that says
+  so, or what they pay into one - or by their spouse, surplus sweeping - emits
+  one row per year, and aggregates a projection into headline summary figures in
+  either dollar basis. A contribution is an item of its own that names the
+  account it pays into, who pays, and one amount - dollars, a share of a named
+  income, the year's legal maximum, or an employer's match on what the employee
+  paid - and the law's limits are applied rather than refused: employee amounts
+  are held to each person's pooled limit in the order the plan lists them, each
+  plan to its yearly cap, and what an account holds after tax comes back untaxed
+  whenever it is drawn - pro rata, save from a person's Roth IRAs before they
+  are drawn untaxed whole, which give it up first, then what was converted into
+  them, oldest first, then what they earned. Every year's row says how each
   contribution came to be what it is. `optimize` searches by re-projecting
   candidate plans - no closed-form tax approximations: fill-bracket Roth
   conversion ladders, each in place of any ladder the plan already holds, filled
@@ -165,25 +174,26 @@ depends on UI.
   milestones, what to do and what to watch, how far the plan has come, each
   account's flows from its open to its close with every move named by where it
   came from or went and every account as one, what it lived on against where
-  that went, each a list over what its kinds come to and the two coming to one
-  total, and its tax with the room left in the bracket it reaches; and the years
-  each earner's salary ends. The load-and-validate gate, a scenario's base chain
-  followed over whatever reads its files and one that does not resolve said by
-  the file in it that failed, where in its text and why, the file a scenario's
-  base names found beside it and a scenario made to name another, and every plan
-  file read, written, listed and stamped through one store - the disk, or files
-  kept as keys of a browser's storage, each file's count of writes its stamp.
-  The document a shell holds open, its projection, and the draft every edit
-  lands in with its whole-plan history - a scenario's saved into its own overlay
-  over its base as the save reads it, and an edit no overlay can state refused.
-  A first plan from the new-plan answers - asked of a partner only where the
-  household files jointly, in the steps a page asks them in - or an example; a
-  statement's earnings recorded on a person; the spending estimate's words - the
-  exports a session holds and what they say the plan spends, each expense a row
-  with what it spends now and would, what it gathers beneath it and why, the
-  payees nothing names beneath the bucket, the ignored after them, and what lies
-  behind each row - an expense's payees or a row's transactions - read out and
-  edited in a form for each kind of row - a category moved kept in the plan's
+  that went - its tax, what employers took out before it, and the rest - each a
+  list over what its kinds come to and the two coming to one total, and its tax
+  with the room left in the bracket it reaches; and the years each earner's
+  salary ends. The load-and-validate gate, a scenario's base chain followed over
+  whatever reads its files and one that does not resolve said by the file in it
+  that failed, where in its text and why, the file a scenario's base names found
+  beside it and a scenario made to name another, and every plan file read,
+  written, listed and stamped through one store - the disk, or files kept as
+  keys of a browser's storage, each file's count of writes its stamp. The
+  document a shell holds open, its projection, and the draft every edit lands in
+  with its whole-plan history - a scenario's saved into its own overlay over its
+  base as the save reads it, and an edit no overlay can state refused. A first
+  plan from the new-plan answers - asked of a partner only where the household
+  files jointly, in the steps a page asks them in - or an example; a statement's
+  earnings recorded on a person; the spending estimate's words - the exports a
+  session holds and what they say the plan spends, each expense a row with what
+  it spends now and would, what it gathers beneath it and why, the payees
+  nothing names beneath the bucket, the ignored after them, and what lies behind
+  each row - an expense's payees or a row's transactions - read out and edited
+  in a form for each kind of row - a category moved kept in the plan's
   `[estimate]` table, which is itself a form over the plan - what is asked
   before the proposals are taken, the scenario they make, and a payee named,
   merged, ignored or said to be for a category, every payee containing some
