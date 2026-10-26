@@ -104,10 +104,11 @@ impl AccountKind {
         )
     }
 
-    /// Whether an employee's after-tax contributions are valid here.
+    /// Whether an employee's after-tax contributions are valid here: a
+    /// 401(k), 403(b) or 414(k).
     #[must_use]
     pub fn accepts_after_tax(self) -> bool {
-        matches!(self, Self::K401k | Self::K403b)
+        matches!(self, Self::K401k | Self::K403b | Self::K414k)
     }
 
     /// Whether the kind keeps an untaxed part of its balance: cost basis

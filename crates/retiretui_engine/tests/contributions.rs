@@ -6,7 +6,7 @@ use retiretui_engine::plan::{AccountKind, FilingStatus};
 use retiretui_engine::project::ContributionNote;
 use retiretui_engine::tax;
 
-use common::{contribution, head, params_2026, run};
+use common::{born_in, contribution, drawn, head, params_2026, run};
 
 /// The 2026 limit for a single person under fifty, as the table has it.
 fn limit_2026(kind: AccountKind) -> i64 {
@@ -167,6 +167,93 @@ fn after_tax_money_fills_what_the_cap_leaves_and_comes_back_untaxed() {
             .ordinary_taxable,
         "after-tax money is not deducted"
     );
+}
+
+/// A retiree's 414(k) paid an employer share and an after-tax self-pay of a
+/// last salary, rolled to an IRA the year after, which an expense then
+/// draws on before the swept surplus; nothing grows, so every figure is
+/// the contributions'.
+const IAP_ROLLED: &str = r#"
+[[accounts]]
+id = "cash"
+kind = "cash"
+owner = "me"
+balance = 0
+
+[[accounts]]
+id = "ira"
+kind = "ira"
+owner = "me"
+balance = 0
+drain_priority = 0
+
+[[accounts]]
+id = "iap"
+kind = "414k"
+owner = "me"
+balance = 0
+
+[[income]]
+id = "pay"
+kind = "salary"
+owner = "me"
+amount = 100000
+end = { date = 2026-12-31 }
+
+[[expenses]]
+id = "living"
+amount = 6000
+
+[[transfers]]
+id = "rollover"
+from = "iap"
+to = "ira"
+on = { date = 2027-01-01 }
+
+[[contributions]]
+id = "iap-employer"
+to = "iap"
+by = "employer"
+rate = 0.06
+of = "pay"
+"#;
+
+const IAP_SELF_PAY: &str = r#"
+[[contributions]]
+id = "iap-selfpay"
+to = "iap"
+by = "after-tax"
+rate = 0.0075
+of = "pay"
+"#;
+
+#[test]
+fn a_414k_takes_after_tax_money_as_basis_that_comes_back_pro_rata() {
+    let with = run(&born_in(1960, &format!("{IAP_ROLLED}{IAP_SELF_PAY}")));
+    let without = run(&born_in(1960, IAP_ROLLED));
+    let (yours, theirs, notes) = contribution(&with, 0, "iap");
+    assert_eq!((yours, theirs), (750, 6_000));
+    assert_eq!(
+        notes,
+        [
+            ContributionNote::Share {
+                rate: 0.06,
+                of: "pay".into()
+            },
+            ContributionNote::Share {
+                rate: 0.0075,
+                of: "pay".into()
+            },
+            ContributionNote::AfterTax { amount: 750 }
+        ]
+    );
+    assert_eq!(
+        with.years[0].taxes.ordinary_taxable, without.years[0].taxes.ordinary_taxable,
+        "after-tax money is not deducted"
+    );
+    // 6,000 drawn from 6,750 rolled over, 750 of it basis: 667 untaxed.
+    assert_eq!(drawn(&with, "ira", 2027), [6_000, 6_000 - 667, 0]);
+    assert_eq!(drawn(&without, "ira", 2027), [6_000, 6_000, 0]);
 }
 
 const IRA_DRAWN: &str = r#"
