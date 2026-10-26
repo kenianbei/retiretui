@@ -107,9 +107,10 @@ pub fn money_in(plan: &Plan, row: &YearRow, is_nominal: bool) -> Funds {
 }
 
 /// Where what `row` lived on went: each expense that spent anything, in the
-/// plan's order, then its tax and Medicare's surcharges, what the household
-/// paid into its accounts, and what was left over and saved - over what the
-/// spending comes to, by kind where it is of more than one.
+/// plan's order, then its tax, what employers took out before tax,
+/// Medicare's surcharges, what the household paid into its accounts, and
+/// what was left over and saved - over what the spending comes to, by kind
+/// where it is of more than one.
 #[must_use]
 pub fn money_out(plan: &Plan, row: &YearRow, is_nominal: bool) -> Funds {
     let mut lines: Amounts = (plan.expenses.iter())
@@ -120,6 +121,7 @@ pub fn money_out(plan: &Plan, row: &YearRow, is_nominal: bool) -> Funds {
         .collect();
     lines.extend(paid([
         ("Tax", row.taxes.total),
+        ("Pre-tax deductions", row.pretax),
         ("Medicare surcharges", row.medicare),
         ("Paid into accounts", row.contributions_employee),
         ("Surplus saved", row.surplus),
@@ -136,6 +138,6 @@ pub fn money_out(plan: &Plan, row: &YearRow, is_nominal: bool) -> Funds {
         &[(SPENDING, row.expenses)]
     };
     let put_away = row.medicare + row.contributions_employee + row.surplus;
-    let total = row.expenses + row.taxes.total + put_away;
+    let total = row.expenses + row.taxes.total + row.pretax + put_away;
     funds((row, is_nominal), &lines, kinds, total)
 }

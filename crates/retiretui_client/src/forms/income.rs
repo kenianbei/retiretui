@@ -1,9 +1,25 @@
 use retiretui_engine::plan::{ColaAnchor, Income, Plan};
+use toml::{Table, Value};
 
 use super::cells::Column;
 use super::offers::{RefSource, Vocabulary};
 use super::{Domain, DomainId, FieldSpec, GROWTH_HELP, applies};
+use crate::codec::set_path;
 use crate::present;
+
+/// The key of a salary's tick for paying into Social Security, which is
+/// on by default: read from the settled value, written only when off.
+const SOCIAL_SECURITY: &str = "social_security";
+
+fn seed_social_security(item: &Table) -> Value {
+    let stated = item.get(SOCIAL_SECURITY).and_then(Value::as_bool);
+    Value::Boolean(stated.unwrap_or(true))
+}
+
+fn write_social_security(item: &mut Table, pays: &Value) {
+    let differs = pays.as_bool().filter(|&pays| !pays);
+    set_path(item, SOCIAL_SECURITY, differs.map(Value::Boolean));
+}
 
 /// The plan's incomes, edited as a table.
 pub struct Incomes;
@@ -24,7 +40,15 @@ impl Domain for Incomes {
         FieldSpec::refers("owner", "Owner", RefSource::Person).help("Who receives it."),
         FieldSpec::flag("covered", "Workplace plan")
             .shown_when(applies::can_be_covered)
-            .help("A workplace plan at this job covers its owner, contributing or not - a pension plan, say. Decides whether a traditional IRA contribution is deductible."),
+            .help("A workplace plan covers its owner, contributing or not - a pension, a solo 401(k). Decides whether a traditional IRA contribution is deductible."),
+        FieldSpec::money("pretax", "Before tax")
+            .blank("None")
+            .shown_when(applies::is_salary)
+            .help("What the employer takes out before tax each year - health premiums, an FSA - in the amount's dollars. Reaches neither cash nor any tax."),
+        FieldSpec::flag(SOCIAL_SECURITY, "Pays into SS")
+            .shown_when(applies::is_salary)
+            .derived(seed_social_security, write_social_security)
+            .help("Off for a non-covered public job: no Social Security tax, Medicare's still, and no covered earnings recorded."),
         FieldSpec::money("amount", "Annual amount")
             .help("Per year, in today's dollars unless it grows from its first year. Blank on Social Security computes it from the earnings record."),
         FieldSpec::timing(),

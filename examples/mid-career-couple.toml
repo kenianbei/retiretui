@@ -96,6 +96,8 @@ name = "Priya's salary"
 kind = "salary"
 owner = "priya"
 amount = 120000
+# Health premiums come out before tax.
+pretax = 7200
 end = { event = "retire-priya", offset = -1 }
 
 [[income]]

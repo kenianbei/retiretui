@@ -12,14 +12,14 @@ expression: composed_frame(app)
 │  Cliffs          0 ││  ss-jordan          Social Security        jordan         $40,000 │ │  Type            Salary          │
 │  Transfers       1 ││  inheritance        Windfall               alex          $100,000 │ │  Owner           jordan          │
 │  Conversions     1 ││                                                                   │ │  Workplace plan                  │
-│  Contributions   3 ││                                                                   │ │  Annual amount   $150,000        │
-│  Events          1 ││                                                                   │ │  Happens         Every year      │
-│  People          2 ││                                                                   │ │  Starts          Plan start      │
-│  Residency       1 ││                                                                   │ │  Ends            1 yr before ret │
-│  Household         ││                                                                   │ │  Growth          Inflation       │
-│  Settings          ││                                                                   │ │  Grows from      Plan start      │
-│  Market            ││                                                                   │ │                                  │
-│                    ││                                                                   │ │                                  │
+│  Contributions   3 ││                                                                   │ │  Before tax      None            │
+│  Events          1 ││                                                                   │ │  Pays into SS    ✓               │
+│  People          2 ││                                                                   │ │  Annual amount   $150,000        │
+│  Residency       1 ││                                                                   │ │  Happens         Every year      │
+│  Household         ││                                                                   │ │  Starts          Plan start      │
+│  Settings          ││                                                                   │ │  Ends            1 yr before ret │
+│  Market            ││                                                                   │ │  Growth          Inflation       │
+│                    ││                                                                   │ │  Grows from      Plan start      │
 │                    ││                                                                   │ │                                  │
 │                    ││                                                                   │ │                                  │
 │                    ││                                                                   │ │                                  │

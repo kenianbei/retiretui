@@ -2,8 +2,6 @@
 
 use std::collections::BTreeMap;
 
-use retiretui_engine::plan::IncomeKind;
-
 use crate::session::Projected;
 
 /// Each earner with the first year none of their salaries pays, earliest
@@ -13,7 +11,7 @@ pub fn salary_ends(projected: &Projected) -> Vec<(&str, i16)> {
     let years = &projected.projection.years;
     let mut last_paid: BTreeMap<&str, i16> = BTreeMap::new();
     let salaries = projected.plan.income.iter();
-    for income in salaries.filter(|income| income.kind == IncomeKind::Salary) {
+    for income in salaries.filter(|income| income.kind.is_earned()) {
         let Some(row) = years
             .iter()
             .rev()

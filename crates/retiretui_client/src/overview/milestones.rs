@@ -72,20 +72,18 @@ fn claims(plan: &Plan, timeline: &Timeline, projection: &Projection, nominal: bo
 /// only, arrive.
 fn incomes_starting(plan: &Plan, timeline: &Timeline) -> Vec<Row> {
     let each = plan.income.iter().enumerate();
-    each.filter(|(_, income)| {
-        !matches!(income.kind, IncomeKind::Salary | IncomeKind::SocialSecurity)
-    })
-    .filter_map(|(at, income)| {
-        let window = timeline.income.get(&income.id)?;
-        let name = income_name(plan, &income.id);
-        let (year, text) = match (window.start, window.on) {
-            (Some(year), _) => (year, format!("{name} starts")),
-            (None, Some(year)) => (year, format!("{name} arrives")),
-            (None, None) => return None,
-        };
-        Some(Row::dated(year, text, (DomainId::Income, Some(at))))
-    })
-    .collect()
+    each.filter(|(_, income)| !income.kind.is_earned() && income.kind != IncomeKind::SocialSecurity)
+        .filter_map(|(at, income)| {
+            let window = timeline.income.get(&income.id)?;
+            let name = income_name(plan, &income.id);
+            let (year, text) = match (window.start, window.on) {
+                (Some(year), _) => (year, format!("{name} starts")),
+                (None, Some(year)) => (year, format!("{name} arrives")),
+                (None, None) => return None,
+            };
+            Some(Row::dated(year, text, (DomainId::Income, Some(at))))
+        })
+        .collect()
 }
 
 fn medicare(plan: &Plan) -> Vec<Row> {
