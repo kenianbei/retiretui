@@ -101,7 +101,7 @@ fn a_salary_pays_its_payroll_tax_from_cash() {
 }
 
 #[test]
-fn a_payroll_hsa_contribution_leaves_the_base_but_a_deferral_does_not() {
+fn a_payroll_hsa_contribution_leaves_the_base_and_the_record_but_a_deferral_does_not() {
     let hsa = r#"
 [[accounts]]
 id = "hsa"
@@ -115,7 +115,9 @@ to = "hsa"
 amount = 4000
 cola = false
 "#;
-    assert_eq!(run(&salaried(60_000, hsa)).years[0].taxes.payroll, 4_284);
+    let first = &run(&salaried(60_000, hsa)).years[0];
+    assert_eq!(first.taxes.payroll, 4_284);
+    assert_eq!(first.covered["me"], 56_000);
     let deferral = r#"
 [[accounts]]
 id = "k"

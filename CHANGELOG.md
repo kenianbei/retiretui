@@ -67,7 +67,7 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   so a salaried plan's working-year surplus falls by about 7.65% of each salary
   below the base. It lands as `payroll` in the year's taxes, inside their total,
   and as a "Payroll" line in the Ledger's Tax pane. A payroll HSA contribution
-  comes off the FICA base; a 401(k) deferral does not.
+  comes off the FICA base and the earnings record; a 401(k) deferral does not.
 - `retiretui_engine`: `Expense` gains `phases`, `ScaledExpense` each phase's
   amount at the ceiling, and `spending_overlay` takes the plan it restates.
   `Taxes` gains `payroll`, `YearRow` `pretax` and `covered` - what each person's
