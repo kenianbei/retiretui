@@ -4,7 +4,7 @@ use std::fmt;
 use serde::Serialize;
 
 use super::escalation::{ColaAnchor, ColaSpec};
-use super::incomes::IncomeKind;
+use super::incomes::{Income, IncomeKind};
 use super::{AccountKind, TreatmentClass};
 use super::{FilingStatus, Plan, SCHEMA_VERSION, Span};
 
@@ -283,6 +283,36 @@ impl<'a> Checker<'a> {
         }
     }
 
+    /// The fields only an earned income has a use for.
+    fn check_earned(&mut self, path: &str, income: &Income) {
+        if income.covered && !income.kind.can_be_covered() {
+            self.push(
+                format!("{path}.covered"),
+                "only a salary or self-employment makes its owner covered",
+            );
+        }
+        let is_salary = income.kind == IncomeKind::Salary;
+        if !income.social_security && !is_salary {
+            self.push(
+                format!("{path}.social_security"),
+                "only a salary can pay into no Social Security",
+            );
+        }
+        let Some(pretax) = income.pretax else {
+            return;
+        };
+        if !is_salary {
+            self.push(
+                format!("{path}.pretax"),
+                "only a salary has deductions taken before tax",
+            );
+        } else if pretax < 0 {
+            self.push(format!("{path}.pretax"), "must not be negative");
+        } else if income.amount.is_some_and(|amount| pretax > amount) {
+            self.push(format!("{path}.pretax"), "must not exceed the amount");
+        }
+    }
+
     fn check_income(&mut self) {
         for (i, income) in self.plan.income.iter().enumerate() {
             let path = format!("income[{i}]");
@@ -292,18 +322,7 @@ impl<'a> Checker<'a> {
                     format!("unknown person `{}`", income.owner),
                 );
             }
-            if income.covered && !income.kind.can_be_covered() {
-                self.push(
-                    format!("{path}.covered"),
-                    "only a salary makes its owner covered",
-                );
-            }
-            if !income.social_security && income.kind != IncomeKind::Salary {
-                self.push(
-                    format!("{path}.social_security"),
-                    "only a salary can pay into no Social Security",
-                );
-            }
+            self.check_earned(&path, income);
             if income.cola_from == ColaAnchor::Start && !income.kind.can_escalate_from_start() {
                 self.push(
                     format!("{path}.cola_from"),

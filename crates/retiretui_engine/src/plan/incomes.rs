@@ -9,8 +9,11 @@ use super::triggers::Trigger;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum IncomeKind {
-    /// Wages; ordinary income, source of contributions.
+    /// Wages; ordinary income, source of contributions, paying payroll tax.
     Salary,
+    /// Net earnings from self-employment; ordinary income, paying
+    /// self-employment tax and building an earnings record.
+    SelfEmployment,
     /// Defined-benefit pension; ordinary income.
     Pension,
     /// Annuity payout; treated as fully ordinary income.
@@ -29,6 +32,7 @@ impl IncomeKind {
     /// Every kind, in the order the schema declares them.
     pub const ALL: &'static [Self] = &[
         Self::Salary,
+        Self::SelfEmployment,
         Self::Pension,
         Self::Annuity,
         Self::Rental,
@@ -42,6 +46,7 @@ impl IncomeKind {
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Salary => "salary",
+            Self::SelfEmployment => "self-employment",
             Self::Pension => "pension",
             Self::Annuity => "annuity",
             Self::Rental => "rental",
@@ -51,11 +56,19 @@ impl IncomeKind {
         }
     }
 
-    /// Whether the job an income of this kind is paid by can have a
-    /// workplace plan that covers its owner: a salary alone.
+    /// Whether an income of this kind is earned - a salary or
+    /// self-employment - and so builds an earnings record and may be
+    /// covered by a workplace plan.
+    #[must_use]
+    pub const fn is_earned(self) -> bool {
+        matches!(self, Self::Salary | Self::SelfEmployment)
+    }
+
+    /// Whether the work an income of this kind is paid for can have a
+    /// workplace plan that covers its owner: any earned income's.
     #[must_use]
     pub const fn can_be_covered(self) -> bool {
-        matches!(self, Self::Salary)
+        self.is_earned()
     }
 
     /// Whether an income of this kind may state its amount as its first
@@ -113,6 +126,12 @@ pub struct Income {
     /// contribution is deductible.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub covered: bool,
+    /// For a `salary`: what the employer takes out before tax each year -
+    /// health premiums, a flexible spending account - in the dollars the
+    /// amount is stated in, growing as it does. It reaches neither cash
+    /// nor any tax, and is not recorded as covered earnings.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pretax: Option<Dollars>,
     /// For a `salary`: whether the job pays into Social Security. One that
     /// does not - a non-covered public employee's - pays no Social Security
     /// tax, Medicare's still, and is not recorded as covered earnings.
@@ -132,13 +151,15 @@ impl Income {
         self.kind == IncomeKind::SocialSecurity && self.amount.is_none()
     }
 
-    /// What `paid` of the income in a year adds to its owner's covered
-    /// earnings: a salary's, where the job pays into Social Security;
-    /// nothing from any other income.
+    /// What `paid` of the income in a year, after what left it before tax,
+    /// adds to its owner's covered earnings: a salary's, where the job pays
+    /// into Social Security; `self_employment_share` of net
+    /// self-employment earnings; nothing from any other income.
     #[must_use]
-    pub fn covered_earnings(&self, paid: Dollars) -> Dollars {
+    pub fn covered_earnings(&self, paid: Dollars, self_employment_share: f64) -> Dollars {
         match self.kind {
             IncomeKind::Salary if self.social_security => paid,
+            IncomeKind::SelfEmployment => (paid as f64 * self_employment_share).round() as Dollars,
             _ => 0,
         }
     }

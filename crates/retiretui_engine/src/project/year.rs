@@ -61,6 +61,8 @@ pub(super) struct YearAcc {
     pub(super) taxed: Vec<PersonIncome>,
     /// What each person earned that payroll taxes reach, in the same order.
     pub(super) payroll: Vec<Earnings>,
+    /// What employers took out of salaries before tax.
+    pub(super) pretax: Dollars,
     /// What was paid into tax-deferred accounts and is deducted whatever
     /// the year's income.
     pub(super) deferred: Dollars,
@@ -186,7 +188,7 @@ impl<'a> Simulation<'a> {
         self.grow(year, &snapshot, &mut acc);
         self.execute_transfers(year, factor, &mut acc);
         self.take_rmds(year, &params, &snapshot, &mut acc);
-        self.collect_income(year, &mut acc);
+        self.collect_income(year, &params, &mut acc);
         self.collect_expenses(year, &mut acc);
         self.collect_medicare(year, &params, &mut acc);
         self.collect_contributions(year, &params, &mut acc);
@@ -291,6 +293,7 @@ impl<'a> Simulation<'a> {
             ages,
             deflator: factor,
             total_income: acc.income.values().sum(),
+            pretax: acc.pretax,
             income: acc.income,
             expenses: acc.expenses,
             spending: acc.spending,

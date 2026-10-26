@@ -22,8 +22,9 @@ penalty: number,
  */
 state: number, 
 /**
- * Payroll tax: Social Security and Medicare on wages, and the
- * Additional Medicare Tax over its threshold.
+ * Payroll tax: Social Security and Medicare on wages, the
+ * self-employment tax on net earnings, and the Additional Medicare
+ * Tax over its threshold.
  */
 payroll: number, 
 /**

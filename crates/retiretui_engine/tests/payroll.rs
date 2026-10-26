@@ -1,14 +1,17 @@
-//! The payroll tax a salary pays, and what a salary that pays into no
-//! Social Security leaves unpaid and unrecorded.
+//! The payroll tax a salary pays, what its pre-tax deductions leave out of
+//! everything, what a salary that pays into no Social Security leaves
+//! unpaid and unrecorded, and the self-employment tax.
 
 mod common;
 
 use retiretui_engine::optimize::career_at_salary;
 use retiretui_engine::params::{Inflation, PayrollParams, TaxTables};
 use retiretui_engine::plan::FilingStatus;
-use retiretui_engine::tax::{Earnings, payroll};
+use retiretui_engine::tax::{Earnings, Payroll, earnings_at_wage, payroll};
 
-use common::{assert_issue, head, issues, params_2026, plan_from, run, with_override};
+use common::{
+    assert_issue, benefit_params, head, issues, params_2026, plan_from, run, with_override,
+};
 
 const CASH: &str = r#"
 [[accounts]]
@@ -28,33 +31,63 @@ fn wages(amount: i64) -> Earnings {
     Earnings {
         covered: amount,
         medicare: amount,
+        self_employed: 0,
     }
+}
+
+fn paid(
+    params: &retiretui_engine::params::TaxParams,
+    status: FilingStatus,
+    earnings: &[Earnings],
+) -> i64 {
+    payroll(params, status, earnings).total
 }
 
 #[test]
 fn fica_is_the_employee_shares_to_the_wage_base_and_more_over_the_threshold() {
     let params = params_2026();
     // 6.2% and 1.45% of 60,000.
-    assert_eq!(
-        payroll(&params, FilingStatus::Single, &[wages(60_000)]),
-        4_590
-    );
+    assert_eq!(paid(&params, FilingStatus::Single, &[wages(60_000)]), 4_590);
     // OASDI capped at 184,500: 11,439; Medicare on all 300,000: 4,350; 0.9%
     // on the 50,000 over 250,000: 450.
     assert_eq!(
-        payroll(&params, FilingStatus::MarriedJoint, &[wages(300_000)]),
+        paid(&params, FilingStatus::MarriedJoint, &[wages(300_000)]),
         16_239
     );
     // Each earner under the base, the threshold on both together.
     assert_eq!(
-        payroll(
+        paid(
             &params,
             FilingStatus::MarriedJoint,
             &[wages(150_000), wages(150_000)]
         ),
         2 * 11_475 + 450
     );
-    assert_eq!(payroll(&params, FilingStatus::Single, &[wages(-1_000)]), 0);
+    assert_eq!(paid(&params, FilingStatus::Single, &[wages(-1_000)]), 0);
+}
+
+#[test]
+fn self_employment_tax_is_twice_the_shares_on_the_taxed_share_over_the_wages() {
+    let params = params_2026();
+    let own = Earnings {
+        self_employed: 100_000,
+        ..Earnings::default()
+    };
+    // 92,350 at 12.4% and 2.9%: 11,451.40 + 2,678.15.
+    assert_eq!(
+        payroll(&params, FilingStatus::Single, &[own]),
+        Payroll {
+            total: 14_130,
+            deduction: 7_065,
+        }
+    );
+    let beside_wages = Earnings {
+        self_employed: 100_000,
+        ..wages(150_000)
+    };
+    // The wages' 11,475; 12.4% on the 34,500 of base left: 4,278; 2.9% on
+    // 92,350: 2,678.15; 0.9% on 42,350 over 200,000: 381.15.
+    assert_eq!(paid(&params, FilingStatus::Single, &[beside_wages]), 18_812);
 }
 
 #[test]
@@ -156,4 +189,51 @@ fn the_embedded_rates_are_the_statutory_default_a_table_may_leave_out() {
     assert_eq!(overridden.payroll, PayrollParams::default());
     let later = TaxTables::embedded().params_for(2040, &Inflation::constant(0.03));
     assert_eq!(later.payroll, PayrollParams::default());
+}
+
+#[test]
+fn pretax_deductions_leave_cash_wages_the_base_and_the_record() {
+    let plan = salaried(60_000, "pretax = 6000");
+    let first = &run(&plan).years[0];
+    assert_eq!(first.pretax, 6_000);
+    assert_eq!(first.income["pay"], 60_000);
+    // 54,000 of wages: 7.65% of them, and 37,900 taxable at 10% and 12%.
+    assert_eq!(first.taxes.payroll, 4_131);
+    assert_eq!(first.taxes.ordinary_taxable, 37_900);
+    assert_eq!(first.taxes.ordinary, 4_300);
+    assert_eq!(first.surplus, 54_000 - 4_300 - 4_131);
+    assert_eq!(
+        career_at_salary(&plan_from(&plan), &TaxTables::embedded(), "me").unwrap(),
+        earnings_at_wage(&benefit_params(), 54_000, 2026, 2002..=2025)
+    );
+    let pension = head(&format!(
+        "{CASH}\n[[income]]\nid = \"db\"\nkind = \"pension\"\nowner = \"me\"\namount = 20000\npretax = 100\n"
+    ));
+    assert_issue(
+        &issues(&pension),
+        "income[0].pretax",
+        "only a salary has deductions taken before tax",
+    );
+    assert_issue(
+        &issues(&salaried(60_000, "pretax = 60001")),
+        "income[0].pretax",
+        "must not exceed the amount",
+    );
+}
+
+#[test]
+fn self_employment_pays_its_tax_half_deducted_and_builds_a_record() {
+    let plan = head(&format!(
+        "{CASH}\n[[income]]\nid = \"pay\"\nkind = \"self-employment\"\nowner = \"me\"\namount = 100000\ncovered = true\n"
+    ));
+    assert_eq!(issues(&plan), []);
+    let first = &run(&plan).years[0];
+    assert_eq!(first.taxes.payroll, 14_130);
+    // 100,000 less half the tax, 7,065, less the 16,100 deduction.
+    assert_eq!(first.taxes.ordinary_taxable, 76_835);
+    assert_eq!(first.taxes.magi, 92_935);
+    assert_eq!(
+        career_at_salary(&plan_from(&plan), &TaxTables::embedded(), "me").unwrap(),
+        earnings_at_wage(&benefit_params(), 92_350, 2026, 2002..=2025)
+    );
 }

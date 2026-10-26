@@ -29,6 +29,12 @@ income: { [key in string]: number },
  */
 total_income: number, 
 /**
+ * What employers took out of salaries before tax, as each salary's
+ * `pretax` states it: part of `total_income` that reached neither
+ * cash nor any tax.
+ */
+pretax: number, 
+/**
  * Spending for the year.
  */
 expenses: number, 

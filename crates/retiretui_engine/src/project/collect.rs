@@ -2,15 +2,15 @@
 //! expenses, Medicare surcharges, cliff costs - touching no balance.
 
 use crate::params::{Source, TaxParams};
-use crate::plan::{Cliff, Dollars, IncomeKind, Plan};
-use crate::tax;
+use crate::plan::{Cliff, Dollars, Income, IncomeKind, Plan};
+use crate::tax::{self, Earnings};
 
 use super::resolve::{self, Resolver};
 use super::year::{Simulation, YearAcc};
 use super::{Taxes, scale};
 
 impl Simulation<'_> {
-    pub(super) fn collect_income(&mut self, year: i16, acc: &mut YearAcc) {
+    pub(super) fn collect_income(&mut self, year: i16, params: &TaxParams, acc: &mut YearAcc) {
         let plan = self.plan;
         for (i, income) in plan.income.iter().enumerate() {
             if !self.item_active(year, income.span()) {
@@ -27,26 +27,54 @@ impl Simulation<'_> {
             }
             *acc.income.entry(income.id.clone()).or_default() += nominal;
             acc.cash += nominal;
-            let source = match income.kind {
+            let owner = self.person_at(&income.owner);
+            let share = params.payroll.self_employment_share;
+            let (source, taxed) = match income.kind {
                 IncomeKind::SocialSecurity => {
                     acc.ss_gross += nominal;
                     continue;
                 }
                 IncomeKind::Windfall => continue,
                 IncomeKind::Salary => {
-                    let covered = income.covered_earnings(nominal);
-                    if covered > 0 {
-                        self.record_covered(&income.owner, year, covered);
-                    }
-                    let earned = &mut acc.payroll[self.person_at(&income.owner)];
-                    earned.covered += covered;
-                    earned.medicare += nominal;
-                    Source::Wages
+                    let pretax =
+                        scale(income.pretax.unwrap_or(0), self.income_factor(income, year));
+                    acc.cash -= pretax;
+                    acc.pretax += pretax;
+                    let paid = nominal - pretax;
+                    acc.payroll[owner] += self.earned(income, year, paid, share);
+                    (Source::Wages, paid)
                 }
-                IncomeKind::Pension => Source::Pension,
-                IncomeKind::Annuity | IncomeKind::Rental | IncomeKind::Other => Source::Other,
+                IncomeKind::SelfEmployment => {
+                    acc.payroll[owner] += self.earned(income, year, nominal, share);
+                    (Source::Other, nominal)
+                }
+                IncomeKind::Pension => (Source::Pension, nominal),
+                IncomeKind::Annuity | IncomeKind::Rental | IncomeKind::Other => {
+                    (Source::Other, nominal)
+                }
             };
-            acc.tax(self.person_at(&income.owner), source, nominal);
+            acc.tax(owner, source, taxed);
+        }
+    }
+
+    /// What `paid` of an earned income, after what left it before tax,
+    /// adds to what payroll taxes reach, having been recorded on the
+    /// owner's earnings record where it is covered.
+    fn earned(&mut self, income: &Income, year: i16, paid: Dollars, share: f64) -> Earnings {
+        let covered = income.covered_earnings(paid, share);
+        if covered > 0 {
+            self.record_covered(&income.owner, year, covered);
+        }
+        if income.kind == IncomeKind::SelfEmployment {
+            return Earnings {
+                self_employed: paid,
+                ..Earnings::default()
+            };
+        }
+        Earnings {
+            covered,
+            medicare: paid,
+            self_employed: 0,
         }
     }
 

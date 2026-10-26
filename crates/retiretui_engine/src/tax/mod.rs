@@ -10,7 +10,7 @@ use crate::plan::{AccountKind, Dollars, FilingStatus, Person, PlanDate};
 mod payroll;
 mod state;
 
-pub use payroll::{Earnings, payroll};
+pub use payroll::{Earnings, Payroll, payroll};
 pub use state::{PersonIncome, StateIncome, state_tax};
 
 /// The age Medicare coverage (and IRMAA exposure) begins.

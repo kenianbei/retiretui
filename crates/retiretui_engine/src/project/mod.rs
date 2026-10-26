@@ -55,8 +55,9 @@ pub struct Taxes {
     /// What the state lived in that year takes: its income tax and, where
     /// it levies one, its excise on gains.
     pub state: Dollars,
-    /// Payroll tax: Social Security and Medicare on wages, and the
-    /// Additional Medicare Tax over its threshold.
+    /// Payroll tax: Social Security and Medicare on wages, the
+    /// self-employment tax on net earnings, and the Additional Medicare
+    /// Tax over its threshold.
     pub payroll: Dollars,
     /// The taxable portion of Social Security benefits (informational).
     pub taxable_social_security: Dollars,
@@ -237,6 +238,10 @@ pub struct YearRow {
     pub income: BTreeMap<String, Dollars>,
     /// Sum of the income map.
     pub total_income: Dollars,
+    /// What employers took out of salaries before tax, as each salary's
+    /// `pretax` states it: part of `total_income` that reached neither
+    /// cash nor any tax.
+    pub pretax: Dollars,
     /// Spending for the year.
     pub expenses: Dollars,
     /// What each expense spent, by expense id; one that spent nothing is

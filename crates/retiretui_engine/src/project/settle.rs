@@ -209,7 +209,8 @@ impl Simulation<'_> {
     }
 }
 
-/// The year's taxes. A traditional IRA contribution whose deduction the
+/// The year's taxes. Half of the self-employment tax comes off ordinary
+/// income first; a traditional IRA contribution whose deduction the
 /// MAGI decides is deducted here, by how far into the band the MAGI read
 /// before it lies, and what was deducted is left on the accumulator.
 fn compute_taxes(
@@ -218,7 +219,8 @@ fn compute_taxes(
     status: FilingStatus,
     acc: &YearAcc,
 ) -> Taxes {
-    let ordinary_income = acc.ordinary();
+    let payroll = tax::payroll(params, status, &acc.payroll);
+    let ordinary_income = acc.ordinary() - payroll.deduction;
     let before = ordinary_income + acc.gains;
     let ss_before = tax::taxable_social_security(params, status, before, acc.ss_gross);
     let by_band = ira_deducted(params, status, &acc.ira_to_settle, before + ss_before);
@@ -244,18 +246,17 @@ fn compute_taxes(
         agi: magi,
     };
     let state = state.map_or(0, |state| tax::state_tax(state, status, &income));
-    let payroll = tax::payroll(params, status, &acc.payroll);
     Taxes {
         ordinary,
         ltcg,
         penalty,
         state,
-        payroll,
+        payroll: payroll.total,
         taxable_social_security: taxable_ss,
         ordinary_taxable: ordinary_taxable.max(0),
         gains: acc.gains,
         magi,
-        total: federal_tax + state + payroll,
+        total: federal_tax + state + payroll.total,
         ira_deducted: by_band,
     }
 }

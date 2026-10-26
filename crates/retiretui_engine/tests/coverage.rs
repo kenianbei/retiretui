@@ -190,7 +190,7 @@ fn the_spouse_band_is_inflated_and_an_override_year_may_leave_it_out() {
 }
 
 #[test]
-fn only_a_salary_makes_its_owner_covered() {
+fn only_an_earned_income_makes_its_owner_covered() {
     let text = head(&format!(
         r#"{IRA}
 [[income]]
@@ -204,6 +204,6 @@ covered = true
     assert_issue(
         &issues(&text),
         "income[0].covered",
-        "only a salary makes its owner covered",
+        "only a salary or self-employment makes its owner covered",
     );
 }

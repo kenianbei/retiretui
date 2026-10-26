@@ -127,8 +127,8 @@ pub enum Source {
     EarlyDistribution,
     /// The taxed part of a Roth conversion.
     Conversion,
-    /// Rental, annuity and other income, and what an HSA pays beyond
-    /// medical spending.
+    /// Rental, annuity, net self-employment and other income, and what an
+    /// HSA pays beyond medical spending.
     Other,
 }
 
