@@ -256,8 +256,7 @@ impl<'a> Simulation<'a> {
             }
             TreatmentClass::Hsa => {
                 acc.tax(owner, Source::Wages, -paid.employee);
-                acc.payroll[owner].covered -= paid.employee;
-                acc.payroll[owner].medicare -= paid.employee;
+                acc.payroll[owner].deduct(paid.employee);
             }
             TreatmentClass::Taxable if account.kind.tracks_basis() => self.bases[index] += total,
             TreatmentClass::Roth => self.bases[index] += paid.employee + paid.after_tax,

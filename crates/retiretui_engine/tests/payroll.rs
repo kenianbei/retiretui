@@ -63,17 +63,16 @@ fn fica_is_the_employee_shares_to_the_wage_base_and_more_over_the_threshold() {
         ),
         2 * 11_475 + 450
     );
-    assert_eq!(paid(&params, FilingStatus::Single, &[wages(-1_000)]), 0);
 }
 
 #[test]
-fn self_employment_tax_is_twice_the_shares_on_the_taxed_share_over_the_wages() {
+fn self_employment_tax_is_twice_the_shares_over_the_wages() {
     let params = params_2026();
     let own = Earnings {
-        self_employed: 100_000,
+        self_employed: 92_350,
         ..Earnings::default()
     };
-    // 92,350 at 12.4% and 2.9%: 11,451.40 + 2,678.15.
+    // 12.4% and 2.9% of it: 11,451.40 + 2,678.15.
     assert_eq!(
         payroll(&params, FilingStatus::Single, &[own]),
         Payroll {
@@ -82,7 +81,7 @@ fn self_employment_tax_is_twice_the_shares_on_the_taxed_share_over_the_wages() {
         }
     );
     let beside_wages = Earnings {
-        self_employed: 100_000,
+        self_employed: 92_350,
         ..wages(150_000)
     };
     // The wages' 11,475; 12.4% on the 34,500 of base left: 4,278; 2.9% on

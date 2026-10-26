@@ -242,6 +242,10 @@ pub struct YearRow {
     /// `pretax` states it: part of `total_income` that reached neither
     /// cash nor any tax.
     pub pretax: Dollars,
+    /// What each person's Social Security earnings record gained in the
+    /// year - covered wages and the taxed share of self-employment
+    /// earnings, net of what left them before tax - by person id, nominal.
+    pub covered: BTreeMap<String, Dollars>,
     /// Spending for the year.
     pub expenses: Dollars,
     /// What each expense spent, by expense id; one that spent nothing is

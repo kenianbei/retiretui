@@ -12,6 +12,9 @@
       },
       "total_income": 150000,
       "pretax": 0,
+      "covered": {
+        "jordan": 150000
+      },
       "expenses": 90000,
       "spending": {
         "living": 90000
@@ -97,6 +100,9 @@
       },
       "total_income": 153750,
       "pretax": 0,
+      "covered": {
+        "jordan": 153750
+      },
       "expenses": 92250,
       "spending": {
         "living": 92250
@@ -182,6 +188,9 @@
       },
       "total_income": 157594,
       "pretax": 0,
+      "covered": {
+        "jordan": 157594
+      },
       "expenses": 94556,
       "spending": {
         "living": 94556
@@ -267,6 +276,9 @@
       },
       "total_income": 161534,
       "pretax": 0,
+      "covered": {
+        "jordan": 161534
+      },
       "expenses": 96920,
       "spending": {
         "living": 96920
@@ -352,6 +364,9 @@
       },
       "total_income": 165572,
       "pretax": 0,
+      "covered": {
+        "jordan": 165572
+      },
       "expenses": 99343,
       "spending": {
         "living": 99343
@@ -437,6 +452,9 @@
       },
       "total_income": 169711,
       "pretax": 0,
+      "covered": {
+        "jordan": 169711
+      },
       "expenses": 101827,
       "spending": {
         "living": 101827
@@ -523,6 +541,9 @@
       },
       "total_income": 289923,
       "pretax": 0,
+      "covered": {
+        "jordan": 173954
+      },
       "expenses": 104372,
       "spending": {
         "living": 104372
@@ -606,6 +627,9 @@
       },
       "total_income": 178303,
       "pretax": 0,
+      "covered": {
+        "jordan": 178303
+      },
       "expenses": 106982,
       "spending": {
         "living": 106982
@@ -691,6 +715,9 @@
       },
       "total_income": 182760,
       "pretax": 0,
+      "covered": {
+        "jordan": 182760
+      },
       "expenses": 109656,
       "spending": {
         "living": 109656
@@ -776,6 +803,9 @@
       },
       "total_income": 187329,
       "pretax": 0,
+      "covered": {
+        "jordan": 187329
+      },
       "expenses": 112398,
       "spending": {
         "living": 112398
@@ -861,6 +891,9 @@
       },
       "total_income": 192013,
       "pretax": 0,
+      "covered": {
+        "jordan": 192013
+      },
       "expenses": 115208,
       "spending": {
         "living": 115208
@@ -946,6 +979,7 @@
       },
       "total_income": 30000,
       "pretax": 0,
+      "covered": {},
       "expenses": 118088,
       "spending": {
         "living": 118088
@@ -1043,6 +1077,7 @@
       },
       "total_income": 30000,
       "pretax": 0,
+      "covered": {},
       "expenses": 141213,
       "spending": {
         "living": 121040,
@@ -1127,6 +1162,7 @@
       },
       "total_income": 30000,
       "pretax": 0,
+      "covered": {},
       "expenses": 144744,
       "spending": {
         "living": 124066,
@@ -1205,6 +1241,7 @@
       },
       "total_income": 30000,
       "pretax": 0,
+      "covered": {},
       "expenses": 148363,
       "spending": {
         "living": 127168,
@@ -1283,6 +1320,7 @@
       },
       "total_income": 30000,
       "pretax": 0,
+      "covered": {},
       "expenses": 152071,
       "spending": {
         "living": 130347,
@@ -1362,6 +1400,7 @@
       },
       "total_income": 64638,
       "pretax": 0,
+      "covered": {},
       "expenses": 155874,
       "spending": {
         "living": 133606,
@@ -1441,6 +1480,7 @@
       },
       "total_income": 90865,
       "pretax": 0,
+      "covered": {},
       "expenses": 159770,
       "spending": {
         "living": 136946,
@@ -1526,6 +1566,7 @@
       },
       "total_income": 92386,
       "pretax": 0,
+      "covered": {},
       "expenses": 163764,
       "spending": {
         "living": 140369,
@@ -1604,6 +1645,7 @@
       },
       "total_income": 93946,
       "pretax": 0,
+      "covered": {},
       "expenses": 167859,
       "spending": {
         "living": 143879,
@@ -1682,6 +1724,7 @@
       },
       "total_income": 95545,
       "pretax": 0,
+      "covered": {},
       "expenses": 172054,
       "spending": {
         "living": 147475,
@@ -1760,6 +1803,7 @@
       },
       "total_income": 97183,
       "pretax": 0,
+      "covered": {},
       "expenses": 176356,
       "spending": {
         "living": 151162,
@@ -1838,6 +1882,7 @@
       },
       "total_income": 98863,
       "pretax": 0,
+      "covered": {},
       "expenses": 180765,
       "spending": {
         "living": 154941,
@@ -1910,6 +1955,7 @@
       },
       "total_income": 100584,
       "pretax": 0,
+      "covered": {},
       "expenses": 185284,
       "spending": {
         "living": 158815,
@@ -1982,6 +2028,7 @@
       },
       "total_income": 102349,
       "pretax": 0,
+      "covered": {},
       "expenses": 189916,
       "spending": {
         "living": 162785,
@@ -2065,6 +2112,7 @@
       },
       "total_income": 104158,
       "pretax": 0,
+      "covered": {},
       "expenses": 194664,
       "spending": {
         "living": 166855,
@@ -2148,6 +2196,7 @@
       },
       "total_income": 106012,
       "pretax": 0,
+      "covered": {},
       "expenses": 199530,
       "spending": {
         "living": 171026,
@@ -2231,6 +2280,7 @@
       },
       "total_income": 107912,
       "pretax": 0,
+      "covered": {},
       "expenses": 204519,
       "spending": {
         "living": 175302,
@@ -2314,6 +2364,7 @@
       },
       "total_income": 109860,
       "pretax": 0,
+      "covered": {},
       "expenses": 209632,
       "spending": {
         "living": 179685,
@@ -2397,6 +2448,7 @@
       },
       "total_income": 111856,
       "pretax": 0,
+      "covered": {},
       "expenses": 214873,
       "spending": {
         "living": 184177,
@@ -2480,6 +2532,7 @@
       },
       "total_income": 113903,
       "pretax": 0,
+      "covered": {},
       "expenses": 188781,
       "spending": {
         "living": 188781
@@ -2562,6 +2615,7 @@
       },
       "total_income": 116000,
       "pretax": 0,
+      "covered": {},
       "expenses": 193501,
       "spending": {
         "living": 193501
@@ -2644,6 +2698,7 @@
       },
       "total_income": 118150,
       "pretax": 0,
+      "covered": {},
       "expenses": 198338,
       "spending": {
         "living": 198338
@@ -2726,6 +2781,7 @@
       },
       "total_income": 120354,
       "pretax": 0,
+      "covered": {},
       "expenses": 203297,
       "spending": {
         "living": 203297
@@ -2808,6 +2864,7 @@
       },
       "total_income": 122613,
       "pretax": 0,
+      "covered": {},
       "expenses": 208379,
       "spending": {
         "living": 208379
@@ -2890,6 +2947,7 @@
       },
       "total_income": 124928,
       "pretax": 0,
+      "covered": {},
       "expenses": 213588,
       "spending": {
         "living": 213588
@@ -2972,6 +3030,7 @@
       },
       "total_income": 127301,
       "pretax": 0,
+      "covered": {},
       "expenses": 218928,
       "spending": {
         "living": 218928
@@ -3054,6 +3113,7 @@
       },
       "total_income": 129734,
       "pretax": 0,
+      "covered": {},
       "expenses": 224401,
       "spending": {
         "living": 224401
@@ -3136,6 +3196,7 @@
       },
       "total_income": 132227,
       "pretax": 0,
+      "covered": {},
       "expenses": 230011,
       "spending": {
         "living": 230011
@@ -3218,6 +3279,7 @@
       },
       "total_income": 134783,
       "pretax": 0,
+      "covered": {},
       "expenses": 235762,
       "spending": {
         "living": 235762
@@ -3300,6 +3362,7 @@
       },
       "total_income": 137403,
       "pretax": 0,
+      "covered": {},
       "expenses": 241656,
       "spending": {
         "living": 241656
@@ -3382,6 +3445,7 @@
       },
       "total_income": 140088,
       "pretax": 0,
+      "covered": {},
       "expenses": 247697,
       "spending": {
         "living": 247697
@@ -3464,6 +3528,7 @@
       },
       "total_income": 142840,
       "pretax": 0,
+      "covered": {},
       "expenses": 253890,
       "spending": {
         "living": 253890
@@ -3546,6 +3611,7 @@
       },
       "total_income": 145661,
       "pretax": 0,
+      "covered": {},
       "expenses": 260237,
       "spending": {
         "living": 260237
@@ -3628,6 +3694,7 @@
       },
       "total_income": 148552,
       "pretax": 0,
+      "covered": {},
       "expenses": 266743,
       "spending": {
         "living": 266743
@@ -3710,6 +3777,7 @@
       },
       "total_income": 151516,
       "pretax": 0,
+      "covered": {},
       "expenses": 273411,
       "spending": {
         "living": 273411
@@ -3792,6 +3860,7 @@
       },
       "total_income": 154554,
       "pretax": 0,
+      "covered": {},
       "expenses": 280247,
       "spending": {
         "living": 280247
@@ -3874,6 +3943,7 @@
       },
       "total_income": 157668,
       "pretax": 0,
+      "covered": {},
       "expenses": 287253,
       "spending": {
         "living": 287253
@@ -3961,6 +4031,7 @@
       },
       "total_income": 160860,
       "pretax": 0,
+      "covered": {},
       "expenses": 294434,
       "spending": {
         "living": 294434

@@ -2,7 +2,7 @@
 //! expenses, Medicare surcharges, cliff costs - touching no balance.
 
 use crate::params::{Source, TaxParams};
-use crate::plan::{Cliff, Dollars, Income, IncomeKind, Plan};
+use crate::plan::{Cliff, Dollars, IncomeKind, Plan};
 use crate::tax::{self, Earnings};
 
 use super::resolve::{self, Resolver};
@@ -20,7 +20,8 @@ impl Simulation<'_> {
                 Some(amount) => amount,
                 None => self.derived_benefit(i, year),
             };
-            let escalated = scale(amount, self.income_factor(income, year));
+            let factor = self.income_factor(income, year);
+            let escalated = scale(amount, factor);
             let nominal = self.social_security_paid(i, year, escalated);
             if nominal <= 0 {
                 continue;
@@ -28,7 +29,6 @@ impl Simulation<'_> {
             *acc.income.entry(income.id.clone()).or_default() += nominal;
             acc.cash += nominal;
             let owner = self.person_at(&income.owner);
-            let share = params.payroll.self_employment_share;
             let (source, taxed) = match income.kind {
                 IncomeKind::SocialSecurity => {
                     acc.ss_gross += nominal;
@@ -36,16 +36,22 @@ impl Simulation<'_> {
                 }
                 IncomeKind::Windfall => continue,
                 IncomeKind::Salary => {
-                    let pretax =
-                        scale(income.pretax.unwrap_or(0), self.income_factor(income, year));
+                    let pretax = scale(income.pretax.unwrap_or(0), factor);
                     acc.cash -= pretax;
                     acc.pretax += pretax;
                     let paid = nominal - pretax;
-                    acc.payroll[owner] += self.earned(income, year, paid, share);
+                    acc.payroll[owner] += Earnings {
+                        covered: if income.social_security { paid } else { 0 },
+                        medicare: paid,
+                        self_employed: 0,
+                    };
                     (Source::Wages, paid)
                 }
                 IncomeKind::SelfEmployment => {
-                    acc.payroll[owner] += self.earned(income, year, nominal, share);
+                    acc.payroll[owner] += Earnings {
+                        self_employed: scale(nominal, params.payroll.self_employment_share),
+                        ..Earnings::default()
+                    };
                     (Source::Other, nominal)
                 }
                 IncomeKind::Pension => (Source::Pension, nominal),
@@ -54,27 +60,6 @@ impl Simulation<'_> {
                 }
             };
             acc.tax(owner, source, taxed);
-        }
-    }
-
-    /// What `paid` of an earned income, after what left it before tax,
-    /// adds to what payroll taxes reach, having been recorded on the
-    /// owner's earnings record where it is covered.
-    fn earned(&mut self, income: &Income, year: i16, paid: Dollars, share: f64) -> Earnings {
-        let covered = income.covered_earnings(paid, share);
-        if covered > 0 {
-            self.record_covered(&income.owner, year, covered);
-        }
-        if income.kind == IncomeKind::SelfEmployment {
-            return Earnings {
-                self_employed: paid,
-                ..Earnings::default()
-            };
-        }
-        Earnings {
-            covered,
-            medicare: paid,
-            self_employed: 0,
         }
     }
 

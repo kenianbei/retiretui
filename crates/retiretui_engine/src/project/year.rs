@@ -63,6 +63,8 @@ pub(super) struct YearAcc {
     pub(super) payroll: Vec<Earnings>,
     /// What employers took out of salaries before tax.
     pub(super) pretax: Dollars,
+    /// What each person's earnings record gained this year, by person id.
+    pub(super) covered: BTreeMap<String, Dollars>,
     /// What was paid into tax-deferred accounts and is deducted whatever
     /// the year's income.
     pub(super) deferred: Dollars,
@@ -192,6 +194,7 @@ impl<'a> Simulation<'a> {
         self.collect_expenses(year, &mut acc);
         self.collect_medicare(year, &params, &mut acc);
         self.collect_contributions(year, &params, &mut acc);
+        acc.covered = self.record_covered(year, &acc.payroll);
         self.execute_conversions(year, &mut acc);
         let taxes = self.settle_cash(year, &params, &mut acc);
         self.settle_ira_bands(&params, &taxes, &mut acc);
@@ -294,6 +297,7 @@ impl<'a> Simulation<'a> {
             deflator: factor,
             total_income: acc.income.values().sum(),
             pretax: acc.pretax,
+            covered: acc.covered,
             income: acc.income,
             expenses: acc.expenses,
             spending: acc.spending,

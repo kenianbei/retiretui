@@ -1,6 +1,6 @@
 use crate::params::{Source, StateParams, TaxParams};
 use crate::plan::{Account, Dollars, FilingStatus, Person, TreatmentClass};
-use crate::tax::{self, StateIncome};
+use crate::tax::{self, Payroll, StateIncome};
 
 use super::Taxes;
 use super::flows::distribution;
@@ -27,7 +27,8 @@ impl Simulation<'_> {
         let state = residence::state_in(self.plan, &self.resolver, year)
             .and_then(|code| params.states.get(code));
         let status = self.plan.household.filing;
-        let mut taxes = compute_taxes(params, state, status, acc);
+        let payroll = tax::payroll(params, status, &acc.payroll);
+        let mut taxes = compute_taxes(params, state, status, payroll, acc);
         acc.cliffs = self.cliff_costs(year, &taxes);
         let order = self.drain_candidates(year);
         for _ in 0..MAX_TAX_ITERATIONS {
@@ -42,7 +43,7 @@ impl Simulation<'_> {
                 acc.unfunded = shortfall;
                 return taxes;
             }
-            taxes = compute_taxes(params, state, status, acc);
+            taxes = compute_taxes(params, state, status, payroll, acc);
             acc.cliffs = self.cliff_costs(year, &taxes);
         }
         let residual = acc.expenses + acc.employee + taxes.total + acc.medicare + acc.cliffs
@@ -217,9 +218,9 @@ fn compute_taxes(
     params: &TaxParams,
     state: Option<&StateParams>,
     status: FilingStatus,
+    payroll: Payroll,
     acc: &YearAcc,
 ) -> Taxes {
-    let payroll = tax::payroll(params, status, &acc.payroll);
     let ordinary_income = acc.ordinary() - payroll.deduction;
     let before = ordinary_income + acc.gains;
     let ss_before = tax::taxable_social_security(params, status, before, acc.ss_gross);

@@ -35,6 +35,12 @@ total_income: number,
  */
 pretax: number, 
 /**
+ * What each person's Social Security earnings record gained in the
+ * year - covered wages and the taxed share of self-employment
+ * earnings, net of what left them before tax - by person id, nominal.
+ */
+covered: { [key in string]: number }, 
+/**
  * Spending for the year.
  */
 expenses: number, 

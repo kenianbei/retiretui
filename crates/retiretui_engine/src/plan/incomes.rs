@@ -151,19 +151,6 @@ impl Income {
         self.kind == IncomeKind::SocialSecurity && self.amount.is_none()
     }
 
-    /// What `paid` of the income in a year, after what left it before tax,
-    /// adds to its owner's covered earnings: a salary's, where the job pays
-    /// into Social Security; `self_employment_share` of net
-    /// self-employment earnings; nothing from any other income.
-    #[must_use]
-    pub fn covered_earnings(&self, paid: Dollars, self_employment_share: f64) -> Dollars {
-        match self.kind {
-            IncomeKind::Salary if self.social_security => paid,
-            IncomeKind::SelfEmployment => (paid as f64 * self_employment_share).round() as Dollars,
-            _ => 0,
-        }
-    }
-
     /// Whether the income is `person`'s Social Security benefit.
     #[must_use]
     pub fn is_benefit_of(&self, person: &str) -> bool {

@@ -5,7 +5,7 @@
 use std::collections::BTreeMap;
 
 use super::claims::{Claim, computed_income};
-use crate::params::{Inflation, TaxTables};
+use crate::params::TaxTables;
 use crate::plan::{Dollars, Income, Person, Plan};
 use crate::project::benefit_params;
 use crate::project::{deflate, horizon_year, project};
@@ -107,27 +107,13 @@ pub fn career_at_salary(
     Ok(career)
 }
 
-/// What the plan's first year pays `person` in covered earnings, today's
+/// What the plan's first year puts on `person`'s earnings record, today's
 /// dollars.
 fn salary_in_start_year(plan: &Plan, tables: &TaxTables, person: &str) -> Dollars {
     let projection = project(plan, tables);
     let Some(first) = projection.years.first() else {
         return 0;
     };
-    let inflation = Inflation::constant(plan.plan.inflation);
-    let share = tables
-        .params_for(first.year, &inflation)
-        .payroll
-        .self_employment_share;
-    let covered = |income: &Income| {
-        let paid = *first.income.get(&income.id)? - income.pretax.unwrap_or(0);
-        Some(income.covered_earnings(paid, share))
-    };
-    let nominal: Dollars = plan
-        .income
-        .iter()
-        .filter(|income| income.owner == person)
-        .filter_map(covered)
-        .sum();
+    let nominal = first.covered.get(person).copied().unwrap_or(0);
     deflate(nominal, first.deflator)
 }
