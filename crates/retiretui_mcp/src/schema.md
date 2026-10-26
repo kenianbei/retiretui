@@ -367,9 +367,9 @@ several - a deferral and a match, or a second stream from a later year.
 - `to` (required) - account id.
 - `by` - `"employee"` (default; out of cash flow, deducted where the kind defers
   tax), `"employer"` (landing in the account directly), or `"after-tax"` (the
-  employee's after-tax money into a 401(k) or 403(b), kept as basis and filled
-  last into the plan's yearly cap). Employer contributions are valid on employer
-  plans and HSAs; SEP IRA takes employer only.
+  employee's after-tax money into a 401(k), 403(b) or 414(k), kept as basis and
+  filled last into the plan's yearly cap). Employer contributions are valid on
+  employer plans and HSAs; SEP IRA takes employer only.
 - The amount, stated one way: `amount` (annual today's dollars, escalated by
   `cola`); `rate` with `of` (a share of the named income's gross each year; `of`
   is an income id), optionally with `step = { add = 0.01, up_to = 0.15 }`
