@@ -6,7 +6,7 @@ use retiretui_engine::plan::{AccountKind, FilingStatus};
 use retiretui_engine::project::ContributionNote;
 use retiretui_engine::tax;
 
-use common::{contribution, head, issues, params_2026, run};
+use common::{born_in, contribution, drawn, head, params_2026, run};
 
 /// The 2026 limit for a single person under fifty, as the table has it.
 fn limit_2026(kind: AccountKind) -> i64 {
@@ -171,24 +171,9 @@ fn after_tax_money_fills_what_the_cap_leaves_and_comes_back_untaxed() {
 
 /// A retiree's 414(k) paid an employer share and an after-tax self-pay of a
 /// last salary, rolled to an IRA the year after, which an expense then
-/// draws on - the swept surplus is never drained; nothing grows, so every
-/// figure is the contributions'.
+/// draws on before the swept surplus; nothing grows, so every figure is
+/// the contributions'.
 const IAP_ROLLED: &str = r#"
-schema = 1
-
-[plan]
-start_year = 2026
-horizon_age = 70
-inflation = 0.025
-withdrawal_order = ["deferred"]
-
-[household]
-filing = "single"
-
-[[household.people]]
-id = "me"
-birth = 1960-06-15
-
 [[accounts]]
 id = "cash"
 kind = "cash"
@@ -200,27 +185,24 @@ id = "ira"
 kind = "ira"
 owner = "me"
 balance = 0
-expected_return = 0.0
+drain_priority = 0
 
 [[accounts]]
 id = "iap"
 kind = "414k"
 owner = "me"
 balance = 0
-expected_return = 0.0
 
 [[income]]
 id = "pay"
 kind = "salary"
 owner = "me"
 amount = 100000
-cola = false
 end = { date = 2026-12-31 }
 
 [[expenses]]
 id = "living"
 amount = 6000
-cola = false
 
 [[transfers]]
 id = "rollover"
@@ -247,10 +229,8 @@ of = "pay"
 
 #[test]
 fn a_414k_takes_after_tax_money_as_basis_that_comes_back_pro_rata() {
-    let text = format!("{IAP_ROLLED}{IAP_SELF_PAY}");
-    assert_eq!(issues(&text), []);
-    let with = run(&text);
-    let without = run(IAP_ROLLED);
+    let with = run(&born_in(1960, &format!("{IAP_ROLLED}{IAP_SELF_PAY}")));
+    let without = run(&born_in(1960, IAP_ROLLED));
     let (yours, theirs, notes) = contribution(&with, 0, "iap");
     assert_eq!((yours, theirs), (750, 6_000));
     assert_eq!(
@@ -272,9 +252,8 @@ fn a_414k_takes_after_tax_money_as_basis_that_comes_back_pro_rata() {
         "after-tax money is not deducted"
     );
     // 6,000 drawn from 6,750 rolled over, 750 of it basis: 667 untaxed.
-    assert_eq!(with.years[1].withdrawals["ira"], 6_000);
-    assert_eq!(with.years[1].taxes.magi, 6_000 - 667);
-    assert_eq!(without.years[1].taxes.magi, 6_000);
+    assert_eq!(drawn(&with, "ira", 2027), [6_000, 6_000 - 667, 0]);
+    assert_eq!(drawn(&without, "ira", 2027), [6_000, 6_000, 0]);
 }
 
 const IRA_DRAWN: &str = r#"
