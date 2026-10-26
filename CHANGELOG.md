@@ -45,10 +45,35 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   and MCP reads that file too, and exports and rules by path, each export named
   by its path.
 
+- A `self-employment` income kind: net earnings that pay self-employment tax on
+  92.35% of net, Social Security's part up to what the wage base leaves over the
+  owner's wages, half of it deducted from ordinary income, and record that share
+  as covered earnings. It may be `covered` by a workplace plan.
+- A salary may state `pretax`, what the employer takes out before tax - health
+  premiums, an FSA - which reaches neither cash, tax, the FICA base nor the
+  earnings record; the Ledger lists it where the year's money went, and the
+  year's `pretax` reports it. A salary may say `social_security = false` for a
+  non-covered public job: no Social Security tax, Medicare's still, and nothing
+  recorded as covered earnings. The Income form offers both; the mid-career
+  couple example shows a pre-tax deduction.
+- The Tax Tables page lists the year's payroll rates. `[payroll]` in a tax table
+  carries them, the statutory rates where a table leaves it out.
+
 ### Changed
 
+- **Breaking:** every salary pays the employee's payroll tax out of cash -
+  Social Security to the year's wage base, Medicare on all wages, and the
+  Additional Medicare Tax on the household's wages over $200,000 or $250,000 -
+  so a salaried plan's working-year surplus falls by about 7.65% of each salary
+  below the base. It lands as `payroll` in the year's taxes, inside their total,
+  and as a "Payroll" line in the Ledger's Tax pane. A payroll HSA contribution
+  comes off the FICA base and the earnings record; a 401(k) deferral does not.
 - `retiretui_engine`: `Expense` gains `phases`, `ScaledExpense` each phase's
   amount at the ceiling, and `spending_overlay` takes the plan it restates.
+  `Taxes` gains `payroll`, `YearRow` `pretax` and `covered` - what each person's
+  earnings record gained in the year - `Income` `pretax` and `social_security`,
+  `IncomeKind` `SelfEmployment`, and `TaxParams` `payroll`; `tax::payroll` is
+  new.
 
 ## [0.4.1] - 2026-10-09
 

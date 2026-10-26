@@ -165,9 +165,14 @@ disability exceptions.
 
 - `id` (string, required, unique) - what scenarios and triggers name it by.
 - `name` (string, optional) - display name; defaults to the id.
-- `kind` (required) - `"salary"`, `"pension"`, `"annuity"`, `"rental"`,
-  `"social-security"`, `"windfall"` (untaxed one-time), `"other"`. The kind
-  decides tax treatment; social security uses the provisional-income rules.
+- `kind` (required) - `"salary"`, `"self-employment"`, `"pension"`, `"annuity"`,
+  `"rental"`, `"social-security"`, `"windfall"` (untaxed one-time), `"other"`.
+  The kind decides tax treatment; social security uses the provisional-income
+  rules. A `self-employment` amount is net earnings after business expenses: it
+  pays self-employment tax - twice the employee's payroll rates on 92.35% of
+  net, Social Security's part up to what the wage base leaves over the owner's
+  wages - half of which comes off ordinary income, and 92.35% of net is recorded
+  as covered earnings.
 - `owner` (person id, required).
 - `amount` (dollars) - annual today's dollars unless `cola_from` says its first
   year's; required for every kind but `social-security`, where it is the annual
@@ -189,9 +194,22 @@ disability exceptions.
   the COLA SSA adds each year from the owner's age-62 year, before and after the
   claim, for every year SSA has not yet published a COLA for.
 - `cola_from` (see escalation).
-- `covered` (bool, default false, `salary` only) - the job's workplace plan
-  covers the owner in every year the salary pays, contributing or not: a pension
-  plan, say. It decides whether a traditional IRA contribution is deductible.
+- `covered` (bool, default false, `salary` and `self-employment` only) - a
+  workplace plan covers the owner in every year the income pays, contributing or
+  not: a pension plan, say, or a solo 401(k). It decides whether a traditional
+  IRA contribution is deductible.
+- `pretax` (dollars, `salary` only, at most `amount`) - what the employer takes
+  out before tax each year: health premiums, a flexible spending account. In the
+  dollars `amount` is stated in, growing as it does. It reaches neither cash nor
+  any tax and is not recorded as covered earnings; the year reports it as
+  `pretax`.
+- `social_security` (bool, default true, `salary` only) - whether the job pays
+  into Social Security. A salary pays the employee's payroll tax out of cash:
+  Social Security to the year's wage base, Medicare on all of it, and the
+  Additional Medicare Tax on the household's wages over the statutory threshold.
+  One that pays into no Social Security - a non-covered public employee's - pays
+  Medicare's alone and is not recorded as covered earnings for a computed
+  benefit.
 
 ## [[expenses]]
 

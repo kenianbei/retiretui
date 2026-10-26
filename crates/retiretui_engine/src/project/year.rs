@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use crate::params::{Source, TaxTables};
 use crate::plan::{Account, ColaAnchor, ColaSpec, Dollars, Income, Plan, Span, TreatmentClass};
-use crate::tax::PersonIncome;
+use crate::tax::{Earnings, PersonIncome};
 
 use super::benefit::{Derived, first_paid_months};
 use super::collect::{default_cliff_end, seed_magi_lookback};
@@ -59,6 +59,12 @@ pub(super) struct YearAcc {
     pub(super) cash: Dollars,
     /// Each person's taxable ordinary income, in the household's order.
     pub(super) taxed: Vec<PersonIncome>,
+    /// What each person earned that payroll taxes reach, in the same order.
+    pub(super) payroll: Vec<Earnings>,
+    /// What employers took out of salaries before tax.
+    pub(super) pretax: Dollars,
+    /// What each person's earnings record gained this year, by person id.
+    pub(super) covered: BTreeMap<String, Dollars>,
     /// What was paid into tax-deferred accounts and is deducted whatever
     /// the year's income.
     pub(super) deferred: Dollars,
@@ -177,16 +183,18 @@ impl<'a> Simulation<'a> {
                 .iter()
                 .map(|person| PersonIncome::new(person.birth))
                 .collect(),
+            payroll: vec![Earnings::default(); people.len()],
             ..YearAcc::default()
         };
         let snapshot = self.balances.clone();
         self.grow(year, &snapshot, &mut acc);
         self.execute_transfers(year, factor, &mut acc);
         self.take_rmds(year, &params, &snapshot, &mut acc);
-        self.collect_income(year, &mut acc);
+        self.collect_income(year, &params, &mut acc);
         self.collect_expenses(year, &mut acc);
         self.collect_medicare(year, &params, &mut acc);
         self.collect_contributions(year, &params, &mut acc);
+        acc.covered = self.record_covered(year, &acc.payroll);
         self.execute_conversions(year, &mut acc);
         let taxes = self.settle_cash(year, &params, &mut acc);
         self.settle_ira_bands(&params, &taxes, &mut acc);
@@ -288,6 +296,8 @@ impl<'a> Simulation<'a> {
             ages,
             deflator: factor,
             total_income: acc.income.values().sum(),
+            pretax: acc.pretax,
+            covered: acc.covered,
             income: acc.income,
             expenses: acc.expenses,
             spending: acc.spending,

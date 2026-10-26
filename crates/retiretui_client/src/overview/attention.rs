@@ -301,7 +301,7 @@ start = {{ age = 67, owner = \"me\" }}
     #[test]
     fn an_amount_past_the_likely_is_a_row_at_its_item_and_refuses_nothing() {
         let plan = TEST_PLAN
-            .replace("balance = 200000", "balance = 2000000000")
+            .replace("balance = 300000", "balance = 2000000000")
             .replace("amount = 60000", "amount = 10000000");
         let projected = projected_from(&plan);
         assert_eq!(projected.plan.validate(), []);
@@ -340,7 +340,7 @@ start = {{ age = 67, owner = \"me\" }}
 
     #[test]
     fn each_issue_is_a_row_at_its_item() {
-        let plan = TEST_PLAN.replace("balance = 200000", "balance = -1");
+        let plan = TEST_PLAN.replace("balance = 300000", "balance = -1");
         let plan = Plan::from_toml_str(&plan).unwrap();
         let draft = Draft::validated(plan, &TaxTables::embedded(), false);
         let rows = issue_rows(&draft);

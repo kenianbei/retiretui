@@ -141,7 +141,7 @@ impl Sums {
 /// not state is other.
 fn income_kind(plan: &Plan, id: &str) -> usize {
     match plan.income_source(id).map(|income| income.kind) {
-        Some(IncomeKind::Salary) => 0,
+        Some(kind) if kind.is_earned() => 0,
         Some(IncomeKind::SocialSecurity) => 1,
         Some(IncomeKind::Pension) => 2,
         _ => 3,

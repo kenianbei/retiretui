@@ -6,12 +6,12 @@ expression: composed_frame(app)
 │1 Overview││2 Ledger││3 Compare││4 Tools││5 Plan│                                                                                                                                          full.toml ● 
 ╯          ╰┴────────┴┴─────────┴┴───────┴┴──────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭ Money lasts ───────────────────────────────────╮╭ Success ───────────────────────────────────────╮╭ Lowest after retiring ─────────────────────────╮╭ Ends with ─────────────────────────────────────╮
-│ Never short                                    ││ 100% of 20 markets                             ││ $1.89M in 2055                                 ││ $2.17M                                         │
+│ Never short                                    ││ 100% of 20 markets                             ││ $1.66M in 2055                                 ││ $1.79M                                         │
 ╰────────────────────────────────────────────────╯╰────────────────────────────────────────────────╯╰────────────────────────────────────────────────╯╰────────────────────────────────────────────────╯
 ╭ Milestones ─────────────────────────────────────────────────────╮╭ Needs attention ───────────────────────────────────────────────╮╭ Could do better ────────────────────────────────────────────────╮
-│▏ 2032 inheritance arrives                                      ▲││▏ Fails from a 1968 start · 23 of 155 fail                      ││▏ jordan: convert to 22%, ends +$58k                             │
-│  2037 retire                                                   █││                                                                ││  Withdrawal order as planned is best                            │
-│  2037 db-pension starts                                        █││                                                                ││  Could spend $11k more a year in 90% of markets                 │
+│▏ 2032 inheritance arrives                                      ▲││▏ Fails from a 1968 start · 28 of 155 fail                      ││▏ jordan: convert to 10%, ends +$15k                             │
+│  2037 retire                                                   █││                                                                ││  Withdraw in the order taxable, HSA, deferred, Roth: ends +$44k │
+│  2037 db-pension starts                                        █││                                                                ││  Could spend $7,331 more a year in 90% of markets               │
 │  2037 401k-deferral ends                                       █││                                                                ││                                                                 │
 │  2037 401k-match ends                                          █││                                                                ││                                                                 │
 │  2037 hsa-deferral ends                                        █││                                                                ││                                                                 │
@@ -22,15 +22,15 @@ expression: composed_frame(app)
 ╭ Income against taxes · today's dollars ───────────────────────────────────────────────────────────────────────────────╮╭ Over the plan · today's dollars ────────────────────────────────────────────╮
 │$263k│                          ┊                                                                                      ││▏ Income       $3.62M                                                        │
 │     │              ⡄           ┊                                                                                      ││    salary 46% · Social Security 36% · pension 16% · other 3%                │
-│     │             ⢀⢇           ┊                                                                                      ││  Withdrawals  $2.37M                                                        │
-│     │             ⢸⢸           ┊                                                                                      ││    taxable 28% · pre-tax 72%                                                │
+│     │             ⢀⢇           ┊                                                                                      ││  Withdrawals  $2.34M                                                        │
+│     │             ⢸⢸           ┊                                                                                      ││    taxable 24% · pre-tax 75% · Roth 1%                                      │
 │     │             ⢸⢸           ┊                                                                                      ││  Spending     $4.68M                                                        │
 │     │             ⡎⠈⡆          ┊                                                                                      ││    flexible 100%                                                            │
-│     │             ⡇ ⡇          ┊                                                                                      ││  Taxes        $661k                                                         │
-│     │            ⢀⠇ ⢇          ┊                                                                                      ││    federal $392k · state $269k · most in 2047                               │
+│     │             ⡇ ⡇          ┊                                                                                      ││  Taxes        $802k                                                         │
+│     │            ⢀⠇ ⢇          ┊                                                                                      ││    federal $530k · state $272k · most in 2035                               │
 │     │            ⢸  ⢸          ┊                                                                                      ││  Converted    $330k                                                         │
 │     │            ⢸  ⢸          ┊                                                                                      ││    to Roth, 2037–2047                                                       │
-│     │            ⡇   ⡇         ┊                                                                                      ││  Required     $1.27M                                                        │
+│     │            ⡇   ⡇         ┊                                                                                      ││  Required     $747k                                                         │
 │     │            ⡇   ⡇         ┊                                                                                      ││    distributions from 2050                                                  │
 │     │           ⢠⠃   ⢣         ┊                                                                                      ││  Medicare     $0                                                            │
 │     │⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠼    ⠸⠤⠤⠤⠤⠤⠤⢤  ┊                                                                                      ││                                                                             │
@@ -48,10 +48,10 @@ expression: composed_frame(app)
 │     │                         ⢸┊           ⢀⠎               ⠈⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⢄⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀││                                                                             │
 │     │                         ⢸┊          ⢠⠃                                                                          ││                                                                             │
 │     │                         ⠘⡄         ⢠⠃                                                                           │╰─────────────────────────────────────────────────────────────────────────────╯
-│     │                          ⡇        ⢠⠃         ⢀⣀⣀⡀                                                               │╭ Rests on ───────────────────────────────────────────────────────────────────╮
-│     │⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⡀ ⠉⠉⠉⠉⠉⠉⠒⠒⠒⠃       ⢀⠔⠊⠁  ⠈⠢⡀                                                             ││▏ Runs through   2074 · to age 95                                            │
-│     │                        ⠱⡀┊   ⣀⣀⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠔⠁       ⠈⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠒⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠢⠤││  Inflation      2.5%                                                        │
-│0    │                         ⠱⣀⠤⠒⠉                                                                                   ││  Returns        stocks 6%, bonds 4%, cash 2.5%                              │
+│     │⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠒⠲⡀ ⡇        ⢠⠃    ⢀⣀⣀⣀⣀⣀⣀⣀⡀                                                               │╭ Rests on ───────────────────────────────────────────────────────────────────╮
+│     │                        ⢣ ⠉⠉⠉⠉⠉⠉⠒⠒⠒⠃   ⡔⠉⠁       ⠈⠢⡀                                                             ││▏ Runs through   2074 · to age 95                                            │
+│     │                        ⠈⢆┊ ⣀⡠⠤⠤⠤⠤⠤⠤⠤⠤⠊            ⠈⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠒⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⠤⣀ ││  Inflation      2.5%                                                        │
+│0    │                         ⠘⡤⠊                                                                                    ⠉││  Returns        stocks 6%, bonds 4%, cash 2.5%                              │
 │     └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────││  Filing status  Married filing jointly                                      │
 │  2026                     retire 2037                      2050                                                   2074││  Lives in       Oregon                                                      │
 │── Income  ── Taxes                                                                                                    ││  Success is     Never running short                                         │

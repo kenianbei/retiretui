@@ -16,7 +16,9 @@ mod states;
 pub use index::Inflation;
 pub(crate) use index::scale;
 use index::{inflate, inflate_state, step_rates};
-pub use limits::{ContributionLimits, EarlyWithdrawal, IrmaaTier, PhaseOut, RmdDivisor, RmdTable};
+pub use limits::{
+    ContributionLimits, EarlyWithdrawal, IrmaaTier, PayrollParams, PhaseOut, RmdDivisor, RmdTable,
+};
 pub use states::{
     Exclusion, ExemptionCredit, FederalTaxSubtraction, GainsExcise, Source, StateParams,
 };
@@ -254,6 +256,9 @@ pub struct TaxParams {
     pub early_withdrawal: EarlyWithdrawal,
     /// Contribution limits.
     pub limits: ContributionLimits,
+    /// Payroll tax rates; the statutory ones where a table leaves them out.
+    #[serde(default)]
+    pub payroll: PayrollParams,
     /// The RMD table.
     pub rmd: RmdTable,
     /// IRMAA surcharge tiers, ascending by threshold; empty disables

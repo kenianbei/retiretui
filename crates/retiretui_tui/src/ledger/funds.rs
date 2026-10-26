@@ -202,7 +202,7 @@ mod tests {
     fn each_pane_is_one_list_over_what_its_kinds_come_to_and_all_of_it() {
         let projected = projected_from(FULL);
         let asked = Asked {
-            year: 2045,
+            year: 2043,
             is_nominal: true,
             run: None,
         };

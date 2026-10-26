@@ -95,6 +95,7 @@ pub(crate) const fn cola_anchor(anchor: ColaAnchor) -> &'static str {
 pub(crate) const fn income_kind(kind: IncomeKind) -> &'static str {
     match kind {
         IncomeKind::Salary => "Salary",
+        IncomeKind::SelfEmployment => "Self-employment",
         IncomeKind::Pension => "Pension",
         IncomeKind::Annuity => "Annuity",
         IncomeKind::Rental => "Rental",

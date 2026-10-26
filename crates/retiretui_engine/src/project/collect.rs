@@ -3,14 +3,14 @@
 
 use crate::params::{Source, TaxParams};
 use crate::plan::{Cliff, Dollars, IncomeKind, Plan};
-use crate::tax;
+use crate::tax::{self, Earnings};
 
 use super::resolve::{self, Resolver};
 use super::year::{Simulation, YearAcc};
 use super::{Taxes, scale};
 
 impl Simulation<'_> {
-    pub(super) fn collect_income(&mut self, year: i16, acc: &mut YearAcc) {
+    pub(super) fn collect_income(&mut self, year: i16, params: &TaxParams, acc: &mut YearAcc) {
         let plan = self.plan;
         for (i, income) in plan.income.iter().enumerate() {
             if !self.item_active(year, income.span()) {
@@ -20,27 +20,46 @@ impl Simulation<'_> {
                 Some(amount) => amount,
                 None => self.derived_benefit(i, year),
             };
-            let escalated = scale(amount, self.income_factor(income, year));
+            let factor = self.income_factor(income, year);
+            let escalated = scale(amount, factor);
             let nominal = self.social_security_paid(i, year, escalated);
             if nominal <= 0 {
                 continue;
             }
             *acc.income.entry(income.id.clone()).or_default() += nominal;
             acc.cash += nominal;
-            let source = match income.kind {
+            let owner = self.person_at(&income.owner);
+            let (source, taxed) = match income.kind {
                 IncomeKind::SocialSecurity => {
                     acc.ss_gross += nominal;
                     continue;
                 }
                 IncomeKind::Windfall => continue,
                 IncomeKind::Salary => {
-                    self.record_covered(&income.owner, year, nominal);
-                    Source::Wages
+                    let pretax = scale(income.pretax.unwrap_or(0), factor);
+                    acc.cash -= pretax;
+                    acc.pretax += pretax;
+                    let paid = nominal - pretax;
+                    acc.payroll[owner] += Earnings {
+                        covered: if income.social_security { paid } else { 0 },
+                        medicare: paid,
+                        self_employed: 0,
+                    };
+                    (Source::Wages, paid)
                 }
-                IncomeKind::Pension => Source::Pension,
-                IncomeKind::Annuity | IncomeKind::Rental | IncomeKind::Other => Source::Other,
+                IncomeKind::SelfEmployment => {
+                    acc.payroll[owner] += Earnings {
+                        self_employed: scale(nominal, params.payroll.self_employment_share),
+                        ..Earnings::default()
+                    };
+                    (Source::Other, nominal)
+                }
+                IncomeKind::Pension => (Source::Pension, nominal),
+                IncomeKind::Annuity | IncomeKind::Rental | IncomeKind::Other => {
+                    (Source::Other, nominal)
+                }
             };
-            acc.tax(self.person_at(&income.owner), source, nominal);
+            acc.tax(owner, source, taxed);
         }
     }
 

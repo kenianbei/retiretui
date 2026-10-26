@@ -37,6 +37,17 @@ married-joint = 98900
 single = 545500
 married-joint = 613700
 
+[payroll]
+oasdi = 0.062
+medicare = 0.0145
+additional-medicare = 0.009
+self-employment-share = 0.9235
+
+# Statutory, not inflation-indexed. IRC §3101(b)(2).
+[payroll.additional-medicare-over]
+single = 200000
+married-joint = 250000
+
 # Statutory, not inflation-indexed.
 [social-security.provisional-base]
 single = 25000

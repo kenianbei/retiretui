@@ -238,11 +238,11 @@ fn a_held_constraint_is_searched_under_and_kept() {
         env!("CARGO_MANIFEST_DIR"),
         "/../retiretui_engine/tests/fixtures/full.toml"
     );
-    let mut app = searched_app(
-        scratch_plan(),
-        &std::fs::read_to_string(fixture).unwrap(),
-        WIDE,
-    );
+    // A deferred balance large enough that a ladder beats the plan's.
+    let deferred = std::fs::read_to_string(fixture)
+        .unwrap()
+        .replace("balance = 450000", "balance = 1500000");
+    let mut app = searched_app(scratch_plan(), &deferred, WIDE);
     let current = rank_key(&projected(&app).projection);
     let (options, _) = options_of(&app, ROTH);
     let tables = &app.world().resource::<Session>().tables;

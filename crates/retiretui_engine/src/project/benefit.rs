@@ -11,20 +11,30 @@ use crate::tax;
 use super::resolve::trigger_month;
 use super::year::Simulation;
 use super::{plan_inflation, scale};
+use crate::tax::Earnings;
 
 impl Simulation<'_> {
-    /// Records a year's salary as covered earnings of its owner, nominal
-    /// as SSA keeps a record.
-    pub(super) fn record_covered(&mut self, owner: &str, year: i16, nominal: Dollars) {
-        let Some(person) = self.plan.person(owner) else {
-            return;
-        };
-        *self
-            .covered
-            .entry(person.id.as_str())
-            .or_default()
-            .entry(year)
-            .or_default() += nominal;
+    /// Records what each person earned in `year` that Social Security
+    /// covers on their record, nominal as SSA keeps one, and says what it
+    /// was by person id.
+    pub(super) fn record_covered(
+        &mut self,
+        year: i16,
+        earnings: &[Earnings],
+    ) -> BTreeMap<String, Dollars> {
+        let mut by_person = BTreeMap::new();
+        for (person, earned) in self.plan.household.people.iter().zip(earnings) {
+            let covered = earned.covered + earned.self_employed;
+            if covered <= 0 {
+                continue;
+            }
+            self.covered
+                .entry(person.id.as_str())
+                .or_default()
+                .insert(year, covered);
+            by_person.insert(person.id.clone(), covered);
+        }
+        by_person
     }
 
     /// What a Social Security income pays of `nominal` in `year`: in the

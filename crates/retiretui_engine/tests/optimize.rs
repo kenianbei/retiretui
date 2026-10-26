@@ -524,7 +524,9 @@ fn a_sweep_is_ranked_by_what_the_household_ends_with_not_by_rate() {
     let mut into_roth = ladder_options();
     into_roth.sources = Vec::new();
     into_roth.destination = "roth-ira".to_owned();
-    let plan = plan_from(common::FULL);
+    // A deferred balance large enough that converting at 22% beats both
+    // less and more.
+    let plan = plan_from(&common::FULL.replace("balance = 450000", "balance = 1500000"));
     let sweep = sweep(&plan, &into_roth);
     let keys: Vec<_> = sweep
         .brackets

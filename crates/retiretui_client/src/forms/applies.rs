@@ -64,6 +64,13 @@ pub(crate) fn can_be_covered(item: &Table) -> bool {
     kind_of(item).is_some_and(IncomeKind::can_be_covered)
 }
 
+/// Whether the income is a salary: paid by an employer, who may take
+/// deductions out before tax and may pay into no Social Security.
+#[must_use]
+pub(crate) fn is_salary(item: &Table) -> bool {
+    kind_of(item) == Some(IncomeKind::Salary)
+}
+
 /// Whether the income may state its amount as its first year's.
 #[must_use]
 pub(crate) fn can_grow_from_its_start(item: &Table) -> bool {

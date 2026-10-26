@@ -32,6 +32,7 @@ pub(super) fn tax_lines(row: &YearRow, is_nominal: bool) -> Vec<DetailLine> {
     let taxes = &row.taxes;
     let kinds = [
         ("Ordinary", taxes.ordinary),
+        ("Payroll", taxes.payroll),
         ("State", taxes.state),
         ("Capital gains", taxes.ltcg),
         ("Penalties", taxes.penalty),

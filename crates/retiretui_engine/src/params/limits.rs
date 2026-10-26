@@ -8,6 +8,17 @@ use crate::plan::{Dollars, FilingStatus};
 
 /// IRC §223(f)(4).
 const STATUTORY_HSA_PENALTY: f64 = 0.20;
+/// IRC §3101(a) and §3101(b)(1): the employee's shares.
+const STATUTORY_OASDI: f64 = 0.062;
+const STATUTORY_MEDICARE: f64 = 0.0145;
+/// IRC §3101(b)(2), its thresholds not indexed.
+const STATUTORY_ADDITIONAL_MEDICARE: f64 = 0.009;
+const STATUTORY_ADDITIONAL_MEDICARE_OVER: PerStatus<Dollars> = PerStatus {
+    single: 200_000,
+    married_joint: 250_000,
+};
+/// IRC §1402(a)(12).
+const STATUTORY_SELF_EMPLOYMENT_SHARE: f64 = 0.9235;
 
 fn statutory_hsa_penalty() -> f64 {
     STATUTORY_HSA_PENALTY
@@ -24,6 +35,39 @@ pub struct EarlyWithdrawal {
     /// spending; the statutory rate where a table leaves it out.
     #[serde(default = "statutory_hsa_penalty")]
     pub hsa_penalty: f64,
+}
+
+/// The payroll taxes a year's earned income pays: the employee's shares,
+/// which self-employment pays twice over; the statutory values where a
+/// table leaves the section out.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+pub struct PayrollParams {
+    /// The Social Security rate on wages up to the year's wage base.
+    pub oasdi: f64,
+    /// The Medicare rate on every wage.
+    pub medicare: f64,
+    /// The Additional Medicare Tax rate over `additional_medicare_over`.
+    pub additional_medicare: f64,
+    /// The household's wages above which the Additional Medicare Tax is
+    /// paid, by filing status; statutory, not inflation-indexed.
+    pub additional_medicare_over: PerStatus<Dollars>,
+    /// The share of net self-employment earnings the self-employment tax
+    /// reaches and the earnings record keeps.
+    pub self_employment_share: f64,
+}
+
+impl Default for PayrollParams {
+    fn default() -> Self {
+        Self {
+            oasdi: STATUTORY_OASDI,
+            medicare: STATUTORY_MEDICARE,
+            additional_medicare: STATUTORY_ADDITIONAL_MEDICARE,
+            additional_medicare_over: STATUTORY_ADDITIONAL_MEDICARE_OVER,
+            self_employment_share: STATUTORY_SELF_EMPLOYMENT_SHARE,
+        }
+    }
 }
 
 /// One row of the RMD Uniform Lifetime Table.

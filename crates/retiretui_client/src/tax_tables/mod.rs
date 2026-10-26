@@ -121,6 +121,7 @@ pub fn year_tables(plan: &Plan, tables: &TaxTables, view: &TablesView) -> YearTa
         .unwrap_or(plan.household.filing);
     let state = (view.state.clone()).or_else(|| own_state.map(str::to_owned));
     let mut sections = federal(&params, status);
+    sections.push(payroll(&params, status));
     sections.push(social_security(
         &params,
         benefit_params(plan, tables).as_ref(),
@@ -285,6 +286,30 @@ fn limits(params: &TaxParams, status: FilingStatus) -> Vec<Vec<String>> {
         .spouse_ira_deduction_phase_out(status)
         .map(|band| labelled(SPOUSE_BAND, phase_out(band)));
     dollars.into_iter().chain(bands).chain(spouse).collect()
+}
+
+fn payroll(params: &TaxParams, status: FilingStatus) -> TaxSection {
+    let rates = &params.payroll;
+    let rows = vec![
+        labelled(
+            "Social Security on wages up to the wage base",
+            rate(rates.oasdi),
+        ),
+        labelled("Medicare on all wages", rate(rates.medicare)),
+        labelled(
+            "Additional Medicare on wages over",
+            format!(
+                "{} at {}",
+                money(rates.additional_medicare_over.get(status)),
+                rate(rates.additional_medicare)
+            ),
+        ),
+        labelled(
+            "Self-employment: both shares on this part of net",
+            rate(rates.self_employment_share),
+        ),
+    ];
+    section("Payroll taxes", &LABELLED_COLUMNS, rows)
 }
 
 fn social_security(

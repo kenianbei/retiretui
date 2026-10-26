@@ -3,7 +3,6 @@
 //! answers, the share of markets survived and what could do better, is
 //! drawn beside it.
 
-use retiretui_engine::plan::IncomeKind;
 use retiretui_engine::project::YearRow;
 
 use serde::{Deserialize, Serialize};
@@ -131,7 +130,7 @@ fn low_point(projected: &Projected, nominal: bool) -> String {
     let years = &projected.projection.years;
     let salaries = projected.plan.income.iter();
     let salaries: Vec<&str> = salaries
-        .filter(|income| income.kind == IncomeKind::Salary)
+        .filter(|income| income.kind.is_earned())
         .map(|income| income.id.as_str())
         .collect();
     let last_paid = salaries

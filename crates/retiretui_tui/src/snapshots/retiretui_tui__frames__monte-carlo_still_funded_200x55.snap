@@ -5,15 +5,15 @@ expression: composed_frame(app)
 ╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                                                                                                      
 │1 Overview││2 Ledger││3 Compare││4 Tools││5 Plan│                                                                                                                                          full.toml ● 
 ┴──────────┴┴────────┴┴─────────┴╯       ╰┴──────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-╭ Tools ─────────────╮╭ Assumptions ───────────────────────────────────╮╭ Markets · Money lasts in 99.7% of 1,000 markets ─────────────────────────────────────────────────────────────────────────────╮
+╭ Tools ─────────────╮╭ Assumptions ───────────────────────────────────╮╭ Markets · Money lasts in 98.9% of 1,000 markets ─────────────────────────────────────────────────────────────────────────────╮
 │  Roth Conversions  ││                                                ││  Markets         Ends with  Short in                                                                                         │
-│  SSA Benefits      ││▌ Money lasts          99.7% of 1,000 markets   ││  As planned         $2.17M     never                                                                                         │
-│  Withdrawal Order  ││  Counts as a success  Never running short      ││▏ 90th percentile    $3.49M     never                                                                                         │
-│▏ Monte Carlo       ││  Markets drawn from   Your return assumptions  ││  75th percentile    $2.81M     never                                                                                         │
-│  Historical        ││  Trials               1,000 · seed 42          ││  50th percentile    $2.15M     never                                                                                         │
-│  Spending Ceiling  ││  Stocks               6% ± 16%                 ││  25th percentile    $1.49M     never                                                                                         │
-│  Spending Estimate ││  Bonds                4% ± 6%                  ││  10th percentile     $917k     never                                                                                         │
-│  Tax Tables        ││  Cash                 2.5% ± 1%                ││  Worst                  $0 2063 (88)                                                                                         │
+│  SSA Benefits      ││▌ Money lasts          98.9% of 1,000 markets   ││  As planned         $1.79M     never                                                                                         │
+│  Withdrawal Order  ││  Counts as a success  Never running short      ││▏ 90th percentile    $3.20M     never                                                                                         │
+│▏ Monte Carlo       ││  Markets drawn from   Your return assumptions  ││  75th percentile    $2.54M     never                                                                                         │
+│  Historical        ││  Trials               1,000 · seed 42          ││  50th percentile    $1.80M     never                                                                                         │
+│  Spending Ceiling  ││  Stocks               6% ± 16%                 ││  25th percentile    $1.17M     never                                                                                         │
+│  Spending Estimate ││  Bonds                4% ± 6%                  ││  10th percentile     $658k     never                                                                                         │
+│  Tax Tables        ││  Cash                 2.5% ± 1%                ││  Worst                  $0 2059 (84)                                                                                         │
 │                    ││  Inflation            2.5% ± 1.5%              │╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 │                    ││  Fixed return         cash, brokerage, fid-401 │╭ Still Funded · share of runs ────────────────────────────────────────────────────────────────────────────────────────────────╮
 │                    ││                                                ││100%│⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉┌────────────┐│
