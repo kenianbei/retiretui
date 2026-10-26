@@ -36,7 +36,7 @@ balance = 10000
 id = "k"
 kind = "401k"
 owner = "me"
-balance = 200000
+balance = 300000
 expected_return = 0.05
 
 [[income]]

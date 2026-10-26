@@ -228,7 +228,7 @@ fn the_ledger_tables_years_over_the_cursor_year_in_full() {
         !frame.contains("Unfunded"),
         "nothing unfunded, so no line for it: {frame}"
     );
-    assert!(frame.contains("+$26,830 surplus"), "{frame}");
+    assert!(frame.contains("+$19,180 surplus"), "{frame}");
     press_key(&mut app, KeyCode::Down);
     app.update();
     assert_eq!(

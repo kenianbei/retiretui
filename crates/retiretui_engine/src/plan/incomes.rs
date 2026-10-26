@@ -113,6 +113,15 @@ pub struct Income {
     /// contribution is deductible.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub covered: bool,
+    /// For a `salary`: whether the job pays into Social Security. One that
+    /// does not - a non-covered public employee's - pays no Social Security
+    /// tax, Medicare's still, and is not recorded as covered earnings.
+    #[serde(default = "yes", skip_serializing_if = "Clone::clone")]
+    pub social_security: bool,
+}
+
+fn yes() -> bool {
+    true
 }
 
 impl Income {
@@ -121,6 +130,17 @@ impl Income {
     #[must_use]
     pub fn is_derived(&self) -> bool {
         self.kind == IncomeKind::SocialSecurity && self.amount.is_none()
+    }
+
+    /// What `paid` of the income in a year adds to its owner's covered
+    /// earnings: a salary's, where the job pays into Social Security;
+    /// nothing from any other income.
+    #[must_use]
+    pub fn covered_earnings(&self, paid: Dollars) -> Dollars {
+        match self.kind {
+            IncomeKind::Salary if self.social_security => paid,
+            _ => 0,
+        }
     }
 
     /// Whether the income is `person`'s Social Security benefit.

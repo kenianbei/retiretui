@@ -34,7 +34,13 @@ impl Simulation<'_> {
                 }
                 IncomeKind::Windfall => continue,
                 IncomeKind::Salary => {
-                    self.record_covered(&income.owner, year, nominal);
+                    let covered = income.covered_earnings(nominal);
+                    if covered > 0 {
+                        self.record_covered(&income.owner, year, covered);
+                    }
+                    let earned = &mut acc.payroll[self.person_at(&income.owner)];
+                    earned.covered += covered;
+                    earned.medicare += nominal;
                     Source::Wages
                 }
                 IncomeKind::Pension => Source::Pension,

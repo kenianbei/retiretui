@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use crate::params::{Source, TaxTables};
 use crate::plan::{Account, ColaAnchor, ColaSpec, Dollars, Income, Plan, Span, TreatmentClass};
-use crate::tax::PersonIncome;
+use crate::tax::{Earnings, PersonIncome};
 
 use super::benefit::{Derived, first_paid_months};
 use super::collect::{default_cliff_end, seed_magi_lookback};
@@ -59,6 +59,8 @@ pub(super) struct YearAcc {
     pub(super) cash: Dollars,
     /// Each person's taxable ordinary income, in the household's order.
     pub(super) taxed: Vec<PersonIncome>,
+    /// What each person earned that payroll taxes reach, in the same order.
+    pub(super) payroll: Vec<Earnings>,
     /// What was paid into tax-deferred accounts and is deducted whatever
     /// the year's income.
     pub(super) deferred: Dollars,
@@ -177,6 +179,7 @@ impl<'a> Simulation<'a> {
                 .iter()
                 .map(|person| PersonIncome::new(person.birth))
                 .collect(),
+            payroll: vec![Earnings::default(); people.len()],
             ..YearAcc::default()
         };
         let snapshot = self.balances.clone();

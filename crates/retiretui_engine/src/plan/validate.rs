@@ -298,6 +298,12 @@ impl<'a> Checker<'a> {
                     "only a salary makes its owner covered",
                 );
             }
+            if !income.social_security && income.kind != IncomeKind::Salary {
+                self.push(
+                    format!("{path}.social_security"),
+                    "only a salary can pay into no Social Security",
+                );
+            }
             if income.cola_from == ColaAnchor::Start && !income.kind.can_escalate_from_start() {
                 self.push(
                     format!("{path}.cola_from"),

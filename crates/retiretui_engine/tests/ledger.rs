@@ -36,7 +36,9 @@ amount = 50000
     // Taxable 83,900 -> 1,240 + 4,560 + 7,370 = 13,170.
     assert_eq!(first.taxes.ordinary_taxable, 83_900);
     assert_eq!(first.taxes.ordinary, 13_170);
-    assert_eq!(first.surplus, 100_000 - 50_000 - 13_170);
+    // 7.65% of 100,000.
+    assert_eq!(first.taxes.payroll, 7_650);
+    assert_eq!(first.surplus, 100_000 - 50_000 - 13_170 - 7_650);
     assert_eq!(first.balances["cash"], first.surplus);
     assert_eq!(first.unfunded, 0);
 }

@@ -281,6 +281,7 @@ pub(super) fn computed_income(owner: &str) -> Income {
         cola: ColaSpec::default(),
         cola_from: ColaAnchor::default(),
         covered: false,
+        social_security: true,
     }
 }
 

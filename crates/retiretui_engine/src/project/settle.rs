@@ -244,16 +244,18 @@ fn compute_taxes(
         agi: magi,
     };
     let state = state.map_or(0, |state| tax::state_tax(state, status, &income));
+    let payroll = tax::payroll(params, status, &acc.payroll);
     Taxes {
         ordinary,
         ltcg,
         penalty,
         state,
+        payroll,
         taxable_social_security: taxable_ss,
         ordinary_taxable: ordinary_taxable.max(0),
         gains: acc.gains,
         magi,
-        total: federal_tax + state,
+        total: federal_tax + state + payroll,
         ira_deducted: by_band,
     }
 }

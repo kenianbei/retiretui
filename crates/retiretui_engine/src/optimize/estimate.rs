@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 
 use super::claims::{Claim, computed_income};
 use crate::params::TaxTables;
-use crate::plan::{Dollars, IncomeKind, Person, Plan};
+use crate::plan::{Dollars, Income, Person, Plan};
 use crate::project::benefit_params;
 use crate::project::{deflate, horizon_year, project};
 use crate::tax::{self, EARLIEST_CLAIM_AGE, LATEST_CREDIT_AGE, MONTHS_PER_YEAR};
@@ -92,9 +92,13 @@ pub fn career_at_salary(
         .ok_or_else(|| format!("the {start_year} table carries no benefit formula"))?;
     let salary = salary_in_start_year(plan, tables, person);
     if salary <= 0 {
-        return Err(format!(
-            "{person} is paid no salary in {start_year} to fill a career from; import a statement"
-        ));
+        let is_uncovered = |income: &Income| income.owner == person && !income.social_security;
+        let why = if plan.income.iter().any(is_uncovered) {
+            format!("{person}'s salary pays into no Social Security")
+        } else {
+            format!("{person} is paid no salary in {start_year}")
+        };
+        return Err(format!("{why} to fill a career from; import a statement"));
     }
     let career = tax::career_before(&params, owner.birth.year(), salary, start_year);
     if career.is_empty() {
@@ -112,8 +116,8 @@ fn salary_in_start_year(plan: &Plan, tables: &TaxTables, person: &str) -> Dollar
     let nominal: Dollars = plan
         .income
         .iter()
-        .filter(|income| income.kind == IncomeKind::Salary && income.owner == person)
-        .filter_map(|income| first.income.get(&income.id))
+        .filter(|income| income.owner == person)
+        .filter_map(|income| Some(income.covered_earnings(*first.income.get(&income.id)?)))
         .sum();
     deflate(nominal, first.deflator)
 }

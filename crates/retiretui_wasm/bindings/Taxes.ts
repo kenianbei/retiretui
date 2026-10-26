@@ -22,6 +22,11 @@ penalty: number,
  */
 state: number, 
 /**
+ * Payroll tax: Social Security and Medicare on wages, and the
+ * Additional Medicare Tax over its threshold.
+ */
+payroll: number, 
+/**
  * The taxable portion of Social Security benefits (informational).
  */
 taxable_social_security: number, 
@@ -41,6 +46,6 @@ gains: number,
  */
 magi: number, 
 /**
- * Ordinary, gains and state tax plus penalties.
+ * Ordinary, gains, state and payroll tax plus penalties.
  */
 total: number, };

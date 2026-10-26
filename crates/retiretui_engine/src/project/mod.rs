@@ -55,6 +55,9 @@ pub struct Taxes {
     /// What the state lived in that year takes: its income tax and, where
     /// it levies one, its excise on gains.
     pub state: Dollars,
+    /// Payroll tax: Social Security and Medicare on wages, and the
+    /// Additional Medicare Tax over its threshold.
+    pub payroll: Dollars,
     /// The taxable portion of Social Security benefits (informational).
     pub taxable_social_security: Dollars,
     /// Ordinary taxable income after the standard deduction, floored at
@@ -66,7 +69,7 @@ pub struct Taxes {
     /// MAGI proxy - ordinary income plus gains plus taxable Social
     /// Security (informational; drives IRMAA lookback and cliffs).
     pub magi: Dollars,
-    /// Ordinary, gains and state tax plus penalties.
+    /// Ordinary, gains, state and payroll tax plus penalties.
     pub total: Dollars,
     /// What of the year's traditional IRA contributions the MAGI let be
     /// deducted, by the band each phases out over; settled with the taxes,

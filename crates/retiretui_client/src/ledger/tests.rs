@@ -150,8 +150,8 @@ fn every_expense_is_listed_over_what_the_spending_comes_to_by_kind() {
 #[test]
 fn income_and_withdrawals_are_one_list_over_what_each_comes_to() {
     let projected = full();
-    let row = projected.projection.row(2045).unwrap();
-    let lived = year_of(&projected, 2045, true).money_in;
+    let row = projected.projection.row(2043).unwrap();
+    let lived = year_of(&projected, 2043, true).money_in;
     assert_eq!(
         labels(&lived.lines),
         ["db-pension", "ss-jordan", "From brokerage", "From fid-401k"]
@@ -159,8 +159,8 @@ fn income_and_withdrawals_are_one_list_over_what_each_comes_to() {
     assert_eq!(labels(&lived.sums), ["Income", "Withdrawn"]);
     let sums: Vec<Dollars> = lived.sums.iter().map(dollars).collect();
     assert_eq!(sums, [row.total_income, row.total_withdrawals()]);
-    let working = year_of(&projected, 2026, true).money_in;
-    assert_eq!(labels(&working.lines), ["salary"]);
+    let working = year_of(&projected, 2032, true).money_in;
+    assert_eq!(labels(&working.lines), ["inheritance", "salary"]);
     assert_eq!(working.sums, [], "one sum would only repeat the total");
     assert_eq!(working.total.label, "Total");
 }

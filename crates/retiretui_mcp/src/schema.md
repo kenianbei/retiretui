@@ -192,6 +192,13 @@ disability exceptions.
 - `covered` (bool, default false, `salary` only) - the job's workplace plan
   covers the owner in every year the salary pays, contributing or not: a pension
   plan, say. It decides whether a traditional IRA contribution is deductible.
+- `social_security` (bool, default true, `salary` only) - whether the job pays
+  into Social Security. A salary pays the employee's payroll tax out of cash:
+  Social Security to the year's wage base, Medicare on all of it, and the
+  Additional Medicare Tax on the household's wages over the statutory threshold.
+  One that pays into no Social Security - a non-covered public employee's - pays
+  Medicare's alone and is not recorded as covered earnings for a computed
+  benefit.
 
 ## [[expenses]]
 

@@ -255,7 +255,7 @@ fn a_portrait_page_rows_the_money_under_flows_as_tall_as_their_rows() {
         "side by side: {frame}"
     );
     let accounts = 6;
-    let further_moves = 1;
+    let further_moves = 2;
     let header_total_and_borders = 4;
     assert_eq!(
         money[0].0 - flows,
@@ -263,7 +263,7 @@ fn a_portrait_page_rows_the_money_under_flows_as_tall_as_their_rows() {
         "{frame}"
     );
     let lines: Vec<&str> = frame.lines().collect();
-    assert!(lines[money[0].0 - 2].contains("All accounts"), "{frame}");
+    assert!(lines[money[0].0 - 3].contains("All accounts"), "{frame}");
     assert!(
         frame.contains("+$15,000 · 5.0%"),
         "growth beside its rate: {frame}"

@@ -7,14 +7,14 @@ expression: composed_frame(app)
 ┴──────────┴┴────────┴┴─────────┴╯       ╰┴──────┴──────────────────────────────────────────────────────────────────────────────
 ╭ Tools ─────────────╮╭ Ceilings ──────────────────────────────────────────────────────────────────────────────────────────────╮
 │  Roth Conversions  ││  Held to           Flexible Change Success Unfunded Ends with Taxes Medicare                           │
-│  SSA Benefits      ││  Current              $105k           100%       $0    $2.17M $661k       $0                           │
-│  Withdrawal Order  ││  In its own market    $125k   +19%     40%       $0    $3,497 $675k       $0                           │
-│  Monte Carlo       ││▌ In 90% of markets    $116k   +10%     90%       $0    $1.08M $629k       $0                           │
+│  SSA Benefits      ││  Current              $105k           100%       $0    $1.79M $802k       $0                           │
+│  Withdrawal Order  ││  In its own market    $121k   +16%     40%       $0    $5,323 $786k       $0                           │
+│  Monte Carlo       ││▌ In 90% of markets    $112k    +7%     90%       $0    $1.05M $740k       $0                           │
 │  Historical        │╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 │▏ Spending Ceiling  │╭ Expenses ──────────────────────────────────────────────────────╮╭ Target ──────────────────────────────╮
 │  Spending Estimate ││  Expense       Now At the ceiling                              ││                                      │
-│  Tax Tables        ││▏ living    $90,000        $99,096                              ││▏ Target success  90%, the default    │
-│                    ││  travel    $15,000        $16,516                              ││                                      │
+│  Tax Tables        ││▏ living    $90,000        $96,284                              ││▏ Target success  90%, the default    │
+│                    ││  travel    $15,000        $16,047                              ││                                      │
 │                    ││                                                                ││                                      │
 │                    ││                                                                ││                                      │
 │                    ││                                                                ││                                      │
