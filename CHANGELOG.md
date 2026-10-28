@@ -84,6 +84,9 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   earnings record gained in the year - `Income` `pretax` and `social_security`,
   `IncomeKind` `SelfEmployment`, and `TaxParams` `payroll`; `tax::payroll` is
   new.
+- **Breaking:** building needs Rust 1.97.1. `retiretui_tui` is built on plurimus
+  0.9.0, plurimus_filepicker 0.3.0 and bevy 0.20, and `retiretui_client`'s
+  `bevy` feature on `bevy_ecs` 0.20, so an app that embeds either moves with it.
 
 ## [0.4.1] - 2026-10-09
 

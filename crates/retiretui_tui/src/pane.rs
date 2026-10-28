@@ -170,7 +170,6 @@ impl Pane {
             node: Node {
                 flex_direction: FlexDirection::Column,
                 padding: UiRect::all(Val::Px(FRAME_INSET)),
-                min_height: Val::Px(0.0),
                 overflow: Overflow::clip(),
                 ..filling()
             },

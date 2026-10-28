@@ -22,7 +22,7 @@ ledger, a Monte Carlo run, and an account opened for editing][Demo]
 
 ## Requirements
 
-- **Rust 1.95** or newer, to build.
+- **Rust 1.97.1** or newer, to build.
 - **A terminal.** Truecolor and the kitty keyboard protocol are used where the
   terminal offers them.
 

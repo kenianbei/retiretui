@@ -18,19 +18,19 @@ terminal = ["plurimus/crossterm", "dep:clap", "retiretui_client/native"]
 
 [dependencies]
 anyhow = "1.0.104"
-bevy_app = "0.19.1"
-bevy_input = { version = "0.19.1", default-features = false, features = ["std"] }
-bevy_window = { version = "0.19.1", default-features = false, features = ["std"] }
-bevy_ecs = "0.19.1"
-bevy_math = { version = "0.19.1", default-features = false }
-bevy_input_focus = { version = "0.19.1", default-features = false, features = ["std", "keyboard"] }
-bevy_time = "0.19.1"
-bevy_ui = { version = "0.19.1", default-features = false }
+bevy_app = "0.20.0"
+bevy_input = { version = "0.20.0", default-features = false, features = ["std"] }
+bevy_window = { version = "0.20.0", default-features = false, features = ["std"] }
+bevy_ecs = "0.20.0"
+bevy_math = { version = "0.20.0", default-features = false }
+bevy_input_focus = { version = "0.20.0", default-features = false, features = ["std", "keyboard"] }
+bevy_time = "0.20.0"
+bevy_ui = { version = "0.20.0", default-features = false }
 clap = { version = "4.6.7", features = ["derive"], optional = true }
 jiff.workspace = true
 nucleo-matcher = "0.3.1"
-plurimus = { version = "0.8.0", default-features = false, features = ["ui", "widgets", "bevy-ui"] }
-plurimus_filepicker = "0.2.0"
+plurimus = { version = "0.9.0", default-features = false, features = ["ui", "widgets", "bevy-ui"] }
+plurimus_filepicker = "0.3.0"
 retiretui_client = { workspace = true, features = ["bevy"] }
 retiretui_engine = { workspace = true, features = ["schemars"] }
 schemars.workspace = true
