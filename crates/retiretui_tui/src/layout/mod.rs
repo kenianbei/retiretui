@@ -95,6 +95,7 @@ pub fn filling() -> Node {
     Node {
         width: Val::Percent(100.0),
         height: Val::Percent(100.0),
+        min_height: Val::Px(0.0),
         ..Node::default()
     }
 }

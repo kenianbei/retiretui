@@ -156,7 +156,10 @@ pub type SlotsMut<'w, 's> = Query<
 /// the value states.
 pub fn show_trigger(value: Option<&Value>, plan: &Plan, group: &[Entity], slots: &mut SlotsMut) {
     let mut widgets = slots.iter_many_mut(group);
-    while let Some((slot, text, select)) = widgets.fetch_next() {
+    while let Some(fetched) = widgets.fetch_next() {
+        let Ok((slot, text, select)) = fetched else {
+            continue;
+        };
         let part = match *slot {
             Slot::Kind => kind_of(value).map(|kind| Value::String(kind.as_str().to_owned())),
             Slot::Part(operand) => operand_of(value, operand).cloned(),
