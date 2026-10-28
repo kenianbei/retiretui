@@ -358,8 +358,8 @@ converted:
 
 ## [[contributions]]
 
-Money paid into an account, one item per stream, so an account may take
-several - a deferral and a match, or a second stream from a later year.
+Money paid into an account, one item per stream, so an account may take several -
+a deferral and a match, or a second stream from a later year.
 
 - `id` (string, required, unique) - what a scenario addresses the item by.
 - `name` (string, optional) - what the contribution is shown as; defaults to the

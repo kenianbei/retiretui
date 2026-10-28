@@ -47,63 +47,63 @@ depends on UI.
   income or added to by age, an excise on gains - and the payroll rates,
   statutory where a table leaves them out - and extended past the last known
   year by inflating indexed values by the inflation of the market projected
-  through, a rate the law has already set for a later year taken from that
-  year - and the national average wage index, grown past its last published year
-  at an assumed rate a plan may override, from which the benefit formula's wage
-  bases and bend points derive by statute for any year, beside every
-  cost-of-living adjustment SSA has published. `tax` holds the formulas: rule
-  shapes are code, the Social Security benefit's among them - each year's
-  covered earnings capped at its own base and indexed to the average wage of the
-  year the worker turns 60, the highest years averaged, the primary insurance
-  amount through the bend points of the year they turn 62 and through each COLA
-  from that year, truncated to the dime after each, the reduction or credit for
-  each month the claim falls before or after full retirement age - credits
-  earned in the claim year paid from the next January, save at 70 - and the
-  share of the first year paid from the first month paid for, 62 being held
-  throughout it - a career at one salary filled from the wage index, as SSA
-  fills a record from current earnings, and the payroll tax a year's earnings
-  pay: the employee's shares on wages up to the wage base, twice them on the
-  taxed share of self-employment earnings up to what the base leaves over the
-  wages, half of that coming off ordinary income, and the Additional Medicare
-  Tax on the household's together over its threshold. `statement` reads the
-  statement a person downloads from `ssa.gov` to what a plan keeps of it - the
-  birth date and the covered earnings by year, a sum stated for several years
-  spread evenly over them - which replaces a person's record, once. `project`
-  walks the years - trigger resolution, a year's growth on what each account
-  opened with - its fixed return, or the year's class returns blended by the mix
-  it holds that year, a glide path stepping between mixes as triggers fire -
-  credited before anything draws on it, escalation and the deflator following
-  the market's inflation, scheduled transfers, RMDs, income and expense windows
-  (a salary reaching cash, taxable wages and the owner's earnings record net of
-  what its employer takes out before tax, and recorded on no record where the
-  job pays into no Social Security; a self-employment income recorded at the
-  share the tax reaches; a Social Security benefit left unstated is computed the
-  year it is claimed, at the month of the date or age its start rests on, from
-  the owner's record - or, where they have none, a career before the plan at the
-  salary its first year pays them - extended with the nominal salary the walk
-  has paid them, and carried from their age-62 year by the COLAs SSA has
-  published so that the income's own escalation carries those still to come;
-  every Social Security benefit pays its first year from the month it starts),
-  an expense's amount restated at triggers of its own - the year one fires in
-  spent at each amount for its months - contributions, Roth conversions, a
-  tax-aware withdrawal fixed point - the year's taxable income kept by person
-  and by where it came from, which the state's tax is figured from with the
-  year's federal tax and income, and the payroll tax among what the year must
-  cover - that also settles the year's MAGI-driven costs (IRMAA surcharges
-  priced from the household MAGI two years earlier, declared cliffs crossed by
-  the current year's MAGI) and the MAGI-driven deduction of a traditional IRA
-  contribution by a person a workplace plan covers - through a salary that says
-  so, or what they pay into one - or by their spouse, surplus sweeping - emits
-  one row per year, and aggregates a projection into headline summary figures in
-  either dollar basis. A contribution is an item of its own that names the
-  account it pays into, who pays, and one amount - dollars, a share of a named
-  income, the year's legal maximum, or an employer's match on what the employee
-  paid - and the law's limits are applied rather than refused: employee amounts
-  are held to each person's pooled limit in the order the plan lists them, each
-  plan to its yearly cap, and what an account holds after tax comes back untaxed
-  whenever it is drawn - pro rata, save from a person's Roth IRAs before they
-  are drawn untaxed whole, which give it up first, then what was converted into
-  them, oldest first, then what they earned. Every year's row says how each
+  through, a rate the law has already set for a later year taken from that year -
+  and the national average wage index, grown past its last published year at an
+  assumed rate a plan may override, from which the benefit formula's wage bases
+  and bend points derive by statute for any year, beside every cost-of-living
+  adjustment SSA has published. `tax` holds the formulas: rule shapes are code,
+  the Social Security benefit's among them - each year's covered earnings capped
+  at its own base and indexed to the average wage of the year the worker turns
+  60, the highest years averaged, the primary insurance amount through the bend
+  points of the year they turn 62 and through each COLA from that year,
+  truncated to the dime after each, the reduction or credit for each month the
+  claim falls before or after full retirement age - credits earned in the claim
+  year paid from the next January, save at 70 - and the share of the first year
+  paid from the first month paid for, 62 being held throughout it - a career at
+  one salary filled from the wage index, as SSA fills a record from current
+  earnings, and the payroll tax a year's earnings pay: the employee's shares on
+  wages up to the wage base, twice them on the taxed share of self-employment
+  earnings up to what the base leaves over the wages, half of that coming off
+  ordinary income, and the Additional Medicare Tax on the household's together
+  over its threshold. `statement` reads the statement a person downloads from
+  `ssa.gov` to what a plan keeps of it - the birth date and the covered earnings
+  by year, a sum stated for several years spread evenly over them - which
+  replaces a person's record, once. `project` walks the years - trigger
+  resolution, a year's growth on what each account opened with - its fixed
+  return, or the year's class returns blended by the mix it holds that year, a
+  glide path stepping between mixes as triggers fire - credited before anything
+  draws on it, escalation and the deflator following the market's inflation,
+  scheduled transfers, RMDs, income and expense windows (a salary reaching cash,
+  taxable wages and the owner's earnings record net of what its employer takes
+  out before tax, and recorded on no record where the job pays into no Social
+  Security; a self-employment income recorded at the share the tax reaches; a
+  Social Security benefit left unstated is computed the year it is claimed, at
+  the month of the date or age its start rests on, from the owner's record - or,
+  where they have none, a career before the plan at the salary its first year
+  pays them - extended with the nominal salary the walk has paid them, and
+  carried from their age-62 year by the COLAs SSA has published so that the
+  income's own escalation carries those still to come; every Social Security
+  benefit pays its first year from the month it starts), an expense's amount
+  restated at triggers of its own - the year one fires in spent at each amount
+  for its months - contributions, Roth conversions, a tax-aware withdrawal fixed
+  point - the year's taxable income kept by person and by where it came from,
+  which the state's tax is figured from with the year's federal tax and income,
+  and the payroll tax among what the year must cover - that also settles the
+  year's MAGI-driven costs (IRMAA surcharges priced from the household MAGI two
+  years earlier, declared cliffs crossed by the current year's MAGI) and the
+  MAGI-driven deduction of a traditional IRA contribution by a person a
+  workplace plan covers - through a salary that says so, or what they pay into
+  one - or by their spouse, surplus sweeping - emits one row per year, and
+  aggregates a projection into headline summary figures in either dollar basis.
+  A contribution is an item of its own that names the account it pays into, who
+  pays, and one amount - dollars, a share of a named income, the year's legal
+  maximum, or an employer's match on what the employee paid - and the law's
+  limits are applied rather than refused: employee amounts are held to each
+  person's pooled limit in the order the plan lists them, each plan to its
+  yearly cap, and what an account holds after tax comes back untaxed whenever it
+  is drawn - pro rata, save from a person's Roth IRAs before they are drawn
+  untaxed whole, which give it up first, then what was converted into them,
+  oldest first, then what they earned. Every year's row says how each
   contribution came to be what it is. `optimize` searches by re-projecting
   candidate plans - no closed-form tax approximations: fill-bracket Roth
   conversion ladders, each in place of any ladder the plan already holds, filled
@@ -111,38 +111,38 @@ depends on UI.
   ceilings (an IRMAA tier, an explicit cap, active cliffs) and a long-term gains
   rate the year's realized gains may not be pushed past, Social Security claim
   ages, every computed benefit - and one made up for anyone with an earnings
-  record and none, save the people whose claims are held as the plan states
-  them - tried at each whole age it can still reach, jointly for the household,
-  and the order the plan withdraws in, the classes its order lists tried in
-  every order they can be drained in, a class it leaves out left out, and the
-  orders that project alike kept as one - each search ranking what it finds by
-  what the household ends with - and the most the plan could spend: every
-  recurring expense not marked essential scaled alike, its phases with it, up
-  from what the plan states or down from it, until the plan no longer succeeds
-  in its own market or in a target share of its random markets, as the market
-  runs count success, every candidate walked through the same markets; beside
-  the claim search, a person's benefit is estimated at the ages that frame the
-  choice, by projection; each search emits its answer as a scenario overlay
-  through the schema's own serialization. Each projected row also records the
-  actions the engine executed - transfers, RMDs, contributions, conversion
-  steps, funding withdrawals, the surplus swept - with post-clamp nominal
-  amounts, what each account grew and what each expense spent, so every surface
-  can answer "what do I actually do this year" and where every account's money
-  went without re-deriving execution. `market` makes the markets a plan is
-  walked through - correlated draws from the plan's `[market]` assumptions on a
-  seeded generator of the engine's own, so a saved seed draws the same markets,
-  historical years bootstrapped in blocks, or history replayed from a start
-  year - from an embedded yearly record of U.S. returns and inflation since 1871
-  that a user file may replace, and runs a plan through many of them at once
-  across the machine's threads where it has more than one, keeping of each run
-  only what the tools show: success, ending, shortfall and net worth by year in
-  that run's own today's dollars, with percentile bands and the runs singled
-  out. `estimate` reads a bank's exports - CSV sniffed from its header, OFX or
-  QFX - each file's rows merged over the ones before it, one row answering for
-  one, merges a payee's variants under the name the user's rules give it and
-  sorts each row into a category - or ignores it, or sends it to the bucket with
-  the payees nothing names - by the user's rules, from one file or several, the
-  most specific match winning and the later file on a tie, then the bank's own
+  record and none, save the people whose claims are held as the plan states them -
+  tried at each whole age it can still reach, jointly for the household, and the
+  order the plan withdraws in, the classes its order lists tried in every order
+  they can be drained in, a class it leaves out left out, and the orders that
+  project alike kept as one - each search ranking what it finds by what the
+  household ends with - and the most the plan could spend: every recurring
+  expense not marked essential scaled alike, its phases with it, up from what
+  the plan states or down from it, until the plan no longer succeeds in its own
+  market or in a target share of its random markets, as the market runs count
+  success, every candidate walked through the same markets; beside the claim
+  search, a person's benefit is estimated at the ages that frame the choice, by
+  projection; each search emits its answer as a scenario overlay through the
+  schema's own serialization. Each projected row also records the actions the
+  engine executed - transfers, RMDs, contributions, conversion steps, funding
+  withdrawals, the surplus swept - with post-clamp nominal amounts, what each
+  account grew and what each expense spent, so every surface can answer "what do
+  I actually do this year" and where every account's money went without
+  re-deriving execution. `market` makes the markets a plan is walked through -
+  correlated draws from the plan's `[market]` assumptions on a seeded generator
+  of the engine's own, so a saved seed draws the same markets, historical years
+  bootstrapped in blocks, or history replayed from a start year - from an
+  embedded yearly record of U.S. returns and inflation since 1871 that a user
+  file may replace, and runs a plan through many of them at once across the
+  machine's threads where it has more than one, keeping of each run only what
+  the tools show: success, ending, shortfall and net worth by year in that run's
+  own today's dollars, with percentile bands and the runs singled out.
+  `estimate` reads a bank's exports - CSV sniffed from its header, OFX or QFX -
+  each file's rows merged over the ones before it, one row answering for one,
+  merges a payee's variants under the name the user's rules give it and sorts
+  each row into a category - or ignores it, or sends it to the bucket with the
+  payees nothing names - by the user's rules, from one file or several, the most
+  specific match winning and the later file on a tie, then the bank's own
   column, its transaction type, or its payee's words against an embedded table
   of patterns, takes the latest twelve months in the plan's start-year dollars,
   and places each category, as the plan's `[estimate]` table leans and assigns,
@@ -272,192 +272,191 @@ depends on UI.
   plan's editing domains - a sidebar naming the group's pages beside whichever
   is on show: the sidebar's cursor and the page are one fact, whichever of them
   moves, and a grouped tab comes back to the page last shown through it. It
-  opens on a plan, a scenario, or a directory - the working directory by
-  default - and holds one document at a time: a command opens another or saves
-  the draft under another name, each through one file picker - a path field over
-  the directory it names, opened on the workspace, the directory beside the
-  document or the one launched on while there is none, and listing that
-  directory's files of the kind wanted and every directory beneath or above it,
-  so a plan anywhere is reached by typing or completing its path - which takes a
-  name no file has as a new one wherever a file is to be written. Without a
-  document there is nothing to view, so the four tabs with a page behind them
-  are drawn dead and the form a new plan starts from stands over the empty
-  shell: one of the example plans, or a household's filing status, where it is
-  in life, and each person's name, birth year, retirement age, when they started
-  working, salary and Social Security - which anyone may leave for the engine to
-  compute, from a career at that salary, a retiree's the last they earned.
-  Creating it builds the plan the example or the answers describe, names it
-  through the picker that saves under another name, and opens it, so nothing
-  reaches disk until it is named and everything after the first answers is
-  edited in the plan's own domains. The same form stands over an open document
-  when a new plan is asked for, the document staying open beneath it and taking
-  no key while it does; alone, it lets the shell's own keys through. Each
-  command's scope states whether it runs where no page is shown - what finds a
-  document, ends the session, dresses the shell, or moves the keyboard between
-  panes does, and the rest refuse. A page is a view of the projection (an
-  overview of the plan as a whole, nothing on it chosen by a year - whether the
-  money lasts and how surely, the lowest it falls once the salaries end, when
-  the big things happen, what needs attention, what the optimizers and then the
-  spending ceiling find better, searched in the background while it is shown,
-  the plan charted through its years in one view `v` turns to the next -
-  balances by tax treatment, net worth, income against taxes, net worth through
-  random markets - over a key that reads each series out at the pointer's year,
-  what its years add up to, and what it rests on - each answer leading to the
-  page its detail lives on, and the chart, by ⏎ or a press on a year, to the
-  Ledger; the Ledger - the plan's own projection, or a market run opened from a
-  market tool until `esc` or an edit returns it - one year in the context of all
-  of them: a table of every year under one of its column sets, its headers held
-  over the years as they scroll and each year marked where a milestone or
-  something to watch falls in it, over the cursor year in full - what happens in
-  it and what to do, each account's flows, what it lived on against where that
-  went, and its tax, those last three in a column beside the rest on a terminal
-  wider than it is tall and in a row under them on one taller - which one key
-  gives up for the table alone and brings back, another turning the table
-  through its column sets and ⏎ on a row of the table alone showing that year, a
-  terminal too short for the year opening on the table alone, the year stepped
-  from any pane by one or to the nearest marked - the year cursor the Ledger's,
-  today until moved and always within the plan's years, which a click on any
-  chart sets, a chart reading its values out under the pointer), one of the
-  plan's editing domains, or one of what runs over it: the document compared
-  with other workspace files, which follow the disk as the document does - each
-  plan's figures, its success through random markets, and what it changes of the
-  one chosen as the baseline, beside the plans charted or tabled year by year,
-  whole or as their difference from the baseline, ⏎ on one taking it into the
-  document's place with the others kept - and the tools, each panes of its own
-  over a line of help and, but for the spending estimate and the tax tables, a
-  search beside the frames that runs by itself whenever what it would search
-  changes, a newer search stopping one under way, taking instead what the
-  overview has already found over the same plan where it searches the same, its
-  options, best first where they are ranked, each against the plan, in one
-  shared table under a row for the plan as it stands - the conversion search's
-  beside what it runs under, read out and edited as a domain's one item is, and
-  over the highlighted ladder year by year, the claim search's beside a table of
-  each person's earnings record, how their benefit is set and its estimates, ⏎
-  on a person offering what can be done for them, and the claims held out of the
-  search among what it watches, the order search's alone on its page, the
-  spending ceiling's two - in the plan's own market, and at the target, where
-  the cursor starts - over the highlighted one's expenses now and at the
-  ceiling, beside the target share, read out and edited as a domain's one item
-  is, and the market tools' runs - the plan through random markets, or from
-  every historical start year worst first - beside what they run under and how
-  the plan fared, over a chart of the runs' spread that `v` turns to other
-  views, ⏎ on a run opening it in the ledger, and on the plan's own row the
-  plan's own projection - the searches' highlighted option written as a scenario
-  over the document into the workspace and compared at once, or taken into the
-  draft, after asking, as one applied item - a Roth conversion ladder as
-  conversions of its own, in place of the ladder taken before, a set of Social
-  Security claims as each searched income's start, adding the incomes the search
-  made up, an order as the plan's withdrawal order, a ceiling as the amount of
-  each expense it scales - the spending estimate's expenses, each with its
-  categories nested beneath it, over what lies behind the highlighted row,
-  beside the exports read through the file picker for the session, that row read
-  out, and the plan's `[estimate]` table, each row edited in its own form - a
-  moved category written to the plan, a payee named, merged or ignored, and from
-  a record - ⏎ offering what can be done with it, `i` ignoring it or counting it
-  again, `c` moving its payee to a category typed by its number, or to the
-  bucket as 0 - its payee moved or ignored or payees containing its words
-  sorted, each to the user's patterns file the launch names and said in a
-  toast - the proposals taken into the draft after asking or written as a
-  scenario, and the year's tax tables, their sections listed beside the
-  highlighted one's table, in the Ledger's year, for the plan's filing status
-  and the state it lives in or any other picked, each tried on as a picker's
-  cursor reaches it. Viewing and editing are distinct: a domain with many items
-  is a table, shown in the plan's order or ordered by a column for the view
-  alone, with the row under the cursor read out beside it, every field the item
-  has a use for in the form's words - a list's rows as far as they are filled -
-  wherever the columns do not say everything - a person's ending with their
-  earnings record - and a domain there is exactly one of is that read-out alone.
-  Nothing on a page edits: one item at a time is the editing session, a form
-  standing over the page as tall as the fields on show and scrolling what the
-  body cannot hold, opened by ⏎ on a row or on the read-out and left by esc or
-  by applying, the keyboard going back to what opened it; its fields work on a
-  snapshot that reaches the working draft only when the whole item is applied.
-  Edits no one applied are never dropped silently - the form keeps every key
-  while it stands, and a press outside it asks what is to become of them - and
-  never applied to an item the plan has changed underneath; an unsaved draft is
-  asked about the same way before another document takes its place. Every
-  applied item is one step of a whole-plan history the draft walks back and
-  forward through, dropped with the document and kept across a save; a statement
-  picked on the People page or beside the claim search, through the same file
-  picker, lands its earnings on the highlighted person as one such step. Each
-  field is entered by its kind - ticked, or picked from a closed set wherever
-  the schema states one, from a menu or, where the set is too long for one,
-  through the fuzzy picker, read from the engine rather than restated, and of
-  the plan's own ids wherever it names one, so an invalid value or a misspelt
-  reference cannot be expressed, and a pick the schema requires cannot be
-  emptied. A value with parts of its own is rows of the same form rather than
-  text: a trigger is picked apart into its kind and that kind's operands, a
-  table the item holds is fields that reach into it - made with its first value
-  and gone with its last, or, where its being there is itself the setting,
-  ticked, its rows shown only while it is - and a list is rows that hold it
-  between them, an order offering each place only what no other holds. A field
-  is shown only while the item has a use for it, asked of the engine's own
-  rules - a basis on the kinds of account that keep one, a window on what recurs
-  and a single date on what happens once - and what is applied leaves out
-  whatever is not. A value the file states one of several ways is chosen between
-  by a pick no file holds, read from the item on open and written back as the
-  keys the file does hold. What such rows do not yet make a value of refuses the
-  apply and says why. A share the others settle - a mix's cash - is not entered
-  but shown as what they leave. What remains is typed: money, a rate and how an
-  amount grows read back exactly what they show - separators, a percent, a
-  word - and a name, an id or a date is the plan file's own value syntax, parsed
-  through the schema's types, so what a field cannot read the schema refuses in
-  its own words. The file's spelling stays in the file: each field states a
-  label and a description beside its key, the schema's closed sets and the
-  plan's items are offered under words and display names over the values kept,
-  one module turns a value into the phrase shown for it wherever it is shown,
-  and an issue's path is read back into the page, item and field it names - so a
-  form, a table, a menu and an issue say the same thing in the same words. Every
-  action the shell can take is a row in one static command table, which the
-  fuzzy pickers that find a command or a page read from. The keys a row answers
-  to are the table's until the user's config file states others for it, and the
-  keys in force are what a keystroke is matched against and what everything that
-  names a key reads: the tabs, the key row, a pane's hints, a page's help, the
-  pickers; a key particular to a page runs only while that page is on show,
-  ahead of any meaning the shell gives the same key, so two pages may bind one
-  key each and a page may take one of the shell's. The keyboard walks a page's
-  panes in the order they are drawn, the sidebar first beside a grouped page,
-  and a page is entered on its first pane. Whatever stands over the page - a
-  menu, a picker, a dialog, an open item - takes the keyboard on a stack, keeps
-  the keys that walk it among what it holds, and gives it back to what held it,
-  and a command chosen from one runs once it has, since what holds the keyboard
-  is what a command acts on. Whether a key is a command at all is asked of the
-  widget it was typed at and everything that widget sits in: what stands over
-  the page keeps every key, and a form's fields and buttons keep the plain ones,
-  a text field the chords it edits with besides. Everything the shell says is a
-  `tracing` event with two readers: a journal the shell toasts from and lists in
-  a drawer, and, in a terminal, a log file. Colour is named by role, never by
-  value: a theme is a table of roles - the terminal's own colours by default,
-  its tables banded in a faint grey for a dark screen or a light one, or, by
-  name, one of an embedded set or a file of the user's own in a directory beside
-  their config file, read at launch and again as the theme picker opens, one
-  that does not read costing only itself - and a cell no widget coloured is
-  drawn in the theme's own ground. What the user sets - theme, motion, the keys
-  a command answers to - lives in one user config file the shell reads at
-  launch, a setting at a time so that one it cannot read costs only itself, and
-  writes a theme or motion it changes back into a key at a time, leaving the
-  rest of the file as the user wrote it. Each applied item re-validates the
-  draft: a valid draft is re-projected at once so the views follow it, and an
-  invalid one holds the last good view, reports its first issue, counts them
-  beside the file name, and lists every one in a panel whose rows turn to the
-  item. Saving writes the draft as canonical TOML through the same validation
-  gate as every other write; a scenario session saves into its own overlay,
-  still naming its base and stating what differs from it beside whatever it
-  stated that still holds; an edit no overlay can state - clearing what the base
-  states outside an item - is refused in the form's words, and saving one under
-  a new name writes the resolved plan as a plan of its own. The resolved chain's
-  files are watched so edits made outside the session - on disk, or from another
-  tab of the page - re-project in place, except under an unsaved draft or an
-  item being edited, which is reported rather than overwritten, and so are each
-  compared file's, which have no draft to protect; `theme` lists the themes a
-  terminal session can wear and prints one's file to start another from; `mcp`
-  serves the same contract to AI agents over stdio - list, read, validate,
-  write, project, actions, compare, earnings-import, spending-estimate,
-  optimizer and market tools over plan files sandboxed to a served directory,
-  plus tax-parameter lookup and an embedded schema reference. Writes are gated
-  on full validation - scenarios validated fully resolved - and stored in
-  canonical TOML; the schema reference's worked example is kept valid by the
-  test suite.
+  opens on a plan, a scenario, or a directory - the working directory by default -
+  and holds one document at a time: a command opens another or saves the draft
+  under another name, each through one file picker - a path field over the
+  directory it names, opened on the workspace, the directory beside the document
+  or the one launched on while there is none, and listing that directory's files
+  of the kind wanted and every directory beneath or above it, so a plan anywhere
+  is reached by typing or completing its path - which takes a name no file has
+  as a new one wherever a file is to be written. Without a document there is
+  nothing to view, so the four tabs with a page behind them are drawn dead and
+  the form a new plan starts from stands over the empty shell: one of the
+  example plans, or a household's filing status, where it is in life, and each
+  person's name, birth year, retirement age, when they started working, salary
+  and Social Security - which anyone may leave for the engine to compute, from a
+  career at that salary, a retiree's the last they earned. Creating it builds
+  the plan the example or the answers describe, names it through the picker that
+  saves under another name, and opens it, so nothing reaches disk until it is
+  named and everything after the first answers is edited in the plan's own
+  domains. The same form stands over an open document when a new plan is asked
+  for, the document staying open beneath it and taking no key while it does;
+  alone, it lets the shell's own keys through. Each command's scope states
+  whether it runs where no page is shown - what finds a document, ends the
+  session, dresses the shell, or moves the keyboard between panes does, and the
+  rest refuse. A page is a view of the projection (an overview of the plan as a
+  whole, nothing on it chosen by a year - whether the money lasts and how
+  surely, the lowest it falls once the salaries end, when the big things happen,
+  what needs attention, what the optimizers and then the spending ceiling find
+  better, searched in the background while it is shown, the plan charted through
+  its years in one view `v` turns to the next - balances by tax treatment, net
+  worth, income against taxes, net worth through random markets - over a key
+  that reads each series out at the pointer's year, what its years add up to,
+  and what it rests on - each answer leading to the page its detail lives on,
+  and the chart, by ⏎ or a press on a year, to the Ledger; the Ledger - the
+  plan's own projection, or a market run opened from a market tool until `esc`
+  or an edit returns it - one year in the context of all of them: a table of
+  every year under one of its column sets, its headers held over the years as
+  they scroll and each year marked where a milestone or something to watch falls
+  in it, over the cursor year in full - what happens in it and what to do, each
+  account's flows, what it lived on against where that went, and its tax, those
+  last three in a column beside the rest on a terminal wider than it is tall and
+  in a row under them on one taller - which one key gives up for the table alone
+  and brings back, another turning the table through its column sets and ⏎ on a
+  row of the table alone showing that year, a terminal too short for the year
+  opening on the table alone, the year stepped from any pane by one or to the
+  nearest marked - the year cursor the Ledger's, today until moved and always
+  within the plan's years, which a click on any chart sets, a chart reading its
+  values out under the pointer), one of the plan's editing domains, or one of
+  what runs over it: the document compared with other workspace files, which
+  follow the disk as the document does - each plan's figures, its success
+  through random markets, and what it changes of the one chosen as the baseline,
+  beside the plans charted or tabled year by year, whole or as their difference
+  from the baseline, ⏎ on one taking it into the document's place with the
+  others kept - and the tools, each panes of its own over a line of help and,
+  but for the spending estimate and the tax tables, a search beside the frames
+  that runs by itself whenever what it would search changes, a newer search
+  stopping one under way, taking instead what the overview has already found
+  over the same plan where it searches the same, its options, best first where
+  they are ranked, each against the plan, in one shared table under a row for
+  the plan as it stands - the conversion search's beside what it runs under,
+  read out and edited as a domain's one item is, and over the highlighted ladder
+  year by year, the claim search's beside a table of each person's earnings
+  record, how their benefit is set and its estimates, ⏎ on a person offering
+  what can be done for them, and the claims held out of the search among what it
+  watches, the order search's alone on its page, the spending ceiling's two - in
+  the plan's own market, and at the target, where the cursor starts - over the
+  highlighted one's expenses now and at the ceiling, beside the target share,
+  read out and edited as a domain's one item is, and the market tools' runs -
+  the plan through random markets, or from every historical start year worst
+  first - beside what they run under and how the plan fared, over a chart of the
+  runs' spread that `v` turns to other views, ⏎ on a run opening it in the
+  ledger, and on the plan's own row the plan's own projection - the searches'
+  highlighted option written as a scenario over the document into the workspace
+  and compared at once, or taken into the draft, after asking, as one applied
+  item - a Roth conversion ladder as conversions of its own, in place of the
+  ladder taken before, a set of Social Security claims as each searched income's
+  start, adding the incomes the search made up, an order as the plan's
+  withdrawal order, a ceiling as the amount of each expense it scales - the
+  spending estimate's expenses, each with its categories nested beneath it, over
+  what lies behind the highlighted row, beside the exports read through the file
+  picker for the session, that row read out, and the plan's `[estimate]` table,
+  each row edited in its own form - a moved category written to the plan, a
+  payee named, merged or ignored, and from a record - ⏎ offering what can be
+  done with it, `i` ignoring it or counting it again, `c` moving its payee to a
+  category typed by its number, or to the bucket as 0 - its payee moved or
+  ignored or payees containing its words sorted, each to the user's patterns
+  file the launch names and said in a toast - the proposals taken into the draft
+  after asking or written as a scenario, and the year's tax tables, their
+  sections listed beside the highlighted one's table, in the Ledger's year, for
+  the plan's filing status and the state it lives in or any other picked, each
+  tried on as a picker's cursor reaches it. Viewing and editing are distinct: a
+  domain with many items is a table, shown in the plan's order or ordered by a
+  column for the view alone, with the row under the cursor read out beside it,
+  every field the item has a use for in the form's words - a list's rows as far
+  as they are filled - wherever the columns do not say everything - a person's
+  ending with their earnings record - and a domain there is exactly one of is
+  that read-out alone. Nothing on a page edits: one item at a time is the
+  editing session, a form standing over the page as tall as the fields on show
+  and scrolling what the body cannot hold, opened by ⏎ on a row or on the
+  read-out and left by esc or by applying, the keyboard going back to what
+  opened it; its fields work on a snapshot that reaches the working draft only
+  when the whole item is applied. Edits no one applied are never dropped
+  silently - the form keeps every key while it stands, and a press outside it
+  asks what is to become of them - and never applied to an item the plan has
+  changed underneath; an unsaved draft is asked about the same way before
+  another document takes its place. Every applied item is one step of a
+  whole-plan history the draft walks back and forward through, dropped with the
+  document and kept across a save; a statement picked on the People page or
+  beside the claim search, through the same file picker, lands its earnings on
+  the highlighted person as one such step. Each field is entered by its kind -
+  ticked, or picked from a closed set wherever the schema states one, from a
+  menu or, where the set is too long for one, through the fuzzy picker, read
+  from the engine rather than restated, and of the plan's own ids wherever it
+  names one, so an invalid value or a misspelt reference cannot be expressed,
+  and a pick the schema requires cannot be emptied. A value with parts of its
+  own is rows of the same form rather than text: a trigger is picked apart into
+  its kind and that kind's operands, a table the item holds is fields that reach
+  into it - made with its first value and gone with its last, or, where its
+  being there is itself the setting, ticked, its rows shown only while it is -
+  and a list is rows that hold it between them, an order offering each place
+  only what no other holds. A field is shown only while the item has a use for
+  it, asked of the engine's own rules - a basis on the kinds of account that
+  keep one, a window on what recurs and a single date on what happens once - and
+  what is applied leaves out whatever is not. A value the file states one of
+  several ways is chosen between by a pick no file holds, read from the item on
+  open and written back as the keys the file does hold. What such rows do not
+  yet make a value of refuses the apply and says why. A share the others settle -
+  a mix's cash - is not entered but shown as what they leave. What remains is
+  typed: money, a rate and how an amount grows read back exactly what they show -
+  separators, a percent, a word - and a name, an id or a date is the plan file's
+  own value syntax, parsed through the schema's types, so what a field cannot
+  read the schema refuses in its own words. The file's spelling stays in the
+  file: each field states a label and a description beside its key, the schema's
+  closed sets and the plan's items are offered under words and display names
+  over the values kept, one module turns a value into the phrase shown for it
+  wherever it is shown, and an issue's path is read back into the page, item and
+  field it names - so a form, a table, a menu and an issue say the same thing in
+  the same words. Every action the shell can take is a row in one static command
+  table, which the fuzzy pickers that find a command or a page read from. The
+  keys a row answers to are the table's until the user's config file states
+  others for it, and the keys in force are what a keystroke is matched against
+  and what everything that names a key reads: the tabs, the key row, a pane's
+  hints, a page's help, the pickers; a key particular to a page runs only while
+  that page is on show, ahead of any meaning the shell gives the same key, so
+  two pages may bind one key each and a page may take one of the shell's. The
+  keyboard walks a page's panes in the order they are drawn, the sidebar first
+  beside a grouped page, and a page is entered on its first pane. Whatever
+  stands over the page - a menu, a picker, a dialog, an open item - takes the
+  keyboard on a stack, keeps the keys that walk it among what it holds, and
+  gives it back to what held it, and a command chosen from one runs once it has,
+  since what holds the keyboard is what a command acts on. Whether a key is a
+  command at all is asked of the widget it was typed at and everything that
+  widget sits in: what stands over the page keeps every key, and a form's fields
+  and buttons keep the plain ones, a text field the chords it edits with
+  besides. Everything the shell says is a `tracing` event with two readers: a
+  journal the shell toasts from and lists in a drawer, and, in a terminal, a log
+  file. Colour is named by role, never by value: a theme is a table of roles -
+  the terminal's own colours by default, its tables banded in a faint grey for a
+  dark screen or a light one, or, by name, one of an embedded set or a file of
+  the user's own in a directory beside their config file, read at launch and
+  again as the theme picker opens, one that does not read costing only itself -
+  and a cell no widget coloured is drawn in the theme's own ground. What the
+  user sets - theme, motion, the keys a command answers to - lives in one user
+  config file the shell reads at launch, a setting at a time so that one it
+  cannot read costs only itself, and writes a theme or motion it changes back
+  into a key at a time, leaving the rest of the file as the user wrote it. Each
+  applied item re-validates the draft: a valid draft is re-projected at once so
+  the views follow it, and an invalid one holds the last good view, reports its
+  first issue, counts them beside the file name, and lists every one in a panel
+  whose rows turn to the item. Saving writes the draft as canonical TOML through
+  the same validation gate as every other write; a scenario session saves into
+  its own overlay, still naming its base and stating what differs from it beside
+  whatever it stated that still holds; an edit no overlay can state - clearing
+  what the base states outside an item - is refused in the form's words, and
+  saving one under a new name writes the resolved plan as a plan of its own. The
+  resolved chain's files are watched so edits made outside the session - on
+  disk, or from another tab of the page - re-project in place, except under an
+  unsaved draft or an item being edited, which is reported rather than
+  overwritten, and so are each compared file's, which have no draft to protect;
+  `theme` lists the themes a terminal session can wear and prints one's file to
+  start another from; `mcp` serves the same contract to AI agents over stdio -
+  list, read, validate, write, project, actions, compare, earnings-import,
+  spending-estimate, optimizer and market tools over plan files sandboxed to a
+  served directory, plus tax-parameter lookup and an embedded schema reference.
+  Writes are gated on full validation - scenarios validated fully resolved - and
+  stored in canonical TOML; the schema reference's worked example is kept valid
+  by the test suite.
 - `retiretui_web` - the planner in a browser page, built for wasm alone and
   published to GitHub Pages under `/ratzilla` with each release, apart from the
   web app it sits beside: plurimus's WebGL canvas, the workspace kept in the
@@ -557,96 +556,95 @@ depends on UI.
   leading to its year in the Ledger, its item, that start in the Historical
   tool, or its tool; beneath them is the one chart the address names of four -
   the plan's balances by treatment, its net worth, its income against its taxes,
-  or its net worth through random markets as percentile bands in today's
-  dollars - an image with the Ledger as its table, a click on a year opening the
-  Ledger there, beside what the plan's years add up to, each total leading to
-  its page, its tool or its year, and what the plan rests on, each assumption
-  leading to the field it is edited at; the Ledger is the terminal's: every year
-  in a table that scrolls in a frame of its own, its headers and its year column
-  staying in view, under the column set the address names, over the chosen year
-  in full - its milestones, what to do and what to watch, its flows through each
-  account, and what it lived on, where that went and its tax - or, by a switch
-  the address keeps, the table alone, a row leading to its year; the arrow keys
-  step the year, and a pair of buttons the marked years either side. The Plan
-  tab's pages are the plan's editing domains: a table - rows of a name and one
-  figure on a phone - with the highlighted item read out, or a domain's one item
-  read out alone, and one item at a time edited in a form over the page, a sheet
-  or a phone's whole screen, whose address names the item and the field an
-  issue's link lands on. A Social Security statement downloaded from ssa.gov is
-  recorded on a person from the People page. The Tools tab's Roth Conversions
-  page ranks every fillable bracket's ladder under and against the plan as it
-  stands, the highlighted one - kept in the address - year by year, taken into
-  the draft after asking or written as a scenario beside the saved plan and
-  compared with it at once, over the constraints its ladders are searched under,
-  read out and edited in the same sheet as an item; it searches again whenever
-  the plan or the constraints change. Its SSA Benefits page ranks every claim
-  age for the household the same way, taken or written the same way, beside each
-  person's earnings record, how their benefit is set and its estimated benefit,
-  with what can be done for the highlighted one, a held claim left as the plan
-  states it. Its Withdrawal Order page ranks every order the plan's kinds of
-  account can be withdrawn in the same way, the highlighted one kept in the
-  address and taken or written the same way; what the Overview found is what
-  each tool shows, a search answered once for both. Its Spending Ceiling page
-  tables the most the plan could spend in its own market and at a target share
-  of random markets under the plan as it stands, the highlighted ceiling kept in
-  the address and taken or written the same way, over its expenses now and at
-  the ceiling and the target, read out and edited in the same sheet as the
-  constraints. Its Monte Carlo and Historical pages say how the plan fared
-  through random markets or from every historical start, in the colour of its
-  zone, beside what the runs were made under - each a link to the field it is
-  edited at - over the runs singled out, the highlighted one kept in the
-  address, and the views of their spread, all shown at once; the highlighted run
-  opens in the Ledger, which shows the plan replayed through its market, named
-  by it and kept in the address through the year, the basis and edits, until a
-  link returns it to the plan's own. Its Spending Estimate page reads a bank's
-  exports picked through the browser's file dialog for the session, tables the
-  expenses they propose for the plan with their categories nested beneath, the
-  highlighted row - kept in the address - read out over what lies behind it,
-  each record with a menu that ignores it or moves, ignores or names its payee
-  or sorts payees containing its words, what was done said beneath the summary,
-  and edited in the same sheet as an item, reads out and edits the plan's
-  `[estimate]` table beside them, and takes or writes the proposals the same
-  way; a tool's address names which of its forms is open. Its Tax Tables page
-  reads out the tables the plan's projection applies in the shared year, for the
-  plan's filing status and the state it lives in, or for any status or modeled
-  state picked in the address. The Compare tab sets the document beside the
-  workspace files chosen from a menu: each plan's figures and its success
-  through random markets, or their differences from the one chosen as the
-  baseline, what the highlighted plan changes of the baseline, and one metric
-  year by year, charted and tabled at once - a plan alone offered another file,
-  or an example written beside it; a compared plan opened takes the document's
-  place, the document joining the compared, and any other plan opened leaves
-  nothing compared. The compared files are opened again whenever the workspace
-  is written, here or in another tab. What is applied is a step of the draft's
-  history, undone and redone from the header, which saves it or saves it under
-  another name; edits not yet applied or saved are asked about before they are
-  dropped, and a file another tab changes under unsaved edits is reported rather
-  than reopened. What it says of a plan - a year's actions, where an issue is,
-  the domains' names, a form's fields - is the client's words through the
-  bindings, never its own. Each kind of search runs in a Web Worker kept loaded
-  for it between searches - a ladder search one for each account it fills, so
-  that owners' ladders run side by side, and a compared plan's market runs one
-  for each plan, released once it is no longer compared; stopping one, or a
-  newer search in its worker, terminates that worker and loads another. A
-  palette finds any page, plan or action by part of its name, opened from the
-  header on any screen; keys open it, go to the tabs and list every key, never
-  while a field or anything over the page holds them; focus moves to a page's
-  heading when another page is shown, unless the page has placed it. Each page
-  loads the first time it is shown, and all of them once the app is idle; a
-  service worker serves the page from the network while there is one and from
-  its cache when there is not, and keeps a build whole - every file the build
-  lists as its own, then the page that needs them, the old build's files dropped
-  only after - so that after one visit every page works offline, a build that
-  does not arrive whole leaves the one before it to open, and the app installs.
-  Its colours are the terminal theme's roles, light or dark as the system is,
-  each held to a readable contrast by a test, and every page is checked against
-  WCAG 2.1 A and AA, in Chromium, by a browser suite CI runs in Chromium,
-  Firefox and WebKit. Under every page it says that it is a model and not
-  advice, and leads to its source and to where an issue is reported. Where it
-  cannot start, with scripts off, no WebAssembly, the page's storage blocked or
-  a file that does not load or run, the page says why from markup and a script
-  of its own, which need nothing of the app; a page that throws while it is
-  drawn is said in its place, with a way to reload.
+  or its net worth through random markets as percentile bands in today's dollars -
+  an image with the Ledger as its table, a click on a year opening the Ledger
+  there, beside what the plan's years add up to, each total leading to its page,
+  its tool or its year, and what the plan rests on, each assumption leading to
+  the field it is edited at; the Ledger is the terminal's: every year in a table
+  that scrolls in a frame of its own, its headers and its year column staying in
+  view, under the column set the address names, over the chosen year in full -
+  its milestones, what to do and what to watch, its flows through each account,
+  and what it lived on, where that went and its tax - or, by a switch the
+  address keeps, the table alone, a row leading to its year; the arrow keys step
+  the year, and a pair of buttons the marked years either side. The Plan tab's
+  pages are the plan's editing domains: a table - rows of a name and one figure
+  on a phone - with the highlighted item read out, or a domain's one item read
+  out alone, and one item at a time edited in a form over the page, a sheet or a
+  phone's whole screen, whose address names the item and the field an issue's
+  link lands on. A Social Security statement downloaded from ssa.gov is recorded
+  on a person from the People page. The Tools tab's Roth Conversions page ranks
+  every fillable bracket's ladder under and against the plan as it stands, the
+  highlighted one - kept in the address - year by year, taken into the draft
+  after asking or written as a scenario beside the saved plan and compared with
+  it at once, over the constraints its ladders are searched under, read out and
+  edited in the same sheet as an item; it searches again whenever the plan or
+  the constraints change. Its SSA Benefits page ranks every claim age for the
+  household the same way, taken or written the same way, beside each person's
+  earnings record, how their benefit is set and its estimated benefit, with what
+  can be done for the highlighted one, a held claim left as the plan states it.
+  Its Withdrawal Order page ranks every order the plan's kinds of account can be
+  withdrawn in the same way, the highlighted one kept in the address and taken
+  or written the same way; what the Overview found is what each tool shows, a
+  search answered once for both. Its Spending Ceiling page tables the most the
+  plan could spend in its own market and at a target share of random markets
+  under the plan as it stands, the highlighted ceiling kept in the address and
+  taken or written the same way, over its expenses now and at the ceiling and
+  the target, read out and edited in the same sheet as the constraints. Its
+  Monte Carlo and Historical pages say how the plan fared through random markets
+  or from every historical start, in the colour of its zone, beside what the
+  runs were made under - each a link to the field it is edited at - over the
+  runs singled out, the highlighted one kept in the address, and the views of
+  their spread, all shown at once; the highlighted run opens in the Ledger,
+  which shows the plan replayed through its market, named by it and kept in the
+  address through the year, the basis and edits, until a link returns it to the
+  plan's own. Its Spending Estimate page reads a bank's exports picked through
+  the browser's file dialog for the session, tables the expenses they propose
+  for the plan with their categories nested beneath, the highlighted row - kept
+  in the address - read out over what lies behind it, each record with a menu
+  that ignores it or moves, ignores or names its payee or sorts payees
+  containing its words, what was done said beneath the summary, and edited in
+  the same sheet as an item, reads out and edits the plan's `[estimate]` table
+  beside them, and takes or writes the proposals the same way; a tool's address
+  names which of its forms is open. Its Tax Tables page reads out the tables the
+  plan's projection applies in the shared year, for the plan's filing status and
+  the state it lives in, or for any status or modeled state picked in the
+  address. The Compare tab sets the document beside the workspace files chosen
+  from a menu: each plan's figures and its success through random markets, or
+  their differences from the one chosen as the baseline, what the highlighted
+  plan changes of the baseline, and one metric year by year, charted and tabled
+  at once - a plan alone offered another file, or an example written beside it;
+  a compared plan opened takes the document's place, the document joining the
+  compared, and any other plan opened leaves nothing compared. The compared
+  files are opened again whenever the workspace is written, here or in another
+  tab. What is applied is a step of the draft's history, undone and redone from
+  the header, which saves it or saves it under another name; edits not yet
+  applied or saved are asked about before they are dropped, and a file another
+  tab changes under unsaved edits is reported rather than reopened. What it says
+  of a plan - a year's actions, where an issue is, the domains' names, a form's
+  fields - is the client's words through the bindings, never its own. Each kind
+  of search runs in a Web Worker kept loaded for it between searches - a ladder
+  search one for each account it fills, so that owners' ladders run side by
+  side, and a compared plan's market runs one for each plan, released once it is
+  no longer compared; stopping one, or a newer search in its worker, terminates
+  that worker and loads another. A palette finds any page, plan or action by
+  part of its name, opened from the header on any screen; keys open it, go to
+  the tabs and list every key, never while a field or anything over the page
+  holds them; focus moves to a page's heading when another page is shown, unless
+  the page has placed it. Each page loads the first time it is shown, and all of
+  them once the app is idle; a service worker serves the page from the network
+  while there is one and from its cache when there is not, and keeps a build
+  whole - every file the build lists as its own, then the page that needs them,
+  the old build's files dropped only after - so that after one visit every page
+  works offline, a build that does not arrive whole leaves the one before it to
+  open, and the app installs. Its colours are the terminal theme's roles, light
+  or dark as the system is, each held to a readable contrast by a test, and
+  every page is checked against WCAG 2.1 A and AA, in Chromium, by a browser
+  suite CI runs in Chromium, Firefox and WebKit. Under every page it says that
+  it is a model and not advice, and leads to its source and to where an issue is
+  reported. Where it cannot start, with scripts off, no WebAssembly, the page's
+  storage blocked or a file that does not load or run, the page says why from
+  markup and a script of its own, which need nothing of the app; a page that
+  throws while it is drawn is said in its place, with a way to reload.
 
 Plans express timing through a closed trigger vocabulary - a fixed date, a
 person's age, or a reference to a named event or income source with a whole year

@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.6.3/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -31,7 +31,8 @@
         "noUselessConstructor": "error",
         "noUselessEscapeInRegex": "error",
         "noUselessThisAlias": "error",
-        "noUselessTypeConstraint": "error"
+        "noUselessTypeConstraint": "error",
+        "noUnnecessaryTemplateExpression": "error"
       },
       "correctness": {
         "noConstantCondition": "error",
@@ -64,11 +65,9 @@
         "noImpliedEval": "error",
         "noMeaninglessVoidOperator": "error",
         "noMisusedPromises": "error",
-        "noUnnecessaryTemplateExpression": "error",
         "noUnsafePlusOperands": "error",
         "noUselessTypeConversion": "error",
-        "usePromiseRejectErrors": "error",
-        "useReduceTypeParameter": "error"
+        "usePromiseRejectErrors": "error"
       },
       "style": {
         "noCommonJs": "error",
@@ -88,7 +87,8 @@
         "useLiteralEnumMembers": "error",
         "useSpreadOverApply": "error",
         "useThrowOnlyError": "error",
-        "useUnifiedTypeSignatures": "error"
+        "useUnifiedTypeSignatures": "error",
+        "useReduceTypeParameter": "error"
       },
       "suspicious": {
         "noAssignInExpressions": "error",
