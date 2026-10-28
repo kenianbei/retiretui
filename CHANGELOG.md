@@ -467,14 +467,13 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     first plan is made from a few questions asked a step at a time - the
     household, then each person - which read every answer back to be changed
     before the plan is named, made and opened on the Overview; a blank age,
-    start of work or Social Security benefit reads as what the plan will
-    assume - `Blank is 65` while answered, `65, the default` read back - and the
-    answers survive a reload until the plan is made. The example plans and an
-    upload are offered beside them. The app reopens the plan last open, and
-    downloads the open plan; a plan that does not open is said on the Start page
-    by the file that failed, the line and why, with that file to download or
-    replace by an upload, and its text as written beneath, the failing line
-    marked.
+    start of work or Social Security benefit reads as what the plan will assume -
+    `Blank is 65` while answered, `65, the default` read back - and the answers
+    survive a reload until the plan is made. The example plans and an upload are
+    offered beside them. The app reopens the plan last open, and downloads the
+    open plan; a plan that does not open is said on the Start page by the file
+    that failed, the line and why, with that file to download or replace by an
+    upload, and its text as written beneath, the failing line marked.
   - **Overview.** It reads as the ledger's first page. It leads with how long
     the money lasts, the share of a thousand random markets it survives - run
     off the page's thread, and leading to the Monte Carlo tool - what it ends
@@ -560,10 +559,10 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     it fared in one sentence - `Money lasts in 87% of 1,000 markets` - in the
     colour of its zone - as the Overview's figure is coloured - beside what the
     runs were made under, each a link to the Market field it is edited at;
-    beneath the runs singled out, all shown at once, are the spread of net
-    worth - percentile bands in a neutral - under the highlighted run's line,
-    the share still funded, what the runs end with, and net worth by year at
-    each percentile (Monte Carlo only). The highlighted run opens in the Ledger,
+    beneath the runs singled out, all shown at once, are the spread of net worth -
+    percentile bands in a neutral - under the highlighted run's line, the share
+    still funded, what the runs end with, and net worth by year at each
+    percentile (Monte Carlo only). The highlighted run opens in the Ledger,
     replayed through its market and named by it - a random market's number, or
     the year retired into - kept in the address through the year, the dollars
     and edits, with a link back to the plan's own.
@@ -1058,8 +1057,7 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Every Social Security income's first year, typed or computed, is paid from the
   month it starts, not only one started on its owner's age.
 - Credits for delaying past full retirement age that are earned in the claim
-  year are paid from the next January, as SSA pays them, except for a claim
-  at 70.
+  year are paid from the next January, as SSA pays them, except for a claim at 70.
 - A benefit whose owner turned 62 before the plan starts is carried to the
   plan's first year by the COLAs SSA published, truncated to the dime after
   each, rather than at the plan's inflation. The tax tables carry every COLA

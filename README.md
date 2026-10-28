@@ -32,7 +32,8 @@ ledger, a Monte Carlo run, and an account opened for editing][Demo]
 cargo install retiretui
 ```
 
-Or download a prebuilt binary for x86_64 or aarch64 Linux from the [releases
+Or download a prebuilt binary for x86_64 or aarch64 Linux from the
+[releases
 page][Releases]:
 
 ```sh
@@ -52,9 +53,11 @@ retiretui tui examples/
 ```
 
 Opens a plan, a scenario, or a directory to pick one from. With no plan, a short
-form builds a first one from the household's basics. The [example
-plans][Examples] are invented households, from a first job to a retired couple,
-to try it on from a clone of the repository.
+form builds a first one from the household's basics. The
+[example
+plans][Examples]
+are invented households, from a first job to a retired couple, to try it on from
+a clone of the repository.
 
 ### Settings
 
