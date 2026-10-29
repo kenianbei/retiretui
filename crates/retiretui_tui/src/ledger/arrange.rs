@@ -79,9 +79,9 @@ impl Shape {
         match self {
             Self::Landscape => {
                 let rows = u16::try_from(lines).unwrap_or(u16::MAX);
-                Val::Px(f32::from(rows.saturating_add(pane::BORDERS)))
+                Val::Rem(f32::from(rows.saturating_add(pane::BORDERS)))
             }
-            Self::Portrait => Val::Px(0.0),
+            Self::Portrait => Val::ZERO,
         }
     }
 }
@@ -171,7 +171,7 @@ const COLUMNS: CommandHint = CommandHint {
 pub(super) fn spawn_year(commands: &mut Commands, page: Entity) -> (Entity, Entity) {
     let hints = CommandHints(TO_TABLE);
     let year = Node {
-        flex_basis: Val::Px(0.0),
+        flex_basis: Val::ZERO,
         ..growing()
     };
     let year = commands
@@ -179,8 +179,8 @@ pub(super) fn spawn_year(commands: &mut Commands, page: Entity) -> (Entity, Enti
         .id();
     let actions = Node {
         flex_direction: FlexDirection::Column,
-        min_width: Val::Px(0.0),
-        min_height: Val::Px(0.0),
+        min_width: Val::ZERO,
+        min_height: Val::ZERO,
         ..Node::default()
     };
     let actions = commands.spawn((actions, Part::Actions, ChildOf(year))).id();
@@ -204,11 +204,11 @@ impl Laid<'_, '_> {
         let table = if is_table {
             Val::Percent(100.0)
         } else {
-            Val::Px(shape.table_rows(size))
+            Val::Rem(shape.table_rows(size))
         };
         let (across, down) = (FlexDirection::Row, FlexDirection::Column);
         let (year_way, money_way, actions) = match shape {
-            Shape::Landscape => (across, down, (ACTIONS_SHARE, Val::Px(0.0))),
+            Shape::Landscape => (across, down, (ACTIONS_SHARE, Val::ZERO)),
             Shape::Portrait => (down, across, (0.0, Val::Auto)),
         };
         for (part, mut node) in &mut self.parts {

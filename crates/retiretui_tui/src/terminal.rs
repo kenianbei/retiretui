@@ -17,7 +17,7 @@ use retiretui_client::environment::{
 use retiretui_client::store::DiskStore;
 
 use crate::Launch;
-use crate::theme::document::{TERMINAL, Variant, terminal_variant};
+use crate::theme::document::{Variant, terminal_variant};
 use crate::theme::library::{DIRECTORY, EMBEDDED, Listed, Origin, SUFFIX, Themes, UNREAD};
 
 /// Arguments of the `tui` subcommand.
@@ -90,8 +90,6 @@ pub enum ThemeCommand {
 
 const LIST_HEADER: [&str; 4] = ["theme", "variant", "family", "from"];
 const COLUMN_GAP: &str = "  ";
-const TERMINALS_OWN: &str = "the terminal's own colours";
-const NO_FILE: &str = "the terminal's own colours have no file; dump a theme to start from";
 
 /// Lists the themes a terminal session can wear, or prints one's file.
 ///
@@ -119,9 +117,9 @@ pub fn run_theme(args: &ThemeArgs) -> anyhow::Result<()> {
 }
 
 fn listing(themes: &Themes) -> String {
-    let listed = themes.listed().map(|(slug, listed)| {
-        let [variant, family, from] = listed.map_or(["", "", TERMINALS_OWN], about);
-        [slug, variant, family, from]
+    let listed = themes.listed().map(|listed| {
+        let [variant, family, from] = about(listed);
+        [&*listed.slug, variant, family, from]
     });
     let rows: Vec<[&str; 4]> = std::iter::once(LIST_HEADER).chain(listed).collect();
     let widths: [usize; 4] =
@@ -160,9 +158,6 @@ fn dumped(
     name: &str,
     wanted: Variant,
 ) -> Result<String, String> {
-    if name == TERMINAL {
-        return Err(NO_FILE.to_owned());
-    }
     let listed = themes.find(name, wanted)?;
     let embedded = EMBEDDED.iter().find(|(slug, _)| *slug == listed.slug);
     if let (Origin::Embedded, Some((_, text))) = (listed.origin, embedded) {

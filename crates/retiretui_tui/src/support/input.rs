@@ -70,6 +70,11 @@ pub fn hover(app: &mut App, column: u16, row: u16) {
     point(app, MouseKind::Moved, column, row);
 }
 
+/// One wheel tick down at a cell.
+pub fn scroll_down(app: &mut App, column: u16, row: u16) {
+    point(app, MouseKind::ScrollDown, column, row);
+}
+
 pub fn click(app: &mut App, column: u16, row: u16) {
     point(app, MouseKind::Down(MouseButton::Left), column, row);
     point(app, MouseKind::Up(MouseButton::Left), column, row);

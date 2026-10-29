@@ -82,8 +82,8 @@ fn spawn_stack(roots: Query<Entity, With<Root>>, mut commands: Commands) {
         ToastStack,
         Node {
             position_type: PositionType::Absolute,
-            right: Val::Px(INSET),
-            bottom: Val::Px(INSET),
+            right: Val::Em(INSET),
+            bottom: Val::Rem(INSET),
             flex_direction: FlexDirection::Column,
             align_items: AlignItems::FlexEnd,
             ..Node::default()

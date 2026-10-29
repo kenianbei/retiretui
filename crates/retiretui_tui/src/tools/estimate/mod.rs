@@ -161,8 +161,8 @@ fn spawn_panes(commands: &mut Commands, row: Entity) {
     let top = Node {
         flex_direction: FlexDirection::Row,
         flex_grow: PROPOSALS_SHARE,
-        flex_basis: Val::Px(0.0),
-        min_height: Val::Px(0.0),
+        flex_basis: Val::ZERO,
+        min_height: Val::ZERO,
         ..Node::default()
     };
     let top = commands.spawn((top, ChildOf(page))).id();
@@ -202,7 +202,7 @@ fn spawn_panes(commands: &mut Commands, row: Entity) {
 fn spawn_column(commands: &mut Commands, row: Entity) {
     let column = Node {
         flex_direction: FlexDirection::Column,
-        width: Val::Px(SIDE_COLS),
+        width: Val::Em(SIDE_COLS),
         height: Val::Percent(100.0),
         flex_shrink: 0.0,
         ..Node::default()

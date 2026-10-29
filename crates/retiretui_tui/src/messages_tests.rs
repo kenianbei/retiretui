@@ -5,6 +5,7 @@ use std::time::Duration;
 use bevy_app::App;
 use bevy_input_focus::InputFocus;
 use plurimus::core::ratatui_core::style::Color;
+
 use plurimus::term::KeyCode;
 use retiretui_engine::plan::Plan;
 
@@ -16,6 +17,7 @@ use super::layout;
 use super::nav::Page;
 use super::support::{
     SIZE, click, composed_buffer, composed_frame, headless_app, let_pass, press_key, said, show,
+    worn,
 };
 use super::toast::Toasts;
 
@@ -143,7 +145,7 @@ fn badge_colour(app: &App) -> Option<Color> {
 fn the_badge_is_lit_while_the_draft_holds_unsaved_changes() {
     let mut app = headless_app(SIZE);
     app.update();
-    assert_eq!(badge_colour(&app), Some(Color::DarkGray));
+    assert_eq!(badge_colour(&app), Some(worn(&app).dim));
     app.world_mut()
         .run_system_once(|mut editor: DraftEditor| {
             let plan: &mut Plan = &mut editor.draft.plan;
@@ -153,5 +155,5 @@ fn the_badge_is_lit_while_the_draft_holds_unsaved_changes() {
         .unwrap();
     app.update();
     app.update();
-    assert_eq!(badge_colour(&app), Some(Color::Cyan));
+    assert_eq!(badge_colour(&app), Some(worn(&app).accent));
 }

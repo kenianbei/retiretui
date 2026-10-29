@@ -6,6 +6,15 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- The terminal wears the embedded `github` theme family by default,
+  `github-light` or `github-dark` as the screen is. The terminal's own colours
+  are no longer a theme: the picker and `retiretui theme` do not list
+  `terminal`, and a settings file naming it is told so and wears the default.
+- A form taller than the body scrolls on a wheel tick over any of its fields,
+  not only as the keyboard moves between them.
+
 ## [0.5.0] - 2026-10-28
 
 ### Added

@@ -73,11 +73,11 @@ pub(super) fn spawn_pane(commands: &mut Commands, ledger: Entity) {
     // scrollbar, and the headers' are solved over the same cells.
     let heads = Node {
         margin: UiRect {
-            left: Val::Px(f32::from(layout::CURSOR_COLS)),
-            right: Val::Px(f32::from(layout::SCROLL_BAR_COLS)),
+            left: Val::Em(f32::from(layout::CURSOR_COLS)),
+            right: Val::Em(f32::from(layout::SCROLL_BAR_COLS)),
             ..UiRect::default()
         },
-        height: Val::Px(HEADER_ROWS),
+        height: Val::Rem(HEADER_ROWS),
         flex_shrink: 0.0,
         ..Node::default()
     };

@@ -206,7 +206,7 @@ fn spawn_panes<R: MarketTool>(commands: &mut Commands, row: Entity) {
     let column = Node {
         flex_direction: FlexDirection::Column,
         flex_grow: 1.0,
-        flex_basis: Val::Px(0.0),
+        flex_basis: Val::ZERO,
         height: Val::Percent(100.0),
         ..Node::default()
     };

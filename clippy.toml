@@ -16,3 +16,7 @@ disallowed-names = [
 
 allow-unwrap-in-tests = true
 allow-expect-in-tests = true
+
+disallowed-methods = [
+    { path = "bevy_ui::Val::Px", reason = "sizes are cells: Val::Rem a cell's height, Val::Em its width, Val::ZERO for none" },
+]

@@ -1,5 +1,7 @@
 //! The frame every view is laid out in: one `bevy_ui` tree the terminal's
-//! size fills.
+//! size fills. Every size is in cells: `Val::Rem` is a cell's height and
+//! `Val::Em` a cell's width - one pixel each in the terminal, and a font's
+//! line height and advance width in a window - so a pixel is named nowhere.
 
 use bevy_app::{App, PostUpdate, Startup, Update};
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
@@ -95,7 +97,7 @@ pub fn filling() -> Node {
     Node {
         width: Val::Percent(100.0),
         height: Val::Percent(100.0),
-        min_height: Val::Px(0.0),
+        min_height: Val::ZERO,
         ..Node::default()
     }
 }
@@ -107,7 +109,7 @@ pub fn growing() -> Node {
     Node {
         flex_grow: 1.0,
         width: Val::Percent(100.0),
-        min_height: Val::Px(0.0),
+        min_height: Val::ZERO,
         ..Node::default()
     }
 }
@@ -118,7 +120,7 @@ pub fn growing() -> Node {
 pub fn fixed(height: f32) -> Node {
     Node {
         width: Val::Percent(100.0),
-        height: Val::Px(height),
+        height: Val::Rem(height),
         flex_shrink: 0.0,
         ..Node::default()
     }
@@ -128,8 +130,8 @@ pub fn fixed(height: f32) -> Node {
 #[must_use]
 pub fn sized(cols: f32, rows: f32) -> Node {
     Node {
-        width: Val::Px(cols),
-        height: Val::Px(rows),
+        width: Val::Em(cols),
+        height: Val::Rem(rows),
         flex_shrink: 0.0,
         ..Node::default()
     }
@@ -158,7 +160,7 @@ pub fn spawn_button_row(commands: &mut Commands, parent: Entity) -> Entity {
     let row = Node {
         flex_direction: FlexDirection::Row,
         justify_content: JustifyContent::FlexEnd,
-        column_gap: Val::Px(BUTTON_GAP),
+        column_gap: Val::Em(BUTTON_GAP),
         ..fixed(1.0)
     };
     commands.spawn((row, ChildOf(parent))).id()

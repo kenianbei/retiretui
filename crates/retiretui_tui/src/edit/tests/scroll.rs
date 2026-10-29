@@ -1,11 +1,14 @@
 //! Headless tests for a form's height and scrolling: it stands as tall as
 //! its rows on show, and what the body cannot hold scrolls.
 
+use bevy_ecs::prelude::With;
+use bevy_ui::ScrollPosition;
 use plurimus::term::KeyCode;
 
 use super::{INVESTED, fixture_app, form_box, open, shows_row, tab_to_field, tab_to_key};
+use crate::edit::build::FormFields;
 use crate::nav::Page;
-use crate::support::{composed_frame, press_key, show};
+use crate::support::{cell_of, composed_frame, press_key, scroll_down, show};
 
 /// The rows the open form's box takes, its frame included.
 fn form_rows(frame: &str) -> usize {
@@ -55,6 +58,21 @@ fn a_form_stands_as_tall_as_its_rows_on_show() {
 /// hold together at the least terminal the shell takes.
 const FIRST: &str = "Leave at least";
 const LAST: &str = "Wrap";
+
+#[test]
+fn a_tick_over_a_field_scrolls_the_form_a_row() {
+    let mut app = fixture_app();
+    open(&mut app, Page::Market);
+    app.update();
+    let (column, row) = cell_of(&app, FIRST);
+    scroll_down(&mut app, column, row);
+    app.update();
+    let mut columns = app
+        .world_mut()
+        .query_filtered::<&ScrollPosition, With<FormFields>>();
+    let scrolled = columns.single(app.world()).expect("one field column");
+    assert_eq!(scrolled.0, bevy_math::Vec2::new(0.0, 1.0));
+}
 
 #[test]
 fn a_form_taller_than_the_body_scrolls_to_the_field_holding_the_keyboard() {

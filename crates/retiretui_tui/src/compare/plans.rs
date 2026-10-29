@@ -143,7 +143,7 @@ pub(super) fn refresh_plans(
         if let Ok((mut framed, row)) = parts.frames.get_mut(pane.parent()) {
             Framed::retitle(&mut framed, &title(&plans));
             Framed::renote(&mut framed, &plans.compared.failure().unwrap_or_default());
-            let tall = Val::Px(rows_tall(plans.compared.docs.len()));
+            let tall = Val::Rem(rows_tall(plans.compared.docs.len()));
             if let Ok(mut node) = parts.nodes.get_mut(row.parent())
                 && node.height != tall
             {

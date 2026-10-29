@@ -138,7 +138,7 @@ mod tests {
     #[test]
     fn the_key_names_each_mark_and_reads_it_at_the_pointer_s_year() {
         let projected = test_projected();
-        let theme = Theme::terminal();
+        let theme = Theme::bare();
         let (_, keyed) = balances(&Chart::Balances.charted(&projected, true), &theme);
         assert_eq!(
             said(&key_line(&keyed, None, money)),
@@ -163,7 +163,7 @@ mod tests {
     #[test]
     fn a_line_chart_is_keyed_by_its_lines() {
         let projected = test_projected();
-        let theme = Theme::terminal();
+        let theme = Theme::bare();
         let charted = Chart::IncomeTaxes.charted(&projected, true);
         let (chart, keyed) = lines(&charted.lines, INCOME_SERIES, &theme);
         assert_eq!(chart.series.len(), 2);
@@ -187,7 +187,7 @@ mod tests {
         let (tables, history) = (TaxTables::embedded(), History::embedded());
         let found = monte_carlo(&projected.plan, &tables, history, &Progress::default());
         let runs = found.unwrap().runs;
-        let (chart, keyed) = markets(&runs.bands, &Theme::terminal());
+        let (chart, keyed) = markets(&runs.bands, &Theme::bare());
         assert_eq!((chart.series.len(), chart.shades.len()), (1, 2));
         assert_eq!(
             said(&key_line(&keyed, None, compact_money)),

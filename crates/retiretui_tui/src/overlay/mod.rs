@@ -75,9 +75,9 @@ pub fn centred(cols: u16, rows: u16) -> (Node, Centred) {
     let rows = rows.saturating_add(CHROME);
     let node = Node {
         position_type: PositionType::Absolute,
-        width: Val::Px(f32::from(cols)),
+        width: Val::Em(f32::from(cols)),
         max_height: Val::Percent(100.0),
-        padding: UiRect::all(Val::Px(1.0)),
+        padding: UiRect::axes(Val::Em(1.0), Val::Rem(1.0)),
         flex_direction: FlexDirection::Column,
         overflow: Overflow::clip(),
         ..Node::default()
@@ -92,11 +92,11 @@ pub fn bottom_panel(commands: &mut Commands, root: Entity, title: &str, hints: H
     commands.entity(root).insert((
         Node {
             position_type: PositionType::Absolute,
-            left: Val::Px(0.0),
-            right: Val::Px(0.0),
-            bottom: Val::Px(0.0),
+            left: Val::ZERO,
+            right: Val::ZERO,
+            bottom: Val::ZERO,
             height: Val::Percent(BOTTOM_SHARE),
-            padding: UiRect::all(Val::Px(1.0)),
+            padding: UiRect::axes(Val::Em(1.0), Val::Rem(1.0)),
             flex_direction: FlexDirection::Column,
             ..Node::default()
         },
@@ -134,8 +134,8 @@ fn centre_boxes(
             continue;
         }
         let rows = centred.rows.min(room.height);
-        node.height = Val::Px(f32::from(centred.rows));
-        node.left = Val::Px(f32::from(room.width.saturating_sub(centred.cols) / 2));
-        node.top = Val::Px(f32::from(room.height.saturating_sub(rows).div_ceil(2)));
+        node.height = Val::Rem(f32::from(centred.rows));
+        node.left = Val::Em(f32::from(room.width.saturating_sub(centred.cols) / 2));
+        node.top = Val::Rem(f32::from(room.height.saturating_sub(rows).div_ceil(2)));
     }
 }

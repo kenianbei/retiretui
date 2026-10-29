@@ -142,7 +142,7 @@ fn refresh(
         &text,
     );
     let lines = u16::try_from(rows.len() + HEADER_ROWS).unwrap_or(u16::MAX);
-    let height = Val::Px(f32::from(lines + pane::BORDERS));
+    let height = Val::Rem(f32::from(lines + pane::BORDERS));
     if let Ok(mut node) = panes.get_mut(pane.parent())
         && node.height != height
     {

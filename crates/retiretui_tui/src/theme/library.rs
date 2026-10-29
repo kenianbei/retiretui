@@ -7,7 +7,7 @@ use std::path::Path;
 use bevy_ecs::prelude::Resource;
 
 use super::Theme;
-use super::document::{self, Choice, Painted, TERMINAL, Variant};
+use super::document::{self, Choice, Painted, Variant};
 use crate::journal;
 use crate::settings::Settings;
 use crate::store::Store;
@@ -17,7 +17,9 @@ pub const DIRECTORY: &str = "themes";
 pub const SUFFIX: &str = ".toml";
 /// What is said of a theme that is listed and does not read.
 pub const UNREAD: &str = "does not read";
-const NOT_A_NAME: &str = "terminal is the terminal's own colours; name the file otherwise";
+/// The family worn where the settings name no theme, in the screen's
+/// variant.
+pub const DEFAULT_FAMILY: &str = "github";
 
 pub const EMBEDDED: &[(&str, &str)] = &[
     (
@@ -60,9 +62,23 @@ pub enum Origin {
     UserOverEmbedded,
 }
 
-/// Every theme that can be named, but the terminal's own.
+/// Every theme that can be named.
 #[derive(Resource, Debug)]
 pub struct Themes(Vec<Listed>);
+
+/// The embedded default family in the `wanted` variant: what is worn
+/// where nothing is named, or what is named does not resolve.
+///
+/// # Panics
+///
+/// Where the embedded family does not read, which the test suite rules
+/// out.
+#[must_use]
+pub fn default_theme(wanted: Variant) -> Theme {
+    Themes::embedded()
+        .named(DEFAULT_FAMILY, wanted)
+        .expect("the embedded default family reads")
+}
 
 impl Themes {
     pub fn embedded() -> Self {
@@ -102,7 +118,6 @@ impl Themes {
             let path = directory.join(name);
             let complaint = match name.strip_suffix(SUFFIX) {
                 None | Some("") => None,
-                Some(TERMINAL) => Some(NOT_A_NAME.to_owned()),
                 Some(slug) => themes.add(slug, store.read(&path)),
             };
             complaints.extend(complaint.map(|said| format!("{}: {said}", path.display())));
@@ -131,26 +146,21 @@ impl Themes {
         unread
     }
 
-    /// Every name a theme is chosen by, the terminal's own first; that one
-    /// is no document.
-    pub fn listed(&self) -> impl Iterator<Item = (&str, Option<&Listed>)> {
-        let documents = self.0.iter().map(|listed| (&*listed.slug, Some(listed)));
-        std::iter::once((TERMINAL, None)).chain(documents)
+    /// Every theme a name chooses, in the order they are listed.
+    pub fn listed(&self) -> impl Iterator<Item = &Listed> {
+        self.0.iter()
     }
 
     /// The theme `choice` names, painted as it asks. A name that is a
     /// family takes the `wanted` variant of it, or whichever it has, and
-    /// the terminal's own is banded for a screen of that variant.
+    /// no name takes the default family's.
     ///
     /// # Errors
     ///
     /// Where no theme or family has the name, the theme named does not
     /// read, or a colour painted over it does not.
     pub fn resolve(&self, choice: &Choice, wanted: Variant) -> Result<Theme, String> {
-        let theme = match choice.name.as_deref() {
-            None | Some(TERMINAL) => Theme::terminal_on(wanted),
-            Some(name) => self.named(name, wanted)?,
-        };
+        let theme = self.named(choice.name.as_deref().unwrap_or(DEFAULT_FAMILY), wanted)?;
         choice.over(theme)
     }
 
@@ -217,8 +227,8 @@ mod tests {
     }
 
     fn origins(themes: &Themes) -> Vec<(&str, Origin)> {
-        let documents = themes.listed().filter_map(|(_, listed)| listed);
-        documents
+        themes
+            .listed()
             .filter(|listed| listed.origin != Origin::Embedded)
             .map(|listed| (&*listed.slug, listed.origin))
             .collect()
@@ -227,15 +237,15 @@ mod tests {
     #[test]
     fn every_embedded_theme_reads_and_names_enough_series_colours() {
         let themes = Themes::embedded();
-        assert_eq!(themes.listed().count(), EMBEDDED.len() + 1);
+        assert_eq!(themes.listed().count(), EMBEDDED.len());
         for (slug, text) in EMBEDDED {
             let read = document::read(text).unwrap_or_else(|error| panic!("{slug}: {error}"));
             let theme = themes.named(slug, Variant::Dark).unwrap();
             assert_eq!(theme, read.theme);
             assert!(theme.bg.is_some(), "{slug} names a background");
-            let terminal = Theme::terminal();
+            let bare = Theme::bare();
             assert!(
-                theme.good != terminal.good && theme.caution != terminal.caution,
+                theme.good != bare.good && theme.caution != bare.caution,
                 "{slug} names its good and caution"
             );
             assert_ne!(theme.series(0), theme.series(LEAST_SERIES - 1), "{slug}");
@@ -243,27 +253,20 @@ mod tests {
     }
 
     #[test]
-    fn the_terminals_own_is_listed_first_and_is_no_document() {
+    fn no_choice_wears_the_default_family_in_the_variant_the_screen_wants() {
         let themes = Themes::embedded();
-        let (slug, listed) = themes.listed().next().unwrap();
-        assert!(slug == TERMINAL && listed.is_none());
-        let worn = themes.resolve(&Choice::default(), Variant::Light).unwrap();
-        assert_eq!(worn, Theme::terminal_on(Variant::Light));
-        let on_dark = themes.resolve(&chosen(TERMINAL), Variant::Dark).unwrap();
-        assert_ne!(
-            on_dark.stripe, worn.stripe,
-            "banded for the screen it is on"
-        );
-        let unbanded = |theme: Theme| Theme {
-            stripe: None,
-            ..theme
-        };
-        assert_eq!(
-            unbanded(on_dark),
-            Theme::terminal(),
-            "and nothing else moves"
-        );
-        assert_eq!(unbanded(worn), Theme::terminal());
+        for (variant, slug) in [
+            (Variant::Light, "github-light"),
+            (Variant::Dark, "github-dark"),
+        ] {
+            let worn = themes.resolve(&Choice::default(), variant).unwrap();
+            assert_eq!(worn, themes.named(slug, variant).unwrap(), "{slug}");
+            assert_eq!(default_theme(variant), worn);
+            assert!(
+                worn.bg.is_some() && worn.stripe.is_some(),
+                "{slug} grounds itself"
+            );
+        }
     }
 
     #[test]
@@ -316,8 +319,8 @@ mod tests {
         let files = [("zebra.toml", USER_THEME), ("day.toml", &*light)];
         let (themes, complaints) = loaded(&files);
         assert_eq!(complaints, [""; 0]);
-        let slugs: Vec<&str> = themes.listed().map(|(slug, _)| slug).collect();
-        assert_eq!(slugs[EMBEDDED.len() + 1..], ["day", "zebra"]);
+        let slugs: Vec<&str> = themes.listed().map(|listed| &*listed.slug).collect();
+        assert_eq!(slugs[EMBEDDED.len()..], ["day", "zebra"]);
         let users = [("day", Origin::User), ("zebra", Origin::User)];
         assert_eq!(origins(&themes), users);
         let accent = |name, wanted| themes.named(name, wanted).unwrap().accent;
@@ -335,8 +338,8 @@ mod tests {
         let (themes, complaints) = loaded(&[("nord.toml", USER_THEME)]);
         assert_eq!(complaints, [""; 0]);
         assert_eq!(origins(&themes), [("nord", Origin::UserOverEmbedded)]);
-        assert_eq!(themes.listed().count(), EMBEDDED.len() + 1);
-        let place = |themes: &Themes| themes.listed().position(|(slug, _)| slug == "nord");
+        assert_eq!(themes.listed().count(), EMBEDDED.len());
+        let place = |themes: &Themes| themes.listed().position(|listed| listed.slug == "nord");
         assert_eq!(place(&themes), place(&Themes::embedded()));
         let worn = themes.named("nord", Variant::Dark).unwrap();
         assert_eq!(worn.accent, USER_THEME_ACCENT);
@@ -378,18 +381,6 @@ mod tests {
     }
 
     #[test]
-    fn a_file_named_for_the_terminals_own_is_refused_and_said() {
-        let (themes, complaints) = loaded(&[("terminal.toml", USER_THEME)]);
-        assert_eq!(origins(&themes), []);
-        assert!(
-            matches!(&complaints[..], [said] if said.starts_with("/config/themes/terminal.toml: ")),
-            "{complaints:?}"
-        );
-        let worn = themes.resolve(&chosen(TERMINAL), Variant::Dark);
-        assert_eq!(worn, Ok(Theme::terminal_on(Variant::Dark)));
-    }
-
-    #[test]
     fn what_is_no_theme_file_is_passed_over_and_no_directory_is_no_complaint() {
         let store = KeyStore::new(Memory::default());
         let absent = Themes::load(&store, Path::new(THEMES));
@@ -411,7 +402,7 @@ mod tests {
         let in_the_way = scratch_dir().join(DIRECTORY);
         std::fs::write(&in_the_way, "").unwrap();
         let (themes, complaints) = Themes::load(&DiskStore, &in_the_way);
-        assert_eq!(themes.listed().count(), EMBEDDED.len() + 1);
+        assert_eq!(themes.listed().count(), EMBEDDED.len());
         let path = in_the_way.display().to_string();
         assert!(
             matches!(&complaints[..], [said] if said.starts_with(&path)),

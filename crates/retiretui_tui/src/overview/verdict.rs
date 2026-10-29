@@ -146,7 +146,7 @@ mod tests {
     fn tiles_of(projected: &Projected, nominal: bool, success: Success) -> [Tile; TILE_COUNT] {
         let view = View::new(projected, nominal);
         let said = success_text(success, projected);
-        tiles(&view, (success, said), &Theme::terminal())
+        tiles(&view, (success, said), &Theme::bare())
     }
 
     #[test]
@@ -168,7 +168,7 @@ mod tests {
 
     #[test]
     fn the_money_lasts_tile_warns_only_of_a_plan_that_runs_short() {
-        let theme = Theme::terminal();
+        let theme = Theme::bare();
         let lasting = &tiles_of(&test_projected(), false, Success::Waiting)[0];
         assert_eq!(
             (lasting.value.as_str(), lasting.style),
@@ -183,7 +183,7 @@ mod tests {
 
     #[test]
     fn the_success_is_drawn_in_its_zone() {
-        let theme = Theme::terminal();
+        let theme = Theme::bare();
         let projected = test_projected();
         let styled = |success| tiles_of(&projected, false, success)[SUCCESS_AT].style;
         assert_eq!(styled(Success::Rate(0.95)), Style::new().fg(theme.good));

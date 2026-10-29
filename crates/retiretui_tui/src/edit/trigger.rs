@@ -63,7 +63,7 @@ const KIND_GAP: f32 = 1.0;
 
 fn kind_node() -> Node {
     Node {
-        margin: UiRect::right(Val::Px(KIND_GAP)),
+        margin: UiRect::right(Val::Em(KIND_GAP)),
         ..sized(KIND_WIDTH, 1.0)
     }
 }

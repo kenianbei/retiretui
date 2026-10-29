@@ -17,6 +17,7 @@ use crate::support::{
 };
 use crate::theme::Theme;
 use crate::theme::document::Variant;
+use crate::theme::library::default_theme;
 use retiretui_client::ledger::ColumnSet;
 
 /// The full fixture on the Ledger, on a terminal of `size`: several
@@ -378,10 +379,10 @@ fn a_run_opened_while_the_table_is_shown_lands_on_its_year() {
 }
 
 #[test]
-fn the_terminal_s_own_theme_bands_the_tables_for_the_screen_it_is_on() {
+fn the_default_theme_bands_the_tables_in_its_own_stripe() {
     let mut app = ledger();
     let worn = app.world().resource::<Theme>().clone();
-    assert_eq!(worn, Theme::terminal_on(Variant::Dark));
+    assert_eq!(worn, default_theme(Variant::Dark));
     let mut stripes = app
         .world_mut()
         .query_filtered::<&TableStripe, With<LedgerTable>>();

@@ -5,6 +5,7 @@
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Component, Entity};
 use bevy_ui::{FlexDirection, Node, Overflow, PositionType, Val};
+use plurimus::bui::bevy_ui_widgets::ScrollArea;
 use plurimus::core::UiWidget;
 use plurimus::core::ratatui_core::style::{Modifier, Style};
 use plurimus::ui::UiStyle;
@@ -110,10 +111,10 @@ pub struct FormBar {
 fn bar_node() -> Node {
     Node {
         position_type: PositionType::Absolute,
-        top: Val::Px(1.0),
-        bottom: Val::Px(f32::from(BELOW_FIELDS + 1)),
-        right: Val::Px(0.0),
-        width: Val::Px(1.0),
+        top: Val::Rem(1.0),
+        bottom: Val::Rem(f32::from(BELOW_FIELDS + 1)),
+        right: Val::ZERO,
+        width: Val::Em(1.0),
         ..Node::default()
     }
 }
@@ -171,6 +172,7 @@ pub fn spawn_form(commands: &mut Commands, form: Entity, ops: Ops, is_alone: boo
     let column = commands
         .spawn((
             FormFields { bar },
+            ScrollArea,
             Node {
                 flex_direction: FlexDirection::Column,
                 flex_shrink: 1.0,
@@ -256,7 +258,7 @@ fn spawn_row(
         .spawn((
             Node {
                 flex_direction: FlexDirection::Row,
-                min_width: Val::Px(0.0),
+                min_width: Val::ZERO,
                 ..growing()
             },
             ChildOf(row),

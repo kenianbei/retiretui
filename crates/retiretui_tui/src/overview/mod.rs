@@ -91,7 +91,7 @@ fn spawn_overview(bodies: Query<Entity, With<Body>>, mut commands: Commands) {
     let beside = Node {
         flex_direction: FlexDirection::Column,
         flex_grow: BESIDE_SHARE,
-        flex_basis: Val::Px(0.0),
+        flex_basis: Val::ZERO,
         ..Node::default()
     };
     let beside = commands.spawn((beside, ChildOf(charted))).id();
@@ -103,8 +103,8 @@ fn spawn_band(commands: &mut Commands, view: Entity, (least, share): (f32, f32))
     let band = Node {
         flex_direction: FlexDirection::Row,
         flex_grow: share,
-        flex_basis: Val::Px(0.0),
-        min_height: Val::Px(least),
+        flex_basis: Val::ZERO,
+        min_height: Val::Rem(least),
         ..Node::default()
     };
     commands.spawn((band, ChildOf(view))).id()

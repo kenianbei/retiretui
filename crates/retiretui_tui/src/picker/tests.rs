@@ -22,7 +22,7 @@ fn listed(world: &World, results: Entity) -> Vec<(Entity, usize, bool)> {
 fn rows_are_written_over_the_ones_listed_and_the_rest_despawned() {
     let mut world = World::new();
     let results = world.spawn_empty().id();
-    let theme = Theme::terminal();
+    let theme = Theme::bare();
     let wide = [Offered::new(0, "zero").dimmed(), Offered::new(1, "one")];
     let first = place_rows(&mut world, results, &wide, &theme);
     let before = listed(&world, results);

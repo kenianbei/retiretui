@@ -6,7 +6,7 @@ pub mod ground;
 pub mod library;
 pub mod picker;
 
-use bevy_app::{App, Startup, Update};
+use bevy_app::{App, PreStartup, Update};
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::prelude::{Commands, IntoScheduleConfigs, Query, Res, ResMut, Resource};
 use bevy_ecs::schedule::SystemSet;
@@ -20,9 +20,8 @@ use super::settings::Settings;
 
 pub fn plugin(app: &mut App) {
     app.add_plugins((picker::plugin, ground::plugin));
-    app.insert_resource(Theme::terminal());
     app.init_resource::<WantedVariant>();
-    app.add_systems(Startup, wear_the_theme_set);
+    app.add_systems(PreStartup, wear_the_theme_set);
     app.configure_sets(Update, Repainted.before(WidgetSystems::Style));
     app.add_systems(Update, (sync_look, restripe).in_set(Repainted));
 }
@@ -36,11 +35,6 @@ pub struct WantedVariant(pub document::Variant);
 /// themselves so a theme change reaches the frame it is made on.
 #[derive(SystemSet, Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct Repainted;
-
-/// The stripe of the terminal's own theme on a dark screen and on a light
-/// one: a step off black and a step off white on the grey ramp.
-const STRIPE_ON_DARK: Color = Color::Indexed(235);
-const STRIPE_ON_LIGHT: Color = Color::Indexed(254);
 
 /// The colours a screen names. A ground the theme leaves unset is the
 /// terminal's own.
@@ -68,10 +62,10 @@ pub struct Theme {
 }
 
 impl Theme {
-    /// The terminal's own sixteen colours, its grounds left alone, so the
-    /// app matches whatever the terminal is themed as.
+    /// The roles a theme document leaves unstated: the terminal's own
+    /// sixteen colours, its grounds left alone. No theme of its own.
     #[must_use]
-    pub fn terminal() -> Self {
+    pub(crate) fn bare() -> Self {
         Self {
             bg: None,
             fg: Color::Reset,
@@ -91,21 +85,6 @@ impl Theme {
                 Color::Blue,
                 Color::Red,
             ],
-        }
-    }
-
-    /// [`Self::terminal`] on a screen of `variant`, its tables banded in a
-    /// faint grey of the 256-colour ramp: the one ground it sets, since no
-    /// colour of the terminal's own sixteen is faint on every screen.
-    #[must_use]
-    pub fn terminal_on(variant: document::Variant) -> Self {
-        let stripe = match variant {
-            document::Variant::Dark => STRIPE_ON_DARK,
-            document::Variant::Light => STRIPE_ON_LIGHT,
-        };
-        Self {
-            stripe: Some(stripe),
-            ..Self::terminal()
         }
     }
 
@@ -189,21 +168,18 @@ impl Theme {
     }
 }
 
-/// Reads the themes there are and puts on the one the settings name. One
-/// that does not resolve is said so, and the terminal's own worn instead.
-fn wear_the_theme_set(
-    settings: Res<Settings>,
-    wanted: Res<WantedVariant>,
-    mut theme: ResMut<Theme>,
-    mut commands: Commands,
-) {
+/// Reads the themes there are and puts on the one the settings name,
+/// before anything draws from it. One that does not resolve is said so,
+/// and what no name resolves to worn instead.
+fn wear_the_theme_set(settings: Res<Settings>, wanted: Res<WantedVariant>, mut commands: Commands) {
     let themes = library::Themes::beside(&settings);
-    *theme = themes
+    let theme = themes
         .resolve(&settings.theme, wanted.0)
         .unwrap_or_else(|error| {
             journal::warn(format!("config.toml: {error}"));
-            Theme::terminal_on(wanted.0)
+            library::default_theme(wanted.0)
         });
+    commands.insert_resource(theme);
     commands.insert_resource(themes);
 }
 
@@ -240,17 +216,17 @@ mod tests {
     fn a_theme_with_a_ground_draws_the_caret_in_its_accent() {
         let themed = Theme {
             bg: Some(Color::Black),
-            ..Theme::terminal()
+            ..Theme::bare()
         };
         let caret = themed.ui_theme().caret;
         assert_eq!((caret.bg, caret.fg), (Some(themed.accent), themed.bg));
-        let terminal = Theme::terminal().ui_theme().caret;
+        let terminal = Theme::bare().ui_theme().caret;
         assert!(terminal.add_modifier.contains(Modifier::REVERSED));
     }
 
     #[test]
-    fn the_terminal_theme_leaves_the_grounds_to_the_terminal() {
-        let theme = Theme::terminal();
+    fn the_bare_roles_leave_the_grounds_to_the_terminal() {
+        let theme = Theme::bare();
         let ui = theme.ui_theme();
         assert_eq!(ui.normal, Style::new().fg(Color::Reset));
         assert_eq!(ui.hovered, ui.normal);
@@ -265,7 +241,7 @@ mod tests {
             bg: Some(Color::Rgb(0, 0, 0)),
             stripe: Some(Color::Rgb(20, 20, 20)),
             selection_bg: Some(Color::Rgb(40, 40, 40)),
-            ..Theme::terminal()
+            ..Theme::bare()
         };
         let ui = theme.ui_theme();
         assert_eq!(ui.normal.bg, Some(Color::Rgb(0, 0, 0)));
@@ -276,7 +252,7 @@ mod tests {
 
     #[test]
     fn a_chart_past_the_colours_the_theme_names_starts_them_again() {
-        let theme = Theme::terminal();
+        let theme = Theme::bare();
         assert_eq!(theme.series(theme.series.len()), theme.series(0));
         assert_ne!(theme.series(0), theme.series(1));
     }

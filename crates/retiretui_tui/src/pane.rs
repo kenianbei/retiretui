@@ -169,7 +169,7 @@ impl Pane {
             frame: Framed::titled(title),
             node: Node {
                 flex_direction: FlexDirection::Column,
-                padding: UiRect::all(Val::Px(FRAME_INSET)),
+                padding: UiRect::axes(Val::Em(FRAME_INSET), Val::Rem(FRAME_INSET)),
                 overflow: Overflow::clip(),
                 ..filling()
             },
@@ -181,7 +181,7 @@ impl Pane {
     #[must_use]
     pub fn sharing(mut self, share: f32) -> Self {
         self.node.flex_grow = share;
-        self.node.flex_basis = Val::Px(0.0);
+        self.node.flex_basis = Val::ZERO;
         self
     }
 
@@ -189,7 +189,7 @@ impl Pane {
     /// does not shrink.
     #[must_use]
     pub fn tall(mut self, rows: f32) -> Self {
-        self.node.height = Val::Px(rows);
+        self.node.height = Val::Rem(rows);
         self.node.flex_shrink = 0.0;
         self
     }
@@ -199,7 +199,7 @@ impl Pane {
     #[must_use]
     pub fn shrinking_to(mut self, rows: f32) -> Self {
         self.node.flex_shrink = 1.0;
-        self.node.min_height = Val::Px(rows);
+        self.node.min_height = Val::Rem(rows);
         self
     }
 
@@ -214,7 +214,7 @@ impl Pane {
     /// not shrink.
     #[must_use]
     pub fn wide(mut self, cols: f32) -> Self {
-        self.node.width = Val::Px(cols);
+        self.node.width = Val::Em(cols);
         self.node.flex_shrink = 0.0;
         self
     }
@@ -222,7 +222,7 @@ impl Pane {
     /// The same pane never narrower than `cols`, borders included.
     #[must_use]
     pub fn at_least_wide(mut self, cols: f32) -> Self {
-        self.node.min_width = Val::Px(cols);
+        self.node.min_width = Val::Em(cols);
         self
     }
 

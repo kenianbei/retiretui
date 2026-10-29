@@ -55,9 +55,9 @@ const FUNDS_LEAST: f32 = 7.0;
 pub(super) fn spawn_panes(commands: &mut Commands, year: Entity) {
     let money = Node {
         flex_grow: 1.0,
-        flex_basis: Val::Px(0.0),
-        min_width: Val::Px(0.0),
-        min_height: Val::Px(FUNDS_LEAST),
+        flex_basis: Val::ZERO,
+        min_width: Val::ZERO,
+        min_height: Val::Rem(FUNDS_LEAST),
         ..Node::default()
     };
     let money = commands.spawn((money, Part::Money, ChildOf(year))).id();
@@ -244,14 +244,15 @@ mod tests {
             label: "Spending".to_owned(),
             amount: "$1".to_owned(),
         };
-        let terminal = Theme::terminal_on(crate::theme::document::Variant::Dark);
-        assert_eq!(Row::Line(line.clone()).ink(&terminal), None);
-        let ground = Row::Gap.ink(&terminal).expect("a gap is unbanded");
+        let mut striped = Theme::bare();
+        striped.stripe = Some(Color::DarkGray);
+        assert_eq!(Row::Line(line.clone()).ink(&striped), None);
+        let ground = Row::Gap.ink(&striped).expect("a gap is unbanded");
         assert_eq!(ground.bg, Some(Color::Reset), "the terminal's own ground");
-        assert_ne!(ground.bg, terminal.stripe);
-        let sum = Row::Sum(line).ink(&terminal).expect("a sum is unbanded");
-        assert_eq!((sum.bg, sum.fg), (ground.bg, terminal.dimmed().fg));
-        let mut painted = terminal;
+        assert_ne!(ground.bg, striped.stripe);
+        let sum = Row::Sum(line).ink(&striped).expect("a sum is unbanded");
+        assert_eq!((sum.bg, sum.fg), (ground.bg, striped.dimmed().fg));
+        let mut painted = striped;
         painted.bg = Some(Color::Rgb(1, 2, 3));
         let ground = Row::Gap.ink(&painted).expect("a gap is unbanded");
         assert_eq!(ground.bg, painted.bg, "a theme's own ground");

@@ -9,9 +9,6 @@ use serde::Deserialize;
 
 use super::Theme;
 
-/// The name of the theme that is the terminal's own colours.
-pub const TERMINAL: &str = "terminal";
-
 /// What a colour is spelled as where it means the terminal's own.
 const DEFAULT_COLOUR: &str = "default";
 pub const LEAST_SERIES: usize = 4;
@@ -50,7 +47,7 @@ struct Document {
 /// The theme a config asks for: which one, and how it is painted over.
 #[derive(Deserialize, Default, Clone, PartialEq, Eq, Debug)]
 pub struct Choice {
-    /// A theme, or a family of them; the terminal's own where unnamed.
+    /// A theme, or a family of them; the default family where unnamed.
     #[serde(default)]
     pub name: Option<String>,
     /// Drop the theme's background for the terminal's own.
@@ -93,7 +90,7 @@ pub struct Painted {
 /// Where it is not a document, or a role or a colour of it does not read.
 pub fn read(text: &str) -> Result<Painted, String> {
     let document: Document = toml::from_str(text).map_err(|error| error.message().to_owned())?;
-    let mut theme = Theme::terminal();
+    let mut theme = Theme::bare();
     for (role, value) in &document.roles {
         match value {
             toml::Value::String(colour) => paint(&mut theme, role, colour)?,
@@ -191,6 +188,6 @@ mod tests {
         assert_eq!(unread("accent = 3"), "accent: not a colour");
         assert!(unread("series = [\"red\"]").starts_with("series:"));
         assert!(read("variant = \"dark\"").unwrap_err().contains("family"));
-        assert_eq!(read(HEAD).unwrap().theme, Theme::terminal());
+        assert_eq!(read(HEAD).unwrap().theme, Theme::bare());
     }
 }

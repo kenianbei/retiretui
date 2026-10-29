@@ -95,7 +95,7 @@ fn spawn_panes(commands: &mut Commands, row: Entity) {
     let stacked = |flex_direction| Node {
         flex_direction,
         flex_grow: 1.0,
-        flex_basis: Val::Px(0.0),
+        flex_basis: Val::ZERO,
         ..Node::default()
     };
     let column = Node {

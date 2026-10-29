@@ -119,9 +119,9 @@ pub fn show_text(text: &mut TextInput, wanted: String) {
 pub fn sharing() -> Node {
     Node {
         flex_grow: 1.0,
-        flex_basis: Val::Px(0.0),
-        min_width: Val::Px(0.0),
-        height: Val::Px(1.0),
+        flex_basis: Val::ZERO,
+        min_width: Val::ZERO,
+        height: Val::Rem(1.0),
         ..Node::default()
     }
 }
@@ -239,7 +239,7 @@ pub fn spawn_field(commands: &mut Commands, row: Entity, spec: FieldSpec) {
                 Remaining::default(),
                 field,
                 Node {
-                    margin: UiRect::left(Val::Px(REMAINDER_INDENT)),
+                    margin: UiRect::left(Val::Em(REMAINDER_INDENT)),
                     ..sharing()
                 },
                 UiWidget::new(Paragraph::new("")),
@@ -270,7 +270,7 @@ fn spawn_slider(commands: &mut Commands, row: Entity, field: FormField) {
         SliderStep(step),
         field,
         Node {
-            margin: UiRect::right(Val::Px(SLIDER_GAP)),
+            margin: UiRect::right(Val::Em(SLIDER_GAP)),
             ..sized(SLIDER_WIDTH, 1.0)
         },
         placed(),

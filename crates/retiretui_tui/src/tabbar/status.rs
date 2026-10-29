@@ -98,7 +98,7 @@ fn draw_status(
     let mut spans = vec![Span::styled(format!("{name} "), theme.dimmed())];
     spans.extend(marks);
     let line = Line::from(spans);
-    let width = Val::Px(f32::from(line.width() as u16 + STATUS_MARGIN));
+    let width = Val::Em(f32::from(line.width() as u16 + STATUS_MARGIN));
     let Ok((mut widget, mut node)) = cells.single_mut() else {
         return;
     };

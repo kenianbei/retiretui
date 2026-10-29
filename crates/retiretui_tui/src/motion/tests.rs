@@ -2,6 +2,8 @@ use std::time::Duration;
 
 use bevy_time::TimeUpdateStrategy;
 use plurimus::core::ratatui_core::style::Color;
+
+use crate::theme::Theme;
 use plurimus::term::KeyCode;
 
 use super::*;
@@ -10,7 +12,7 @@ use crate::nav::Page;
 use crate::sidebar::SIDEBAR_COLS;
 use crate::support::{
     Headless, SIZE, cell_fg, cell_of, composed_frame, headless_app, headless_app_set, let_pass,
-    press_key, said, scratch_plan, show, type_text,
+    press_key, said, scratch_plan, show, type_text, worn,
 };
 
 const DIM: Play = Play::Dim(Color::Gray);
@@ -81,7 +83,7 @@ fn no_motion_gives_every_effect_no_time_at_all() {
 fn the_backdrop_dims_under_a_dialog_and_comes_back_when_it_closes() {
     let mut app = moving_app(Motion::Full);
     let resting = cell_fg(&app, FIRST_ROW.0, FIRST_ROW.1);
-    assert_ne!(resting, Some(Color::DarkGray));
+    assert_ne!(resting, Some(worn(&app).dim));
     press_key(&mut app, KeyCode::Down);
     let resting_unfocused = cell_fg(&app, FIRST_ROW.0, FIRST_ROW.1);
 
@@ -90,7 +92,7 @@ fn the_backdrop_dims_under_a_dialog_and_comes_back_when_it_closes() {
     let frame = composed_frame(&app);
     assert_eq!(
         cell_fg(&app, FIRST_ROW.0, FIRST_ROW.1),
-        Some(Color::DarkGray),
+        Some(worn(&app).dim),
         "the page behind is dimmed: {frame}"
     );
     let (row, text) = frame
@@ -101,12 +103,12 @@ fn the_backdrop_dims_under_a_dialog_and_comes_back_when_it_closes() {
     let column = text.chars().position(|symbol| symbol == 'D').unwrap();
     assert_ne!(
         cell_fg(&app, column as u16, row as u16),
-        Some(Color::DarkGray),
+        Some(worn(&app).dim),
         "the dialog is not"
     );
     assert_eq!(
         cell_fg(&app, 1, SIZE.rows - 1),
-        Some(Color::Cyan),
+        Some(worn(&app).accent),
         "nor the hint row, which names its keys"
     );
 
@@ -125,7 +127,7 @@ fn with_motion_off_nothing_dims() {
     assert!(composed_frame(&app).contains("Delete"));
     assert_ne!(
         cell_fg(&app, FIRST_ROW.0, FIRST_ROW.1),
-        Some(Color::DarkGray)
+        Some(worn(&app).dim)
     );
 }
 
@@ -139,14 +141,14 @@ fn an_applied_row_fades_in_from_dim() {
     assert!(said(&app).is_empty(), "applied: {:?}", said(&app));
     assert_eq!(
         cell_fg(&app, FIRST_ROW.0, FIRST_ROW.1),
-        Some(Color::DarkGray),
+        Some(worn(&app).dim),
         "the row starts from dim: {}",
         composed_frame(&app)
     );
     let_pass(&mut app, WELL_PAST_ANY_EFFECT);
     assert_eq!(
         cell_fg(&app, FIRST_ROW.0, FIRST_ROW.1),
-        Some(Color::Cyan),
+        Some(worn(&app).accent),
         "and settles into the cursor row's own accent"
     );
 }
@@ -173,7 +175,7 @@ fn the_backdrop_spares_the_overlay_standing_deepest() {
 
     let upper = Rect::new(10, 5, 20, 8);
     let mut world = World::new();
-    world.insert_resource(Theme::terminal());
+    world.insert_resource(Theme::bare());
     world.init_resource::<Cues>();
     world.spawn((ModalOpen, ComputedWidgetArea(upper), Band::at(1)));
     world.spawn((

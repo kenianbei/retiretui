@@ -33,6 +33,7 @@ use crate::nav::{self, ActivePage, Page};
 use crate::session::{Session, Today};
 use crate::settings::Settings;
 use crate::store::{DiskStore, Store};
+use crate::theme::Theme;
 use crate::tools::Searches;
 use crate::watch;
 
@@ -125,6 +126,11 @@ pub fn searched_app(path: PathBuf, plan_text: &str, size: TerminalSize) -> Headl
 
 pub fn headless_app(size: TerminalSize) -> Headless {
     headless_app_at(scratch_plan(), size)
+}
+
+/// The theme the shell wears.
+pub fn worn(app: &App) -> &Theme {
+    app.world().resource::<Theme>()
 }
 
 /// Everything said to the user so far, oldest first.

@@ -75,7 +75,7 @@ fn spawn_table(commands: &mut Commands, root: Entity, ops: Ops, list: ListOps) {
         .spawn((
             Node {
                 flex_direction: FlexDirection::Row,
-                column_gap: Val::Px(PANE_GAP),
+                column_gap: Val::Em(PANE_GAP),
                 ..filling()
             },
             ChildOf(root),
@@ -114,7 +114,7 @@ fn spawn_table(commands: &mut Commands, root: Entity, ops: Ops, list: ListOps) {
 fn spawn_add_button(commands: &mut Commands, pane: Entity, table: Entity, list: ListOps) {
     let label = format!("+ Add {}", list.singular);
     let node = Node {
-        margin: UiRect::left(Val::Px(f32::from(CURSOR_COLS))),
+        margin: UiRect::left(Val::Em(f32::from(CURSOR_COLS))),
         ..button_node(&label)
     };
     commands
