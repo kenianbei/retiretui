@@ -9,10 +9,9 @@ use bevy_ecs::prelude::{
 };
 use bevy_input::keyboard::KeyboardInput;
 use bevy_input_focus::FocusedInput;
-use plurimus::core::UiWidget;
+use bevy_ui::widget::Text;
 use plurimus::term::bevy_compat::HeldModifiers;
 use plurimus::ui::{ModalDismiss, ModalOpen, first_bound};
-use plurimus::widgets::ratatui_widgets::paragraph::{Paragraph, Wrap};
 use plurimus::widgets::{Activate, button};
 
 use super::hints::Hints;
@@ -162,11 +161,9 @@ fn spawn_dialog(commands: &mut Commands, root: Entity, asked: &Asked) -> Option<
         ))
         .observe(handle_key)
         .observe(handle_dismiss);
-    let question = Paragraph::new(asked.message.clone()).wrap(Wrap { trim: true });
     commands.spawn((
         fixed(f32::from(rows)),
-        UiWidget::new(question),
-        placed(),
+        Text::new(asked.message.clone()),
         ChildOf(root),
     ));
     commands.spawn((growing(), ChildOf(root)));
@@ -233,12 +230,13 @@ fn handle_dismiss(_dismissed: On<ModalDismiss>, mut confirm: ResMut<Confirm>) {
 
 #[cfg(test)]
 mod tests {
-    use super::{TEXT_COLS, wrapped_rows};
+    use super::{Confirm, TEXT_COLS, wrapped_rows};
     use bevy_input_focus::InputFocus;
     use plurimus::term::KeyCode;
 
     use crate::edit::Draft;
     use crate::edit::tests::open;
+    use crate::layout::wrapped;
     use crate::nav::Page;
     use crate::support::{
         Headless, SIZE, click, composed_frame, headless_app, is_asking, press_ctrl, press_key,
@@ -297,5 +295,21 @@ mod tests {
         let question =
             "Take the 24% ladder? 14 conversions, 2026–2038, in place of the ladder taken before.";
         assert_eq!(wrapped_rows(question), 3);
+    }
+
+    #[test]
+    fn the_terminal_draws_a_long_question_on_the_rows_it_was_sized_for() {
+        let mut app = headless_app(SIZE);
+        let question =
+            "Take the 24% ladder? 14 conversions, 2026–2038, in place of the ladder taken before.";
+        app.world_mut()
+            .resource_mut::<Confirm>()
+            .ask(question, "Take", |_| {});
+        app.update();
+        app.update();
+        let frame = composed_frame(&app);
+        for row in wrapped(question, TEXT_COLS, "") {
+            assert!(frame.contains(&row), "{row:?} is not on one row of {frame}");
+        }
     }
 }

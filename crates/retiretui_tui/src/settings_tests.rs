@@ -94,7 +94,7 @@ fn a_chosen_theme_is_kept_in_the_file_beside_what_was_there() {
         Color::Rgb(0xff, 0, 0),
         "their own accent stays on"
     );
-    assert_eq!(worn(&app).bg, Some(Color::Rgb(0x2e, 0x34, 0x40)));
+    assert_eq!(worn(&app).bg, Color::Rgb(0x2e, 0x34, 0x40));
     assert_eq!(said(&app), ["theme nord"]);
     let kept = std::fs::read_to_string(&path).unwrap();
     assert_eq!(

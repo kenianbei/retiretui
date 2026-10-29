@@ -199,7 +199,7 @@ fn headless_app_from(
     app.insert_resource(today);
     app.insert_resource(projected);
     app.insert_resource(watch::Watch::new(store, files));
-    crate::add_tui(&mut app);
+    crate::add_tui(&mut app, crate::cells::plugin);
     app.insert_resource(Searches(false));
     let inbox = app.world().resource::<Inbox>().clone();
     let subscriber = tracing_subscriber::registry().with(journal::layer(inbox));

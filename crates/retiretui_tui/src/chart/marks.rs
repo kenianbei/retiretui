@@ -208,7 +208,7 @@ mod tests {
 
     #[test]
     fn the_year_cursor_is_marked_in_the_accent() {
-        let theme = Theme::bare();
+        let theme = Theme::default();
         let mut chart = marked(&[]);
         chart.marks = vec![Mark::cursor(2038, &theme)];
         let buf = drawn(&chart);

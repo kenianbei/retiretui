@@ -55,8 +55,8 @@ pub const CLOSE_KEYS: &[(KeyBinding, ())] = &[(KeyBinding::new(Key::Escape), ())
 /// A box centred over the body, by its outer size in cells.
 #[derive(Component, Clone, Copy, Debug)]
 pub struct Centred {
-    cols: u16,
-    rows: u16,
+    pub(crate) cols: u16,
+    pub(crate) rows: u16,
 }
 
 /// Makes a centred box as tall as the `rows` it holds inside its frame.

@@ -5,6 +5,7 @@ pub mod document;
 pub mod ground;
 pub mod library;
 pub mod picker;
+mod said;
 
 use bevy_app::{App, PreStartup, Update};
 use bevy_ecs::change_detection::DetectChanges;
@@ -15,11 +16,13 @@ use plurimus::core::{Background, TerminalCamera};
 use plurimus::ui::UiTheme;
 use plurimus::widgets::{TableStripe, WidgetSystems};
 
+pub use said::{say, text};
+
 use super::journal;
 use super::settings::Settings;
 
 pub fn plugin(app: &mut App) {
-    app.add_plugins((picker::plugin, ground::plugin));
+    app.add_plugins(picker::plugin);
     app.init_resource::<WantedVariant>();
     app.add_systems(PreStartup, wear_the_theme_set);
     app.configure_sets(Update, Repainted.before(WidgetSystems::Style));
@@ -36,11 +39,12 @@ pub struct WantedVariant(pub document::Variant);
 #[derive(SystemSet, Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct Repainted;
 
-/// The colours a screen names. A ground the theme leaves unset is the
-/// terminal's own.
+/// The colours a screen names, each an RGB value: a theme decides every
+/// colour, the terminal's palette none.
 #[derive(Resource, Clone, PartialEq, Eq, Debug)]
 pub struct Theme {
-    pub bg: Option<Color>,
+    /// The ground under everything.
+    pub bg: Color,
     pub fg: Color,
     /// Metadata, axis labels, hints.
     pub dim: Color,
@@ -61,31 +65,48 @@ pub struct Theme {
     series: Vec<Color>,
 }
 
+/// The default family in the dark variant.
+#[cfg(test)]
+impl Default for Theme {
+    fn default() -> Self {
+        library::default_theme(document::Variant::default())
+    }
+}
+
 impl Theme {
-    /// The roles a theme document leaves unstated: the terminal's own
-    /// sixteen colours, its grounds left alone. No theme of its own.
-    #[must_use]
-    pub(crate) fn bare() -> Self {
+    /// Every role in `ink`: what the default family's document is painted
+    /// over, so that the family names every role or wears the ink.
+    fn unpainted(ink: Color) -> Self {
         Self {
-            bg: None,
-            fg: Color::Reset,
-            dim: Color::DarkGray,
-            border: Color::DarkGray,
-            accent: Color::Cyan,
+            bg: ink,
+            fg: ink,
+            dim: ink,
+            border: ink,
+            accent: ink,
             selection_bg: None,
             stripe: None,
-            over: Color::Red,
-            good: Color::Green,
-            caution: Color::Yellow,
-            series: vec![
-                Color::Cyan,
-                Color::Green,
-                Color::Magenta,
-                Color::Yellow,
-                Color::Blue,
-                Color::Red,
-            ],
+            over: ink,
+            good: ink,
+            caution: ink,
+            series: vec![ink],
         }
+    }
+
+    /// The colour `style` writes in, the theme's ink where it names none,
+    /// as bevy's text takes it.
+    #[must_use]
+    pub fn ink(&self, style: Style) -> bevy_color::Color {
+        style
+            .fg
+            .and_then(rgb)
+            .or_else(|| rgb(self.fg))
+            .unwrap_or_default()
+    }
+
+    /// The theme's ground as bevy takes it.
+    #[must_use]
+    pub fn ground(&self) -> bevy_color::Color {
+        rgb(self.bg).unwrap_or_default()
     }
 
     #[must_use]
@@ -103,6 +124,23 @@ impl Theme {
         Style::new().fg(self.border)
     }
 
+    /// A frame's line: the accent while the keyboard is inside it, the
+    /// border otherwise.
+    #[must_use]
+    pub fn edge(&self, is_lit: bool) -> Style {
+        if is_lit {
+            self.accented()
+        } else {
+            self.bordered()
+        }
+    }
+
+    /// What holds the keyboard, or is chosen: bold in the accent.
+    #[must_use]
+    pub fn focused(&self) -> Style {
+        self.accented().add_modifier(Modifier::BOLD)
+    }
+
     #[must_use]
     pub fn exceeded(&self) -> Style {
         Style::new().fg(self.over)
@@ -116,10 +154,10 @@ impl Theme {
     }
 
     /// The ground of a row left out of the banding, patched over a stripe
-    /// that would fall on it: the theme's own, or the terminal's.
+    /// that would fall on it.
     #[must_use]
     pub fn unbanded(&self) -> Style {
-        Style::new().bg(self.bg.unwrap_or(Color::Reset))
+        Style::new().bg(self.bg)
     }
 
     /// The colour of a chart's `index`th dataset, wrapping past the last.
@@ -132,18 +170,11 @@ impl Theme {
         self.series[index % self.series.len()]
     }
 
-    fn background(&self) -> Background {
-        self.bg
-            .map_or(Background::TerminalDefault, Background::Clear)
-    }
-
-    /// The interaction theme every stock widget resolves its look from.
+    /// The interaction theme every stock widget resolves its look from;
+    /// the caret is the ground's colour on the accent.
     #[must_use]
     pub fn ui_theme(&self) -> UiTheme {
-        let normal = self
-            .bg
-            .map_or_else(Style::new, |bg| Style::new().bg(bg))
-            .fg(self.fg);
+        let normal = Style::new().bg(self.bg).fg(self.fg);
         let hovered = self.stripe.map_or(normal, |stripe| normal.bg(stripe));
         let pressed = self
             .selection_bg
@@ -153,18 +184,15 @@ impl Theme {
             .with_hovered(hovered)
             .with_pressed(pressed)
             .with_disabled(normal.fg(self.dim))
-            .with_focused(Style::new().fg(self.accent).add_modifier(Modifier::BOLD))
-            .with_caret(self.caret())
+            .with_focused(self.focused())
+            .with_caret(Style::new().fg(self.bg).bg(self.accent))
     }
+}
 
-    /// A text caret in the accent over the theme's ground, or the stock
-    /// reversed cell where the ground is the terminal's own and no colour
-    /// is sure to show against it.
-    fn caret(&self) -> Style {
-        self.bg.map_or_else(
-            || Style::new().add_modifier(Modifier::REVERSED),
-            |bg| Style::new().fg(bg).bg(self.accent),
-        )
+fn rgb(colour: Color) -> Option<bevy_color::Color> {
+    match colour {
+        Color::Rgb(red, green, blue) => Some(bevy_color::Color::srgb_u8(red, green, blue)),
+        _ => None,
     }
 }
 
@@ -192,9 +220,8 @@ fn sync_look(
         return;
     }
     *stock = theme.ui_theme();
-    let background = theme.background();
     for mut camera in &mut cameras {
-        camera.background = background;
+        camera.background = Background::Clear(theme.bg);
     }
 }
 
@@ -213,46 +240,36 @@ mod tests {
     use super::*;
 
     #[test]
-    fn a_theme_with_a_ground_draws_the_caret_in_its_accent() {
-        let themed = Theme {
-            bg: Some(Color::Black),
-            ..Theme::bare()
-        };
-        let caret = themed.ui_theme().caret;
-        assert_eq!((caret.bg, caret.fg), (Some(themed.accent), themed.bg));
-        let terminal = Theme::bare().ui_theme().caret;
-        assert!(terminal.add_modifier.contains(Modifier::REVERSED));
+    fn the_caret_is_the_ground_on_the_accent() {
+        let theme = Theme::default();
+        let caret = theme.ui_theme().caret;
+        assert_eq!((caret.bg, caret.fg), (Some(theme.accent), Some(theme.bg)));
     }
 
     #[test]
-    fn the_bare_roles_leave_the_grounds_to_the_terminal() {
-        let theme = Theme::bare();
-        let ui = theme.ui_theme();
-        assert_eq!(ui.normal, Style::new().fg(Color::Reset));
-        assert_eq!(ui.hovered, ui.normal);
-        assert_eq!(ui.pressed, ui.normal);
-        assert_eq!(ui.focused.fg, Some(Color::Cyan));
-        assert_eq!(theme.background(), Background::TerminalDefault);
-    }
-
-    #[test]
-    fn a_theme_with_grounds_fills_the_states_from_them() {
+    fn a_themes_grounds_fill_the_states() {
         let theme = Theme {
-            bg: Some(Color::Rgb(0, 0, 0)),
+            bg: Color::Rgb(0, 0, 0),
             stripe: Some(Color::Rgb(20, 20, 20)),
             selection_bg: Some(Color::Rgb(40, 40, 40)),
-            ..Theme::bare()
+            ..Theme::default()
         };
         let ui = theme.ui_theme();
         assert_eq!(ui.normal.bg, Some(Color::Rgb(0, 0, 0)));
         assert_eq!(ui.hovered.bg, Some(Color::Rgb(20, 20, 20)));
         assert_eq!(ui.pressed.bg, Some(Color::Rgb(40, 40, 40)));
-        assert_eq!(theme.background(), Background::Clear(Color::Rgb(0, 0, 0)));
+        let unstriped = Theme {
+            stripe: None,
+            selection_bg: None,
+            ..theme
+        };
+        let ui = unstriped.ui_theme();
+        assert_eq!((ui.hovered, ui.pressed), (ui.normal, ui.normal));
     }
 
     #[test]
     fn a_chart_past_the_colours_the_theme_names_starts_them_again() {
-        let theme = Theme::bare();
+        let theme = Theme::default();
         assert_eq!(theme.series(theme.series.len()), theme.series(0));
         assert_ne!(theme.series(0), theme.series(1));
     }

@@ -6,12 +6,32 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- `retiretui-desktop`, a second binary that opens the planner in a window: the
+  `tui` command's arguments and `--light` for a theme family's light variant,
+  Inconsolata embedded as its face, a grid of cells the shell lays itself out in
+  as it does in a terminal, the close button asking what `q` asks over an
+  unsaved draft, and its log in `desktop.log`. The window shows the shell's
+  chrome - the tabs, switched by digit or click, each pane's frame and title,
+  the status and the key row, the sidebars, toasts, the message drawer, the
+  dialog and the pickers - over a dimmed body while anything stands over the
+  page; the pages themselves are not yet drawn there.
+
 ### Changed
 
 - The terminal wears the embedded `github` theme family by default,
   `github-light` or `github-dark` as the screen is. The terminal's own colours
   are no longer a theme: the picker and `retiretui theme` do not list
-  `terminal`, and a settings file naming it is told so and wears the default.
+  `terminal`, and a settings file naming it is told so and wears the default. A
+  theme file states every colour as `#rrggbb`, and a role it leaves out takes
+  the `github` family's in its variant.
+
+### Removed
+
+- A theme file can no longer name a colour by an ANSI name or palette index, nor
+  set `transparent`; one that does is reported as unreadable and the default
+  family is worn.
 - A form taller than the body scrolls on a wheel tick over any of its fields,
   not only as the keyboard moves between them.
 

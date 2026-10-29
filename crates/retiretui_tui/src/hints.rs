@@ -5,20 +5,20 @@ use bevy_app::{App, Update};
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{
-    Component, FromWorld, Has, IntoScheduleConfigs, Local, Query, Res, With, World,
+    Commands, Component, Entity, FromWorld, Has, IntoScheduleConfigs, Local, Query, Res, With,
+    World,
 };
 use bevy_ecs::system::SystemParam;
 use bevy_input_focus::InputFocus;
+use plurimus::core::TerminalSize;
 use plurimus::core::ratatui_core::text::{Line, Span};
-use plurimus::core::{TerminalSize, UiWidget};
 use plurimus::ui::ModalOpen;
-use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
 
 use super::command::{self, Keymap};
 use super::focus::Ring;
 use super::layout::HintRow;
 use super::scope::{KeyScope, Scoped};
-use super::theme::{Repainted, Theme};
+use super::theme::{Repainted, Theme, say};
 use super::tools::Idle;
 
 pub fn plugin(app: &mut App) {
@@ -185,11 +185,12 @@ struct Drawn {
 fn refresh_hints(
     held: Held,
     shell: (Ring, Idle, Res<TerminalSize>, Res<Theme>),
-    mut rows: Query<&mut UiWidget, With<HintRow>>,
+    rows: (Query<Entity, With<HintRow>>, Commands),
     mut drawn: Local<Drawn>,
     mut has_many: Local<bool>,
 ) {
     let (ring, idle, size, theme) = shell;
+    let (rows, mut commands) = rows;
     let Held { keymap, own, .. } = &held;
     if ring.shown.is_changed() {
         *has_many = ring.has_many();
@@ -216,8 +217,8 @@ fn refresh_hints(
     push_run(&mut spans, &wanted.leading, &theme);
     spans.push(Span::raw(" ".repeat(gap)));
     push_run(&mut spans, trailing, &theme);
-    for mut widget in &mut rows {
-        *widget = UiWidget::new(Paragraph::new(Line::from(spans.clone())));
+    for row in &rows {
+        say(&mut commands, row, Line::from(spans.clone()), &theme);
     }
     *drawn = wanted;
 }

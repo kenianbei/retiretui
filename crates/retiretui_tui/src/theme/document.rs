@@ -8,9 +8,8 @@ use plurimus::core::ratatui_core::style::Color;
 use serde::Deserialize;
 
 use super::Theme;
+use super::library::default_theme;
 
-/// What a colour is spelled as where it means the terminal's own.
-const DEFAULT_COLOUR: &str = "default";
 pub const LEAST_SERIES: usize = 4;
 const GROUND_VARIABLE: &str = "COLORFGBG";
 const GROUND_SEPARATOR: char = ';';
@@ -50,9 +49,6 @@ pub struct Choice {
     /// A theme, or a family of them; the default family where unnamed.
     #[serde(default)]
     pub name: Option<String>,
-    /// Drop the theme's background for the terminal's own.
-    #[serde(default)]
-    pub transparent: bool,
     /// Any role, painted over the named theme.
     #[serde(flatten)]
     pub overrides: BTreeMap<String, String>,
@@ -83,14 +79,24 @@ pub struct Painted {
     pub theme: Theme,
 }
 
-/// The theme document `text` holds.
+/// The theme document `text` holds, its roles painted over the default
+/// family in the document's variant, so a role it leaves unstated takes
+/// the default's.
 ///
 /// # Errors
 ///
 /// Where it is not a document, or a role or a colour of it does not read.
 pub fn read(text: &str) -> Result<Painted, String> {
+    read_over(text, default_theme)
+}
+
+/// `text` painted over what `base` gives for its variant.
+pub(super) fn read_over(
+    text: &str,
+    base: impl FnOnce(Variant) -> Theme,
+) -> Result<Painted, String> {
     let document: Document = toml::from_str(text).map_err(|error| error.message().to_owned())?;
-    let mut theme = Theme::bare();
+    let mut theme = base(document.variant);
     for (role, value) in &document.roles {
         match value {
             toml::Value::String(colour) => paint(&mut theme, role, colour)?,
@@ -115,9 +121,6 @@ impl Choice {
         for (role, colour) in &self.overrides {
             paint(&mut theme, role, colour)?;
         }
-        if self.transparent {
-            theme.bg = None;
-        }
         Ok(theme)
     }
 }
@@ -138,15 +141,12 @@ fn series(theme: &mut Theme, colours: &[toml::Value]) -> Result<(), String> {
     Ok(())
 }
 
-/// Paints one role of `theme`. A ground spelled `default` is the
-/// terminal's own, which is no fill at all.
 fn paint(theme: &mut Theme, role: &str, colour: &str) -> Result<(), String> {
     let parsed = parse(colour).map_err(|error| format!("{role}: {error}"))?;
-    let ground = (parsed != Color::Reset).then_some(parsed);
     match role {
-        "bg" => theme.bg = ground,
-        "selection_bg" => theme.selection_bg = ground,
-        "stripe" => theme.stripe = ground,
+        "bg" => theme.bg = parsed,
+        "selection_bg" => theme.selection_bg = Some(parsed),
+        "stripe" => theme.stripe = Some(parsed),
         "fg" => theme.fg = parsed,
         "dim" => theme.dim = parsed,
         "border" => theme.border = parsed,
@@ -159,11 +159,13 @@ fn paint(theme: &mut Theme, role: &str, colour: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// A colour as a theme spells one: `#rrggbb`, and nothing a terminal's
+/// palette would decide.
 fn parse(colour: &str) -> Result<Color, String> {
-    if colour == DEFAULT_COLOUR {
-        return Ok(Color::Reset);
+    match Color::from_str(colour) {
+        Ok(rgb @ Color::Rgb(..)) => Ok(rgb),
+        _ => Err(format!("{colour:?} is not spelled #rrggbb")),
     }
-    Color::from_str(colour).map_err(|_| format!("{colour:?} is not a colour"))
 }
 
 #[cfg(test)]
@@ -183,11 +185,32 @@ mod tests {
     fn a_document_says_which_role_or_colour_does_not_read() {
         const HEAD: &str = "family = \"mine\"\nvariant = \"dark\"\n";
         let unread = |roles: &str| read(&format!("{HEAD}{roles}")).unwrap_err();
-        assert!(unread("accent = \"mauve-ish\"").starts_with("accent:"));
         assert!(unread("surface = \"red\"").starts_with("surface:"));
         assert_eq!(unread("accent = 3"), "accent: not a colour");
-        assert!(unread("series = [\"red\"]").starts_with("series:"));
+        assert!(unread("series = [\"#ff0000\"]").starts_with("series:"));
         assert!(read("variant = \"dark\"").unwrap_err().contains("family"));
-        assert_eq!(read(HEAD).unwrap().theme, Theme::bare());
+    }
+
+    #[test]
+    fn a_colour_is_spelled_rgb_and_never_a_palette_entry() {
+        const HEAD: &str = "family = \"mine\"\nvariant = \"dark\"\n";
+        for named in ["red", "darkgray", "8", "default", "mauve-ish"] {
+            let said = read(&format!("{HEAD}accent = \"{named}\"")).unwrap_err();
+            assert_eq!(said, format!("accent: {named:?} is not spelled #rrggbb"));
+        }
+        let read = read(&format!("{HEAD}accent = \"#fabd2f\"")).unwrap();
+        assert_eq!(read.theme.accent, Color::Rgb(0xfa, 0xbd, 0x2f));
+    }
+
+    #[test]
+    fn a_role_left_unstated_takes_the_default_family_in_the_document_variant() {
+        let dark = read("family = \"mine\"\nvariant = \"dark\"\n").unwrap();
+        assert_eq!(dark.theme, default_theme(Variant::Dark));
+        let light = read("family = \"mine\"\nvariant = \"light\"\naccent = \"#010203\"\n").unwrap();
+        let expected = Theme {
+            accent: Color::Rgb(1, 2, 3),
+            ..default_theme(Variant::Light)
+        };
+        assert_eq!(light.theme, expected);
     }
 }

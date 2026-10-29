@@ -238,9 +238,15 @@ depends on UI.
   there. A launch names what the session opens, its store and settings file,
   whether the screen it is drawn on is light, and, for a page, that the document
   last open is reopened, the directory no picker climbs above, and what hands
-  files across the page's edge. Behind a feature, it holds the launcher that
-  runs it in a terminal and the command that lists its themes.
-- `retiretui` - the single user-facing binary, composing each interface's clap
+  files across the page's edge. What draws the tree is a skin added beside the
+  shared pages: a terminal's cells, or a window's pixels - bevy's own renderer
+  over an embedded monospace face, every length still a cell so the shell lays
+  itself out the same, the chrome said as text where both can read it and each
+  skin drawing its own boxes, lines and tabs on the shared markers, the window
+  answering a click where the terminal answers a press. Behind one feature it
+  holds the launcher that runs it in a terminal and the command that lists its
+  themes; behind another, the launcher that opens the window.
+- `retiretui` - the user-facing binary, composing each interface's clap
   subcommands into one command: the command line's from `retiretui_cli`, `tui`
   and `theme` from `retiretui_tui`, and `mcp` from `retiretui_mcp`; each is a
   library of its own over the client. The engine's resolver follows scenario
@@ -429,34 +435,37 @@ depends on UI.
   file. Colour is named by role, never by value: a theme is a table of roles -
   one of an embedded set, the `github` family in the screen's light or dark
   variant by default, or a file of the user's own in a directory beside their
-  config file, every role it leaves unstated the terminal's own colour, read at
-  launch and again as the theme picker opens, one that does not read costing
-  only itself - and a cell no widget coloured is drawn in the theme's own
-  ground. What the user sets - theme, motion, the keys a command answers to -
-  lives in one user config file the shell reads at launch, a setting at a time
-  so that one it cannot read costs only itself, and writes a theme or motion it
-  changes back into a key at a time, leaving the rest of the file as the user
-  wrote it. Each applied item re-validates the draft: a valid draft is
-  re-projected at once so the views follow it, and an invalid one holds the last
-  good view, reports its first issue, counts them beside the file name, and
-  lists every one in a panel whose rows turn to the item. Saving writes the
-  draft as canonical TOML through the same validation gate as every other write;
-  a scenario session saves into its own overlay, still naming its base and
-  stating what differs from it beside whatever it stated that still holds; an
-  edit no overlay can state - clearing what the base states outside an item - is
-  refused in the form's words, and saving one under a new name writes the
-  resolved plan as a plan of its own. The resolved chain's files are watched so
-  edits made outside the session - on disk, or from another tab of the page -
-  re-project in place, except under an unsaved draft or an item being edited,
-  which is reported rather than overwritten, and so are each compared file's,
-  which have no draft to protect; `theme` lists the themes a terminal session
-  can wear and prints one's file to start another from; `mcp` serves the same
-  contract to AI agents over stdio - list, read, validate, write, project,
-  actions, compare, earnings-import, spending-estimate, optimizer and market
-  tools over plan files sandboxed to a served directory, plus tax-parameter
-  lookup and an embedded schema reference. Writes are gated on full validation -
-  scenarios validated fully resolved - and stored in canonical TOML; the schema
-  reference's worked example is kept valid by the test suite.
+  config file, each colour spelled in RGB alone and every role it leaves
+  unstated the default family's in its variant, read at launch and again as the
+  theme picker opens, one that does not read costing only itself - and a cell no
+  widget coloured is drawn in the theme's own ground. What the user sets -
+  theme, motion, the keys a command answers to - lives in one user config file
+  the shell reads at launch, a setting at a time so that one it cannot read
+  costs only itself, and writes a theme or motion it changes back into a key at
+  a time, leaving the rest of the file as the user wrote it. Each applied item
+  re-validates the draft: a valid draft is re-projected at once so the views
+  follow it, and an invalid one holds the last good view, reports its first
+  issue, counts them beside the file name, and lists every one in a panel whose
+  rows turn to the item. Saving writes the draft as canonical TOML through the
+  same validation gate as every other write; a scenario session saves into its
+  own overlay, still naming its base and stating what differs from it beside
+  whatever it stated that still holds; an edit no overlay can state - clearing
+  what the base states outside an item - is refused in the form's words, and
+  saving one under a new name writes the resolved plan as a plan of its own. The
+  resolved chain's files are watched so edits made outside the session - on
+  disk, or from another tab of the page - re-project in place, except under an
+  unsaved draft or an item being edited, which is reported rather than
+  overwritten, and so are each compared file's, which have no draft to protect;
+  `theme` lists the themes a terminal session can wear and prints one's file to
+  start another from; `mcp` serves the same contract to AI agents over stdio -
+  list, read, validate, write, project, actions, compare, earnings-import,
+  spending-estimate, optimizer and market tools over plan files sandboxed to a
+  served directory, plus tax-parameter lookup and an embedded schema reference.
+  Writes are gated on full validation - scenarios validated fully resolved - and
+  stored in canonical TOML; the schema reference's worked example is kept valid
+  by the test suite.
+- `retiretui_desktop` - the planner in a window, a binary of its own over
+  `retiretui_tui`'s window launcher, taking the `tui` command's arguments.
 - `retiretui_web` - the planner in a browser page, built for wasm alone and
   published to GitHub Pages under `/ratzilla` with each release, apart from the
   web app it sits beside: plurimus's WebGL canvas, the workspace kept in the

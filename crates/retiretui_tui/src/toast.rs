@@ -15,9 +15,10 @@ use bevy_ui::{AlignItems, FlexDirection, Node, PositionType, Val};
 use plurimus::core::ratatui_core::buffer::Buffer;
 use plurimus::core::ratatui_core::layout::Rect;
 use plurimus::core::ratatui_core::style::Style;
+use plurimus::core::ratatui_core::text::Line;
 use plurimus::core::ratatui_core::widgets::Widget;
 use plurimus::core::{TerminalSize, UiOrder, UiWidget};
-use plurimus::ui::{Hovered, PointerPress};
+use plurimus::ui::{Hovered, PointerPress, UiLabel};
 use plurimus::widgets::ratatui_widgets::block::Block;
 use plurimus::widgets::ratatui_widgets::borders::BorderType;
 use plurimus::widgets::ratatui_widgets::clear::Clear;
@@ -64,6 +65,13 @@ impl Toasts {
     pub fn texts(&self) -> Vec<&str> {
         self.0.iter().map(|toast| toast.text.as_str()).collect()
     }
+
+    /// Takes down the toast at `at` among those on show.
+    pub(crate) fn dismiss(&mut self, at: usize) {
+        if at < self.0.len() {
+            self.0.remove(at);
+        }
+    }
 }
 
 /// The node the toasts stack up from the lower right corner.
@@ -72,7 +80,7 @@ struct ToastStack;
 
 /// Which toast, by its place in [`Toasts`], a drawn one is.
 #[derive(Component, Clone, Copy)]
-struct Shown(usize);
+pub(crate) struct Shown(pub(crate) usize);
 
 fn spawn_stack(roots: Query<Entity, With<Root>>, mut commands: Commands) {
     let Ok(root) = roots.single() else {
@@ -170,14 +178,13 @@ fn draw_toasts(
         } else {
             theme.ui_theme().normal
         };
+        let text = format!(" {}", toast.text);
         commands
             .spawn((
                 Shown(at),
                 sized(f32::from(width), TOAST_ROWS),
-                UiWidget::new(ToastBox {
-                    text: format!(" {}", toast.text),
-                    style,
-                }),
+                UiLabel(Line::styled(text.clone(), style)),
+                UiWidget::new(ToastBox { text, style }),
                 placed(),
                 TOAST_ORDER,
                 Hovered::default(),
@@ -189,9 +196,7 @@ fn draw_toasts(
 
 /// A press on a toast takes it down.
 fn handle_press(press: On<PointerPress>, shown: Query<&Shown>, mut toasts: ResMut<Toasts>) {
-    if let Ok(&Shown(at)) = shown.get(press.entity)
-        && at < toasts.0.len()
-    {
-        toasts.0.remove(at);
+    if let Ok(shown) = shown.get(press.entity) {
+        toasts.dismiss(shown.0);
     }
 }

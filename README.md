@@ -72,7 +72,6 @@ motion = "reduced" # or "full", or "off"
 
 [tui.theme]
 name = "gruvbox" # a theme, or a family that follows a light or dark terminal
-transparent = true # keep the terminal's own background
 accent = "#fabd2f" # any role of a theme, painted over it
 
 [tui.keys]

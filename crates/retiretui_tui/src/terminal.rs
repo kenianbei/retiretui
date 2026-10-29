@@ -2,8 +2,7 @@
 //! launch it makes of them, and the `theme` command over the themes such
 //! a session can wear.
 
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::path::Path;
 use std::time::Duration;
 
 use anyhow::bail;
@@ -11,29 +10,15 @@ use bevy_app::{App, AppExit, ScheduleRunnerPlugin};
 use clap::{Args, Subcommand};
 use plurimus::core::CorePlugin;
 use plurimus::crossterm::CrosstermPlugin;
-use retiretui_client::environment::{
-    config_dir, load_history, load_tables, patterns_path, state_dir,
-};
+use retiretui_client::environment::{config_dir, state_dir};
 use retiretui_client::store::DiskStore;
 
-use crate::Launch;
 use crate::theme::document::{Variant, terminal_variant};
 use crate::theme::library::{DIRECTORY, EMBEDDED, Listed, Origin, SUFFIX, Themes, UNREAD};
 
-/// Arguments of the `tui` subcommand.
-#[derive(Args, Debug)]
-pub struct TuiArgs {
-    /// Path to a plan or scenario TOML file, or to a directory to open
-    /// one from; the working directory by default.
-    #[arg(default_value = ".")]
-    pub path: PathBuf,
-    /// Extra directory of tax parameter TOML files (repeatable).
-    #[arg(long)]
-    pub tax_dir: Vec<PathBuf>,
-}
+pub use crate::TuiArgs;
 
 const FRAME_INTERVAL: Duration = Duration::from_millis(16);
-const CONFIG_FILE: &str = "config.toml";
 const LOG_FILE: &str = "tui.log";
 
 /// Runs the planner in the terminal until it is quit.
@@ -43,18 +28,7 @@ const LOG_FILE: &str = "tui.log";
 /// Where the tables, the history or the log cannot be set up, the session
 /// cannot open, or the app exits with an error.
 pub fn run(args: &TuiArgs) -> anyhow::Result<()> {
-    let launch = Launch {
-        path: args.path.clone(),
-        tables: load_tables(&args.tax_dir)?,
-        history: load_history(None)?,
-        patterns_file: patterns_path(),
-        store: Arc::new(DiskStore),
-        settings: config_dir(CONFIG_FILE),
-        is_light: crate::terminal_is_light(),
-        reopens: false,
-        floor: None,
-        exchange: None,
-    };
+    let launch = crate::native_launch(args, crate::terminal_is_light())?;
     let mut app = App::new();
     app.add_plugins((ScheduleRunnerPlugin::run_loop(FRAME_INTERVAL), CorePlugin));
     // The terminal is taken by adding its plugin, so a refused plan comes first.

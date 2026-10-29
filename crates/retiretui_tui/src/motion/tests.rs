@@ -175,7 +175,7 @@ fn the_backdrop_spares_the_overlay_standing_deepest() {
 
     let upper = Rect::new(10, 5, 20, 8);
     let mut world = World::new();
-    world.insert_resource(Theme::bare());
+    world.insert_resource(Theme::default());
     world.init_resource::<Cues>();
     world.spawn((ModalOpen, ComputedWidgetArea(upper), Band::at(1)));
     world.spawn((

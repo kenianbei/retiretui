@@ -5,6 +5,7 @@ use std::io;
 use std::path::Path;
 
 use bevy_ecs::prelude::Resource;
+use plurimus::core::ratatui_core::style::Color;
 
 use super::Theme;
 use super::document::{self, Choice, Painted, Variant};
@@ -67,7 +68,8 @@ pub enum Origin {
 pub struct Themes(Vec<Listed>);
 
 /// The embedded default family in the `wanted` variant: what is worn
-/// where nothing is named, or what is named does not resolve.
+/// where nothing is named, or what is named does not resolve, and what
+/// every other document is painted over.
 ///
 /// # Panics
 ///
@@ -75,9 +77,21 @@ pub struct Themes(Vec<Listed>);
 /// out.
 #[must_use]
 pub fn default_theme(wanted: Variant) -> Theme {
-    Themes::embedded()
-        .named(DEFAULT_FAMILY, wanted)
-        .expect("the embedded default family reads")
+    document::read_over(default_text(wanted), |_| {
+        Theme::unpainted(Color::Rgb(0, 0, 0))
+    })
+    .expect("the embedded default family reads")
+    .theme
+}
+
+/// The default family's `wanted` document.
+fn default_text(wanted: Variant) -> &'static str {
+    let slug = format!("{DEFAULT_FAMILY}-{}", wanted.name());
+    EMBEDDED
+        .iter()
+        .find(|(listed, _)| *listed == slug)
+        .map(|(_, text)| *text)
+        .expect("the embedded default family has every variant")
 }
 
 impl Themes {
@@ -242,13 +256,21 @@ mod tests {
             let read = document::read(text).unwrap_or_else(|error| panic!("{slug}: {error}"));
             let theme = themes.named(slug, Variant::Dark).unwrap();
             assert_eq!(theme, read.theme);
-            assert!(theme.bg.is_some(), "{slug} names a background");
-            let bare = Theme::bare();
-            assert!(
-                theme.good != bare.good && theme.caution != bare.caution,
-                "{slug} names its good and caution"
-            );
             assert_ne!(theme.series(0), theme.series(LEAST_SERIES - 1), "{slug}");
+        }
+    }
+
+    #[test]
+    fn the_default_family_names_every_role() {
+        for variant in [Variant::Dark, Variant::Light] {
+            let white = Color::Rgb(255, 255, 255);
+            let over_white =
+                document::read_over(default_text(variant), |_| Theme::unpainted(white))
+                    .unwrap()
+                    .theme;
+            let worn = default_theme(variant);
+            assert_eq!(worn, over_white, "{}", variant.name());
+            assert!(worn.stripe.is_some() && worn.selection_bg.is_some());
         }
     }
 
@@ -262,10 +284,6 @@ mod tests {
             let worn = themes.resolve(&Choice::default(), variant).unwrap();
             assert_eq!(worn, themes.named(slug, variant).unwrap(), "{slug}");
             assert_eq!(default_theme(variant), worn);
-            assert!(
-                worn.bg.is_some() && worn.stripe.is_some(),
-                "{slug} grounds itself"
-            );
         }
     }
 
@@ -284,14 +302,14 @@ mod tests {
     #[test]
     fn a_choice_paints_over_the_theme_it_names() {
         let choice = Choice {
-            transparent: true,
             overrides: BTreeMap::from([("accent".to_owned(), "#fabd2f".to_owned())]),
             ..chosen("nord")
         };
-        let theme = Themes::embedded().resolve(&choice, Variant::Dark).unwrap();
+        let themes = Themes::embedded();
+        let theme = themes.resolve(&choice, Variant::Dark).unwrap();
         assert_eq!(theme.accent, Color::Rgb(0xfa, 0xbd, 0x2f));
-        assert_eq!(theme.bg, None, "transparent drops the background");
-        assert!(theme.stripe.is_some(), "and keeps the rows' grounds");
+        let nord = themes.named("nord", Variant::Dark).unwrap();
+        assert_eq!((theme.bg, theme.stripe), (nord.bg, nord.stripe));
     }
 
     #[test]

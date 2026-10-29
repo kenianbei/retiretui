@@ -244,17 +244,13 @@ mod tests {
             label: "Spending".to_owned(),
             amount: "$1".to_owned(),
         };
-        let mut striped = Theme::bare();
-        striped.stripe = Some(Color::DarkGray);
+        let mut striped = Theme::default();
+        striped.bg = Color::Rgb(1, 2, 3);
+        striped.stripe = Some(Color::Rgb(9, 9, 9));
         assert_eq!(Row::Line(line.clone()).ink(&striped), None);
         let ground = Row::Gap.ink(&striped).expect("a gap is unbanded");
-        assert_eq!(ground.bg, Some(Color::Reset), "the terminal's own ground");
-        assert_ne!(ground.bg, striped.stripe);
+        assert_eq!(ground.bg, Some(striped.bg), "the theme's own ground");
         let sum = Row::Sum(line).ink(&striped).expect("a sum is unbanded");
         assert_eq!((sum.bg, sum.fg), (ground.bg, striped.dimmed().fg));
-        let mut painted = striped;
-        painted.bg = Some(Color::Rgb(1, 2, 3));
-        let ground = Row::Gap.ink(&painted).expect("a gap is unbanded");
-        assert_eq!(ground.bg, painted.bg, "a theme's own ground");
     }
 }

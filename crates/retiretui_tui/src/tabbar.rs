@@ -12,7 +12,6 @@ use bevy_ecs::prelude::{
 use bevy_ecs::system::EntityCommands;
 use bevy_ui::{Node, Val};
 use plurimus::core::Edge;
-use plurimus::core::ratatui_core::style::Modifier;
 use plurimus::core::ratatui_core::text::{Line, Span};
 use plurimus::ui::{Checked, InteractionDisabled, PressFocusDisabled, UiLabel, ValueChange};
 use plurimus::widgets::ratatui_widgets::borders::BorderType;
@@ -64,7 +63,7 @@ struct ShellTabs;
 /// Which tab an item of the bar stands for. The bar's items are
 /// positional: [`nav::ActivePage`] is what a tab means, both ways.
 #[derive(Component, Clone, Copy, Debug)]
-pub(super) struct BarTab(pub(super) usize);
+pub(crate) struct BarTab(pub(crate) usize);
 
 /// Each tab boxed, the active box opening onto a baseline drawn along the
 /// row's foot.
@@ -94,7 +93,7 @@ fn spawn_tab_row(
             },
             tab_bar(),
             look(),
-            TabBarActiveStyle(active_style(&theme)),
+            TabBarActiveStyle(theme.focused()),
             PressFocusDisabled,
             placed(),
             ChildOf(row),
@@ -105,10 +104,6 @@ fn spawn_tab_row(
         commands.spawn((tab_item(label), BarTab(tab), ChildOf(bar)));
     }
     status::spawn(&mut commands, row);
-}
-
-fn active_style(theme: &Theme) -> plurimus::core::ratatui_core::style::Style {
-    theme.accented().add_modifier(Modifier::BOLD)
 }
 
 /// The key that selects the tab, dimmed ahead of its title. The row's
@@ -133,7 +128,7 @@ fn repaint_tabs(
         return;
     }
     for mut style in &mut bars {
-        style.0 = active_style(&theme);
+        style.0 = theme.focused();
     }
     for (tab, mut label) in &mut items {
         label.0 = tab_label(tab.0, &keymap, &theme);

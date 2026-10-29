@@ -3,14 +3,14 @@
 //! `Val::Em` a cell's width - one pixel each in the terminal, and a font's
 //! line height and advance width in a window - so a pixel is named nowhere.
 
-use bevy_app::{App, PostUpdate, Startup, Update};
+use bevy_app::{App, Startup, Update};
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{
     Bundle, Changed, Commands, Component, Entity, IntoScheduleConfigs, Mut, Query, Ref, Res, With,
 };
-use bevy_ui::{Display, FlexDirection, JustifyContent, Node, UiSystems, Val};
-use plurimus::bui::{BuiPlugin, ComputedNodeRect};
+use bevy_ui::{Display, FlexDirection, JustifyContent, Node, Val};
+use plurimus::bui::ComputedNodeRect;
 use plurimus::core::ratatui_core::layout::{Position, Rect};
 use plurimus::core::ratatui_core::style::{Modifier, Style};
 use plurimus::core::{
@@ -30,7 +30,7 @@ pub use clip::{cells_of, clipped, clipped_middle, wrapped};
 pub use cursor::{CURSOR_COLS, Rests, SCROLL_BAR_COLS, list_cursor, table_cursor};
 pub use list::{CONTINUED, fill_lines, fill_wrapped, row_width, spawn_scrolled_list};
 
-use super::theme::{Repainted, Theme};
+use super::theme::{Repainted, Theme, text};
 
 /// Rows the frame spends on chrome: the tab row and the hint row.
 pub const CHROME_ROWS: u16 = TAB_ROW_ROWS + HINT_ROWS;
@@ -65,13 +65,12 @@ pub struct Body;
 pub struct HintRow;
 
 pub fn plugin(app: &mut App) {
-    app.add_plugins((BuiPlugin, cursor::plugin));
+    app.add_plugins(cursor::plugin);
     app.add_systems(Startup, spawn_frame);
     app.add_systems(
         Update,
         (hold_offsets, (draw_rules, emphasise).in_set(Repainted)),
     );
-    app.add_systems(PostUpdate, sync_areas.after(UiSystems::PostLayout));
 }
 
 /// Holds each scroll area's offset within what it can scroll once its area
@@ -142,7 +141,9 @@ pub fn sized(cols: f32, rows: f32) -> Node {
 pub const NO_STOP: i32 = -1;
 
 /// The `[ ` and ` ]` plurimus paints a button's label between.
-const BUTTON_DECORATION: u16 = 4;
+/// What a button's label is said between.
+pub const BUTTON_BRACKETS: [&str; 2] = ["[ ", " ]"];
+const BUTTON_DECORATION: u16 = (BUTTON_BRACKETS[0].len() + BUTTON_BRACKETS[1].len()) as u16;
 pub const BUTTON_GAP: f32 = 1.0;
 
 /// The node of a button saying `label`, as wide as it is drawn.
@@ -193,6 +194,17 @@ fn emphasise(theme: Res<Theme>, buttons: Query<(Entity, Ref<Emphasis>)>, mut com
 #[derive(Component, Debug)]
 pub struct Rule(&'static str);
 
+impl Rule {
+    /// The title along the line, a cell before the line goes on.
+    pub(crate) fn heading(&self) -> String {
+        if self.0.is_empty() {
+            String::new()
+        } else {
+            format!("{} ", self.0)
+        }
+    }
+}
+
 #[must_use]
 pub fn rule() -> impl Bundle {
     titled_rule("")
@@ -211,12 +223,7 @@ pub fn titled_rule(title: &'static str) -> impl Bundle {
 fn draw_rules(theme: Res<Theme>, mut rules: Query<(Ref<Rule>, &mut UiWidget)>) {
     for (rule, mut widget) in &mut rules {
         if theme.is_changed() || rule.is_added() {
-            let title = if rule.0.is_empty() {
-                String::new()
-            } else {
-                format!("{} ", rule.0)
-            };
-            let line = Block::new().borders(Borders::TOP).title(title);
+            let line = Block::new().borders(Borders::TOP).title(rule.heading());
             *widget = UiWidget::new(line.border_style(theme.dimmed()));
         }
     }
@@ -262,17 +269,11 @@ pub fn spawn_frame(mut commands: Commands) {
         ChildOf(root),
     ));
     commands.spawn((Body, growing(), ChildOf(root)));
-    commands.spawn((
-        HintRow,
-        fixed(f32::from(HINT_ROWS)),
-        UiWidget::default(),
-        placed(),
-        ChildOf(root),
-    ));
+    commands.spawn((HintRow, fixed(f32::from(HINT_ROWS)), text(), ChildOf(root)));
 }
 
-// Layout speaks in screen cells and `UiArea::Fixed` in camera-local ones.
-fn sync_areas(
+/// Layout speaks in screen cells and `UiArea::Fixed` in camera-local ones.
+pub(crate) fn sync_areas(
     default_camera: Res<DefaultCamera>,
     cameras: Query<&ResolvedViewport>,
     mut widgets: Query<

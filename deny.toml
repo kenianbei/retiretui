@@ -21,3 +21,9 @@ multiple-versions = "warn"
 
 [advisories]
 yanked = "deny"
+ignore = [
+    # winit's Wayland window decorations shape their title through ab_glyph,
+    # which parses the system's font with ttf-parser; nothing here hands it
+    # a file. Gone when winit moves to a maintained parser.
+    { id = "RUSTSEC-2026-0192", reason = "ttf-parser is unmaintained; reached only through winit's sctk-adwaita" },
+]

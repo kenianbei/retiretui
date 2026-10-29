@@ -3,8 +3,7 @@
 //!
 //! A pass over the composed frame rather than a style at every widget, so
 //! that the rule holds for a widget built with no theme in reach, a stock
-//! widget, and one not yet written alike. Under a theme that leaves its
-//! grounds to the terminal it does nothing.
+//! widget, and one not yet written alike.
 
 use bevy_app::App;
 use bevy_ecs::change_detection::DetectChangesMut;
@@ -38,7 +37,7 @@ pub struct Grounded;
 #[derive(Resource, Clone, Copy, PartialEq, Eq, Default, Debug)]
 struct Ground {
     fg: Color,
-    bg: Option<Color>,
+    bg: Color,
 }
 
 fn extract(main_world: Res<MainWorld>, mut ground: ResMut<Ground>) {
@@ -50,18 +49,12 @@ fn extract(main_world: Res<MainWorld>, mut ground: ResMut<Ground>) {
 }
 
 fn paint_ground(ground: Res<Ground>, mut frame: ResMut<FrameBuffer>) {
-    let paints_fg = ground.fg != Color::Reset;
-    if !paints_fg && ground.bg.is_none() {
-        return;
-    }
     for cell in &mut frame.0.content {
-        if paints_fg && cell.fg == Color::Reset {
+        if cell.fg == Color::Reset {
             cell.fg = ground.fg;
         }
-        if let Some(bg) = ground.bg
-            && cell.bg == Color::Reset
-        {
-            cell.bg = bg;
+        if cell.bg == Color::Reset {
+            cell.bg = ground.bg;
         }
     }
 }

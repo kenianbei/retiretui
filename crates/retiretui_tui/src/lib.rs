@@ -1,14 +1,17 @@
 //! The retirement planner's interface: a plurimus app over a projected plan, above
-//! whatever backend draws it - a terminal, or a browser page.
+//! whatever backend draws it - a terminal, a browser page, or a window.
 
 pub mod exchange;
 
 use retiretui_client::{files, metric, present, store, table};
 
+mod cells;
 mod chart;
 mod command;
 mod compare;
 mod confirm;
+#[cfg(feature = "desktop")]
+pub mod desktop;
 mod documents;
 mod drawer;
 mod edit;
@@ -101,13 +104,19 @@ pub struct Launch {
     pub exchange: Option<Arc<dyn exchange::Exchange>>,
 }
 
-/// Adds the planner to `app`, above whatever backend draws it: the
-/// session `launch` names, the user's settings, and every page.
+/// Adds the planner to `app`, drawn in a terminal's cells: the session
+/// `launch` names, the user's settings, and every page.
 ///
 /// # Errors
 ///
 /// Where the document cannot be read or resolved.
 pub fn build(app: &mut App, launch: Launch) -> Result<(), String> {
+    build_shared(app, launch, cells::plugin)
+}
+
+/// Everything above whatever draws the tree, with `skin` adding what
+/// does, in the place plurimus's layout had among the plugins.
+fn build_shared(app: &mut App, launch: Launch, skin: fn(&mut App)) -> Result<(), String> {
     let (settings, complaints) = launch.settings.map_or_else(Default::default, |path| {
         settings::Settings::at(Arc::clone(&launch.store), path)
     });
@@ -129,7 +138,7 @@ pub fn build(app: &mut App, launch: Launch) -> Result<(), String> {
     if let Some(exchange) = launch.exchange {
         app.insert_resource(exchange::Edge(exchange));
     }
-    add_tui(app);
+    add_tui(app, skin);
     let variant = if launch.is_light {
         theme::document::Variant::Light
     } else {
@@ -144,6 +153,42 @@ pub fn build(app: &mut App, launch: Launch) -> Result<(), String> {
         complaints.iter().for_each(journal::warn);
     });
     Ok(())
+}
+
+/// Arguments every launcher on a machine takes: what to open, and where
+/// else the tax tables are.
+#[cfg(any(feature = "terminal", feature = "desktop"))]
+#[derive(clap::Args, Debug)]
+pub struct TuiArgs {
+    /// Path to a plan or scenario TOML file, or to a directory to open
+    /// one from; the working directory by default.
+    #[arg(default_value = ".")]
+    pub path: PathBuf,
+    /// Extra directory of tax parameter TOML files (repeatable).
+    #[arg(long)]
+    pub tax_dir: Vec<PathBuf>,
+}
+
+/// The launch `args` describe on this machine's disk and config.
+///
+/// # Errors
+///
+/// Where the tables or the history cannot be read.
+#[cfg(any(feature = "terminal", feature = "desktop"))]
+fn native_launch(args: &TuiArgs, is_light: bool) -> anyhow::Result<Launch> {
+    use retiretui_client::environment::{config_dir, load_history, load_tables, patterns_path};
+    Ok(Launch {
+        path: args.path.clone(),
+        tables: load_tables(&args.tax_dir)?,
+        history: load_history(None)?,
+        patterns_file: patterns_path(),
+        store: Arc::new(retiretui_client::store::DiskStore),
+        settings: config_dir(settings::CONFIG_FILE),
+        is_light,
+        reopens: false,
+        floor: None,
+        exchange: None,
+    })
 }
 
 /// Whether the terminal says, through `COLORFGBG`, that its ground is
@@ -173,12 +218,13 @@ pub fn install_log(app: &App, file: anyhow::Result<PathBuf>) -> anyhow::Result<(
     log::install(app.world().resource::<journal::Inbox>(), file)
 }
 
-/// Everything above the terminal backend and the session resources, shared
-/// by the real run and the headless tests.
-fn add_tui(app: &mut App) {
+/// Everything above the backend and the session resources, shared by the
+/// real runs and the headless tests; `skin` is what draws the tree.
+fn add_tui(app: &mut App, skin: fn(&mut App)) {
     app.init_resource::<session::Basis>();
     app.init_resource::<session::YearCursor>();
     app.add_plugins((WidgetsPlugin, FilePickerPlugin));
+    skin(app);
     app.add_plugins((
         layout::plugin,
         guard::plugin,

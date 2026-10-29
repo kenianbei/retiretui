@@ -299,7 +299,7 @@ end = { date = 2030-12-31 }
 
     fn labels(projected: &Projected) -> Vec<String> {
         let charted = Chart::NetWorth.charted(projected, false);
-        let marks = marks(&charted.marks, &Theme::bare());
+        let marks = marks(&charted.marks, &Theme::default());
         marks.into_iter().map(|mark| mark.label).collect()
     }
 
@@ -338,7 +338,7 @@ end = { date = 2030-12-31 }
     fn series_deflation_and_bounds() {
         let projected = test_projected();
         let projection = &projected.projection;
-        let theme = Theme::bare();
+        let theme = Theme::default();
         let drawn = |nominal| {
             let charted = Chart::IncomeTaxes.charted(&projected, nominal);
             lines(&charted.lines, INCOME_SERIES, &theme).0

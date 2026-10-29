@@ -166,7 +166,7 @@ mod tests {
 
     #[test]
     fn a_year_leads_with_its_milestones_over_what_to_do() {
-        let theme = Theme::bare();
+        let theme = Theme::default();
         let said = lines(&year_of(FULL, 2037), &theme);
         let first = said.first().unwrap();
         assert!(first.0.starts_with(MILESTONE), "{said:?}");
@@ -179,7 +179,7 @@ mod tests {
 
     #[test]
     fn a_warning_is_marked_and_drawn_as_a_figure_past_its_limit() {
-        let theme = Theme::bare();
+        let theme = Theme::default();
         let short = TEST_PLAN.replace("amount = 60000", "amount = 600000");
         let said = lines(&year_of(&short, 2031), &theme);
         let warned = said.iter().find(|(line, _)| line.starts_with(WARNING));

@@ -10,7 +10,7 @@ use super::keys::character;
 use super::pickers;
 use super::{
     COMPARE_METRICS, COMPARE_OPEN, COMPARE_WITH, CommandSpec, DOMAINS, FOCUS_NEXT, HELP, Outcome,
-    PALETTE, Scope,
+    PALETTE, QUIT, Scope,
 };
 use crate::compare::{self, Compared};
 use crate::confirm::Confirm;
@@ -82,7 +82,7 @@ pub static COMMANDS: LazyLock<Vec<CommandSpec>> = LazyLock::new(|| {
             register: Box::new(|world| world.register_system(reload)),
         },
         CommandSpec {
-            name: "quit",
+            name: QUIT,
             scope: Scope::Shell,
             doc: "leave the dashboard",
             keys: vec![character("q"), character("q").with_ctrl()],

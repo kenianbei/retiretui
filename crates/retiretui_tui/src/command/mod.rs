@@ -44,6 +44,9 @@ use super::settings::Settings;
 pub const FOCUS_NEXT: &str = "focus-next";
 pub const PALETTE: &str = "palette";
 pub const HELP: &str = "help";
+/// The command that ends the session, which a window's close button runs
+/// too.
+pub const QUIT: &str = "quit";
 
 /// The commands a page says the key of, in a hint or in its help.
 pub const DOMAINS: &str = "domains";

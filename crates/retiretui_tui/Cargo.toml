@@ -15,17 +15,49 @@ exclude = ["**/snapshots"]
 [features]
 # The launcher that runs the planner in a terminal.
 terminal = ["plurimus/crossterm", "dep:clap", "retiretui_client/native"]
+# The launcher that runs the planner in a window.
+desktop = [
+    "dep:clap",
+    "retiretui_client/native",
+    "dep:bevy_a11y",
+    "dep:bevy_asset",
+    "dep:bevy_camera",
+    "dep:bevy_core_pipeline",
+    "dep:bevy_diagnostic",
+    "dep:bevy_image",
+    "dep:bevy_mesh",
+    "dep:bevy_render",
+    "dep:bevy_sprite_render",
+    "dep:bevy_text",
+    "dep:bevy_transform",
+    "dep:bevy_ui_render",
+    "dep:bevy_winit",
+]
 
 [dependencies]
 anyhow = "1.0.104"
+bevy_a11y = { version = "0.20.0", optional = true }
 bevy_app = "0.20.0"
+bevy_asset = { version = "0.20.0", optional = true }
+bevy_camera = { version = "0.20.0", optional = true }
+bevy_color = "0.20.0"
+bevy_core_pipeline = { version = "0.20.0", optional = true }
+bevy_diagnostic = { version = "0.20.0", optional = true }
+bevy_image = { version = "0.20.0", optional = true }
 bevy_input = { version = "0.20.0", default-features = false, features = ["std"] }
 bevy_window = { version = "0.20.0", default-features = false, features = ["std"] }
 bevy_ecs = "0.20.0"
 bevy_math = { version = "0.20.0", default-features = false }
+bevy_mesh = { version = "0.20.0", optional = true }
+bevy_render = { version = "0.20.0", optional = true }
+bevy_sprite_render = { version = "0.20.0", optional = true }
+bevy_text = { version = "0.20.0", default-features = false, optional = true }
 bevy_input_focus = { version = "0.20.0", default-features = false, features = ["std", "keyboard"] }
 bevy_time = "0.20.0"
+bevy_transform = { version = "0.20.0", optional = true }
 bevy_ui = { version = "0.20.0", default-features = false }
+bevy_ui_render = { version = "0.20.0", optional = true }
+bevy_winit = { version = "0.20.0", features = ["x11", "wayland"], optional = true }
 clap = { version = "4.6.7", features = ["derive"], optional = true }
 jiff.workspace = true
 nucleo-matcher = "0.3.1"

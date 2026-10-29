@@ -7,6 +7,7 @@ members = [
     "crates/retiretui_cli",
     "crates/retiretui_mcp",
     "crates/retiretui",
+    "crates/retiretui_desktop",
     "crates/retiretui_web",
     "crates/retiretui_wasm",
 ]
@@ -18,6 +19,7 @@ default-members = [
     "crates/retiretui_cli",
     "crates/retiretui_mcp",
     "crates/retiretui",
+    "crates/retiretui_desktop",
     "crates/retiretui_wasm",
 ]
 

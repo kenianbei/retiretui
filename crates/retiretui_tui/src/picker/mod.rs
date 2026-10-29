@@ -16,13 +16,11 @@ use bevy_ecs::prelude::{
 use bevy_ecs::system::SystemId;
 use bevy_input::keyboard::{Key, KeyboardInput};
 use bevy_input_focus::FocusedInput;
-use plurimus::core::UiWidget;
 use plurimus::core::ratatui_core::layout::Size;
 use plurimus::core::ratatui_core::text::{Line, Span};
 use plurimus::term::PasteMessage;
 use plurimus::term::bevy_compat::HeldModifiers;
 use plurimus::ui::{ModalDismiss, ModalOpen, ScrollArea, UiStyle, first_bound};
-use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
 use plurimus::widgets::{
     ActiveDescendant, ListBoxAction, ListBoxKeys, ListItemTrailing, TextInput, TextInputAction,
     TextInputKeys, ValueChange, list_item, listbox,
@@ -34,7 +32,7 @@ use super::hints::Hints;
 use super::layout::{fixed, growing, list_cursor, placed};
 use super::overlay::{self, Standing};
 use super::pane::Framed;
-use super::theme::Theme;
+use super::theme::{Theme, say, text};
 
 pub fn plugin(app: &mut App) {
     app.init_resource::<Picking>();
@@ -241,8 +239,7 @@ fn sync_picker(
         TextInput::new(picking.query.clone()),
         query_keys(),
         fixed(1.0),
-        UiWidget::default(),
-        placed(),
+        text(),
         ChildOf(root),
     ));
     let results = commands
@@ -330,18 +327,19 @@ fn relist(world: &mut World) {
     draw_query(world, query, &theme);
 }
 
+/// The query row says the same line twice: as a paragraph for the
+/// terminal, where the covering frame clears what bevy's text would draw
+/// beneath it, and as that text for the window.
 fn draw_query(world: &mut World, query: String, theme: &Theme) {
     let typed = Line::from(vec![
         Span::styled(PROMPT, theme.dimmed()),
         Span::raw(query),
         Span::styled(CARET, theme.accented()),
     ]);
-    if let Ok(mut field) = world
-        .query_filtered::<&mut UiWidget, With<Field>>()
-        .single_mut(world)
-    {
-        *field = UiWidget::new(Paragraph::new(typed));
-    }
+    let Ok(field) = world.query_filtered::<Entity, With<Field>>().single(world) else {
+        return;
+    };
+    say(&mut world.commands(), field, typed, theme);
 }
 
 /// Writes `rows` over the rows under `results`, keeping the entities

@@ -8,7 +8,7 @@
 //! [`Cue`] - and the render side plays it.
 
 mod exit;
-mod render;
+pub(crate) mod render;
 
 use std::time::Duration;
 
@@ -37,7 +37,6 @@ pub fn plugin(app: &mut App) {
         PostUpdate,
         (dim_backdrop, cue_arrivals).after(UiSystems::PostLayout),
     );
-    render::install(app);
 }
 
 /// How much the shell moves. Every effect's length passes through it.

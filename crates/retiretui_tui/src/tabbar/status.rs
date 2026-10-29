@@ -5,18 +5,17 @@ use bevy_app::{App, Update};
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Component, Entity, IntoScheduleConfigs, Query, Res, With};
-use bevy_ui::{Node, Val};
+use bevy_ui::{Node, UiRect, Val};
 use plurimus::core::ratatui_core::text::{Line, Span};
 use plurimus::core::{TerminalSize, UiWidget};
-use plurimus::widgets::ratatui_widgets::block::{Block, Padding};
+use plurimus::widgets::ratatui_widgets::block::Block;
 use plurimus::widgets::ratatui_widgets::borders::Borders;
-use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
 
 use crate::edit::Draft;
 use crate::layout::{cells_of, clipped_middle, placed, sized};
 use crate::present;
 use crate::session::Session;
-use crate::theme::{Repainted, Theme};
+use crate::theme::{Repainted, Theme, say, text};
 
 pub fn plugin(app: &mut App) {
     app.add_systems(Update, draw_status.in_set(Repainted));
@@ -42,37 +41,32 @@ struct StatusCell;
 
 /// Laid beside the bar rather than inside it, where the bar's own chrome
 /// would repaint it, and as tall as the bar so its foot carries the bar's
-/// baseline on to the frame's edge.
+/// baseline on to the frame's edge; what it says sits on the middle row.
 pub fn spawn(commands: &mut Commands, tab_row: Entity) {
+    let foot = Block::new().borders(Borders::BOTTOM);
     commands.spawn((
         StatusCell,
         Node {
             height: Val::Percent(100.0),
+            padding: UiRect::top(Val::Rem(1.0)),
             ..sized(0.0, 1.0)
         },
-        UiWidget::new(drawn(Line::default())),
+        text(),
+        UiWidget::new(foot),
         placed(),
         ChildOf(tab_row),
     ));
-}
-
-/// The line on the bar's middle row, over the baseline.
-fn drawn(line: Line<'static>) -> Paragraph<'static> {
-    let foot = Block::new()
-        .borders(Borders::BOTTOM)
-        .padding(Padding::top(1));
-    Paragraph::new(line).block(foot)
 }
 
 /// The cell is as wide as what fits beside the tabs, measured whenever
 /// what it says or the room for it changes.
 fn draw_status(
     theme: Res<Theme>,
-    draft: Res<Draft>,
-    session: Res<Session>,
-    size: Res<TerminalSize>,
-    mut cells: Query<(&mut UiWidget, &mut Node), With<StatusCell>>,
+    shell: (Res<Draft>, Res<Session>, Res<TerminalSize>),
+    mut cells: Query<(Entity, &mut Node), With<StatusCell>>,
+    mut commands: Commands,
 ) {
+    let (draft, session, size) = shell;
     if !theme.is_changed() && !draft.is_changed() && !session.is_changed() && !size.is_changed() {
         return;
     }
@@ -99,10 +93,10 @@ fn draw_status(
     spans.extend(marks);
     let line = Line::from(spans);
     let width = Val::Em(f32::from(line.width() as u16 + STATUS_MARGIN));
-    let Ok((mut widget, mut node)) = cells.single_mut() else {
+    let Ok((cell, mut node)) = cells.single_mut() else {
         return;
     };
-    *widget = UiWidget::new(drawn(line));
+    say(&mut commands, cell, line, &theme);
     if node.width != width {
         node.width = width;
     }
