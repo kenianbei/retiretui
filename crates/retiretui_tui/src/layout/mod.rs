@@ -9,7 +9,7 @@ use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{
     Bundle, Changed, Commands, Component, Entity, IntoScheduleConfigs, Mut, Query, Ref, Res, With,
 };
-use bevy_ui::{Display, FlexDirection, JustifyContent, Node, Val};
+use bevy_ui::{ComputedNode, Display, FlexDirection, JustifyContent, Node, Val};
 use plurimus::bui::ComputedNodeRect;
 use plurimus::core::ratatui_core::layout::{Position, Rect};
 use plurimus::core::ratatui_core::style::{Modifier, Style};
@@ -26,8 +26,10 @@ mod clip;
 mod cursor;
 mod list;
 
-pub use clip::{cells_of, clipped, clipped_middle, wrapped};
-pub use cursor::{CURSOR_COLS, Rests, SCROLL_BAR_COLS, list_cursor, table_cursor};
+pub use clip::{cells_of, clipped, clipped_middle, fitting, wrapped};
+pub use cursor::{
+    CURSOR_COLS, GUTTER, Rests, SCROLL_BAR_COLS, cursor_bar, list_cursor, table_cursor,
+};
 pub use list::{CONTINUED, fill_lines, fill_wrapped, row_width, spawn_scrolled_list};
 
 use super::theme::{Repainted, Theme, text};
@@ -249,6 +251,21 @@ pub fn placed() -> UiArea {
     UiArea::Fixed(Rect::ZERO)
 }
 
+/// The columns a laid-out node spans: its width in logical pixels over
+/// its em, which is a cell's width in either target. The node's size is
+/// in physical pixels, a scale factor larger on a dense screen.
+#[must_use]
+pub fn node_cols(node: &ComputedNode) -> u16 {
+    (node.size.x * node.inverse_scale_factor / node.em_size.0).round() as u16
+}
+
+/// The rows a laid-out node spans: its height in logical pixels over its
+/// rem, a cell's height in either target.
+#[must_use]
+pub fn node_rows(node: &ComputedNode) -> u16 {
+    (node.size.y * node.inverse_scale_factor / node.rem_size.0).round() as u16
+}
+
 pub fn spawn_frame(mut commands: Commands) {
     commands.spawn(TerminalCamera::default());
     let root = commands
@@ -256,6 +273,7 @@ pub fn spawn_frame(mut commands: Commands) {
             Root,
             Node {
                 flex_direction: FlexDirection::Column,
+                min_width: Val::ZERO,
                 ..filling()
             },
         ))
@@ -281,14 +299,44 @@ pub(crate) fn sync_areas(
         (With<UiWidget>, Changed<ComputedNodeRect>),
     >,
 ) {
-    let Some(viewport) = default_camera
-        .0
-        .and_then(|camera| cameras.get(camera).ok())
-        .map(|resolved| resolved.0)
-    else {
+    let Some(viewport) = default_viewport(*default_camera, &cameras) else {
         return;
     };
     for (node, mut area) in &mut widgets {
         area.set_if_neq(UiArea::Fixed(local_area(node.visible, viewport)));
+    }
+}
+
+/// The cells the default camera draws into, once it has resolved them.
+pub(crate) fn default_viewport(
+    default_camera: DefaultCamera,
+    cameras: &Query<&ResolvedViewport>,
+) -> Option<Rect> {
+    let camera = default_camera.0?;
+    cameras.get(camera).ok().map(|resolved| resolved.0)
+}
+
+#[cfg(test)]
+mod tests {
+    use bevy_math::Vec2;
+    use plurimus::bui::bevy_text::{EmSize, RemSize};
+
+    use super::*;
+
+    #[test]
+    fn a_node_s_cells_are_its_logical_size_over_its_em_and_rem() {
+        let dense = ComputedNode {
+            size: Vec2::new(1234.0, 291.0),
+            inverse_scale_factor: 1.0 / 1.5,
+            em_size: EmSize(8.0),
+            rem_size: RemSize(20.0),
+            ..ComputedNode::default()
+        };
+        assert_eq!((node_cols(&dense), node_rows(&dense)), (103, 10));
+        let plain = ComputedNode {
+            inverse_scale_factor: 1.0,
+            ..dense
+        };
+        assert_eq!((node_cols(&plain), node_rows(&plain)), (154, 15));
     }
 }

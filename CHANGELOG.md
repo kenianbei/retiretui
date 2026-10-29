@@ -16,7 +16,10 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   chrome - the tabs, switched by digit or click, each pane's frame and title,
   the status and the key row, the sidebars, toasts, the message drawer, the
   dialog and the pickers - over a dimmed body while anything stands over the
-  page; the pages themselves are not yet drawn there.
+  page. Of the pages, it draws the Ledger: the years under their headers, the
+  flows, the money panes and the so-far table, each scrolled on the wheel with a
+  bar beside it, stepped by the keys, a row chosen by a click and banded under
+  the pointer; the other pages are not yet drawn there.
 
 ### Changed
 
@@ -29,6 +32,8 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Removed
 
+- `ctrl+c` no longer copies the row under the cursor in the Ledger's tables; it
+  still does in every other table.
 - A theme file can no longer name a colour by an ANSI name or palette index, nor
   set `transparent`; one that does is reported as unreadable and the default
   family is worn.

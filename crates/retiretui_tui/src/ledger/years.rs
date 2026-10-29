@@ -6,28 +6,25 @@
 
 use bevy_app::{App, Update};
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
-use bevy_ecs::hierarchy::{ChildOf, Children};
+use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{
     Commands, Component, Entity, IntoScheduleConfigs, Local, Query, Res, With,
 };
 use bevy_ecs::system::SystemParam;
-use bevy_ui::{Node, UiRect, Val};
 use plurimus::core::TerminalSize;
 use plurimus::core::ratatui_core::layout::Constraint;
-use plurimus::core::ratatui_core::style::{Modifier, Style};
+use plurimus::core::ratatui_core::style::Style;
 use plurimus::core::ratatui_core::text::{Line, Span};
 use plurimus::ui::UiStyle;
-use plurimus::widgets::{
-    ActiveDescendant, TableColumns, table_header, table_row, table_self_update,
-};
+use plurimus::widgets::ActiveDescendant;
 use retiretui_client::ledger::{Marks, Table, TableRow};
 use retiretui_engine::plan::Dollars;
 
 use super::arrange::Part;
 use super::{Columns, LedgerSystems, MILESTONE, TableSaid, WARNING};
-use crate::edit::table_bundle;
+use crate::grid::{self, Grid};
 use crate::hints::CommandHints;
-use crate::layout::{self, growing, placed};
+use crate::layout;
 use crate::nav::{self, FocusStop, Page};
 use crate::pane::{self, Framed, Pane};
 use crate::present::{self, MoneyForm};
@@ -47,17 +44,11 @@ pub(super) fn plugin(app: &mut App) {
             .chain()
             .in_set(LedgerSystems::Draw),
     );
-    app.add_observer(table_self_update);
 }
 
 /// The table of years.
 #[derive(Component)]
 pub struct LedgerTable;
-
-/// The table of one row the headers stand in, over the years' own so that
-/// it does not scroll with them.
-#[derive(Component)]
-struct LedgerHeads;
 
 /// The pane the years are tabled in.
 #[derive(Component)]
@@ -69,28 +60,8 @@ pub(super) fn spawn_pane(commands: &mut Commands, ledger: Entity) {
     let pane = Pane::new(TITLE).spawn(commands, ledger);
     let parts = (YearsPane, Part::Table, CommandHints(&[]));
     commands.entity(pane).insert(parts);
-    // The years' columns start past their cursor and end before their
-    // scrollbar, and the headers' are solved over the same cells.
-    let heads = Node {
-        margin: UiRect {
-            left: Val::Em(f32::from(layout::CURSOR_COLS)),
-            right: Val::Em(f32::from(layout::SCROLL_BAR_COLS)),
-            ..UiRect::default()
-        },
-        height: Val::Rem(HEADER_ROWS),
-        flex_shrink: 0.0,
-        ..Node::default()
-    };
-    let headed = (plurimus::widgets::table([]), LedgerHeads, heads, placed());
-    commands.spawn((headed, ChildOf(pane)));
-    commands.spawn((
-        table_bundle(),
-        LedgerTable,
-        FocusStop,
-        growing(),
-        placed(),
-        ChildOf(pane),
-    ));
+    let table = grid::spawn(commands, pane);
+    commands.entity(table).insert((LedgerTable, FocusStop));
 }
 
 /// Titles the pane by the run it shows, the dollars and the column set.
@@ -109,12 +80,6 @@ fn title_years(
     for mut pane in &mut panes {
         Framed::retitle(&mut pane, &title);
     }
-}
-
-#[derive(SystemParam)]
-struct LedgerEntities<'w, 's> {
-    tables: Query<'w, 's, Entity, With<LedgerTable>>,
-    heads: Query<'w, 's, Entity, With<LedgerHeads>>,
 }
 
 /// What the rows are built from, and what makes them stale.
@@ -149,11 +114,15 @@ impl RowInputs<'_, '_> {
 
 /// Respawns the header and year rows whenever what they say or the fit
 /// changes, carrying the cursor across by year.
-fn rebuild_rows(mut inputs: RowInputs, entities: LedgerEntities, mut commands: Commands) {
+fn rebuild_rows(
+    mut inputs: RowInputs,
+    tables: Query<(Entity, &Grid), With<LedgerTable>>,
+    mut commands: Commands,
+) {
     if !inputs.is_stale() {
         return;
     }
-    let (Ok(ledger_table), Ok(heads)) = (entities.tables.single(), entities.heads.single()) else {
+    let Ok((ledger_table, grid)) = tables.single() else {
         return;
     };
     let (Some(table), Some(fit)) = (inputs.said.0.as_ref(), inputs.fit()) else {
@@ -161,27 +130,22 @@ fn rebuild_rows(mut inputs: RowInputs, entities: LedgerEntities, mut commands: C
     };
     *inputs.fitted = Some(fit);
     let figures = fit.figures(table.figure_headers.len());
-    for tabled in [heads, ledger_table] {
-        let columns = TableColumns(constraints(figures.len()));
-        let mut tabled = commands.entity(tabled);
-        tabled.despawn_related::<Children>().insert(columns);
-    }
-    commands.spawn((
-        table_header(header_cells(table, &figures, fit.given)),
-        UiStyle(Style::new().add_modifier(Modifier::BOLD)),
-        ChildOf(heads),
-    ));
+    let columns = constraints(figures.len());
+    let header = header_cells(table, &figures, fit.given);
+    let rows = table.rows.iter();
+    let cells = rows.map(|row| year_cells(row, &figures, fit.form, &inputs.theme));
+    let root = (ledger_table, grid);
+    let spawned = grid::refill_lines(&mut commands, root, columns, header, cells);
     let cursor_year = inputs.shown.year();
     let mut cursor_row = None;
-    for row in &table.rows {
-        let cells = year_cells(row, &figures, fit.form, &inputs.theme);
-        let mut spawned = commands.spawn((table_row(cells), RowYear(row.year)));
-        spawned.insert(ChildOf(ledger_table));
+    for (row, spawned) in table.rows.iter().zip(spawned) {
+        let mut spawned_row = commands.entity(spawned);
+        spawned_row.insert(RowYear(row.year));
         if row.is_exceeded {
-            spawned.insert(UiStyle(inputs.theme.exceeded()));
+            spawned_row.insert(UiStyle(inputs.theme.exceeded()));
         }
         if cursor_year == row.year {
-            cursor_row = Some(spawned.id());
+            cursor_row = Some(spawned);
         }
     }
     commands
@@ -193,26 +157,24 @@ fn rebuild_rows(mut inputs: RowInputs, entities: LedgerEntities, mut commands: C
 /// for the Ledger to be shown.
 fn follow_cursor(
     shown: Shown,
-    mut tables: Query<(Entity, &mut ActiveDescendant), With<LedgerTable>>,
+    mut tables: Query<(&Grid, &mut ActiveDescendant), With<LedgerTable>>,
     rows: Query<(Entity, &RowYear, &ChildOf)>,
 ) {
     if !shown.is_changed() {
         return;
     }
-    let Ok((table, mut active)) = tables.single_mut() else {
+    let Ok((grid, mut active)) = tables.single_mut() else {
         return;
     };
     let year = shown.year();
     let row = rows
         .iter()
-        .find(|(_, row_year, parent)| parent.parent() == table && row_year.0 == year);
+        .find(|(_, row_year, parent)| parent.parent() == grid.body && row_year.0 == year);
     if let Some((row, ..)) = row {
         active.set_if_neq(ActiveDescendant(Some(row)));
     }
 }
 
-/// The row the headers stand in.
-const HEADER_ROWS: f32 = 1.0;
 const YEAR_COLS: u16 = 5;
 const AGE_COLS: u16 = 6;
 const MARK_COLS: u16 = 2;

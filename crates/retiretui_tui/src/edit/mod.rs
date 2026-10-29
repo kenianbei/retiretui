@@ -45,7 +45,7 @@ pub use retiretui_client::issues::issue_words;
 pub use sort::sort;
 #[cfg(test)]
 pub use table::DomainTable;
-pub use table::{Row, Turn, table_bundle};
+pub use table::{Row, Turn, table_bundle, table_keys};
 
 use super::journal;
 use super::session::{Projected, Session};
@@ -69,6 +69,7 @@ pub fn plugin(app: &mut App) {
     app.init_resource::<Importing>();
     app.configure_sets(Update, (EditSystems::Seed, EditSystems::Place).chain());
     app.add_plugins((screen::plugin, form::plugin, scroll::plugin));
+    app.add_observer(plurimus::widgets::table_self_update);
     app.add_systems(
         Startup,
         (seed_draft, spawn_screens.after(layout::spawn_frame)),

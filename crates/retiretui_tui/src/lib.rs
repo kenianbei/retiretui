@@ -16,6 +16,7 @@ mod documents;
 mod drawer;
 mod edit;
 mod focus;
+mod grid;
 mod guard;
 mod hints;
 mod issues;
@@ -254,6 +255,7 @@ fn add_tui(app: &mut App, skin: fn(&mut App)) {
     ));
     app.add_plugins((
         issues::plugin,
+        grid::plugin,
         chart::plugin,
         compare::plugin,
         success::plugin,

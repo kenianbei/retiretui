@@ -189,6 +189,13 @@ impl Theme {
     }
 }
 
+/// A ground `colour` names as bevy takes it, and none where it names none,
+/// so that what stands beneath shows through.
+#[must_use]
+pub fn paper(colour: Option<Color>) -> bevy_color::Color {
+    colour.and_then(rgb).unwrap_or(bevy_color::Color::NONE)
+}
+
 fn rgb(colour: Color) -> Option<bevy_color::Color> {
     match colour {
         Color::Rgb(red, green, blue) => Some(bevy_color::Color::srgb_u8(red, green, blue)),

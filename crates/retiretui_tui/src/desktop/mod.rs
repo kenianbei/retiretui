@@ -3,6 +3,7 @@
 //! through bevy's own renderer on a grid of cells one monospace glyph
 //! each.
 
+mod areas;
 mod chrome;
 mod overlays;
 mod widgets;
@@ -150,7 +151,12 @@ fn skin(app: &mut App) {
         .insert(&Handle::<Font>::default(), Font::from_bytes(FACE.to_vec()))
         .expect("the default font handle is live");
     app.insert_resource(RemSize(CELL.y));
-    app.add_plugins((chrome::plugin, widgets::plugin, overlays::plugin));
+    app.add_plugins((
+        areas::plugin,
+        chrome::plugin,
+        widgets::plugin,
+        overlays::plugin,
+    ));
     app.add_systems(Startup, spawn_camera);
     app.add_systems(
         PreUpdate,

@@ -2,18 +2,18 @@
 //! table's column sets, and the year stepped from any pane.
 
 use bevy_app::App;
-use bevy_ecs::prelude::With;
 use bevy_input_focus::InputFocus;
 use plurimus::core::TerminalSize;
+use plurimus::core::ratatui_core::style::Modifier;
 use plurimus::term::KeyCode;
-use plurimus::widgets::TableStripe;
 
 use super::{Columns, LedgerTable, LedgerView};
 use crate::nav::Page;
 use crate::session::{LedgerRun, Projected, YearCursor};
 use crate::support::{
-    ROOMY, SETTLING_TICKS, SIZE, TALL, TODAY, active_page, cell_of, composed_frame,
-    headless_app_at, ledger_year, press_key, redrawn, said, scratch_full_plan, show,
+    ROOMY, SETTLING_TICKS, SIZE, TALL, TODAY, active_page, cell_of, cell_style, click,
+    composed_buffer, composed_frame, headless_app_at, hover, ledger_year, press_key, redrawn, said,
+    scratch_full_plan, scroll_down, show, worn,
 };
 use crate::theme::Theme;
 use crate::theme::document::Variant;
@@ -383,14 +383,12 @@ fn the_default_theme_bands_the_tables_in_its_own_stripe() {
     let mut app = ledger();
     let worn = app.world().resource::<Theme>().clone();
     assert_eq!(worn, default_theme(Variant::Dark));
-    let mut stripes = app
-        .world_mut()
-        .query_filtered::<&TableStripe, With<LedgerTable>>();
-    let stripe = stripes.single(app.world()).unwrap().0;
-    assert!(
-        stripe.bg.is_some() && stripe.bg == worn.stripe,
-        "{stripe:?}"
-    );
+    assert!(worn.stripe.is_some());
+    redrawn(&mut app);
+    let (column, first) = cell_in(&app, "╭ Ledger ", 3, 2);
+    let ground = |row| cell_style(&app, column, row).bg;
+    assert_eq!(ground(first + 1), worn.stripe, "the second year is banded");
+    assert_ne!(ground(first + 2), worn.stripe, "the third is not");
 }
 
 #[test]
@@ -423,4 +421,90 @@ fn how_far_the_plan_has_come_is_a_pane_of_its_own_beside_what_to_do() {
         composed_frame(&app).contains("↑↓ line"),
         "⇥ reaches it after the to-dos"
     );
+}
+
+/// The cell `right` of and `down` from the corner of the pane titled
+/// `title`.
+fn cell_in(app: &App, title: &str, right: usize, down: usize) -> (u16, u16) {
+    let (top, left) = corner_of(app, title);
+    let cell = |at: usize| u16::try_from(at).unwrap();
+    (cell(left + right), cell(top + down))
+}
+
+#[test]
+fn a_click_on_a_money_line_moves_its_cursor_and_the_keyboard() {
+    let mut app = ledger();
+    redrawn(&mut app);
+    let (column, row) = cell_in(&app, "╭ Money in ", 3, 2);
+    let bar = |app: &App| {
+        composed_buffer(app)
+            .cell((column - 2, row))
+            .unwrap()
+            .symbol()
+            .to_owned()
+    };
+    assert_eq!(bar(&app), " ", "the cursor rests on the first line");
+    click(&mut app, column, row);
+    redrawn(&mut app);
+    assert_eq!(bar(&app), "▌", "the cursor is on the clicked line and full");
+    press_key(&mut app, KeyCode::Up);
+    redrawn(&mut app);
+    assert_eq!(
+        bar(&app),
+        " ",
+        "the arrows reach the pane the click gave the keyboard"
+    );
+}
+
+#[test]
+fn a_line_under_the_pointer_is_banded_in_the_stripe() {
+    let mut app = ledger();
+    redrawn(&mut app);
+    let (column, row) = cell_in(&app, "╭ Money in ", 3, 1);
+    let plain = cell_style(&app, column, row).bg;
+    hover(&mut app, column, row);
+    redrawn(&mut app);
+    let banded = cell_style(&app, column, row).bg;
+    assert_eq!(banded, worn(&app).stripe, "{plain:?} became {banded:?}");
+    assert_ne!(plain, banded);
+}
+
+#[test]
+fn the_cursor_year_is_lit_while_the_table_holds_the_keyboard() {
+    let mut app = ledger();
+    let frame = redrawn(&mut app);
+    let year = ledger_year(&mut app);
+    let (top, left) = corner_of(&app, &format!("▌ {year}"));
+    let (column, row) = (
+        u16::try_from(left + 2).unwrap(),
+        u16::try_from(top).unwrap(),
+    );
+    let lit = cell_style(&app, column, row);
+    assert_eq!(lit.fg, Some(worn(&app).accent), "{frame}");
+    assert!(lit.add_modifier.contains(Modifier::BOLD), "{lit:?}");
+    press_key(&mut app, KeyCode::Tab);
+    redrawn(&mut app);
+    let left_alone = cell_style(&app, column, row);
+    assert_ne!(left_alone.fg, Some(worn(&app).accent), "{left_alone:?}");
+}
+
+#[test]
+fn the_wheel_scrolls_the_years_away_from_the_cursor_and_leaves_it() {
+    let mut app = ledger();
+    redrawn(&mut app);
+    let year = ledger_year(&mut app);
+    let (column, row) = cell_in(&app, "╭ Ledger ", 4, 3);
+    let first_shown = |app: &mut App| {
+        let frame = redrawn(app);
+        let (top, _) = corner_of(app, "╭ Ledger ");
+        frame.lines().nth(top + 2).unwrap().to_owned()
+    };
+    let before = first_shown(&mut app);
+    for _ in 0..3 {
+        scroll_down(&mut app, column, row);
+        redrawn(&mut app);
+    }
+    let after = first_shown(&mut app);
+    assert_ne!(before, after, "the rows scrolled: {after}");
+    assert_eq!(ledger_year(&mut app), year, "the cursor stayed");
 }

@@ -79,7 +79,7 @@ pub(super) fn labelled(rows: &[Vec<String>], gap: u16) -> TableColumns {
 }
 
 /// A row's cells, those at `text` on the left and the rest right.
-fn cells(row: &[String], text: &[usize]) -> Vec<Line<'static>> {
+pub(crate) fn cells(row: &[String], text: &[usize]) -> Vec<Line<'static>> {
     row.iter()
         .enumerate()
         .map(|(at, cell)| {

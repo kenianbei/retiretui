@@ -20,6 +20,10 @@ const CURSOR_BAR: &str = "\u{258c} ";
 /// not get, and what everything drawn beside the rows lines up under.
 pub const CURSOR_COLS: u16 = 2;
 
+/// The gutter beside a row the cursor is not on, as wide as the cursor.
+pub const GUTTER: &str = "  ";
+const _: () = assert!(GUTTER.len() == CURSOR_COLS as usize);
+
 /// The column a scrolled list or table keeps for its scrollbar.
 pub const SCROLL_BAR_COLS: u16 = 1;
 
@@ -44,12 +48,15 @@ const RESTING_BAR: &str = "\u{258f} ";
 #[derive(Component, Debug)]
 pub struct Rests;
 
+/// The bar a cursor row shows: full while `is_held` says the keyboard is
+/// on its table, thin otherwise.
+#[must_use]
+pub fn cursor_bar(is_held: bool) -> &'static str {
+    if is_held { CURSOR_BAR } else { RESTING_BAR }
+}
+
 fn bar_for(holder: Option<Entity>, entity: Entity) -> Line<'static> {
-    if holder == Some(entity) {
-        Line::from(CURSOR_BAR)
-    } else {
-        Line::from(RESTING_BAR)
-    }
+    Line::from(cursor_bar(holder == Some(entity)))
 }
 
 fn rest_cursors(

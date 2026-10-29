@@ -13,16 +13,14 @@ use bevy_ui::{FlexDirection, Node, Val};
 use plurimus::core::ratatui_core::layout::Constraint;
 use plurimus::core::ratatui_core::style::Style;
 use plurimus::ui::{ComputedWidgetArea, ScrollArea};
-use plurimus::widgets::TableColumns;
 use retiretui_client::ledger::Year;
 
 use super::arrange::DetailStop;
 use super::{Detail, LedgerSystems, MILESTONE, WARNING, shows_the_year};
-use crate::edit::table_bundle;
+use crate::grid::{self, Grid};
 use crate::hints::Hints;
-use crate::layout::{self, filling, fixed, placed};
+use crate::layout::{self, fixed};
 use crate::pane::{self, Framed, Pane};
-use crate::tabulate;
 use crate::theme::Theme;
 
 pub(super) fn plugin(app: &mut App) {
@@ -59,16 +57,10 @@ pub(super) fn spawn_panes(commands: &mut Commands, detail: Entity) {
     let list = layout::spawn_scrolled_list(commands, to_do, Hints(&[("↑↓", "scroll")]));
     commands.entity(list).insert((YearLines, DetailStop));
     let so_far = Pane::new("").wide(SO_FAR_COLS).spawn(commands, row);
-    commands.spawn((
-        table_bundle(),
-        SoFar,
-        DetailStop,
-        Hints(&[("↑↓", "line")]),
-        layout::Rests,
-        filling(),
-        placed(),
-        ChildOf(so_far),
-    ));
+    let root = grid::spawn(commands, so_far);
+    commands
+        .entity(root)
+        .insert((SoFar, DetailStop, Hints(&[("↑↓", "line")]), layout::Rests));
 }
 
 /// The year's lines, each in what it is drawn in: a milestone in the
@@ -96,7 +88,7 @@ struct YearPanes<'w, 's> {
         ),
         (With<YearLines>, Without<SoFar>),
     >,
-    tables: Query<'w, 's, (Entity, &'static ChildOf, &'static mut ScrollArea), With<SoFar>>,
+    tables: Query<'w, 's, (Entity, &'static ChildOf, &'static Grid), With<SoFar>>,
     frames: Query<'w, 's, &'static mut Framed>,
     rows: Query<'w, 's, &'static mut Node, With<YearBand>>,
 }
@@ -125,12 +117,11 @@ fn refresh(
     let so_far: Vec<Vec<String>> = so_far
         .map(|line| vec![line.label.clone(), line.amount.clone()])
         .collect();
-    if let Ok((table, pane, mut scroll)) = panes.tables.single_mut() {
+    if let Ok((table, pane, grid)) = panes.tables.single() {
         let widest = so_far.iter().map(|line| line[1].chars().count()).max();
         let widest = u16::try_from(widest.unwrap_or(0)).unwrap_or(u16::MAX);
         let columns = vec![Constraint::Fill(1), Constraint::Length(widest)];
-        commands.entity(table).insert(TableColumns(columns));
-        tabulate::refill(&mut commands, (table, &mut *scroll), (&[], &so_far), &[0]);
+        grid::refill(&mut commands, (table, grid), columns, (&[], &so_far), &[0]);
         if let Ok(mut framed) = panes.frames.get_mut(pane.parent()) {
             Framed::retitle(&mut framed, &year.so_far_title);
         }

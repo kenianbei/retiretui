@@ -18,13 +18,16 @@ pub fn text() -> impl Bundle {
     (Text::default(), TextLayout::default().with_no_wrap())
 }
 
-/// Makes `root`'s spans say `line`, replacing whatever it said before.
+/// Makes `root`'s spans say `line`, replacing whatever it said before;
+/// each span is said in its own style over the line's, as ratatui draws
+/// it.
 pub fn say(commands: &mut Commands, root: Entity, line: Line<'static>, theme: &Theme) {
     let mut root = commands.entity(root);
     root.despawn_related::<Children>();
     root.with_children(|spans| {
         for span in line.spans {
-            spans.spawn(said(span, theme));
+            let style = line.style.patch(span.style);
+            spans.spawn(said(Span::styled(span.content, style), theme));
         }
     });
 }

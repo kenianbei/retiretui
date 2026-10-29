@@ -19,13 +19,9 @@ use plurimus::widgets::{
 };
 
 use super::chrome::{HAIRLINE, HALF_CELL_WIDE};
-use crate::layout::{BUTTON_BRACKETS, CURSOR_COLS};
+use crate::layout::{BUTTON_BRACKETS, GUTTER};
 use crate::theme::{Repainted, Theme, say, text};
 use crate::toast::{Shown, Toasts};
-
-/// The gutter beside a row the cursor is not on, as wide as the cursor.
-const GUTTER: &str = "  ";
-const _: () = assert!(GUTTER.len() == CURSOR_COLS as usize);
 
 pub fn plugin(app: &mut App) {
     app.add_observer(stack_the_list);

@@ -11,18 +11,16 @@ use bevy_ecs::prelude::{Commands, Component, Entity, IntoScheduleConfigs, Query,
 use bevy_ui::{Node, Val};
 use plurimus::core::ratatui_core::layout::Constraint;
 use plurimus::core::ratatui_core::style::Style;
-use plurimus::ui::{ScrollArea, UiStyle};
-use plurimus::widgets::TableColumns;
+use plurimus::ui::UiStyle;
 use retiretui_client::ledger::{DetailLine, Funds, MONEY_IN, MONEY_OUT, TAX, Year};
 
 use super::arrange::{DetailStop, Part, Shape};
 use super::{Detail, LedgerSystems, shows_the_year};
-use crate::edit::table_bundle;
+use crate::grid::{self, Grid};
 use crate::hints::Hints;
-use crate::layout::{self, filling, placed};
+use crate::layout;
 use crate::nav::Page;
 use crate::pane::Pane;
-use crate::tabulate;
 use crate::theme::Theme;
 use crate::tools::{EnterRuns, handle_enter};
 
@@ -63,16 +61,9 @@ pub(super) fn spawn_panes(commands: &mut Commands, year: Entity) {
     let money = commands.spawn((money, Part::Money, ChildOf(year))).id();
     for (said, title) in PANES {
         let pane = Pane::new(title).sharing(1.0).spawn(commands, money);
-        let mut table = commands.spawn((
-            table_bundle(),
-            said,
-            DetailStop,
-            Hints(&[("↑↓", "line")]),
-            layout::Rests,
-            filling(),
-            placed(),
-            ChildOf(pane),
-        ));
+        let root = grid::spawn(commands, pane);
+        let mut table = commands.entity(root);
+        table.insert((said, DetailStop, Hints(&[("↑↓", "line")]), layout::Rests));
         if said == Said::Tax {
             let tables = Page::TaxTables.label();
             table
@@ -145,14 +136,14 @@ impl Said {
 /// them.
 fn refresh(
     (detail, shape): (Detail, Res<Shape>),
-    mut tables: Query<(Entity, &Said, &ChildOf, &mut ScrollArea)>,
+    tables: Query<(Entity, &Said, &ChildOf, &Grid)>,
     mut panes: Query<&mut Node>,
     mut commands: Commands,
 ) {
     let Some((year, theme)) = detail.due(shape.is_changed()) else {
         return;
     };
-    for (table, said, pane, mut scroll) in &mut tables {
+    for (table, said, pane, grid) in &tables {
         let rows = said.rows(year);
         let basis = shape.money_basis(rows.len());
         if let Ok(mut node) = panes.get_mut(pane.parent())
@@ -171,8 +162,7 @@ fn refresh(
         let widest = amounts.map(|amount| amount.chars().count()).max();
         let widest = u16::try_from(widest.unwrap_or(0)).unwrap_or(u16::MAX);
         let columns = vec![Constraint::Fill(1), Constraint::Length(widest)];
-        commands.entity(table).insert(TableColumns(columns));
-        let spawned = tabulate::refill(&mut commands, (table, &mut *scroll), (&[], &cells), &[0]);
+        let spawned = grid::refill(&mut commands, (table, grid), columns, (&[], &cells), &[0]);
         for (row, entity) in rows.iter().zip(spawned) {
             if let Some(ink) = row.ink(theme) {
                 commands.entity(entity).insert(UiStyle(ink));

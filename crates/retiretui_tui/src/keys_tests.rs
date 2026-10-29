@@ -7,7 +7,7 @@ use bevy_input_focus::InputFocus;
 use plurimus::term::{KeyCode, LastCopied};
 
 use super::nav::Page;
-use super::support::{SIZE, headless_app, ledger_year, press_ctrl, press_key, show};
+use super::support::{SIZE, headless_app, press_ctrl, press_key, show};
 
 fn copied(app: &App) -> String {
     let last = app.world().resource::<LastCopied>();
@@ -26,8 +26,11 @@ fn ctrl_c_copies_the_row_under_the_cursor_and_ctrl_q_quits() {
     assert!(copied(&app).starts_with("cash\t"), "{:?}", copied(&app));
     show(&mut app, Page::Ledger);
     press_ctrl(&mut app, KeyCode::Char('c'));
-    let year = ledger_year(&mut app).to_string();
-    assert!(copied(&app).starts_with(&year), "{:?}", copied(&app));
+    assert!(
+        copied(&app).starts_with("cash\t"),
+        "the Ledger's grid copies nothing: {:?}",
+        copied(&app)
+    );
     assert!(app.should_exit().is_none(), "a copy is not a quit");
     press_ctrl(&mut app, KeyCode::Char('q'));
     assert!(app.should_exit().is_some());
