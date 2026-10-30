@@ -8,12 +8,14 @@ mod domain;
 mod draft;
 mod editing;
 mod field;
+mod flag;
 mod form;
 mod group;
 mod screen;
 mod scroll;
 mod search;
 mod select;
+mod slider;
 mod sort;
 mod table;
 #[cfg(test)]

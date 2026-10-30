@@ -15,13 +15,11 @@ use bevy_ecs::system::SystemParam;
 use bevy_input::keyboard::Key;
 use bevy_input_focus::InputFocus;
 use bevy_ui::{Node, UiRect, Val};
+use plurimus::bui::bevy_ui_widgets::SliderValue;
 use plurimus::core::ratatui_core::style::Style;
 use plurimus::core::ratatui_core::text::Line;
 use plurimus::ui::{Checked, KeyBinding};
-use plurimus::widgets::{
-    ActivateKeys, Checkbox, SliderStep, SliderValue, TextInput, checkbox, checkbox_self_update,
-    editable_text, slider,
-};
+use plurimus::widgets::{ActivateKeys, TextInput, editable_text};
 use retiretui_engine::plan::Plan;
 use toml::Value;
 
@@ -30,7 +28,9 @@ use super::cells::{field_text, parse_field};
 use super::codec::{get_path, share_left};
 use super::domain::{FieldKind, FieldSpec};
 use super::editing::{EditSession, Editing};
+use super::flag::{self, FlagBox};
 use super::select::{Select, spawn_select};
+use super::slider;
 use super::trigger::Slot;
 use crate::layout::{placed, sized};
 use crate::present;
@@ -43,19 +43,9 @@ pub fn space() -> ActivateKeys {
     ActivateKeys(vec![KeyBinding::new(Key::Character(" ".into()))])
 }
 
-/// The highest rate a slider offers; a higher one is still typable.
-const RATE_CEILING: f32 = 0.15;
-const RATE_STEP: f32 = 0.0025;
-/// A share's slider reaches the whole in these steps.
-const SHARE_CEILING: f32 = 1.0;
-const SHARE_STEP: f32 = 0.05;
-/// Cells the slider takes, leaving the rest of the field for the text.
-const SLIDER_WIDTH: f32 = 20.0;
-/// Cells kept clear between the slider and the text beside it.
-const SLIDER_GAP: f32 = 1.0;
 /// Where a remainder's text starts: level with the shares' text, past
 /// their slider and bracket.
-const REMAINDER_INDENT: f32 = SLIDER_WIDTH + SLIDER_GAP + BRACKETS[0].len() as f32;
+const REMAINDER_INDENT: f32 = slider::WIDTH as f32 + slider::GAP + BRACKETS[0].len() as f32;
 /// What a remainder is drawn with, and the share it last drew.
 #[derive(Component, Default)]
 pub struct Remaining {
@@ -89,19 +79,6 @@ pub fn show_remainders(
         };
         let said = left.map(present::rate).unwrap_or_default();
         say(&mut commands, entity, Line::styled(said, style), &theme);
-    }
-}
-
-/// Marks a flag's box, which is a component rather than a value.
-fn show_check(entity: Entity, wanted: bool, is_checked: bool, commands: &mut Commands) {
-    if wanted == is_checked {
-        return;
-    }
-    let mut widget = commands.entity(entity);
-    if wanted {
-        widget.insert(Checked);
-    } else {
-        widget.remove::<Checked>();
     }
 }
 
@@ -226,19 +203,8 @@ pub fn spawn_field(commands: &mut Commands, row: Entity, spec: FieldSpec) {
         | FieldKind::Listed(_) => {
             spawn_text(commands, row, sharing(), field);
         }
-        FieldKind::Flag | FieldKind::Presence(_) => {
-            commands
-                .spawn((
-                    checkbox(""),
-                    space(),
-                    field,
-                    sharing(),
-                    placed(),
-                    ChildOf(row),
-                ))
-                .observe(checkbox_self_update);
-        }
-        FieldKind::Rate | FieldKind::Share => spawn_slider(commands, row, field),
+        FieldKind::Flag | FieldKind::Presence(_) => flag::spawn(commands, row, field),
+        FieldKind::Rate | FieldKind::Share => slider::spawn(commands, row, field),
         FieldKind::Remainder => {
             commands.spawn((
                 Remaining::default(),
@@ -259,28 +225,6 @@ pub fn spawn_field(commands: &mut Commands, row: Entity, spec: FieldSpec) {
             commands.entity(select).insert((sharing(), ChildOf(row)));
         }
     }
-}
-
-/// A rate's or a share's slider, and the text beside it that says it
-/// exactly.
-fn spawn_slider(commands: &mut Commands, row: Entity, field: FormField) {
-    let (ceiling, step) = if field.spec.kind == FieldKind::Share {
-        (SHARE_CEILING, SHARE_STEP)
-    } else {
-        (RATE_CEILING, RATE_STEP)
-    };
-    commands.spawn((
-        slider(0.0, ceiling, 0.0),
-        SliderStep(step),
-        field,
-        Node {
-            margin: UiRect::right(Val::Em(SLIDER_GAP)),
-            ..sized(SLIDER_WIDTH, 1.0)
-        },
-        placed(),
-        ChildOf(row),
-    ));
-    spawn_text(commands, row, sharing(), field);
 }
 
 /// A form's tree, for finding the widgets in it.
@@ -309,8 +253,8 @@ pub struct Fields<'w, 's> {
     pub tree: FormTree<'w, 's>,
     texts: Query<'w, 's, (&'static FormField, &'static mut TextInput), Without<Slot>>,
     selects: Query<'w, 's, (&'static FormField, &'static mut Select), Without<Slot>>,
-    sliders: Query<'w, 's, (&'static FormField, &'static mut SliderValue)>,
-    checks: Query<'w, 's, (&'static FormField, Has<Checked>), With<Checkbox>>,
+    sliders: Query<'w, 's, (&'static FormField, &'static SliderValue)>,
+    checks: Query<'w, 's, (&'static FormField, Has<Checked>), With<FlagBox>>,
     kinds: Query<'w, 's, (&'static FormField, &'static Slot, &'static ChildOf)>,
     slots: super::trigger::SlotsMut<'w, 's>,
     commands: Commands<'w, 's>,
@@ -364,10 +308,14 @@ impl Fields<'_, '_> {
         }
     }
 
+    /// The stock slider's value is immutable, so a change is an insert.
     fn show_slider_at(&mut self, widget: Entity, editing: &Editing) {
-        if let Ok((field, mut value)) = self.sliders.get_mut(widget) {
+        if let Ok((field, shown)) = self.sliders.get(widget) {
             let rate = get_path(editing.snapshot(), field.spec.key).and_then(Value::as_float);
-            *value = SliderValue(rate.unwrap_or(0.0) as f32);
+            let wanted = SliderValue(rate.unwrap_or(0.0) as f32);
+            if *shown != wanted {
+                self.commands.entity(widget).insert(wanted);
+            }
         }
     }
 
@@ -394,7 +342,7 @@ impl Fields<'_, '_> {
                     FieldKind::Presence(_) => value.is_some_and(Value::is_table),
                     _ => value.and_then(Value::as_bool).unwrap_or(false),
                 };
-                show_check(widget, wanted, is_checked, &mut self.commands);
+                flag::show(widget, wanted, is_checked, &mut self.commands);
             }
             if let Ok((field, Slot::Kind, row)) = self.kinds.get(widget)
                 && let Ok(group) = self.tree.children.get(row.parent())
@@ -408,11 +356,4 @@ impl Fields<'_, '_> {
             }
         }
     }
-}
-
-/// A slider's rate reaches the field as a float, rounded to its own step
-/// so the text beside it reads as the slider moved.
-pub fn slider_value(value: f32) -> Value {
-    let stepped = f64::from((value / RATE_STEP).round() * RATE_STEP);
-    Value::Float((stepped * 1e6).round() / 1e6)
 }

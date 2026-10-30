@@ -9,7 +9,8 @@ use bevy_input::keyboard::Key;
 use bevy_input_focus::InputFocus;
 use bevy_input_focus::directional_navigation::DirectionalNavigationMap;
 use bevy_math::CompassOctant;
-use plurimus::widgets::{ListBoxKeys, SliderKeys, TableKeys};
+use plurimus::bui::bevy_ui_widgets::Slider;
+use plurimus::widgets::{ListBoxKeys, TableKeys};
 
 use super::command::{Keymap, Outcome};
 use super::nav::{FocusStop, Page, PageSystems, ShownSurface, SurfaceRoot};
@@ -220,7 +221,7 @@ fn block_bound_arrows(
 /// not then walk the keyboard off the widget.
 fn block_widget_ends(
     lists: Query<Entity, Or<(Added<ListBoxKeys>, Added<TableKeys>)>>,
-    sliders: Query<Entity, Added<SliderKeys>>,
+    sliders: Query<Entity, Added<Slider>>,
     mut map: ResMut<DirectionalNavigationMap>,
 ) {
     for list in &lists {

@@ -46,6 +46,8 @@ pub fn plugin(app: &mut App) {
             show_help,
             field::light_brackets,
             field::show_remainders,
+            super::flag::paint,
+            super::slider::paint,
         )
             .in_set(Repainted),
     );
@@ -362,7 +364,7 @@ fn handle_pick_change(change: On<PickChanged>, items: Items, mut state: SessionF
 }
 
 fn handle_slider_change(change: On<ValueChange<f32>>, items: Items, mut state: SessionFocus) {
-    let value = super::field::slider_value(change.value);
+    let value = super::slider::value(change.value);
     items.set(change.source, Entered::Made(value), &mut state);
 }
 

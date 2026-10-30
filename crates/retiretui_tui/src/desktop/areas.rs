@@ -4,11 +4,11 @@
 
 use bevy_app::{App, PostUpdate};
 use bevy_ecs::change_detection::DetectChangesMut;
-use bevy_ecs::prelude::{Changed, IntoScheduleConfigs, Or, Query, Res, With};
+use bevy_ecs::prelude::{Changed, IntoScheduleConfigs, Or, Query, Res};
 use bevy_math::Vec2;
 use bevy_ui::{ComputedNode, UiGlobalTransform, UiSystems};
 use plurimus::core::ratatui_core::layout::Rect;
-use plurimus::core::{DefaultCamera, ResolvedViewport, UiArea, UiWidget, local_area};
+use plurimus::core::{DefaultCamera, ResolvedViewport, UiArea, local_area};
 
 use super::CELL;
 use crate::layout;
@@ -24,7 +24,7 @@ type Moved = Or<(Changed<ComputedNode>, Changed<UiGlobalTransform>)>;
 fn place_widgets(
     default_camera: Res<DefaultCamera>,
     cameras: Query<&ResolvedViewport>,
-    mut widgets: Query<(&ComputedNode, &UiGlobalTransform, &mut UiArea), (With<UiWidget>, Moved)>,
+    mut widgets: Query<(&ComputedNode, &UiGlobalTransform, &mut UiArea), Moved>,
 ) {
     let Some(viewport) = layout::default_viewport(*default_camera, &cameras) else {
         return;
@@ -72,7 +72,9 @@ fn cell_rect(min: Vec2, max: Vec2, viewport: Rect) -> Rect {
 
 #[cfg(test)]
 mod tests {
+    use bevy_ecs::prelude::With;
     use plurimus::bui::ComputedNodeRect;
+    use plurimus::core::UiWidget;
 
     use super::*;
     use crate::nav::Page;

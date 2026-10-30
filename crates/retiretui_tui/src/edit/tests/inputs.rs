@@ -1,8 +1,8 @@
 //! Headless tests for what a form's fields are entered with: text,
 //! picks, flags and sliders.
 
+use plurimus::bui::bevy_ui_widgets::{SliderRange, SliderValue};
 use plurimus::term::KeyCode;
-use plurimus::widgets::{SliderRange, SliderValue};
 use retiretui_engine::plan::AccountKind;
 
 use super::{
@@ -13,7 +13,7 @@ use crate::edit::Draft;
 use crate::nav::Page;
 use crate::present;
 use crate::support::{
-    cell_fg, cell_of, composed_frame, press_key, press_shift, redrawn, show, type_text,
+    cell_fg, cell_of, click, composed_frame, press_key, press_shift, redrawn, show, type_text,
 };
 use crate::theme::Theme;
 
@@ -275,4 +275,37 @@ fn a_slider_at_its_ceiling_keeps_the_keyboard() {
         .insert(SliderValue(ceiling));
     press_key(&mut app, KeyCode::Right);
     assert_eq!(focused(&app), slider);
+}
+
+#[test]
+fn a_click_on_the_track_moves_the_slider_to_the_cell_clicked() {
+    let mut app = fixture_app();
+    show(&mut app, Page::Accounts);
+    app.update();
+    press_key(&mut app, KeyCode::Down);
+    press_key(&mut app, KeyCode::Enter);
+    tab_to_field(&mut app, RATE_FIELD);
+    let slider = focused(&app);
+    let before = app.world().get::<SliderValue>(slider).unwrap().0;
+    let (thumb, row) = cell_of(&app, "█");
+    click(&mut app, thumb + 6, row);
+    let after = app.world().get::<SliderValue>(slider).unwrap().0;
+    assert!(after > before, "{before} to {after}");
+    let frame = composed_frame(&app);
+    let (moved, _) = cell_of(&app, "█");
+    assert!(moved > thumb, "the thumb follows: {frame}");
+}
+
+#[test]
+fn a_click_on_a_flag_s_box_ticks_it() {
+    const ESSENTIAL_BOX: &str = "Essential       [ ]";
+    let mut app = fixture_app();
+    open(&mut app, Page::Expenses);
+    let (column, row) = cell_of(&app, ESSENTIAL_BOX);
+    let inside = u16::try_from(ESSENTIAL_BOX.len() - 2).unwrap();
+    click(&mut app, column + inside, row);
+    let frame = composed_frame(&app);
+    assert!(frame.contains("Essential       [x]"), "{frame}");
+    press_key(&mut app, KeyCode::Enter);
+    assert!(draft_plan(&app).expenses[0].essential);
 }

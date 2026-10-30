@@ -7,7 +7,7 @@ use bevy_app::{App, Startup, Update};
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{
-    Bundle, Changed, Commands, Component, Entity, IntoScheduleConfigs, Mut, Query, Ref, Res, With,
+    Bundle, Changed, Commands, Component, Entity, IntoScheduleConfigs, Mut, Query, Ref, Res,
 };
 use bevy_ui::{ComputedNode, Display, FlexDirection, JustifyContent, Node, Val};
 use plurimus::bui::ComputedNodeRect;
@@ -294,10 +294,7 @@ pub fn spawn_frame(mut commands: Commands) {
 pub(crate) fn sync_areas(
     default_camera: Res<DefaultCamera>,
     cameras: Query<&ResolvedViewport>,
-    mut widgets: Query<
-        (&ComputedNodeRect, &mut UiArea),
-        (With<UiWidget>, Changed<ComputedNodeRect>),
-    >,
+    mut widgets: Query<(&ComputedNodeRect, &mut UiArea), Changed<ComputedNodeRect>>,
 ) {
     let Some(viewport) = default_viewport(*default_camera, &cameras) else {
         return;
