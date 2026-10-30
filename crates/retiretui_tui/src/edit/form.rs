@@ -8,10 +8,11 @@ use bevy_ecs::schedule::IntoScheduleConfigs;
 use bevy_ecs::system::SystemParam;
 use bevy_input::keyboard::{Key, KeyboardInput};
 use bevy_input_focus::{FocusCause, FocusedInput, InputFocus};
-use plurimus::core::UiWidget;
+use bevy_ui::widget::Text;
+use plurimus::bui::bevy_text::TextColor;
+use plurimus::core::ratatui_core::text::Line;
 use plurimus::term::bevy_compat::HeldModifiers;
 use plurimus::ui::{KeyBinding, ModalDismiss, first_bound};
-use plurimus::widgets::ratatui_widgets::paragraph::{Paragraph, Wrap};
 use plurimus::widgets::{Activate, Submit, TextInput, ValueChange};
 use toml::Value;
 
@@ -26,7 +27,7 @@ use super::table::Row;
 use super::trigger;
 use crate::journal;
 use crate::pane::Framed;
-use crate::theme::{Repainted, Theme};
+use crate::theme::{Repainted, Theme, say};
 use retiretui_client::forms::edit::place_of;
 use retiretui_client::issues::{LocatedIssue, field_issue, located_issues};
 
@@ -149,8 +150,9 @@ const ISSUE_MARK: &str = " !";
 fn mark_issues(
     issues: FormIssues,
     theme: Res<Theme>,
-    mut labels: Query<(Entity, Mut<FieldLabel>, &mut UiWidget)>,
+    mut labels: Query<(Entity, Mut<FieldLabel>)>,
     mut last_shown: Local<Option<(Entity, Option<Row>)>>,
+    mut commands: Commands,
 ) {
     let shown = issues.shown();
     // A form standing over its table is spawned after the session that
@@ -158,24 +160,28 @@ fn mark_issues(
     let is_stale = issues.draft.is_changed()
         || theme.is_changed()
         || *last_shown != shown
-        || labels.iter().any(|(_, label, _)| label.is_added());
+        || labels.iter().any(|(_, label)| label.is_added());
     if !is_stale {
         return;
     }
     *last_shown = shown;
     let located = located_issues(&issues.draft);
-    for (entity, mut label, mut widget) in &mut labels {
+    for (entity, mut label) in &mut labels {
         let form = issues.targets.owner(entity).map(|(form, _)| form);
         let is_marked = form.is_some_and(|form| issues.of(&located, form, &label.spec).is_some());
-        if is_marked == label.is_marked && !theme.is_changed() {
+        if is_marked == label.is_marked && !theme.is_changed() && !label.is_added() {
             continue;
         }
         label.is_marked = is_marked;
-        *widget = UiWidget::new(if is_marked {
-            Paragraph::new(format!("{}{ISSUE_MARK}", label.spec.label)).style(theme.exceeded())
+        let line = if is_marked {
+            Line::styled(
+                format!("{}{ISSUE_MARK}", label.spec.label),
+                theme.exceeded(),
+            )
         } else {
-            Paragraph::new(label.spec.label)
-        });
+            Line::from(label.spec.label)
+        };
+        say(&mut commands, entity, line, &theme);
     }
 }
 
@@ -187,7 +193,7 @@ fn show_help(
     focus: Res<InputFocus>,
     theme: Res<Theme>,
     fields: Query<&FormField>,
-    mut feet: Query<(&ChildOf, &mut UiWidget), With<HelpFoot>>,
+    mut feet: Query<(&ChildOf, &mut Text, &mut TextColor), With<HelpFoot>>,
 ) {
     if !issues.draft.is_changed() && !focus.is_changed() && !theme.is_changed() {
         return;
@@ -197,7 +203,7 @@ fn show_help(
     let form = focused.and_then(|widget| targets.owner(widget));
     let field = focused.and_then(|widget| targets.field(widget, &fields));
     let located = located_issues(&issues.draft);
-    for (parent, mut widget) in &mut feet {
+    for (parent, mut foot, mut ink) in &mut feet {
         let here = field.filter(|_| form.is_some_and(|(form, _)| form == parent.parent()));
         let issue = here.and_then(|field| issues.of(&located, parent.parent(), &field.spec));
         let (said, style) = match (issue, here) {
@@ -205,10 +211,8 @@ fn show_help(
             (None, Some(field)) => (field.spec.help, theme.dimmed()),
             (None, None) => ("", theme.dimmed()),
         };
-        let text = Paragraph::new(said.to_owned())
-            .style(style)
-            .wrap(Wrap { trim: true });
-        *widget = UiWidget::new(text);
+        said.clone_into(&mut foot.0);
+        ink.0 = theme.ink(style);
     }
 }
 

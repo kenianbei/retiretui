@@ -3,7 +3,7 @@
 //! what it showed of a scrolled table and a window the same glyphs.
 
 use bevy_ecs::hierarchy::{ChildOf, Children};
-use bevy_ecs::prelude::{Commands, Component, Query, Res};
+use bevy_ecs::prelude::{Commands, Component, Entity, Query, Res};
 use bevy_ui::{ComputedNode, FlexDirection, Node, Val};
 use plurimus::core::ratatui_core::buffer::Buffer;
 use plurimus::core::ratatui_core::layout::Rect;
@@ -31,13 +31,12 @@ pub(super) fn column() -> Node {
     }
 }
 
-/// The glyph on each of `shown` rows of a bar over `rows` rows with `top`
-/// the first in view: what tui-scrollview draws beside a scrolled table,
-/// the bar's content the rows past the viewport.
-fn glyphs(rows: u16, shown: u16, top: u16) -> Vec<String> {
+/// The glyph on each of `shown` rows of a bar whose content is `content`
+/// places long with `top` the one in view: ratatui's scrollbar, said a
+/// row at a time.
+pub(crate) fn glyphs(content: u16, shown: u16, top: u16) -> Vec<String> {
     let mut buffer = Buffer::empty(Rect::new(0, 0, 1, shown));
-    let mut state =
-        ScrollbarState::new(usize::from(rows.saturating_sub(shown))).position(usize::from(top));
+    let mut state = ScrollbarState::new(usize::from(content)).position(usize::from(top));
     Scrollbar::new(ScrollbarOrientation::VerticalRight).render(
         buffer.area,
         &mut buffer,
@@ -76,10 +75,26 @@ pub(super) fn draw_bars(
         let Some((rows, shown, top)) = now else {
             continue;
         };
-        for glyph in glyphs(rows, shown, top) {
-            let row = commands.spawn((text(), fixed(1.0), ChildOf(grid.bar))).id();
-            say(&mut commands, row, Line::from(glyph), &theme);
-        }
+        say_glyphs(
+            &mut commands,
+            grid.bar,
+            glyphs(rows - shown, shown, top),
+            &theme,
+        );
+    }
+}
+
+/// Replaces `column`'s rows with one saying each of `glyphs`.
+pub(crate) fn say_glyphs(
+    commands: &mut Commands,
+    column: Entity,
+    glyphs: Vec<String>,
+    theme: &Theme,
+) {
+    commands.entity(column).despawn_related::<Children>();
+    for glyph in glyphs {
+        let row = commands.spawn((text(), fixed(1.0), ChildOf(column))).id();
+        say(commands, row, Line::from(glyph), theme);
     }
 }
 
@@ -89,11 +104,11 @@ mod tests {
 
     #[test]
     fn the_bar_is_ratatui_s_from_its_arrow_to_its_arrow() {
-        let drawn = glyphs(40, 10, 0);
+        let drawn = glyphs(30, 10, 0);
         assert_eq!(drawn.len(), 10);
         assert_eq!((drawn[0].as_str(), drawn[9].as_str()), ("▲", "▼"));
         assert!(drawn[1..9].iter().any(|glyph| glyph == "█"), "{drawn:?}");
-        let end = glyphs(40, 10, 30);
+        let end = glyphs(30, 10, 30);
         assert_ne!(drawn, end, "the thumb moves with the offset");
     }
 }

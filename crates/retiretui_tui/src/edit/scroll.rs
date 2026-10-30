@@ -5,18 +5,16 @@
 use bevy_app::{App, Update};
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::{ChildOf, Children};
-use bevy_ecs::prelude::{Changed, Entity, IntoScheduleConfigs, Query, Ref, Res, With};
+use bevy_ecs::prelude::{Changed, Commands, Entity, IntoScheduleConfigs, Query, Ref, Res, With};
 use bevy_input_focus::InputFocus;
 use bevy_ui::{ComputedNode, Display, Node, ScrollPosition};
-use plurimus::bui::ComputedNodeRect;
-use plurimus::core::UiWidget;
-use plurimus::widgets::ratatui_widgets::scrollbar::{
-    Scrollbar, ScrollbarOrientation, ScrollbarState,
-};
 
 use super::build::{BELOW_FIELDS, FormBar, FormFields};
 use super::group::{self, Dependent};
+use crate::grid::bar::{glyphs, say_glyphs};
+use crate::layout;
 use crate::overlay::{self, Centred};
+use crate::theme::Theme;
 
 pub fn plugin(app: &mut App) {
     app.add_systems(
@@ -59,13 +57,13 @@ fn is_shown(rows: &Query<&Node>, row: Entity) -> bool {
 }
 
 /// Scrolls a form's fields by the least that shows the row holding the
-/// keyboard. Every row is a cell tall, so a row's place is the rows on show
+/// keyboard. Every row is a rem tall, so a row's place is the rows on show
 /// above it: a rect cannot say where a row scrolled above the screen is.
 fn reveal_focused(
     focus: Res<InputFocus>,
     parents: Query<&ChildOf>,
     nodes: Query<&Node>,
-    mut columns: Query<(&ComputedNodeRect, &Children, &mut ScrollPosition), With<FormFields>>,
+    mut columns: Query<(&ComputedNode, &Children, &mut ScrollPosition), With<FormFields>>,
 ) {
     if !focus.is_changed() {
         return;
@@ -88,35 +86,42 @@ fn reveal_focused(
         .take_while(|&&each| each != row)
         .filter(|&&each| is_shown(&nodes, each))
         .count();
-    let (top, height) = (above as f32, f32::from(view.content.height));
-    if top < scroll.0.y {
-        scroll.0.y = top;
-    } else if top + 1.0 > scroll.0.y + height {
-        scroll.0.y = top + 1.0 - height;
+    let rem = view.rem_size.0;
+    let (top, height) = (above as f32, f32::from(layout::node_rows(view)));
+    let offset = scroll.0.y / rem;
+    if top < offset {
+        scroll.0.y = top * rem;
+    } else if top + 1.0 > offset + height {
+        scroll.0.y = (top + 1.0 - height) * rem;
     }
 }
 
 /// Each form's bar shows where its fields are scrolled to, as a table's
-/// does. Layout moves a column's scroll unmarked, so the last layout's is
-/// compared with what the bar last drew.
+/// does: an offset from none to every hidden row is a place. Layout moves
+/// a column's scroll unmarked, so the last layout's is compared with what
+/// the bar last drew.
 fn draw_bars(
+    theme: Res<Theme>,
     columns: Query<(&ComputedNode, &FormFields)>,
-    mut bars: Query<(&mut FormBar, &mut UiWidget)>,
+    mut bars: Query<&mut FormBar>,
+    mut commands: Commands,
 ) {
     for (column, fields) in &columns {
-        let Ok((mut bar, mut widget)) = bars.get_mut(fields.bar) else {
+        let Ok(mut bar) = bars.get_mut(fields.bar) else {
             continue;
         };
-        let hidden = (column.content_size.y - column.size.y).max(0.0) as usize;
-        let drawn = (hidden > 0).then(|| (hidden, column.scroll_position.y.max(0.0) as usize));
+        let scale = column.inverse_scale_factor / column.rem_size.0;
+        let hidden = ((column.content_size.y - column.size.y).max(0.0) * scale).round() as u16;
+        let shown = layout::node_rows(column);
+        let above = (column.scroll_position.y.max(0.0) * scale).round() as u16;
+        let drawn = (hidden > 0).then_some((hidden, shown, above));
         if bar.drawn == drawn {
             continue;
         }
         bar.drawn = drawn;
-        *widget = drawn.map_or_else(UiWidget::default, |(hidden, above)| {
-            // An offset from none to every hidden row is a place.
-            let state = ScrollbarState::new(hidden + 1).position(above);
-            UiWidget::stateful(Scrollbar::new(ScrollbarOrientation::VerticalRight), state)
+        let glyphs = drawn.map_or_else(Vec::new, |(hidden, shown, above)| {
+            glyphs(hidden + 1, shown, above)
         });
+        say_glyphs(&mut commands, fields.bar, glyphs, &theme);
     }
 }

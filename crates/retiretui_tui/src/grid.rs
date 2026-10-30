@@ -4,7 +4,7 @@
 //! cursor row barred, a bar beside the rows, and the keys, the wheel, a
 //! click and the pointer answered as plurimus's table answers them.
 
-mod bar;
+pub(crate) mod bar;
 mod keys;
 
 use bevy_app::{App, Update};

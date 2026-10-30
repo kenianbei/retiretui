@@ -21,6 +21,7 @@ use crate::overlay::{self, Standing};
 use crate::pane::Framed;
 use crate::scope::KeyScope;
 use crate::session::Session;
+use crate::theme::Theme;
 use retiretui_client::forms::edit::{Entry, ItemEdit};
 
 /// What is opened: the item at a row, or a new one.
@@ -141,6 +142,7 @@ pub fn open_item(
 pub fn sync_item_form(
     mut session: ResMut<EditSession>,
     mut standing: Standing<ItemForm>,
+    theme: Res<Theme>,
     mut commands: Commands,
 ) {
     if !session.is_changed() {
@@ -175,7 +177,7 @@ pub fn sync_item_form(
     if editing.is_alone {
         commands.entity(form).remove::<KeyScope>();
     }
-    build::spawn_form(&mut commands, form, editing.ops, editing.is_alone);
+    build::spawn_form(&mut commands, (form, editing.ops, editing.is_alone), &theme);
 }
 
 /// Applies or discards the edits a question was asked about, as the

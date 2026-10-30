@@ -15,10 +15,9 @@ use bevy_ecs::system::SystemParam;
 use bevy_input::keyboard::Key;
 use bevy_input_focus::InputFocus;
 use bevy_ui::{Node, UiRect, Val};
-use plurimus::core::UiWidget;
 use plurimus::core::ratatui_core::style::Style;
+use plurimus::core::ratatui_core::text::Line;
 use plurimus::ui::{Checked, KeyBinding};
-use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
 use plurimus::widgets::{
     ActivateKeys, Checkbox, SliderStep, SliderValue, TextInput, checkbox, checkbox_self_update,
     editable_text, slider,
@@ -35,7 +34,7 @@ use super::select::{Select, spawn_select};
 use super::trigger::Slot;
 use crate::layout::{placed, sized};
 use crate::present;
-use crate::theme::Theme;
+use crate::theme::{Theme, say, text};
 use retiretui_client::forms::cells::{nth, nth_back};
 use retiretui_client::forms::offers::{candidates, offered};
 
@@ -68,7 +67,8 @@ pub struct Remaining {
 pub fn show_remainders(
     session: Res<EditSession>,
     theme: Res<Theme>,
-    mut shown: Query<(&mut Remaining, &FormField, &mut UiWidget)>,
+    mut shown: Query<(Entity, &mut Remaining, &FormField)>,
+    mut commands: Commands,
 ) {
     if !session.is_changed() && !theme.is_changed() {
         return;
@@ -76,7 +76,7 @@ pub fn show_remainders(
     let Some(editing) = session.0.as_ref() else {
         return;
     };
-    for (mut remaining, field, mut widget) in &mut shown {
+    for (entity, mut remaining, field) in &mut shown {
         let left = share_left(editing.snapshot(), field.spec.key);
         if remaining.left == left && !theme.is_changed() {
             continue;
@@ -87,8 +87,8 @@ pub fn show_remainders(
         } else {
             theme.exceeded()
         };
-        let text = left.map(present::rate).unwrap_or_default();
-        *widget = UiWidget::new(Paragraph::new(text).style(style));
+        let said = left.map(present::rate).unwrap_or_default();
+        say(&mut commands, entity, Line::styled(said, style), &theme);
     }
 }
 
@@ -146,9 +146,8 @@ pub fn spawn_beside(commands: &mut Commands, row: Entity, input: Entity, drawn: 
     }
     commands.spawn((
         Bracket { input, drawn },
+        text(),
         sized(drawn.len() as f32, 1.0),
-        UiWidget::new(Paragraph::new(drawn)),
-        placed(),
         ChildOf(row),
     ));
 }
@@ -174,14 +173,15 @@ pub fn spawn_text_as(commands: &mut Commands, row: Entity, input: Entity, field:
 pub fn light_brackets(
     focus: Res<InputFocus>,
     theme: Res<Theme>,
-    mut brackets: Query<(Ref<Bracket>, &mut UiWidget)>,
+    brackets: Query<(Entity, Ref<Bracket>)>,
+    mut commands: Commands,
 ) {
     let is_stale = focus.is_changed() || theme.is_changed();
-    if !is_stale && !brackets.iter().any(|(bracket, _)| bracket.is_added()) {
+    if !is_stale && !brackets.iter().any(|(_, bracket)| bracket.is_added()) {
         return;
     }
     let lit = theme.ui_theme().focused;
-    for (bracket, mut widget) in &mut brackets {
+    for (entity, bracket) in &brackets {
         if !is_stale && !bracket.is_added() {
             continue;
         }
@@ -190,7 +190,12 @@ pub fn light_brackets(
         } else {
             theme.dimmed()
         };
-        *widget = UiWidget::new(Paragraph::new(bracket.drawn).style(style));
+        say(
+            &mut commands,
+            entity,
+            Line::styled(bracket.drawn, style),
+            &theme,
+        );
     }
 }
 
@@ -242,8 +247,7 @@ pub fn spawn_field(commands: &mut Commands, row: Entity, spec: FieldSpec) {
                     margin: UiRect::left(Val::Em(REMAINDER_INDENT)),
                     ..sharing()
                 },
-                UiWidget::new(Paragraph::new("")),
-                placed(),
+                text(),
                 ChildOf(row),
             ));
         }
