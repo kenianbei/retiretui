@@ -19,7 +19,13 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   page. Of the pages, it draws the Ledger: the years under their headers, the
   flows, the money panes and the so-far table, each scrolled on the wheel with a
   bar beside it, stepped by the keys, a row chosen by a click and banded under
-  the pointer; the other pages are not yet drawn there.
+  the pointer. It draws the Plan tab's editing domains the same way: each
+  domain's table with its read-out beside it, a row opened by a click and a
+  column sorted by a click on its header, and the form over it - its labels,
+  headings and help, a text field typed into, a flag ticked by space or a
+  click, a slider moved by the arrows or a press on its track, and a select's
+  menu opened over the form and picked from by key or click - scrolled with a
+  bar as the terminal's is. The tools and Compare are not yet drawn there.
 
 ### Changed
 
@@ -32,8 +38,8 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Removed
 
-- `ctrl+c` no longer copies the row under the cursor in the Ledger's tables; it
-  still does in every other table.
+- `ctrl+c` no longer copies the row under the cursor in the Ledger's tables or
+  the editing domains' tables; it still does in the tools' and Compare's.
 - A theme file can no longer name a colour by an ANSI name or palette index, nor
   set `transparent`; one that does is reported as unreadable and the default
   family is worn.
