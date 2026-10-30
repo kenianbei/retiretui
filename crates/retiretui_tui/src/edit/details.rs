@@ -37,8 +37,6 @@ const TEXT_COLUMNS: [usize; 2] = [0, 1];
 const UNSTATED: Style = Style::new().add_modifier(Modifier::DIM);
 /// What sets a field in under the heading that gathers it.
 const GATHERED: &str = "  ";
-/// A heading over the fields it gathers.
-const HEADING: Style = Style::new().add_modifier(Modifier::BOLD);
 const BESIDE_HINTS: Hints = Hints(&[("↑↓", "scroll"), ("⏎", "edit")]);
 
 /// The table an item's details are rows of: of the domain `ops`, and of
@@ -126,7 +124,7 @@ fn drawn(read: Vec<ReadRow>) -> (Vec<Vec<String>>, Vec<Option<Style>>) {
     for row in read {
         if let Some(group) = heading(before, row.group) {
             rows.push(vec![group.to_owned(), String::new()]);
-            styles.push(Some(HEADING));
+            styles.push(Some(grid::HEADING));
         }
         before = row.group;
         let label = match row.group {

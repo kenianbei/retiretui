@@ -6,13 +6,14 @@
 //! form applies the item.
 
 use bevy_ecs::change_detection::DetectChanges;
+use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Component, Entity, Has, On, Query, Res};
 use bevy_input::keyboard::{Key, KeyboardInput};
 use bevy_input_focus::FocusedInput;
 use bevy_input_focus::InputFocus;
 use bevy_input_focus::tab_navigation::TabIndex;
 use plurimus::bui::bevy_picking::events::PointerClick;
-use plurimus::core::ratatui_core::style::Style;
+use plurimus::core::UiArea;
 use plurimus::core::ratatui_core::text::Line;
 use plurimus::term::bevy_compat::HeldModifiers;
 use plurimus::ui::{Checked, KeyBinding, ValueChange, first_bound};
@@ -24,6 +25,7 @@ use crate::theme::{Theme, say, text};
 
 /// A flag's box, and what it last drew: whether ticked, and whether held.
 #[derive(Component, Debug, Default)]
+#[require(UiArea = placed())]
 pub struct FlagBox {
     drawn: Option<(bool, bool)>,
 }
@@ -38,8 +40,7 @@ pub fn spawn(commands: &mut Commands, row: Entity, field: FormField) {
             TabIndex(0),
             text(),
             sharing(),
-            placed(),
-            bevy_ecs::hierarchy::ChildOf(row),
+            ChildOf(row),
         ))
         .observe(toggle_on_key)
         .observe(toggle_on_click);
@@ -106,12 +107,8 @@ pub fn paint(
             continue;
         }
         flag.drawn = Some(state);
-        let style = if state.1 {
-            theme.focused()
-        } else {
-            Style::default()
-        };
         let mark = MARKS[usize::from(is_checked)];
-        say(&mut commands, entity, Line::styled(mark, style), &theme);
+        let line = Line::styled(mark, theme.held(state.1));
+        say(&mut commands, entity, line, &theme);
     }
 }

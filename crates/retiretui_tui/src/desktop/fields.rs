@@ -92,10 +92,10 @@ fn read_the_buffer(
     let Ok((buffer, mut state)) = fields.get_mut(field) else {
         return;
     };
-    let value = buffer.value().to_string();
-    if state.value() == value {
+    if buffer.value() == state.value() {
         return;
     }
+    let value = buffer.value().to_string();
     show_text(&mut state, value.clone());
     commands.trigger(ValueChange {
         source: field,

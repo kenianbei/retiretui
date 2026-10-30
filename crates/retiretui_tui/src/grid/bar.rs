@@ -71,16 +71,10 @@ pub(super) fn draw_bars(
             continue;
         }
         bar.0 = now;
-        commands.entity(grid.bar).despawn_related::<Children>();
-        let Some((rows, shown, top)) = now else {
-            continue;
-        };
-        say_glyphs(
-            &mut commands,
-            grid.bar,
-            glyphs(rows - shown, shown, top),
-            &theme,
-        );
+        let glyphs = now.map_or_else(Vec::new, |(rows, shown, top)| {
+            glyphs(rows - shown, shown, top)
+        });
+        say_glyphs(&mut commands, grid.bar, glyphs, &theme);
     }
 }
 

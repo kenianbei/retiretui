@@ -17,13 +17,14 @@ use bevy_input_focus::{FocusCause, FocusedInput, InputFocus};
 use plurimus::core::ratatui_core::text::Line;
 use plurimus::term::bevy_compat::HeldModifiers;
 use plurimus::ui::{KeyBinding, UiLabel, first_bound};
-use plurimus::widgets::{Activate, MenuOpen, MenuPopup, menu_button, menu_item, menu_popup};
+use plurimus::widgets::{
+    Activate, ActivateKeys, MenuOpen, MenuPopup, menu_button, menu_item, menu_popup,
+};
 use retiretui_engine::plan::Plan;
 use toml::Value;
 
 use super::build::FormField;
 use super::domain::{BLANK, FieldKind};
-use super::field::space;
 use super::offers::{Offer, PickOffers, Vocabulary, held_word, ref_offers};
 use super::search;
 use crate::hints::Hints;
@@ -39,6 +40,12 @@ pub fn plugin(app: &mut App) {
 }
 
 const CHEVRON: &str = "▾";
+
+/// The button opens its menu on space alone, leaving Enter to apply the
+/// item.
+fn space() -> ActivateKeys {
+    ActivateKeys(vec![KeyBinding::new(Key::Character(" ".into()))])
+}
 const STEP_KEYS: &[(KeyBinding, isize)] = &[
     (KeyBinding::new(Key::ArrowLeft), -1),
     (KeyBinding::new(Key::ArrowRight), 1),

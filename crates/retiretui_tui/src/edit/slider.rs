@@ -9,7 +9,7 @@ use bevy_input_focus::InputFocus;
 use bevy_input_focus::tab_navigation::TabIndex;
 use bevy_ui::{Node, UiRect, Val};
 use plurimus::bui::bevy_ui_widgets::{Slider, SliderRange, SliderStep, SliderValue, TrackClick};
-use plurimus::core::ratatui_core::style::Style;
+use plurimus::core::UiArea;
 use plurimus::core::ratatui_core::text::Line;
 use toml::Value;
 
@@ -37,6 +37,7 @@ const EMPTY: &str = "─";
 
 /// A slider's track, and whether it was last drawn held.
 #[derive(Component, Debug, Default)]
+#[require(UiArea = placed())]
 pub struct Track {
     drawn_held: Option<bool>,
 }
@@ -63,7 +64,6 @@ pub fn spawn(commands: &mut Commands, row: Entity, field: FormField) {
             margin: UiRect::right(Val::Em(GAP)),
             ..sized(f32::from(WIDTH), 1.0)
         },
-        placed(),
         ChildOf(row),
     ));
     spawn_text(commands, row, sharing(), field);
@@ -92,13 +92,9 @@ pub fn paint(
             continue;
         }
         track.drawn_held = Some(is_held);
-        let style = if is_held {
-            theme.focused()
-        } else {
-            Style::default()
-        };
         let drawn = glyphs(range.thumb_position(value.0), WIDTH);
-        say(&mut commands, entity, Line::styled(drawn, style), &theme);
+        let line = Line::styled(drawn, theme.held(is_held));
+        say(&mut commands, entity, line, &theme);
     }
 }
 

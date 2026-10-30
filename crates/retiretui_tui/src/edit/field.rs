@@ -3,24 +3,23 @@
 //! beside exact text for a rate.
 //!
 //! Nothing here consumes Enter, so it reaches the form and applies the
-//! item: a flag's checkbox is bound to space alone rather than to the
-//! Enter its activation would otherwise take as well.
+//! item.
 
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::{ChildOf, Children};
 use bevy_ecs::prelude::{
-    Bundle, Changed, Commands, Component, Entity, Has, Query, Ref, Res, With, Without,
+    Bundle, Changed, Commands, Component, Entity, Has, Query, Res, With, Without,
 };
 use bevy_ecs::system::SystemParam;
-use bevy_input::keyboard::Key;
 use bevy_input_focus::InputFocus;
 use bevy_input_focus::tab_navigation::TabIndex;
 use bevy_ui::{Node, UiRect, Val};
 use plurimus::bui::bevy_ui_widgets::SliderValue;
+use plurimus::core::UiArea;
 use plurimus::core::ratatui_core::style::Style;
 use plurimus::core::ratatui_core::text::Line;
-use plurimus::ui::{Checked, KeyBinding};
-use plurimus::widgets::{ActivateKeys, TextInput};
+use plurimus::ui::Checked;
+use plurimus::widgets::TextInput;
 use retiretui_engine::plan::Plan;
 use toml::Value;
 
@@ -38,11 +37,6 @@ use crate::present;
 use crate::theme::{Theme, say, text};
 use retiretui_client::forms::cells::{nth, nth_back};
 use retiretui_client::forms::offers::{candidates, offered};
-
-/// A widget activated by space alone, leaving Enter to apply the item.
-pub fn space() -> ActivateKeys {
-    ActivateKeys(vec![KeyBinding::new(Key::Character(" ".into()))])
-}
 
 /// Where a remainder's text starts: level with the shares' text, past
 /// their slider and bracket.
@@ -106,11 +100,12 @@ pub fn sharing() -> Node {
 
 /// What is drawn beside a text input and goes where it goes: one of its
 /// two brackets, which show it is there while it holds nothing, or a word
-/// of the sentence it is part of.
+/// of the sentence it is part of; and whether it was last drawn lit.
 #[derive(Component, Debug)]
 pub struct Bracket {
     input: Entity,
     drawn: &'static str,
+    drawn_lit: Option<bool>,
 }
 
 /// The closing one keeps a cell clear of whatever follows it on the row.
@@ -123,7 +118,11 @@ pub fn spawn_beside(commands: &mut Commands, row: Entity, input: Entity, drawn: 
         return;
     }
     commands.spawn((
-        Bracket { input, drawn },
+        Bracket {
+            input,
+            drawn,
+            drawn_lit: None,
+        },
         text(),
         sized(drawn.len() as f32, 1.0),
         ChildOf(row),
@@ -133,6 +132,7 @@ pub fn spawn_beside(commands: &mut Commands, row: Entity, input: Entity, drawn: 
 /// A form's text field: plurimus's `TextInput` state is the value both
 /// skins share, and each dresses the entity with what edits and draws it.
 #[derive(Component, Debug, Default)]
+#[require(UiArea = placed())]
 pub struct TextField;
 
 /// A text input along `row`, carrying `field`, laid out as `node` between
@@ -150,7 +150,6 @@ pub fn spawn_text_as(commands: &mut Commands, row: Entity, input: Entity, field:
         TextInput::new(""),
         TabIndex(0),
         field,
-        placed(),
         ChildOf(row),
     ));
     spawn_beside(commands, row, input, BRACKETS[1]);
@@ -161,20 +160,17 @@ pub fn spawn_text_as(commands: &mut Commands, row: Entity, input: Entity, field:
 pub fn light_brackets(
     focus: Res<InputFocus>,
     theme: Res<Theme>,
-    brackets: Query<(Entity, Ref<Bracket>)>,
+    mut brackets: Query<(Entity, &mut Bracket)>,
     mut commands: Commands,
 ) {
-    let is_stale = focus.is_changed() || theme.is_changed();
-    if !is_stale && !brackets.iter().any(|(_, bracket)| bracket.is_added()) {
-        return;
-    }
-    let lit = theme.ui_theme().focused;
-    for (entity, bracket) in &brackets {
-        if !is_stale && !bracket.is_added() {
+    for (entity, mut bracket) in &mut brackets {
+        let is_lit = focus.get() == Some(bracket.input);
+        if bracket.drawn_lit == Some(is_lit) && !theme.is_changed() {
             continue;
         }
-        let style = if focus.get() == Some(bracket.input) {
-            lit
+        bracket.drawn_lit = Some(is_lit);
+        let style = if is_lit {
+            theme.focused()
         } else {
             theme.dimmed()
         };

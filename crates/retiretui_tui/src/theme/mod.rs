@@ -141,6 +141,17 @@ impl Theme {
         self.accented().add_modifier(Modifier::BOLD)
     }
 
+    /// A widget's style by whether it holds the keyboard: focused, or
+    /// plain.
+    #[must_use]
+    pub fn held(&self, is_held: bool) -> Style {
+        if is_held {
+            self.focused()
+        } else {
+            Style::new()
+        }
+    }
+
     #[must_use]
     pub fn exceeded(&self) -> Style {
         Style::new().fg(self.over)

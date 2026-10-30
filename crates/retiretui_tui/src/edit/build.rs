@@ -8,7 +8,6 @@ use bevy_ui::widget::Text;
 use bevy_ui::{FlexDirection, Node, Overflow, PositionType, Val};
 use plurimus::bui::bevy_text::TextLayout;
 use plurimus::bui::bevy_ui_widgets::ScrollArea;
-use plurimus::core::ratatui_core::style::{Modifier, Style};
 use plurimus::core::ratatui_core::text::Line;
 use plurimus::widgets::button;
 
@@ -16,10 +15,11 @@ use super::domain::{FieldSpec, Ops};
 use super::field;
 use super::form::{handle_button, handle_form_key};
 use super::group::Dependent;
+use crate::grid;
 use crate::layout::{Emphasis, button_node, fixed, growing, placed, rule, sized, spawn_button_row};
 use crate::overlay::{self, Centred};
 use crate::scope::KeyScope;
-use crate::theme::{Theme, say, text};
+use crate::theme::text;
 use retiretui_client::forms::heading;
 use retiretui_client::forms::lists::gate_of;
 
@@ -154,14 +154,15 @@ pub struct FieldLabel {
 #[derive(Component)]
 pub struct HelpFoot;
 
+/// A line a form says once and never changes - a heading, a gutter - said
+/// again only as the theme changes its ink.
+#[derive(Component, Debug)]
+pub struct Said(pub Line<'static>);
+
 /// Makes `form` the form over `ops`: a row per field, and the buttons that
 /// apply or discard the item - `is_alone` where it stands with nothing to
 /// cancel back to.
-pub fn spawn_form(
-    commands: &mut Commands,
-    (form, ops, is_alone): (Entity, Ops, bool),
-    theme: &Theme,
-) {
+pub fn spawn_form(commands: &mut Commands, form: Entity, ops: Ops, is_alone: bool) {
     let label_cols = label_cols(ops.fields);
     commands
         .entity(form)
@@ -185,12 +186,11 @@ pub fn spawn_form(
     let mut before = None;
     for &spec in ops.fields {
         if let Some(heading) = heading(before, spec.group) {
-            spawn_heading(commands, column, heading, theme);
+            spawn_heading(commands, column, heading);
         }
         before = spec.group;
         let gutter = gutter_cols(ops.fields, &spec);
-        let widths = (gutter, label_cols - gutter);
-        let row = spawn_row(commands, (column, spec, widths), theme);
+        let row = spawn_row(commands, column, spec, gutter, label_cols - gutter);
         if let Some(dependent) = Dependent::of(ops.fields, &spec) {
             commands.entity(row).insert(dependent);
         }
@@ -208,18 +208,19 @@ pub fn spawn_form(
 }
 
 /// A row naming the group of the fields below it, which takes no focus.
-fn spawn_heading(commands: &mut Commands, column: Entity, heading: &'static str, theme: &Theme) {
-    let row = commands.spawn((text(), fixed(1.0), ChildOf(column))).id();
-    let bold = Style::new().add_modifier(Modifier::BOLD);
-    say(commands, row, Line::styled(heading, bold), theme);
+fn spawn_heading(commands: &mut Commands, column: Entity, heading: &'static str) {
+    let said = Said(Line::styled(heading, grid::HEADING));
+    commands.spawn((said, text(), fixed(1.0), ChildOf(column)));
 }
 
 /// One field of a form: its label in `label_cols` behind a gutter of
 /// `gutter` cells, and the widget its kind is entered by.
 fn spawn_row(
     commands: &mut Commands,
-    (column, spec, (gutter, label_cols)): (Entity, FieldSpec, (u16, u16)),
-    theme: &Theme,
+    column: Entity,
+    spec: FieldSpec,
+    gutter: u16,
+    label_cols: u16,
 ) -> Entity {
     let row = commands
         .spawn((
@@ -231,10 +232,8 @@ fn spawn_row(
         ))
         .id();
     if gutter > 0 {
-        let gutter = commands
-            .spawn((text(), sized(f32::from(gutter), 1.0), ChildOf(row)))
-            .id();
-        say(commands, gutter, Line::from(GUTTER), theme);
+        let said = Said(Line::from(GUTTER));
+        commands.spawn((said, text(), sized(f32::from(gutter), 1.0), ChildOf(row)));
     }
     commands.spawn((
         FieldLabel {

@@ -5,19 +5,19 @@
 //! click and the pointer answered as plurimus's table answers them.
 
 pub(crate) mod bar;
+mod click;
 mod keys;
+
+pub use click::{HeaderClick, RowClick};
 
 use bevy_app::{App, Update};
 use bevy_ecs::change_detection::{DetectChanges, Ref};
 use bevy_ecs::hierarchy::{ChildOf, Children};
-use bevy_ecs::prelude::{
-    Commands, Component, Entity, EntityEvent, Has, IntoScheduleConfigs, On, Query, Res,
-};
+use bevy_ecs::prelude::{Commands, Component, Entity, Has, IntoScheduleConfigs, Query, Res};
 use bevy_input_focus::InputFocus;
 use bevy_ui::{
     BackgroundColor, ComputedNode, Display, FlexDirection, Node, Overflow, ScrollPosition, Val,
 };
-use plurimus::bui::bevy_picking::events::PointerClick;
 use plurimus::bui::bevy_ui_widgets::ScrollArea;
 use plurimus::core::ratatui_core::layout::{Alignment, Constraint, Layout, Rect};
 use plurimus::core::ratatui_core::style::{Color, Modifier, Style};
@@ -26,7 +26,6 @@ use plurimus::ui::{Hovered, UiStyle};
 use plurimus::widgets::ActiveDescendant;
 
 use crate::edit::table_keys;
-use crate::focus::PageFocus;
 use crate::layout::{self, CURSOR_COLS, GUTTER, Rests, fixed, growing};
 use crate::tabulate;
 use crate::theme::{self, Repainted, Theme, say, text};
@@ -56,14 +55,6 @@ pub struct Grid {
     /// The node the rows are children of, as wide as their lines.
     pub body: Entity,
     bar: Entity,
-}
-
-/// A click on a grid's header, on the cell of its `column`th column;
-/// triggered on the grid's root.
-#[derive(EntityEvent, Debug)]
-pub struct HeaderClick {
-    pub entity: Entity,
-    pub column: usize,
 }
 
 /// The grid's columns, solved against the body's width each time it
@@ -101,7 +92,7 @@ pub fn spawn(commands: &mut Commands, parent: Entity) -> Entity {
     };
     let root = commands
         .spawn((root, ChildOf(parent)))
-        .observe(point_on_click)
+        .observe(click::point_on_click)
         .id();
     let header = Node {
         display: Display::None,
@@ -170,7 +161,9 @@ pub fn refill_lines(
     rows: impl IntoIterator<Item = Vec<Line<'static>>>,
 ) -> Vec<Entity> {
     commands.entity(grid.body).despawn_related::<Children>();
-    commands.entity(grid.header).insert(Cells(header));
+    commands
+        .entity(grid.header)
+        .insert((Cells(header), UiStyle(HEADING)));
     let spawned: Vec<Entity> = rows
         .into_iter()
         .map(|cells| {
@@ -210,53 +203,6 @@ pub fn span(columns: &[Constraint]) -> u16 {
     });
     let between = u16::try_from(columns.len().saturating_sub(1)).unwrap_or(u16::MAX);
     held.fold(between.saturating_mul(GAP), u16::saturating_add)
-}
-
-/// A click on a row of the body puts the cursor on it and gives the grid
-/// the keyboard, as a press on a terminal's table does; one on the header
-/// names the column pressed. The click reaches the root by bubbling, so
-/// the row is the click's first target.
-fn point_on_click(
-    click: On<PointerClick>,
-    grids: Query<(&Grid, &GridColumns)>,
-    (parents, nodes): (Query<&ChildOf>, Query<&ComputedNode>),
-    mut focus: PageFocus,
-    mut commands: Commands,
-) {
-    let root = click.entity;
-    let row = click.original_event_target();
-    let Ok((grid, columns)) = grids.get(root) else {
-        return;
-    };
-    if row == grid.header {
-        let Ok(header) = nodes.get(row) else {
-            return;
-        };
-        let across = click.hit.position.map(|hit| hit.x + 0.5);
-        if let Some(column) = across.and_then(|across| column_at(across, header, &columns.0)) {
-            commands.trigger(HeaderClick {
-                entity: root,
-                column,
-            });
-        }
-        return;
-    }
-    if parents.get(row).map(ChildOf::parent) != Ok(grid.body) {
-        return;
-    }
-    commands.entity(root).insert(ActiveDescendant(Some(row)));
-    focus.set(Some(root));
-}
-
-/// The column under a point `across` the header, as a share of its
-/// width from the left; none over the gutter or a gap.
-fn column_at(across: f32, header: &ComputedNode, columns: &[Constraint]) -> Option<usize> {
-    let width = layout::node_cols(header);
-    let cell = (across * f32::from(width)).floor();
-    let cell = u16::try_from(cell as i32).ok()?;
-    solved(columns, width)
-        .iter()
-        .position(|rect| (rect.x..rect.x.saturating_add(rect.width)).contains(&cell))
 }
 
 /// The column rects across `width` cells past the gutter, solved as
@@ -509,24 +455,6 @@ mod tests {
             "   ",
             "cut by cells"
         );
-    }
-
-    #[test]
-    fn a_point_on_the_header_names_its_column_and_nothing_between() {
-        let header = ComputedNode {
-            size: bevy_math::Vec2::new(14.0, 1.0),
-            inverse_scale_factor: 1.0,
-            em_size: plurimus::bui::bevy_text::EmSize(1.0),
-            ..ComputedNode::default()
-        };
-        let columns = [Constraint::Length(4), Constraint::Fill(1)];
-        let at = |cell: f32| column_at((cell + 0.5) / 14.0, &header, &columns);
-        assert_eq!(at(0.0), None, "the gutter");
-        assert_eq!(at(2.0), Some(0));
-        assert_eq!(at(5.0), Some(0));
-        assert_eq!(at(6.0), None, "the gap");
-        assert_eq!(at(13.0), Some(1));
-        assert_eq!(column_at(-0.1, &header, &columns), None);
     }
 
     #[test]

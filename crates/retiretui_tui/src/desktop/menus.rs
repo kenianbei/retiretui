@@ -44,8 +44,7 @@ pub fn plugin(app: &mut App) {
 #[derive(Component, Debug, Clone, Copy)]
 struct Shadow(Entity);
 
-/// The popup or item a window node stands for, and whether its row was
-/// last drawn held.
+/// The item a row stands for, and whether it was last drawn held.
 #[derive(Component, Debug)]
 struct Shadowed {
     of: Entity,
@@ -64,10 +63,6 @@ fn shadow_the_popup(
     let popup = added.entity;
     let shadow = commands
         .spawn((
-            Shadowed {
-                of: popup,
-                drawn_held: None,
-            },
             Node {
                 position_type: PositionType::Absolute,
                 flex_direction: FlexDirection::Column,
@@ -223,12 +218,12 @@ fn paint_rows(
         let mut line = Line::from(Span::raw(ROW_MARGIN));
         line.extend(label.0.spans.iter().cloned());
         line.push_span(Span::raw(ROW_MARGIN));
-        let style = if is_held {
-            theme.focused()
-        } else {
-            Style::default()
-        };
-        say(&mut commands, row, line.patch_style(style), &theme);
+        say(
+            &mut commands,
+            row,
+            line.patch_style(theme.held(is_held)),
+            &theme,
+        );
     }
 }
 

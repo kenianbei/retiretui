@@ -2,13 +2,12 @@
 //! from the draft.
 
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
-use bevy_ecs::prelude::{ChildOf, Commands, Component, Entity, Mut, On, Query, Res, ResMut};
+use bevy_ecs::prelude::{Commands, Component, Entity, Mut, On, Query, Res, ResMut};
 use bevy_ecs::system::SystemParam;
 use bevy_input::keyboard::{Key, KeyboardInput};
 use bevy_input_focus::FocusedInput;
 use bevy_ui::ComputedNode;
 use plurimus::bui::ComputedNodeRect;
-use plurimus::bui::bevy_picking::events::PointerClick;
 use plurimus::core::ratatui_core::layout::{Constraint, Rect, Size};
 use plurimus::core::ratatui_core::style::Style;
 use plurimus::core::ratatui_core::text::Line;
@@ -18,9 +17,9 @@ use plurimus::widgets::{ActiveDescendant, TableAction, TableKeys, TableSelection
 
 use super::domain::{ListOps, Ops};
 use super::draft::Draft;
-use super::editing::{self, SessionFocus, Slot};
+use super::editing::{self, Slot};
 use super::widths::Laid;
-use crate::grid::{self, Grid};
+use crate::grid::{self, Grid, RowClick};
 use crate::layout;
 use crate::motion::{Cues, Play};
 use crate::nav::{self, Page, ShownSurface};
@@ -41,19 +40,6 @@ pub struct DomainTable {
     /// The width the rows were last laid out over; none while they are
     /// behind what they are drawn from.
     pub built_for: Option<u16>,
-}
-
-impl DomainTable {
-    pub(super) fn new(ops: Ops, list: ListOps) -> Self {
-        Self {
-            ops,
-            list,
-            sort: None,
-            wanted: None,
-            is_applied: false,
-            built_for: None,
-        }
-    }
 }
 
 /// The item a body row stands for, by where it sits in the plan.
@@ -158,13 +144,10 @@ pub fn rebuild_rows(
             continue;
         }
         let laid = Laid::of(table_ref, &items, given);
-        let (indices, cells): (Vec<usize>, Vec<Vec<Line<'static>>>) = items
-            .into_iter()
-            .map(|(index, cells)| (index, laid.row(cells)))
-            .unzip();
+        let indices: Vec<usize> = items.iter().map(|(index, _)| *index).collect();
+        let rows = items.into_iter().map(|(_, cells)| laid.row(cells));
         let root = (table, grid);
-        let spawned = grid::refill_lines(&mut commands, root, laid.columns(), laid.header(), cells);
-        commands.entity(grid.header).insert(UiStyle(grid::HEADING));
+        let spawned = grid::refill_lines(&mut commands, root, laid.columns(), laid.header(), rows);
         let mut cursor_row = None;
         for (&row, index) in spawned.iter().zip(indices) {
             commands.entity(row).insert(Row(index));
@@ -250,28 +233,19 @@ pub fn handle_table_key(
     }
 }
 
-/// A click on a row opens it. The table takes the keyboard first, so that
-/// the form opened over it hands the keyboard back to it.
+/// A click on a row opens it; the grid has put the keyboard on the table
+/// first, so the form opened over it hands the keyboard back to it.
 pub fn handle_row_click(
-    click: On<PointerClick>,
-    grids: Query<&Grid>,
-    (parents, rows): (Query<&ChildOf>, Query<&Row>),
-    mut state: SessionFocus,
+    click: On<RowClick>,
+    tables: Query<&DomainTable>,
+    rows: Query<&Row>,
     mut commands: Commands,
 ) {
     let table = click.entity;
-    let Ok(grid) = grids.get(table) else {
-        return;
-    };
-    let row = click.original_event_target();
-    if parents.get(row).map(ChildOf::parent) != Ok(grid.body) {
-        return;
-    }
-    let (Ok(&row), Ok(domain)) = (rows.get(row), state.tables.get(table)) else {
+    let (Ok(domain), Ok(&row)) = (tables.get(table), rows.get(click.row)) else {
         return;
     };
     let opened = (domain.ops, Some(table), Slot::At(row));
-    state.focus(table);
     commands.run_system_cached_with(editing::open_item, opened);
 }
 

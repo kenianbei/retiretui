@@ -2,7 +2,7 @@
 //! which reaches the draft only when the item is applied.
 
 use bevy_app::{App, Update};
-use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
+use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut, Ref};
 use bevy_ecs::prelude::{ChildOf, Commands, Entity, Local, Mut, On, Query, Res, ResMut, With};
 use bevy_ecs::schedule::IntoScheduleConfigs;
 use bevy_ecs::system::SystemParam;
@@ -16,7 +16,7 @@ use plurimus::ui::{KeyBinding, ModalDismiss, first_bound};
 use plurimus::widgets::{Activate, Submit, TextInput, ValueChange};
 use toml::Value;
 
-use super::build::{EditForm, FieldLabel, FormButton, FormField, HelpFoot};
+use super::build::{EditForm, FieldLabel, FormButton, FormField, HelpFoot, Said};
 use super::domain::{FieldKind, FieldSpec};
 use super::draft::{Draft, DraftEditor};
 use super::editing::{self, EditSession, SessionFocus};
@@ -44,6 +44,7 @@ pub fn plugin(app: &mut App) {
         (
             mark_issues,
             show_help,
+            paint_said,
             field::light_brackets,
             field::show_remainders,
             super::flag::paint,
@@ -187,6 +188,15 @@ fn mark_issues(
     }
 }
 
+/// What a form says once is said again in the theme's ink as it changes.
+fn paint_said(theme: Res<Theme>, said: Query<(Entity, Ref<Said>)>, mut commands: Commands) {
+    for (entity, line) in &said {
+        if line.is_added() || theme.is_changed() {
+            say(&mut commands, entity, line.0.clone(), &theme);
+        }
+    }
+}
+
 /// A form says under its fields what the one holding the keyboard means,
 /// or what the draft holds against it. A form the keyboard is not in says
 /// nothing.
@@ -213,8 +223,13 @@ fn show_help(
             (None, Some(field)) => (field.spec.help, theme.dimmed()),
             (None, None) => ("", theme.dimmed()),
         };
-        said.clone_into(&mut foot.0);
-        ink.0 = theme.ink(style);
+        if foot.0 != said {
+            said.clone_into(&mut foot.0);
+        }
+        let colour = theme.ink(style);
+        if ink.0 != colour {
+            ink.0 = colour;
+        }
     }
 }
 
