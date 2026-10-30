@@ -5,6 +5,7 @@
 
 mod areas;
 mod chrome;
+mod fields;
 mod menus;
 mod overlays;
 mod widgets;
@@ -157,6 +158,7 @@ fn skin(app: &mut App) {
         chrome::plugin,
         widgets::plugin,
         menus::plugin,
+        fields::plugin,
         overlays::plugin,
     ));
     app.add_systems(Startup, spawn_camera);

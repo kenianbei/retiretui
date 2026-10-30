@@ -14,12 +14,13 @@ use bevy_ecs::prelude::{
 use bevy_ecs::system::SystemParam;
 use bevy_input::keyboard::Key;
 use bevy_input_focus::InputFocus;
+use bevy_input_focus::tab_navigation::TabIndex;
 use bevy_ui::{Node, UiRect, Val};
 use plurimus::bui::bevy_ui_widgets::SliderValue;
 use plurimus::core::ratatui_core::style::Style;
 use plurimus::core::ratatui_core::text::Line;
 use plurimus::ui::{Checked, KeyBinding};
-use plurimus::widgets::{ActivateKeys, TextInput, editable_text};
+use plurimus::widgets::{ActivateKeys, TextInput};
 use retiretui_engine::plan::Plan;
 use toml::Value;
 
@@ -129,6 +130,11 @@ pub fn spawn_beside(commands: &mut Commands, row: Entity, input: Entity, drawn: 
     ));
 }
 
+/// A form's text field: plurimus's `TextInput` state is the value both
+/// skins share, and each dresses the entity with what edits and draws it.
+#[derive(Component, Debug, Default)]
+pub struct TextField;
+
 /// A text input along `row`, carrying `field`, laid out as `node` between
 /// its brackets.
 pub fn spawn_text(commands: &mut Commands, row: Entity, node: Node, field: impl Bundle) {
@@ -139,9 +145,14 @@ pub fn spawn_text(commands: &mut Commands, row: Entity, node: Node, field: impl 
 /// As [`spawn_text`], of an entity made before its place on the row came.
 pub fn spawn_text_as(commands: &mut Commands, row: Entity, input: Entity, field: impl Bundle) {
     spawn_beside(commands, row, input, BRACKETS[0]);
-    commands
-        .entity(input)
-        .insert((editable_text(""), field, placed(), ChildOf(row)));
+    commands.entity(input).insert((
+        TextField,
+        TextInput::new(""),
+        TabIndex(0),
+        field,
+        placed(),
+        ChildOf(row),
+    ));
     spawn_beside(commands, row, input, BRACKETS[1]);
 }
 

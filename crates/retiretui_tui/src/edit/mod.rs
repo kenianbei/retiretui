@@ -23,6 +23,8 @@ pub(crate) mod tests;
 mod trigger;
 mod widths;
 
+pub(crate) use field::{TextField, show_text};
+
 use retiretui_client::codec;
 use retiretui_client::files::load_beneath;
 use retiretui_client::forms::{cells, offers};
