@@ -1,5 +1,5 @@
-//! Headless tests of the keys the shell shares with its widgets: copy
-//! beside quit, and an arrow at the end of a list.
+//! Headless tests of the keys the shell shares with its widgets: a copy
+//! chord beside quit, and an arrow at the end of a list.
 
 use bevy_app::App;
 use bevy_ecs::entity::Entity;
@@ -19,19 +19,14 @@ fn holder(app: &App) -> Option<Entity> {
 }
 
 #[test]
-fn ctrl_c_copies_the_row_under_the_cursor_and_ctrl_q_quits() {
+fn ctrl_c_copies_nothing_from_a_grid_and_ctrl_q_quits() {
     let mut app = headless_app(SIZE);
-    show(&mut app, Page::Accounts);
-    press_ctrl(&mut app, KeyCode::Char('c'));
-    assert!(copied(&app).starts_with("cash\t"), "{:?}", copied(&app));
-    show(&mut app, Page::Ledger);
-    press_ctrl(&mut app, KeyCode::Char('c'));
-    assert!(
-        copied(&app).starts_with("cash\t"),
-        "the Ledger's grid copies nothing: {:?}",
-        copied(&app)
-    );
-    assert!(app.should_exit().is_none(), "a copy is not a quit");
+    for page in [Page::Accounts, Page::Ledger] {
+        show(&mut app, page);
+        press_ctrl(&mut app, KeyCode::Char('c'));
+        assert_eq!(copied(&app), "", "{page:?}'s grid copies nothing");
+        assert!(app.should_exit().is_none(), "a copy is not a quit");
+    }
     press_ctrl(&mut app, KeyCode::Char('q'));
     assert!(app.should_exit().is_some());
 }

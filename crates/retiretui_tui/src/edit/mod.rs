@@ -67,7 +67,12 @@ pub enum EditSystems {
 
 pub fn plugin(app: &mut App) {
     app.init_resource::<Importing>();
-    app.configure_sets(Update, (EditSystems::Seed, EditSystems::Place).chain());
+    app.configure_sets(
+        Update,
+        (EditSystems::Seed, EditSystems::Place)
+            .chain()
+            .before(super::theme::Repainted),
+    );
     app.add_plugins((screen::plugin, form::plugin, scroll::plugin));
     app.add_observer(plurimus::widgets::table_self_update);
     app.add_systems(

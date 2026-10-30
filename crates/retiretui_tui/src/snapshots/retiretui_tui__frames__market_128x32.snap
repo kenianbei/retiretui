@@ -6,8 +6,8 @@ expression: composed_frame(app)
 │1 Overview││2 Ledger││3 Compare││4 Tools││5 Plan│                                                                  full.toml ● 
 ┴──────────┴┴────────┴┴─────────┴┴───────┴╯      ╰──────────────────────────────────────────────────────────────────────────────
 ╭ Plan ──────────────╮╭ Market ────────────────────────────────────────────────────────────────────────────────────────────────╮
-│  Accounts        7 ││                                                                                                       ▲│
-│  Income          4 ││▌ Success                                                                                              █│
+│  Accounts        7 ││                                                                                                        │
+│  Income          4 ││▌ Success                                                                                              ▲│
 │  Expenses        2 ││    Leave at least        Nothing                                                                      █│
 │  Cliffs          0 ││  Stocks                                                                                               █│
 │  Transfers       1 ││    Mean return           6%, the default                                                              █│

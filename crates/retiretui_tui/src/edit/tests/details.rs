@@ -177,10 +177,15 @@ fn what_a_blank_field_stands_for_is_read_out_dimmed() {
     show(&mut app, Page::Accounts);
     app.update();
     let world = app.world_mut();
-    let rows: Vec<Entity> = world
-        .query_filtered::<&Children, With<DetailsTable>>()
+    let bodies: Vec<Entity> = world
+        .query_filtered::<&crate::grid::Grid, With<DetailsTable>>()
         .iter(world)
-        .flat_map(|children| children.iter().skip(1).copied())
+        .map(|grid| grid.body)
+        .collect();
+    let rows: Vec<Entity> = bodies
+        .iter()
+        .filter_map(|&body| world.get::<Children>(body))
+        .flat_map(|children| children.iter().copied())
         .collect();
     let is_dimmed = |row: &Entity| {
         world

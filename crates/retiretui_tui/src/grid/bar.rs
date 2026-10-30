@@ -53,15 +53,16 @@ fn glyphs(rows: u16, shown: u16, top: u16) -> Vec<String> {
 pub(super) fn draw_bars(
     theme: Res<Theme>,
     mut grids: Query<(&Grid, &mut Bar)>,
-    bodies: Query<(&ComputedNode, &Children)>,
+    bodies: Query<(&ComputedNode, Option<&Children>)>,
     mut commands: Commands,
 ) {
     for (grid, mut bar) in &mut grids {
         let Ok((body, rows)) = bodies.get(grid.body) else {
             continue;
         };
+        let rows = rows.map_or(0, |rows| rows.len());
         let (rows, shown) = (
-            u16::try_from(rows.len()).unwrap_or(u16::MAX),
+            u16::try_from(rows).unwrap_or(u16::MAX),
             layout::node_rows(body),
         );
         let scrolled = body.scroll_position.y * body.inverse_scale_factor;

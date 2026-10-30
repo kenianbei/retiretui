@@ -33,8 +33,8 @@ use super::table::{DomainTable, Row};
 use super::{Draft, screens};
 use crate::nav::Page;
 use crate::support::{
-    self, Headless, ROOMY, SIZE, cell_fg, cell_of, commit_edit, composed_frame, headless_app,
-    headless_app_at, press_key, show, type_text,
+    self, Headless, ROOMY, SIZE, cell_fg, cell_of, click, commit_edit, composed_frame,
+    headless_app, headless_app_at, press_key, show, type_text,
 };
 use crate::theme::Theme;
 
@@ -517,11 +517,32 @@ fn body_rows(app: &mut App, page: Page) -> Vec<Entity> {
         .find(|(_, table)| table.ops.surface == Some(page))
         .map(|(entity, _)| entity)
         .unwrap();
-    let children = world.get::<Children>(table).unwrap().to_vec();
+    let body = world.get::<crate::grid::Grid>(table).unwrap().body;
+    let children = world.get::<Children>(body).unwrap().to_vec();
     children
         .into_iter()
         .filter(|&child| world.get::<Row>(child).is_some())
         .collect()
+}
+
+#[test]
+fn a_click_on_a_row_opens_its_item_over_the_table() {
+    let mut app = fixture_app();
+    show(&mut app, Page::Accounts);
+    app.update();
+    let table = focused(&app);
+    let (x, y) = cell_of(&app, "brokerage");
+    click(&mut app, x, y);
+    app.update();
+    assert!(is_editing(&app), "a click opens the row");
+    let frame = composed_frame(&app);
+    assert!(frame.contains("brokerage"), "{frame}");
+    press_key(&mut app, KeyCode::Esc);
+    assert_eq!(
+        focused(&app),
+        table,
+        "the table is what the form hands back to"
+    );
 }
 
 #[test]
