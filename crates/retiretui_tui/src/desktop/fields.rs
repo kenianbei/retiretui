@@ -148,6 +148,27 @@ mod tests {
     use bevy_ecs::system::RunSystemOnce;
 
     use super::*;
+    use crate::support::{SIZE, headless_app, press_ctrl};
+    use bevy_ecs::prelude::Has;
+    use plurimus::term::KeyCode;
+
+    #[test]
+    fn the_new_plan_form_s_text_fields_are_dressed_for_the_window() {
+        let mut app = headless_app(SIZE);
+        app.add_plugins(plugin);
+        press_ctrl(&mut app, KeyCode::Char('n'));
+        app.update();
+        let world = app.world_mut();
+        let dressed: Vec<bool> = world
+            .query_filtered::<Has<Input>, With<TextField>>()
+            .iter(world)
+            .collect();
+        assert!(dressed.len() > 1, "the form's text fields stand");
+        assert!(
+            dressed.iter().all(|&is_dressed| is_dressed),
+            "each has bevy's input"
+        );
+    }
 
     #[test]
     fn a_state_the_form_moved_reaches_the_buffer_and_one_it_did_not_is_left() {

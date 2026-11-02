@@ -10,6 +10,8 @@ use bevy_ecs::prelude::{
 use bevy_input::keyboard::KeyboardInput;
 use bevy_input_focus::FocusedInput;
 use bevy_ui::widget::Text;
+use plurimus::bui::bevy_text::TextColor;
+use plurimus::core::ratatui_core::style::Style;
 use plurimus::term::bevy_compat::HeldModifiers;
 use plurimus::ui::{ModalDismiss, ModalOpen, first_bound};
 use plurimus::widgets::{Activate, button};
@@ -18,7 +20,7 @@ use super::hints::Hints;
 use super::layout::{Emphasis, button_node, fixed, growing, placed, spawn_button_row, wrapped};
 use super::overlay::{self, Standing};
 use super::pane::Framed;
-use super::theme::Repainted;
+use super::theme::{Repainted, Theme};
 
 pub fn plugin(app: &mut App) {
     app.init_resource::<Confirm>();
@@ -130,6 +132,7 @@ impl Confirm {
 
 fn sync_confirm(
     confirm: Res<Confirm>,
+    theme: Res<Theme>,
     mut standing: Standing<ConfirmRoot>,
     mut commands: Commands,
 ) {
@@ -143,13 +146,20 @@ fn sync_confirm(
     let Some(root) = standing.open(&mut commands) else {
         return;
     };
-    if let Some(last) = spawn_dialog(&mut commands, root, asked) {
+    if let Some(last) = spawn_dialog(&mut commands, root, asked, &theme) {
         standing.focus(last);
     }
 }
 
-/// The dialog under `root`, answering with its last button.
-fn spawn_dialog(commands: &mut Commands, root: Entity, asked: &Asked) -> Option<Entity> {
+/// The dialog under `root`, answering with its last button. The question
+/// is said in the theme's ink of the moment; a dialog does not outlive a
+/// theme change by much.
+fn spawn_dialog(
+    commands: &mut Commands,
+    root: Entity,
+    asked: &Asked,
+    theme: &Theme,
+) -> Option<Entity> {
     let rows = wrapped_rows(&asked.message);
     commands
         .entity(root)
@@ -164,6 +174,7 @@ fn spawn_dialog(commands: &mut Commands, root: Entity, asked: &Asked) -> Option<
     commands.spawn((
         fixed(f32::from(rows)),
         Text::new(asked.message.clone()),
+        TextColor(theme.ink(Style::default())),
         ChildOf(root),
     ));
     commands.spawn((growing(), ChildOf(root)));
@@ -230,7 +241,8 @@ fn handle_dismiss(_dismissed: On<ModalDismiss>, mut confirm: ResMut<Confirm>) {
 
 #[cfg(test)]
 mod tests {
-    use super::{Confirm, TEXT_COLS, wrapped_rows};
+    use super::*;
+    use bevy_ecs::prelude::With;
     use bevy_input_focus::InputFocus;
     use plurimus::term::KeyCode;
 
@@ -240,7 +252,7 @@ mod tests {
     use crate::nav::Page;
     use crate::support::{
         Headless, SIZE, click, composed_frame, headless_app, is_asking, press_ctrl, press_key,
-        type_text,
+        type_text, worn,
     };
 
     fn dirty_app() -> Headless {
@@ -251,6 +263,25 @@ mod tests {
         press_key(&mut app, KeyCode::Enter);
         assert!(app.world().resource::<Draft>().is_dirty());
         app
+    }
+
+    #[test]
+    fn the_question_is_said_in_the_theme_s_ink() {
+        let mut app = dirty_app();
+        press_key(&mut app, KeyCode::Char('q'));
+        let ink = worn(&app).ink(Style::default());
+        let world = app.world_mut();
+        let root = world
+            .query_filtered::<Entity, With<ConfirmRoot>>()
+            .single(world)
+            .unwrap();
+        let said: Vec<_> = world
+            .query::<(&ChildOf, &TextColor)>()
+            .iter(world)
+            .filter(|(parent, _)| parent.parent() == root)
+            .map(|(_, colour)| colour.0)
+            .collect();
+        assert_eq!(said, vec![ink], "the question alone, in the ink");
     }
 
     #[test]

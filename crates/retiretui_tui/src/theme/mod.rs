@@ -141,6 +141,12 @@ impl Theme {
         self.accented().add_modifier(Modifier::BOLD)
     }
 
+    /// The cell under the caret, or a selection: the ground on the accent.
+    #[must_use]
+    pub fn caret(&self) -> Style {
+        Style::new().fg(self.bg).bg(self.accent)
+    }
+
     /// A widget's style by whether it holds the keyboard: focused, or
     /// plain.
     #[must_use]
@@ -196,7 +202,7 @@ impl Theme {
             .with_pressed(pressed)
             .with_disabled(normal.fg(self.dim))
             .with_focused(self.focused())
-            .with_caret(Style::new().fg(self.bg).bg(self.accent))
+            .with_caret(self.caret())
     }
 }
 

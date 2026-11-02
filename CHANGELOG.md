@@ -25,7 +25,11 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   headings and help, a text field typed into, a flag ticked by space or a
   click, a slider moved by the arrows or a press on its track, and a select's
   menu opened over the form and picked from by key or click - scrolled with a
-  bar as the terminal's is. The tools and Compare are not yet drawn there.
+  bar as the terminal's is. It draws what finds and makes a document: the file
+  picker, its path typed, completed and climbed as in the terminal, its listing
+  scrolled with the cursor and a row chosen by a double click; the new-plan
+  form; and the issues panel, scrolled with its cursor. The tools and Compare
+  are not yet drawn there.
 
 ### Changed
 

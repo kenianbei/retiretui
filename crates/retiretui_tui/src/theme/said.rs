@@ -6,11 +6,13 @@ use bevy_ecs::bundle::Bundle;
 use bevy_ecs::hierarchy::Children;
 use bevy_ecs::prelude::{Commands, Entity};
 use bevy_ui::widget::Text;
-use plurimus::bui::bevy_text::{FontWeight, TextColor, TextFont, TextLayout, TextSpan};
+use plurimus::bui::bevy_text::{
+    FontWeight, TextBackgroundColor, TextColor, TextFont, TextLayout, TextSpan,
+};
 use plurimus::core::ratatui_core::style::Modifier;
 use plurimus::core::ratatui_core::text::{Line, Span};
 
-use super::Theme;
+use super::{Theme, paper};
 
 /// A node that says one line of chrome, never wrapped.
 #[must_use]
@@ -27,7 +29,9 @@ pub fn say(commands: &mut Commands, root: Entity, line: Line<'static>, theme: &T
     root.with_children(|spans| {
         for span in line.spans {
             let style = line.style.patch(span.style);
-            spans.spawn(said(Span::styled(span.content, style), theme));
+            spans
+                .spawn(said(Span::styled(span.content, style), theme))
+                .insert_if(TextBackgroundColor(paper(style.bg)), || style.bg.is_some());
         }
     });
 }

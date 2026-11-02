@@ -4,6 +4,7 @@
 //! each.
 
 mod areas;
+mod browse;
 mod chrome;
 mod fields;
 mod menus;
@@ -155,6 +156,7 @@ fn skin(app: &mut App) {
     app.insert_resource(RemSize(CELL.y));
     app.add_plugins((
         areas::plugin,
+        browse::plugin,
         chrome::plugin,
         widgets::plugin,
         menus::plugin,

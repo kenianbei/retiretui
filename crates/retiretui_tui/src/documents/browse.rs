@@ -136,7 +136,7 @@ fn sync_browse(
     let dim = dressing.theme.dimmed();
     let mut field = FilePicker::new(session.workspace());
     if let Some(named) = browsing.named {
-        field.set_path(named);
+        field = field.with_path(named);
     }
     let mut picker = commands.spawn((
         field,

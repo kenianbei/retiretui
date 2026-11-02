@@ -7,13 +7,16 @@ use bevy_app::{App, Update};
 use bevy_ecs::change_detection::{DetectChanges, Ref};
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{
-    Add, Commands, Component, Entity, IntoScheduleConfigs, On, Query, Res, ResMut, With,
+    Add, Changed, Commands, Component, Entity, IntoScheduleConfigs, On, Query, Res, ResMut, With,
 };
 use bevy_input_focus::InputFocus;
-use bevy_ui::{BackgroundColor, BorderColor, BorderRadius, FlexDirection, Node, UiRect, Val};
+use bevy_ui::{
+    BackgroundColor, BorderColor, BorderRadius, ComputedNode, FlexDirection, Node, Overflow,
+    ScrollPosition, UiRect, Val,
+};
 use plurimus::bui::bevy_picking::events::PointerClick;
 use plurimus::core::ratatui_core::text::{Line, Span};
-use plurimus::ui::{UiLabel, UiStyle};
+use plurimus::ui::{ScrollOffset, UiLabel, UiStyle};
 use plurimus::widgets::{
     Activate, ActiveDescendant, Button, ListBox, ListBoxCursor, ListItem, ListItemTrailing,
 };
@@ -28,13 +31,36 @@ pub fn plugin(app: &mut App) {
     app.add_observer(row_the_item);
     app.add_observer(label_the_button);
     app.add_observer(box_the_toast);
-    app.add_systems(Update, (paint_rows, paint_buttons).in_set(Repainted));
+    app.add_systems(
+        Update,
+        (paint_rows, paint_buttons, scroll_the_list).in_set(Repainted),
+    );
 }
 
-/// A list's rows stack down it, as the terminal's listbox draws them.
-fn stack_the_list(added: On<Add<ListBox>>, mut lists: Query<&mut Node>) {
-    if let Ok(mut node) = lists.get_mut(added.entity) {
-        node.flex_direction = FlexDirection::Column;
+/// A list's rows stack down it, as the terminal's listbox draws them, and
+/// the rows past its node scroll rather than spill; a list spawned with
+/// no node of its own gets one.
+fn stack_the_list(added: On<Add<ListBox>>, mut commands: Commands) {
+    commands
+        .entity(added.entity)
+        .entry::<Node>()
+        .or_default()
+        .and_modify(|mut node| {
+            node.flex_direction = FlexDirection::Column;
+            node.overflow = Overflow::scroll_y();
+        });
+}
+
+/// The rows the engine scrolled a list by - revealing its cursor, or a
+/// wheel tick in the terminal - scroll its node the same, a rem a row.
+fn scroll_the_list(
+    mut lists: Query<
+        (&ScrollOffset, &ComputedNode, &mut ScrollPosition),
+        (With<ListBox>, Changed<ScrollOffset>),
+    >,
+) {
+    for (offset, computed, mut scroll) in &mut lists {
+        scroll.0.y = f32::from(offset.0.y) * computed.rem_size.0;
     }
 }
 
@@ -229,5 +255,64 @@ fn box_the_toast(
 fn dismiss_on_click(click: On<PointerClick>, shown: Query<&Shown>, mut toasts: ResMut<Toasts>) {
     if let Ok(shown) = shown.get(click.entity) {
         toasts.dismiss(shown.0);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use bevy_ecs::hierarchy::Children;
+    use bevy_ecs::prelude::World;
+    use bevy_ecs::system::RunSystemOnce;
+    use bevy_ui::OverflowAxis;
+    use plurimus::bui::bevy_text::RemSize;
+    use plurimus::core::ratatui_core::layout::Position;
+    use plurimus::term::KeyCode;
+    use plurimus::ui::{ModalOpen, ScrollArea};
+
+    use super::*;
+    use crate::support::{SIZE, headless_app, press_key};
+
+    const REM: f32 = 20.0;
+
+    #[test]
+    fn the_rows_a_list_is_scrolled_by_scroll_its_node_a_rem_each() {
+        let mut world = World::new();
+        let list = world
+            .spawn((
+                ListBox,
+                ScrollOffset(Position::new(0, 3)),
+                ComputedNode {
+                    rem_size: RemSize(REM),
+                    ..ComputedNode::default()
+                },
+                ScrollPosition::default(),
+            ))
+            .id();
+        world.run_system_once(scroll_the_list).unwrap();
+        let top = world.get::<ScrollPosition>(list).unwrap().0.y;
+        assert!((top - 3.0 * REM).abs() < f32::EPSILON, "{top}");
+    }
+
+    #[test]
+    fn the_issues_panel_s_list_stacks_its_rows_as_nodes_that_scroll() {
+        let mut app = headless_app(SIZE);
+        app.add_plugins(plugin);
+        press_key(&mut app, KeyCode::Char('i'));
+        let world = app.world_mut();
+        let (node, children) = world
+            .query_filtered::<(&Node, &Children, &ChildOf), (With<ListBox>, With<ScrollArea>)>()
+            .iter(world)
+            .find(|(_, _, parent)| world.entity(parent.parent()).contains::<ModalOpen>())
+            .map(|(node, children, _)| (node, children))
+            .expect("the issues panel's list is the one scrolled list under an overlay");
+        assert_eq!(node.flex_direction, FlexDirection::Column);
+        assert_eq!(node.overflow.y, OverflowAxis::Scroll);
+        assert!(!children.is_empty());
+        assert!(
+            children
+                .iter()
+                .all(|&row| world.entity(row).contains::<Node>()),
+            "every row is a node under the list"
+        );
     }
 }
