@@ -5,10 +5,9 @@ use bevy_app::{App, Update};
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::prelude::{IntoScheduleConfigs, Local, Query, Res, With};
 use bevy_input_focus::InputFocus;
-use plurimus::core::UiWidget;
 
 use super::super::options::OptionsTable;
-use super::super::{HelpLine, show_help, writes_it};
+use super::super::{Help, writes_it};
 use super::panes::ConversionsTable;
 use super::{PICK_DESTINATION, Swept, held};
 use crate::command::{Keymap, TAKE_LADDER, WRITE_LADDER};
@@ -46,7 +45,7 @@ fn say_help(
         Query<(), With<ConversionsTable>>,
     ),
     mut said: Local<String>,
-    mut lines: Query<(&mut UiWidget, &HelpLine)>,
+    mut help: Help,
 ) {
     let is_moved = draft.is_changed() || focus.is_changed() || shown.is_changed();
     if !(is_moved || theme.is_changed()) {
@@ -64,6 +63,6 @@ fn say_help(
     if *said == text && !theme.is_changed() {
         return;
     }
-    show_help(&mut lines, Page::RothConversions, &text, &theme);
+    help.show(Page::RothConversions, &text, &theme);
     *said = text;
 }

@@ -4,22 +4,22 @@
 
 use bevy_app::{App, Update};
 use bevy_ecs::change_detection::DetectChanges;
-use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Component, Entity, IntoScheduleConfigs, Query, Res};
-use plurimus::ui::ScrollArea;
-use plurimus::widgets::{ActiveDescendant, WidgetSystems};
+use plurimus::widgets::ActiveDescendant;
 use retiretui_client::present;
 use retiretui_client::searches::markets;
 use retiretui_engine::plan::Plan;
 
 use super::MarketTool;
 use crate::command::Outcome;
-use crate::edit::{Draft, page_of, table_bundle};
+use crate::edit::{Draft, page_of};
+use crate::grid::{self, Grid};
 use crate::hints::Hints;
-use crate::layout::{self, filling, placed};
+use crate::layout;
 use crate::nav::{FocusStop, Page, Turn};
 use crate::pane::Pane;
 use crate::tabulate;
+use crate::theme::Repainted;
 use crate::tools::{EnterRuns, Tool, handle_enter};
 
 const TITLE: &str = "Assumptions";
@@ -36,22 +36,20 @@ pub(crate) struct AssumptionsTable(Page);
 pub(crate) struct EditedOn(Page);
 
 pub(super) fn install<R: MarketTool>(app: &mut App) {
-    app.add_systems(Update, refresh::<R>.before(WidgetSystems::Layout));
+    app.add_systems(Update, refresh::<R>.before(Repainted));
 }
 
 pub(super) fn spawn_pane<R: MarketTool>(commands: &mut Commands, row: Entity, cols: f32) {
     let pane = Pane::new(TITLE).wide(cols).spawn(commands, row);
+    let table = grid::spawn(commands, pane);
     commands
-        .spawn((
-            table_bundle(),
+        .entity(table)
+        .insert((
             AssumptionsTable(R::PAGE),
             EnterRuns(R::EDIT),
             FocusStop,
             Hints(&[("↑↓", "assumption"), ("⏎", "edit")]),
             layout::Rests,
-            filling(),
-            placed(),
-            ChildOf(pane),
         ))
         .observe(handle_enter);
 }
@@ -73,7 +71,7 @@ fn rows<R: MarketTool>(plan: &Plan, found: Option<&R>) -> Vec<Row> {
 /// Rewrites the table whenever the plan or what the search found moves.
 fn refresh<R: MarketTool>(
     (tool, draft): (Res<Tool<R>>, Res<Draft>),
-    mut tables: Query<(Entity, &AssumptionsTable, &mut ScrollArea)>,
+    mut tables: Query<(Entity, &AssumptionsTable, &Grid)>,
     mut commands: Commands,
 ) {
     if !(tool.is_changed() || draft.is_changed()) {
@@ -86,14 +84,14 @@ fn refresh<R: MarketTool>(
         .map(|(label, value, _)| vec![(*label).to_owned(), value.clone()])
         .collect();
     let columns = tabulate::labelled(&cells, GAP);
-    for (table, shown, mut scroll) in &mut tables {
+    for (table, shown, grid) in &mut tables {
         if shown.0 != R::PAGE {
             continue;
         }
-        commands.entity(table).insert(columns.clone());
-        let spawned = tabulate::refill(
+        let spawned = grid::refill(
             &mut commands,
-            (table, &mut scroll),
+            (table, grid),
+            columns.clone(),
             (&header, &cells),
             &[0, 1],
         );

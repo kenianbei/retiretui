@@ -4,7 +4,14 @@
 use std::time::Duration;
 
 use bevy_app::App;
+use bevy_camera::NormalizedRenderTarget;
+use bevy_ecs::prelude::Entity;
+use bevy_math::Vec2;
 use bevy_time::TimeUpdateStrategy;
+use bevy_window::{Window, WindowRef};
+use plurimus::bui::bevy_picking::backend::HitData;
+use plurimus::bui::bevy_picking::events::{Pointer, PointerClick};
+use plurimus::bui::bevy_picking::pointer::{Location, PointerButton, PointerId};
 use plurimus::core::ratatui_core::layout::Position;
 use plurimus::term::{
     KeyCode, KeyKind, KeyMessage, KeyModifiers, MouseButton, MouseKind, MouseMessage,
@@ -73,6 +80,26 @@ pub fn hover(app: &mut App, column: u16, row: u16) {
 /// One wheel tick down at a cell.
 pub fn scroll_down(app: &mut App, column: u16, row: u16) {
     point(app, MouseKind::ScrollDown, column, row);
+}
+
+/// A click of the window's pointer on `entity`, at `position` in pixels.
+/// The event climbs to the root and then to the pointer's window, which
+/// has to be one, or it climbs from there again.
+pub fn click_entity(app: &mut App, entity: Entity, position: Vec2) {
+    let window = app.world_mut().spawn(Window::default()).id();
+    let target = WindowRef::Primary.normalize(Some(window)).unwrap();
+    let location = Location {
+        target: NormalizedRenderTarget::Window(target),
+        position,
+    };
+    app.world_mut().trigger(PointerClick {
+        entity,
+        pointer: Pointer::new(PointerId::Mouse, location),
+        button: PointerButton::Primary,
+        hit: HitData::new(entity, 0.0, None, None),
+        duration: Duration::ZERO,
+        count: 1,
+    });
 }
 
 pub fn click(app: &mut App, column: u16, row: u16) {

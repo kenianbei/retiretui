@@ -1,30 +1,20 @@
-//! The page's tables, drawn as every table in the shell is - the plurimus
-//! table with the shared bar cursor - from rows of text measured here: the
-//! first column lines up on the left, the rest on the right, unless a
-//! table says which of its columns are text and sizes them itself.
+//! The page's tables, measured here for the grid every table in the shell
+//! is: the first column lines up on the left, the rest on the right,
+//! unless a table says which of its columns are text and sizes them
+//! itself.
 
-use bevy_ecs::hierarchy::{ChildOf, Children};
-use bevy_ecs::prelude::{Commands, Component, Entity};
+use bevy_ecs::prelude::{Commands, Entity};
 use plurimus::core::ratatui_core::layout::Constraint;
-use plurimus::core::ratatui_core::style::{Color, Modifier, Style};
+use plurimus::core::ratatui_core::style::{Color, Style};
 use plurimus::core::ratatui_core::text::{Line, Span};
-use plurimus::ui::{ScrollArea, UiStyle};
-use plurimus::widgets::{ActiveDescendant, TableColumns, table_header, table_row};
 
 use crate::chart::LINE_KEY;
+use crate::grid::{self, Grid};
 use crate::layout::CURSOR_COLS;
-
-/// What a table says in place of rows it has none of, and the width it
-/// was last wrapped to; rows spawned into the table take its place.
-#[derive(Component, Debug)]
-pub(super) struct Said {
-    pub(super) text: String,
-    pub(super) drawn: Option<u16>,
-}
 
 /// Each column as wide as its widest cell, header included, and `gap`
 /// cells more before the next than the one the table itself leaves.
-pub(super) fn columns((header, rows): (&[String], &[Vec<String>]), gap: u16) -> TableColumns {
+pub(super) fn columns((header, rows): (&[String], &[Vec<String>]), gap: u16) -> Vec<Constraint> {
     let mut widths: Vec<u16> = Vec::new();
     for row in std::iter::once(header).chain(rows.iter().map(Vec::as_slice)) {
         for (at, cell) in row.iter().enumerate() {
@@ -40,15 +30,15 @@ pub(super) fn columns((header, rows): (&[String], &[Vec<String>]), gap: u16) -> 
         let gap = if at == last { 0 } else { gap };
         Constraint::Length(width.saturating_add(gap))
     });
-    TableColumns(spaced.collect())
+    spaced.collect()
 }
 
 /// How many leading columns of `measured` fit in `given` cells beside
 /// the `beside` cells before them; the first always does.
-pub(super) fn fitting(measured: &TableColumns, given: u16, beside: u16) -> usize {
+pub(super) fn fitting(measured: &[Constraint], given: u16, beside: u16) -> usize {
     let mut used = beside;
     let mut count = 0;
-    for constraint in &measured.0 {
+    for constraint in measured {
         let Constraint::Length(width) = *constraint else {
             break;
         };
@@ -65,17 +55,17 @@ pub(super) fn fitting(measured: &TableColumns, given: u16, beside: u16) -> usize
 
 /// A label column as wide as its widest label and `gap` more, and the
 /// values in whatever is left.
-pub(super) fn labelled(rows: &[Vec<String>], gap: u16) -> TableColumns {
+pub(super) fn labelled(rows: &[Vec<String>], gap: u16) -> Vec<Constraint> {
     let widest = rows
         .iter()
         .filter_map(|row| row.first())
         .map(|label| label.chars().count())
         .max();
     let label_cols = u16::try_from(widest.unwrap_or_default()).unwrap_or(u16::MAX);
-    TableColumns(vec![
+    vec![
         Constraint::Length(label_cols.saturating_add(gap)),
         Constraint::Fill(1),
-    ])
+    ]
 }
 
 /// A row's cells, those at `text` on the left and the rest right.
@@ -101,10 +91,10 @@ fn fitted(
     gap: u16,
     given: u16,
     beside: u16,
-) -> (TableColumns, usize) {
+) -> (Vec<Constraint>, usize) {
     let mut measured = gapped_columns(rows, gap);
     let count = fitting(&measured, given, beside);
-    measured.0.truncate(count);
+    measured.truncate(count);
     (measured, count)
 }
 
@@ -113,21 +103,21 @@ fn leading(row: &[String], count: usize) -> &[String] {
     &row[..count.min(row.len())]
 }
 
-/// Spawns `header`, bold, and `rows` into `table`, measured as
+/// Fills the grid `root` with `header` and `rows`, measured as
 /// [`gapped_columns`] measures them and cut to the columns that fit in
 /// `given` cells beside the cursor, the first column on the left and the
 /// rest right, answering with each row's entity.
 pub(super) fn fill(
     commands: &mut Commands,
-    table: Entity,
+    (root, grid): (Entity, &Grid),
     rows: (&[String], &[Vec<String>]),
     (gap, given): (u16, u16),
 ) -> Vec<Entity> {
     let (measured, count) = fitted(rows, gap, given, CURSOR_COLS);
-    commands.entity(table).insert(measured);
     let (header, body) = rows;
     let body = body.iter().map(|row| cells(leading(row, count), &[0]));
-    spawn_rows(commands, table, cells(leading(header, count), &[0]), body)
+    let header = cells(leading(header, count), &[0]);
+    grid::refill_lines(commands, (root, grid), measured, header, body)
 }
 
 /// The cells [`LINE_KEY`] and the space after it take, leading each of a
@@ -137,9 +127,9 @@ pub(super) const SWATCH_COLS: u16 = 3;
 /// As [`columns`], the last column too `gap` wider, for a table whose
 /// last column does not stand at the edge of its pane: headers lined up
 /// on the right then keep the gap from their neighbours.
-pub(super) fn gapped_columns(rows: (&[String], &[Vec<String>]), gap: u16) -> TableColumns {
+pub(super) fn gapped_columns(rows: (&[String], &[Vec<String>]), gap: u16) -> Vec<Constraint> {
     let mut measured = columns(rows, gap);
-    if let Some(Constraint::Length(last)) = measured.0.last_mut() {
+    if let Some(Constraint::Length(last)) = measured.last_mut() {
         *last = last.saturating_add(gap);
     }
     measured
@@ -150,16 +140,15 @@ pub(super) fn gapped_columns(rows: (&[String], &[Vec<String>]), gap: u16) -> Tab
 /// draws in them; the columns fit beside the swatch as well as the cursor.
 pub(super) fn fill_keyed(
     commands: &mut Commands,
-    table: Entity,
+    (root, grid): (Entity, &Grid),
     rows: (&[String], &[Vec<String>]),
     (gap, given): (u16, u16),
     keys: &[(Color, Style)],
 ) -> Vec<Entity> {
     let (mut measured, count) = fitted(rows, gap, given, CURSOR_COLS + SWATCH_COLS);
-    if let Some(Constraint::Length(first)) = measured.0.first_mut() {
+    if let Some(Constraint::Length(first)) = measured.first_mut() {
         *first = first.saturating_add(SWATCH_COLS);
     }
-    commands.entity(table).insert(measured);
     let (header, body) = rows;
     let mut header = cells(leading(header, count), &[0]);
     if let Some(first) = header.first_mut() {
@@ -167,7 +156,7 @@ pub(super) fn fill_keyed(
             .spans
             .insert(0, Span::raw(" ".repeat(SWATCH_COLS.into())));
     }
-    let body = body.iter().zip(keys).map(|(row, &(key, named))| {
+    let body = (body.iter().zip(keys)).map(|(row, &(key, named))| {
         let mut row = cells(leading(row, count), &[0]);
         if let Some(first) = row.first_mut() {
             first.style = named;
@@ -178,45 +167,5 @@ pub(super) fn fill_keyed(
         }
         row
     });
-    spawn_rows(commands, table, header, body)
-}
-
-/// Replaces `table`'s rows with `header`, where it has one, and `rows`,
-/// the columns at `text` on the left and the rest right, the cursor on the
-/// first row and the scroll sized to them, answering each row's entity;
-/// the widths are the caller's.
-pub(super) fn refill(
-    commands: &mut Commands,
-    (table, scroll): (Entity, &mut ScrollArea),
-    rows: (&[String], &[Vec<String>]),
-    text: &[usize],
-) -> Vec<Entity> {
-    commands.entity(table).despawn_related::<Children>();
-    let (header, body) = rows;
-    let lines = body.iter().map(|row| cells(row, text));
-    let spawned = spawn_rows(commands, table, cells(header, text), lines);
-    commands
-        .entity(table)
-        .insert(ActiveDescendant(spawned.first().copied()));
-    let lines = body.len() + usize::from(!header.is_empty());
-    scroll.content_size.height = u16::try_from(lines).unwrap_or(u16::MAX);
-    spawned
-}
-
-fn spawn_rows(
-    commands: &mut Commands,
-    table: Entity,
-    header: Vec<Line<'static>>,
-    rows: impl Iterator<Item = Vec<Line<'static>>>,
-) -> Vec<Entity> {
-    commands.entity(table).remove::<Said>();
-    if !header.is_empty() {
-        commands.spawn((
-            table_header(header),
-            UiStyle(Style::new().add_modifier(Modifier::BOLD)),
-            ChildOf(table),
-        ));
-    }
-    rows.map(|row| commands.spawn((table_row(row), ChildOf(table))).id())
-        .collect()
+    grid::refill_lines(commands, (root, grid), measured, header, body)
 }

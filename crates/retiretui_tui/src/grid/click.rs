@@ -4,13 +4,13 @@
 //! grid's root, for what hangs on the grid to act on.
 
 use bevy_ecs::hierarchy::ChildOf;
-use bevy_ecs::prelude::{Commands, Entity, EntityEvent, On, Query};
+use bevy_ecs::prelude::{Commands, Entity, EntityEvent, On, Query, Without};
 use bevy_ui::ComputedNode;
 use plurimus::bui::bevy_picking::events::PointerClick;
 use plurimus::core::ratatui_core::layout::Constraint;
 use plurimus::widgets::ActiveDescendant;
 
-use super::{Grid, GridColumns, solved};
+use super::{Grid, GridColumns, Said, solved};
 use crate::focus::PageFocus;
 use crate::layout;
 
@@ -36,7 +36,7 @@ const LEFT_EDGE: f32 = -0.5;
 /// first target.
 pub(super) fn point_on_click(
     click: On<PointerClick>,
-    grids: Query<(&Grid, &GridColumns)>,
+    grids: Query<(&Grid, &GridColumns), Without<Said>>,
     (parents, nodes): (Query<&ChildOf>, Query<&ComputedNode>),
     mut focus: PageFocus,
     mut commands: Commands,

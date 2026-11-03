@@ -98,7 +98,7 @@ pub fn refresh(
             details::rows(&shown_of.ops, &item, &draft.plan)
         });
         let (rows, styles) = drawn(read);
-        let columns = tabulate::labelled(&rows, GAP).0;
+        let columns = tabulate::labelled(&rows, GAP);
         let header = HEADER.map(str::to_owned);
         let spawned = grid::refill(
             &mut commands,

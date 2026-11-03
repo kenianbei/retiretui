@@ -8,27 +8,28 @@ use bevy_ecs::prelude::{
     Commands, Component, Entity, IntoScheduleConfigs, Local, Query, Res, With,
 };
 use bevy_ui::{FlexDirection, Node, Val};
-use plurimus::ui::ScrollArea;
 use retiretui_engine::optimize::SweptBracket;
 use retiretui_engine::plan::Plan;
 
-use super::super::options::{self, say_instead, spawn_table};
+use super::super::options::{self, spawn_table};
 use super::{CONVERSION_COLUMNS, CONVERTS_NOTHING, Ladders, OPS, Swept, taxed_in};
-use crate::edit::{self, Draft, table_bundle};
+use crate::edit::{self, Draft};
+use crate::grid::{self, Grid};
 use crate::hints::Hints;
-use crate::layout::{self, filling, placed};
+use crate::layout;
 use crate::nav::FocusStop;
 use crate::pane::Pane;
 use crate::present::{account_name, compact_money};
 use crate::session::Basis;
 use crate::table::basis_amount;
 use crate::tabulate;
+use crate::theme::Repainted;
 
 pub fn plugin(app: &mut App) {
     app.add_systems(
         Update,
         refresh_conversions
-            .in_set(options::TablesFilled)
+            .before(Repainted)
             .after(options::follow_cursor::<Swept>),
     );
 }
@@ -73,15 +74,12 @@ pub fn spawn_panes(commands: &mut Commands, row: Entity) {
     let framed = Pane::new(CONVERSIONS_TITLE)
         .sharing(1.0)
         .spawn(commands, column);
-    commands.spawn((
-        table_bundle(),
+    let table = grid::spawn(commands, framed);
+    commands.entity(table).insert((
         ConversionsTable,
         FocusStop,
         Hints(&[("↑↓", "year")]),
         layout::Rests,
-        filling(),
-        placed(),
-        ChildOf(framed),
     ));
 }
 
@@ -91,7 +89,7 @@ pub fn spawn_panes(commands: &mut Commands, row: Entity) {
 fn refresh_conversions(
     state: (Res<Ladders>, Res<Basis>, Res<Draft>),
     mut drawn: Local<Option<usize>>,
-    mut tables: Query<(Entity, &mut ScrollArea), With<ConversionsTable>>,
+    mut tables: Query<(Entity, &Grid), With<ConversionsTable>>,
     mut commands: Commands,
 ) {
     let (ladders, basis, draft) = state;
@@ -102,7 +100,7 @@ fn refresh_conversions(
         return;
     }
     *drawn = Some(ladders.highlighted);
-    for (table, mut scroll) in &mut tables {
+    for (table, grid) in &mut tables {
         let bracket = ladders.highlighted_bracket();
         let said = match bracket {
             None => NOT_SEARCHED,
@@ -110,14 +108,17 @@ fn refresh_conversions(
             Some(bracket) => {
                 let rows = conversion_rows(bracket, &draft.plan, basis.nominal);
                 let header = CONVERSION_COLUMNS.map(str::to_owned);
-                commands
-                    .entity(table)
-                    .insert(tabulate::columns((&header, &rows), GAP));
-                tabulate::refill(&mut commands, (table, &mut scroll), (&header, &rows), &[0]);
+                grid::refill(
+                    &mut commands,
+                    (table, grid),
+                    tabulate::columns((&header, &rows), GAP),
+                    (&header, &rows),
+                    &[0],
+                );
                 continue;
             }
         };
-        say_instead(&mut commands, table, said.to_owned());
+        grid::say_instead(&mut commands, table, said.to_owned());
     }
 }
 

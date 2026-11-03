@@ -27,12 +27,6 @@ const _: () = assert!(GUTTER.len() == CURSOR_COLS as usize);
 /// The column a scrolled list or table keeps for its scrollbar.
 pub const SCROLL_BAR_COLS: u16 = 1;
 
-/// The cursor every table draws, shared so two tables cannot drift.
-#[must_use]
-pub fn table_cursor() -> TableCursor {
-    TableCursor(Line::from(CURSOR_BAR))
-}
-
 /// The cursor every list draws, the same bar a table's is.
 #[must_use]
 pub fn list_cursor() -> ListBoxCursor {

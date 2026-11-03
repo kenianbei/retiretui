@@ -241,8 +241,9 @@ depends on UI.
   files across the page's edge. What draws the tree is a skin added beside the
   shared pages: a terminal's cells, or a window's pixels - bevy's own renderer
   over an embedded monospace face, every length still a cell so the shell lays
-  itself out the same, the chrome said as text where both can read it and each
-  skin drawing its own boxes, lines, tabs and chart plots on the shared markers -
+  itself out the same, the chrome, every table's rows and what a page says in
+  words said as text where both can read it and each skin drawing its own
+  boxes, lines, tabs and chart plots on the shared markers -
   the window's plot a shader over the chart's points - and the window saying the
   pointer's moves and a click on a plot to the shell as the terminal's mouse
   says them, answering every other click itself. Behind one feature it holds the

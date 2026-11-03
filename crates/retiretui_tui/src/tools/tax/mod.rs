@@ -11,19 +11,17 @@ use bevy_ecs::hierarchy::{ChildOf, Children};
 use bevy_ecs::prelude::{
     Changed, Commands, Component, Entity, IntoScheduleConfigs, Query, Res, ResMut, Resource, With,
 };
-use plurimus::core::UiWidget;
 use plurimus::core::ratatui_core::text::Line;
-use plurimus::ui::ScrollArea;
 use plurimus::widgets::{ActiveDescendant, list_item};
 use retiretui_client::tax_tables::{TablesView, TaxSection, YearTables, year_tables};
 
 pub use pick::{Pick, opens};
 
-use super::options::say_instead;
-use super::{HelpLine, ToolPage, show_help};
-use crate::edit::{Draft, table_bundle};
+use super::{Help, ToolPage};
+use crate::edit::Draft;
+use crate::grid::{self, Grid};
 use crate::hints::Hints;
-use crate::layout::{self, Body, filling, placed};
+use crate::layout::{self, Body};
 use crate::nav::{self, FocusStop, Page};
 use crate::pane::{Framed, Pane};
 use crate::session::{Session, Shown};
@@ -96,15 +94,12 @@ fn spawn_panes(commands: &mut Commands, row: Entity) {
     let list = layout::spawn_scrolled_list(commands, sections, Hints(&[("↑↓", "section")]));
     commands.entity(list).insert(SectionList);
     let pane = Pane::new(Page::TaxTables.title()).spawn(commands, row);
-    commands.spawn((
-        table_bundle(),
+    let table = grid::spawn(commands, pane);
+    commands.entity(table).insert((
         SectionTable,
         FocusStop,
         Hints(&[("↑↓", "line")]),
         layout::Rests,
-        filling(),
-        placed(),
-        ChildOf(pane),
     ));
 }
 
@@ -114,7 +109,7 @@ fn list_sections(
     (draft, session, picks, shown): (Res<Draft>, Res<Session>, Res<TaxPicks>, Shown),
     (cursor, theme): (Res<SectionCursor>, Res<Theme>),
     lists: Query<Entity, With<SectionList>>,
-    mut help: Query<(&mut UiWidget, &HelpLine)>,
+    mut help: Help,
     (mut last, mut commands): (ResMut<Tabled>, Commands),
 ) {
     let is_year_moved = shown.is_year_changed() || shown.projected.is_changed();
@@ -127,7 +122,7 @@ fn list_sections(
         state: picks.state.clone(),
     };
     let said = year_tables(&draft.plan, &session.tables, &view);
-    show_help(&mut help, Page::TaxTables, said.about, &theme);
+    help.show(Page::TaxTables, said.about, &theme);
     let kept = cursor.0.min(said.sections.len().saturating_sub(1));
     for list in &lists {
         commands.entity(list).despawn_related::<Children>();
@@ -161,7 +156,7 @@ fn follow_cursor(
 /// Tables the highlighted section: its columns over its rows, or its note.
 fn show_section(
     (tabled, cursor): (Res<Tabled>, Res<SectionCursor>),
-    mut sections: Query<(Entity, &mut ScrollArea, &ChildOf), With<SectionTable>>,
+    sections: Query<(Entity, &Grid, &ChildOf), With<SectionTable>>,
     mut panes: Query<&mut Framed>,
     mut commands: Commands,
 ) {
@@ -174,30 +169,30 @@ fn show_section(
     let Some(section) = shown.sections.get(cursor.0) else {
         return;
     };
-    for (table, mut scroll, &ChildOf(pane)) in &mut sections {
-        fill_section(&mut commands, (table, &mut scroll), section);
+    for (table, grid, &ChildOf(pane)) in &sections {
+        fill_section(&mut commands, (table, grid), section);
         if let Ok(mut framed) = panes.get_mut(pane) {
             Framed::retitle(&mut framed, &title(shown, section));
         }
     }
 }
 
-fn fill_section(
-    commands: &mut Commands,
-    (table, scroll): (Entity, &mut ScrollArea),
-    section: &TaxSection,
-) {
+fn fill_section(commands: &mut Commands, (table, grid): (Entity, &Grid), section: &TaxSection) {
     if let Some(note) = &section.note {
-        commands.entity(table).despawn_related::<Children>();
-        say_instead(commands, table, note.clone());
+        grid::say_instead(commands, table, note.clone());
         return;
     }
     let header: Vec<String> = (section.columns.iter())
         .map(|&column| column.to_owned())
         .collect();
     let widths = tabulate::columns((&header, &section.rows), GAP);
-    commands.entity(table).insert(widths);
-    tabulate::refill(commands, (table, scroll), (&header, &section.rows), &[0]);
+    grid::refill(
+        commands,
+        (table, grid),
+        widths,
+        (&header, &section.rows),
+        &[0],
+    );
 }
 
 /// "Income tax brackets · 2027 · Married filing jointly · Oregon".

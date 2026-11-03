@@ -6,23 +6,22 @@
 use std::marker::PhantomData;
 
 use bevy_app::{App, Update};
-use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut, Ref};
-use bevy_ecs::hierarchy::{ChildOf, Children};
+use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
+use bevy_ecs::hierarchy::Children;
 use bevy_ecs::prelude::{
-    Changed, Commands, Component, Entity, Has, IntoScheduleConfigs, Query, Res, ResMut, SystemSet,
-    With,
+    Changed, Commands, Component, Entity, Has, IntoScheduleConfigs, Local, Query, Res, ResMut, With,
 };
-use plurimus::core::ratatui_core::layout::Constraint;
-use plurimus::core::ratatui_core::text::Line;
-use plurimus::ui::{ComputedWidgetArea, ScrollArea, UiStyle};
-use plurimus::widgets::{ActiveDescendant, TableColumns, WidgetSystems, table_row};
+use bevy_ui::ComputedNode;
+use plurimus::ui::UiStyle;
+use plurimus::widgets::ActiveDescendant;
 
 use super::{EnterRuns, Found, ResultPane, Tool, handle_enter};
-use crate::edit::{Draft, table_bundle};
+use crate::edit::Draft;
+use crate::grid::{self, Grid};
 use crate::hints::Hints;
-use crate::layout::{self, filling, placed};
+use crate::layout::{self, Rests};
 use crate::session::Basis;
-use crate::tabulate::{self, Said};
+use crate::tabulate;
 use crate::theme::{Repainted, Theme};
 
 /// Keeps `R`'s options pane saying what its search found.
@@ -31,24 +30,8 @@ pub fn plugin<R: Found>(app: &mut App) {
         Update,
         (refresh_options::<R>, follow_cursor::<R>)
             .chain()
-            .in_set(TablesFilled)
-            .after(super::poll_search::<R>),
-    );
-}
-
-/// Where the tools' tables are filled, or told what to say in place of
-/// rows.
-#[derive(SystemSet, Clone, Copy, PartialEq, Eq, Hash, Debug)]
-pub struct TablesFilled;
-
-/// Wraps what each table says in place of rows, once filled.
-pub(super) fn plugin_said(app: &mut App) {
-    app.add_systems(
-        Update,
-        wrap_said
-            .after(TablesFilled)
             .before(Repainted)
-            .before(WidgetSystems::Layout),
+            .after(super::poll_search::<R>),
     );
 }
 
@@ -84,19 +67,17 @@ pub fn spawn_table<R: Found>(
     hints: Hints,
 ) -> Entity {
     commands.entity(framed).insert(ResultPane::<R>::default());
+    let table = grid::spawn(commands, framed);
     commands
-        .spawn((
-            table_bundle(),
+        .entity(table)
+        .insert((
             OptionsTable::<R>(PhantomData),
             EnterRuns(enter),
             hints,
-            layout::Rests,
-            filling(),
-            placed(),
-            ChildOf(framed),
+            Rests,
         ))
-        .observe(handle_enter)
-        .id()
+        .observe(handle_enter);
+    table
 }
 
 /// Respawns the table's rows from what the search found, or a line
@@ -104,7 +85,9 @@ pub fn spawn_table<R: Found>(
 /// the table's width moves.
 fn refresh_options<R: Found>(
     state: (Res<Tool<R>>, Res<Basis>, Res<Theme>, Res<Draft>),
-    mut tables: Query<(Entity, Ref<ComputedWidgetArea>, &mut ScrollArea), With<OptionsTable<R>>>,
+    tables: Query<(Entity, &Grid), With<OptionsTable<R>>>,
+    bodies: Query<&ComputedNode>,
+    mut drawn: Local<u16>,
     mut commands: Commands,
 ) {
     let (tool, basis, theme, draft) = state;
@@ -114,65 +97,25 @@ fn refresh_options<R: Found>(
     if tool.found().is_none() && tool.is_running() {
         return;
     }
-    for (table, area, mut scroll) in &mut tables {
-        if !is_moved && !area.is_changed() {
-            continue;
-        }
-        commands.entity(table).despawn_related::<Children>();
-        let Some(found) = tool.found() else {
-            say_instead(&mut commands, table, tool.said());
+    for (table, grid) in &tables {
+        let Ok(body) = bodies.get(grid.body) else {
             continue;
         };
-        let laid = found.laid(&draft.plan, basis.nominal);
-        // The widget measures the rows a frame behind a respawn, and keeps
-        // that; the header, the plan's own row and the options are told.
-        let rows = laid.options.len().saturating_add(2);
-        scroll.content_size.height = u16::try_from(rows).unwrap_or(u16::MAX);
-        let chosen = tool.highlighted().unwrap_or(R::LEADING);
-        let given = scroll.content_width(area.0.width);
-        fill(&mut commands, table, (laid, given), chosen, &theme);
-    }
-}
-
-/// Dimmed lines in place of `table`'s rows, saying why there are none,
-/// wrapped to the table's width: a table whose body has once gone empty
-/// draws no rows it is given after.
-pub fn say_instead(commands: &mut Commands, table: Entity, said: String) {
-    commands.entity(table).insert((
-        TableColumns(vec![Constraint::Fill(1)]),
-        ActiveDescendant(None),
-        Said {
-            text: said,
-            drawn: None,
-        },
-    ));
-}
-
-/// Rewraps each table's [`Said`] whenever it, the theme or the table's
-/// width moves.
-fn wrap_said(
-    theme: Res<Theme>,
-    mut tables: Query<(Entity, &mut Said, &mut ScrollArea, &ComputedWidgetArea)>,
-    mut commands: Commands,
-) {
-    for (table, mut said, mut scroll, area) in &mut tables {
-        // No row is the cursor's, so the lines start at the table's edge.
-        let width = scroll.content_width(area.0.width);
-        if said.drawn == Some(width) && !said.is_changed() && !theme.is_changed() {
+        let Some(found) = tool.found() else {
+            if is_moved {
+                grid::say_instead(&mut commands, table, tool.said());
+            }
+            continue;
+        };
+        let given = layout::node_cols(body);
+        if given == 0 || (!is_moved && given == *drawn) {
+            *drawn = given;
             continue;
         }
-        said.bypass_change_detection().drawn = Some(width);
-        commands.entity(table).despawn_related::<Children>();
-        let lines = layout::wrapped(&said.text, width, "");
-        scroll.content_size.height = u16::try_from(lines.len()).unwrap_or(u16::MAX);
-        for line in lines {
-            commands.spawn((
-                table_row([Line::from(line)]),
-                CurrentRow,
-                UiStyle(theme.dimmed()),
-                ChildOf(table),
-            ));
-        }
+        *drawn = given;
+        let laid = found.laid(&draft.plan, basis.nominal);
+        let chosen = tool.highlighted().unwrap_or(R::LEADING);
+        fill(&mut commands, (table, grid), (laid, given), chosen, &theme);
     }
 }
 
@@ -181,7 +124,7 @@ fn wrap_said(
 /// cursor on option `chosen`.
 fn fill(
     commands: &mut Commands,
-    table: Entity,
+    (table, grid): (Entity, &Grid),
     (laid, given): (Laid, u16),
     chosen: usize,
     theme: &Theme,
@@ -192,7 +135,7 @@ fn fill(
         mut options,
     } = laid;
     options.insert(0, current);
-    let spawned = tabulate::fill(commands, table, (&header, &options), (0, given));
+    let spawned = tabulate::fill(commands, (table, grid), (&header, &options), (0, given));
     let Some((&current, options)) = spawned.split_first() else {
         return;
     };
@@ -213,13 +156,14 @@ fn fill(
 /// opens it, and goes on to the first option where it does not.
 pub fn follow_cursor<R: Found>(
     mut tables: Query<
-        (&mut ActiveDescendant, &Children),
+        (&mut ActiveDescendant, &Grid),
         (With<OptionsTable<R>>, Changed<ActiveDescendant>),
     >,
+    bodies: Query<&Children>,
     rows: Query<(Has<CurrentRow>, Option<&OptionRow>)>,
     mut tool: ResMut<Tool<R>>,
 ) {
-    for (mut on, children) in &mut tables {
+    for (mut on, grid) in &mut tables {
         let Some(row) = on.0 else {
             continue;
         };
@@ -228,10 +172,12 @@ pub fn follow_cursor<R: Found>(
                 tool.bypass_change_detection().highlighted = 0;
             }
             Ok((true, _)) => {
-                let best = children
-                    .iter()
-                    .find(|&&child| rows.get(child).is_ok_and(|(_, option)| option.is_some()))
-                    .copied();
+                let best = bodies.get(grid.body).ok().and_then(|children| {
+                    children
+                        .iter()
+                        .find(|&&child| rows.get(child).is_ok_and(|(_, option)| option.is_some()))
+                        .copied()
+                });
                 on.0 = best;
             }
             Ok((false, Some(&OptionRow(index)))) => {
@@ -239,5 +185,50 @@ pub fn follow_cursor<R: Found>(
             }
             _ => {}
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use bevy_ecs::hierarchy::Children;
+    use bevy_math::Vec2;
+
+    use super::*;
+    use crate::nav::Page;
+    use crate::support::{SIZE, click_entity, headless_app_at, said_by, show};
+    use crate::tools::ladders::Swept;
+
+    fn options_grid(app: &mut App) -> (Entity, Entity) {
+        let mut tables = app
+            .world_mut()
+            .query_filtered::<(Entity, &Grid), With<OptionsTable<Swept>>>();
+        let (root, grid) = tables.single(app.world()).unwrap();
+        (root, grid.body)
+    }
+
+    #[test]
+    fn the_options_are_said_as_rows_and_a_click_on_one_moves_the_cursor() {
+        let fixture = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../retiretui_engine/tests/fixtures/full.toml"
+        );
+        let mut app = headless_app_at(fixture.into(), SIZE);
+        app.update();
+        show(&mut app, Page::RothConversions);
+        crate::tools::settle_all(&mut app);
+        let (root, body) = options_grid(&mut app);
+        let rows: Vec<Entity> = app.world().get::<Children>(body).unwrap().to_vec();
+        let texts: Vec<String> = rows.iter().map(|&row| said_by(app.world(), row)).collect();
+        assert!(
+            rows.len() > 1,
+            "the plan's row and the ladders found: {texts:?}"
+        );
+        assert!(texts[0].contains("Current"), "{texts:?}");
+        assert!(!texts[1].trim().is_empty(), "{texts:?}");
+        assert!(app.world().get::<OptionRow>(rows[1]).is_some());
+        click_entity(&mut app, rows[1], Vec2::ZERO);
+        app.update();
+        let cursor = app.world().get::<ActiveDescendant>(root).unwrap();
+        assert_eq!(cursor.0, Some(rows[1]));
     }
 }

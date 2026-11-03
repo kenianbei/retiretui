@@ -76,10 +76,11 @@ fn line_distance(start: u32, len: u32, p: vec2<f32>, px: vec2<f32>) -> f32 {
 
 @fragment
 fn fragment(in: UiVertexOutput) -> @location(0) vec4<f32> {
-    // The borders are the axis; the plot is what is inside them.
-    let b = in.border_widths;
-    let span = vec2(max(1.0 - b.x - b.y, 1e-6), max(1.0 - b.z - b.w, 1e-6));
-    let uv = vec2((in.uv.x - b.x) / span.x, (in.uv.y - b.z) / span.y);
+    // The borders are the axis; the plot is what is inside them. bevy
+    // hands the widths in pixels as left, top, right, bottom.
+    let b = in.border_widths / vec4(in.size.x, in.size.y, in.size.x, in.size.y);
+    let span = vec2(max(1.0 - b.x - b.z, 1e-6), max(1.0 - b.y - b.w, 1e-6));
+    let uv = vec2((in.uv.x - b.x) / span.x, (in.uv.y - b.y) / span.y);
     if uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0 {
         return vec4(0.0);
     }

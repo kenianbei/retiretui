@@ -15,8 +15,6 @@ use bevy_ecs::prelude::{
 };
 use bevy_input_focus::InputFocus;
 use bevy_ui::{FlexDirection, Node, Val};
-use plurimus::core::UiWidget;
-use plurimus::ui::ScrollArea;
 use retiretui_client::searches::spending::{
     self, ABOUT, AT_TARGET, Answers, FIELDS, ITEM_COLUMNS, LEADING, Listed, search, taken, total,
 };
@@ -24,15 +22,16 @@ use retiretui_engine::optimize::{ScaledExpense, apply_spending, spending_overlay
 use retiretui_engine::plan::Plan;
 
 use super::markets::MarketHistory;
-use super::options::{self, CURRENT_PLAN, Laid, OptionsTable, say_instead, spawn_table};
-use super::{Found, HelpLine, NOTHING_SEARCHED_YET, Tool, ToolPage, show_help, write, writes_it};
+use super::options::{self, CURRENT_PLAN, Laid, OptionsTable, spawn_table};
+use super::{Found, Help, NOTHING_SEARCHED_YET, Tool, ToolPage, write, writes_it};
 use crate::command::{Keymap, Outcome, TAKE_SPENDING, WRITE_SPENDING};
 use crate::confirm::{Answer, Confirm};
 use crate::documents::{Browsing, Pickers};
-use crate::edit::{self, Draft, DraftEditor, Ops, table_bundle};
+use crate::edit::{self, Draft, DraftEditor, Ops};
+use crate::grid::{self, Grid};
 use crate::hints::Hints;
 use crate::journal;
-use crate::layout::{self, filling, placed};
+use crate::layout;
 use crate::nav::{self, FocusStop, Page, ShownSurface};
 use crate::overview::Better;
 use crate::pane::Pane;
@@ -72,7 +71,7 @@ pub fn plugin(app: &mut App) {
     app.add_systems(
         Update,
         refresh_expenses
-            .in_set(options::TablesFilled)
+            .before(Repainted)
             .after(options::follow_cursor::<Ceilings>),
     );
 }
@@ -114,15 +113,12 @@ fn spawn_panes(commands: &mut Commands, row: Entity) {
     let framed = Pane::new(EXPENSES_TITLE)
         .sharing(1.0)
         .spawn(commands, beneath);
-    commands.spawn((
-        table_bundle(),
+    let table = grid::spawn(commands, framed);
+    commands.entity(table).insert((
         ExpensesTable,
         FocusStop,
         Hints(&[("↑↓", "expense")]),
         layout::Rests,
-        filling(),
-        placed(),
-        ChildOf(framed),
     ));
     let form = Pane::new(OPS.title)
         .wide(TARGET_COLS)
@@ -199,7 +195,7 @@ fn search_by_itself(
 fn refresh_expenses(
     (tool, draft): (Res<Spending>, Res<Draft>),
     mut drawn: Local<Option<usize>>,
-    mut tables: Query<(Entity, &mut ScrollArea), With<ExpensesTable>>,
+    mut tables: Query<(Entity, &Grid), With<ExpensesTable>>,
     mut commands: Commands,
 ) {
     let is_moved = tool.is_changed() || draft.is_changed();
@@ -209,18 +205,21 @@ fn refresh_expenses(
         return;
     }
     *drawn = Some(tool.highlighted);
-    for (table, mut scroll) in &mut tables {
+    for (table, grid) in &mut tables {
         let Some(listed) = tool.chosen() else {
-            say_instead(&mut commands, table, NOT_SEARCHED.to_owned());
+            grid::say_instead(&mut commands, table, NOT_SEARCHED.to_owned());
             continue;
         };
         let items = listed.items(&draft.plan, MoneyForm::Full);
         let rows: Vec<Vec<String>> = items.into_iter().map(Vec::from).collect();
         let header = ITEM_COLUMNS.map(str::to_owned);
-        commands
-            .entity(table)
-            .insert(tabulate::columns((&header, &rows), GAP));
-        tabulate::refill(&mut commands, (table, &mut scroll), (&header, &rows), &[0]);
+        grid::refill(
+            &mut commands,
+            (table, grid),
+            tabulate::columns((&header, &rows), GAP),
+            (&header, &rows),
+            &[0],
+        );
     }
 }
 
@@ -239,7 +238,7 @@ fn say_help(
     (shown, theme, keymap): (ShownSurface, Res<Theme>, Res<Keymap>),
     options: Query<(), With<OptionsTable<Ceilings>>>,
     mut said_of: Local<usize>,
-    mut lines: Query<(&mut UiWidget, &HelpLine)>,
+    mut help: Help,
 ) {
     let is_moved = tool.is_changed() || draft.is_changed() || focus.is_changed();
     let is_redrawn = shown.is_changed() || theme.is_changed();
@@ -251,7 +250,7 @@ fn say_help(
         Some(holder) if options.contains(holder) => on_options(&tool, &draft.plan, &keymap),
         _ => ABOUT.to_owned(),
     };
-    show_help(&mut lines, Page::SpendingCeiling, &text, &theme);
+    help.show(Page::SpendingCeiling, &text, &theme);
 }
 
 /// The `take-spending` command: asks before restating the plan's flexible

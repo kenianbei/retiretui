@@ -232,3 +232,55 @@ fn ask_on_close(mut closing: MessageReader<WindowCloseRequested>, mut commands: 
         defer_named(&mut commands, command::QUIT);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use bevy_ecs::hierarchy::ChildOf;
+    use bevy_ecs::prelude::{Entity, With, Without, World};
+    use plurimus::core::UiWidget;
+    use plurimus::widgets::{Button, ListBox};
+
+    use crate::chart::SeriesChart;
+    use crate::layout::Rule;
+    use crate::nav::{Page, SurfaceRoot};
+    use crate::pane::Framed;
+    use crate::support::{SIZE, headless_app, show};
+
+    /// The page a widget stands on, climbing to its surface's root.
+    fn page_of(world: &World, mut entity: Entity) -> Option<Page> {
+        loop {
+            if let Some(SurfaceRoot(surface)) = world.get::<SurfaceRoot>(entity) {
+                return *surface;
+            }
+            entity = world.get::<ChildOf>(entity)?.parent();
+        }
+    }
+
+    /// The window draws a pane's frame, a chart's plot, a rule, a list
+    /// and a button itself and nothing else ratatui draws, so no page may
+    /// hold another widget.
+    #[test]
+    fn every_page_s_widgets_are_what_the_window_draws() {
+        let mut app = headless_app(SIZE);
+        for page in Page::ALL {
+            show(&mut app, page);
+        }
+        let world = app.world_mut();
+        let mut widgets = world.query_filtered::<Entity, (
+            With<UiWidget>,
+            Without<Framed>,
+            Without<SeriesChart>,
+            Without<Rule>,
+            Without<ListBox>,
+            Without<Button>,
+        )>();
+        let strays: Vec<(Entity, Page)> = widgets
+            .iter(world)
+            .filter_map(|widget| page_of(world, widget).map(|page| (widget, page)))
+            .collect();
+        assert!(
+            strays.is_empty(),
+            "widgets the window does not draw: {strays:?}"
+        );
+    }
+}

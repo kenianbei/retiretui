@@ -11,7 +11,7 @@ mod keys;
 pub use click::{HeaderClick, RowClick};
 
 use bevy_app::{App, Update};
-use bevy_ecs::change_detection::{DetectChanges, Ref};
+use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut, Ref};
 use bevy_ecs::hierarchy::{ChildOf, Children};
 use bevy_ecs::prelude::{Commands, Component, Entity, Has, IntoScheduleConfigs, Query, Res};
 use bevy_input_focus::InputFocus;
@@ -34,7 +34,7 @@ pub fn plugin(app: &mut App) {
     app.add_observer(keys::handle_key);
     app.add_systems(
         Update,
-        (lay_rows, reveal_cursor, bar::draw_bars)
+        (wrap_said, lay_rows, reveal_cursor, bar::draw_bars)
             .chain()
             .in_set(Repainted),
     );
@@ -65,6 +65,15 @@ struct GridColumns(Vec<Constraint>);
 /// A row's cells, each a line of its own alignment.
 #[derive(Component, Debug)]
 struct Cells(Vec<Line<'static>>);
+
+/// What a grid says in place of rows it has none of, wrapped to its body
+/// as dimmed lines no row stands behind: the cursor, the keys and a click
+/// leave a grid saying one alone.
+#[derive(Component, Debug)]
+struct Said {
+    text: String,
+    drawn: Option<u16>,
+}
 
 /// The rows the body showed when the cursor was last revealed, so a
 /// wheel that scrolls the cursor out of view is not undone.
@@ -135,6 +144,44 @@ pub fn spawn(commands: &mut Commands, parent: Entity) -> Entity {
     root
 }
 
+/// Makes `root` say `text` in place of rows, from the next frame on.
+pub fn say_instead(commands: &mut Commands, root: Entity, text: String) {
+    commands
+        .entity(root)
+        .insert((Said { text, drawn: None }, ActiveDescendant(None)));
+}
+
+/// Rewraps what a grid says instead of rows whenever it, the theme or
+/// the body's width moves; the header says nothing over it.
+fn wrap_said(
+    theme: Res<Theme>,
+    mut grids: Query<(&Grid, &mut Said)>,
+    bodies: Query<&ComputedNode>,
+    mut commands: Commands,
+) {
+    for (grid, mut said) in &mut grids {
+        let width = bodies.get(grid.body).map_or(0, layout::node_cols);
+        let is_drawn = said.drawn == Some(width) && !said.is_changed() && !theme.is_changed();
+        if width == 0 || is_drawn {
+            continue;
+        }
+        said.bypass_change_detection().drawn = Some(width);
+        head(&mut commands, grid.header, Vec::new());
+        commands.entity(grid.body).despawn_related::<Children>();
+        for line in layout::wrapped(&said.text, width, "") {
+            let row = commands
+                .spawn((text(), fixed(1.0), ChildOf(grid.body)))
+                .id();
+            say(
+                &mut commands,
+                row,
+                Line::styled(line, theme.dimmed()),
+                &theme,
+            );
+        }
+    }
+}
+
 /// Replaces `root`'s rows with `header`, where it has one, and `rows`
 /// under `columns`, the cells at `text_columns` on the left and the rest
 /// right, the cursor on the first row, answering each row's entity.
@@ -160,10 +207,10 @@ pub fn refill_lines(
     header: Vec<Line<'static>>,
     rows: impl IntoIterator<Item = Vec<Line<'static>>>,
 ) -> Vec<Entity> {
+    commands.entity(root).remove::<Said>();
     commands.entity(grid.body).despawn_related::<Children>();
-    commands
-        .entity(grid.header)
-        .insert((Cells(header), UiStyle(HEADING)));
+    commands.entity(grid.header).insert(UiStyle(HEADING));
+    head(commands, grid.header, header);
     let spawned: Vec<Entity> = rows
         .into_iter()
         .map(|cells| {
@@ -184,6 +231,18 @@ pub fn refill_lines(
         ActiveDescendant(spawned.first().copied()),
     ));
     spawned
+}
+
+/// Gives the header `cells` to say and the row to say them on, or none,
+/// as the fill lands - so the frame it is filled in lays the rows out
+/// under the header, not a frame later.
+fn head(commands: &mut Commands, header: Entity, cells: Vec<Line<'static>>) {
+    let is_shown = !cells.is_empty();
+    commands
+        .entity(header)
+        .insert(Cells(cells))
+        .entry::<Node>()
+        .and_modify(move |mut node| layout::set_display(&mut node, is_shown));
 }
 
 /// The cells a grid's columns are solved over in a body `body` wide: what
@@ -245,7 +304,7 @@ fn line_of(gutter: &str, cells: &[Line<'static>], columns: &[Rect]) -> Line<'sta
         push(" ".repeat(left), Style::new());
         let (shown, taken) = clipped(cell, column.width.saturating_sub(left as u16));
         for span in shown {
-            push(span.content.into_owned(), span.style);
+            push(span.content.into_owned(), cell.style.patch(span.style));
         }
         push(" ".repeat(width - left - taken), Style::new());
         at = column.x.saturating_add(column.width);
@@ -275,7 +334,6 @@ type RowItem<'a> = (
     Option<&'a UiStyle>,
     &'a Hovered,
     &'a mut Drawn,
-    &'a mut Node,
 );
 
 /// Draws every row whose line, place or state moved. A grid laid out
@@ -311,12 +369,9 @@ fn lay_rows(
             .enumerate()
             .map(|(at, row)| (row, at));
         for (row, at) in header.chain(body_rows) {
-            let Ok((cells, style, hovered, mut drawn, mut node)) = rows.get_mut(row) else {
+            let Ok((cells, style, hovered, mut drawn)) = rows.get_mut(row) else {
                 continue;
             };
-            if row == grid.header {
-                layout::set_display(&mut node, !cells.0.is_empty());
-            }
             let is_said = !theme.is_changed() && !cells.is_changed();
             let item = (
                 cells.0.as_slice(),

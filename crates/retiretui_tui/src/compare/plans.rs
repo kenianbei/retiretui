@@ -2,21 +2,21 @@
 //! chart, its figures in the Overview's words - as many columns as the
 //! pane is wide enough for, the most wanted first.
 
-use bevy_ecs::change_detection::{DetectChanges, Ref};
-use bevy_ecs::hierarchy::{ChildOf, Children};
-use bevy_ecs::prelude::{Commands, Component, Entity, Query, With};
+use bevy_ecs::change_detection::DetectChanges;
+use bevy_ecs::hierarchy::ChildOf;
+use bevy_ecs::prelude::{Commands, Component, Entity, Local, Query, With};
 use bevy_ecs::system::SystemParam;
-use bevy_ui::{FlexDirection, Node, Val};
+use bevy_ui::{ComputedNode, FlexDirection, Node, Val};
 use plurimus::core::ratatui_core::style::{Color, Style};
-use plurimus::ui::{ComputedWidgetArea, ScrollArea, UiStyle};
+use plurimus::ui::UiStyle;
 use plurimus::widgets::ActiveDescendant;
 use retiretui_client::compare::{self, Figured};
 
 use super::Plans;
 use crate::command;
-use crate::edit::table_bundle;
+use crate::grid::{self, Grid};
 use crate::hints::{CommandHint, CommandHints, Hints};
-use crate::layout::{self, filling, fixed, placed};
+use crate::layout::{self, fixed};
 use crate::nav::FocusStop;
 use crate::pane::{Framed, Pane};
 use crate::present;
@@ -52,8 +52,8 @@ pub(super) fn spawn(commands: &mut Commands, view: Entity) {
     let row = commands.spawn((row, ChildOf(view))).id();
     let pane = Pane::new(TITLE).sharing(2.0).spawn(commands, row);
     super::changes::spawn(commands, row);
-    commands.spawn((
-        table_bundle(),
+    let table = grid::spawn(commands, pane);
+    commands.entity(table).insert((
         PlansTable,
         Hints(&[("↑↓", "plan")]),
         CommandHints(&[CommandHint {
@@ -63,9 +63,6 @@ pub(super) fn spawn(commands: &mut Commands, view: Entity) {
         }]),
         layout::Rests,
         FocusStop,
-        filling(),
-        placed(),
-        ChildOf(pane),
     ));
 }
 
@@ -93,17 +90,8 @@ impl Cursor<'_, '_> {
 /// The table, and the pane and row it stands in.
 #[derive(SystemParam)]
 pub(super) struct PlansParts<'w, 's> {
-    tables: Query<
-        'w,
-        's,
-        (
-            Entity,
-            Ref<'static, ComputedWidgetArea>,
-            &'static mut ScrollArea,
-            &'static ChildOf,
-        ),
-        With<PlansTable>,
-    >,
+    tables: Query<'w, 's, (Entity, &'static Grid, &'static ChildOf), With<PlansTable>>,
+    bodies: Query<'w, 's, &'static ComputedNode>,
     frames: Query<'w, 's, (&'static mut Framed, &'static ChildOf)>,
     nodes: Query<'w, 's, &'static mut Node>,
 }
@@ -115,21 +103,30 @@ pub(super) fn refresh_plans(
     plans: Plans,
     cursor: Cursor,
     mut parts: PlansParts,
+    mut drawn: Local<u16>,
     mut commands: Commands,
 ) {
     let kept = cursor.place();
     let is_moved = plans.is_changed() || plans.successes.is_changed();
-    for (table, area, mut scroll, pane) in &mut parts.tables {
-        if !is_moved && !area.is_changed() {
+    for (table, grid, pane) in &parts.tables {
+        let Ok(body) = parts.bodies.get(grid.body) else {
+            continue;
+        };
+        let given = layout::node_cols(body);
+        if given == 0 || (!is_moved && given == *drawn) {
+            *drawn = given;
             continue;
         }
+        *drawn = given;
         let (header, rows) = laid(&plans);
-        let given = scroll.content_width(area.0.width);
-        scroll.content_size.height = u16::try_from(rows.len() + 1).unwrap_or(u16::MAX);
-        commands.entity(table).despawn_related::<Children>();
         let keys = keys(&plans);
-        let spawned =
-            tabulate::fill_keyed(&mut commands, table, (&header, &rows), (GAP, given), &keys);
+        let spawned = tabulate::fill_keyed(
+            &mut commands,
+            (table, grid),
+            (&header, &rows),
+            (GAP, given),
+            &keys,
+        );
         for (place, &row) in spawned.iter().enumerate() {
             commands.entity(row).insert(PlanRow(place));
         }

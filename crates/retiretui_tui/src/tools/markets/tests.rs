@@ -4,7 +4,9 @@
 use std::time::Duration;
 
 use bevy_app::App;
+use bevy_ecs::hierarchy::Children;
 use bevy_ecs::prelude::{Entity, With};
+use plurimus::bui::bevy_text::TextColor;
 use plurimus::term::KeyCode;
 use retiretui_engine::market::{MonteCarlo, RunError, Runs};
 use retiretui_engine::plan::Market;
@@ -15,7 +17,7 @@ use crate::pane::Framed;
 use crate::session::{LedgerRun, Projected};
 use crate::support::{
     Headless, SIZE, active_page, assert_at_rest, click_year, commit_edit, headless_app,
-    ledger_year, press_key, redrawn, show,
+    ledger_year, press_key, redrawn, said_by, show,
 };
 use crate::theme::Theme;
 use crate::tools::{ResultPane, Tool, settle_all};
@@ -243,4 +245,54 @@ fn a_click_on_the_runs_chart_moves_the_ledger() {
     show(&mut app, Page::Ledger);
     assert_eq!(ledger_year(&mut app), 2040);
     assert_at_rest(&mut app);
+}
+
+#[test]
+fn the_help_is_said_dimmed_under_the_page() {
+    let mut app = app_on(Page::MonteCarlo);
+    let world = app.world_mut();
+    let mut lines = world.query_filtered::<&crate::theme::Hung, With<crate::tools::HelpLine>>();
+    let theme = world.resource::<Theme>();
+    let dimmed = theme.ink(theme.dimmed());
+    let said = lines
+        .iter(world)
+        .filter_map(|hung| {
+            let span = *world.get::<Children>(hung.0)?.first()?;
+            let colour = world.get::<TextColor>(span)?.0;
+            Some((said_by(world, hung.0), colour))
+        })
+        .find(|(text, _)| text == MonteCarlo::ABOUT);
+    assert_eq!(said, Some((MonteCarlo::ABOUT.to_owned(), dimmed)));
+}
+
+#[test]
+fn the_endings_are_said_as_rows_laid_out_as_bars() {
+    let mut app = app_on(Page::MonteCarlo);
+    for _ in 0..3 {
+        press_key(&mut app, KeyCode::Char('v'));
+    }
+    app.update();
+    app.update();
+    let world = app.world_mut();
+    let mut parts = world.query::<(&ViewPart, &crate::theme::Hung)>();
+    let hung = parts
+        .iter(world)
+        .find(|(part, _)| part.0 == Page::MonteCarlo && part.1 == View::Endings)
+        .map(|(_, hung)| hung.0)
+        .unwrap();
+    let said = said_by(world, hung);
+    let rows: Vec<&str> = said.lines().collect();
+    let runs = world.resource::<Tool<MonteCarlo>>().found().unwrap().runs();
+    let endings = retiretui_client::searches::markets::endings(runs);
+    assert_eq!(rows.len(), endings.len());
+    for (row, ending) in rows.iter().zip(&endings) {
+        assert!(row.starts_with(&ending.label), "{row:?}");
+        assert!(row.contains(&ending.count.to_string()), "{row:?}");
+    }
+    let widest = endings.iter().max_by_key(|ending| ending.count).unwrap();
+    let widest_row = rows[endings
+        .iter()
+        .position(|ending| ending.label == widest.label)
+        .unwrap()];
+    assert!(widest_row.ends_with('█'), "{widest_row:?}");
 }

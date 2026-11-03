@@ -30,10 +30,9 @@ use bevy_ecs::system::SystemParam;
 use bevy_input::keyboard::{Key, KeyboardInput};
 use bevy_input_focus::FocusedInput;
 use bevy_ui::{FlexDirection, Node};
-use plurimus::core::UiWidget;
+use plurimus::core::ratatui_core::text::Line;
 use plurimus::term::bevy_compat::HeldModifiers;
 use plurimus::ui::{KeyBinding, first_bound};
-use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
 use retiretui_client::searches::page_refusal;
 use retiretui_engine::market::{Progress, RunError};
 use retiretui_engine::plan::Plan;
@@ -48,10 +47,10 @@ pub use write::OVERLAY_OVER;
 
 use super::command::{self, Keymap};
 use super::edit::Draft;
-use super::layout::{self, Body, fixed, growing, placed};
+use super::layout::{self, Body, fixed, growing};
 use super::nav::{self, Page};
 use super::pane::Framed;
-use super::theme::{Repainted, Theme};
+use super::theme::{Hung, Repainted, Theme, hang, say};
 
 pub fn plugin(app: &mut App) {
     app.init_resource::<Searches>();
@@ -62,7 +61,6 @@ pub fn plugin(app: &mut App) {
         markets::plugin,
         spending::plugin,
         estimate::plugin,
-        options::plugin_said,
         tax::plugin,
     ));
 }
@@ -133,25 +131,26 @@ pub struct HelpLine(pub Page);
 
 /// Spawns `surface`'s line of help, a row across the foot of `view`.
 pub(crate) fn spawn_help(commands: &mut Commands, view: Entity, surface: Page) {
-    commands.spawn((
-        HelpLine(surface),
-        UiWidget::default(),
-        fixed(1.0),
-        placed(),
-        ChildOf(view),
-    ));
+    let line = commands
+        .spawn((HelpLine(surface), fixed(1.0), ChildOf(view)))
+        .id();
+    hang(commands, line);
 }
 
-/// Writes `text`, dimmed, into the help line under `surface`'s panes.
-pub(crate) fn show_help(
-    lines: &mut Query<(&mut UiWidget, &HelpLine)>,
-    surface: Page,
-    text: &str,
-    theme: &Theme,
-) {
-    let on_page = lines.iter_mut().filter(|(_, help)| help.0 == surface);
-    for (mut widget, _) in on_page {
-        *widget = UiWidget::new(Paragraph::new(text.to_owned()).style(theme.dimmed()));
+/// The help lines, said into.
+#[derive(SystemParam)]
+pub(crate) struct Help<'w, 's> {
+    lines: Query<'w, 's, (&'static Hung, &'static HelpLine)>,
+    commands: Commands<'w, 's>,
+}
+
+impl Help<'_, '_> {
+    /// Says `text`, dimmed, in the help line under `surface`'s panes.
+    pub(crate) fn show(&mut self, surface: Page, text: &str, theme: &Theme) {
+        for (hung, _) in self.lines.iter().filter(|(_, help)| help.0 == surface) {
+            let line = Line::styled(text.to_owned(), theme.dimmed());
+            say(&mut self.commands, hung.0, line, theme);
+        }
     }
 }
 

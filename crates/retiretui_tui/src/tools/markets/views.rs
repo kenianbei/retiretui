@@ -11,26 +11,27 @@ use bevy_app::{App, Update};
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{
-    Commands, Component, Entity, IntoScheduleConfigs, Query, Res, ResMut, Resource,
+    Commands, Component, Entity, IntoScheduleConfigs, Local, Query, Res, ResMut, Resource,
 };
-use bevy_ui::{Display, Node};
-use plurimus::core::UiWidget;
-use plurimus::core::ratatui_core::layout::Direction;
+use bevy_ui::{ComputedNode, Display, Node};
+use plurimus::core::ratatui_core::buffer::Buffer;
+use plurimus::core::ratatui_core::layout::{Direction, Rect};
 use plurimus::core::ratatui_core::style::Style;
-use plurimus::ui::ScrollArea;
+use plurimus::core::ratatui_core::text::Line;
+use plurimus::core::ratatui_core::widgets::Widget;
 use plurimus::widgets::WidgetSystems;
 use plurimus::widgets::ratatui_widgets::barchart::{Bar, BarChart};
-use retiretui_client::searches::markets;
+use retiretui_client::searches::markets::{self, Ending};
 use retiretui_engine::market::Runs;
 
 use super::{MarketTool, count_text};
 use crate::chart::{Series, SeriesChart};
 use crate::command::Outcome;
-use crate::edit::table_bundle;
-use crate::layout::{self, filling, placed};
+use crate::grid::{self, Grid};
+use crate::layout::{self, filling};
 use crate::nav::Page;
 use crate::tabulate;
-use crate::theme::Theme;
+use crate::theme::{Hung, Repainted, Theme, hang, row_line, say_lines};
 use crate::tools::Tool;
 
 /// What the chart pane shows.
@@ -81,7 +82,9 @@ pub(super) fn install<R: MarketTool>(app: &mut App) {
     app.init_resource::<ViewOf<R>>();
     app.add_systems(
         Update,
-        (show_view::<R>, refresh_views::<R>).before(WidgetSystems::Layout),
+        (show_view::<R>, refresh_views::<R>)
+            .before(Repainted)
+            .before(WidgetSystems::Layout),
     );
 }
 
@@ -92,27 +95,22 @@ pub(super) fn spawn_parts(commands: &mut Commands, framed: Entity, page: Page) {
         display: Display::None,
         ..filling()
     };
-    commands.spawn((
-        table_bundle(),
-        ViewPart(page, View::ByYear),
-        layout::Rests,
-        hidden(),
-        placed(),
-        ChildOf(framed),
-    ));
+    let table = grid::spawn(commands, framed);
+    commands
+        .entity(table)
+        .insert((ViewPart(page, View::ByYear), layout::Rests))
+        .entry::<Node>()
+        .and_modify(|mut node| layout::set_display(&mut node, false));
     commands.spawn((
         SeriesChart::default(),
         ViewPart(page, View::StillFunded),
         hidden(),
         ChildOf(framed),
     ));
-    commands.spawn((
-        UiWidget::default(),
-        ViewPart(page, View::Endings),
-        hidden(),
-        placed(),
-        ChildOf(framed),
-    ));
+    let endings = commands
+        .spawn((ViewPart(page, View::Endings), hidden(), ChildOf(framed)))
+        .id();
+    hang(commands, endings);
 }
 
 /// The `*-view` commands: the chart pane's next view.
@@ -145,40 +143,48 @@ pub(super) fn title(view: View, runs: &Runs, label: &str) -> String {
     }
 }
 
-/// Fills the part on show from what the search found, as it is turned to:
+/// Fills the part on show from what the search found, as it is turned to -
 /// a table given its cursor while hidden scrolls that row into no area and
-/// is shown a row down, its header gone.
+/// is shown a row down, its header gone - and says the endings again as
+/// their width moves.
 fn refresh_views<R: MarketTool>(
     (tool, theme, view): (Res<Tool<R>>, Res<Theme>, Res<ViewOf<R>>),
-    mut parts: Query<(Entity, &ViewPart, Option<&mut ScrollArea>)>,
+    parts: Query<(
+        Entity,
+        &ViewPart,
+        Option<&Grid>,
+        Option<&Hung>,
+        &ComputedNode,
+    )>,
     mut funded: Query<&mut SeriesChart>,
-    mut endings: Query<&mut UiWidget>,
+    mut said_at: Local<u16>,
     mut commands: Commands,
 ) {
-    if !tool.is_changed() && !theme.is_changed() && !view.is_changed() {
-        return;
-    }
+    let is_moved = tool.is_changed() || theme.is_changed() || view.is_changed();
     let Some(found) = tool.found() else {
         return;
     };
     let runs = found.runs();
-    for (part, shown, scroll) in &mut parts {
+    for (part, shown, grid, hung, node) in &parts {
         if shown.0 != R::PAGE || shown.1 != view.0 {
             continue;
         }
-        match (shown.1, scroll) {
-            (View::ByYear, Some(mut scroll)) => {
-                fill_by_year(&mut commands, (part, &mut scroll), runs);
+        match (shown.1, grid, hung) {
+            (View::ByYear, Some(grid), _) if is_moved => {
+                fill_by_year(&mut commands, (part, grid), runs);
             }
-            (View::StillFunded, _) => {
+            (View::StillFunded, ..) if is_moved => {
                 if let Ok(mut chart) = funded.get_mut(part) {
                     *chart = still_funded(runs, &theme);
                 }
             }
-            (View::Endings, _) => {
-                if let Ok(mut widget) = endings.get_mut(part) {
-                    *widget = UiWidget::new(endings_chart(runs, &theme));
+            (View::Endings, _, Some(hung)) => {
+                let width = layout::node_cols(node);
+                if width > 0 && (is_moved || width != *said_at) {
+                    let rows = endings_rows(runs, width, &theme);
+                    say_lines(&mut commands, hung.0, rows, &theme);
                 }
+                *said_at = width;
             }
             _ => {}
         }
@@ -186,11 +192,10 @@ fn refresh_views<R: MarketTool>(
 }
 
 /// Net worth at each percentile, and the share still funded, year by year.
-fn fill_by_year(commands: &mut Commands, (table, scroll): (Entity, &mut ScrollArea), runs: &Runs) {
+fn fill_by_year(commands: &mut Commands, (table, grid): (Entity, &Grid), runs: &Runs) {
     let (header, rows) = markets::by_year(runs, MoneyForm::Compact);
     let columns = tabulate::gapped_columns((&header, &rows), GAP);
-    commands.entity(table).insert(columns);
-    tabulate::refill(commands, (table, scroll), (&header, &rows), &[0]);
+    grid::refill(commands, (table, grid), columns, (&header, &rows), &[0]);
 }
 
 /// The share of runs not yet short, year by year, as a percent.
@@ -211,9 +216,23 @@ fn still_funded(runs: &Runs, theme: &Theme) -> SeriesChart {
     chart
 }
 
-/// How many runs end in each bucket, those that fell short first.
-fn endings_chart(runs: &Runs, theme: &Theme) -> BarChart<'static> {
-    let bars: Vec<Bar<'static>> = markets::endings(runs)
+/// How many runs end in each bucket, those that fell short first, as
+/// ratatui's horizontal bar chart draws them in `width` cells, each row
+/// said as text so that both skins draw it.
+fn endings_rows(runs: &Runs, width: u16, theme: &Theme) -> Vec<Line<'static>> {
+    let endings = markets::endings(runs);
+    let rows = u16::try_from(endings.len()).unwrap_or(u16::MAX);
+    let area = Rect::new(0, 0, width, rows);
+    let mut buffer = Buffer::empty(area);
+    endings_chart(endings, theme).render(area, &mut buffer);
+    (0..rows)
+        .map(|y| row_line(&buffer, y, Rect::ZERO))
+        .collect()
+}
+
+/// The buckets as bars, the short one in the exceeded colour.
+fn endings_chart(endings: Vec<Ending>, theme: &Theme) -> BarChart<'static> {
+    let bars: Vec<Bar<'static>> = endings
         .into_iter()
         .map(|ending| {
             let bar =
@@ -229,5 +248,4 @@ fn endings_chart(runs: &Runs, theme: &Theme) -> BarChart<'static> {
         .direction(Direction::Horizontal)
         .bar_width(1)
         .bar_gap(0)
-        .label_style(theme.dimmed())
 }

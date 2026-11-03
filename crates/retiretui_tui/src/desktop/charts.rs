@@ -18,8 +18,6 @@ use bevy_window::CursorMoved;
 use plurimus::bui::bevy_picking::events::PointerClick;
 use plurimus::core::ratatui_core::buffer::Buffer;
 use plurimus::core::ratatui_core::layout::{Position, Rect};
-use plurimus::core::ratatui_core::style::Style;
-use plurimus::core::ratatui_core::text::{Line, Span};
 use plurimus::core::ratatui_core::widgets::Widget;
 use plurimus::term::{KeyModifiers, MouseButton, MouseKind, MouseMessage};
 
@@ -27,7 +25,7 @@ use super::CELL;
 use super::chrome::HAIRLINE;
 use crate::chart::SeriesChart;
 use crate::layout::{node_cols, node_rows};
-use crate::theme::{Hung, Repainted, Theme, hang, say_lines};
+use crate::theme::{Hung, Repainted, Theme, hang, row_line, say_lines};
 
 pub fn plugin(app: &mut App) {
     // The window's plugin sends it; a harness without a window does not.
@@ -111,25 +109,6 @@ fn paint_charts(
     }
 }
 
-/// Row `y` of `buffer` as spans of its cells, runs of one style together,
-/// the cells in `blank` said as spaces.
-fn row_line(buffer: &Buffer, y: u16, blank: Rect) -> Line<'static> {
-    let mut spans: Vec<Span<'static>> = Vec::new();
-    for x in buffer.area.left()..buffer.area.right() {
-        let cell = &buffer[(x, y)];
-        let (symbol, style) = if blank.contains(Position::new(x, y)) {
-            (" ", Style::default())
-        } else {
-            (cell.symbol(), cell.style())
-        };
-        match spans.last_mut() {
-            Some(last) if last.style == style => last.content.to_mut().push_str(symbol),
-            _ => spans.push(Span::styled(symbol.to_owned(), style)),
-        }
-    }
-    Line::from(spans)
-}
-
 /// The cell under a point of the window.
 fn cell_at(position: Vec2) -> Position {
     let cell = (position.max(Vec2::ZERO) / CELL).floor();
@@ -174,12 +153,6 @@ fn press_the_chart(click: On<PointerClick>, mut mouse: MessageWriter<MouseMessag
 
 #[cfg(test)]
 mod tests {
-    use bevy_camera::NormalizedRenderTarget;
-    use bevy_window::{Window, WindowRef};
-    use core::time::Duration;
-    use plurimus::bui::bevy_picking::backend::HitData;
-    use plurimus::bui::bevy_picking::events::Pointer;
-    use plurimus::bui::bevy_picking::pointer::{Location, PointerButton, PointerId};
     use plurimus::term::CursorCell;
     use plurimus::ui::ComputedWidgetArea;
 
@@ -187,7 +160,9 @@ mod tests {
     use crate::nav::Page;
     use crate::pane::Framed;
     use crate::session::YearCursor;
-    use crate::support::{ROOMY, SIZE, active_page, headless_app, overview_chart, said_by, show};
+    use crate::support::{
+        ROOMY, SIZE, active_page, click_entity, headless_app, overview_chart, said_by, show,
+    };
 
     #[test]
     fn the_chart_says_its_labels_around_a_blank_graph_the_plot_covers() {
@@ -274,22 +249,7 @@ mod tests {
         let drawn = app.world().get::<SeriesChart>(chart).unwrap().clone();
         let column = drawn.column_of(area, 2040).unwrap();
         let position = Vec2::new(f32::from(column) + 0.5, f32::from(area.y + 1) + 0.5) * CELL;
-        // The event climbs to the root and then to the pointer's window,
-        // which has to be one, or it climbs from there again.
-        let window = app.world_mut().spawn(Window::default()).id();
-        let target = WindowRef::Primary.normalize(Some(window)).unwrap();
-        let location = Location {
-            target: NormalizedRenderTarget::Window(target),
-            position,
-        };
-        app.world_mut().trigger(PointerClick {
-            entity: plot,
-            pointer: Pointer::new(PointerId::Mouse, location),
-            button: PointerButton::Primary,
-            hit: HitData::new(plot, 0.0, None, None),
-            duration: Duration::ZERO,
-            count: 1,
-        });
+        click_entity(&mut app, plot, position);
         app.update();
         app.update();
         assert_eq!(active_page(&app), Page::Ledger, "the click turned to it");

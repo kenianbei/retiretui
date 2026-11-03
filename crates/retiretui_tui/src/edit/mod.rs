@@ -49,7 +49,7 @@ pub use retiretui_client::issues::issue_words;
 pub use sort::sort;
 #[cfg(test)]
 pub use table::DomainTable;
-pub use table::{Row, Turn, table_bundle, table_keys};
+pub use table::{Row, Turn, table_keys};
 
 use super::journal;
 use super::session::{Projected, Session};

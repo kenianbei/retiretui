@@ -5,12 +5,12 @@ use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Component, Entity, Query, ResMut, Resource, With, Without};
 use bevy_ecs::system::SystemParam;
 use bevy_ui::{Display, FlexDirection, Node};
-use plurimus::ui::ScrollArea;
 
 use super::{Plans, by_year};
 use crate::chart::SeriesChart;
 use crate::command::Outcome;
 use crate::focus::PageFocus;
+use crate::grid::Grid;
 use crate::layout::{self, filling, growing};
 use crate::metric::Metric;
 use crate::nav::FocusStop;
@@ -160,7 +160,9 @@ pub(super) fn spawn(commands: &mut Commands, view: Entity) {
     let table = by_year::spawn(commands, pane);
     commands
         .entity(table)
-        .insert((ViewPart(View::ByYear), hidden()));
+        .insert(ViewPart(View::ByYear))
+        .entry::<Node>()
+        .and_modify(|mut node| layout::set_display(&mut node, false));
 }
 
 /// The parts of the view pane, and the frames they are named in.
@@ -177,7 +179,7 @@ pub(super) struct Parts<'w, 's> {
         ),
         Without<CompareChart>,
     >,
-    tables: Query<'w, 's, (Entity, &'static mut ScrollArea), With<by_year::ByYearTable>>,
+    tables: Query<'w, 's, (Entity, &'static Grid), With<by_year::ByYearTable>>,
     panes: Query<'w, 's, Entity, With<ViewPane>>,
     frames: Query<'w, 's, &'static mut Framed>,
 }
@@ -218,8 +220,8 @@ pub(super) fn refresh_views(plans: Plans, mut parts: Parts, mut commands: Comman
         }
         View::Grid => parts.draw_grid(&plans),
         View::ByYear => {
-            for (table, mut scroll) in &mut parts.tables {
-                by_year::fill(&mut commands, (table, &mut scroll), &plans);
+            for (table, grid) in &parts.tables {
+                by_year::fill(&mut commands, (table, grid), &plans);
             }
         }
     }

@@ -34,8 +34,11 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the salary's end and zero ruled - read out under the pointer and opening the
   Ledger on a click, as in the terminal. Every list the window scrolls shows the
   terminal's bar beside it, and the pointer's moves reach the shell, so what
-  lights up under it in the terminal does in the window. The tools and Compare
-  are not yet drawn there.
+  lights up under it in the terminal does in the window. It draws the tools
+  and Compare: every table - the options a search ranks, the ladder, the
+  people, the expenses, the assumptions, the years, the proposals, the records,
+  the tax table and the compared plans - as the Ledger's, the help line under
+  each page, and the market tools' Ends With view as rows of bars.
 
 ### Changed
 
@@ -48,8 +51,7 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Removed
 
-- `ctrl+c` no longer copies the row under the cursor in the Ledger's tables or
-  the editing domains' tables; it still does in the tools' and Compare's.
+- `ctrl+c` no longer copies the row under the cursor in any table.
 - A theme file can no longer name a colour by an ANSI name or palette index, nor
   set `transparent`; one that does is reported as unreadable and the default
   family is worn.

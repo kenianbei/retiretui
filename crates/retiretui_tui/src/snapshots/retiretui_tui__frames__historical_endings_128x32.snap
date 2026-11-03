@@ -6,9 +6,9 @@ expression: composed_frame(app)
 │1 Overview││2 Ledger││3 Compare││4 Tools││5 Plan│                                                                  full.toml ● 
 ┴──────────┴┴────────┴┴─────────┴╯       ╰┴──────┴──────────────────────────────────────────────────────────────────────────────
 ╭ Tools ─────────────╮╭ Assumptions ───────────────────────────────────╮╭ Start years · Money lasts in 81.9% of 155 start years╮
-│  Roth Conversions  ││                                                ││  Start years Ends with  Short in                    ▲│
-│  SSA Benefits      ││▌ Money lasts          81.9% of 155 start years ││  As planned     $1.79M     never                    █│
-│  Withdrawal Order  ││  Counts as a success  Never running short      ││▏ 1968               $0 2053 (78)                    ║│
+│  Roth Conversions  ││                                                ││  Start years Ends with  Short in                     │
+│  SSA Benefits      ││▌ Money lasts          81.9% of 155 start years ││  As planned     $1.79M     never                    ▲│
+│  Withdrawal Order  ││  Counts as a success  Never running short      ││▏ 1968               $0 2053 (78)                    █│
 │  Monte Carlo       ││  Years                1871–2025, wrapped       ││  1969               $0 2053 (78)                    ║│
 │▏ Historical        ││  Fixed return         cash, brokerage, fid-401 ││  1967               $0 2053 (78)                    ║│
 │  Spending Ceiling  ││                                                ││  1970               $0 2053 (78)                    ║│

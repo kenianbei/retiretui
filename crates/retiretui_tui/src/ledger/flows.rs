@@ -8,7 +8,6 @@ use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Component, Entity, IntoScheduleConfigs, Local, Query, With};
 use bevy_ui::{ComputedNode, Node, Val};
 use plurimus::core::ratatui_core::layout::Constraint;
-use plurimus::widgets::TableColumns;
 use retiretui_client::ledger::{AccountFlows, FLOW_COLUMNS, FLOWS, Year};
 
 use super::arrange::DetailStop;
@@ -83,7 +82,7 @@ fn account_lines(flows: &AccountFlows, has_rate: bool) -> Vec<Vec<String>> {
 /// The columns as wide as what they hold, and the cells all of them take
 /// laid out in the grid.
 fn measured(header: &[String], rows: &[Vec<String>]) -> (Vec<Constraint>, u16) {
-    let TableColumns(widths) = tabulate::columns((header, rows), FLOW_GAP);
+    let widths = tabulate::columns((header, rows), FLOW_GAP);
     let cells = grid::span(&widths);
     (widths, cells)
 }

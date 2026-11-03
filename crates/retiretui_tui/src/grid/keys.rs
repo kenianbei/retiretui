@@ -4,7 +4,7 @@
 
 use bevy_ecs::change_detection::DetectChangesMut;
 use bevy_ecs::hierarchy::Children;
-use bevy_ecs::prelude::{On, Query};
+use bevy_ecs::prelude::{On, Query, Without};
 use bevy_input::keyboard::KeyboardInput;
 use bevy_input_focus::FocusedInput;
 use bevy_ui::ComputedNode;
@@ -12,13 +12,13 @@ use plurimus::term::bevy_compat::HeldModifiers;
 use plurimus::ui::first_bound;
 use plurimus::widgets::{ActiveDescendant, TableAction, TableKeys};
 
-use super::Grid;
+use super::{Grid, Said};
 use crate::layout;
 
 pub(super) fn handle_key(
     mut input: On<FocusedInput<KeyboardInput>>,
     held: HeldModifiers,
-    mut grids: Query<(&Grid, &TableKeys, &mut ActiveDescendant)>,
+    mut grids: Query<(&Grid, &TableKeys, &mut ActiveDescendant), Without<Said>>,
     bodies: Query<(&ComputedNode, &Children)>,
 ) {
     let Ok((grid, keys, mut cursor)) = grids.get_mut(input.focused_entity) else {

@@ -69,7 +69,7 @@ fn a_narrower_pane_shows_fewer_columns() {
 #[test]
 fn columns_are_kept_while_they_fit_beside_the_cursor_and_the_swatch() {
     use plurimus::core::ratatui_core::layout::Constraint::Length;
-    let measured = plurimus::widgets::TableColumns(vec![Length(10), Length(10), Length(10)]);
+    let measured = vec![Length(10), Length(10), Length(10)];
     let beside = layout::CURSOR_COLS + crate::tabulate::SWATCH_COLS;
     let fitting = |given| crate::tabulate::fitting(&measured, given, beside);
     assert_eq!(fitting(beside + 21), 2);

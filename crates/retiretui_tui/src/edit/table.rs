@@ -8,12 +8,11 @@ use bevy_input::keyboard::{Key, KeyboardInput};
 use bevy_input_focus::FocusedInput;
 use bevy_ui::ComputedNode;
 use plurimus::bui::ComputedNodeRect;
-use plurimus::core::ratatui_core::layout::{Constraint, Rect, Size};
-use plurimus::core::ratatui_core::style::Style;
+use plurimus::core::ratatui_core::layout::{Constraint, Rect};
 use plurimus::core::ratatui_core::text::Line;
 use plurimus::term::bevy_compat::HeldModifiers;
-use plurimus::ui::{KeyBinding, ScrollArea, UiStyle, first_bound};
-use plurimus::widgets::{ActiveDescendant, TableAction, TableKeys, TableSelection};
+use plurimus::ui::{KeyBinding, UiStyle, first_bound};
+use plurimus::widgets::{ActiveDescendant, TableAction, TableKeys};
 
 use super::domain::{ListOps, Ops};
 use super::draft::Draft;
@@ -80,21 +79,6 @@ pub fn table_keys() -> TableKeys {
         )
     });
     keys
-}
-
-/// A plurimus table, for the pages not yet drawn as grids. The columns
-/// are left unshared until the first rebuild measures what they hold; the
-/// scroll area's content size is left at zero, which the widget crate
-/// keeps in step with the rows.
-pub fn table_bundle() -> impl bevy_ecs::bundle::Bundle {
-    (
-        plurimus::widgets::table([]),
-        TableSelection::Row,
-        layout::table_cursor(),
-        table_keys(),
-        plurimus::widgets::TableStripe(Style::new()),
-        ScrollArea::new(Size::default()),
-    )
 }
 
 /// What the rows are drawn from: the draft they stand for, the surface on

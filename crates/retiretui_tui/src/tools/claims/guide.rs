@@ -9,13 +9,12 @@ use bevy_ecs::prelude::{
 };
 use bevy_ecs::system::SystemParam;
 use bevy_input_focus::InputFocus;
-use plurimus::core::UiWidget;
 use retiretui_client::searches::claims::{ABOUT, NOBODY, PersonAction, is_claimed, typed_monthly};
 use retiretui_engine::optimize::ClaimSearch;
 use retiretui_engine::plan::{Item, Person};
 
+use super::super::Help;
 use super::super::options::OptionsTable;
-use super::super::{HelpLine, show_help};
 use super::people::{HeldClaims, PeopleTable, PersonCursor};
 use crate::command::{self, Keymap, Outcome};
 use crate::edit::Draft;
@@ -138,7 +137,7 @@ fn say_help(
     keyboard: Keyboard,
     theme: Res<Theme>,
     mut said: Local<String>,
-    mut lines: Query<(&mut UiWidget, &HelpLine)>,
+    mut help: Help,
 ) {
     let (draft, cursor, keymap, shown) = state;
     let is_moved = draft.is_changed() || cursor.is_changed() || keyboard.focus.is_changed();
@@ -155,7 +154,7 @@ fn say_help(
     if *said == text && !is_restyled {
         return;
     }
-    show_help(&mut lines, Page::SsaBenefits, &text, &theme);
+    help.show(Page::SsaBenefits, &text, &theme);
     *said = text;
 }
 

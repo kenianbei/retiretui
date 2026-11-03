@@ -19,7 +19,6 @@ use bevy_ecs::prelude::{
     Commands, Entity, IntoScheduleConfigs, Query, Res, ResMut, Resource, With,
 };
 use bevy_ecs::system::SystemParam;
-use plurimus::core::UiWidget;
 use plurimus::widgets::WidgetSystems;
 use retiretui_engine::plan::{Dollars, Plan};
 use retiretui_engine::project::Projection;
@@ -38,7 +37,7 @@ use super::nav::{self, Page};
 use super::session::{self, Session, Shown};
 use super::success::{self, Successes};
 use super::theme::{Repainted, Theme};
-use super::tools::{self, HelpLine};
+use super::tools;
 use super::watch;
 
 use follow::ComparedDoc;
@@ -62,7 +61,8 @@ pub fn plugin(app: &mut App) {
                 views::refresh_views,
                 session::track_cursor::<by_year::ByYearTable>,
             )
-                .chain(),
+                .chain()
+                .before(Repainted),
             show_help,
             (plans::refresh_plans, changes::refresh_changes)
                 .chain()
@@ -302,17 +302,17 @@ impl Plans<'_> {
     }
 }
 
-fn show_help(theme: Res<Theme>, keymap: Res<Keymap>, mut lines: Query<(&mut UiWidget, &HelpLine)>) {
+fn show_help(theme: Res<Theme>, keymap: Res<Keymap>, mut help: tools::Help) {
     if !theme.is_changed() {
         return;
     }
     let adds = keymap.label_named(command::COMPARE_WITH, 0);
-    let help = if adds.is_empty() {
+    let text = if adds.is_empty() {
         format!("{HELP}.")
     } else {
         format!("{HELP}: {adds} adds one.")
     };
-    tools::show_help(&mut lines, Page::Compare, &help, &theme);
+    help.show(Page::Compare, &text, &theme);
 }
 
 /// Stops comparing the highlighted plan; the document is not one.

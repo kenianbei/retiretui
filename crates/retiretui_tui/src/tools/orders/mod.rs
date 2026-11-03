@@ -14,7 +14,6 @@ use bevy_ecs::prelude::{
     Commands, In, IntoScheduleConfigs, Local, Query, Res, ResMut, With, World,
 };
 use bevy_input_focus::InputFocus;
-use plurimus::core::UiWidget;
 use retiretui_client::searches::{option_cells, orders};
 use retiretui_engine::optimize::{
     OrderCandidate, OrderSearch, apply_order, optimize_order, order_overlay,
@@ -22,7 +21,7 @@ use retiretui_engine::optimize::{
 use retiretui_engine::plan::{Plan, TreatmentClass};
 
 use super::options::{CURRENT_PLAN, Laid, OptionsTable, spawn_table};
-use super::{Found, HelpLine, NOTHING_SEARCHED_YET, Tool, ToolPage, show_help, write, writes_it};
+use super::{Found, Help, NOTHING_SEARCHED_YET, Tool, ToolPage, write, writes_it};
 use crate::command::{Keymap, Outcome, TAKE_ORDER, WRITE_ORDER};
 use crate::confirm::{Answer, Confirm};
 use crate::documents::{Browsing, Pickers};
@@ -143,7 +142,7 @@ fn say_help(
     (focus, shown, theme): (Res<InputFocus>, ShownSurface, Res<Theme>),
     keymap: Res<Keymap>,
     options: Query<(), With<OptionsTable<OrderSearch>>>,
-    mut lines: Query<(&mut UiWidget, &HelpLine)>,
+    mut help: Help,
 ) {
     if !(focus.is_changed() || shown.is_changed() || theme.is_changed()) {
         return;
@@ -154,7 +153,7 @@ fn say_help(
         }
         _ => orders::ABOUT.to_owned(),
     };
-    show_help(&mut lines, Page::WithdrawalOrder, &text, &theme);
+    help.show(Page::WithdrawalOrder, &text, &theme);
 }
 
 /// The `take-order` command: asks before restating the plan's withdrawal

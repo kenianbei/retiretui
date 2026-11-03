@@ -10,7 +10,9 @@ use bevy_ui::{Node, Overflow, PositionType, Val};
 use plurimus::bui::bevy_text::{
     FontWeight, TextBackgroundColor, TextColor, TextFont, TextLayout, TextSpan,
 };
-use plurimus::core::ratatui_core::style::Modifier;
+use plurimus::core::ratatui_core::buffer::Buffer;
+use plurimus::core::ratatui_core::layout::{Position, Rect};
+use plurimus::core::ratatui_core::style::{Modifier, Style};
 use plurimus::core::ratatui_core::text::{Line, Span};
 
 use super::{Theme, paper};
@@ -80,6 +82,25 @@ pub fn say(commands: &mut Commands, root: Entity, line: Line<'static>, theme: &T
                 .insert_if(TextBackgroundColor(paper(style.bg)), || style.bg.is_some());
         }
     });
+}
+
+/// Row `y` of `buffer` as spans of its cells, runs of one style together,
+/// the cells in `blank` said as spaces: what ratatui drew, said as text.
+pub fn row_line(buffer: &Buffer, y: u16, blank: Rect) -> Line<'static> {
+    let mut spans: Vec<Span<'static>> = Vec::new();
+    for x in buffer.area.left()..buffer.area.right() {
+        let cell = &buffer[(x, y)];
+        let (symbol, style) = if blank.contains(Position::new(x, y)) {
+            (" ", Style::default())
+        } else {
+            (cell.symbol(), cell.style())
+        };
+        match spans.last_mut() {
+            Some(last) if last.style == style => last.content.to_mut().push_str(symbol),
+            _ => spans.push(Span::styled(symbol.to_owned(), style)),
+        }
+    }
+    Line::from(spans)
 }
 
 fn said(span: Span<'static>, theme: &Theme) -> (TextSpan, TextColor, TextFont) {
