@@ -144,7 +144,19 @@ impl SeriesChart {
 
     /// Where ratatui draws the graph: after the widest y label - or the first
     /// x label less a character, at most a third of the width - and the axis.
-    fn graph(&self, area: Rect) -> Option<Rect> {
+    /// The cells the graph and its axis take of `area`: the column beside
+    /// the graph and the row under it.
+    pub(crate) fn plot(&self, area: Rect) -> Option<Rect> {
+        let graph = self.graph(area)?;
+        Some(Rect::new(
+            graph.x - 1,
+            graph.y,
+            graph.width + 1,
+            graph.height + 1,
+        ))
+    }
+
+    pub(crate) fn graph(&self, area: Rect) -> Option<Rect> {
         let y_labels = self
             .y_labels
             .iter()
@@ -180,7 +192,7 @@ impl SeriesChart {
         self.column_in(self.graph(area)?, year)
     }
 
-    fn column_in(&self, graph: Rect, year: i16) -> Option<u16> {
+    pub(crate) fn column_in(&self, graph: Rect, year: i16) -> Option<u16> {
         let [first, last] = self.x_bounds;
         let along = (f64::from(year) - first) / (last - first);
         (0.0..=1.0)

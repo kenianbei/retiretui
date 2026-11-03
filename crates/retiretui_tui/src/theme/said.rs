@@ -3,9 +3,10 @@
 //! terminal's cells by plurimus and in a window by bevy's text.
 
 use bevy_ecs::bundle::Bundle;
-use bevy_ecs::hierarchy::Children;
-use bevy_ecs::prelude::{Commands, Entity};
+use bevy_ecs::hierarchy::{ChildOf, Children};
+use bevy_ecs::prelude::{Commands, Component, Entity};
 use bevy_ui::widget::Text;
+use bevy_ui::{Node, Overflow, PositionType, Val};
 use plurimus::bui::bevy_text::{
     FontWeight, TextBackgroundColor, TextColor, TextFont, TextLayout, TextSpan,
 };
@@ -18,6 +19,51 @@ use super::{Theme, paper};
 #[must_use]
 pub fn text() -> impl Bundle {
     (Text::default(), TextLayout::default().with_no_wrap())
+}
+
+/// The text hung over a node by [`hang`].
+#[derive(Component, Debug)]
+pub struct Hung(pub Entity);
+
+/// Hangs a text over `holder`, placed over its whole box and clipped to
+/// it, so that what it says never sizes the holder: a text node measures
+/// its longest line, which a pane sharing a band would widen to hold,
+/// where a paragraph drawn into an area was cut at its edge.
+pub fn hang(commands: &mut Commands, holder: Entity) -> Entity {
+    let hung = commands
+        .spawn((
+            text(),
+            Node {
+                position_type: PositionType::Absolute,
+                left: Val::ZERO,
+                top: Val::ZERO,
+                right: Val::ZERO,
+                bottom: Val::ZERO,
+                ..Node::default()
+            },
+            ChildOf(holder),
+        ))
+        .id();
+    commands
+        .entity(holder)
+        .insert(Hung(hung))
+        .entry::<Node>()
+        .or_default()
+        .and_modify(|mut node| node.overflow = Overflow::clip());
+    hung
+}
+
+/// Makes `root`'s spans say `lines`, one under another: bui breaks a
+/// span at a newline, so the rows are one text.
+pub fn say_lines(commands: &mut Commands, root: Entity, lines: Vec<Line<'static>>, theme: &Theme) {
+    let mut spans = Vec::new();
+    for (at, line) in lines.into_iter().enumerate() {
+        if at > 0 {
+            spans.push(Span::raw("\n"));
+        }
+        spans.extend(line.spans);
+    }
+    say(commands, root, Line::from(spans), theme);
 }
 
 /// Makes `root`'s spans say `line`, replacing whatever it said before;

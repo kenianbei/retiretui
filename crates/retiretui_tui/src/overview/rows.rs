@@ -9,12 +9,10 @@ use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Changed, Commands, Component, Entity, On, Query, Res, ResMut, With};
 use bevy_ecs::system::SystemParam;
 use bevy_input_focus::InputFocus;
-use bevy_ui::Node;
-use plurimus::core::UiWidget;
+use bevy_ui::{Node, Val};
 use plurimus::core::ratatui_core::style::Style;
-use plurimus::core::ratatui_core::text::Line;
+use plurimus::core::ratatui_core::text::{Line, Span};
 use plurimus::ui::{ComputedWidgetArea, ScrollArea};
-use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
 use plurimus::widgets::{ActiveDescendant, ValueChange};
 
 use super::attention;
@@ -23,12 +21,12 @@ use super::{Viewed, totals};
 use crate::command::Outcome;
 use crate::edit::{Draft, Turn, page_of};
 use crate::hints::Hints;
-use crate::layout::{self, fixed, placed};
+use crate::layout::{self, fixed};
 use crate::nav::Page;
 use crate::pane::{Framed, Pane};
 use crate::present;
 use crate::session::{LedgerRun, RowYear, Shown, YearCursor};
-use crate::theme::Theme;
+use crate::theme::{Hung, Theme, hang, say, say_lines};
 use crate::tools::ladders;
 use retiretui_client::overview::{ATTENTION, MILESTONES, OVER_THE_PLAN, RESTS_ON, Row};
 use retiretui_client::searches::overview::COULD_DO_BETTER;
@@ -194,13 +192,10 @@ pub(super) fn spawn(commands: &mut Commands, band: Entity, lists: &[List]) {
             .insert(leads)
             .observe(handle_chosen);
         if list == List::Totals {
-            commands.spawn((
-                BeneathLines,
-                UiWidget::default(),
-                fixed(0.0),
-                placed(),
-                ChildOf(pane),
-            ));
+            let beneath = commands
+                .spawn((BeneathLines, fixed(0.0), ChildOf(pane)))
+                .id();
+            hang(commands, beneath);
         }
     }
 }
@@ -263,26 +258,27 @@ pub(super) fn refresh(
 pub(super) fn read_beneath(
     lists: Query<(&ActiveDescendant, &ChildOf, &ComputedWidgetArea), Changed<ActiveDescendant>>,
     rows: Query<&Beneath>,
-    mut lines: Query<(&mut UiWidget, &mut Node, &ChildOf), With<BeneathLines>>,
+    mut lines: Query<(&Hung, &mut Node, &ChildOf), With<BeneathLines>>,
     theme: Res<Theme>,
+    mut commands: Commands,
 ) {
     for (on, pane, area) in &lists {
         let said = on.0.and_then(|row| rows.get(row).ok());
-        for (mut widget, mut node, parent) in &mut lines {
+        for (Hung(hung), mut node, parent) in &mut lines {
             if parent.parent() != pane.parent() {
                 continue;
             }
             let Some(Beneath(said)) = said else {
-                *node = fixed(0.0);
+                node.height = Val::Rem(0.0);
+                say(&mut commands, *hung, Line::default(), &theme);
                 continue;
             };
             let wrapped = layout::wrapped(said, area.0.width.saturating_sub(INDENT), "");
-            let wrapped = wrapped.into_iter();
-            let lines: Vec<Line<'static>> = wrapped
-                .map(|line| Line::styled(format!("  {line}"), theme.dimmed()))
+            let lines = (wrapped.into_iter())
+                .map(|line| Line::from(Span::styled(format!("  {line}"), theme.dimmed())))
                 .collect();
-            *node = fixed(BENEATH_ROWS);
-            *widget = UiWidget::new(Paragraph::new(lines));
+            node.height = Val::Rem(BENEATH_ROWS);
+            say_lines(&mut commands, *hung, lines, &theme);
         }
     }
 }

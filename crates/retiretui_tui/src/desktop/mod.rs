@@ -4,9 +4,12 @@
 //! each.
 
 mod areas;
+mod bars;
 mod browse;
+mod charts;
 mod chrome;
 mod fields;
+mod material;
 mod menus;
 mod overlays;
 mod widgets;
@@ -156,11 +159,14 @@ fn skin(app: &mut App) {
     app.insert_resource(RemSize(CELL.y));
     app.add_plugins((
         areas::plugin,
+        bars::plugin,
         browse::plugin,
+        charts::plugin,
         chrome::plugin,
         widgets::plugin,
         menus::plugin,
         fields::plugin,
+        material::plugin,
         overlays::plugin,
     ));
     app.add_systems(Startup, spawn_camera);

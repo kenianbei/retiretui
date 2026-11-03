@@ -171,7 +171,6 @@ fn enter_on_double_click(
 #[cfg(test)]
 mod tests {
     use bevy_ecs::hierarchy::Children;
-    use plurimus::bui::bevy_text::TextSpan;
     use plurimus::bui::bevy_ui_widgets::TextInput as Input;
     use plurimus::core::UiArea;
     use plurimus::core::ratatui_core::layout::Rect;
@@ -180,7 +179,8 @@ mod tests {
 
     use super::*;
     use crate::support::{
-        Headless, SIZE, headless_app_at, is_browsing, press_key, scratch_workspace, type_text,
+        Headless, SIZE, headless_app_at, is_browsing, press_key, said_by, scratch_workspace,
+        type_text,
     };
 
     /// The window skin over a shell launched on a directory, which opens
@@ -208,17 +208,6 @@ mod tests {
             Some(UiArea::Fixed(rect)) => *rect,
             other => panic!("{entity} has no fixed area: {other:?}"),
         }
-    }
-
-    fn said_by(app: &Headless, entity: Entity) -> String {
-        let world = app.world();
-        world
-            .get::<Children>(entity)
-            .into_iter()
-            .flatten()
-            .filter_map(|&span| world.get::<TextSpan>(span))
-            .map(|span| span.0.as_str())
-            .collect()
     }
 
     fn texts<'a>(line: &'a Line<'a>) -> Vec<&'a str> {
@@ -276,12 +265,12 @@ mod tests {
             .to_string();
         assert!(value.ends_with("pl"), "{value}");
         assert_eq!(
-            said_by(&app, parts.field),
+            said_by(app.world(), parts.field),
             format!("{value} "),
             "the caret past the end"
         );
         let prompt = app.world().get::<Prompt>(picker).unwrap().0;
-        assert!(!said_by(&app, prompt).is_empty());
+        assert!(!said_by(app.world(), prompt).is_empty());
     }
 
     #[test]

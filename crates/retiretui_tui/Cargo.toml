@@ -26,7 +26,9 @@ desktop = [
     "dep:bevy_diagnostic",
     "dep:bevy_image",
     "dep:bevy_mesh",
+    "dep:bevy_reflect",
     "dep:bevy_render",
+    "dep:bevy_shader",
     "dep:bevy_sprite_render",
     "dep:bevy_text",
     "dep:bevy_transform",
@@ -49,7 +51,9 @@ bevy_window = { version = "0.20.0", default-features = false, features = ["std"]
 bevy_ecs = "0.20.0"
 bevy_math = { version = "0.20.0", default-features = false }
 bevy_mesh = { version = "0.20.0", optional = true }
+bevy_reflect = { version = "0.20.0", optional = true }
 bevy_render = { version = "0.20.0", optional = true }
+bevy_shader = { version = "0.20.0", optional = true }
 bevy_sprite_render = { version = "0.20.0", optional = true }
 bevy_text = { version = "0.20.0", default-features = false, optional = true }
 bevy_input_focus = { version = "0.20.0", default-features = false, features = ["std", "keyboard"] }
@@ -82,6 +86,7 @@ tachyonfx = { version = "0.25.2", default-features = false, features = ["std", "
 
 [dev-dependencies]
 insta = "1.48.0"
+naga = { version = "30.0.1", features = ["wgsl-in"] }
 retiretui_client = { workspace = true, features = ["bevy", "testing"] }
 
 [lints]

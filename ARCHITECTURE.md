@@ -242,10 +242,12 @@ depends on UI.
   shared pages: a terminal's cells, or a window's pixels - bevy's own renderer
   over an embedded monospace face, every length still a cell so the shell lays
   itself out the same, the chrome said as text where both can read it and each
-  skin drawing its own boxes, lines and tabs on the shared markers, the window
-  answering a click where the terminal answers a press. Behind one feature it
-  holds the launcher that runs it in a terminal and the command that lists its
-  themes; behind another, the launcher that opens the window.
+  skin drawing its own boxes, lines, tabs and chart plots on the shared markers -
+  the window's plot a shader over the chart's points - and the window saying the
+  pointer's moves and a click on a plot to the shell as the terminal's mouse
+  says them, answering every other click itself. Behind one feature it holds the
+  launcher that runs it in a terminal and the command that lists its themes;
+  behind another, the launcher that opens the window.
 - `retiretui` - the user-facing binary, composing each interface's clap
   subcommands into one command: the command line's from `retiretui_cli`, `tui`
   and `theme` from `retiretui_tui`, and `mcp` from `retiretui_mcp`; each is a

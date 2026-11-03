@@ -20,9 +20,32 @@ use crate::theme::{Theme, say, text};
 /// What the bar was last drawn for: the rows there are, the rows shown
 /// and the row at the top; nothing while every row fits.
 #[derive(Component, Debug, Default, PartialEq, Eq)]
-pub(super) struct Bar(Option<(u16, u16, u16)>);
+pub(crate) struct Bar(Option<(u16, u16, u16)>);
 
-pub(super) fn column() -> Node {
+impl Bar {
+    /// Says the bar again down `column` where `rows`, `shown` or `top`
+    /// moved since it was last said: a glyph a row, blank where every
+    /// row fits.
+    pub(crate) fn redraw(
+        &mut self,
+        (rows, shown, top): (u16, u16, u16),
+        column: Entity,
+        commands: &mut Commands,
+        theme: &Theme,
+    ) {
+        let now = (rows > shown).then_some((rows, shown, top));
+        if self.0 == now {
+            return;
+        }
+        self.0 = now;
+        let glyphs = now.map_or_else(Vec::new, |(rows, shown, top)| {
+            glyphs(rows - shown, shown, top)
+        });
+        say_glyphs(commands, column, glyphs, theme);
+    }
+}
+
+pub(crate) fn column() -> Node {
     Node {
         width: Val::Em(f32::from(SCROLL_BAR_COLS)),
         flex_shrink: 0.0,
@@ -47,8 +70,7 @@ pub(crate) fn glyphs(content: u16, shown: u16, top: u16) -> Vec<String> {
         .collect()
 }
 
-/// Redraws each bar whose rows, height or offset moved: a glyph node a
-/// row, blank where every row fits.
+/// Redraws each bar whose rows, height or offset moved.
 pub(super) fn draw_bars(
     theme: Res<Theme>,
     mut grids: Query<(&Grid, &mut Bar)>,
@@ -66,15 +88,7 @@ pub(super) fn draw_bars(
         );
         let scrolled = body.scroll_position.y * body.inverse_scale_factor;
         let top = (scrolled / body.rem_size.0).round() as u16;
-        let now = (rows > shown).then_some((rows, shown, top));
-        if bar.0 == now {
-            continue;
-        }
-        bar.0 = now;
-        let glyphs = now.map_or_else(Vec::new, |(rows, shown, top)| {
-            glyphs(rows - shown, shown, top)
-        });
-        say_glyphs(&mut commands, grid.bar, glyphs, &theme);
+        bar.redraw((rows, shown, top), grid.bar, &mut commands, &theme);
     }
 }
 

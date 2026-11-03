@@ -1,6 +1,7 @@
 use bevy_app::App;
 use bevy_ecs::prelude::Entity;
 use bevy_input_focus::InputFocus;
+use plurimus::core::ratatui_core::style::Modifier;
 use plurimus::term::KeyCode;
 
 use crate::edit::Row;
@@ -10,9 +11,9 @@ use crate::pane::Framed;
 use crate::session::{Basis, YearCursor};
 use crate::success::Successes;
 use crate::support::{
-    Headless, ROOMY, SIZE, TEST_PLAN, active_page, commit_edit, composed_frame, headless_app,
-    headless_app_at, ledger_year, press_key, redrawn, said, scratch_full_plan, scratch_plan,
-    searched_app, show, test_projected,
+    Headless, ROOMY, SIZE, TEST_PLAN, active_page, cell_of, cell_style, commit_edit,
+    composed_frame, headless_app, headless_app_at, ledger_year, press_key, redrawn, said,
+    scratch_full_plan, scratch_plan, searched_app, show, test_projected, worn,
 };
 use crate::tools::settle_all;
 
@@ -243,12 +244,27 @@ fn enter_on_the_chart_opens_the_ledger() {
 }
 
 #[test]
+fn the_tiles_are_said_bold() {
+    let mut app = headless_app(SIZE);
+    app.update();
+    let (column, row) = cell_of(&app, "Never short");
+    let style = cell_style(&app, column, row);
+    assert!(style.add_modifier.contains(Modifier::BOLD), "{style:?}");
+}
+
+#[test]
 fn a_tight_pane_reads_the_highlighted_total_s_make_up_beneath_the_list() {
     let mut app = headless_app(SIZE);
     let totals = retiretui_client::overview::View::new(&test_projected(), false).totals;
     hold(&mut app, "Over the plan");
     let frame = redrawn(&mut app);
     assert!(frame.contains(&totals[0].made_of), "{frame}");
+    let (column, row) = cell_of(&app, &totals[0].made_of);
+    assert_eq!(
+        cell_style(&app, column, row).fg,
+        worn(&app).dimmed().fg,
+        "read out quietly"
+    );
     assert!(
         !frame.contains(&totals[1].made_of),
         "one at a time: {frame}"

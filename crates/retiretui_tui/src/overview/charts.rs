@@ -6,7 +6,6 @@
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Component, Entity, On, Query, Res, ResMut, Resource, With};
-use plurimus::core::UiWidget;
 use plurimus::core::ratatui_core::style::{Color, Style};
 use plurimus::core::ratatui_core::text::Span;
 use plurimus::ui::{ComputedWidgetArea, PointerPress};
@@ -18,13 +17,13 @@ use crate::chart::{Legend, Mark, Series, SeriesChart, Shade};
 use crate::command::Outcome;
 use crate::edit::Turn;
 use crate::hints::Hints;
-use crate::layout::{filling, fixed, placed};
+use crate::layout::{filling, fixed};
 use crate::nav::{FocusStop, Page};
 use crate::pane::{Framed, Pane};
 use crate::present;
 use crate::session::{LedgerRun, Shown};
 use crate::success::Successes;
-use crate::theme::Theme;
+use crate::theme::{Theme, hang};
 use crate::tools::markets::chart::{INNER, OUTER, band};
 use crate::tools::{EnterRuns, handle_enter};
 
@@ -57,13 +56,10 @@ pub(super) fn spawn(commands: &mut Commands, band: Entity, share: f32) {
         ))
         .observe(handle_enter)
         .observe(open_ledger);
-    commands.spawn((
-        ChartKey::default(),
-        UiWidget::default(),
-        fixed(1.0),
-        placed(),
-        ChildOf(pane),
-    ));
+    let key = commands
+        .spawn((ChartKey::default(), fixed(1.0), ChildOf(pane)))
+        .id();
+    hang(commands, key);
 }
 
 /// The `overview-chart` command: the chart's next view.

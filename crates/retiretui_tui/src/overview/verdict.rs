@@ -7,21 +7,19 @@ use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Component, Entity, Query, Res};
 use bevy_ui::{FlexDirection, Node};
-use plurimus::core::UiWidget;
 use plurimus::core::ratatui_core::style::{Modifier, Style};
 use plurimus::core::ratatui_core::text::Line;
-use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
 use retiretui_client::overview::{STRIP, View};
 use retiretui_client::searches::markets::{self, Markets};
 use retiretui_engine::market::MonteCarlo;
 
 use crate::hints::Hints;
-use crate::layout::{fixed, growing, placed};
+use crate::layout::{fixed, growing};
 use crate::nav::{FocusStop, Page};
 use crate::pane::{BORDERS, Pane};
 use crate::session::Projected;
 use crate::success::{Success, Successes};
-use crate::theme::Theme;
+use crate::theme::{Hung, Theme, hang, say};
 use crate::tools::markets::zone_style;
 use crate::tools::{EnterRuns, handle_enter};
 
@@ -45,16 +43,15 @@ pub(super) fn spawn(commands: &mut Commands, view: Entity) {
     let strip = commands.spawn((strip, ChildOf(view))).id();
     for (place, label) in STRIP.into_iter().enumerate() {
         let framed = Pane::new(label).sharing(1.0).spawn(commands, strip);
-        let mut tile = commands.spawn((
-            TileAt(place),
-            growing(),
-            UiWidget::default(),
-            placed(),
-            ChildOf(framed),
-        ));
+        let tile = commands
+            .spawn((TileAt(place), growing(), ChildOf(framed)))
+            .id();
+        hang(commands, tile);
         if place == SUCCESS_AT {
             let page = Page::MonteCarlo.label();
-            tile.insert((FocusStop, EnterRuns(page), Hints(&[("⏎", "markets")])))
+            commands
+                .entity(tile)
+                .insert((FocusStop, EnterRuns(page), Hints(&[("⏎", "markets")])))
                 .observe(handle_enter);
         }
     }
@@ -67,11 +64,11 @@ struct Tile {
 }
 
 impl Tile {
-    fn paragraph(&self) -> Paragraph<'static> {
-        Paragraph::new(Line::styled(
+    fn line(&self) -> Line<'static> {
+        Line::styled(
             format!(" {}", self.value),
             self.style.add_modifier(Modifier::BOLD),
-        ))
+        )
     }
 }
 
@@ -108,13 +105,14 @@ fn tiles(view: &View, success: (Success, String), theme: &Theme) -> [Tile; TILE_
     .map(|(value, style)| Tile { value, style })
 }
 
-/// Rewrites each tile whenever what it reads moves: the page as the
+/// Says each tile again whenever what it reads moves: the page as the
 /// client says it and the theme for every one, and the Success tile also
 /// its answer.
 pub(super) fn refresh(
     (viewed, projected, theme): (Res<Viewed>, Res<Projected>, Res<Theme>),
     successes: Res<Successes>,
-    mut parts: Query<(&TileAt, &mut UiWidget)>,
+    parts: Query<(&Hung, &TileAt)>,
+    mut commands: Commands,
 ) {
     let is_moved = viewed.is_changed() || theme.is_changed();
     let is_success_moved = is_moved || successes.is_changed();
@@ -126,14 +124,14 @@ pub(super) fn refresh(
     }
     let success = successes.of(&projected.plan);
     let tiles = tiles(view, (success, success_text(success, &projected)), &theme);
-    for (TileAt(place), mut widget) in &mut parts {
-        let is_stale = if *place == SUCCESS_AT {
+    for (Hung(tile), &TileAt(place)) in &parts {
+        let is_stale = if place == SUCCESS_AT {
             is_success_moved
         } else {
             is_moved
         };
         if is_stale {
-            *widget = UiWidget::new(tiles[*place].paragraph());
+            say(&mut commands, *tile, tiles[place].line(), &theme);
         }
     }
 }

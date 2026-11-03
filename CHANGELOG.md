@@ -22,13 +22,19 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the pointer. It draws the Plan tab's editing domains the same way: each
   domain's table with its read-out beside it, a row opened by a click and a
   column sorted by a click on its header, and the form over it - its labels,
-  headings and help, a text field typed into, a flag ticked by space or a
-  click, a slider moved by the arrows or a press on its track, and a select's
-  menu opened over the form and picked from by key or click - scrolled with a
-  bar as the terminal's is. It draws what finds and makes a document: the file
-  picker, its path typed, completed and climbed as in the terminal, its listing
-  scrolled with the cursor and a row chosen by a double click; the new-plan
-  form; and the issues panel, scrolled with its cursor. The tools and Compare
+  headings and help, a text field typed into, a flag ticked by space or a click,
+  a slider moved by the arrows or a press on its track, and a select's menu
+  opened over the form and picked from by key or click - scrolled with a bar as
+  the terminal's is. It draws what finds and makes a document: the file picker,
+  its path typed, completed and climbed as in the terminal, its listing scrolled
+  with the cursor and a row chosen by a double click; the new-plan form; and the
+  issues panel, scrolled with its cursor. It draws the Overview: the verdict
+  tiles, the three lists, and the chart - its labels and key as text, its plot
+  through bevy's renderer, each band filled flat in its colour under the lines,
+  the salary's end and zero ruled - read out under the pointer and opening the
+  Ledger on a click, as in the terminal. Every list the window scrolls shows the
+  terminal's bar beside it, and the pointer's moves reach the shell, so what
+  lights up under it in the terminal does in the window. The tools and Compare
   are not yet drawn there.
 
 ### Changed

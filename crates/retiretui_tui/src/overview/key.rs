@@ -2,21 +2,21 @@
 //! pointer what each reads that year.
 
 use bevy_ecs::change_detection::DetectChanges;
-use bevy_ecs::prelude::{Component, Query, Ref, Res, With};
-use plurimus::core::UiWidget;
+use bevy_ecs::prelude::{Commands, Component, Query, Ref, Res, With};
+use bevy_ui::ComputedNode;
 use plurimus::core::ratatui_core::style::Style;
 use plurimus::core::ratatui_core::text::{Line, Span};
 use plurimus::term::CursorCell;
 use plurimus::ui::ComputedWidgetArea;
-use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
 use retiretui_client::overview::ChartLine;
 use retiretui_client::present::money;
 use retiretui_engine::plan::Dollars;
 
 use super::charts::OverviewChart;
 use crate::chart::{LINE_KEY, SeriesChart};
+use crate::layout::node_cols;
 use crate::present::compact_money;
-use crate::theme::Theme;
+use crate::theme::{Hung, Theme, say};
 
 /// How many of its glyph a mark is keyed by.
 const KEY_SWATCH: usize = 2;
@@ -63,30 +63,31 @@ pub(crate) struct ChartKey {
     pub(super) waits_on: String,
 }
 
-/// Rewrites the key whenever what it names moves or the pointer does: its
-/// marks' names, and under the pointer what each reads that year, in full
-/// where the line holds them and compact where it does not.
+/// Says the key again whenever what it names moves or the pointer does:
+/// its marks' names, and under the pointer what each reads that year, in
+/// full where the line holds them and compact where it does not.
 pub(super) fn read_key(
     cursor: Res<CursorCell>,
     charts: Query<(&SeriesChart, &ComputedWidgetArea), With<OverviewChart>>,
-    mut keys: Query<(Ref<ChartKey>, &ComputedWidgetArea, &mut UiWidget)>,
+    keys: Query<(Ref<ChartKey>, &ComputedNode, &Hung)>,
     theme: Res<Theme>,
+    mut commands: Commands,
 ) {
     let is_moved = cursor.is_changed() || theme.is_changed();
     let year = charts.iter().next().and_then(|(chart, area)| {
         let cell = cursor.0?;
         chart.year_at(area.0, cell)
     });
-    for (key, area, mut widget) in &mut keys {
+    for (key, computed, Hung(hung)) in &keys {
         if !is_moved && !key.is_changed() {
             continue;
         }
         let line = if key.keyed.is_empty() {
             Line::styled(key.waits_on.clone(), theme.dimmed())
         } else {
-            fitted(&key.keyed, year, area.0.width)
+            fitted(&key.keyed, year, node_cols(computed))
         };
-        *widget = UiWidget::new(Paragraph::new(line));
+        say(&mut commands, *hung, line, &theme);
     }
 }
 
