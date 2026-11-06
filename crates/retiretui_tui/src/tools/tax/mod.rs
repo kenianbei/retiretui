@@ -122,7 +122,7 @@ fn list_sections(
         state: picks.state.clone(),
     };
     let said = year_tables(&draft.plan, &session.tables, &view);
-    help.show(Page::TaxTables, said.about, &theme);
+    help.show(Page::TaxTables, said.about);
     let kept = cursor.0.min(said.sections.len().saturating_sub(1));
     for list in &lists {
         commands.entity(list).despawn_related::<Children>();
@@ -156,7 +156,7 @@ fn follow_cursor(
 /// Tables the highlighted section: its columns over its rows, or its note.
 fn show_section(
     (tabled, cursor): (Res<Tabled>, Res<SectionCursor>),
-    sections: Query<(Entity, &Grid, &ChildOf), With<SectionTable>>,
+    sections: Query<(&Grid, &ChildOf), With<SectionTable>>,
     mut panes: Query<&mut Framed>,
     mut commands: Commands,
 ) {
@@ -169,30 +169,24 @@ fn show_section(
     let Some(section) = shown.sections.get(cursor.0) else {
         return;
     };
-    for (table, grid, &ChildOf(pane)) in &sections {
-        fill_section(&mut commands, (table, grid), section);
+    for (grid, &ChildOf(pane)) in &sections {
+        fill_section(&mut commands, grid, section);
         if let Ok(mut framed) = panes.get_mut(pane) {
             Framed::retitle(&mut framed, &title(shown, section));
         }
     }
 }
 
-fn fill_section(commands: &mut Commands, (table, grid): (Entity, &Grid), section: &TaxSection) {
+fn fill_section(commands: &mut Commands, grid: &Grid, section: &TaxSection) {
     if let Some(note) = &section.note {
-        grid::say_instead(commands, table, note.clone());
+        grid::say_instead(commands, grid, note.clone());
         return;
     }
     let header: Vec<String> = (section.columns.iter())
         .map(|&column| column.to_owned())
         .collect();
     let widths = tabulate::columns((&header, &section.rows), GAP);
-    grid::refill(
-        commands,
-        (table, grid),
-        widths,
-        (&header, &section.rows),
-        &[0],
-    );
+    grid::refill(commands, grid, widths, (&header, &section.rows), &[0]);
 }
 
 /// "Income tax brackets · 2027 · Married filing jointly · Oregon".

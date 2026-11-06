@@ -73,13 +73,13 @@ impl Shape {
     }
 
     /// What a money pane of `lines` lines starts from along the way the
-    /// three are laid: its own height down a column, and nothing across a
-    /// row.
-    pub(super) fn money_basis(self, lines: usize) -> Val {
+    /// three are laid: its own height down a column, in a frame of
+    /// `frame` rows, and nothing across a row.
+    pub(super) fn money_basis(self, lines: usize, frame: pane::FrameRows) -> Val {
         match self {
             Self::Landscape => {
                 let rows = u16::try_from(lines).unwrap_or(u16::MAX);
-                Val::Rem(f32::from(rows.saturating_add(pane::BORDERS)))
+                Val::Rem(f32::from(rows.saturating_add(frame.0)))
             }
             Self::Portrait => Val::ZERO,
         }

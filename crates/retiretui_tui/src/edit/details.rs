@@ -79,11 +79,11 @@ pub fn refresh(
     (draft, shown): (Res<Draft>, ShownSurface),
     tables: Query<Ref<ActiveDescendant>, With<DomainTable>>,
     cursors: Query<&Row>,
-    details: Query<(Entity, &DetailsTable, &Grid)>,
+    details: Query<(&DetailsTable, &Grid)>,
     mut commands: Commands,
 ) {
     let surface = shown.surface();
-    for (table, shown_of, grid) in &details {
+    for (shown_of, grid) in &details {
         let cursor = shown_of.table.and_then(|table| tables.get(table).ok());
         let is_moved = match &cursor {
             Some(cursor) => cursor.is_changed(),
@@ -102,7 +102,7 @@ pub fn refresh(
         let header = HEADER.map(str::to_owned);
         let spawned = grid::refill(
             &mut commands,
-            (table, grid),
+            grid,
             columns,
             (&header, &rows),
             &TEXT_COLUMNS,

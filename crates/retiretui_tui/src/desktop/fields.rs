@@ -2,17 +2,22 @@
 //! both skins share; here bevy's text input edits it - the state shown
 //! into bevy's buffer when the form moves it, the buffer read back into
 //! the state and told to the form as it is typed, and Enter made the
-//! field's submission, which bevy leaves to the app.
+//! field's submission, which bevy leaves to the app. The field is a box
+//! ringed in the accent while it holds the keyboard, and the brackets the
+//! terminal draws around it give it their cells.
 
 use bevy_app::{App, Update};
-use bevy_ecs::change_detection::DetectChanges;
+use bevy_ecs::change_detection::{DetectChanges, Ref};
 use bevy_ecs::event::EntityEvent;
 use bevy_ecs::prelude::{
     Add, Changed, Commands, Entity, IntoScheduleConfigs, On, Query, Res, With,
 };
 use bevy_input::ButtonState;
 use bevy_input::keyboard::{Key, KeyboardInput};
-use bevy_input_focus::FocusedInput;
+use bevy_input_focus::{FocusedInput, InputFocus};
+#[cfg(test)]
+use bevy_ui::UiRect;
+use bevy_ui::{BorderColor, Node, Overflow, Val};
 use plurimus::bui::bevy_text::{
     EditableText as Buffer, TextColor, TextCursorStyle, TextEdit, TextEditChange, TextFont,
 };
@@ -20,13 +25,48 @@ use plurimus::bui::bevy_ui_widgets::TextInput as Input;
 use plurimus::core::ratatui_core::style::Style;
 use plurimus::widgets::{Submit, TextInput, ValueChange};
 
-use crate::edit::{TextField, show_text};
+#[cfg(test)]
+use super::chrome::HAIRLINE;
+use super::chrome::box_in;
+use crate::edit::{Bracket, TextField, show_text};
 use crate::theme::{Repainted, Theme};
 
 pub fn plugin(app: &mut App) {
     app.add_observer(dress_the_field);
+    app.add_observer(blank_the_bracket);
     app.add_observer(read_the_buffer);
-    app.add_systems(Update, (show_the_state, paint_fields).in_set(Repainted));
+    app.add_systems(
+        Update,
+        (show_the_state, paint_fields, ring_fields).in_set(Repainted),
+    );
+}
+
+/// A bracket keeps no cells in the window: its input, which shares the
+/// row, grows into them. A word of a sentence stays.
+fn blank_the_bracket(added: On<Add<Bracket>>, mut brackets: Query<(&Bracket, &mut Node)>) {
+    if let Ok((bracket, mut node)) = brackets.get_mut(added.entity)
+        && bracket.is_bracket()
+    {
+        node.width = Val::ZERO;
+        node.overflow = Overflow::clip();
+    }
+}
+
+/// A field's border: the accent while it holds the keyboard.
+fn ring_fields(
+    focus: Res<InputFocus>,
+    theme: Res<Theme>,
+    fields: Query<(Entity, Ref<Input>), With<TextField>>,
+    mut commands: Commands,
+) {
+    for (field, input) in &fields {
+        if !focus.is_changed() && !theme.is_changed() && !input.is_added() {
+            continue;
+        }
+        let is_held = focus.get() == Some(field);
+        let ring = theme.ink(theme.edge(is_held));
+        commands.entity(field).insert(BorderColor::all(ring));
+    }
 }
 
 fn dress_the_field(
@@ -47,7 +87,10 @@ fn dress_the_field(
             TextFont::default(),
             ink(&theme),
         ))
-        .observe(submit_on_enter);
+        .observe(submit_on_enter)
+        .entry::<Node>()
+        .or_default()
+        .and_modify(|mut node| box_in(&mut node, 1.0));
 }
 
 /// The theme's ink, and its accent for the caret and the selection, the
@@ -159,15 +202,29 @@ mod tests {
         press_ctrl(&mut app, KeyCode::Char('n'));
         app.update();
         let world = app.world_mut();
-        let dressed: Vec<bool> = world
-            .query_filtered::<Has<Input>, With<TextField>>()
+        let dressed: Vec<(bool, &Node)> = world
+            .query_filtered::<(Has<Input>, &Node), With<TextField>>()
             .iter(world)
             .collect();
         assert!(dressed.len() > 1, "the form's text fields stand");
         assert!(
-            dressed.iter().all(|&is_dressed| is_dressed),
+            dressed.iter().all(|&(is_dressed, _)| is_dressed),
             "each has bevy's input"
         );
+        assert!(
+            dressed
+                .iter()
+                .all(|(_, node)| node.border == UiRect::all(HAIRLINE)),
+            "each is a box"
+        );
+        let blanked: Vec<Val> = world
+            .query::<(&Bracket, &Node)>()
+            .iter(world)
+            .filter(|(bracket, _)| bracket.is_bracket())
+            .map(|(_, node)| node.width)
+            .collect();
+        assert!(!blanked.is_empty(), "the fields have brackets");
+        assert!(blanked.iter().all(|&width| width == Val::ZERO));
     }
 
     #[test]

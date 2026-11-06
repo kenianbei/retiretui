@@ -179,7 +179,7 @@ pub(super) struct Parts<'w, 's> {
         ),
         Without<CompareChart>,
     >,
-    tables: Query<'w, 's, (Entity, &'static Grid), With<by_year::ByYearTable>>,
+    tables: Query<'w, 's, &'static Grid, With<by_year::ByYearTable>>,
     panes: Query<'w, 's, Entity, With<ViewPane>>,
     frames: Query<'w, 's, &'static mut Framed>,
 }
@@ -220,8 +220,8 @@ pub(super) fn refresh_views(plans: Plans, mut parts: Parts, mut commands: Comman
         }
         View::Grid => parts.draw_grid(&plans),
         View::ByYear => {
-            for (table, grid) in &parts.tables {
-                by_year::fill(&mut commands, (table, grid), &plans);
+            for grid in &parts.tables {
+                by_year::fill(&mut commands, grid, &plans);
             }
         }
     }

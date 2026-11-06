@@ -29,7 +29,7 @@ pub(super) fn spawn(commands: &mut Commands, pane: Entity) -> Entity {
 }
 
 /// A row per year any plan reaches, the cursor on the cursor year's.
-pub(super) fn fill(commands: &mut Commands, (table, grid): (Entity, &Grid), plans: &Plans) {
+pub(super) fn fill(commands: &mut Commands, grid: &Grid, plans: &Plans) {
     let header: Vec<String> = std::iter::once(YEAR.to_owned())
         .chain(plans.each().map(|(name, _)| name.into_owned()))
         .collect();
@@ -48,7 +48,7 @@ pub(super) fn fill(commands: &mut Commands, (table, grid): (Entity, &Grid), plan
         .collect();
     let spawned = grid::refill(
         commands,
-        (table, grid),
+        grid,
         tabulate::gapped_columns((&header, &rows), GAP),
         (&header, &rows),
         &[0],
@@ -57,7 +57,9 @@ pub(super) fn fill(commands: &mut Commands, (table, grid): (Entity, &Grid), plan
     for (&row, &year) in spawned.iter().zip(&years) {
         commands.entity(row).insert(RowYear(year));
         if year == cursor {
-            commands.entity(table).insert(ActiveDescendant(Some(row)));
+            commands
+                .entity(grid.root)
+                .insert(ActiveDescendant(Some(row)));
         }
     }
 }

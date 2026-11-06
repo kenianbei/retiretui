@@ -18,7 +18,8 @@ use crate::session::Projected;
 use crate::table::basis_amount;
 
 /// What the strip calls the least the household holds once it stops earning.
-const LOW_POINT: &str = "Lowest after retiring";
+/// The strip's third label.
+pub const LOW_POINT: &str = "Lowest after retiring";
 /// The strip's labels in its order; a search answers the second.
 pub const STRIP: [&str; 4] = [MONEY_LASTS, SUCCESS, LOW_POINT, ENDS_WITH];
 /// What the low point says of a household still paid a salary in its last
@@ -51,6 +52,18 @@ impl Chart {
         Self::IncomeTaxes,
         Self::Markets,
     ];
+
+    /// What the chart is called where its title is too long: on a picker
+    /// that names every chart at once.
+    #[must_use]
+    pub const fn name(self) -> &'static str {
+        match self {
+            Self::Balances => "Treatments",
+            Self::NetWorth => "Net worth",
+            Self::IncomeTaxes => "Income vs taxes",
+            Self::Markets => "Markets",
+        }
+    }
 
     /// What the chart is titled.
     #[must_use]

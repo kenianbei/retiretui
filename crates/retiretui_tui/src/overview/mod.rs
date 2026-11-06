@@ -25,11 +25,13 @@ use bevy_ui::{FlexDirection, Node, Val};
 use retiretui_client::overview::View;
 
 pub(crate) use better::Better;
+pub(crate) use charts::{ChartView, OverviewChart, cycle_chart};
 #[cfg(test)]
-pub(crate) use charts::OverviewChart;
-pub(crate) use charts::cycle_chart;
+pub(crate) use key::ChartKey;
+pub(crate) use key::KeyMarks;
 use rows::List;
 pub(crate) use rows::edit_row;
+pub(crate) use verdict::{SUCCESS_AT, TileAt, success_text};
 
 use super::layout::{self, Body};
 use super::nav::{self, Page};
@@ -37,6 +39,7 @@ use super::session::Shown;
 
 pub fn plugin(app: &mut App) {
     app.init_resource::<charts::ChartView>();
+    app.init_resource::<KeyMarks>();
     app.init_resource::<Better>();
     app.init_resource::<Viewed>();
     app.add_systems(Startup, spawn_overview.after(layout::spawn_frame));
@@ -57,6 +60,13 @@ pub fn plugin(app: &mut App) {
 /// The page as the client says it, of the plan and the basis shown.
 #[derive(Resource, Default)]
 pub(crate) struct Viewed(Option<View>);
+
+impl Viewed {
+    /// The page as last said, once it has been.
+    pub(crate) fn view(&self) -> Option<&View> {
+        self.0.as_ref()
+    }
+}
 
 /// Says the page again whenever the plan or the basis moves.
 fn view(shown: Shown, mut viewed: ResMut<Viewed>) {

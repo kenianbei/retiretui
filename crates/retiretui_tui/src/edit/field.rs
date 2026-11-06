@@ -111,6 +111,13 @@ pub struct Bracket {
 /// The closing one keeps a cell clear of whatever follows it on the row.
 const BRACKETS: [&str; 2] = ["[ ", " ] "];
 
+impl Bracket {
+    /// Whether this is one of the two brackets rather than a word.
+    pub(crate) fn is_bracket(&self) -> bool {
+        BRACKETS.contains(&self.drawn)
+    }
+}
+
 /// `drawn` along `row`, beside `input`, where there is anything to draw.
 /// It is ASCII, so bytes are cells.
 pub fn spawn_beside(commands: &mut Commands, row: Entity, input: Entity, drawn: &'static str) {

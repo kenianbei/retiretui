@@ -4,7 +4,7 @@
 
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::ChildOf;
-use bevy_ecs::prelude::{Commands, Component, Entity, Local, Query, With};
+use bevy_ecs::prelude::{Commands, Component, Entity, Local, Query, Res, With};
 use bevy_ecs::system::SystemParam;
 use bevy_ui::{ComputedNode, FlexDirection, Node, Val};
 use plurimus::core::ratatui_core::style::{Color, Style};
@@ -18,7 +18,7 @@ use crate::grid::{self, Grid};
 use crate::hints::{CommandHint, CommandHints, Hints};
 use crate::layout::{self, fixed};
 use crate::nav::FocusStop;
-use crate::pane::{Framed, Pane};
+use crate::pane::{FrameRows, Framed, Pane};
 use crate::present;
 use crate::tabulate;
 
@@ -28,8 +28,6 @@ const GAP: u16 = 1;
 /// The most of the page the row takes, in percent: the chart keeps the
 /// rest.
 const MOST_OF_PAGE: f32 = 50.0;
-/// Rows the pane spends besides one per plan: its borders and the header.
-const FRAME_ROWS: usize = 3;
 /// The fewest rows the row takes, borders included, so the Changes pane
 /// beside the table has room however few plans there are.
 const LEAST_ROWS: usize = 8;
@@ -47,7 +45,7 @@ pub(super) fn spawn(commands: &mut Commands, view: Entity) {
     let row = Node {
         flex_direction: FlexDirection::Row,
         max_height: Val::Percent(MOST_OF_PAGE),
-        ..fixed(rows_tall(0))
+        ..fixed(rows_tall(0, FrameRows::default()))
     };
     let row = commands.spawn((row, ChildOf(view))).id();
     let pane = Pane::new(TITLE).sharing(2.0).spawn(commands, row);
@@ -66,9 +64,10 @@ pub(super) fn spawn(commands: &mut Commands, view: Entity) {
     ));
 }
 
-/// The row's height with `compared` files beside the document.
-fn rows_tall(compared: usize) -> f32 {
-    (compared + 1 + FRAME_ROWS).max(LEAST_ROWS) as f32
+/// The row's height with `compared` files beside the document, in a
+/// frame of `frame` rows.
+fn rows_tall(compared: usize, frame: FrameRows) -> f32 {
+    (compared + 1 + usize::from(frame.0)).max(LEAST_ROWS) as f32
 }
 
 /// Where the table's cursor rests.
@@ -94,6 +93,7 @@ pub(super) struct PlansParts<'w, 's> {
     bodies: Query<'w, 's, &'static ComputedNode>,
     frames: Query<'w, 's, (&'static mut Framed, &'static ChildOf)>,
     nodes: Query<'w, 's, &'static mut Node>,
+    frame: Res<'w, FrameRows>,
 }
 
 /// Respawns the rows whenever a plan, the basis, the baseline, a success
@@ -120,13 +120,8 @@ pub(super) fn refresh_plans(
         *drawn = given;
         let (header, rows) = laid(&plans);
         let keys = keys(&plans);
-        let spawned = tabulate::fill_keyed(
-            &mut commands,
-            (table, grid),
-            (&header, &rows),
-            (GAP, given),
-            &keys,
-        );
+        let spawned =
+            tabulate::fill_keyed(&mut commands, grid, (&header, &rows), (GAP, given), &keys);
         for (place, &row) in spawned.iter().enumerate() {
             commands.entity(row).insert(PlanRow(place));
         }
@@ -140,7 +135,7 @@ pub(super) fn refresh_plans(
         if let Ok((mut framed, row)) = parts.frames.get_mut(pane.parent()) {
             Framed::retitle(&mut framed, &title(&plans));
             Framed::renote(&mut framed, &plans.compared.failure().unwrap_or_default());
-            let tall = Val::Rem(rows_tall(plans.compared.docs.len()));
+            let tall = Val::Rem(rows_tall(plans.compared.docs.len(), *parts.frame));
             if let Ok(mut node) = parts.nodes.get_mut(row.parent())
                 && node.height != tall
             {

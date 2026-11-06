@@ -5,19 +5,26 @@
 
 mod areas;
 mod bars;
+mod basis;
 mod browse;
+mod card;
 mod charts;
 mod chrome;
 mod fields;
 mod material;
 mod menus;
 mod overlays;
+mod overview;
+mod pill;
+mod tabs;
 mod widgets;
+
+use std::time::Duration;
 
 use anyhow::bail;
 use bevy_a11y::AccessibilityPlugin;
 use bevy_app::{
-    App, AppExit, PanicHandlerPlugin, PostUpdate, PreUpdate, Startup, TaskPoolPlugin, Update,
+    App, AppExit, Last, PanicHandlerPlugin, PostUpdate, PreUpdate, Startup, TaskPoolPlugin, Update,
 };
 use bevy_asset::{AssetPlugin, Assets, Handle};
 use bevy_camera::{Camera2d, CameraPlugin, ClearColor};
@@ -26,7 +33,8 @@ use bevy_diagnostic::FrameCountPlugin;
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
 use bevy_ecs::message::MessageReader;
 use bevy_ecs::prelude::{
-    Added, Changed, Commands, IntoScheduleConfigs, Or, Query, Res, ResMut, Single, With,
+    Added, Changed, Commands, Component, IntoScheduleConfigs, Or, Query, Res, ResMut, Single, With,
+    Without,
 };
 use bevy_image::ImagePlugin;
 use bevy_input::InputPlugin;
@@ -42,7 +50,7 @@ use bevy_ui_render::UiRenderPlugin;
 use bevy_window::{
     PrimaryWindow, Window, WindowCloseRequested, WindowPlugin, WindowResizeConstraints,
 };
-use bevy_winit::WinitPlugin;
+use bevy_winit::{UpdateMode, WinitPlugin, WinitSettings};
 use clap::Args;
 use plurimus::bui::bevy_picking::DefaultPickingPlugins;
 use plurimus::bui::bevy_ui_widgets::UiWidgetsPlugins;
@@ -53,8 +61,9 @@ use retiretui_client::environment::state_dir;
 
 use crate::TuiArgs;
 use crate::command::{self, defer_named};
-use crate::guard::MIN_SIZE;
 use crate::theme::Theme;
+use crate::tools::is_any_live;
+use crate::watch::POLL_SECONDS;
 
 /// Arguments of the desktop binary: the `tui` command's, and the light
 /// variant.
@@ -77,6 +86,12 @@ const FONT_SIZE: f32 = 16.0;
 /// A cell: the face advances half its size, and a row leaves a quarter
 /// of the size between lines; nothing measures the face at runtime.
 const CELL: Vec2 = Vec2::new(FONT_SIZE / 2.0, FONT_SIZE * 1.25);
+
+/// A figure the window says at twice the size, which the pins leave as
+/// said: a glyph is then two cells wide and two tall, so it stays on the
+/// grid. Only on text the window spawns itself, never on a shared node.
+#[derive(Component, Debug, Default)]
+pub(super) struct Figure;
 
 /// Runs the planner in a window until it is quit.
 ///
@@ -103,7 +118,8 @@ pub fn run(args: &DesktopArgs) -> anyhow::Result<()> {
 /// subscriber. The window comes first: plurimus spawns a virtual one only
 /// where none is there by then.
 fn add_window(app: &mut App) {
-    let floor = Vec2::new(f32::from(MIN_SIZE.cols), f32::from(MIN_SIZE.rows)) * CELL;
+    let (cols, rows) = chrome::floor_cells();
+    let floor = Vec2::new(f32::from(cols), f32::from(rows)) * CELL;
     app.add_plugins((
         PanicHandlerPlugin,
         TaskPoolPlugin::default(),
@@ -160,11 +176,15 @@ fn skin(app: &mut App) {
     app.add_plugins((
         areas::plugin,
         bars::plugin,
+        basis::plugin,
         browse::plugin,
         charts::plugin,
+        card::plugin,
         chrome::plugin,
+        tabs::plugin,
         widgets::plugin,
         menus::plugin,
+        overview::plugin,
         fields::plugin,
         material::plugin,
         overlays::plugin,
@@ -175,6 +195,7 @@ fn skin(app: &mut App) {
         (size_in_cells.before(CameraSystems::SyncSize), ask_on_close),
     );
     app.add_systems(Update, clear_to_the_ground);
+    app.add_systems(Last, sleep_when_idle);
     app.add_systems(
         PostUpdate,
         (
@@ -186,6 +207,26 @@ fn skin(app: &mut App) {
 
 fn spawn_camera(mut commands: Commands) {
     commands.spawn(Camera2d);
+}
+
+/// How often the window draws: every frame while work runs beside the
+/// frames, so its progress and its answer show as they happen; otherwise
+/// for an input and once a beat, the file watch's, in and out of focus
+/// alike, since the plan is edited elsewhere while the window is not
+/// focused. Last in the frame, so work spawned in it is drawn from the
+/// next.
+fn sleep_when_idle(mut settings: ResMut<WinitSettings>) {
+    let wanted = if is_any_live() {
+        UpdateMode::Continuous
+    } else {
+        UpdateMode::reactive_low_power(Duration::from_secs_f32(POLL_SECONDS))
+    };
+    if settings.focused_mode != wanted || settings.unfocused_mode != wanted {
+        *settings = WinitSettings {
+            focused_mode: wanted,
+            unfocused_mode: wanted,
+        };
+    }
 }
 
 /// What the shell lays itself out by: the window in whole cells.
@@ -202,9 +243,10 @@ fn size_ems(mut nodes: Query<&mut EmSize, (With<Node>, Or<(Added<Node>, Changed<
     }
 }
 
-/// Every text and span is set at the one size, whatever font it was given
-/// for its weight or style; a size set back to bevy's own is pinned again.
-fn pin_fonts(mut fonts: Query<&mut TextFont, Changed<TextFont>>) {
+/// Every text and span but a figure is set at the one size, whatever font
+/// it was given for its weight or style; a size set back to bevy's own is
+/// pinned again.
+fn pin_fonts(mut fonts: Query<&mut TextFont, (Changed<TextFont>, Without<Figure>)>) {
     for mut font in &mut fonts {
         if !matches!(font.font_size, FontSize::Px(size) if size == FONT_SIZE) {
             font.font_size = FontSize::Px(FONT_SIZE);
@@ -212,8 +254,8 @@ fn pin_fonts(mut fonts: Query<&mut TextFont, Changed<TextFont>>) {
     }
 }
 
-/// Every line is a row tall.
-fn pin_line_heights(mut heights: Query<&mut LineHeight, Changed<LineHeight>>) {
+/// Every line but a figure's is a row tall.
+fn pin_line_heights(mut heights: Query<&mut LineHeight, (Changed<LineHeight>, Without<Figure>)>) {
     for mut height in &mut heights {
         height.set_if_neq(LineHeight::Px(CELL.y));
     }
@@ -237,14 +279,17 @@ fn ask_on_close(mut closing: MessageReader<WindowCloseRequested>, mut commands: 
 mod tests {
     use bevy_ecs::hierarchy::ChildOf;
     use bevy_ecs::prelude::{Entity, With, Without, World};
+    use bevy_ecs::system::RunSystemOnce;
     use plurimus::core::UiWidget;
     use plurimus::widgets::{Button, ListBox};
 
+    use super::*;
     use crate::chart::SeriesChart;
     use crate::layout::Rule;
     use crate::nav::{Page, SurfaceRoot};
     use crate::pane::Framed;
     use crate::support::{SIZE, headless_app, show};
+    use crate::tools::Keyed;
 
     /// The page a widget stands on, climbing to its surface's root.
     fn page_of(world: &World, mut entity: Entity) -> Option<Page> {
@@ -253,6 +298,44 @@ mod tests {
                 return *surface;
             }
             entity = world.get::<ChildOf>(entity)?.parent();
+        }
+    }
+
+    fn modes(app: &App) -> (UpdateMode, UpdateMode) {
+        let settings = app.world().resource::<WinitSettings>();
+        (settings.focused_mode, settings.unfocused_mode)
+    }
+
+    /// The count of work is the process's, so the sleeping edge is
+    /// asserted only while no other test holds work of its own.
+    #[test]
+    fn a_figure_keeps_its_size_through_the_pins_and_the_rest_is_pinned() {
+        let mut world = World::new();
+        let doubled = FONT_SIZE * 2.0;
+        let figure = world
+            .spawn((Figure, TextFont::from_font_size(doubled)))
+            .id();
+        let plain = world.spawn(TextFont::from_font_size(doubled)).id();
+        world.run_system_once(pin_fonts).unwrap();
+        let size = |entity: Entity| world.get::<TextFont>(entity).unwrap().font_size;
+        assert_eq!(size(figure), FontSize::Px(doubled));
+        assert_eq!(size(plain), FontSize::Px(FONT_SIZE));
+    }
+
+    #[test]
+    fn the_window_draws_every_frame_while_work_runs_and_sleeps_otherwise() {
+        let mut app = headless_app(SIZE);
+        app.init_resource::<WinitSettings>();
+        app.add_systems(Last, sleep_when_idle);
+        let held = Keyed::spawn((), |_| ());
+        app.update();
+        let continuous = (UpdateMode::Continuous, UpdateMode::Continuous);
+        assert_eq!(modes(&app), continuous, "work under way");
+        drop(held);
+        app.update();
+        if !is_any_live() {
+            let asleep = UpdateMode::reactive_low_power(Duration::from_secs_f32(POLL_SECONDS));
+            assert_eq!(modes(&app), (asleep, asleep), "none");
         }
     }
 

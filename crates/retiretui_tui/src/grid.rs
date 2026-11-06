@@ -50,6 +50,9 @@ pub const HEADING: Style = Style::new().add_modifier(Modifier::BOLD);
 /// and the bar beside them.
 #[derive(Component, Debug)]
 pub struct Grid {
+    /// The node the grid is: what says in place of rows and holds the
+    /// cursor.
+    pub root: Entity,
     /// The row over the body, shown while it has cells to say.
     pub header: Entity,
     /// The node the rows are children of, as wide as their lines.
@@ -118,6 +121,25 @@ pub fn spawn(commands: &mut Commands, parent: Entity) -> Entity {
             ChildOf(root),
         ))
         .id();
+    let (body, bar) = spawn_scrolled(commands, root);
+    commands.entity(root).insert((
+        Grid {
+            root,
+            header,
+            body,
+            bar,
+        },
+        GridColumns(Vec::new()),
+        bar::Bar::default(),
+        Revealed::default(),
+        table_keys(),
+        ActiveDescendant(None),
+    ));
+    root
+}
+
+/// The row under the header: the scrolled body and the bar beside it.
+fn spawn_scrolled(commands: &mut Commands, root: Entity) -> (Entity, Entity) {
     let scrolled = Node {
         flex_direction: FlexDirection::Row,
         min_height: Val::ZERO,
@@ -133,21 +155,13 @@ pub fn spawn(commands: &mut Commands, parent: Entity) -> Entity {
     };
     let body = commands.spawn((body, ScrollArea, ChildOf(scrolled))).id();
     let bar = commands.spawn((bar::column(), ChildOf(scrolled))).id();
-    commands.entity(root).insert((
-        Grid { header, body, bar },
-        GridColumns(Vec::new()),
-        bar::Bar::default(),
-        Revealed::default(),
-        table_keys(),
-        ActiveDescendant(None),
-    ));
-    root
+    (body, bar)
 }
 
-/// Makes `root` say `text` in place of rows, from the next frame on.
-pub fn say_instead(commands: &mut Commands, root: Entity, text: String) {
+/// Makes the grid say `text` in place of rows, from the next frame on.
+pub fn say_instead(commands: &mut Commands, grid: &Grid, text: String) {
     commands
-        .entity(root)
+        .entity(grid.root)
         .insert((Said { text, drawn: None }, ActiveDescendant(None)));
 }
 
@@ -182,32 +196,32 @@ fn wrap_said(
     }
 }
 
-/// Replaces `root`'s rows with `header`, where it has one, and `rows`
+/// Replaces the grid's rows with `header`, where it has one, and `rows`
 /// under `columns`, the cells at `text_columns` on the left and the rest
 /// right, the cursor on the first row, answering each row's entity.
 pub fn refill(
     commands: &mut Commands,
-    (root, grid): (Entity, &Grid),
+    grid: &Grid,
     columns: Vec<Constraint>,
     (header, rows): (&[String], &[Vec<String>]),
     text_columns: &[usize],
 ) -> Vec<Entity> {
     let rows = rows.iter().map(|row| tabulate::cells(row, text_columns));
     let header = tabulate::cells(header, text_columns);
-    refill_lines(commands, (root, grid), columns, header, rows)
+    refill_lines(commands, grid, columns, header, rows)
 }
 
-/// Replaces `root`'s rows with `header`, where it has one, and `rows`
+/// Replaces the grid's rows with `header`, where it has one, and `rows`
 /// under `columns`, each cell a line of its own alignment, the cursor on
 /// the first row, answering each row's entity.
 pub fn refill_lines(
     commands: &mut Commands,
-    (root, grid): (Entity, &Grid),
+    grid: &Grid,
     columns: Vec<Constraint>,
     header: Vec<Line<'static>>,
     rows: impl IntoIterator<Item = Vec<Line<'static>>>,
 ) -> Vec<Entity> {
-    commands.entity(root).remove::<Said>();
+    commands.entity(grid.root).remove::<Said>();
     commands.entity(grid.body).despawn_related::<Children>();
     commands.entity(grid.header).insert(UiStyle(HEADING));
     head(commands, grid.header, header);
@@ -226,7 +240,7 @@ pub fn refill_lines(
                 .id()
         })
         .collect();
-    commands.entity(root).insert((
+    commands.entity(grid.root).insert((
         GridColumns(columns),
         ActiveDescendant(spawned.first().copied()),
     ));

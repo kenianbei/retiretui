@@ -103,13 +103,13 @@ fn leading(row: &[String], count: usize) -> &[String] {
     &row[..count.min(row.len())]
 }
 
-/// Fills the grid `root` with `header` and `rows`, measured as
+/// Fills `grid` with `header` and `rows`, measured as
 /// [`gapped_columns`] measures them and cut to the columns that fit in
 /// `given` cells beside the cursor, the first column on the left and the
 /// rest right, answering with each row's entity.
 pub(super) fn fill(
     commands: &mut Commands,
-    (root, grid): (Entity, &Grid),
+    grid: &Grid,
     rows: (&[String], &[Vec<String>]),
     (gap, given): (u16, u16),
 ) -> Vec<Entity> {
@@ -117,7 +117,7 @@ pub(super) fn fill(
     let (header, body) = rows;
     let body = body.iter().map(|row| cells(leading(row, count), &[0]));
     let header = cells(leading(header, count), &[0]);
-    grid::refill_lines(commands, (root, grid), measured, header, body)
+    grid::refill_lines(commands, grid, measured, header, body)
 }
 
 /// The cells [`LINE_KEY`] and the space after it take, leading each of a
@@ -140,7 +140,7 @@ pub(super) fn gapped_columns(rows: (&[String], &[Vec<String>]), gap: u16) -> Vec
 /// draws in them; the columns fit beside the swatch as well as the cursor.
 pub(super) fn fill_keyed(
     commands: &mut Commands,
-    (root, grid): (Entity, &Grid),
+    grid: &Grid,
     rows: (&[String], &[Vec<String>]),
     (gap, given): (u16, u16),
     keys: &[(Color, Style)],
@@ -167,5 +167,5 @@ pub(super) fn fill_keyed(
         }
         row
     });
-    grid::refill_lines(commands, (root, grid), measured, header, body)
+    grid::refill_lines(commands, grid, measured, header, body)
 }

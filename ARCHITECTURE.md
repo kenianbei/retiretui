@@ -243,12 +243,23 @@ depends on UI.
   over an embedded monospace face, every length still a cell so the shell lays
   itself out the same, the chrome, every table's rows and what a page says in
   words said as text where both can read it and each skin drawing its own
-  boxes, lines, tabs and chart plots on the shared markers -
-  the window's plot a shader over the chart's points - and the window saying the
-  pointer's moves and a click on a plot to the shell as the terminal's mouse
-  says them, answering every other click itself. Behind one feature it holds the
-  launcher that runs it in a terminal and the command that lists its themes;
-  behind another, the launcher that opens the window.
+  boxes, lines, tabs and chart plots on the shared markers - the window's
+  plot a shader over the chart's points, its frames headed and padded or
+  raised as cards, its overlays sheets, its fields and buttons boxed - and
+  the window
+  adding what only it shows, over what the terminal draws rather than in its
+  place: a figure at twice the size, a switch of the dollar basis the titles
+  then leave unsaid, the Overview's charts picked by name, and its verdict
+  as a band and four scoreboards over the terminal's tiles, each said from
+  what the shared pages already hold and acting through the shared commands -
+  the window
+  dimming the whole frame under whichever overlay stands highest, drawing
+  every frame while a search runs and otherwise only on input and once a
+  beat, the file watch's, and saying the pointer's moves and a click on a
+  plot to the shell as the terminal's mouse says them, answering every other
+  click itself. Behind one feature it holds the launcher that runs it in a
+  terminal and the command that lists its themes; behind another, the
+  launcher that opens the window.
 - `retiretui` - the user-facing binary, composing each interface's clap
   subcommands into one command: the command line's from `retiretui_cli`, `tui`
   and `theme` from `retiretui_tui`, and `mcp` from `retiretui_mcp`; each is a
@@ -425,7 +436,8 @@ depends on UI.
   that page is on show, ahead of any meaning the shell gives the same key, so
   two pages may bind one key each and a page may take one of the shell's. The
   keyboard walks a page's panes in the order they are drawn, the sidebar first
-  beside a grouped page, and a page is entered on its first pane. Whatever
+  beside a grouped page, a page is entered on its first pane, and a click
+  anywhere in a pane hands it the keyboard. Whatever
   stands over the page - a menu, a picker, a dialog, an open item - takes the
   keyboard on a stack, keeps the keys that walk it among what it holds, and
   gives it back to what held it, and a command chosen from one runs once it has,

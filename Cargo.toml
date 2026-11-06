@@ -77,3 +77,7 @@ plurimus_bui = { path = "../plurimus/crates/plurimus_bui" }
 plurimus_crossterm = { path = "../plurimus/crates/plurimus_crossterm" }
 plurimus_web = { path = "../plurimus/crates/plurimus_web" }
 plurimus_filepicker = { path = "../plurimus-filepicker" }
+
+# A debug window, and the engine's tests, run their dependencies optimised.
+[profile.dev.package."*"]
+opt-level = 3

@@ -89,7 +89,7 @@ pub fn spawn_panes(commands: &mut Commands, row: Entity) {
 fn refresh_conversions(
     state: (Res<Ladders>, Res<Basis>, Res<Draft>),
     mut drawn: Local<Option<usize>>,
-    mut tables: Query<(Entity, &Grid), With<ConversionsTable>>,
+    tables: Query<&Grid, With<ConversionsTable>>,
     mut commands: Commands,
 ) {
     let (ladders, basis, draft) = state;
@@ -100,7 +100,7 @@ fn refresh_conversions(
         return;
     }
     *drawn = Some(ladders.highlighted);
-    for (table, grid) in &mut tables {
+    for grid in &tables {
         let bracket = ladders.highlighted_bracket();
         let said = match bracket {
             None => NOT_SEARCHED,
@@ -110,7 +110,7 @@ fn refresh_conversions(
                 let header = CONVERSION_COLUMNS.map(str::to_owned);
                 grid::refill(
                     &mut commands,
-                    (table, grid),
+                    grid,
                     tabulate::columns((&header, &rows), GAP),
                     (&header, &rows),
                     &[0],
@@ -118,7 +118,7 @@ fn refresh_conversions(
                 continue;
             }
         };
-        grid::say_instead(&mut commands, table, said.to_owned());
+        grid::say_instead(&mut commands, grid, said.to_owned());
     }
 }
 

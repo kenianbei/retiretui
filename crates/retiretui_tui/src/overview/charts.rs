@@ -12,7 +12,7 @@ use plurimus::ui::{ComputedWidgetArea, PointerPress};
 use retiretui_client::overview::{Chart, ChartLine, ChartMark, Charted, Spread, band_words};
 use retiretui_engine::market::Band;
 
-use super::key::{ChartKey, Keyed, line_swatch, swatch};
+use super::key::{ChartKey, KeyMarks, Keyed, dot, line_swatch, swatch};
 use crate::chart::{Legend, Mark, Series, SeriesChart, Shade};
 use crate::command::Outcome;
 use crate::edit::Turn;
@@ -93,7 +93,13 @@ fn open_ledger(
 /// moves, or the markets answer while they are on show, naming the view
 /// and its dollars in the pane's title.
 pub(super) fn refresh(
-    (shown, theme, view, successes): (Shown, Res<Theme>, Res<ChartView>, Res<Successes>),
+    (shown, theme, view, successes, key_marks): (
+        Shown,
+        Res<Theme>,
+        Res<ChartView>,
+        Res<Successes>,
+        Res<KeyMarks>,
+    ),
     mut charts: Query<(&mut SeriesChart, &ChildOf), With<OverviewChart>>,
     mut keys: Query<&mut ChartKey>,
     mut frames: Query<&mut Framed>,
@@ -102,13 +108,14 @@ pub(super) fn refresh(
         || shown.basis.is_changed()
         || theme.is_changed()
         || view.is_changed()
+        || key_marks.is_changed()
         || (view.0 == Chart::Markets && successes.is_changed());
     if !is_drawn {
         return;
     }
     let nominal = shown.basis.nominal;
     let charted = view.0.charted(&shown.projected, nominal);
-    let (drawn, keyed) = match view.0 {
+    let (drawn, mut keyed) = match view.0 {
         Chart::Balances => balances(&charted, &theme),
         Chart::NetWorth => lines(&charted.lines, WORTH_SERIES, &theme),
         Chart::IncomeTaxes => lines(&charted.lines, INCOME_SERIES, &theme),
@@ -117,6 +124,9 @@ pub(super) fn refresh(
             None => (SeriesChart::default(), Vec::new()),
         },
     };
+    if key_marks.is_dotted {
+        dot(&mut keyed);
+    }
     // The runs are kept in today's dollars alone.
     let basis = present::basis_name(nominal && view.0 != Chart::Markets);
     let title = format!("{} · {basis}", view.0.title());

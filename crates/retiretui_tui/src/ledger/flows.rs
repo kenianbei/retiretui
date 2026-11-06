@@ -5,7 +5,9 @@
 
 use bevy_app::{App, Update};
 use bevy_ecs::hierarchy::ChildOf;
-use bevy_ecs::prelude::{Commands, Component, Entity, IntoScheduleConfigs, Local, Query, With};
+use bevy_ecs::prelude::{
+    Commands, Component, Entity, IntoScheduleConfigs, Local, Query, Res, With,
+};
 use bevy_ui::{ComputedNode, Node, Val};
 use plurimus::core::ratatui_core::layout::Constraint;
 use retiretui_client::ledger::{AccountFlows, FLOW_COLUMNS, FLOWS, Year};
@@ -106,14 +108,15 @@ fn fitted(year: &Year, header: &[String], width: u16) -> (Vec<Vec<String>>, Vec<
 fn refresh(
     detail: Detail,
     mut drawn: Local<Option<u16>>,
-    (tables, bodies): (
-        Query<(Entity, &ChildOf, &Grid), With<FlowsTable>>,
+    (tables, bodies, frame): (
+        Query<(&ChildOf, &Grid), With<FlowsTable>>,
         Query<&ComputedNode>,
+        Res<pane::FrameRows>,
     ),
     mut panes: Query<&mut Node>,
     mut commands: Commands,
 ) {
-    let Ok((table, pane, grid)) = tables.single() else {
+    let Ok((pane, grid)) = tables.single() else {
         return;
     };
     let width = bodies.get(grid.body).map_or(0, grid::across);
@@ -127,15 +130,9 @@ fn refresh(
     let text: Vec<usize> = (FLOW_COLUMNS.iter().enumerate())
         .filter_map(|(at, &(_, is_figure))| (!is_figure).then_some(at))
         .collect();
-    grid::refill(
-        &mut commands,
-        (table, grid),
-        widths,
-        (&header, &rows),
-        &text,
-    );
+    grid::refill(&mut commands, grid, widths, (&header, &rows), &text);
     let lines = u16::try_from(rows.len() + HEADER_ROWS).unwrap_or(u16::MAX);
-    let height = Val::Rem(f32::from(lines + pane::BORDERS));
+    let height = Val::Rem(f32::from(lines + frame.0));
     if let Ok(mut node) = panes.get_mut(pane.parent())
         && node.height != height
     {

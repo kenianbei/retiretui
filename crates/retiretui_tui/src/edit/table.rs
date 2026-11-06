@@ -124,14 +124,13 @@ pub fn rebuild_rows(
             items = sort.order(items);
         }
         if items.is_empty() {
-            spawn_nothing_yet(&mut commands, (table, grid), list.purpose, theme);
+            spawn_nothing_yet(&mut commands, grid, list.purpose, theme);
             continue;
         }
         let laid = Laid::of(table_ref, &items, given);
         let indices: Vec<usize> = items.iter().map(|(index, _)| *index).collect();
         let rows = items.into_iter().map(|(_, cells)| laid.row(cells));
-        let root = (table, grid);
-        let spawned = grid::refill_lines(&mut commands, root, laid.columns(), laid.header(), rows);
+        let spawned = grid::refill_lines(&mut commands, grid, laid.columns(), laid.header(), rows);
         let mut cursor_row = None;
         for (&row, index) in spawned.iter().zip(indices) {
             commands.entity(row).insert(Row(index));
@@ -147,16 +146,11 @@ pub fn rebuild_rows(
 /// What a domain with nothing in it yet says: what it is for, in place of
 /// headers over no rows. A header, not a row: a line no item stands
 /// behind must never take the cursor.
-fn spawn_nothing_yet(
-    commands: &mut Commands,
-    (table, grid): (Entity, &Grid),
-    purpose: &str,
-    theme: &Theme,
-) {
+fn spawn_nothing_yet(commands: &mut Commands, grid: &Grid, purpose: &str, theme: &Theme) {
     let header = vec![Line::from(purpose.to_owned())];
     grid::refill_lines(
         commands,
-        (table, grid),
+        grid,
         vec![Constraint::Fill(1)],
         header,
         std::iter::empty(),

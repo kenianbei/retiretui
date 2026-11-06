@@ -14,7 +14,7 @@ use bevy_ecs::prelude::{
 };
 use bevy_input::keyboard::{Key, KeyboardInput};
 use bevy_input_focus::{FocusCause, FocusedInput, InputFocus};
-use plurimus::core::ratatui_core::text::Line;
+use plurimus::core::ratatui_core::text::{Line, Span};
 use plurimus::term::bevy_compat::HeldModifiers;
 use plurimus::ui::{KeyBinding, UiLabel, first_bound};
 use plurimus::widgets::{
@@ -39,7 +39,8 @@ pub fn plugin(app: &mut App) {
     );
 }
 
-const CHEVRON: &str = "▾";
+/// What a select's label ends with, a span of its own after the value.
+pub(crate) const CHEVRON: &str = "▾";
 
 /// The button opens its menu on space alone, leaving Enter to apply the
 /// item.
@@ -223,7 +224,8 @@ pub fn sync_selects(
     mut commands: Commands,
 ) {
     for (mut select, mut label, children) in &mut selects {
-        label.0 = Line::from(format!("{} {CHEVRON}", select.shown())).left_aligned();
+        let shown = Span::raw(select.shown().to_owned());
+        label.0 = Line::from(vec![shown, Span::raw(format!(" {CHEVRON}"))]).left_aligned();
         if select.is_listed {
             continue;
         }

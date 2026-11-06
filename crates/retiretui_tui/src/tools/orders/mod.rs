@@ -153,7 +153,7 @@ fn say_help(
         }
         _ => orders::ABOUT.to_owned(),
     };
-    help.show(Page::WithdrawalOrder, &text, &theme);
+    help.show(Page::WithdrawalOrder, &text);
 }
 
 /// The `take-order` command: asks before restating the plan's withdrawal

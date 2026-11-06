@@ -116,13 +116,13 @@ impl RowInputs<'_, '_> {
 /// changes, carrying the cursor across by year.
 fn rebuild_rows(
     mut inputs: RowInputs,
-    tables: Query<(Entity, &Grid), With<LedgerTable>>,
+    tables: Query<&Grid, With<LedgerTable>>,
     mut commands: Commands,
 ) {
     if !inputs.is_stale() {
         return;
     }
-    let Ok((ledger_table, grid)) = tables.single() else {
+    let Ok(grid) = tables.single() else {
         return;
     };
     let (Some(table), Some(fit)) = (inputs.said.0.as_ref(), inputs.fit()) else {
@@ -134,8 +134,7 @@ fn rebuild_rows(
     let header = header_cells(table, &figures, fit.given);
     let rows = table.rows.iter();
     let cells = rows.map(|row| year_cells(row, &figures, fit.form, &inputs.theme));
-    let root = (ledger_table, grid);
-    let spawned = grid::refill_lines(&mut commands, root, columns, header, cells);
+    let spawned = grid::refill_lines(&mut commands, grid, columns, header, cells);
     let cursor_year = inputs.shown.year();
     let mut cursor_row = None;
     for (row, spawned) in table.rows.iter().zip(spawned) {
@@ -149,7 +148,7 @@ fn rebuild_rows(
         }
     }
     commands
-        .entity(ledger_table)
+        .entity(grid.root)
         .insert(ActiveDescendant(cursor_row));
 }
 

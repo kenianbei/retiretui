@@ -29,11 +29,11 @@ use super::Viewed;
 const STRIP_ROWS: f32 = BORDERS as f32 + 1.0;
 const TILE_COUNT: usize = STRIP.len();
 /// The Success tile's place in the strip.
-const SUCCESS_AT: usize = 1;
+pub(crate) const SUCCESS_AT: usize = 1;
 
 /// A tile's value, by its place in the strip.
 #[derive(Component, Clone, Copy)]
-pub(super) struct TileAt(usize);
+pub(crate) struct TileAt(pub(crate) usize);
 
 pub(super) fn spawn(commands: &mut Commands, view: Entity) {
     let strip = Node {
@@ -73,7 +73,7 @@ impl Tile {
 }
 
 /// The share of markets survived, and of how many.
-fn success_text(success: Success, projected: &Projected) -> String {
+pub(crate) fn success_text(success: Success, projected: &Projected) -> String {
     match success {
         Success::Rate(rate) => {
             let trials = usize::try_from(projected.plan.market().trials()).unwrap_or_default();

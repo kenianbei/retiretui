@@ -7,7 +7,7 @@
 
 use bevy_app::{App, Update};
 use bevy_asset::{Asset, Assets, Handle, load_internal_asset, uuid_handle};
-use bevy_color::{ColorToComponents, LinearRgba};
+use bevy_color::{ColorToComponents, LinearRgba, Mix};
 use bevy_ecs::change_detection::{DetectChanges, Ref};
 use bevy_ecs::prelude::{Commands, IntoScheduleConfigs, Query, Res, ResMut};
 use bevy_math::{UVec4, Vec4};
@@ -20,7 +20,7 @@ use plurimus::core::ratatui_core::layout::Rect;
 use plurimus::core::ratatui_core::style::{Color, Style};
 
 use super::charts::Charted;
-use crate::chart::{SeriesChart, Shade};
+use crate::chart::SeriesChart;
 use crate::theme::{Repainted, Theme};
 
 const SHADER: Handle<Shader> = uuid_handle!("bd267fc8-4bce-4879-8704-aeb43acd3cc6");
@@ -88,6 +88,11 @@ const LINE: u32 = 1;
 /// A line's width and a rule's dash, in pixels.
 const LINE_WIDTH: f32 = 2.0;
 const DASH: f32 = 4.0;
+/// A band's fill: its colour mixed this far toward the ground, and how
+/// much of what is under it shows through; every band alike, told apart
+/// by colour, as the key marks them.
+const BAND_DEPTH: f32 = 0.35;
+const BAND_ALPHA: f32 = 0.85;
 
 /// A point of a run in plot space: x along the years, a band's low and
 /// high or a line's value twice, from the floor at 0 to the top at 1.
@@ -103,6 +108,7 @@ struct ChartLook {
     rules: [Vec4; RULES],
     rule_colors: [Vec4; RULES],
     zero_color: Vec4,
+    grid_color: Vec4,
     /// Runs, rules, whether zero is ruled, unused.
     counts: UVec4,
     /// Zero's y, the line width and the dash in pixels, unused.
@@ -123,7 +129,7 @@ fn runs(chart: &SeriesChart, graph: Option<Rect>, theme: &Theme) -> (Vec<Point>,
     for shade in &chart.shades {
         let band =
             (shade.points.iter()).filter_map(|&(year, low, high)| scale.point(year, low, high));
-        runs.add(BAND, scale.paint(shade.color, shade_alpha(shade)), band);
+        runs.add(BAND, scale.fill(shade.color), band);
     }
     for series in &chart.series {
         let line =
@@ -148,6 +154,7 @@ fn runs(chart: &SeriesChart, graph: Option<Rect>, theme: &Theme) -> (Vec<Point>,
         look.params.x = scale.y_of(0.0);
     }
     look.zero_color = scale.paint(chart.axis.fg.unwrap_or(Color::Reset), 1.0);
+    look.grid_color = scale.paint(theme.bordered().fg.unwrap_or(Color::Reset), 1.0);
     look.params.y = LINE_WIDTH;
     look.params.z = DASH;
     if points.is_empty() {
@@ -198,6 +205,15 @@ impl<'a> Scale<'a> {
         rgba.alpha = alpha;
         Vec4::from(rgba.to_f32_array())
     }
+
+    /// A band's fill, deeper than its line.
+    fn fill(&self, color: Color) -> Vec4 {
+        let ink: LinearRgba = self.theme.ink(Style::new().fg(color)).into();
+        let ground: LinearRgba = self.theme.ground().into();
+        let mut rgba = ink.mix(&ground, BAND_DEPTH);
+        rgba.alpha = BAND_ALPHA;
+        Vec4::from(rgba.to_f32_array())
+    }
 }
 
 /// The runs gathered so far: their points end to end, and the look that
@@ -228,17 +244,6 @@ impl Runs {
         self.look.runs[run] = UVec4::new(start, len, kind, 0);
         self.look.colors[run] = color;
         self.look.counts.x += 1;
-    }
-}
-
-/// A band is as opaque as the glyph the terminal shades it with: the
-/// lighter the glyph, the more the ground shows through.
-fn shade_alpha(shade: &Shade) -> f32 {
-    match shade.symbol {
-        "░" => 0.35,
-        "▒" => 0.6,
-        "▓" => 0.8,
-        _ => 1.0,
     }
 }
 

@@ -195,7 +195,7 @@ fn search_by_itself(
 fn refresh_expenses(
     (tool, draft): (Res<Spending>, Res<Draft>),
     mut drawn: Local<Option<usize>>,
-    mut tables: Query<(Entity, &Grid), With<ExpensesTable>>,
+    tables: Query<&Grid, With<ExpensesTable>>,
     mut commands: Commands,
 ) {
     let is_moved = tool.is_changed() || draft.is_changed();
@@ -205,9 +205,9 @@ fn refresh_expenses(
         return;
     }
     *drawn = Some(tool.highlighted);
-    for (table, grid) in &mut tables {
+    for grid in &tables {
         let Some(listed) = tool.chosen() else {
-            grid::say_instead(&mut commands, table, NOT_SEARCHED.to_owned());
+            grid::say_instead(&mut commands, grid, NOT_SEARCHED.to_owned());
             continue;
         };
         let items = listed.items(&draft.plan, MoneyForm::Full);
@@ -215,7 +215,7 @@ fn refresh_expenses(
         let header = ITEM_COLUMNS.map(str::to_owned);
         grid::refill(
             &mut commands,
-            (table, grid),
+            grid,
             tabulate::columns((&header, &rows), GAP),
             (&header, &rows),
             &[0],
@@ -250,7 +250,7 @@ fn say_help(
         Some(holder) if options.contains(holder) => on_options(&tool, &draft.plan, &keymap),
         _ => ABOUT.to_owned(),
     };
-    help.show(Page::SpendingCeiling, &text, &theme);
+    help.show(Page::SpendingCeiling, &text);
 }
 
 /// The `take-spending` command: asks before restating the plan's flexible

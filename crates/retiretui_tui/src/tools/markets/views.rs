@@ -171,7 +171,7 @@ fn refresh_views<R: MarketTool>(
         }
         match (shown.1, grid, hung) {
             (View::ByYear, Some(grid), _) if is_moved => {
-                fill_by_year(&mut commands, (part, grid), runs);
+                fill_by_year(&mut commands, grid, runs);
             }
             (View::StillFunded, ..) if is_moved => {
                 if let Ok(mut chart) = funded.get_mut(part) {
@@ -192,10 +192,10 @@ fn refresh_views<R: MarketTool>(
 }
 
 /// Net worth at each percentile, and the share still funded, year by year.
-fn fill_by_year(commands: &mut Commands, (table, grid): (Entity, &Grid), runs: &Runs) {
+fn fill_by_year(commands: &mut Commands, grid: &Grid, runs: &Runs) {
     let (header, rows) = markets::by_year(runs, MoneyForm::Compact);
     let columns = tabulate::gapped_columns((&header, &rows), GAP);
-    grid::refill(commands, (table, grid), columns, (&header, &rows), &[0]);
+    grid::refill(commands, grid, columns, (&header, &rows), &[0]);
 }
 
 /// The share of runs not yet short, year by year, as a percent.

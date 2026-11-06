@@ -32,8 +32,8 @@ pub struct RowClick {
 /// bevy places a hit across a node from its centre, the left edge at this.
 const LEFT_EDGE: f32 = -0.5;
 
-/// The click reaches the root by bubbling, so the row is the click's
-/// first target.
+/// The click reaches the root by bubbling from what was hit: the header
+/// or a row, or, where the text is laid out, a span of one.
 pub(super) fn point_on_click(
     click: On<PointerClick>,
     grids: Query<(&Grid, &GridColumns), Without<Said>>,
@@ -42,12 +42,18 @@ pub(super) fn point_on_click(
     mut commands: Commands,
 ) {
     let root = click.entity;
-    let row = click.original_event_target();
     let Ok((grid, columns)) = grids.get(root) else {
         return;
     };
-    if row == grid.header {
-        let Ok(header) = nodes.get(row) else {
+    let hit = click.original_event_target();
+    let mut lineage = std::iter::once(hit).chain(parents.iter_ancestors(hit));
+    let Some(line) = lineage
+        .find(|&at| at == grid.header || parents.get(at).map(ChildOf::parent) == Ok(grid.body))
+    else {
+        return;
+    };
+    if line == grid.header {
+        let Ok(header) = nodes.get(line) else {
             return;
         };
         let across = click.hit.position.map(|hit| hit.x - LEFT_EDGE);
@@ -59,12 +65,12 @@ pub(super) fn point_on_click(
         }
         return;
     }
-    if parents.get(row).map(ChildOf::parent) != Ok(grid.body) {
-        return;
-    }
-    commands.entity(root).insert(ActiveDescendant(Some(row)));
+    commands.entity(root).insert(ActiveDescendant(Some(line)));
     focus.set(Some(root));
-    commands.trigger(RowClick { entity: root, row });
+    commands.trigger(RowClick {
+        entity: root,
+        row: line,
+    });
 }
 
 /// The column under a point `across` the header, as a share of its

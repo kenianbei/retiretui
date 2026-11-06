@@ -16,7 +16,7 @@ use plurimus::core::{Background, TerminalCamera};
 use plurimus::ui::UiTheme;
 use plurimus::widgets::{TableStripe, WidgetSystems};
 
-pub use said::{Hung, hang, row_line, say, say_lines, text};
+pub use said::{Hung, hang, row_line, said, say, say_lines, text};
 
 use super::journal;
 use super::settings::Settings;

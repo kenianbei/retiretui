@@ -3,22 +3,28 @@
 use bevy_app::{App, Update};
 use bevy_ecs::change_detection::DetectChangesMut;
 use bevy_ecs::hierarchy::{ChildOf, Children};
-use bevy_ecs::prelude::{Added, Entity, IntoScheduleConfigs, Or, Query, Res, ResMut, Resource};
+use bevy_ecs::prelude::{
+    Added, Entity, IntoScheduleConfigs, On, Or, Query, Res, ResMut, Resource, With,
+};
 use bevy_ecs::system::SystemParam;
 use bevy_input::keyboard::Key;
-use bevy_input_focus::InputFocus;
 use bevy_input_focus::directional_navigation::DirectionalNavigationMap;
+use bevy_input_focus::{AcquireFocus, InputFocus};
 use bevy_math::CompassOctant;
+use plurimus::bui::bevy_picking::events::PointerClick;
 use plurimus::bui::bevy_ui_widgets::Slider;
 use plurimus::widgets::{ListBoxKeys, TableKeys};
 
 use super::command::{Keymap, Outcome};
 use super::nav::{FocusStop, Page, PageSystems, ShownSurface, SurfaceRoot};
 use super::overlay;
+use super::pane::Framed;
 use super::sidebar::SidebarCursor;
 
 pub fn plugin(app: &mut App) {
     app.init_resource::<SidebarLed>();
+    app.add_observer(hold_focus_on_press);
+    app.add_observer(take_keyboard_on_click);
     app.add_systems(
         Update,
         (
@@ -27,6 +33,48 @@ pub fn plugin(app: &mut App) {
             block_widget_ends,
         ),
     );
+}
+
+/// bevy asks, on every press, that what was pressed take the keyboard,
+/// and takes it from everything where nothing up to the window can; the
+/// shell hands the keyboard out itself, so the request goes no further
+/// than what was pressed.
+fn hold_focus_on_press(mut acquire: On<AcquireFocus>) {
+    acquire.propagate(false);
+}
+
+/// A click anywhere in a pane hands it the keyboard: to the stop the
+/// click landed in, else to the pane itself where it is one, else to its
+/// first. The click bubbles to every frame above what was hit, and only
+/// the nearest acts; a sheet standing over the page is left to its own.
+fn take_keyboard_on_click(
+    click: On<PointerClick>,
+    frames: Query<&Framed>,
+    parents: Query<&ChildOf>,
+    stops: Query<(), With<FocusStop>>,
+    mut focus: PageFocus,
+) {
+    let frame = click.entity;
+    let Ok(dressed) = frames.get(frame) else {
+        return;
+    };
+    let hit = click.original_event_target();
+    let lineage = || std::iter::once(hit).chain(parents.iter_ancestors(hit));
+    if dressed.is_covering || lineage().find(|&at| frames.contains(at)) != Some(frame) {
+        return;
+    }
+    let landed_in = lineage()
+        .take_while(|&at| at != frame)
+        .find(|&at| stops.contains(at));
+    let stop = landed_in
+        .or_else(|| stops.contains(frame).then_some(frame))
+        .or_else(|| {
+            let within = |&stop: &Entity| parents.iter_ancestors(stop).any(|up| up == frame);
+            focus.ring.stops().into_iter().find(within)
+        });
+    if let Some(stop) = stop {
+        focus.set(Some(stop));
+    }
 }
 
 /// Whether the sidebar is turning the page this frame, and so keeps the

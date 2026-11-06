@@ -23,7 +23,8 @@ pub(crate) mod tests;
 mod trigger;
 mod widths;
 
-pub(crate) use field::{TextField, show_text};
+pub(crate) use field::{Bracket, TextField, show_text};
+pub(crate) use select::{CHEVRON, Select};
 
 use retiretui_client::codec;
 use retiretui_client::files::load_beneath;

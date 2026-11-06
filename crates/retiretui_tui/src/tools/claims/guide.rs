@@ -5,7 +5,7 @@
 use bevy_app::{App, Startup, Update};
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::prelude::{
-    Commands, In, IntoScheduleConfigs, Local, Query, Res, ResMut, Resource, With, World,
+    Commands, In, IntoScheduleConfigs, Query, Res, ResMut, Resource, With, World,
 };
 use bevy_ecs::system::SystemParam;
 use bevy_input_focus::InputFocus;
@@ -136,13 +136,11 @@ fn say_help(
     state: (Res<Draft>, Res<PersonCursor>, Res<Keymap>, ShownSurface),
     keyboard: Keyboard,
     theme: Res<Theme>,
-    mut said: Local<String>,
     mut help: Help,
 ) {
     let (draft, cursor, keymap, shown) = state;
     let is_moved = draft.is_changed() || cursor.is_changed() || keyboard.focus.is_changed();
-    let is_restyled = theme.is_changed();
-    if !(is_moved || is_restyled || shown.is_changed()) {
+    if !(is_moved || theme.is_changed() || shown.is_changed()) {
         return;
     }
     let text = help_line(
@@ -151,11 +149,7 @@ fn say_help(
         keyboard.place(),
         &keymap,
     );
-    if *said == text && !is_restyled {
-        return;
-    }
-    help.show(Page::SsaBenefits, &text, &theme);
-    *said = text;
+    help.show(Page::SsaBenefits, &text);
 }
 
 /// What to do next, for whom: a record missing comes first, then what ⏎

@@ -508,3 +508,67 @@ fn the_wheel_scrolls_the_years_away_from_the_cursor_and_leaves_it() {
     assert_ne!(before, after, "the rows scrolled: {after}");
     assert_eq!(ledger_year(&mut app), year, "the cursor stayed");
 }
+
+#[test]
+fn a_press_on_a_pane_s_border_leaves_the_keyboard_where_it_was() {
+    use bevy_input_focus::InputFocus;
+    let mut app = ledger();
+    redrawn(&mut app);
+    let held = app.world().resource::<InputFocus>().get();
+    assert!(held.is_some(), "the table holds the keyboard");
+    let (column, row) = cell_in(&app, "╭ Ledger", 0, 3);
+    click(&mut app, column, row);
+    redrawn(&mut app);
+    assert_eq!(app.world().resource::<InputFocus>().get(), held);
+    press_key(&mut app, KeyCode::Down);
+    redrawn(&mut app);
+    assert!(
+        app.world().resource::<YearCursor>().0.is_some(),
+        "the arrows still reach the table"
+    );
+}
+
+#[test]
+fn a_click_on_a_row_s_text_chooses_its_year() {
+    use crate::grid::Grid;
+    use crate::session::RowYear;
+    use crate::support::click_entity;
+    use bevy_ecs::hierarchy::Children;
+    use bevy_ecs::prelude::With;
+    let mut app = ledger();
+    redrawn(&mut app);
+    let mut tables = app.world_mut().query_filtered::<&Grid, With<LedgerTable>>();
+    let body = tables.single(app.world()).unwrap().body;
+    let row = app.world().get::<Children>(body).unwrap()[3];
+    let span = app.world().get::<Children>(row).unwrap()[0];
+    let year = app.world().get::<RowYear>(row).unwrap().0;
+    click_entity(&mut app, span, bevy_math::Vec2::ZERO);
+    redrawn(&mut app);
+    assert_eq!(app.world().resource::<YearCursor>().0, Some(year));
+}
+
+#[test]
+fn a_click_on_a_pane_s_padding_hands_it_the_keyboard() {
+    use crate::pane::Framed;
+    use bevy_ecs::hierarchy::ChildOf;
+    let mut app = ledger();
+    redrawn(&mut app);
+    let pane_of = |app: &App| {
+        let world = app.world();
+        let mut at = world.resource::<InputFocus>().get().unwrap();
+        loop {
+            if let Some(framed) = world.get::<Framed>(at) {
+                return framed.title.clone();
+            }
+            at = world.get::<ChildOf>(at).unwrap().parent();
+        }
+    };
+    assert!(
+        pane_of(&app).starts_with("Ledger"),
+        "the table holds the keyboard"
+    );
+    let (column, row) = cell_in(&app, "╭ Money in ", 1, 0);
+    click(&mut app, column, row);
+    redrawn(&mut app);
+    assert_eq!(pane_of(&app), "Money in");
+}

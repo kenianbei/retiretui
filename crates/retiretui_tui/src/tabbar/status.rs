@@ -4,7 +4,9 @@
 use bevy_app::{App, Update};
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::ChildOf;
-use bevy_ecs::prelude::{Commands, Component, Entity, IntoScheduleConfigs, Query, Res, With};
+use bevy_ecs::prelude::{
+    Commands, Component, Entity, IntoScheduleConfigs, Query, Res, Resource, With,
+};
 use bevy_ui::{Node, UiRect, Val};
 use plurimus::core::ratatui_core::text::{Line, Span};
 use plurimus::core::{TerminalSize, UiWidget};
@@ -18,6 +20,7 @@ use crate::session::Session;
 use crate::theme::{Repainted, Theme, say, text};
 
 pub fn plugin(app: &mut App) {
+    app.init_resource::<Reserved>();
     app.add_systems(Update, draw_status.in_set(Repainted));
 }
 
@@ -37,7 +40,12 @@ const NAME_GAP: u16 = 1;
 pub const MIN_COLS: u16 = 1 + STATUS_MARGIN;
 
 #[derive(Component, Debug)]
-struct StatusCell;
+pub(crate) struct StatusCell;
+
+/// Cells a skin keeps after the status on its row, which the status
+/// leaves clear of the name.
+#[derive(Resource, Debug, Default)]
+pub(crate) struct Reserved(pub(crate) u16);
 
 /// Laid beside the bar rather than inside it, where the bar's own chrome
 /// would repaint it, and as tall as the bar so its foot carries the bar's
@@ -62,11 +70,11 @@ pub fn spawn(commands: &mut Commands, tab_row: Entity) {
 /// what it says or the room for it changes.
 fn draw_status(
     theme: Res<Theme>,
-    shell: (Res<Draft>, Res<Session>, Res<TerminalSize>),
+    shell: (Res<Draft>, Res<Session>, Res<TerminalSize>, Res<Reserved>),
     mut cells: Query<(Entity, &mut Node), With<StatusCell>>,
     mut commands: Commands,
 ) {
-    let (draft, session, size) = shell;
+    let (draft, session, size, reserved) = shell;
     if !theme.is_changed() && !draft.is_changed() && !session.is_changed() && !size.is_changed() {
         return;
     }
@@ -87,7 +95,7 @@ fn draw_status(
     let taken: u16 = marks.iter().map(|span| cells_of(&span.content)).sum();
     let room = size
         .cols
-        .saturating_sub(super::TABS_COLS + NAME_GAP + taken + STATUS_MARGIN);
+        .saturating_sub(super::TABS_COLS + NAME_GAP + taken + STATUS_MARGIN + reserved.0);
     let name = clipped_middle(session.file_name().into_owned(), room);
     let mut spans = vec![Span::styled(format!("{name} "), theme.dimmed())];
     spans.extend(marks);

@@ -103,7 +103,8 @@ pub fn row_line(buffer: &Buffer, y: u16, blank: Rect) -> Line<'static> {
     Line::from(spans)
 }
 
-fn said(span: Span<'static>, theme: &Theme) -> (TextSpan, TextColor, TextFont) {
+/// A span as bevy's text takes it: its words, its ink and its weight.
+pub fn said(span: Span<'static>, theme: &Theme) -> (TextSpan, TextColor, TextFont) {
     let weight = if span.style.add_modifier.contains(Modifier::BOLD) {
         FontWeight::BOLD
     } else {

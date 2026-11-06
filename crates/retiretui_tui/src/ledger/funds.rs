@@ -20,7 +20,7 @@ use crate::grid::{self, Grid};
 use crate::hints::Hints;
 use crate::layout;
 use crate::nav::Page;
-use crate::pane::Pane;
+use crate::pane::{FrameRows, Pane};
 use crate::theme::Theme;
 use crate::tools::{EnterRuns, handle_enter};
 
@@ -135,17 +135,17 @@ impl Said {
 /// The label gives way to the amount, which is as wide as the widest of
 /// them.
 fn refresh(
-    (detail, shape): (Detail, Res<Shape>),
-    tables: Query<(Entity, &Said, &ChildOf, &Grid)>,
+    (detail, shape, frame): (Detail, Res<Shape>, Res<FrameRows>),
+    tables: Query<(&Said, &ChildOf, &Grid)>,
     mut panes: Query<&mut Node>,
     mut commands: Commands,
 ) {
     let Some((year, theme)) = detail.due(shape.is_changed()) else {
         return;
     };
-    for (table, said, pane, grid) in &tables {
+    for (said, pane, grid) in &tables {
         let rows = said.rows(year);
-        let basis = shape.money_basis(rows.len());
+        let basis = shape.money_basis(rows.len(), *frame);
         if let Ok(mut node) = panes.get_mut(pane.parent())
             && node.flex_basis != basis
         {
@@ -162,7 +162,7 @@ fn refresh(
         let widest = amounts.map(|amount| amount.chars().count()).max();
         let widest = u16::try_from(widest.unwrap_or(0)).unwrap_or(u16::MAX);
         let columns = vec![Constraint::Fill(1), Constraint::Length(widest)];
-        let spawned = grid::refill(&mut commands, (table, grid), columns, (&[], &cells), &[0]);
+        let spawned = grid::refill(&mut commands, grid, columns, (&[], &cells), &[0]);
         for (row, entity) in rows.iter().zip(spawned) {
             if let Some(ink) = row.ink(theme) {
                 commands.entity(entity).insert(UiStyle(ink));

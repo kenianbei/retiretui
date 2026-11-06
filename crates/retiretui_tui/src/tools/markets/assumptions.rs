@@ -71,7 +71,7 @@ fn rows<R: MarketTool>(plan: &Plan, found: Option<&R>) -> Vec<Row> {
 /// Rewrites the table whenever the plan or what the search found moves.
 fn refresh<R: MarketTool>(
     (tool, draft): (Res<Tool<R>>, Res<Draft>),
-    mut tables: Query<(Entity, &AssumptionsTable, &Grid)>,
+    tables: Query<(&AssumptionsTable, &Grid)>,
     mut commands: Commands,
 ) {
     if !(tool.is_changed() || draft.is_changed()) {
@@ -84,13 +84,13 @@ fn refresh<R: MarketTool>(
         .map(|(label, value, _)| vec![(*label).to_owned(), value.clone()])
         .collect();
     let columns = tabulate::labelled(&cells, GAP);
-    for (table, shown, grid) in &mut tables {
+    for (shown, grid) in &tables {
         if shown.0 != R::PAGE {
             continue;
         }
         let spawned = grid::refill(
             &mut commands,
-            (table, grid),
+            grid,
             columns.clone(),
             (&header, &cells),
             &[0, 1],

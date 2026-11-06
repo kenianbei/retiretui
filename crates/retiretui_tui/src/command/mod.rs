@@ -47,6 +47,7 @@ pub const HELP: &str = "help";
 /// The command that ends the session, which a window's close button runs
 /// too.
 pub const QUIT: &str = "quit";
+pub const BASIS: &str = "basis";
 
 /// The commands a page says the key of, in a hint or in its help.
 pub const DOMAINS: &str = "domains";

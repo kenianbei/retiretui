@@ -85,7 +85,7 @@ pub fn spawn_table<R: Found>(
 /// the table's width moves.
 fn refresh_options<R: Found>(
     state: (Res<Tool<R>>, Res<Basis>, Res<Theme>, Res<Draft>),
-    tables: Query<(Entity, &Grid), With<OptionsTable<R>>>,
+    tables: Query<&Grid, With<OptionsTable<R>>>,
     bodies: Query<&ComputedNode>,
     mut drawn: Local<u16>,
     mut commands: Commands,
@@ -97,13 +97,13 @@ fn refresh_options<R: Found>(
     if tool.found().is_none() && tool.is_running() {
         return;
     }
-    for (table, grid) in &tables {
+    for grid in &tables {
         let Ok(body) = bodies.get(grid.body) else {
             continue;
         };
         let Some(found) = tool.found() else {
             if is_moved {
-                grid::say_instead(&mut commands, table, tool.said());
+                grid::say_instead(&mut commands, grid, tool.said());
             }
             continue;
         };
@@ -115,7 +115,7 @@ fn refresh_options<R: Found>(
         *drawn = given;
         let laid = found.laid(&draft.plan, basis.nominal);
         let chosen = tool.highlighted().unwrap_or(R::LEADING);
-        fill(&mut commands, (table, grid), (laid, given), chosen, &theme);
+        fill(&mut commands, grid, (laid, given), chosen, &theme);
     }
 }
 
@@ -124,7 +124,7 @@ fn refresh_options<R: Found>(
 /// cursor on option `chosen`.
 fn fill(
     commands: &mut Commands,
-    (table, grid): (Entity, &Grid),
+    grid: &Grid,
     (laid, given): (Laid, u16),
     chosen: usize,
     theme: &Theme,
@@ -135,7 +135,7 @@ fn fill(
         mut options,
     } = laid;
     options.insert(0, current);
-    let spawned = tabulate::fill(commands, (table, grid), (&header, &options), (0, given));
+    let spawned = tabulate::fill(commands, grid, (&header, &options), (0, given));
     let Some((&current, options)) = spawned.split_first() else {
         return;
     };
@@ -146,7 +146,7 @@ fn fill(
         commands.entity(option).insert(OptionRow(index));
     }
     commands
-        .entity(table)
+        .entity(grid.root)
         .insert(ActiveDescendant(options.get(chosen).copied()));
 }
 
@@ -201,9 +201,9 @@ mod tests {
     fn options_grid(app: &mut App) -> (Entity, Entity) {
         let mut tables = app
             .world_mut()
-            .query_filtered::<(Entity, &Grid), With<OptionsTable<Swept>>>();
-        let (root, grid) = tables.single(app.world()).unwrap();
-        (root, grid.body)
+            .query_filtered::<&Grid, With<OptionsTable<Swept>>>();
+        let grid = tables.single(app.world()).unwrap();
+        (grid.root, grid.body)
     }
 
     #[test]

@@ -5,29 +5,27 @@
 //! answers a click on a row as the terminal answers a press.
 
 use bevy_app::{App, Update};
-use bevy_ecs::change_detection::{DetectChanges, Ref};
+use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut, Ref};
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{
     Add, Commands, Component, Entity, Has, IntoScheduleConfigs, On, Query, Remove, Res, With,
 };
 use bevy_input_focus::InputFocus;
 use bevy_ui::{
-    BackgroundColor, BorderColor, BorderRadius, ComputedNode, Display, FlexDirection, Node,
-    PositionType, UiGlobalTransform, UiRect, Val, ZIndex,
+    BackgroundColor, BorderColor, BorderRadius, ComputedNode, Display, FlexDirection, GlobalZIndex,
+    Node, PositionType, UiGlobalTransform, UiRect, Val,
 };
 use plurimus::bui::bevy_picking::events::PointerClick;
 use plurimus::core::UiHidden;
 use plurimus::core::ratatui_core::style::Style;
 use plurimus::core::ratatui_core::text::{Line, Span};
-use plurimus::ui::{ModalDismiss, UiLabel};
+use plurimus::ui::{ModalDismiss, ModalOpen, UiLabel};
 use plurimus::widgets::{Activate, MenuItem, MenuPopup};
 
 use super::chrome::{HAIRLINE, HALF_CELL_WIDE};
 use crate::layout::{self, Root};
+use crate::overlay::Band;
 use crate::theme::{Repainted, Theme, say, text};
-
-/// Above the body and whatever overlay stands in it.
-const MENU_LAYER: ZIndex = ZIndex(1);
 
 /// A row's label sits a cell in from the frame, as plurimus draws it.
 const ROW_MARGIN: &str = " ";
@@ -42,7 +40,7 @@ pub fn plugin(app: &mut App) {
 
 /// The window's node for a popup or an item.
 #[derive(Component, Debug, Clone, Copy)]
-struct Shadow(Entity);
+pub(super) struct Shadow(pub(super) Entity);
 
 /// The item a row stands for, and whether it was last drawn held.
 #[derive(Component, Debug)]
@@ -72,7 +70,7 @@ fn shadow_the_popup(
                 display: Display::None,
                 ..Node::default()
             },
-            MENU_LAYER,
+            GlobalZIndex::default(),
             ChildOf(root),
         ))
         .id();
@@ -157,25 +155,26 @@ fn choose_on_click(
 }
 
 /// An open popup's shadow hangs under its select's node, in the cells
-/// the node's em and rem resolve to, as wide as its rows; a hidden one is
-/// laid out of the tree. The window places it
-/// below alone, where the terminal's popover mirrors to the side or above
-/// when short of room.
+/// the node's em and rem resolve to, as wide as its rows, over whatever
+/// overlay stands as it is shown; a hidden one is laid out of the tree.
+/// The window places it below alone, where the terminal's popover mirrors
+/// to the side or above when short of room.
 fn place_shadows(
-    theme: Res<Theme>,
+    (theme, overlays): (Res<Theme>, Query<&Band, With<ModalOpen>>),
     popups: Query<(&Shadow, &ChildOf, Has<UiHidden>), With<MenuPopup>>,
     anchors: Query<(&ComputedNode, &UiGlobalTransform)>,
-    mut nodes: Query<&mut Node>,
+    mut shadows: Query<(&mut Node, &mut GlobalZIndex)>,
     mut commands: Commands,
 ) {
     for (shadow, anchor, is_hidden) in &popups {
-        let Ok(mut node) = nodes.get_mut(shadow.0) else {
+        let Ok((mut node, mut layer)) = shadows.get_mut(shadow.0) else {
             continue;
         };
         if is_hidden {
             layout::set_display(&mut node, false);
             continue;
         }
+        layer.set_if_neq(super::overlays::menu_layer(&overlays));
         let Ok((computed, transform)) = anchors.get(anchor.parent()) else {
             continue;
         };

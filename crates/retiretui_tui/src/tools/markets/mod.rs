@@ -161,7 +161,7 @@ fn title_runs<R: MarketTool>(
 
 fn say_help<R: MarketTool>(shown: ShownSurface, theme: Res<Theme>, mut help: Help) {
     if shown.is_changed() || theme.is_changed() {
-        help.show(R::PAGE, R::ABOUT, &theme);
+        help.show(R::PAGE, R::ABOUT);
     }
 }
 

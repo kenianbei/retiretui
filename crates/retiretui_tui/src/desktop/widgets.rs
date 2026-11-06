@@ -1,9 +1,11 @@
 //! The plurimus widgets the shell lays out, mirrored in the window: a
-//! list's rows with its cursor, a button with its brackets, and a toast in
-//! its box, each a node of text over the widget the terminal draws, and
-//! each answering a click as the terminal's does.
+//! list's rows with its cursor, a button as a box - a select as a box
+//! across its row with its chevron at the far end - and a toast in its
+//! box, each a node of text over the widget the terminal draws, and each
+//! answering a click as the terminal's does.
 
 use bevy_app::{App, Update};
+use bevy_color::Color;
 use bevy_ecs::change_detection::{DetectChanges, Ref};
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{
@@ -15,16 +17,22 @@ use bevy_ui::{
     ScrollPosition, UiRect, Val,
 };
 use plurimus::bui::bevy_picking::events::PointerClick;
+use plurimus::core::ratatui_core::style::Style;
 use plurimus::core::ratatui_core::text::{Line, Span};
 use plurimus::ui::{ScrollOffset, UiLabel, UiStyle};
 use plurimus::widgets::{
     Activate, ActiveDescendant, Button, ListBox, ListBoxCursor, ListItem, ListItemTrailing,
 };
 
-use super::chrome::{HAIRLINE, HALF_CELL_WIDE};
-use crate::layout::{BUTTON_BRACKETS, GUTTER};
+use super::chrome::{HAIRLINE, HALF_CELL_WIDE, box_in};
+use crate::edit::{CHEVRON, Select};
+use crate::layout::{BUTTON_BRACKETS, Emphasis, GUTTER};
 use crate::theme::{Repainted, Theme, say, text};
 use crate::toast::{Shown, Toasts};
+
+/// Cells a button's box keeps either side of its label: what its
+/// brackets take in the terminal.
+const BUTTON_PADDING: f32 = BUTTON_BRACKETS[0].len() as f32;
 
 pub fn plugin(app: &mut App) {
     app.add_observer(stack_the_list);
@@ -173,17 +181,49 @@ fn paint_rows(
     }
 }
 
-/// A button's label.
+/// A button's label, and a select's chevron.
 #[derive(Component, Debug)]
-struct Labelled(Entity);
+struct Labelled {
+    label: Entity,
+    chevron: Option<Entity>,
+}
 
-fn label_the_button(added: On<Add<Button>>, mut commands: Commands) {
+/// A button is a box around its label, the cells its brackets took as
+/// padding; a select - spawned with its button, so it is one by now - is
+/// a box across its row, its chevron at the far end.
+fn label_the_button(
+    added: On<Add<Button>>,
+    selects: Query<(), With<Select>>,
+    mut commands: Commands,
+) {
     let button = added.entity;
+    let is_select = selects.contains(button);
     let label = commands.spawn((text(), ChildOf(button))).id();
+    let chevron = is_select.then(|| {
+        commands
+            .spawn((
+                text(),
+                Node {
+                    margin: UiRect::left(Val::Auto),
+                    ..Node::default()
+                },
+                ChildOf(button),
+            ))
+            .id()
+    });
+    let padding = if is_select { 1.0 } else { BUTTON_PADDING };
     commands
         .entity(button)
-        .insert(Labelled(label))
-        .observe(activate_on_click);
+        .insert(Labelled { label, chevron })
+        .observe(activate_on_click)
+        .entry::<Node>()
+        .or_default()
+        .and_modify(move |mut node| {
+            box_in(&mut node, padding);
+            if is_select {
+                node.flex_grow = 1.0;
+            }
+        });
 }
 
 fn activate_on_click(click: On<PointerClick>, mut commands: Commands) {
@@ -192,15 +232,26 @@ fn activate_on_click(click: On<PointerClick>, mut commands: Commands) {
     });
 }
 
-/// `[ label ]`, bold in the accent while the keyboard is on it, and in
-/// the style its emphasis gives it otherwise.
+/// The label in its box: ringed in the ink while the keyboard is on it,
+/// and bold in the accent too unless the box is filled; a primary answer
+/// filled with the accent and said in the ground's ink, a destructive one
+/// edged in the warning's; otherwise in the style its emphasis gives it.
 fn paint_buttons(
     theme: Res<Theme>,
     focus: Res<InputFocus>,
-    buttons: Query<(Entity, Ref<UiLabel>, Option<Ref<UiStyle>>, Ref<Labelled>), With<Button>>,
+    buttons: Query<
+        (
+            Entity,
+            Ref<UiLabel>,
+            Option<Ref<UiStyle>>,
+            Option<&Emphasis>,
+            Ref<Labelled>,
+        ),
+        With<Button>,
+    >,
     mut commands: Commands,
 ) {
-    for (button, label, style, labelled) in &buttons {
+    for (button, label, style, emphasis, labelled) in &buttons {
         let has_changed = focus.is_changed()
             || theme.is_changed()
             || label.is_changed()
@@ -209,16 +260,43 @@ fn paint_buttons(
         if !has_changed {
             continue;
         }
-        let worn = if focus.get() == Some(button) {
+        let is_held = focus.get() == Some(button);
+        let is_filled = emphasis == Some(&Emphasis::Primary);
+        let edge = match emphasis {
+            _ if is_held => theme.ink(Style::new()),
+            Some(Emphasis::Primary) => theme.ink(theme.accented()),
+            Some(Emphasis::Destructive) => theme.ink(theme.exceeded()),
+            None => theme.ink(theme.bordered()),
+        };
+        let fill = if is_filled {
+            theme.ink(theme.accented())
+        } else {
+            Color::NONE
+        };
+        commands
+            .entity(button)
+            .insert((BorderColor::all(edge), BackgroundColor(fill)));
+        let worn = if is_filled {
+            Style::new().fg(theme.bg)
+        } else if is_held && labelled.chevron.is_none() {
             theme.focused()
         } else {
             style.map_or_else(Default::default, |style| style.0)
         };
-        let [open, close] = BUTTON_BRACKETS;
-        let mut line = Line::from(open);
-        line.extend(label.0.spans.iter().cloned());
-        line.push_span(close);
-        say(&mut commands, labelled.0, line.patch_style(worn), &theme);
+        let mut line = label.0.clone();
+        if let Some(chevron) = labelled.chevron {
+            line.spans.pop();
+            if theme.is_changed() || labelled.is_added() {
+                let chevron_line = Line::styled(CHEVRON, theme.dimmed());
+                say(&mut commands, chevron, chevron_line, &theme);
+            }
+        }
+        say(
+            &mut commands,
+            labelled.label,
+            line.patch_style(worn),
+            &theme,
+        );
     }
 }
 
@@ -261,6 +339,7 @@ fn dismiss_on_click(click: On<PointerClick>, shown: Query<&Shown>, mut toasts: R
 #[cfg(test)]
 mod tests {
     use bevy_ecs::hierarchy::Children;
+    use bevy_ecs::observer::Observer;
     use bevy_ecs::prelude::World;
     use bevy_ecs::system::RunSystemOnce;
     use bevy_ui::OverflowAxis;
@@ -270,9 +349,41 @@ mod tests {
     use plurimus::ui::{ModalOpen, ScrollArea};
 
     use super::*;
-    use crate::support::{SIZE, headless_app, press_key};
+    use crate::support::{SIZE, headless_app, press_key, said_by};
 
     const REM: f32 = 20.0;
+
+    #[test]
+    fn a_button_is_a_box_without_brackets_and_a_primary_one_is_filled() {
+        let mut world = World::new();
+        world.insert_resource(Theme::default());
+        world.insert_resource(InputFocus::default());
+        world.spawn(Observer::new(label_the_button));
+        let plain = world
+            .spawn((Button, UiLabel(Line::from("Cancel")), Node::default()))
+            .id();
+        let primary = world
+            .spawn((
+                Button,
+                Emphasis::Primary,
+                UiLabel(Line::from("Apply")),
+                Node::default(),
+            ))
+            .id();
+        world.flush();
+        world.run_system_once(paint_buttons).unwrap();
+        world.flush();
+        let theme = world.resource::<Theme>().clone();
+        let label = |button| world.get::<Labelled>(button).unwrap().label;
+        assert_eq!(said_by(&world, label(plain)), "Cancel");
+        assert_eq!(said_by(&world, label(primary)), "Apply");
+        let node = world.get::<Node>(plain).unwrap();
+        assert_eq!(node.border, UiRect::all(HAIRLINE));
+        assert_eq!(node.padding, UiRect::horizontal(Val::Em(2.0)));
+        let fill = |button| world.get::<BackgroundColor>(button).unwrap().0;
+        assert_eq!(fill(plain), Color::NONE);
+        assert_eq!(fill(primary), theme.ink(theme.accented()));
+    }
 
     #[test]
     fn the_rows_a_list_is_scrolled_by_scroll_its_node_a_rem_each() {

@@ -41,8 +41,8 @@ pub use claims::Claims;
 pub use ladders::Ladders;
 pub use orders::Orders;
 pub use spending::Spending;
-pub(crate) use worker::Keyed;
 pub use worker::Searches;
+pub(crate) use worker::{Keyed, is_any_live};
 pub use write::OVERLAY_OVER;
 
 use super::command::{self, Keymap};
@@ -125,31 +125,43 @@ pub(crate) struct ToolPage {
     panes: fn(&mut Commands, Entity),
 }
 
-/// The line of help under a page's panes, on the page's surface.
+/// The line of help under a page's panes, on the page's surface, and
+/// what it last said.
 #[derive(Component)]
-pub struct HelpLine(pub Page);
+pub struct HelpLine {
+    surface: Page,
+    said: String,
+}
 
 /// Spawns `surface`'s line of help, a row across the foot of `view`.
 pub(crate) fn spawn_help(commands: &mut Commands, view: Entity, surface: Page) {
-    let line = commands
-        .spawn((HelpLine(surface), fixed(1.0), ChildOf(view)))
-        .id();
+    let help = HelpLine {
+        surface,
+        said: String::new(),
+    };
+    let line = commands.spawn((help, fixed(1.0), ChildOf(view))).id();
     hang(commands, line);
 }
 
 /// The help lines, said into.
 #[derive(SystemParam)]
 pub(crate) struct Help<'w, 's> {
-    lines: Query<'w, 's, (&'static Hung, &'static HelpLine)>,
+    lines: Query<'w, 's, (&'static Hung, &'static mut HelpLine)>,
+    theme: Res<'w, Theme>,
     commands: Commands<'w, 's>,
 }
 
 impl Help<'_, '_> {
-    /// Says `text`, dimmed, in the help line under `surface`'s panes.
-    pub(crate) fn show(&mut self, surface: Page, text: &str, theme: &Theme) {
-        for (hung, _) in self.lines.iter().filter(|(_, help)| help.0 == surface) {
-            let line = Line::styled(text.to_owned(), theme.dimmed());
-            say(&mut self.commands, hung.0, line, theme);
+    /// Says `text`, dimmed, in the help line under `surface`'s panes,
+    /// unless it says that already in the theme worn.
+    pub(crate) fn show(&mut self, surface: Page, text: &str) {
+        for (hung, mut help) in self.lines.iter_mut() {
+            if help.surface != surface || (help.said == text && !self.theme.is_changed()) {
+                continue;
+            }
+            let line = Line::styled(text.to_owned(), self.theme.dimmed());
+            say(&mut self.commands, hung.0, line, &self.theme);
+            text.clone_into(&mut help.said);
         }
     }
 }
@@ -463,4 +475,63 @@ fn settle_until_idle(app: &mut bevy_app::App, is_running: impl Fn(&bevy_app::App
         std::thread::sleep(Duration::from_millis(10));
     }
     panic!("the search never answered");
+}
+
+#[cfg(test)]
+mod help_tests {
+    use bevy_ecs::hierarchy::Children;
+    use bevy_ecs::system::SystemId;
+
+    use super::*;
+    use crate::support::{SIZE, headless_app, show};
+
+    /// What the registered system says next; one system keeps what it
+    /// last saw of the theme, as a page's own does.
+    #[derive(Resource)]
+    struct ToSay(&'static str);
+
+    fn spans(app: &mut App, surface: Page) -> Vec<Entity> {
+        let world = app.world_mut();
+        let hung = world
+            .query::<(&Hung, &HelpLine)>()
+            .iter(world)
+            .find(|(_, help)| help.surface == surface)
+            .map(|(hung, _)| hung.0)
+            .expect("the page has a help line");
+        world
+            .get::<Children>(hung)
+            .map_or_else(Vec::new, |spans| spans.iter().copied().collect())
+    }
+
+    fn say(app: &mut App, saying: SystemId, text: &'static str) {
+        app.insert_resource(ToSay(text));
+        app.world_mut().run_system(saying).unwrap();
+        app.update();
+    }
+
+    #[test]
+    fn a_help_line_is_said_again_only_where_its_text_moves() {
+        let mut app = headless_app(SIZE);
+        show(&mut app, Page::WithdrawalOrder);
+        let saying = app
+            .world_mut()
+            .register_system(|to_say: Res<ToSay>, mut help: Help| {
+                help.show(Page::WithdrawalOrder, to_say.0);
+            });
+        say(&mut app, saying, "what to do");
+        let first = spans(&mut app, Page::WithdrawalOrder);
+        assert!(!first.is_empty());
+        say(&mut app, saying, "what to do");
+        assert_eq!(
+            spans(&mut app, Page::WithdrawalOrder),
+            first,
+            "unchanged, kept"
+        );
+        say(&mut app, saying, "what else to do");
+        assert_ne!(
+            spans(&mut app, Page::WithdrawalOrder),
+            first,
+            "changed, said again"
+        );
+    }
 }

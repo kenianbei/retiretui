@@ -9,6 +9,7 @@ struct Look {
     rules: array<vec4<f32>, 8>,
     rule_colors: array<vec4<f32>, 8>,
     zero_color: vec4<f32>,
+    grid_color: vec4<f32>,
     // runs, rules, whether zero is ruled, unused
     counts: vec4<u32>,
     // zero's y, the line width and the dash in pixels, unused
@@ -21,6 +22,8 @@ struct Look {
 const BAND: u32 = 0u;
 const LINE: u32 = 1u;
 const FAR: f32 = 1e9;
+// The plot is ruled across at each quarter of its height, under the runs.
+const GRID: u32 = 4u;
 
 fn over(under: vec4<f32>, paint: vec4<f32>) -> vec4<f32> {
     let alpha = paint.a + under.a * (1.0 - paint.a);
@@ -87,6 +90,11 @@ fn fragment(in: UiVertexOutput) -> @location(0) vec4<f32> {
     let px = in.size * span;
     let p = vec2(uv.x, 1.0 - uv.y);
     var color = vec4(0.0);
+    for (var g = 1u; g < GRID; g += 1u) {
+        if abs(p.y - f32(g) / f32(GRID)) * px.y <= 0.5 {
+            color = look.grid_color;
+        }
+    }
     for (var r = 0u; r < look.counts.x; r += 1u) {
         let run = look.runs[r];
         if run.z != BAND {

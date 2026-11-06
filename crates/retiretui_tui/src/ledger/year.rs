@@ -6,7 +6,7 @@
 use bevy_app::{App, Update};
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{
-    Commands, Component, Entity, IntoScheduleConfigs, Local, Query, With, Without,
+    Commands, Component, Entity, IntoScheduleConfigs, Local, Query, Res, With, Without,
 };
 use bevy_ecs::system::SystemParam;
 use bevy_ui::{FlexDirection, Node, Val};
@@ -88,9 +88,10 @@ struct YearPanes<'w, 's> {
         ),
         (With<YearLines>, Without<SoFar>),
     >,
-    tables: Query<'w, 's, (Entity, &'static ChildOf, &'static Grid), With<SoFar>>,
+    tables: Query<'w, 's, (&'static ChildOf, &'static Grid), With<SoFar>>,
     frames: Query<'w, 's, &'static mut Framed>,
     rows: Query<'w, 's, &'static mut Node, With<YearBand>>,
+    frame: Res<'w, pane::FrameRows>,
 }
 
 /// Rewrites both panes whenever the year said or the list's width moves,
@@ -117,18 +118,18 @@ fn refresh(
     let so_far: Vec<Vec<String>> = so_far
         .map(|line| vec![line.label.clone(), line.amount.clone()])
         .collect();
-    if let Ok((table, pane, grid)) = panes.tables.single() {
+    if let Ok((pane, grid)) = panes.tables.single() {
         let widest = so_far.iter().map(|line| line[1].chars().count()).max();
         let widest = u16::try_from(widest.unwrap_or(0)).unwrap_or(u16::MAX);
         let columns = vec![Constraint::Fill(1), Constraint::Length(widest)];
-        grid::refill(&mut commands, (table, grid), columns, (&[], &so_far), &[0]);
+        grid::refill(&mut commands, grid, columns, (&[], &so_far), &[0]);
         if let Ok(mut framed) = panes.frames.get_mut(pane.parent()) {
             Framed::retitle(&mut framed, &year.so_far_title);
         }
     }
     let longer = wrapped.max(so_far.len());
     let shown = u16::try_from(longer).unwrap_or(u16::MAX).min(YEAR_MOST);
-    let height = Val::Rem(f32::from(shown + pane::BORDERS));
+    let height = Val::Rem(f32::from(shown + panes.frame.0));
     for mut node in &mut panes.rows {
         if node.height != height {
             node.height = height;

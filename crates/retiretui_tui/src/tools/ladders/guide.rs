@@ -3,7 +3,7 @@
 
 use bevy_app::{App, Update};
 use bevy_ecs::change_detection::DetectChanges;
-use bevy_ecs::prelude::{IntoScheduleConfigs, Local, Query, Res, With};
+use bevy_ecs::prelude::{IntoScheduleConfigs, Query, Res, With};
 use bevy_input_focus::InputFocus;
 
 use super::super::options::OptionsTable;
@@ -44,7 +44,6 @@ fn say_help(
         Query<(), With<OptionsTable<Swept>>>,
         Query<(), With<ConversionsTable>>,
     ),
-    mut said: Local<String>,
     mut help: Help,
 ) {
     let is_moved = draft.is_changed() || focus.is_changed() || shown.is_changed();
@@ -60,9 +59,5 @@ fn say_help(
         Some(holder) if conversions.contains(holder) => on_conversions(&keymap),
         _ => ABOUT.to_owned(),
     };
-    if *said == text && !theme.is_changed() {
-        return;
-    }
-    help.show(Page::RothConversions, &text, &theme);
-    *said = text;
+    help.show(Page::RothConversions, &text);
 }

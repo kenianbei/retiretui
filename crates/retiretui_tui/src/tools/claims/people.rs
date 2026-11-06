@@ -155,7 +155,7 @@ fn estimate(
 fn refresh_people(
     state: (Res<Draft>, Res<Estimates>, Res<HeldClaims>),
     cursor: Res<PersonCursor>,
-    tables: Query<(Entity, &Grid), With<PeopleTable>>,
+    tables: Query<&Grid, With<PeopleTable>>,
     mut commands: Commands,
 ) {
     let (draft, estimates, held) = state;
@@ -165,18 +165,13 @@ fn refresh_people(
     let header: Vec<String> = PEOPLE_COLUMNS.map(str::to_owned).to_vec();
     let rows = people_rows(&draft.plan, &estimates, &held);
     let at = cursor.index(&draft.plan);
-    for (table, grid) in &tables {
-        let spawned = tabulate::fill(
-            &mut commands,
-            (table, grid),
-            (&header, &rows),
-            (GAP, u16::MAX),
-        );
+    for grid in &tables {
+        let spawned = tabulate::fill(&mut commands, grid, (&header, &rows), (GAP, u16::MAX));
         for (index, &row) in spawned.iter().enumerate() {
             commands.entity(row).insert(PersonRow(index));
         }
         let on = at.and_then(|at| spawned.get(at)).copied();
-        commands.entity(table).insert(ActiveDescendant(on));
+        commands.entity(grid.root).insert(ActiveDescendant(on));
     }
 }
 

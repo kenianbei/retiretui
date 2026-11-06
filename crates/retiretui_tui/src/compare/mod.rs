@@ -312,7 +312,7 @@ fn show_help(theme: Res<Theme>, keymap: Res<Keymap>, mut help: tools::Help) {
     } else {
         format!("{HELP}: {adds} adds one.")
     };
-    help.show(Page::Compare, &text, &theme);
+    help.show(Page::Compare, &text);
 }
 
 /// Stops comparing the highlighted plan; the document is not one.

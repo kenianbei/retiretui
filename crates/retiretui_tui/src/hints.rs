@@ -10,6 +10,7 @@ use bevy_ecs::prelude::{
 };
 use bevy_ecs::system::SystemParam;
 use bevy_input_focus::InputFocus;
+use bevy_ui::{Node, Val};
 use plurimus::core::TerminalSize;
 use plurimus::core::ratatui_core::text::{Line, Span};
 use plurimus::ui::ModalOpen;
@@ -101,7 +102,16 @@ impl FromWorld for ShellKeys {
 }
 
 const HINT_GAP: usize = 2;
-const EDGE: usize = 1;
+pub(crate) const EDGE: usize = 1;
+
+/// Cells the row's own padding keeps clear either side, which the hints
+/// are fitted short of: none in a terminal, a skin's margin in a window.
+fn inset(node: &Node) -> u16 {
+    match node.padding.left {
+        Val::Em(cells) => cells as u16,
+        _ => 0,
+    }
+}
 
 fn width_of(hints: &[Shown]) -> usize {
     let said: usize = hints
@@ -185,7 +195,7 @@ struct Drawn {
 fn refresh_hints(
     held: Held,
     shell: (Ring, Idle, Res<TerminalSize>, Res<Theme>),
-    rows: (Query<Entity, With<HintRow>>, Commands),
+    rows: (Query<(Entity, &Node), With<HintRow>>, Commands),
     mut drawn: Local<Drawn>,
     mut has_many: Local<bool>,
 ) {
@@ -203,11 +213,13 @@ fn refresh_hints(
         leading.extend(page.map(shown));
     }
     let trailing: &[Shown] = if owns_keys { &[] } else { &own.finders };
-    let cols = usize::from(size.cols);
+    let inset = rows.iter().map(|(_, node)| inset(node)).next().unwrap_or(0);
+    let fitted_cols = size.cols.saturating_sub(2 * inset);
+    let cols = usize::from(fitted_cols);
     let wanted = Drawn {
         leading: fitted(leading, trailing, cols),
         has_finders: !owns_keys,
-        cols: size.cols,
+        cols: fitted_cols,
     };
     if *drawn == wanted && !theme.is_changed() {
         return;
@@ -217,7 +229,7 @@ fn refresh_hints(
     push_run(&mut spans, &wanted.leading, &theme);
     spans.push(Span::raw(" ".repeat(gap)));
     push_run(&mut spans, trailing, &theme);
-    for row in &rows {
+    for (row, _) in &rows {
         say(&mut commands, row, Line::from(spans.clone()), &theme);
     }
     *drawn = wanted;

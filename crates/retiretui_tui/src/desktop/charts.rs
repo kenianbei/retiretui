@@ -4,37 +4,102 @@
 //! as it does in the terminal, through plurimus's mouse messages: the
 //! cursor's moves, so a chart reads out under it, and a click on a plot
 //! as the press and release it is, so the chart's own handlers answer.
+//! The Overview's chart is picked by name from its pane's header row.
 
 use bevy_app::{App, PreUpdate, Update};
 use bevy_ecs::change_detection::{DetectChanges, Ref};
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::message::{MessageReader, MessageWriter};
 use bevy_ecs::prelude::{
-    Commands, Component, Entity, IntoScheduleConfigs, Local, On, Query, Res, With, Without,
+    Added, Commands, Component, Entity, IntoScheduleConfigs, Local, On, Query, Res, ResMut, With,
+    Without,
 };
 use bevy_math::Vec2;
-use bevy_ui::{BorderColor, ComputedNode, Node, PositionType, UiRect, Val};
+use bevy_ui::{BorderColor, ComputedNode, FlexDirection, Node, PositionType, UiRect, Val};
 use bevy_window::CursorMoved;
 use plurimus::bui::bevy_picking::events::PointerClick;
 use plurimus::core::ratatui_core::buffer::Buffer;
 use plurimus::core::ratatui_core::layout::{Position, Rect};
 use plurimus::core::ratatui_core::widgets::Widget;
 use plurimus::term::{KeyModifiers, MouseButton, MouseKind, MouseMessage};
+use retiretui_client::overview::Chart;
 
 use super::CELL;
-use super::chrome::HAIRLINE;
+use super::chrome::{HAIRLINE, TITLE_AT};
+use super::pill::{lift, pill, segment};
 use crate::chart::SeriesChart;
 use crate::layout::{node_cols, node_rows};
-use crate::theme::{Hung, Repainted, Theme, hang, row_line, say_lines};
+use crate::overview::{ChartView, KeyMarks, OverviewChart};
+use crate::theme::{Hung, Repainted, Theme, hang, row_line, say_lines, text};
 
 pub fn plugin(app: &mut App) {
     // The window's plugin sends it; a harness without a window does not.
     app.add_message::<CursorMoved>();
+    app.insert_resource(KeyMarks { is_dotted: true });
     app.add_systems(PreUpdate, move_the_cursor);
     app.add_systems(
         Update,
-        (frame_charts, paint_charts).chain().in_set(Repainted),
+        (frame_charts, paint_charts, offer_the_charts, paint_picks)
+            .chain()
+            .in_set(Repainted),
     );
+}
+
+/// A chart the picker offers.
+#[derive(Component, Debug)]
+struct Picks(Chart);
+
+/// The Overview's charts named along its pane's header row, at the far
+/// end, a click on one showing it.
+fn offer_the_charts(
+    charts: Query<&ChildOf, (With<OverviewChart>, Added<Charted>)>,
+    mut commands: Commands,
+) {
+    for pane in &charts {
+        let node = Node {
+            position_type: PositionType::Absolute,
+            top: TITLE_AT.1,
+            right: TITLE_AT.0,
+            flex_direction: FlexDirection::Row,
+            ..Node::default()
+        };
+        let picker = commands.spawn((pill(node), ChildOf(pane.parent()))).id();
+        for chart in Chart::ALL {
+            commands
+                .spawn((Picks(chart), text(), segment(), ChildOf(picker)))
+                .observe(pick_on_click);
+        }
+    }
+}
+
+fn pick_on_click(click: On<PointerClick>, picks: Query<&Picks>, mut view: ResMut<ChartView>) {
+    if let Ok(pick) = picks.get(click.entity)
+        && view.0 != pick.0
+    {
+        view.0 = pick.0;
+    }
+}
+
+/// Each offered chart by name, the one on show lifted off the pill and
+/// said in the ink, the rest dimmed on it.
+fn paint_picks(
+    theme: Res<Theme>,
+    view: Res<ChartView>,
+    picks: Query<(Entity, Ref<Picks>)>,
+    mut commands: Commands,
+) {
+    for (pick, picks) in &picks {
+        if !theme.is_changed() && !view.is_changed() && !picks.is_added() {
+            continue;
+        }
+        lift(
+            &mut commands,
+            pick,
+            picks.0.name(),
+            view.0 == picks.0,
+            &theme,
+        );
+    }
 }
 
 /// A chart's plot node - over the cells ratatui draws the graph in and
@@ -153,11 +218,13 @@ fn press_the_chart(click: On<PointerClick>, mut mouse: MessageWriter<MouseMessag
 
 #[cfg(test)]
 mod tests {
+    use bevy_ecs::hierarchy::Children;
     use plurimus::term::CursorCell;
     use plurimus::ui::ComputedWidgetArea;
 
     use super::*;
     use crate::nav::Page;
+    use crate::overview::ChartKey;
     use crate::pane::Framed;
     use crate::session::YearCursor;
     use crate::support::{
@@ -257,6 +324,38 @@ mod tests {
             app.world().resource::<YearCursor>(),
             &YearCursor(Some(2040))
         );
+    }
+
+    #[test]
+    fn the_overview_s_charts_are_offered_by_name_with_the_shown_one_lit() {
+        let mut app = headless_app(SIZE);
+        app.add_plugins(plugin);
+        app.update();
+        app.update();
+        let world = app.world_mut();
+        let picker = world
+            .query::<(&Picks, &ChildOf)>()
+            .iter(world)
+            .map(|(_, parent)| parent.parent())
+            .next()
+            .unwrap();
+        let offered: Vec<(Chart, String)> = world
+            .get::<Children>(picker)
+            .unwrap()
+            .iter()
+            .map(|&pick| (world.get::<Picks>(pick).unwrap().0, said_by(world, pick)))
+            .collect();
+        let named: Vec<(Chart, String)> = Chart::ALL
+            .into_iter()
+            .map(|chart| (chart, chart.name().to_owned()))
+            .collect();
+        assert_eq!(offered, named);
+        let key = world
+            .query_filtered::<&Hung, With<ChartKey>>()
+            .single(world)
+            .unwrap()
+            .0;
+        assert!(said_by(world, key).starts_with("● "), "the key is dotted");
     }
 
     #[test]

@@ -1,9 +1,12 @@
 //! The framed pane a view lays its contents in.
 
 use bevy_app::{App, Update};
+use bevy_ecs::bundle::Bundle;
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut, Mut, Ref};
 use bevy_ecs::hierarchy::ChildOf;
-use bevy_ecs::prelude::{Commands, Component, Entity, Has, IntoScheduleConfigs, Query, Res};
+use bevy_ecs::prelude::{
+    Commands, Component, Entity, Has, IntoScheduleConfigs, Query, Res, Resource,
+};
 use bevy_input_focus::InputFocus;
 use bevy_ui::{FlexDirection, Node, Overflow, UiRect, Val};
 use plurimus::core::ratatui_core::buffer::Buffer;
@@ -21,6 +24,7 @@ use super::layout::{filling, placed};
 use super::theme::{Repainted, Theme};
 
 pub fn plugin(app: &mut App) {
+    app.init_resource::<FrameRows>();
     app.add_systems(
         Update,
         (
@@ -28,6 +32,17 @@ pub fn plugin(app: &mut App) {
             draw_frames.in_set(Repainted),
         ),
     );
+}
+
+/// Rows a frame takes of a pane sized by what it holds: the terminal's
+/// two border rows, or more where a skin draws a taller header.
+#[derive(Resource, Debug, Clone, Copy)]
+pub struct FrameRows(pub u16);
+
+impl Default for FrameRows {
+    fn default() -> Self {
+        Self(BORDERS)
+    }
 }
 
 /// The cells a pane's border takes across either axis: one on each side.
@@ -39,6 +54,9 @@ const FRAME_INSET: f32 = (BORDERS / 2) as f32;
 /// One below the floor plurimus gives a node it publishes an area for, so
 /// a frame is drawn beneath everything laid out inside it.
 const PANE_ORDER: UiOrder = UiOrder(i32::MIN / 2 - 1);
+
+/// What joins a title to what follows it.
+pub(crate) const JOIN: &str = " · ";
 
 /// A rounded border titled along its top line, drawn in the accent while
 /// the keyboard is somewhere inside it, or on the frame itself.
@@ -105,7 +123,7 @@ impl Framed {
         let heading = if self.note.is_empty() {
             format!(" {} ", self.title)
         } else {
-            format!(" {} · {} ", self.title, self.note)
+            format!(" {}{JOIN}{} ", self.title, self.note)
         };
         Line::styled(heading, self.title_style.unwrap_or(theme.accented()))
     }
@@ -230,8 +248,14 @@ impl Pane {
     /// Draws the pane under `parent`, answering with the node its contents
     /// are spawned into.
     pub fn spawn(self, commands: &mut Commands, parent: Entity) -> Entity {
+        self.spawn_with(commands, parent, ())
+    }
+
+    /// The pane spawned with `extra` beside its frame, for what must be
+    /// there as the frame is dressed.
+    pub fn spawn_with(self, commands: &mut Commands, parent: Entity, extra: impl Bundle) -> Entity {
         commands
-            .spawn((self.node, self.frame, PANE_ORDER, ChildOf(parent)))
+            .spawn((self.node, self.frame, PANE_ORDER, extra, ChildOf(parent)))
             .id()
     }
 }

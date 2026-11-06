@@ -2,7 +2,7 @@
 //! pointer what each reads that year.
 
 use bevy_ecs::change_detection::DetectChanges;
-use bevy_ecs::prelude::{Commands, Component, Query, Ref, Res, With};
+use bevy_ecs::prelude::{Commands, Component, Query, Ref, Res, Resource, With};
 use bevy_ui::ComputedNode;
 use plurimus::core::ratatui_core::style::Style;
 use plurimus::core::ratatui_core::text::{Line, Span};
@@ -20,6 +20,26 @@ use crate::theme::{Hung, Theme, say};
 
 /// How many of its glyph a mark is keyed by.
 const KEY_SWATCH: usize = 2;
+
+/// How a skin drawing its bands in colour marks them: a dot in the
+/// colour for a band, and a dash for a line.
+const DOT: &str = "●";
+const DASH: &str = "─";
+
+/// Whether the key marks its bands with dots rather than the glyphs the
+/// terminal shades them with; a skin that draws bands in colour sets it.
+#[derive(Resource, Default)]
+pub(crate) struct KeyMarks {
+    pub(crate) is_dotted: bool,
+}
+
+/// Marks each of `keyed` with a dot or a dash in its colour.
+pub(super) fn dot(keyed: &mut [Keyed]) {
+    for mark in keyed {
+        let is_line = mark.swatch.content == LINE_KEY;
+        mark.swatch.content = if is_line { DASH } else { DOT }.into();
+    }
+}
 
 /// A mark the key names, and what it reads each year: one figure, or the
 /// two a band lies between.
@@ -158,6 +178,12 @@ mod tests {
             said(&key_line(&keyed, Some(1999), money)),
             said(&key_line(&keyed, None, money)),
             "a year the plan does not reach reads nothing"
+        );
+        let mut dotted = keyed.clone();
+        dot(&mut dotted);
+        assert_eq!(
+            said(&key_line(&dotted, None, money)),
+            "● taxable  ● pre-tax  ─ Net worth  "
         );
     }
 

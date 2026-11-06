@@ -272,7 +272,7 @@ fn list_files(
 
 fn table_proposals(
     (held, cursor, shown): (Res<Held>, Res<Cursor>, ShownSurface),
-    mut tables: Query<(Entity, &Grid), With<ProposalsTable>>,
+    tables: Query<&Grid, With<ProposalsTable>>,
     mut commands: Commands,
 ) {
     if !(held.is_changed() || shown.is_changed()) {
@@ -283,14 +283,14 @@ fn table_proposals(
         .map(|row| row.cells(MoneyForm::Full).to_vec())
         .collect();
     let header = COLUMNS.map(str::to_owned);
-    for (table, grid) in &mut tables {
+    for grid in &tables {
         if rows.is_empty() {
-            grid::say_instead(&mut commands, table, NOTHING_READ.to_owned());
+            grid::say_instead(&mut commands, grid, NOTHING_READ.to_owned());
             continue;
         }
         let spawned = grid::refill(
             &mut commands,
-            (table, grid),
+            grid,
             tabulate::columns((&header, &rows), GAP),
             (&header, &rows),
             &[0, 4],
@@ -300,7 +300,7 @@ fn table_proposals(
         }
         let at = cursor.0.min(spawned.len().saturating_sub(1));
         commands
-            .entity(table)
+            .entity(grid.root)
             .insert(ActiveDescendant(spawned.get(at).copied()));
     }
 }
@@ -319,7 +319,7 @@ fn follow_cursor(
 
 fn show_read_out(
     (held, cursor, shown): (Res<Held>, Res<Cursor>, ShownSurface),
-    mut outs: Query<(Entity, &Grid), With<ReadOut>>,
+    outs: Query<&Grid, With<ReadOut>>,
     mut commands: Commands,
 ) {
     if !(held.is_changed() || cursor.is_changed() || shown.is_changed()) {
@@ -327,9 +327,9 @@ fn show_read_out(
     }
     let header: [String; 0] = [];
     let months = held.0.estimate().months;
-    for (table, grid) in &mut outs {
+    for grid in &outs {
         let Some(row) = held.0.row(cursor.0) else {
-            grid::say_instead(&mut commands, table, NOTHING_HIGHLIGHTED.to_owned());
+            grid::say_instead(&mut commands, grid, NOTHING_HIGHLIGHTED.to_owned());
             continue;
         };
         let rows: Vec<Vec<String>> = row
@@ -339,7 +339,7 @@ fn show_read_out(
             .collect();
         grid::refill(
             &mut commands,
-            (table, grid),
+            grid,
             tabulate::labelled(&rows, GAP),
             (&header, &rows),
             &[0, 1],
@@ -350,7 +350,7 @@ fn show_read_out(
 /// What lies behind the highlighted row, its pane titled for it.
 fn show_behind(
     (held, cursor, shown): (Res<Held>, Res<Cursor>, ShownSurface),
-    mut tables: Query<(Entity, &ChildOf, &Grid, Option<&ActiveDescendant>), With<BehindTable>>,
+    tables: Query<(&ChildOf, &Grid, Option<&ActiveDescendant>), With<BehindTable>>,
     (records, mut frames): (Query<&RecordRow>, Query<&mut Framed>),
     mut commands: Commands,
 ) {
@@ -358,7 +358,7 @@ fn show_behind(
         return;
     }
     let behind = held.0.behind(cursor.0, MoneyForm::Full).unwrap_or_default();
-    for (table, pane, grid, on) in &mut tables {
+    for (pane, grid, on) in &tables {
         let kept = (on.and_then(|on| on.0))
             .and_then(|row| records.get(row).ok())
             .map_or(0, |row| row.0);
@@ -371,13 +371,13 @@ fn show_behind(
             Framed::retitle(&mut framed, title);
         }
         if behind.rows.is_empty() {
-            grid::say_instead(&mut commands, table, NOTHING_HIGHLIGHTED.to_owned());
+            grid::say_instead(&mut commands, grid, NOTHING_HIGHLIGHTED.to_owned());
             continue;
         }
         let text: Vec<usize> = (0..behind.columns.len().saturating_sub(1)).collect();
         let spawned = grid::refill(
             &mut commands,
-            (table, grid),
+            grid,
             tabulate::columns((&behind.columns, &behind.rows), GAP),
             (&behind.columns, &behind.rows),
             &text,
@@ -387,7 +387,7 @@ fn show_behind(
         }
         let at = kept.min(spawned.len().saturating_sub(1));
         commands
-            .entity(table)
+            .entity(grid.root)
             .insert(ActiveDescendant(spawned.get(at).copied()));
     }
 }
@@ -419,5 +419,5 @@ fn say_help(
     } else {
         ABOUT.to_owned()
     };
-    foot.show(Page::SpendingEstimate, &text, &theme);
+    foot.show(Page::SpendingEstimate, &text);
 }
