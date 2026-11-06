@@ -32,17 +32,27 @@ ledger, a Monte Carlo run, and an account opened for editing][Demo]
 cargo install retiretui
 ```
 
-Or download a prebuilt binary for x86_64 or aarch64 Linux from the
-[releases
-page][Releases]:
+Or download a prebuilt archive from the [releases page][Releases]. Each holds
+the `retiretui` command and the `retiretui-desktop` window:
 
-```sh
-curl -LO https://github.com/kenianbei/retiretui/releases/latest/download/retiretui-x86_64-unknown-linux-gnu.tar.gz
-tar xzf retiretui-x86_64-unknown-linux-gnu.tar.gz
-```
+- Linux, x86_64 or aarch64, as a tarball:
 
-The binary is inside the `retiretui-x86_64-unknown-linux-gnu/` directory it
-unpacks to.
+  ```sh
+  curl -LO https://github.com/kenianbei/retiretui/releases/latest/download/retiretui-x86_64-unknown-linux-gnu.tar.gz
+  tar xzf retiretui-x86_64-unknown-linux-gnu.tar.gz
+  ```
+
+  The binaries are inside the `retiretui-x86_64-unknown-linux-gnu/` directory
+  it unpacks to.
+
+- Windows, x86_64, as `retiretui-x86_64-pc-windows-msvc.zip`: unzip it and
+  open `retiretui-desktop.exe`. The executable is not signed, so the first
+  run shows SmartScreen's warning; choose "More info", then "Run anyway".
+
+- macOS, Apple silicon or Intel, as `retiretui-universal-apple-darwin.zip`:
+  unzip it and open `RetireTui.app`. The app is not notarized, so the first
+  open is refused; open System Settings, Privacy & Security, and choose "Open
+  Anyway" beside the refusal, then open the app again.
 
 ## Usage
 

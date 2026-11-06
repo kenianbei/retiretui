@@ -61,8 +61,18 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   output's scale, as at a scale of 1.6; fullscreen, or a height the scale
   divides, draws.
 
+- Releases for Windows and macOS: every release archive holds the `retiretui`
+  command and the `retiretui-desktop` window, the Linux tarballs beside a zip
+  of the two Windows executables, the window's with its icon, and a zip of a
+  universal `RetireTui.app` with the command, ad-hoc signed. Neither is signed
+  by a publisher, so the README says what each platform asks on the first
+  open.
+
 ### Changed
 
+- The app icon is a shell prompt: Inconsolata's dollar beside an amber block
+  cursor on the terminal's near-black, in the web app's manifest and on the
+  Windows executable.
 - A click anywhere in a pane hands it the keyboard: to the widget the click
   landed in, or the pane's first.
 - The terminal wears the embedded `github` theme family by default,
