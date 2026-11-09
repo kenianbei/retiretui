@@ -24,7 +24,7 @@ default-members = [
 ]
 
 [workspace.package]
-version = "0.5.0"
+version = "0.6.0"
 authors = ["Norman Kerr"]
 edition = "2024"
 license = "MIT OR Apache-2.0"
@@ -35,11 +35,11 @@ categories = ["command-line-utilities", "finance"]
 rust-version = "1.97.1"
 
 [workspace.dependencies]
-retiretui_engine = { path = "crates/retiretui_engine", version = "0.5.0" }
-retiretui_client = { path = "crates/retiretui_client", version = "0.5.0" }
-retiretui_tui = { path = "crates/retiretui_tui", version = "0.5.0" }
-retiretui_cli = { path = "crates/retiretui_cli", version = "0.5.0" }
-retiretui_mcp = { path = "crates/retiretui_mcp", version = "0.5.0" }
+retiretui_engine = { path = "crates/retiretui_engine", version = "0.6.0" }
+retiretui_client = { path = "crates/retiretui_client", version = "0.6.0" }
+retiretui_tui = { path = "crates/retiretui_tui", version = "0.6.0" }
+retiretui_cli = { path = "crates/retiretui_cli", version = "0.6.0" }
+retiretui_mcp = { path = "crates/retiretui_mcp", version = "0.6.0" }
 jiff = "0.2.37"
 schemars = "1.2.2"
 serde = { version = "1.0.229", features = ["derive"] }
