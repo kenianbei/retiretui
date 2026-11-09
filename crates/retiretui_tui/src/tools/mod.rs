@@ -522,7 +522,7 @@ mod help_tests {
             });
         say(&mut app, saying, "what to do");
         let first = spans(&mut app, Page::WithdrawalOrder);
-        assert!(!first.is_empty());
+        assert_ne!(first, Vec::<Entity>::new(), "the help is said");
         say(&mut app, saying, "what to do");
         assert_eq!(
             spans(&mut app, Page::WithdrawalOrder),
