@@ -12,6 +12,10 @@ use crate::table::basis_amount;
 
 /// What the Overview titles its totals.
 pub const OVER_THE_PLAN: &str = "Over the plan";
+/// What the plan's spending and its taxes are totalled as.
+pub const SPENDING_TOTAL: &str = "Spending";
+/// See [`SPENDING_TOTAL`].
+pub const TAXES_TOTAL: &str = "Taxes";
 
 /// A tool a total leads to.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -208,13 +212,13 @@ impl Sums {
                 Some(Leads::Tool(Tool::WithdrawalOrder)),
             ),
             Total::new(
-                "Spending",
+                SPENDING_TOTAL,
                 self.spent.iter().sum(),
                 shares(SPENDING_KINDS.into_iter().zip(self.spent)),
                 domain(DomainId::Expenses),
             ),
             Total::new(
-                "Taxes",
+                TAXES_TOTAL,
                 self.taxes,
                 taxes_said(self),
                 Some(Leads::Tool(Tool::TaxTables)),

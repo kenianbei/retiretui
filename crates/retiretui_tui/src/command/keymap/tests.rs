@@ -271,9 +271,9 @@ fn a_page_names_the_users_key_in_what_it_says_of_itself() {
 fn a_rebound_command_runs_from_the_users_key_and_not_from_the_tables() {
     let mut app = app_bound("basis = \"b\"");
     let is_nominal = |app: &Headless| app.world().resource::<Basis>().nominal;
-    press_key(&mut app, plurimus::term::KeyCode::Char('n'));
+    press_key(&mut app, crate::support::typed('n'));
     assert!(!is_nominal(&app), "n is no longer the key");
-    press_key(&mut app, plurimus::term::KeyCode::Char('b'));
+    press_key(&mut app, crate::support::typed('b'));
     assert!(is_nominal(&app));
 }
 
@@ -286,7 +286,7 @@ fn the_key_row_and_the_help_name_the_users_keys() {
     assert!(!row.contains("reload"), "a command with no key has no hint");
     assert!(row.contains(": commands  ctrl-h help"), "{row}");
 
-    press_ctrl(&mut app, plurimus::term::KeyCode::Char('h'));
+    press_ctrl(&mut app, crate::support::typed('h'));
     type_text(&mut app, "draft to the plan file");
     let rows = picker_rows(&mut app);
     let is_keyed = |key: &str| rows.iter().any(|(_, badge)| badge == key);

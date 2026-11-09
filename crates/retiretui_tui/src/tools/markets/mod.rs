@@ -20,7 +20,6 @@ use bevy_ecs::entity::Entity;
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, IntoScheduleConfigs, Local, Query, Res, ResMut, Resource};
 use bevy_ui::{FlexDirection, Node, Val};
-use plurimus::core::UiWidget;
 use plurimus::core::ratatui_core::style::Style;
 use retiretui_client::searches::markets::{self, Listed, Markets, Zone, zone_of};
 use retiretui_engine::market::{History, Progress, RunError};
@@ -32,7 +31,7 @@ pub(crate) use assumptions::edit_assumption;
 pub(crate) use views::cycle_view;
 
 use super::options::spawn_table;
-use super::{Found, HelpLine, ResultPane, Tool, count_text, show_help};
+use super::{Found, Help, ResultPane, Tool, count_text};
 use crate::edit::Draft;
 use crate::hints::Hints;
 use crate::nav::{self, FocusStop, Page, ShownSurface, Turn};
@@ -160,13 +159,9 @@ fn title_runs<R: MarketTool>(
     }
 }
 
-fn say_help<R: MarketTool>(
-    shown: ShownSurface,
-    theme: Res<Theme>,
-    mut lines: Query<(&mut UiWidget, &HelpLine)>,
-) {
+fn say_help<R: MarketTool>(shown: ShownSurface, theme: Res<Theme>, mut help: Help) {
     if shown.is_changed() || theme.is_changed() {
-        show_help(&mut lines, R::PAGE, R::ABOUT, &theme);
+        help.show(R::PAGE, R::ABOUT);
     }
 }
 
@@ -206,7 +201,7 @@ fn spawn_panes<R: MarketTool>(commands: &mut Commands, row: Entity) {
     let column = Node {
         flex_direction: FlexDirection::Column,
         flex_grow: 1.0,
-        flex_basis: Val::Px(0.0),
+        flex_basis: Val::ZERO,
         height: Val::Percent(100.0),
         ..Node::default()
     };

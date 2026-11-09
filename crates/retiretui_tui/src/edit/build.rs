@@ -4,20 +4,22 @@
 
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Component, Entity};
+use bevy_ui::widget::Text;
 use bevy_ui::{FlexDirection, Node, Overflow, PositionType, Val};
-use plurimus::core::UiWidget;
-use plurimus::core::ratatui_core::style::{Modifier, Style};
-use plurimus::ui::UiStyle;
+use plurimus::bui::bevy_text::TextLayout;
+use plurimus::bui::bevy_ui_widgets::ScrollArea;
+use plurimus::core::ratatui_core::text::Line;
 use plurimus::widgets::button;
-use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
 
 use super::domain::{FieldSpec, Ops};
 use super::field;
 use super::form::{handle_button, handle_form_key};
 use super::group::Dependent;
+use crate::grid;
 use crate::layout::{Emphasis, button_node, fixed, growing, placed, rule, sized, spawn_button_row};
 use crate::overlay::{self, Centred};
 use crate::scope::KeyScope;
+use crate::theme::text;
 use retiretui_client::forms::heading;
 use retiretui_client::forms::lists::gate_of;
 
@@ -98,22 +100,23 @@ pub struct FormFields {
 }
 
 /// The bar on a form's right edge beside its fields, drawn while they
-/// overflow: what it last drew, as the rows scrolled out of view and how
-/// many of them are above.
+/// overflow: what it last drew - the rows scrolled out of view, the rows
+/// shown and how many are above - or nothing while every row fits.
 #[derive(Component, Default)]
 pub struct FormBar {
-    pub drawn: Option<(usize, usize)>,
+    pub drawn: Option<(u16, u16, u16)>,
 }
 
 /// Where a form's bar stands: on the frame's right edge, level with the
-/// field column.
+/// field column, a glyph a row down it.
 fn bar_node() -> Node {
     Node {
         position_type: PositionType::Absolute,
-        top: Val::Px(1.0),
-        bottom: Val::Px(f32::from(BELOW_FIELDS + 1)),
-        right: Val::Px(0.0),
-        width: Val::Px(1.0),
+        top: Val::Rem(1.0),
+        bottom: Val::Rem(f32::from(BELOW_FIELDS + 1)),
+        right: Val::ZERO,
+        width: Val::Em(1.0),
+        flex_direction: FlexDirection::Column,
         ..Node::default()
     }
 }
@@ -151,6 +154,11 @@ pub struct FieldLabel {
 #[derive(Component)]
 pub struct HelpFoot;
 
+/// A line a form says once and never changes - a heading, a gutter - said
+/// again only as the theme changes its ink.
+#[derive(Component, Debug)]
+pub struct Said(pub Line<'static>);
+
 /// Makes `form` the form over `ops`: a row per field, and the buttons that
 /// apply or discard the item - `is_alone` where it stands with nothing to
 /// cancel back to.
@@ -160,17 +168,11 @@ pub fn spawn_form(commands: &mut Commands, form: Entity, ops: Ops, is_alone: boo
         .entity(form)
         .insert(EditForm { ops })
         .observe(handle_form_key);
-    let bar = commands
-        .spawn((
-            FormBar::default(),
-            bar_node(),
-            UiWidget::default(),
-            placed(),
-        ))
-        .id();
+    let bar = commands.spawn((FormBar::default(), bar_node())).id();
     let column = commands
         .spawn((
             FormFields { bar },
+            ScrollArea,
             Node {
                 flex_direction: FlexDirection::Column,
                 flex_shrink: 1.0,
@@ -197,8 +199,8 @@ pub fn spawn_form(commands: &mut Commands, form: Entity, ops: Ops, is_alone: boo
     commands.spawn((
         HelpFoot,
         fixed(f32::from(HELP_ROWS)),
-        UiWidget::new(Paragraph::new("")),
-        placed(),
+        Text::default(),
+        TextLayout::default(),
         ChildOf(form),
     ));
     commands.spawn((rule(), ChildOf(form)));
@@ -207,13 +209,8 @@ pub fn spawn_form(commands: &mut Commands, form: Entity, ops: Ops, is_alone: boo
 
 /// A row naming the group of the fields below it, which takes no focus.
 fn spawn_heading(commands: &mut Commands, column: Entity, heading: &'static str) {
-    commands.spawn((
-        fixed(1.0),
-        UiWidget::new(Paragraph::new(heading)),
-        UiStyle(Style::new().add_modifier(Modifier::BOLD)),
-        placed(),
-        ChildOf(column),
-    ));
+    let said = Said(Line::styled(heading, grid::HEADING));
+    commands.spawn((said, text(), fixed(1.0), ChildOf(column)));
 }
 
 /// One field of a form: its label in `label_cols` behind a gutter of
@@ -235,28 +232,23 @@ fn spawn_row(
         ))
         .id();
     if gutter > 0 {
-        commands.spawn((
-            sized(f32::from(gutter), 1.0),
-            UiWidget::new(Paragraph::new(GUTTER)),
-            placed(),
-            ChildOf(row),
-        ));
+        let said = Said(Line::from(GUTTER));
+        commands.spawn((said, text(), sized(f32::from(gutter), 1.0), ChildOf(row)));
     }
     commands.spawn((
         FieldLabel {
             spec,
             is_marked: false,
         },
+        text(),
         sized(f32::from(label_cols), 1.0),
-        UiWidget::new(Paragraph::new(spec.label)),
-        placed(),
         ChildOf(row),
     ));
     let value = commands
         .spawn((
             Node {
                 flex_direction: FlexDirection::Row,
-                min_width: Val::Px(0.0),
+                min_width: Val::ZERO,
                 ..growing()
             },
             ChildOf(row),

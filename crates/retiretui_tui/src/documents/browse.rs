@@ -35,9 +35,18 @@ const WIDTH: u16 = 64;
 /// The path row, and the rows of the list under it.
 const ROWS: u16 = 11;
 
+const HINTS: Hints = Hints(&[
+    ("↑↓", "move"),
+    ("⏎", "pick"),
+    ("⇥", "complete"),
+    ("alt-↑", "parent"),
+    ("esc", "close"),
+]);
+
 pub fn plugin(app: &mut App) {
     app.init_resource::<Browsing>();
     app.add_systems(Update, sync_browse.in_set(overlay::Settles));
+    app.add_observer(super::field::dress_the_field);
 }
 
 /// One file picker: what it is called, what it lists, and the system told
@@ -124,22 +133,17 @@ fn sync_browse(
             overlay::centred(WIDTH, ROWS),
             Framed::over(pick.title),
             ModalOpen,
-            Hints(&[
-                ("↑↓", "move"),
-                ("⏎", "pick"),
-                ("⇥", "complete"),
-                ("←", "parent"),
-                ("esc", "close"),
-            ]),
+            HINTS,
         ))
         .observe(handle_dismiss);
     let dim = dressing.theme.dimmed();
     let mut field = FilePicker::new(session.workspace());
     if let Some(named) = browsing.named {
-        field.set_path(named);
+        field = field.with_path(named);
     }
     let mut picker = commands.spawn((
         field,
+        super::field::picker_keys(),
         UiWidget::default(),
         look(&pick, dim),
         FilePickerMatchStyle(dressing.theme.accented()),

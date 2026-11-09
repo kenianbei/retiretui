@@ -1,7 +1,8 @@
+use crate::support::typed;
 use bevy_app::App;
 use bevy_ecs::prelude::With;
+use bevy_input::keyboard::Key;
 use plurimus::core::TerminalSize;
-use plurimus::term::KeyCode;
 
 use super::{KEY_COLS, TAB_DECORATION, TABS_COLS, look};
 use crate::edit::Draft;
@@ -55,9 +56,9 @@ fn a_tab_names_the_key_the_user_gave_it_where_one_cell_holds_it() {
         Some(usize::from(TABS_COLS)),
         "the bar keeps the columns the frame reserves: {frame}"
     );
-    press_key(&mut app, KeyCode::Char('L'));
+    press_key(&mut app, typed('L'));
     assert_eq!(active_page(&app), Page::Ledger);
-    press_key(&mut app, KeyCode::Char('3'));
+    press_key(&mut app, typed('3'));
     assert_eq!(active_page(&app), Page::Ledger, "compare has no key");
 }
 
@@ -65,7 +66,7 @@ fn a_tab_names_the_key_the_user_gave_it_where_one_cell_holds_it() {
 fn a_digit_selects_the_tab_it_names() {
     let mut app = headless_app(SIZE);
     for tab in 0..TAB_COUNT {
-        press_key(&mut app, KeyCode::Char(tab_digit(tab)));
+        press_key(&mut app, typed(tab_digit(tab)));
         assert_eq!(active_page(&app).tab(), tab, "tab {tab}");
     }
 }
@@ -153,7 +154,7 @@ fn the_baseline_runs_under_the_status_to_the_edge() {
 #[test]
 fn without_a_document_only_the_plan_tab_is_live() {
     let mut app = headless_app_at(scratch_dir(), SIZE);
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     app.update();
     let dead = dead_tabs(&mut app);
     assert_eq!(dead.len(), TAB_COUNT - 1, "every tab but Plan: {dead:?}");
@@ -191,7 +192,7 @@ fn tab_column(tab: usize) -> u16 {
 #[test]
 fn without_a_document_the_status_drops_the_mark_and_keeps_the_count() {
     let mut app = headless_app_at(scratch_dir(), SIZE);
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     let frame = redrawn(&mut app);
     let row = status_row(&frame);
     assert!(row.contains("no document"), "{frame}");

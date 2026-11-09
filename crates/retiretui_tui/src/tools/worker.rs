@@ -2,6 +2,7 @@
 //! threads, and on the page between frames where there is one; how far it
 //! has got, and the way to stop it, which dropping it takes.
 
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 
 use bevy_ecs::prelude::Resource;
@@ -142,11 +143,37 @@ mod deferred {
     }
 }
 
+/// How much work is under way or not yet taken, across the process; the
+/// window reads it to draw every frame while there is any.
+static LIVE: AtomicUsize = AtomicUsize::new(0);
+
+#[cfg(any(feature = "desktop", test))]
+pub(crate) fn is_any_live() -> bool {
+    LIVE.load(Ordering::Relaxed) > 0
+}
+
+/// One count of [`LIVE`], held as long as its [`Keyed`] is.
+struct Live;
+
+impl Live {
+    fn take() -> Self {
+        LIVE.fetch_add(1, Ordering::Relaxed);
+        Self
+    }
+}
+
+impl Drop for Live {
+    fn drop(&mut self) {
+        LIVE.fetch_sub(1, Ordering::Relaxed);
+    }
+}
+
 /// Work under way over `key`, which says what it is for, and since when.
 pub(crate) struct Keyed<K, T> {
     pub(crate) key: K,
     worker: Worker<T>,
     since: Instant,
+    _live: Live,
 }
 
 impl<K, T: Send + 'static> Keyed<K, T> {
@@ -155,6 +182,7 @@ impl<K, T: Send + 'static> Keyed<K, T> {
             key,
             worker: Worker::spawn(work),
             since: Instant::now(),
+            _live: Live::take(),
         }
     }
 }

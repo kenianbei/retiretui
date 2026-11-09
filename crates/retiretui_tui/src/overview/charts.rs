@@ -6,25 +6,26 @@
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Component, Entity, On, Query, Res, ResMut, Resource, With};
-use plurimus::core::UiWidget;
+use plurimus::core::CellSize;
 use plurimus::core::ratatui_core::style::{Color, Style};
 use plurimus::core::ratatui_core::text::Span;
-use plurimus::ui::{ComputedWidgetArea, PointerPress};
+use plurimus::ui::bevy_picking::events::PointerPress;
+use plurimus::ui::{ComputedWidgetArea, pointer_cell};
 use retiretui_client::overview::{Chart, ChartLine, ChartMark, Charted, Spread, band_words};
 use retiretui_engine::market::Band;
 
-use super::key::{ChartKey, Keyed, line_swatch, swatch};
+use super::key::{ChartKey, KeyMarks, Keyed, dot, line_swatch, swatch};
 use crate::chart::{Legend, Mark, Series, SeriesChart, Shade};
 use crate::command::Outcome;
 use crate::edit::Turn;
 use crate::hints::Hints;
-use crate::layout::{filling, fixed, placed};
+use crate::layout::{filling, fixed};
 use crate::nav::{FocusStop, Page};
 use crate::pane::{Framed, Pane};
 use crate::present;
 use crate::session::{LedgerRun, Shown};
 use crate::success::Successes;
-use crate::theme::Theme;
+use crate::theme::{Theme, hang};
 use crate::tools::markets::chart::{INNER, OUTER, band};
 use crate::tools::{EnterRuns, handle_enter};
 
@@ -57,13 +58,10 @@ pub(super) fn spawn(commands: &mut Commands, band: Entity, share: f32) {
         ))
         .observe(handle_enter)
         .observe(open_ledger);
-    commands.spawn((
-        ChartKey::default(),
-        UiWidget::default(),
-        fixed(1.0),
-        placed(),
-        ChildOf(pane),
-    ));
+    let key = commands
+        .spawn((ChartKey::default(), fixed(1.0), ChildOf(pane)))
+        .id();
+    hang(commands, key);
 }
 
 /// The `overview-chart` command: the chart's next view.
@@ -78,13 +76,17 @@ pub(crate) fn cycle_chart(mut view: ResMut<ChartView>) -> Outcome {
 fn open_ledger(
     press: On<PointerPress>,
     charts: Query<(&SeriesChart, &ComputedWidgetArea)>,
+    cell: Res<CellSize>,
     mut run: ResMut<LedgerRun>,
     mut turn: Turn,
 ) {
     let Ok((chart, area)) = charts.get(press.entity) else {
         return;
     };
-    if chart.year_at(area.0, press.position).is_none() {
+    if chart
+        .year_at(area.0, pointer_cell(&press.pointer, *cell))
+        .is_none()
+    {
         return;
     }
     if run.0.is_some() {
@@ -97,7 +99,13 @@ fn open_ledger(
 /// moves, or the markets answer while they are on show, naming the view
 /// and its dollars in the pane's title.
 pub(super) fn refresh(
-    (shown, theme, view, successes): (Shown, Res<Theme>, Res<ChartView>, Res<Successes>),
+    (shown, theme, view, successes, key_marks): (
+        Shown,
+        Res<Theme>,
+        Res<ChartView>,
+        Res<Successes>,
+        Res<KeyMarks>,
+    ),
     mut charts: Query<(&mut SeriesChart, &ChildOf), With<OverviewChart>>,
     mut keys: Query<&mut ChartKey>,
     mut frames: Query<&mut Framed>,
@@ -106,13 +114,14 @@ pub(super) fn refresh(
         || shown.basis.is_changed()
         || theme.is_changed()
         || view.is_changed()
+        || key_marks.is_changed()
         || (view.0 == Chart::Markets && successes.is_changed());
     if !is_drawn {
         return;
     }
     let nominal = shown.basis.nominal;
     let charted = view.0.charted(&shown.projected, nominal);
-    let (drawn, keyed) = match view.0 {
+    let (drawn, mut keyed) = match view.0 {
         Chart::Balances => balances(&charted, &theme),
         Chart::NetWorth => lines(&charted.lines, WORTH_SERIES, &theme),
         Chart::IncomeTaxes => lines(&charted.lines, INCOME_SERIES, &theme),
@@ -121,6 +130,9 @@ pub(super) fn refresh(
             None => (SeriesChart::default(), Vec::new()),
         },
     };
+    if key_marks.is_dotted {
+        dot(&mut keyed);
+    }
     // The runs are kept in today's dollars alone.
     let basis = present::basis_name(nominal && view.0 != Chart::Markets);
     let title = format!("{} · {basis}", view.0.title());
@@ -299,7 +311,7 @@ end = { date = 2030-12-31 }
 
     fn labels(projected: &Projected) -> Vec<String> {
         let charted = Chart::NetWorth.charted(projected, false);
-        let marks = marks(&charted.marks, &Theme::terminal());
+        let marks = marks(&charted.marks, &Theme::default());
         marks.into_iter().map(|mark| mark.label).collect()
     }
 
@@ -338,7 +350,7 @@ end = { date = 2030-12-31 }
     fn series_deflation_and_bounds() {
         let projected = test_projected();
         let projection = &projected.projection;
-        let theme = Theme::terminal();
+        let theme = Theme::default();
         let drawn = |nominal| {
             let charted = Chart::IncomeTaxes.charted(&projected, nominal);
             lines(&charted.lines, INCOME_SERIES, &theme).0

@@ -30,10 +30,9 @@ use bevy_ecs::system::SystemParam;
 use bevy_input::keyboard::{Key, KeyboardInput};
 use bevy_input_focus::FocusedInput;
 use bevy_ui::{FlexDirection, Node};
-use plurimus::core::UiWidget;
-use plurimus::term::bevy_compat::HeldModifiers;
+use plurimus::core::ratatui_core::text::Line;
+use plurimus::term::HeldModifiers;
 use plurimus::ui::{KeyBinding, first_bound};
-use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
 use retiretui_client::searches::page_refusal;
 use retiretui_engine::market::{Progress, RunError};
 use retiretui_engine::plan::Plan;
@@ -44,14 +43,16 @@ pub use orders::Orders;
 pub use spending::Spending;
 pub(crate) use worker::Keyed;
 pub use worker::Searches;
+#[cfg(any(feature = "desktop", test))]
+pub(crate) use worker::is_any_live;
 pub use write::OVERLAY_OVER;
 
 use super::command::{self, Keymap};
 use super::edit::Draft;
-use super::layout::{self, Body, fixed, growing, placed};
+use super::layout::{self, Body, fixed, growing};
 use super::nav::{self, Page};
 use super::pane::Framed;
-use super::theme::{Repainted, Theme};
+use super::theme::{Hung, Repainted, Theme, hang, say};
 
 pub fn plugin(app: &mut App) {
     app.init_resource::<Searches>();
@@ -62,7 +63,6 @@ pub fn plugin(app: &mut App) {
         markets::plugin,
         spending::plugin,
         estimate::plugin,
-        options::plugin_said,
         tax::plugin,
     ));
 }
@@ -127,31 +127,44 @@ pub(crate) struct ToolPage {
     panes: fn(&mut Commands, Entity),
 }
 
-/// The line of help under a page's panes, on the page's surface.
+/// The line of help under a page's panes, on the page's surface, and
+/// what it last said.
 #[derive(Component)]
-pub struct HelpLine(pub Page);
+pub struct HelpLine {
+    surface: Page,
+    said: String,
+}
 
 /// Spawns `surface`'s line of help, a row across the foot of `view`.
 pub(crate) fn spawn_help(commands: &mut Commands, view: Entity, surface: Page) {
-    commands.spawn((
-        HelpLine(surface),
-        UiWidget::default(),
-        fixed(1.0),
-        placed(),
-        ChildOf(view),
-    ));
+    let help = HelpLine {
+        surface,
+        said: String::new(),
+    };
+    let line = commands.spawn((help, fixed(1.0), ChildOf(view))).id();
+    hang(commands, line);
 }
 
-/// Writes `text`, dimmed, into the help line under `surface`'s panes.
-pub(crate) fn show_help(
-    lines: &mut Query<(&mut UiWidget, &HelpLine)>,
-    surface: Page,
-    text: &str,
-    theme: &Theme,
-) {
-    let on_page = lines.iter_mut().filter(|(_, help)| help.0 == surface);
-    for (mut widget, _) in on_page {
-        *widget = UiWidget::new(Paragraph::new(text.to_owned()).style(theme.dimmed()));
+/// The help lines, said into.
+#[derive(SystemParam)]
+pub(crate) struct Help<'w, 's> {
+    lines: Query<'w, 's, (&'static Hung, &'static mut HelpLine)>,
+    theme: Res<'w, Theme>,
+    commands: Commands<'w, 's>,
+}
+
+impl Help<'_, '_> {
+    /// Says `text`, dimmed, in the help line under `surface`'s panes,
+    /// unless it says that already in the theme worn.
+    pub(crate) fn show(&mut self, surface: Page, text: &str) {
+        for (hung, mut help) in self.lines.iter_mut() {
+            if help.surface != surface || (help.said == text && !self.theme.is_changed()) {
+                continue;
+            }
+            let line = Line::styled(text.to_owned(), self.theme.dimmed());
+            say(&mut self.commands, hung.0, line, &self.theme);
+            text.clone_into(&mut help.said);
+        }
     }
 }
 
@@ -464,4 +477,63 @@ fn settle_until_idle(app: &mut bevy_app::App, is_running: impl Fn(&bevy_app::App
         std::thread::sleep(Duration::from_millis(10));
     }
     panic!("the search never answered");
+}
+
+#[cfg(test)]
+mod help_tests {
+    use bevy_ecs::hierarchy::Children;
+    use bevy_ecs::system::SystemId;
+
+    use super::*;
+    use crate::support::{SIZE, headless_app, show};
+
+    /// What the registered system says next; one system keeps what it
+    /// last saw of the theme, as a page's own does.
+    #[derive(Resource)]
+    struct ToSay(&'static str);
+
+    fn spans(app: &mut App, surface: Page) -> Vec<Entity> {
+        let world = app.world_mut();
+        let hung = world
+            .query::<(&Hung, &HelpLine)>()
+            .iter(world)
+            .find(|(_, help)| help.surface == surface)
+            .map(|(hung, _)| hung.0)
+            .expect("the page has a help line");
+        world
+            .get::<Children>(hung)
+            .map_or_else(Vec::new, |spans| spans.iter().copied().collect())
+    }
+
+    fn say(app: &mut App, saying: SystemId, text: &'static str) {
+        app.insert_resource(ToSay(text));
+        app.world_mut().run_system(saying).unwrap();
+        app.update();
+    }
+
+    #[test]
+    fn a_help_line_is_said_again_only_where_its_text_moves() {
+        let mut app = headless_app(SIZE);
+        show(&mut app, Page::WithdrawalOrder);
+        let saying = app
+            .world_mut()
+            .register_system(|to_say: Res<ToSay>, mut help: Help| {
+                help.show(Page::WithdrawalOrder, to_say.0);
+            });
+        say(&mut app, saying, "what to do");
+        let first = spans(&mut app, Page::WithdrawalOrder);
+        assert_ne!(first, Vec::<Entity>::new(), "the help is said");
+        say(&mut app, saying, "what to do");
+        assert_eq!(
+            spans(&mut app, Page::WithdrawalOrder),
+            first,
+            "unchanged, kept"
+        );
+        say(&mut app, saying, "what else to do");
+        assert_ne!(
+            spans(&mut app, Page::WithdrawalOrder),
+            first,
+            "changed, said again"
+        );
+    }
 }

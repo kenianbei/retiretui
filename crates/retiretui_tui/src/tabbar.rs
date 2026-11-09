@@ -12,11 +12,10 @@ use bevy_ecs::prelude::{
 use bevy_ecs::system::EntityCommands;
 use bevy_ui::{Node, Val};
 use plurimus::core::Edge;
-use plurimus::core::ratatui_core::style::Modifier;
 use plurimus::core::ratatui_core::text::{Line, Span};
-use plurimus::ui::{Checked, InteractionDisabled, PressFocusDisabled, UiLabel, ValueChange};
+use plurimus::ui::{InteractionDisabled, PressFocusDisabled, UiLabel, ValueChange};
 use plurimus::widgets::ratatui_widgets::borders::BorderType;
-use plurimus::widgets::{TabBarActiveStyle, TabBarLook, tab_bar, tab_item};
+use plurimus::widgets::{SelectedTab, TabBarActiveStyle, TabBarLook, tab_bar, tab_item};
 
 use super::command::Keymap;
 use super::layout::{self, TabRow, cells_of, placed};
@@ -64,7 +63,7 @@ struct ShellTabs;
 /// Which tab an item of the bar stands for. The bar's items are
 /// positional: [`nav::ActivePage`] is what a tab means, both ways.
 #[derive(Component, Clone, Copy, Debug)]
-pub(super) struct BarTab(pub(super) usize);
+pub(crate) struct BarTab(pub(crate) usize);
 
 /// Each tab boxed, the active box opening onto a baseline drawn along the
 /// row's foot.
@@ -94,21 +93,21 @@ fn spawn_tab_row(
             },
             tab_bar(),
             look(),
-            TabBarActiveStyle(active_style(&theme)),
-            PressFocusDisabled,
+            TabBarActiveStyle(theme.focused()),
             placed(),
             ChildOf(row),
         ))
         .id();
     for tab in 0..TAB_COUNT {
         let label = tab_label(tab, &keymap, &theme);
-        commands.spawn((tab_item(label), BarTab(tab), ChildOf(bar)));
+        commands.spawn((
+            tab_item(label),
+            BarTab(tab),
+            PressFocusDisabled,
+            ChildOf(bar),
+        ));
     }
     status::spawn(&mut commands, row);
-}
-
-fn active_style(theme: &Theme) -> plurimus::core::ratatui_core::style::Style {
-    theme.accented().add_modifier(Modifier::BOLD)
 }
 
 /// The key that selects the tab, dimmed ahead of its title. The row's
@@ -133,7 +132,7 @@ fn repaint_tabs(
         return;
     }
     for mut style in &mut bars {
-        style.0 = active_style(&theme);
+        style.0 = theme.focused();
     }
     for (tab, mut label) in &mut items {
         label.0 = tab_label(tab.0, &keymap, &theme);
@@ -145,15 +144,22 @@ fn repaint_tabs(
 /// stands.
 fn light_the_active_tab(
     shown: ShownSurface,
-    items: Query<(Entity, &BarTab, Has<Checked>)>,
+    bars: Query<(Entity, &SelectedTab), With<ShellTabs>>,
+    items: Query<(Entity, &BarTab)>,
     mut commands: Commands,
 ) {
     if !shown.is_changed() {
         return;
     }
     let lit = shown.surface().map_or(nav::Group::Plan.tab(), Page::tab);
-    for (entity, tab, is_marked) in &items {
-        mark(commands.entity(entity), Checked, tab.0 == lit, is_marked);
+    let item = items
+        .iter()
+        .find(|(_, tab)| tab.0 == lit)
+        .map(|(item, _)| item);
+    for (bar, selected) in &bars {
+        if selected.0 != item {
+            commands.entity(bar).insert(SelectedTab(item));
+        }
     }
 }
 
@@ -193,7 +199,7 @@ fn disable_the_dead_tabs(
 }
 
 fn handle_tab_chosen(
-    chosen: On<ValueChange<Entity>>,
+    chosen: On<ValueChange<Option<Entity>>>,
     bars: Query<(), With<ShellTabs>>,
     items: Query<&BarTab>,
     last: Res<LastShown>,
@@ -202,7 +208,7 @@ fn handle_tab_chosen(
     if !bars.contains(chosen.source) {
         return;
     }
-    let Ok(tab) = items.get(chosen.value) else {
+    let Some(Ok(tab)) = chosen.value.map(|item| items.get(item)) else {
         return;
     };
     turn.to(nav::entering(tab.0, *last));

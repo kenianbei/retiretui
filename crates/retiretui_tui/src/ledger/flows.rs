@@ -5,18 +5,18 @@
 
 use bevy_app::{App, Update};
 use bevy_ecs::hierarchy::ChildOf;
-use bevy_ecs::prelude::{Commands, Component, Entity, IntoScheduleConfigs, Local, Query, With};
-use bevy_ui::{Node, Val};
+use bevy_ecs::prelude::{
+    Commands, Component, Entity, IntoScheduleConfigs, Local, Query, Res, With,
+};
+use bevy_ui::{ComputedNode, Node, Val};
 use plurimus::core::ratatui_core::layout::Constraint;
-use plurimus::ui::{ComputedWidgetArea, ScrollArea};
-use plurimus::widgets::TableColumns;
 use retiretui_client::ledger::{AccountFlows, FLOW_COLUMNS, FLOWS, Year};
 
 use super::arrange::DetailStop;
 use super::{Detail, LedgerSystems, shows_the_year};
-use crate::edit::table_bundle;
+use crate::grid::{self, Grid};
 use crate::hints::Hints;
-use crate::layout::{self, filling, placed};
+use crate::layout;
 use crate::pane::{self, Pane};
 use crate::tabulate;
 
@@ -43,15 +43,12 @@ pub(super) fn spawn_pane(commands: &mut Commands, actions: Entity) {
         .shrinking_to(FLOWS_LEAST)
         .stretching()
         .spawn(commands, actions);
-    commands.spawn((
-        table_bundle(),
+    let table = grid::spawn(commands, pane);
+    commands.entity(table).insert((
         FlowsTable,
         DetailStop,
         Hints(&[("↑↓", "account")]),
         layout::Rests,
-        filling(),
-        placed(),
-        ChildOf(pane),
     ));
 }
 
@@ -85,15 +82,10 @@ fn account_lines(flows: &AccountFlows, has_rate: bool) -> Vec<Vec<String>> {
 }
 
 /// The columns as wide as what they hold, and the cells all of them take
-/// with the one the table leaves between each.
+/// laid out in the grid.
 fn measured(header: &[String], rows: &[Vec<String>]) -> (Vec<Constraint>, u16) {
-    let TableColumns(widths) = tabulate::columns((header, rows), FLOW_GAP);
-    let held = widths.iter().map(|width| match width {
-        Constraint::Length(cells) => *cells,
-        _ => 0,
-    });
-    let between = u16::try_from(widths.len().saturating_sub(1)).unwrap_or(u16::MAX);
-    let cells = held.sum::<u16>().saturating_add(between);
+    let widths = tabulate::columns((header, rows), FLOW_GAP);
+    let cells = grid::span(&widths);
     (widths, cells)
 }
 
@@ -116,14 +108,18 @@ fn fitted(year: &Year, header: &[String], width: u16) -> (Vec<Vec<String>>, Vec<
 fn refresh(
     detail: Detail,
     mut drawn: Local<Option<u16>>,
-    mut tables: Query<(Entity, &ChildOf, &mut ScrollArea, &ComputedWidgetArea), With<FlowsTable>>,
+    (tables, bodies, frame): (
+        Query<(&ChildOf, &Grid), With<FlowsTable>>,
+        Query<&ComputedNode>,
+        Res<pane::FrameRows>,
+    ),
     mut panes: Query<&mut Node>,
     mut commands: Commands,
 ) {
-    let Ok((table, pane, mut scroll, area)) = tables.single_mut() else {
+    let Ok((pane, grid)) = tables.single() else {
         return;
     };
-    let width = layout::row_width(*scroll, *area);
+    let width = bodies.get(grid.body).map_or(0, grid::across);
     let is_resized = drawn.replace(width) != Some(width);
     let Some((year, _)) = detail.due(is_resized) else {
         return;
@@ -134,15 +130,9 @@ fn refresh(
     let text: Vec<usize> = (FLOW_COLUMNS.iter().enumerate())
         .filter_map(|(at, &(_, is_figure))| (!is_figure).then_some(at))
         .collect();
-    commands.entity(table).insert(TableColumns(widths));
-    tabulate::refill(
-        &mut commands,
-        (table, &mut *scroll),
-        (&header, &rows),
-        &text,
-    );
+    grid::refill(&mut commands, grid, widths, (&header, &rows), &text);
     let lines = u16::try_from(rows.len() + HEADER_ROWS).unwrap_or(u16::MAX);
-    let height = Val::Px(f32::from(lines + pane::BORDERS));
+    let height = Val::Rem(f32::from(lines + frame.0));
     if let Ok(mut node) = panes.get_mut(pane.parent())
         && node.height != height
     {

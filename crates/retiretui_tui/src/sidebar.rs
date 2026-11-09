@@ -10,15 +10,14 @@ use bevy_ecs::prelude::{
     Changed, Commands, Component, Entity, IntoScheduleConfigs, On, Query, Res, ResMut, With, World,
 };
 use bevy_ecs::system::SystemParam;
-use bevy_input::keyboard::Key;
-use bevy_input_focus::InputFocus;
+use bevy_input::keyboard::{Key, KeyboardInput};
+use bevy_input_focus::{FocusedInput, InputFocus};
 use bevy_ui::Node;
 use plurimus::core::ratatui_core::layout::Size;
 use plurimus::core::ratatui_core::text::Line;
-use plurimus::ui::ScrollArea;
-use plurimus::widgets::{
-    ActiveDescendant, ListBoxAction, ListBoxKeys, ListItemTrailing, ValueChange, list_item, listbox,
-};
+use plurimus::term::HeldModifiers;
+use plurimus::ui::{KeyBinding, ScrollArea, first_bound};
+use plurimus::widgets::{ActiveDescendant, ListItemTrailing, ValueChange, list_item, listbox};
 
 use super::command::Outcome;
 use super::edit::{self, Draft};
@@ -83,14 +82,6 @@ pub struct Sidebar(Group);
 #[derive(Component, Clone, Copy, Debug)]
 pub struct SidebarRow(Page);
 
-/// A sidebar's keys: a list's own, and the arrow that goes into the page
-/// as choosing its row does.
-fn sidebar_keys() -> ListBoxKeys {
-    let mut keys = ListBoxKeys::default();
-    keys.0.push((Key::ArrowRight.into(), ListBoxAction::Select));
-    keys
-}
-
 const fn hints(group: Group) -> Hints {
     match group {
         Group::Tools => Hints(&[("↑↓", "tool"), ("→", "into")]),
@@ -115,13 +106,13 @@ fn spawn_sidebars(bodies: Query<Entity, With<Body>>, mut commands: Commands) {
                 layout::Rests,
                 hints(group),
                 listbox(),
-                sidebar_keys(),
                 layout::list_cursor(),
                 ScrollArea::new(Size::default()),
                 filling(),
                 placed(),
                 ChildOf(pane),
             ))
+            .observe(step_in_on_right)
             .id();
         for page in Page::ALL
             .into_iter()
@@ -135,8 +126,9 @@ fn spawn_sidebars(bodies: Query<Entity, With<Body>>, mut commands: Commands) {
 /// A sidebar's cursor, read as the page it is on.
 #[derive(SystemParam)]
 pub struct SidebarCursor<'w, 's> {
-    lists: Query<'w, 's, (Entity, &'static Sidebar, &'static mut ActiveDescendant)>,
+    lists: Query<'w, 's, (Entity, &'static Sidebar, &'static ActiveDescendant)>,
     rows: Query<'w, 's, (Entity, &'static SidebarRow)>,
+    commands: Commands<'w, 's>,
 }
 
 impl SidebarCursor<'_, '_> {
@@ -162,16 +154,37 @@ impl SidebarCursor<'_, '_> {
         let Some((row, _)) = row else {
             return;
         };
-        let list = self
-            .lists
-            .iter_mut()
-            .find(|(_, sidebar, _)| sidebar.0 == group);
-        if let Some((_, _, mut cursor)) = list
+        let list = self.lists.iter().find(|(_, sidebar, _)| sidebar.0 == group);
+        if let Some((list, _, cursor)) = list
             && cursor.0 != Some(row)
         {
-            cursor.0 = Some(row);
+            self.commands
+                .entity(list)
+                .insert(ActiveDescendant(Some(row)));
         }
     }
+}
+
+/// The arrow that goes into the page, as choosing the row does.
+const INTO_KEYS: &[(KeyBinding, ())] = &[(KeyBinding::new(Key::ArrowRight), ())];
+
+/// Upstream's list runs first and moves its cursor on Right, so the cursor
+/// it moved from is put back behind it.
+fn step_in_on_right(
+    mut input: On<FocusedInput<KeyboardInput>>,
+    (held, cursors): (HeldModifiers, Query<&ActiveDescendant>),
+    mut commands: Commands,
+    mut focus: PageFocus,
+) {
+    if first_bound(INTO_KEYS, &input.input, held.get()).is_none() {
+        return;
+    }
+    input.propagate(false);
+    let list = input.focused_entity;
+    if let Ok(cursor) = cursors.get(list) {
+        commands.entity(list).insert(cursor.clone());
+    }
+    focus.enter_page();
 }
 
 /// A cursor moved, by key or by pointer: the page follows it, and the

@@ -2,7 +2,7 @@
 //! and the year under them, a press on the Overview's chart, and Compare.
 
 use bevy_app::App;
-use plurimus::term::KeyCode;
+use bevy_input::keyboard::Key;
 
 use super::nav::Page;
 use super::session::{Today, YearCursor};
@@ -34,9 +34,9 @@ fn ledger_shows(app: &mut App) -> i16 {
 fn a_year_moved_in_the_ledger_moves_the_year_under_it() {
     let mut app = headless_app(ROOMY);
     assert_eq!(ledger_shows(&mut app), TODAY.0);
-    press_key(&mut app, KeyCode::Down);
+    press_key(&mut app, Key::ArrowDown);
     assert_eq!(ledger_shows(&mut app), TODAY.0 + 1);
-    press_key(&mut app, KeyCode::End);
+    press_key(&mut app, Key::End);
     assert_eq!(ledger_shows(&mut app), LAST_YEAR);
     let (column, row) = cell_of(&app, " 2040 ");
     click(&mut app, column, row);
@@ -53,7 +53,7 @@ fn a_chart_click_on_the_overview_opens_the_ledger_at_that_year() {
     app.update();
     assert_eq!(active_page(&app), Page::Ledger, "the press turned to it");
     assert_eq!(ledger_shows(&mut app), 2040);
-    press_key(&mut app, KeyCode::Down);
+    press_key(&mut app, Key::ArrowDown);
     assert_eq!(cursor(&app), YearCursor(Some(2041)), "↓ steps on from 2040");
     assert_eq!(ledger_shows(&mut app), 2041);
     assert_at_rest(&mut app);

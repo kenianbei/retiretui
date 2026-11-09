@@ -1,27 +1,24 @@
-//! The view side of an editing page: one plurimus `Table` per domain,
-//! its rows drawn from the draft.
+//! The view side of an editing page: one grid per domain, its rows drawn
+//! from the draft.
 
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
-use bevy_ecs::prelude::{
-    ChildOf, Children, Commands, Component, Entity, Mut, On, Query, Res, ResMut,
-};
+use bevy_ecs::prelude::{Commands, Component, Entity, Mut, On, Query, Res, ResMut};
 use bevy_ecs::system::SystemParam;
 use bevy_input::keyboard::{Key, KeyboardInput};
 use bevy_input_focus::FocusedInput;
-use plurimus::core::ratatui_core::layout::{Constraint, Rect, Size};
-use plurimus::core::ratatui_core::style::{Modifier, Style};
+use bevy_ui::ComputedNode;
+use plurimus::bui::ComputedNodeRect;
+use plurimus::core::ratatui_core::layout::{Constraint, Rect};
 use plurimus::core::ratatui_core::text::Line;
-use plurimus::term::bevy_compat::HeldModifiers;
-use plurimus::ui::{ComputedWidgetArea, KeyBinding, ScrollArea, UiStyle, first_bound};
-use plurimus::widgets::{
-    ActiveDescendant, TableAction, TableColumns, TableGeometry, TableKeys, TablePosition,
-    TableSelection, TableStripe, ValueChange, table_header, table_row,
-};
+use plurimus::term::HeldModifiers;
+use plurimus::ui::{KeyBinding, UiStyle, first_bound};
+use plurimus::widgets::{ActiveDescendant, TableAction, TableKeys};
 
 use super::domain::{ListOps, Ops};
 use super::draft::Draft;
 use super::editing::{self, Slot};
 use super::widths::Laid;
+use crate::grid::{self, Grid, RowClick};
 use crate::layout;
 use crate::motion::{Cues, Play};
 use crate::nav::{self, Page, ShownSurface};
@@ -84,20 +81,6 @@ pub fn table_keys() -> TableKeys {
     keys
 }
 
-/// A domain's table. The columns are left unshared until the first
-/// rebuild measures what they hold; the scroll area's content size is
-/// left at zero, which the widget crate keeps in step with the rows.
-pub fn table_bundle() -> impl bevy_ecs::bundle::Bundle {
-    (
-        plurimus::widgets::table([]),
-        TableSelection::Row,
-        layout::table_cursor(),
-        table_keys(),
-        TableStripe(Style::new()),
-        ScrollArea::new(Size::default()),
-    )
-}
-
 /// What the rows are drawn from: the draft they stand for, the surface on
 /// show, and the theme an empty domain's line is dimmed by.
 #[derive(SystemParam)]
@@ -113,129 +96,96 @@ pub struct TableView<'w> {
 /// is shown with room; one turned back to unmoved keeps its rows.
 pub fn rebuild_rows(
     view: TableView,
-    mut tables: Query<(
-        Entity,
-        &mut DomainTable,
-        &ActiveDescendant,
-        &ComputedWidgetArea,
-        &ScrollArea,
-    )>,
-    rows: Query<&Row>,
+    mut tables: Query<(Entity, &mut DomainTable, &Grid, &ActiveDescendant)>,
+    (bodies, rows): (Query<&ComputedNode>, Query<&Row>),
     mut commands: Commands,
 ) {
     let (draft, theme) = (&view.draft, &view.theme);
     let surface = view.shown.surface();
-    for (table, mut domain_table, cursor, area, scroll) in &mut tables {
+    for (table, mut domain_table, grid, cursor) in &mut tables {
         let is_moved = draft.is_changed() || theme.is_changed() || domain_table.is_changed();
-        if domain_table.ops.surface != surface || area.0.width == 0 {
+        let given = bodies.get(grid.body).map_or(0, layout::node_cols);
+        if domain_table.ops.surface != surface || given == 0 {
             if is_moved {
                 domain_table.bypass_change_detection().built_for = None;
             }
             continue;
         }
-        // What the rows are drawn in, which is the area less the column
-        // a scrolled table keeps for its bar.
-        let given = scroll.content_width(area.0.width);
         if !is_moved && domain_table.built_for == Some(given) {
             continue;
         }
-        let kept = cursor_row(*cursor, &rows);
+        let kept = cursor_row(cursor, &rows);
         let table_ref = domain_table.bypass_change_detection();
         table_ref.built_for = Some(given);
         let wanted = table_ref.wanted.take().or(kept);
-        commands.entity(table).despawn_related::<Children>();
         let list = table_ref.list;
         let mut items: Vec<sort::Item> = (list.rows)(&draft.plan).into_iter().enumerate().collect();
         if let Some(sort) = table_ref.sort {
             items = sort.order(items);
         }
         if items.is_empty() {
-            spawn_nothing_yet(&mut commands, table, list.purpose, theme);
-            commands.entity(table).insert(ActiveDescendant(None));
+            spawn_nothing_yet(&mut commands, grid, list.purpose, theme);
             continue;
         }
         let laid = Laid::of(table_ref, &items, given);
-        commands.entity(table).insert(laid.columns());
-        commands.spawn((
-            table_header(laid.header()),
-            UiStyle(Style::new().add_modifier(Modifier::BOLD)),
-            ChildOf(table),
-        ));
-        let placed = spawn_body(&mut commands, table, &laid, items, wanted);
+        let indices: Vec<usize> = items.iter().map(|(index, _)| *index).collect();
+        let rows = items.into_iter().map(|(_, cells)| laid.row(cells));
+        let spawned = grid::refill_lines(&mut commands, grid, laid.columns(), laid.header(), rows);
+        let mut cursor_row = None;
+        for (&row, index) in spawned.iter().zip(indices) {
+            commands.entity(row).insert(Row(index));
+            if Some(Row(index)) == wanted {
+                cursor_row = Some(row);
+            }
+        }
+        let placed = cursor_row.or_else(|| spawned.first().copied());
         commands.entity(table).insert(ActiveDescendant(placed));
     }
 }
 
-/// Spawns a row per item; answers with the row the cursor is to rest on.
-fn spawn_body(
-    commands: &mut Commands,
-    table: Entity,
-    laid: &Laid,
-    items: Vec<sort::Item>,
-    wanted: Option<Row>,
-) -> Option<Entity> {
-    let mut cursor_row = None;
-    let mut first_row = None;
-    for (index, cells) in items {
-        let row = Row(index);
-        let spawned = commands
-            .spawn((table_row(laid.row(cells)), row, ChildOf(table)))
-            .id();
-        first_row.get_or_insert(spawned);
-        if Some(row) == wanted {
-            cursor_row = Some(spawned);
-        }
-    }
-    cursor_row.or(first_row)
-}
-
 /// What a domain with nothing in it yet says: what it is for, in place of
-/// headers over no rows.
-fn spawn_nothing_yet(commands: &mut Commands, table: Entity, purpose: &str, theme: &Theme) {
-    commands
-        .entity(table)
-        .insert(TableColumns(vec![Constraint::Fill(1)]));
-    let indent = usize::from(layout::CURSOR_COLS);
-    // A header, not a row: the widget steps and clicks its body rows, and
-    // a line no item stands behind must never take the cursor.
-    commands.spawn((
-        table_header(vec![Line::from(format!("{:indent$}{purpose}", ""))]),
-        UiStyle(theme.dimmed()),
-        ChildOf(table),
-    ));
+/// headers over no rows. A header, not a row: a line no item stands
+/// behind must never take the cursor.
+fn spawn_nothing_yet(commands: &mut Commands, grid: &Grid, purpose: &str, theme: &Theme) {
+    let header = vec![Line::from(purpose.to_owned())];
+    grid::refill_lines(
+        commands,
+        grid,
+        vec![Constraint::Fill(1)],
+        header,
+        std::iter::empty(),
+    );
+    commands.entity(grid.header).insert(UiStyle(theme.dimmed()));
 }
 
 /// Flashes the row of the item just applied: the receipt for a write that
 /// is otherwise instant. It fades in from `dim` rather than from the
 /// accent, which the cursor row it lands on is already drawn in. It waits
 /// a frame, for the rebuilt rows to be scrolled to where they will rest.
+/// Only a terminal lays its nodes out in cells, so only there is a rect
+/// to flash.
 pub fn cue_receipt(
-    mut tables: Query<(
-        Entity,
-        Mut<DomainTable>,
-        &ActiveDescendant,
-        &ComputedWidgetArea,
-    )>,
-    geometry: TableGeometry,
+    mut tables: Query<(Entity, Mut<DomainTable>, &ActiveDescendant)>,
+    rects: Query<&ComputedNodeRect>,
     theme: Res<Theme>,
     mut cues: ResMut<Cues>,
 ) {
-    for (table, mut domain_table, cursor, area) in &mut tables {
+    for (table, mut domain_table, cursor) in &mut tables {
         if !domain_table.is_applied || domain_table.is_changed() {
             continue;
         }
         domain_table.bypass_change_detection().is_applied = false;
         // An applied item is the one the cursor is left on.
-        let row = cursor.0.and_then(|row| geometry.cell_rect(table, row, 0));
-        if let Some(row) = row {
-            let flashed = Rect::new(area.0.x, row.y, area.0.width, 1);
+        let row = cursor.0.and_then(|row| rects.get(row).ok());
+        if let (Some(row), Ok(across)) = (row, rects.get(table)) {
+            let flashed = Rect::new(across.rect.x, row.rect.y, across.rect.width, 1);
             cues.play(Play::Receipt(theme.dim), flashed);
         }
     }
 }
 
 /// The row `cursor` rests on, where it rests on one.
-pub fn cursor_row(cursor: ActiveDescendant, rows: &Query<&Row>) -> Option<Row> {
+pub fn cursor_row(cursor: &ActiveDescendant, rows: &Query<&Row>) -> Option<Row> {
     cursor.0.and_then(|row| rows.get(row).ok()).copied()
 }
 
@@ -255,26 +205,26 @@ pub fn handle_table_key(
         return;
     }
     input.propagate(false);
-    if let Some(row) = cursor_row(*cursor, &rows) {
+    if let Some(row) = cursor_row(cursor, &rows) {
         commands
             .run_system_cached_with(editing::open_item, (domain.ops, Some(table), Slot::At(row)));
     }
 }
 
-/// A press on a row opens it.
-pub fn handle_row_select(
-    select: On<ValueChange<TablePosition>>,
+/// A click on a row opens it; the grid has put the keyboard on the table
+/// first, so the form opened over it hands the keyboard back to it.
+pub fn handle_row_click(
+    click: On<RowClick>,
     tables: Query<&DomainTable>,
     rows: Query<&Row>,
     mut commands: Commands,
 ) {
-    let Ok(domain) = tables.get(select.source) else {
+    let table = click.entity;
+    let (Ok(domain), Ok(&row)) = (tables.get(table), rows.get(click.row)) else {
         return;
     };
-    if let Some(&row) = select.value.row.and_then(|row| rows.get(row).ok()) {
-        let opened = (domain.ops, Some(select.source), Slot::At(row));
-        commands.run_system_cached_with(editing::open_item, opened);
-    }
+    let opened = (domain.ops, Some(table), Slot::At(row));
+    commands.run_system_cached_with(editing::open_item, opened);
 }
 
 #[cfg(test)]

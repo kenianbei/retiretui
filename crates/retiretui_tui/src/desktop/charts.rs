@@ -1,0 +1,303 @@
+//! A chart in the window: the terminal's chart says its cells outside the
+//! graph a row at a time, so its labels land where ratatui puts them, and
+//! the graph is a node the plot is drawn into. The pointer reaches a chart
+//! as it does in the terminal, through plurimus's mouse messages: the
+//! cursor's moves, so a chart reads out under it, and a click on a plot
+//! as the press and release it is, so the chart's own handlers answer.
+//! The Overview's chart is picked by name from its pane's header row.
+
+use bevy_app::{App, Update};
+use bevy_ecs::change_detection::{DetectChanges, Ref};
+use bevy_ecs::hierarchy::ChildOf;
+use bevy_ecs::prelude::{
+    Added, Commands, Component, Entity, IntoScheduleConfigs, On, Query, Res, ResMut, With, Without,
+};
+use bevy_ui::{BorderColor, ComputedNode, FlexDirection, Node, PositionType, UiRect, Val};
+use plurimus::core::ratatui_core::buffer::Buffer;
+use plurimus::core::ratatui_core::layout::Rect;
+use plurimus::core::ratatui_core::widgets::Widget;
+use plurimus::ui::bevy_picking::events::PointerClick;
+use retiretui_client::overview::Chart;
+
+use super::chrome::{HAIRLINE, TITLE_AT};
+use super::pill::{lift, pill, segment};
+use crate::chart::SeriesChart;
+use crate::layout::{node_cols, node_rows};
+use crate::overview::{ChartView, KeyMarks, OverviewChart};
+use crate::theme::{Hung, Repainted, Theme, hang, row_line, say_lines, text};
+
+pub fn plugin(app: &mut App) {
+    app.insert_resource(KeyMarks { is_dotted: true });
+    app.add_systems(
+        Update,
+        (frame_charts, paint_charts, offer_the_charts, paint_picks)
+            .chain()
+            .in_set(Repainted),
+    );
+}
+
+/// A chart the picker offers.
+#[derive(Component, Debug)]
+struct Picks(Chart);
+
+/// The Overview's charts named along its pane's header row, at the far
+/// end, a click on one showing it.
+fn offer_the_charts(
+    charts: Query<&ChildOf, (With<OverviewChart>, Added<Charted>)>,
+    mut commands: Commands,
+) {
+    for pane in &charts {
+        let node = Node {
+            position_type: PositionType::Absolute,
+            top: TITLE_AT.1,
+            right: TITLE_AT.0,
+            flex_direction: FlexDirection::Row,
+            ..Node::default()
+        };
+        let picker = commands.spawn((pill(node), ChildOf(pane.parent()))).id();
+        for chart in Chart::ALL {
+            commands
+                .spawn((Picks(chart), text(), segment(), ChildOf(picker)))
+                .observe(pick_on_click);
+        }
+    }
+}
+
+fn pick_on_click(click: On<PointerClick>, picks: Query<&Picks>, mut view: ResMut<ChartView>) {
+    if let Ok(pick) = picks.get(click.entity)
+        && view.0 != pick.0
+    {
+        view.0 = pick.0;
+    }
+}
+
+/// Each offered chart by name, the one on show lifted off the pill and
+/// said in the ink, the rest dimmed on it.
+fn paint_picks(
+    theme: Res<Theme>,
+    view: Res<ChartView>,
+    picks: Query<(Entity, Ref<Picks>)>,
+    mut commands: Commands,
+) {
+    for (pick, picks) in &picks {
+        if !theme.is_changed() && !view.is_changed() && !picks.is_added() {
+            continue;
+        }
+        lift(
+            &mut commands,
+            pick,
+            picks.0.name(),
+            view.0 == picks.0,
+            &theme,
+        );
+    }
+}
+
+/// A chart's plot node - over the cells ratatui draws the graph in and
+/// the axis beside and under it, which the node's left and bottom borders
+/// draw - and the graph's cells as last said, none while the chart has
+/// no room for one.
+#[derive(Component, Debug)]
+pub(super) struct Charted {
+    pub(super) plot: Entity,
+    pub(super) graph: Option<Rect>,
+}
+
+/// Gives every chart not yet dressed its said rows and its plot.
+fn frame_charts(
+    charts: Query<Entity, (With<SeriesChart>, Without<Charted>)>,
+    mut commands: Commands,
+) {
+    for chart in &charts {
+        hang(&mut commands, chart);
+        let plot = commands
+            .spawn((
+                Node {
+                    position_type: PositionType::Absolute,
+                    border: UiRect {
+                        left: HAIRLINE,
+                        bottom: HAIRLINE,
+                        ..UiRect::ZERO
+                    },
+                    ..Node::default()
+                },
+                ChildOf(chart),
+            ))
+            .id();
+        commands.entity(chart).insert(Charted { plot, graph: None });
+    }
+}
+
+/// Says each chart's cells again whenever it, its node or the theme
+/// moves: the chart drawn into a buffer of its cells, each row said with
+/// the graph and the axis blank, and the plot's node placed over them.
+fn paint_charts(
+    theme: Res<Theme>,
+    mut charts: Query<(Ref<SeriesChart>, Ref<ComputedNode>, &Hung, &mut Charted)>,
+    mut nodes: Query<&mut Node>,
+    mut commands: Commands,
+) {
+    for (drawn, computed, hung, mut charted) in &mut charts {
+        let is_stale =
+            drawn.is_changed() || computed.is_changed() || theme.is_changed() || charted.is_added();
+        if !is_stale {
+            continue;
+        }
+        let cells = Rect::new(0, 0, node_cols(&computed), node_rows(&computed));
+        let mut buffer = Buffer::empty(cells);
+        (&*drawn).render(cells, &mut buffer);
+        let blank = drawn.plot(cells).unwrap_or(Rect::ZERO);
+        charted.graph = drawn.graph(cells);
+        let rows = (cells.top()..cells.bottom())
+            .map(|y| row_line(&buffer, y, blank))
+            .collect();
+        say_lines(&mut commands, hung.0, rows, &theme);
+        if let Ok(mut node) = nodes.get_mut(charted.plot) {
+            node.left = Val::Em(f32::from(blank.x));
+            node.top = Val::Rem(f32::from(blank.y));
+            node.width = Val::Em(f32::from(blank.width));
+            node.height = Val::Rem(f32::from(blank.height));
+        }
+        commands
+            .entity(charted.plot)
+            .insert(BorderColor::all(theme.ink(drawn.axis)));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use bevy_ecs::hierarchy::Children;
+    use plurimus::core::CellSize;
+    use plurimus::ui::ComputedWidgetArea;
+
+    use super::*;
+    use crate::desktop::CELL;
+    use crate::nav::Page;
+    use crate::overview::ChartKey;
+    use crate::pane::Framed;
+    use crate::session::YearCursor;
+    use crate::support::{
+        ROOMY, SIZE, active_page, click, headless_app, hover, overview_chart, said_by, show,
+    };
+
+    /// A harness whose pointer is measured in the window's pixels, as
+    /// bevy's is there.
+    fn windowed(app: &mut bevy_app::App) {
+        app.add_plugins(plugin);
+        app.insert_resource(CellSize {
+            x: CELL.x,
+            y: CELL.y,
+        });
+    }
+
+    #[test]
+    fn the_chart_says_its_labels_around_a_blank_graph_the_plot_covers() {
+        let mut app = headless_app(SIZE);
+        app.add_plugins(plugin);
+        app.update();
+        app.update();
+        let chart = overview_chart(&mut app);
+        let world = app.world();
+        let drawn = world.get::<SeriesChart>(chart).unwrap();
+        let computed = world.get::<ComputedNode>(chart).unwrap();
+        let cells = Rect::new(0, 0, node_cols(computed), node_rows(computed));
+        let blank = drawn.plot(cells).unwrap();
+        let charted = world.get::<Charted>(chart).unwrap();
+        assert_eq!(charted.graph, drawn.graph(cells));
+        let said = said_by(world, world.get::<Hung>(chart).unwrap().0);
+        let rows: Vec<&str> = said.split('\n').collect();
+        assert_eq!(rows.len(), usize::from(cells.height));
+        assert!(rows[0].starts_with(&drawn.y_labels[1]), "{:?}", rows[0]);
+        let labels = rows.last().unwrap();
+        for label in drawn
+            .x_labels
+            .iter()
+            .chain(drawn.marks.iter().map(|mark| &mark.label))
+        {
+            assert!(labels.contains(label.as_str()), "{label} in {labels:?}");
+        }
+        for row in &rows[usize::from(blank.y)..usize::from(blank.bottom())] {
+            let graph: String = row
+                .chars()
+                .skip(usize::from(blank.x))
+                .take(usize::from(blank.width))
+                .collect();
+            assert!(graph.trim().is_empty(), "blank: {graph:?}");
+        }
+        let plot = world.get::<Node>(charted.plot).unwrap();
+        assert_eq!(
+            (plot.left, plot.top, plot.width, plot.height),
+            (
+                Val::Em(f32::from(blank.x)),
+                Val::Rem(f32::from(blank.y)),
+                Val::Em(f32::from(blank.width)),
+                Val::Rem(f32::from(blank.height)),
+            )
+        );
+    }
+
+    #[test]
+    fn the_mouse_over_the_chart_reads_its_year_out_at_the_window_s_cells() {
+        let mut app = headless_app(SIZE);
+        windowed(&mut app);
+        app.update();
+        let chart = overview_chart(&mut app);
+        let area = app.world().get::<ComputedWidgetArea>(chart).unwrap().0;
+        let drawn = app.world().get::<SeriesChart>(chart).unwrap().clone();
+        let column = drawn.column_of(area, 2038).unwrap();
+        hover(&mut app, column, area.y + 1);
+        let pane = app.world().get::<ChildOf>(chart).unwrap().parent();
+        let note = &app.world().get::<Framed>(pane).unwrap().note;
+        assert_eq!(note, "2038");
+    }
+
+    #[test]
+    fn a_click_on_the_plot_opens_the_ledger_at_its_year() {
+        let mut app = headless_app(ROOMY);
+        windowed(&mut app);
+        show(&mut app, Page::Overview);
+        let chart = overview_chart(&mut app);
+        app.update();
+        let area = app.world().get::<ComputedWidgetArea>(chart).unwrap().0;
+        let drawn = app.world().get::<SeriesChart>(chart).unwrap().clone();
+        let column = drawn.column_of(area, 2040).unwrap();
+        click(&mut app, column, area.y + 1);
+        assert_eq!(active_page(&app), Page::Ledger, "the click turned to it");
+        assert_eq!(
+            app.world().resource::<YearCursor>(),
+            &YearCursor(Some(2040))
+        );
+    }
+
+    #[test]
+    fn the_overview_s_charts_are_offered_by_name_with_the_shown_one_lit() {
+        let mut app = headless_app(SIZE);
+        app.add_plugins(plugin);
+        app.update();
+        app.update();
+        let world = app.world_mut();
+        let picker = world
+            .query::<(&Picks, &ChildOf)>()
+            .iter(world)
+            .map(|(_, parent)| parent.parent())
+            .next()
+            .unwrap();
+        let offered: Vec<(Chart, String)> = world
+            .get::<Children>(picker)
+            .unwrap()
+            .iter()
+            .map(|&pick| (world.get::<Picks>(pick).unwrap().0, said_by(world, pick)))
+            .collect();
+        let named: Vec<(Chart, String)> = Chart::ALL
+            .into_iter()
+            .map(|chart| (chart, chart.name().to_owned()))
+            .collect();
+        assert_eq!(offered, named);
+        let key = world
+            .query_filtered::<&Hung, With<ChartKey>>()
+            .single(world)
+            .unwrap()
+            .0;
+        assert!(said_by(world, key).starts_with("● "), "the key is dotted");
+    }
+}

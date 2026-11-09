@@ -1,22 +1,24 @@
 //! The Ledger as a user drives it: its two views, its two shapes, the
 //! table's column sets, and the year stepped from any pane.
 
+use crate::support::typed;
 use bevy_app::App;
-use bevy_ecs::prelude::With;
+use bevy_input::keyboard::Key;
 use bevy_input_focus::InputFocus;
 use plurimus::core::TerminalSize;
-use plurimus::term::KeyCode;
-use plurimus::widgets::TableStripe;
+use plurimus::core::ratatui_core::style::Modifier;
 
 use super::{Columns, LedgerTable, LedgerView};
 use crate::nav::Page;
 use crate::session::{LedgerRun, Projected, YearCursor};
 use crate::support::{
-    ROOMY, SETTLING_TICKS, SIZE, TALL, TODAY, active_page, cell_of, composed_frame,
-    headless_app_at, ledger_year, press_key, redrawn, said, scratch_full_plan, show,
+    ROOMY, SETTLING_TICKS, SIZE, TALL, TODAY, active_page, cell_of, cell_style, click,
+    composed_buffer, composed_frame, headless_app_at, hover, ledger_year, press_key, redrawn, said,
+    scratch_full_plan, scroll_down, show, worn,
 };
 use crate::theme::Theme;
 use crate::theme::document::Variant;
+use crate::theme::library::default_theme;
 use retiretui_client::ledger::ColumnSet;
 
 /// The full fixture on the Ledger, on a terminal of `size`: several
@@ -48,13 +50,13 @@ fn holds_the_table(app: &App) -> bool {
 #[test]
 fn t_gives_the_table_the_page_and_the_year_back_at_the_same_year() {
     let mut app = ledger();
-    press_key(&mut app, KeyCode::Down);
+    press_key(&mut app, Key::ArrowDown);
     for _ in 0..3 {
-        press_key(&mut app, KeyCode::Tab);
+        press_key(&mut app, Key::Tab);
     }
     assert!(composed_frame(&app).contains("↑↓ account"), "the flows");
     assert!(!holds_the_table(&app));
-    press_key(&mut app, KeyCode::Char('t'));
+    press_key(&mut app, typed('t'));
     assert_eq!(view(&app), LedgerView::Table);
     assert!(holds_the_table(&app), "the keyboard goes with the pane");
     let frame = redrawn(&mut app);
@@ -69,10 +71,10 @@ fn t_gives_the_table_the_page_and_the_year_back_at_the_same_year() {
     assert!(frame.contains("Withdrawn"), "{frame}");
     assert!(frame.contains("c columns  t the year"), "{frame}");
     assert_eq!(ledger_year(&mut app), TODAY.0 + 1);
-    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, Key::Tab);
     assert!(holds_the_table(&app), "the table is the only pane to walk");
-    press_key(&mut app, KeyCode::Down);
-    press_key(&mut app, KeyCode::Char('t'));
+    press_key(&mut app, Key::ArrowDown);
+    press_key(&mut app, typed('t'));
     assert_eq!(view(&app), LedgerView::Year);
     assert!(holds_the_table(&app), "which the keyboard stays in");
     let frame = redrawn(&mut app);
@@ -85,13 +87,13 @@ fn t_gives_the_table_the_page_and_the_year_back_at_the_same_year() {
 #[test]
 fn enter_in_the_table_shows_the_year_its_cursor_is_on() {
     let mut app = ledger();
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert_eq!(view(&app), LedgerView::Year, "⏎ over the year keeps it");
-    press_key(&mut app, KeyCode::Char('t'));
+    press_key(&mut app, typed('t'));
     for _ in 0..3 {
-        press_key(&mut app, KeyCode::Down);
+        press_key(&mut app, Key::ArrowDown);
     }
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert_eq!(view(&app), LedgerView::Year);
     let frame = redrawn(&mut app);
     let to_do = format!("╭ To do in {} ", TODAY.0 + 3);
@@ -101,8 +103,8 @@ fn enter_in_the_table_shows_the_year_its_cursor_is_on() {
 #[test]
 fn c_turns_the_table_through_its_column_sets() {
     let mut app = ledger();
-    press_key(&mut app, KeyCode::Down);
-    press_key(&mut app, KeyCode::Char('c'));
+    press_key(&mut app, Key::ArrowDown);
+    press_key(&mut app, typed('c'));
     assert_eq!(
         view(&app),
         LedgerView::Year,
@@ -121,7 +123,7 @@ fn c_turns_the_table_through_its_column_sets() {
         assert!(frame.contains("Withdraw"), "every set leads alike: {frame}");
         assert!(frame.contains("╭ Flows "), "over the year: {frame}");
         assert_eq!(ledger_year(&mut app), TODAY.0 + 1, "the year stays");
-        press_key(&mut app, KeyCode::Char('c'));
+        press_key(&mut app, typed('c'));
     }
 }
 
@@ -129,24 +131,24 @@ fn c_turns_the_table_through_its_column_sets() {
 fn the_year_is_stepped_from_any_pane_by_the_arrows_or_the_brackets() {
     let mut app = ledger();
     for _ in 0..3 {
-        press_key(&mut app, KeyCode::Tab);
+        press_key(&mut app, Key::Tab);
     }
     assert!(composed_frame(&app).contains("↑↓ account"), "the flows");
-    press_key(&mut app, KeyCode::Right);
+    press_key(&mut app, Key::ArrowRight);
     assert_eq!(cursor(&app), Some(TODAY.0 + 1), "→ from the flows");
-    press_key(&mut app, KeyCode::Char(']'));
+    press_key(&mut app, typed(']'));
     assert_eq!(cursor(&app), Some(TODAY.0 + 2));
-    press_key(&mut app, KeyCode::Left);
-    press_key(&mut app, KeyCode::Char('['));
+    press_key(&mut app, Key::ArrowLeft);
+    press_key(&mut app, typed('['));
     assert_eq!(cursor(&app), Some(TODAY.0));
-    press_key(&mut app, KeyCode::Left);
+    press_key(&mut app, Key::ArrowLeft);
     assert_eq!(cursor(&app), Some(TODAY.0), "held at the plan's first year");
     let frame = redrawn(&mut app);
     assert!(frame.contains("←→ year  {} marked year"), "{frame}");
-    press_key(&mut app, KeyCode::Char('t'));
-    press_key(&mut app, KeyCode::Right);
+    press_key(&mut app, typed('t'));
+    press_key(&mut app, Key::ArrowRight);
     assert_eq!(ledger_year(&mut app), TODAY.0 + 1, "and in the table");
-    press_key(&mut app, KeyCode::Char('n'));
+    press_key(&mut app, typed('n'));
     assert_eq!(
         ledger_year(&mut app),
         TODAY.0 + 1,
@@ -158,23 +160,23 @@ fn the_year_is_stepped_from_any_pane_by_the_arrows_or_the_brackets() {
 #[test]
 fn the_braces_step_to_the_nearest_marked_year_and_say_where_there_is_none() {
     let mut app = ledger();
-    press_key(&mut app, KeyCode::Char('{'));
+    press_key(&mut app, typed('{'));
     assert_eq!(cursor(&app), None, "nothing is marked before the first");
     assert_eq!(
         said(&app).last().map(String::as_str),
         Some("No marked year before 2026")
     );
-    press_key(&mut app, KeyCode::Char('}'));
+    press_key(&mut app, typed('}'));
     assert_eq!(cursor(&app), Some(2032), "the inheritance");
     let frame = redrawn(&mut app);
     assert!(frame.contains("▌ 2032  57/53  ◆"), "{frame}");
     assert!(frame.contains("◆ "), "the year says its milestone: {frame}");
-    press_key(&mut app, KeyCode::Char('}'));
+    press_key(&mut app, typed('}'));
     assert_eq!(cursor(&app), Some(2037));
-    press_key(&mut app, KeyCode::Char('{'));
+    press_key(&mut app, typed('{'));
     assert_eq!(cursor(&app), Some(2032));
-    press_key(&mut app, KeyCode::End);
-    press_key(&mut app, KeyCode::Char('}'));
+    press_key(&mut app, Key::End);
+    press_key(&mut app, typed('}'));
     assert!(
         said(&app)
             .last()
@@ -188,12 +190,12 @@ fn the_braces_step_to_the_nearest_marked_year_and_say_where_there_is_none() {
 #[test]
 fn enter_on_the_tax_pane_shows_the_tax_tables_at_the_year() {
     let mut app = ledger();
-    press_key(&mut app, KeyCode::Right);
+    press_key(&mut app, Key::ArrowRight);
     for _ in 0..6 {
-        press_key(&mut app, KeyCode::Tab);
+        press_key(&mut app, Key::Tab);
     }
     assert!(composed_frame(&app).contains("⏎ tax tables"));
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert_eq!(active_page(&app), Page::TaxTables);
     let frame = redrawn(&mut app);
     assert!(frame.contains(&(TODAY.0 + 1).to_string()), "{frame}");
@@ -273,7 +275,7 @@ fn a_portrait_page_rows_the_money_under_flows_as_tall_as_their_rows() {
 #[test]
 fn the_headers_stay_over_the_years_as_they_scroll() {
     let mut app = ledger();
-    press_key(&mut app, KeyCode::End);
+    press_key(&mut app, Key::End);
     let last = ledger_year(&mut app);
     let frame = redrawn(&mut app);
     let (table, _) = corner_of(&app, "╭ Ledger ");
@@ -315,7 +317,7 @@ fn a_terminal_too_short_for_the_year_opens_on_the_table_alone() {
     let frame = redrawn(&mut app);
     assert!(!frame.contains("╭ Flows "), "{frame}");
     assert!(frame.contains("c columns  t the year"), "{frame}");
-    press_key(&mut app, KeyCode::Char('t'));
+    press_key(&mut app, typed('t'));
     assert_eq!(view(&app), LedgerView::Year, "t still shows the year");
     assert!(redrawn(&mut app).contains("╭ Flows "));
     let least = TerminalSize::new(SIZE.cols, 35);
@@ -336,18 +338,18 @@ fn a_terminal_too_short_for_the_year_opens_on_the_table_alone() {
 #[test]
 fn a_year_that_is_shown_again_says_what_moved_while_it_was_hidden() {
     let mut app = ledger();
-    press_key(&mut app, KeyCode::Char('t'));
+    press_key(&mut app, typed('t'));
     for _ in 0..4 {
-        press_key(&mut app, KeyCode::Down);
+        press_key(&mut app, Key::ArrowDown);
     }
-    press_key(&mut app, KeyCode::Char('n'));
-    press_key(&mut app, KeyCode::Char('t'));
+    press_key(&mut app, typed('n'));
+    press_key(&mut app, typed('t'));
     let frame = redrawn(&mut app);
     let year = TODAY.0 + 4;
     assert!(frame.contains(&format!("╭ To do in {year} ")), "{frame}");
     assert!(frame.contains("╭ So far · future dollars "), "{frame}");
     show(&mut app, Page::Overview);
-    press_key(&mut app, KeyCode::Char('n'));
+    press_key(&mut app, typed('n'));
     show(&mut app, Page::Ledger);
     let frame = redrawn(&mut app);
     assert!(frame.contains("· today's dollars "), "{frame}");
@@ -357,7 +359,7 @@ fn a_year_that_is_shown_again_says_what_moved_while_it_was_hidden() {
 #[test]
 fn a_run_opened_while_the_table_is_shown_lands_on_its_year() {
     let mut app = ledger();
-    press_key(&mut app, KeyCode::Char('t'));
+    press_key(&mut app, typed('t'));
     assert_eq!(view(&app), LedgerView::Table);
     let run = app.world().resource::<Projected>().clone();
     app.world_mut().resource_mut::<LedgerRun>().0 = Some(("a run".to_owned(), run));
@@ -373,30 +375,28 @@ fn a_run_opened_while_the_table_is_shown_lands_on_its_year() {
         !frame.contains("To top of"),
         "a run has no bracket of the plan's: {frame}"
     );
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     assert!(redrawn(&mut app).contains("To top of"), "the plan has");
 }
 
 #[test]
-fn the_terminal_s_own_theme_bands_the_tables_for_the_screen_it_is_on() {
+fn the_default_theme_bands_the_tables_in_its_own_stripe() {
     let mut app = ledger();
     let worn = app.world().resource::<Theme>().clone();
-    assert_eq!(worn, Theme::terminal_on(Variant::Dark));
-    let mut stripes = app
-        .world_mut()
-        .query_filtered::<&TableStripe, With<LedgerTable>>();
-    let stripe = stripes.single(app.world()).unwrap().0;
-    assert!(
-        stripe.bg.is_some() && stripe.bg == worn.stripe,
-        "{stripe:?}"
-    );
+    assert_eq!(worn, default_theme(Variant::Dark));
+    assert!(worn.stripe.is_some());
+    redrawn(&mut app);
+    let (column, first) = cell_in(&app, "╭ Ledger ", 3, 2);
+    let ground = |row| cell_style(&app, column, row).bg;
+    assert_eq!(ground(first + 1), worn.stripe, "the second year is banded");
+    assert_ne!(ground(first + 2), worn.stripe, "the third is not");
 }
 
 #[test]
 fn how_far_the_plan_has_come_is_a_pane_of_its_own_beside_what_to_do() {
     let mut app = ledger();
     for _ in 0..16 {
-        press_key(&mut app, KeyCode::Down);
+        press_key(&mut app, Key::ArrowDown);
     }
     let frame = redrawn(&mut app);
     let lines: Vec<&str> = frame.lines().collect();
@@ -416,10 +416,160 @@ fn how_far_the_plan_has_come_is_a_pane_of_its_own_beside_what_to_do() {
         lines[top + 4].contains("╰") && !frame.contains("So far:"),
         "{frame}"
     );
-    press_key(&mut app, KeyCode::Tab);
-    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, Key::Tab);
+    press_key(&mut app, Key::Tab);
     assert!(
         composed_frame(&app).contains("↑↓ line"),
         "⇥ reaches it after the to-dos"
     );
+}
+
+/// The cell `right` of and `down` from the corner of the pane titled
+/// `title`.
+fn cell_in(app: &App, title: &str, right: usize, down: usize) -> (u16, u16) {
+    let (top, left) = corner_of(app, title);
+    let cell = |at: usize| u16::try_from(at).unwrap();
+    (cell(left + right), cell(top + down))
+}
+
+#[test]
+fn a_click_on_a_money_line_moves_its_cursor_and_the_keyboard() {
+    let mut app = ledger();
+    redrawn(&mut app);
+    let (column, row) = cell_in(&app, "╭ Money in ", 3, 2);
+    let bar = |app: &App| {
+        composed_buffer(app)
+            .cell((column - 2, row))
+            .unwrap()
+            .symbol()
+            .to_owned()
+    };
+    assert_eq!(bar(&app), " ", "the cursor rests on the first line");
+    click(&mut app, column, row);
+    redrawn(&mut app);
+    assert_eq!(bar(&app), "▌", "the cursor is on the clicked line and full");
+    press_key(&mut app, Key::ArrowUp);
+    redrawn(&mut app);
+    assert_eq!(
+        bar(&app),
+        " ",
+        "the arrows reach the pane the click gave the keyboard"
+    );
+}
+
+#[test]
+fn a_line_under_the_pointer_is_banded_in_the_stripe() {
+    let mut app = ledger();
+    redrawn(&mut app);
+    let (column, row) = cell_in(&app, "╭ Money in ", 3, 1);
+    let plain = cell_style(&app, column, row).bg;
+    hover(&mut app, column, row);
+    redrawn(&mut app);
+    let banded = cell_style(&app, column, row).bg;
+    assert_eq!(banded, worn(&app).stripe, "{plain:?} became {banded:?}");
+    assert_ne!(plain, banded);
+}
+
+#[test]
+fn the_cursor_year_is_lit_while_the_table_holds_the_keyboard() {
+    let mut app = ledger();
+    let frame = redrawn(&mut app);
+    let year = ledger_year(&mut app);
+    let (top, left) = corner_of(&app, &format!("▌ {year}"));
+    let (column, row) = (
+        u16::try_from(left + 2).unwrap(),
+        u16::try_from(top).unwrap(),
+    );
+    let lit = cell_style(&app, column, row);
+    assert_eq!(lit.fg, Some(worn(&app).accent), "{frame}");
+    assert!(lit.add_modifier.contains(Modifier::BOLD), "{lit:?}");
+    press_key(&mut app, Key::Tab);
+    redrawn(&mut app);
+    let left_alone = cell_style(&app, column, row);
+    assert_ne!(left_alone.fg, Some(worn(&app).accent), "{left_alone:?}");
+}
+
+#[test]
+fn the_wheel_scrolls_the_years_away_from_the_cursor_and_leaves_it() {
+    let mut app = ledger();
+    redrawn(&mut app);
+    let year = ledger_year(&mut app);
+    let (column, row) = cell_in(&app, "╭ Ledger ", 4, 3);
+    let first_shown = |app: &mut App| {
+        let frame = redrawn(app);
+        let (top, _) = corner_of(app, "╭ Ledger ");
+        frame.lines().nth(top + 2).unwrap().to_owned()
+    };
+    let before = first_shown(&mut app);
+    for _ in 0..3 {
+        scroll_down(&mut app, column, row);
+        redrawn(&mut app);
+    }
+    let after = first_shown(&mut app);
+    assert_ne!(before, after, "the rows scrolled: {after}");
+    assert_eq!(ledger_year(&mut app), year, "the cursor stayed");
+}
+
+#[test]
+fn a_press_on_a_pane_s_border_leaves_the_keyboard_where_it_was() {
+    use bevy_input_focus::InputFocus;
+    let mut app = ledger();
+    redrawn(&mut app);
+    let held = app.world().resource::<InputFocus>().get();
+    assert!(held.is_some(), "the table holds the keyboard");
+    let (column, row) = cell_in(&app, "╭ Ledger", 0, 3);
+    click(&mut app, column, row);
+    redrawn(&mut app);
+    assert_eq!(app.world().resource::<InputFocus>().get(), held);
+    press_key(&mut app, Key::ArrowDown);
+    redrawn(&mut app);
+    assert!(
+        app.world().resource::<YearCursor>().0.is_some(),
+        "the arrows still reach the table"
+    );
+}
+
+#[test]
+fn a_click_on_a_row_s_text_chooses_its_year() {
+    use crate::grid::Grid;
+    use crate::session::RowYear;
+    use crate::support::click_entity;
+    use bevy_ecs::hierarchy::Children;
+    use bevy_ecs::prelude::With;
+    let mut app = ledger();
+    redrawn(&mut app);
+    let mut tables = app.world_mut().query_filtered::<&Grid, With<LedgerTable>>();
+    let body = tables.single(app.world()).unwrap().body;
+    let row = app.world().get::<Children>(body).unwrap()[3];
+    let span = app.world().get::<Children>(row).unwrap()[0];
+    let year = app.world().get::<RowYear>(row).unwrap().0;
+    click_entity(&mut app, span, bevy_math::Vec2::ZERO);
+    redrawn(&mut app);
+    assert_eq!(app.world().resource::<YearCursor>().0, Some(year));
+}
+
+#[test]
+fn a_click_on_a_pane_s_padding_hands_it_the_keyboard() {
+    use crate::pane::Framed;
+    use bevy_ecs::hierarchy::ChildOf;
+    let mut app = ledger();
+    redrawn(&mut app);
+    let pane_of = |app: &App| {
+        let world = app.world();
+        let mut at = world.resource::<InputFocus>().get().unwrap();
+        loop {
+            if let Some(framed) = world.get::<Framed>(at) {
+                return framed.title.clone();
+            }
+            at = world.get::<ChildOf>(at).unwrap().parent();
+        }
+    };
+    assert!(
+        pane_of(&app).starts_with("Ledger"),
+        "the table holds the keyboard"
+    );
+    let (column, row) = cell_in(&app, "╭ Money in ", 1, 0);
+    click(&mut app, column, row);
+    redrawn(&mut app);
+    assert_eq!(pane_of(&app), "Money in");
 }

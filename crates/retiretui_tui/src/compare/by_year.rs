@@ -3,15 +3,13 @@
 
 use std::collections::BTreeSet;
 
-use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Component, Entity};
-use plurimus::ui::ScrollArea;
 use plurimus::widgets::ActiveDescendant;
 
 use super::Plans;
-use crate::edit::table_bundle;
+use crate::grid::{self, Grid};
 use crate::hints::Hints;
-use crate::layout::{self, placed};
+use crate::layout;
 use crate::session::RowYear;
 use crate::tabulate;
 
@@ -23,24 +21,15 @@ pub(super) struct ByYearTable;
 
 /// The table, under `pane`.
 pub(super) fn spawn(commands: &mut Commands, pane: Entity) -> Entity {
+    let table = grid::spawn(commands, pane);
     commands
-        .spawn((
-            table_bundle(),
-            ByYearTable,
-            Hints(&[("↑↓", "year")]),
-            layout::Rests,
-            placed(),
-            ChildOf(pane),
-        ))
+        .entity(table)
+        .insert((ByYearTable, Hints(&[("↑↓", "year")]), layout::Rests))
         .id()
 }
 
 /// A row per year any plan reaches, the cursor on the cursor year's.
-pub(super) fn fill(
-    commands: &mut Commands,
-    (table, scroll): (Entity, &mut ScrollArea),
-    plans: &Plans,
-) {
+pub(super) fn fill(commands: &mut Commands, grid: &Grid, plans: &Plans) {
     let header: Vec<String> = std::iter::once(YEAR.to_owned())
         .chain(plans.each().map(|(name, _)| name.into_owned()))
         .collect();
@@ -57,15 +46,20 @@ pub(super) fn fill(
                 .collect()
         })
         .collect();
-    commands
-        .entity(table)
-        .insert(tabulate::gapped_columns((&header, &rows), GAP));
-    let spawned = tabulate::refill(commands, (table, scroll), (&header, &rows), &[0]);
+    let spawned = grid::refill(
+        commands,
+        grid,
+        tabulate::gapped_columns((&header, &rows), GAP),
+        (&header, &rows),
+        &[0],
+    );
     let cursor = plans.year();
     for (&row, &year) in spawned.iter().zip(&years) {
         commands.entity(row).insert(RowYear(year));
         if year == cursor {
-            commands.entity(table).insert(ActiveDescendant(Some(row)));
+            commands
+                .entity(grid.root)
+                .insert(ActiveDescendant(Some(row)));
         }
     }
 }

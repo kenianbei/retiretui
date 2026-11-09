@@ -3,10 +3,11 @@
 use std::collections::BTreeSet;
 use std::time::Duration;
 
+use crate::support::typed;
 use bevy_app::App;
+use bevy_input::keyboard::Key;
 use bevy_ui::{Display, Node};
 use plurimus::core::TerminalSize;
-use plurimus::term::KeyCode;
 
 use bevy_input_focus::InputFocus;
 use retiretui_engine::plan::Plan;
@@ -55,7 +56,7 @@ fn a_directory_launches_the_shell_empty() {
     let plan = support::scratch_plan();
     let mut app = headless_app_at(plan.parent().unwrap().to_path_buf(), SIZE);
     assert!(is_browsing(&app), "asking which file to open");
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     let frame = composed_frame(&app);
     assert!(frame.contains("no document"), "{frame}");
     assert!(!frame.contains("Income / Taxes"), "{frame}");
@@ -93,7 +94,7 @@ fn a_directory_launches_the_shell_empty() {
         Some(NO_DOCUMENT),
         "saving is refused rather than run"
     );
-    press_key(&mut app, KeyCode::Char(':'));
+    press_key(&mut app, typed(':'));
     assert!(is_palette_open(&app), "the palette still opens");
 }
 
@@ -123,14 +124,14 @@ fn every_command_that_needs_a_document_refuses_without_one() {
 #[test]
 fn tab_keys_step_through_every_tab_and_wrap() {
     let mut app = headless_app(SIZE);
-    press_ctrl(&mut app, KeyCode::Down);
+    press_ctrl(&mut app, Key::ArrowDown);
     assert_eq!(active(&app), Page::Ledger);
     assert_eq!(shown_pages(&mut app), BTreeSet::from([Page::Ledger]));
     for _ in 1..nav::TAB_COUNT {
-        press_ctrl(&mut app, KeyCode::Down);
+        press_ctrl(&mut app, Key::ArrowDown);
     }
     assert_eq!(active(&app), Page::Overview, "the last tab wraps");
-    press_ctrl(&mut app, KeyCode::Up);
+    press_ctrl(&mut app, Key::ArrowUp);
     assert_eq!(active(&app), Page::Accounts, "and backwards, to the plan");
     assert!(frame_of(&mut app).contains("Conversions"));
 }
@@ -143,7 +144,7 @@ fn frame_of(app: &mut App) -> String {
 #[test]
 fn q_exits() {
     let mut app = headless_app(SIZE);
-    press_key(&mut app, KeyCode::Char('q'));
+    press_key(&mut app, typed('q'));
     assert!(app.should_exit().is_some());
 }
 
@@ -229,7 +230,7 @@ fn the_ledger_tables_years_over_the_cursor_year_in_full() {
         "nothing unfunded, so no line for it: {frame}"
     );
     assert!(frame.contains("+$19,180 surplus"), "{frame}");
-    press_key(&mut app, KeyCode::Down);
+    press_key(&mut app, Key::ArrowDown);
     app.update();
     assert_eq!(
         app.world().resource::<YearCursor>().0,
@@ -247,7 +248,7 @@ fn the_ledger_tables_years_over_the_cursor_year_in_full() {
         "⏎ tax tables",
     ];
     for hint in walked {
-        press_key(&mut app, KeyCode::Tab);
+        press_key(&mut app, Key::Tab);
         let frame = composed_frame(&app);
         assert!(frame.contains(hint), "⇥ walks the year's panes: {frame}");
     }
@@ -273,14 +274,14 @@ fn r_reloads_edits_and_keeps_the_view_on_failure() {
     let plan_path = app.world().resource::<Session>().plan_path.clone().unwrap();
     let renamed = support::TEST_PLAN.replace("name = \"test-plan\"", "name = \"edited-plan\"");
     std::fs::write(&plan_path, renamed).unwrap();
-    press_key(&mut app, KeyCode::Char('r'));
+    press_key(&mut app, typed('r'));
     app.update();
     let frame = composed_frame(&app);
     assert_eq!(plan_name(&app), "edited-plan");
     assert!(frame.contains("plan reloaded"), "{frame}");
     let broken = support::TEST_PLAN.replace("inflation = 0.025", "inflation = 9.0");
     std::fs::write(&plan_path, broken).unwrap();
-    press_key(&mut app, KeyCode::Char('r'));
+    press_key(&mut app, typed('r'));
     app.update();
     let frame = composed_frame(&app);
     assert!(frame.contains("reload failed"), "{frame}");
@@ -341,10 +342,10 @@ fn a_failed_reload_watches_the_chain_as_it_now_reads() {
 #[test]
 fn n_toggles_the_dollar_basis() {
     let mut app = headless_app(SIZE);
-    press_key(&mut app, KeyCode::Char('n'));
+    press_key(&mut app, typed('n'));
     let frame = composed_frame(&app);
     assert!(frame.contains("future dollars"), "{frame}");
-    press_key(&mut app, KeyCode::Char('n'));
+    press_key(&mut app, typed('n'));
     let frame = composed_frame(&app);
     assert!(frame.contains("today's dollars"), "{frame}");
 }
@@ -380,11 +381,11 @@ fn draft_edits_reproject_live_and_save_canonically() {
         frame.contains("Settings › Inflation"),
         "first issue shown: {frame}"
     );
-    press_ctrl(&mut app, KeyCode::Char('s'));
+    press_ctrl(&mut app, typed('s'));
     let frame = composed_frame(&app);
     assert!(frame.contains("not saved, 1 issue"), "{frame}");
     edit_draft(&mut app, |plan| plan.plan.inflation = 0.03);
-    press_ctrl(&mut app, KeyCode::Char('s'));
+    press_ctrl(&mut app, typed('s'));
     let frame = composed_frame(&app);
     assert!(frame.contains("saved "), "{frame}");
     let written = std::fs::read_to_string(&plan_path).unwrap();
@@ -395,11 +396,11 @@ fn draft_edits_reproject_live_and_save_canonically() {
         .to_toml_string()
         .unwrap();
     assert_eq!(written, expected, "canonical TOML on disk");
-    press_key(&mut app, KeyCode::Char('r'));
+    press_key(&mut app, typed('r'));
     let frame = composed_frame(&app);
     assert!(frame.contains("plan reloaded"), "{frame}");
     assert_eq!(plan_name(&app), "draft-plan");
-    press_ctrl(&mut app, KeyCode::Char('s'));
+    press_ctrl(&mut app, typed('s'));
     assert_eq!(
         std::fs::read_to_string(&plan_path).unwrap(),
         written,
@@ -413,15 +414,15 @@ fn quitting_a_dirty_draft_asks_first() {
     edit_draft(&mut app, |plan| {
         plan.plan.name = Some("draft-plan".to_owned());
     });
-    press_key(&mut app, KeyCode::Char('q'));
+    press_key(&mut app, typed('q'));
     assert!(app.should_exit().is_none());
     let frame = composed_frame(&app);
     assert!(frame.contains("lose the unsaved changes"), "{frame}");
-    press_key(&mut app, KeyCode::Char('q'));
+    press_key(&mut app, typed('q'));
     assert!(app.should_exit().is_none(), "the dialog owns the keyboard");
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     assert!(app.should_exit().is_none());
-    press_key(&mut app, KeyCode::Char('q'));
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, typed('q'));
+    press_key(&mut app, Key::Enter);
     assert!(app.should_exit().is_some());
 }

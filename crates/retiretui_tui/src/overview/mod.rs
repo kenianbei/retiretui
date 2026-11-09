@@ -25,11 +25,16 @@ use bevy_ui::{FlexDirection, Node, Val};
 use retiretui_client::overview::View;
 
 pub(crate) use better::Better;
-#[cfg(test)]
-pub(crate) use charts::OverviewChart;
 pub(crate) use charts::cycle_chart;
+#[cfg(any(feature = "desktop", test))]
+pub(crate) use charts::{ChartView, OverviewChart};
+#[cfg(test)]
+pub(crate) use key::ChartKey;
+pub(crate) use key::KeyMarks;
 use rows::List;
 pub(crate) use rows::edit_row;
+#[cfg(any(feature = "desktop", test))]
+pub(crate) use verdict::{SUCCESS_AT, TileAt, success_text};
 
 use super::layout::{self, Body};
 use super::nav::{self, Page};
@@ -37,6 +42,7 @@ use super::session::Shown;
 
 pub fn plugin(app: &mut App) {
     app.init_resource::<charts::ChartView>();
+    app.init_resource::<KeyMarks>();
     app.init_resource::<Better>();
     app.init_resource::<Viewed>();
     app.add_systems(Startup, spawn_overview.after(layout::spawn_frame));
@@ -57,6 +63,14 @@ pub fn plugin(app: &mut App) {
 /// The page as the client says it, of the plan and the basis shown.
 #[derive(Resource, Default)]
 pub(crate) struct Viewed(Option<View>);
+
+impl Viewed {
+    /// The page as last said, once it has been.
+    #[cfg(any(feature = "desktop", test))]
+    pub(crate) fn view(&self) -> Option<&View> {
+        self.0.as_ref()
+    }
+}
 
 /// Says the page again whenever the plan or the basis moves.
 fn view(shown: Shown, mut viewed: ResMut<Viewed>) {
@@ -91,7 +105,7 @@ fn spawn_overview(bodies: Query<Entity, With<Body>>, mut commands: Commands) {
     let beside = Node {
         flex_direction: FlexDirection::Column,
         flex_grow: BESIDE_SHARE,
-        flex_basis: Val::Px(0.0),
+        flex_basis: Val::ZERO,
         ..Node::default()
     };
     let beside = commands.spawn((beside, ChildOf(charted))).id();
@@ -103,8 +117,8 @@ fn spawn_band(commands: &mut Commands, view: Entity, (least, share): (f32, f32))
     let band = Node {
         flex_direction: FlexDirection::Row,
         flex_grow: share,
-        flex_basis: Val::Px(0.0),
-        min_height: Val::Px(least),
+        flex_basis: Val::ZERO,
+        min_height: Val::Rem(least),
         ..Node::default()
     };
     commands.spawn((band, ChildOf(view))).id()

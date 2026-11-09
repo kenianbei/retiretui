@@ -4,7 +4,7 @@ use bevy_app::{App, Startup, Update};
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::prelude::{Commands, Component, Entity, Query, Res, With};
 use bevy_ui::Node;
-use plurimus::core::{TerminalSize, UiArea, UiHidden, UiWidget};
+use plurimus::core::{Hidden, Propagate, TerminalSize, UiArea, UiWidget};
 use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
 
 use super::layout::{self, Root};
@@ -19,7 +19,7 @@ const FLOOR: TerminalSize = TerminalSize::new(128, 32);
 /// they need less; a taller form scrolls.
 /// Derived so that a renamed tab or a domain that gains a field cannot
 /// leave it silently stale.
-const MIN_SIZE: TerminalSize = TerminalSize::new(
+pub(crate) const MIN_SIZE: TerminalSize = TerminalSize::new(
     raised(FLOOR.cols, tabbar::TABS_COLS + tabbar::status::MIN_COLS),
     raised(FLOOR.rows, layout::CHROME_ROWS + edit::SHORTEST_FORM_ROWS),
 );
@@ -46,7 +46,7 @@ fn spawn_notice(mut commands: Commands) {
         Notice,
         UiWidget::new(Paragraph::new(notice)),
         UiArea::Fill,
-        UiHidden,
+        Propagate(Hidden),
     ));
 }
 
@@ -69,9 +69,9 @@ fn guard_size(
     }
     for notice in &notices {
         if is_fitting {
-            commands.entity(notice).insert(UiHidden);
+            commands.entity(notice).insert(Propagate(Hidden));
         } else {
-            commands.entity(notice).remove::<UiHidden>();
+            commands.entity(notice).remove::<Propagate<Hidden>>();
         }
     }
 }

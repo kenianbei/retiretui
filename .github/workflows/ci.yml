@@ -44,6 +44,24 @@ jobs:
       - name: Engine without features
         run: cargo check -p retiretui_engine
 
+  desktop:
+    strategy:
+      matrix:
+        runner: [ windows-latest, macos-latest ]
+
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+        with:
+          cache-save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Check the window builds here
+        run: cargo check --locked -p retiretui_desktop
+
   wasm:
     runs-on: ubuntu-latest
 

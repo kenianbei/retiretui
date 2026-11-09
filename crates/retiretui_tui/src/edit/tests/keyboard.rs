@@ -1,7 +1,8 @@
 //! Headless tests for which keys an open item keeps and which reach the
 //! shell.
 
-use plurimus::term::KeyCode;
+use crate::support::typed;
+use bevy_input::keyboard::Key;
 
 use super::{clear_field, draft_plan, fixture_app, is_editing, open, tab_to_field};
 use crate::edit::Draft;
@@ -21,10 +22,10 @@ fn an_open_item_owns_the_keyboard() {
     let mut app = fixture_app();
     open(&mut app, Page::Accounts);
     tab_to_field(&mut app, 2);
-    press_key(&mut app, KeyCode::Char('n'));
+    press_key(&mut app, typed('n'));
     assert!(is_editing(&app), "a plain key is typed, not run");
     assert!(!is_nominal(&app));
-    press_ctrl(&mut app, KeyCode::Char('s'));
+    press_ctrl(&mut app, typed('s'));
     assert!(is_editing(&app), "nor does a chord reach the shell");
     assert!(
         !said(&app).iter().any(|text| text.contains("saved")),
@@ -42,14 +43,14 @@ fn a_field_being_edited_keeps_the_keys_the_shell_would_take() {
         frame.contains("Filing status"),
         "the settings form: {frame}"
     );
-    press_key(&mut app, KeyCode::Enter);
-    press_key(&mut app, KeyCode::Char('n'));
+    press_key(&mut app, Key::Enter);
+    press_key(&mut app, typed('n'));
     assert!(
         !is_nominal(&app),
         "a plain key on a pick inside the form does not reach the shell"
     );
-    press_key(&mut app, KeyCode::Esc);
-    press_key(&mut app, KeyCode::Char('n'));
+    press_key(&mut app, Key::Escape);
+    press_key(&mut app, typed('n'));
     assert!(
         is_nominal(&app),
         "esc leaves the form, so the shell hears keys again"
@@ -63,9 +64,9 @@ fn a_chord_reaches_the_shell_from_a_field_being_typed_into() {
     tab_to_field(&mut app, 2);
     clear_field(&mut app);
     type_text(&mut app, "80");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert!(app.world().resource::<Draft>().is_dirty());
-    press_ctrl(&mut app, KeyCode::Char('s'));
+    press_ctrl(&mut app, typed('s'));
     assert!(
         !app.world().resource::<Draft>().is_dirty(),
         "ctrl-s saves from inside the field it was typed in"
@@ -79,17 +80,17 @@ fn single_forms_commit_each_field_and_refuse_add() {
     app.update();
     let frame = composed_frame(&app);
     assert!(frame.contains("Plan to age"), "{frame}");
-    press_key(&mut app, KeyCode::Char('a'));
+    press_key(&mut app, typed('a'));
     let frame = composed_frame(&app);
     assert!(frame.contains("nothing to add"), "{frame}");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     tab_to_field(&mut app, 2);
     clear_field(&mut app);
     type_text(&mut app, "80");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert_eq!(draft_plan(&app).plan.horizon_age, 80);
-    press_key(&mut app, KeyCode::Esc);
-    press_key(&mut app, KeyCode::Char('n'));
+    press_key(&mut app, Key::Escape);
+    press_key(&mut app, typed('n'));
     assert!(
         is_nominal(&app),
         "esc leaves the form, so the shell hears keys again"

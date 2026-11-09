@@ -6,23 +6,21 @@
 use bevy_app::{App, Update};
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{
-    Commands, Component, Entity, IntoScheduleConfigs, Local, Query, With, Without,
+    Commands, Component, Entity, IntoScheduleConfigs, Local, Query, Res, With, Without,
 };
 use bevy_ecs::system::SystemParam;
 use bevy_ui::{FlexDirection, Node, Val};
 use plurimus::core::ratatui_core::layout::Constraint;
 use plurimus::core::ratatui_core::style::Style;
 use plurimus::ui::{ComputedWidgetArea, ScrollArea};
-use plurimus::widgets::TableColumns;
 use retiretui_client::ledger::Year;
 
 use super::arrange::DetailStop;
 use super::{Detail, LedgerSystems, MILESTONE, WARNING, shows_the_year};
-use crate::edit::table_bundle;
+use crate::grid::{self, Grid};
 use crate::hints::Hints;
-use crate::layout::{self, filling, fixed, placed};
+use crate::layout::{self, fixed};
 use crate::pane::{self, Framed, Pane};
-use crate::tabulate;
 use crate::theme::Theme;
 
 pub(super) fn plugin(app: &mut App) {
@@ -59,16 +57,10 @@ pub(super) fn spawn_panes(commands: &mut Commands, detail: Entity) {
     let list = layout::spawn_scrolled_list(commands, to_do, Hints(&[("↑↓", "scroll")]));
     commands.entity(list).insert((YearLines, DetailStop));
     let so_far = Pane::new("").wide(SO_FAR_COLS).spawn(commands, row);
-    commands.spawn((
-        table_bundle(),
-        SoFar,
-        DetailStop,
-        Hints(&[("↑↓", "line")]),
-        layout::Rests,
-        filling(),
-        placed(),
-        ChildOf(so_far),
-    ));
+    let root = grid::spawn(commands, so_far);
+    commands
+        .entity(root)
+        .insert((SoFar, DetailStop, Hints(&[("↑↓", "line")]), layout::Rests));
 }
 
 /// The year's lines, each in what it is drawn in: a milestone in the
@@ -96,9 +88,10 @@ struct YearPanes<'w, 's> {
         ),
         (With<YearLines>, Without<SoFar>),
     >,
-    tables: Query<'w, 's, (Entity, &'static ChildOf, &'static mut ScrollArea), With<SoFar>>,
+    tables: Query<'w, 's, (&'static ChildOf, &'static Grid), With<SoFar>>,
     frames: Query<'w, 's, &'static mut Framed>,
     rows: Query<'w, 's, &'static mut Node, With<YearBand>>,
+    frame: Res<'w, pane::FrameRows>,
 }
 
 /// Rewrites both panes whenever the year said or the list's width moves,
@@ -125,19 +118,18 @@ fn refresh(
     let so_far: Vec<Vec<String>> = so_far
         .map(|line| vec![line.label.clone(), line.amount.clone()])
         .collect();
-    if let Ok((table, pane, mut scroll)) = panes.tables.single_mut() {
+    if let Ok((pane, grid)) = panes.tables.single() {
         let widest = so_far.iter().map(|line| line[1].chars().count()).max();
         let widest = u16::try_from(widest.unwrap_or(0)).unwrap_or(u16::MAX);
         let columns = vec![Constraint::Fill(1), Constraint::Length(widest)];
-        commands.entity(table).insert(TableColumns(columns));
-        tabulate::refill(&mut commands, (table, &mut *scroll), (&[], &so_far), &[0]);
+        grid::refill(&mut commands, grid, columns, (&[], &so_far), &[0]);
         if let Ok(mut framed) = panes.frames.get_mut(pane.parent()) {
             Framed::retitle(&mut framed, &year.so_far_title);
         }
     }
     let longer = wrapped.max(so_far.len());
     let shown = u16::try_from(longer).unwrap_or(u16::MAX).min(YEAR_MOST);
-    let height = Val::Px(f32::from(shown + pane::BORDERS));
+    let height = Val::Rem(f32::from(shown + panes.frame.0));
     for mut node in &mut panes.rows {
         if node.height != height {
             node.height = height;
@@ -166,7 +158,7 @@ mod tests {
 
     #[test]
     fn a_year_leads_with_its_milestones_over_what_to_do() {
-        let theme = Theme::terminal();
+        let theme = Theme::default();
         let said = lines(&year_of(FULL, 2037), &theme);
         let first = said.first().unwrap();
         assert!(first.0.starts_with(MILESTONE), "{said:?}");
@@ -179,7 +171,7 @@ mod tests {
 
     #[test]
     fn a_warning_is_marked_and_drawn_as_a_figure_past_its_limit() {
-        let theme = Theme::terminal();
+        let theme = Theme::default();
         let short = TEST_PLAN.replace("amount = 60000", "amount = 600000");
         let said = lines(&year_of(&short, 2031), &theme);
         let warned = said.iter().find(|(line, _)| line.starts_with(WARNING));

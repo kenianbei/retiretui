@@ -12,15 +12,13 @@ use std::path::PathBuf;
 
 use bevy_app::{App, Startup, Update};
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
-use bevy_ecs::hierarchy::{ChildOf, Children};
+use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{
     Changed, Commands, Component, Entity, IntoScheduleConfigs, Query, Res, ResMut, Resource, With,
 };
 use bevy_input_focus::InputFocus;
 use bevy_ui::{FlexDirection, Node, Val};
-use plurimus::core::UiWidget;
 use plurimus::core::ratatui_core::style::Style;
-use plurimus::ui::ScrollArea;
 use plurimus::widgets::ActiveDescendant;
 use retiretui_client::estimate::{ABOUT, COLUMNS, Estimator, NOTHING_READ, listed, summary};
 use retiretui_client::present::counted;
@@ -34,12 +32,12 @@ pub use moves::{
     ignore, ignore_payee, move_containing, move_payee, name_payee, pick_category, record_actions,
 };
 
-use super::options::say_instead;
-use super::{EnterRuns, HelpLine, ToolPage, show_help, writes_it};
+use super::{EnterRuns, Help, ToolPage, writes_it};
 use crate::command::{EDIT_PROPOSAL, Keymap, WRITE_ESTIMATE};
-use crate::edit::{self, Draft, table_bundle};
+use crate::edit::{self, Draft};
+use crate::grid::{self, Grid};
 use crate::hints::Hints;
-use crate::layout::{self, Body, clipped_middle, filling, growing, placed};
+use crate::layout::{self, Body, clipped_middle, growing};
 use crate::nav::{self, FocusStop, Page, ShownSurface};
 use crate::pane::{BORDERS, Framed, Pane};
 use crate::present::MoneyForm;
@@ -161,38 +159,34 @@ fn spawn_panes(commands: &mut Commands, row: Entity) {
     let top = Node {
         flex_direction: FlexDirection::Row,
         flex_grow: PROPOSALS_SHARE,
-        flex_basis: Val::Px(0.0),
-        min_height: Val::Px(0.0),
+        flex_basis: Val::ZERO,
+        min_height: Val::ZERO,
         ..Node::default()
     };
     let top = commands.spawn((top, ChildOf(page))).id();
     let proposals = Pane::new(PROPOSALS_TITLE).spawn(commands, top);
+    let table = grid::spawn(commands, proposals);
     commands
-        .spawn((
-            table_bundle(),
+        .entity(table)
+        .insert((
             ProposalsTable,
             EnterRuns(EDIT_PROPOSAL),
             FocusStop,
             Hints(&[("↑↓", "row"), ("⏎", "edit")]),
             layout::Rests,
-            filling(),
-            placed(),
-            ChildOf(proposals),
         ))
         .observe(super::handle_enter);
     spawn_column(commands, top);
     let behind = Pane::new(RECORDS_TITLE).sharing(1.0).spawn(commands, page);
+    let table = grid::spawn(commands, behind);
     commands
-        .spawn((
-            table_bundle(),
+        .entity(table)
+        .insert((
             BehindTable,
             EnterRuns(RECORD_ACTIONS),
             FocusStop,
             Hints(&[("↑↓", "record"), ("⏎", "actions")]),
             layout::Rests,
-            filling(),
-            placed(),
-            ChildOf(behind),
         ))
         .observe(super::handle_enter);
 }
@@ -202,7 +196,7 @@ fn spawn_panes(commands: &mut Commands, row: Entity) {
 fn spawn_column(commands: &mut Commands, row: Entity) {
     let column = Node {
         flex_direction: FlexDirection::Column,
-        width: Val::Px(SIDE_COLS),
+        width: Val::Em(SIDE_COLS),
         height: Val::Percent(100.0),
         flex_shrink: 0.0,
         ..Node::default()
@@ -216,16 +210,10 @@ fn spawn_column(commands: &mut Commands, row: Entity) {
     let read_out = Pane::new(READ_OUT_TITLE)
         .sharing(1.0)
         .spawn(commands, column);
-    commands.spawn((
-        table_bundle(),
-        ReadOut,
-        FocusStop,
-        Hints(&[("↑↓", "line")]),
-        layout::Rests,
-        filling(),
-        placed(),
-        ChildOf(read_out),
-    ));
+    let table = grid::spawn(commands, read_out);
+    commands
+        .entity(table)
+        .insert((ReadOut, FocusStop, Hints(&[("↑↓", "line")]), layout::Rests));
     let settings = Pane::new(SETTINGS_TITLE)
         .tall(SETTINGS_ROWS)
         .spawn(commands, column);
@@ -284,7 +272,7 @@ fn list_files(
 
 fn table_proposals(
     (held, cursor, shown): (Res<Held>, Res<Cursor>, ShownSurface),
-    mut tables: Query<(Entity, &mut ScrollArea), With<ProposalsTable>>,
+    tables: Query<&Grid, With<ProposalsTable>>,
     mut commands: Commands,
 ) {
     if !(held.is_changed() || shown.is_changed()) {
@@ -295,18 +283,15 @@ fn table_proposals(
         .map(|row| row.cells(MoneyForm::Full).to_vec())
         .collect();
     let header = COLUMNS.map(str::to_owned);
-    for (table, mut scroll) in &mut tables {
+    for grid in &tables {
         if rows.is_empty() {
-            commands.entity(table).despawn_related::<Children>();
-            say_instead(&mut commands, table, NOTHING_READ.to_owned());
+            grid::say_instead(&mut commands, grid, NOTHING_READ.to_owned());
             continue;
         }
-        commands
-            .entity(table)
-            .insert(tabulate::columns((&header, &rows), GAP));
-        let spawned = tabulate::refill(
+        let spawned = grid::refill(
             &mut commands,
-            (table, &mut scroll),
+            grid,
+            tabulate::columns((&header, &rows), GAP),
             (&header, &rows),
             &[0, 4],
         );
@@ -315,7 +300,7 @@ fn table_proposals(
         }
         let at = cursor.0.min(spawned.len().saturating_sub(1));
         commands
-            .entity(table)
+            .entity(grid.root)
             .insert(ActiveDescendant(spawned.get(at).copied()));
     }
 }
@@ -334,7 +319,7 @@ fn follow_cursor(
 
 fn show_read_out(
     (held, cursor, shown): (Res<Held>, Res<Cursor>, ShownSurface),
-    mut outs: Query<(Entity, &mut ScrollArea), With<ReadOut>>,
+    outs: Query<&Grid, With<ReadOut>>,
     mut commands: Commands,
 ) {
     if !(held.is_changed() || cursor.is_changed() || shown.is_changed()) {
@@ -342,10 +327,9 @@ fn show_read_out(
     }
     let header: [String; 0] = [];
     let months = held.0.estimate().months;
-    for (table, mut scroll) in &mut outs {
-        commands.entity(table).despawn_related::<Children>();
+    for grid in &outs {
         let Some(row) = held.0.row(cursor.0) else {
-            say_instead(&mut commands, table, NOTHING_HIGHLIGHTED.to_owned());
+            grid::say_instead(&mut commands, grid, NOTHING_HIGHLIGHTED.to_owned());
             continue;
         };
         let rows: Vec<Vec<String>> = row
@@ -353,12 +337,10 @@ fn show_read_out(
             .into_iter()
             .map(|(label, text)| vec![label, text])
             .collect();
-        commands
-            .entity(table)
-            .insert(tabulate::labelled(&rows, GAP));
-        tabulate::refill(
+        grid::refill(
             &mut commands,
-            (table, &mut scroll),
+            grid,
+            tabulate::labelled(&rows, GAP),
             (&header, &rows),
             &[0, 1],
         );
@@ -368,10 +350,7 @@ fn show_read_out(
 /// What lies behind the highlighted row, its pane titled for it.
 fn show_behind(
     (held, cursor, shown): (Res<Held>, Res<Cursor>, ShownSurface),
-    mut tables: Query<
-        (Entity, &ChildOf, &mut ScrollArea, Option<&ActiveDescendant>),
-        With<BehindTable>,
-    >,
+    tables: Query<(&ChildOf, &Grid, Option<&ActiveDescendant>), With<BehindTable>>,
     (records, mut frames): (Query<&RecordRow>, Query<&mut Framed>),
     mut commands: Commands,
 ) {
@@ -379,7 +358,7 @@ fn show_behind(
         return;
     }
     let behind = held.0.behind(cursor.0, MoneyForm::Full).unwrap_or_default();
-    for (table, pane, mut scroll, on) in &mut tables {
+    for (pane, grid, on) in &tables {
         let kept = (on.and_then(|on| on.0))
             .and_then(|row| records.get(row).ok())
             .map_or(0, |row| row.0);
@@ -392,17 +371,14 @@ fn show_behind(
             Framed::retitle(&mut framed, title);
         }
         if behind.rows.is_empty() {
-            commands.entity(table).despawn_related::<Children>();
-            say_instead(&mut commands, table, NOTHING_HIGHLIGHTED.to_owned());
+            grid::say_instead(&mut commands, grid, NOTHING_HIGHLIGHTED.to_owned());
             continue;
         }
-        commands
-            .entity(table)
-            .insert(tabulate::columns((&behind.columns, &behind.rows), GAP));
         let text: Vec<usize> = (0..behind.columns.len().saturating_sub(1)).collect();
-        let spawned = tabulate::refill(
+        let spawned = grid::refill(
             &mut commands,
-            (table, &mut scroll),
+            grid,
+            tabulate::columns((&behind.columns, &behind.rows), GAP),
             (&behind.columns, &behind.rows),
             &text,
         );
@@ -411,7 +387,7 @@ fn show_behind(
         }
         let at = kept.min(spawned.len().saturating_sub(1));
         commands
-            .entity(table)
+            .entity(grid.root)
             .insert(ActiveDescendant(spawned.get(at).copied()));
     }
 }
@@ -429,7 +405,7 @@ fn say_help(
     (held, focus, shown): (Res<Held>, Res<InputFocus>, ShownSurface),
     (theme, keymap): (Res<Theme>, Res<Keymap>),
     tables: Query<(), With<ProposalsTable>>,
-    mut lines: Query<(&mut UiWidget, &HelpLine)>,
+    mut foot: Help,
 ) {
     if !(held.is_changed() || focus.is_changed() || shown.is_changed() || theme.is_changed()) {
         return;
@@ -443,5 +419,5 @@ fn say_help(
     } else {
         ABOUT.to_owned()
     };
-    show_help(&mut lines, Page::SpendingEstimate, &text, &theme);
+    foot.show(Page::SpendingEstimate, &text);
 }

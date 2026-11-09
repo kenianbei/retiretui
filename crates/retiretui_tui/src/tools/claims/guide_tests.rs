@@ -1,5 +1,6 @@
+use crate::support::typed;
 use bevy_app::App;
-use plurimus::term::KeyCode;
+use bevy_input::keyboard::Key;
 
 use super::guide::{self, Place};
 use super::people_tests::{BENEFIT, SALARY, app_on, fixture, plan, run, without_record};
@@ -30,7 +31,7 @@ fn help_line(frame: &str) -> String {
 #[test]
 fn enter_on_a_person_offers_what_fits_them_and_runs_it_on_them() {
     let mut app = app_on(&fixture());
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     let frame = redrawn(&mut app);
     for offered in [
         "Import statement…",
@@ -46,13 +47,13 @@ fn enter_on_a_person_offers_what_fits_them_and_runs_it_on_them() {
     );
 
     type_text(&mut app, "clear");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     let frame = redrawn(&mut app);
     assert!(frame.contains("Clear me's earnings record?"), "{frame}");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     app.update();
     assert!(plan(&app).person("me").unwrap().earnings.is_empty());
-    press_ctrl(&mut app, KeyCode::Char('z'));
+    press_ctrl(&mut app, typed('z'));
     assert!(
         !plan(&app).person("me").unwrap().earnings.is_empty(),
         "one step"
@@ -64,7 +65,7 @@ fn a_removal_asks_and_a_cancel_keeps_the_income() {
     let mut app = app_on(&fixture());
     assert_eq!(run(&mut app, remove_benefit), Outcome::Done);
     assert!(redrawn(&mut app).contains("Remove me's Social Security income?"));
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     app.update();
     assert_eq!(plan(&app).income.len(), 1);
     assert_eq!(
@@ -72,7 +73,7 @@ fn a_removal_asks_and_a_cancel_keeps_the_income() {
         Outcome::Done,
         "a record to clear is asked about"
     );
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     let no_record = fresh();
     let mut app = app_on(&no_record);
     assert_eq!(
@@ -133,7 +134,7 @@ fn the_help_line_names_the_next_thing_to_do_and_for_whom() {
     assert!(line.starts_with("⏎ takes the highlighted option"), "{line}");
 
     assert_eq!(run(&mut app, adopt), Outcome::Done);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     app.update();
     let line = said_on(&app, Place::People);
     assert_eq!(line, retiretui_client::searches::claims::ABOUT);

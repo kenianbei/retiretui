@@ -8,18 +8,25 @@ mod domain;
 mod draft;
 mod editing;
 mod field;
+mod flag;
 mod form;
 mod group;
 mod screen;
 mod scroll;
 mod search;
 mod select;
+mod slider;
 mod sort;
 mod table;
 #[cfg(test)]
 pub(crate) mod tests;
 mod trigger;
 mod widths;
+
+#[cfg(any(feature = "desktop", test))]
+pub(crate) use field::{Bracket, TextField};
+#[cfg(any(feature = "desktop", test))]
+pub(crate) use select::{CHEVRON, SelectBox};
 
 use retiretui_client::codec;
 use retiretui_client::files::load_beneath;
@@ -45,7 +52,7 @@ pub use retiretui_client::issues::issue_words;
 pub use sort::sort;
 #[cfg(test)]
 pub use table::DomainTable;
-pub use table::{Row, Turn, table_bundle};
+pub use table::{Row, Turn, table_keys};
 
 use super::journal;
 use super::session::{Projected, Session};
@@ -67,8 +74,14 @@ pub enum EditSystems {
 
 pub fn plugin(app: &mut App) {
     app.init_resource::<Importing>();
-    app.configure_sets(Update, (EditSystems::Seed, EditSystems::Place).chain());
+    app.configure_sets(
+        Update,
+        (EditSystems::Seed, EditSystems::Place)
+            .chain()
+            .before(super::theme::Repainted),
+    );
     app.add_plugins((screen::plugin, form::plugin, scroll::plugin));
+    app.add_observer(plurimus::widgets::table_self_update);
     app.add_systems(
         Startup,
         (seed_draft, spawn_screens.after(layout::spawn_frame)),

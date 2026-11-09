@@ -1,5 +1,6 @@
+use crate::support::typed;
 use bevy_app::App;
-use plurimus::term::KeyCode;
+use bevy_input::keyboard::Key;
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::{FilingStatus, Plan};
 use retiretui_engine::project::validate_plan;
@@ -56,7 +57,7 @@ fn press_button(app: &mut App, label: &str) {
 fn create_as(app: &mut App, name: &str) {
     press_button(app, CREATE);
     type_text(app, name);
-    press_key(app, KeyCode::Enter);
+    press_key(app, Key::Enter);
     settle(app);
 }
 
@@ -88,7 +89,7 @@ fn without_a_document_the_form_is_all_there_is_and_cannot_be_left() {
     assert!(!frame.contains(CANCEL), "nothing to go back to: {frame}");
     assert!(!frame.contains("╭ Plan "), "no page of a plan: {frame}");
     assert_eq!(lit_tab(&mut app), Some(crate::nav::Group::Plan.tab()));
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     settle(&mut app);
     assert!(
         composed_frame(&app).contains(TITLE),
@@ -117,8 +118,8 @@ fn creating_names_the_plan_writes_it_and_lands_in_its_accounts() {
         "{frame}"
     );
 
-    press_key(&mut app, KeyCode::Right);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::ArrowRight);
+    press_key(&mut app, Key::Enter);
     settle(&mut app);
     let frame = composed_frame(&app);
     assert!(
@@ -130,8 +131,8 @@ fn creating_names_the_plan_writes_it_and_lands_in_its_accounts() {
 #[test]
 fn an_example_hides_the_questions_and_is_named_after_itself() {
     let (dir, mut app) = empty_shell();
-    press_key(&mut app, KeyCode::Tab);
-    press_key(&mut app, KeyCode::Right);
+    press_key(&mut app, Key::Tab);
+    press_key(&mut app, Key::ArrowRight);
     settle(&mut app);
     let frame = composed_frame(&app);
     assert!(frame.contains("Start from"), "{frame}");
@@ -142,7 +143,7 @@ fn an_example_hides_the_questions_and_is_named_after_itself() {
         "the name offered is the example's: {}",
         composed_frame(&app)
     );
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     settle(&mut app);
 
     let written = dir.join("starter.toml");
@@ -208,7 +209,7 @@ fn an_unsaved_document_is_asked_about_before_the_new_plan_is_named() {
     let saved = std::fs::read_to_string(&path).expect("the document");
     assert_ne!(saved, support::TEST_PLAN, "saving wrote the old draft");
     type_text(&mut app, "second");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     settle(&mut app);
     let second = path.with_file_name("second.toml");
     assert_eq!(document(&app), Some(second), "and then the new plan opens");
@@ -226,7 +227,7 @@ fn a_name_not_given_returns_to_the_form_with_its_answers() {
     let (_, mut app) = empty_shell();
     answer(&mut app, FilingStatus::Single, SAM);
     press_button(&mut app, CREATE);
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     settle(&mut app);
     assert_eq!(document(&app), None, "nothing was written");
     let frame = composed_frame(&app);
@@ -239,9 +240,9 @@ fn the_form_keeps_every_key_from_the_document_beneath_it() {
     commit_edit(&mut app, |plan| plan.accounts[0].balance = 1);
     run_command(&mut app, "new");
     settle(&mut app);
-    press_ctrl(&mut app, KeyCode::Char('z'));
-    press_key(&mut app, KeyCode::Char('r'));
-    press_key(&mut app, KeyCode::Char('1'));
+    press_ctrl(&mut app, typed('z'));
+    press_key(&mut app, typed('r'));
+    press_key(&mut app, typed('1'));
     settle(&mut app);
     assert!(composed_frame(&app).contains(TITLE), "the form stands");
     let draft = app.world().resource::<Draft>();
@@ -254,7 +255,7 @@ fn the_form_keeps_every_key_from_the_document_beneath_it() {
 #[test]
 fn esc_with_nothing_to_cancel_says_nothing() {
     let (_, mut app) = empty_shell();
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     settle(&mut app);
     assert_eq!(support::said(&app), Vec::<String>::new());
 }
@@ -269,7 +270,7 @@ fn the_answers_are_kept_apart_from_the_optimizer_s() {
     run_command(&mut app, "new");
     answer(&mut app, FilingStatus::Single, SAM);
     press_button(&mut app, CREATE);
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     settle(&mut app);
     let draft = app.world().resource::<Draft>();
     assert_eq!(draft.answers::<Constraints>(), constraints);
@@ -279,14 +280,14 @@ fn the_answers_are_kept_apart_from_the_optimizer_s() {
 fn the_pane_keys_are_the_forms_own_where_no_page_is_shown() {
     let (_, mut app) = empty_shell();
     let heard = said(&app);
-    press_shift(&mut app, KeyCode::Tab);
+    press_shift(&mut app, Key::Tab);
     assert_eq!(
         said(&app),
         heard,
         "shift-tab has nowhere to go and says so to no one"
     );
     let pane = app.world().resource::<bevy_input_focus::InputFocus>().get();
-    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, Key::Tab);
     let field = app.world().resource::<bevy_input_focus::InputFocus>().get();
     assert_ne!(field, pane, "tab goes into the fields");
     assert_eq!(said(&app), heard);
@@ -300,7 +301,7 @@ fn to_a_text_field(app: &mut App) {
         held.is_some_and(|held| world.get::<plurimus::widgets::TextInput>(held).is_some())
     };
     while !is_typed_in(app) {
-        press_key(app, KeyCode::Tab);
+        press_key(app, Key::Tab);
     }
 }
 
@@ -327,7 +328,7 @@ fn enter_in_a_text_field_creates_as_the_button_does() {
     let (_, mut app) = empty_shell();
     answer(&mut app, FilingStatus::Single, SAM);
     to_a_text_field(&mut app);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     settle(&mut app);
     assert!(
         composed_frame(&app).contains("New plan as"),

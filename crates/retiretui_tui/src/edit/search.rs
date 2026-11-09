@@ -1,7 +1,9 @@
 //! A pick from a set too long for a menu: the select's button opens the
 //! shell's fuzzy picker over its offers, and takes the choice as a menu's.
 
+use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Entity, In, On, Query, Res, ResMut, Resource, World};
+use bevy_ecs::system::SystemParam;
 use plurimus::widgets::Activate;
 
 use super::offers::Vocabulary;
@@ -26,22 +28,41 @@ pub fn register(world: &mut World) {
     world.insert_resource(searches);
 }
 
+/// What opens a searched select's picker.
+#[derive(SystemParam)]
+pub struct Searching<'w> {
+    searches: ResMut<'w, Searches>,
+    picking: ResMut<'w, Picking>,
+}
+
+impl Searching<'_> {
+    /// Opens the picker over `select`'s offers, where its set is searched;
+    /// whether it was.
+    pub fn open(&mut self, entity: Entity, select: &Select) -> bool {
+        let picker = match select.searched() {
+            Some(Vocabulary::Country) => self.searches.countries,
+            Some(Vocabulary::UsState) => self.searches.states,
+            _ => return false,
+        };
+        self.searches.target = Some(entity);
+        self.picking.open(picker);
+        true
+    }
+}
+
+/// A click on a searched select's box opens its picker.
 pub fn handle_search(
     activate: On<Activate>,
+    parents: Query<&ChildOf>,
     selects: Query<&Select>,
-    mut searches: ResMut<Searches>,
-    mut picking: ResMut<Picking>,
+    mut searching: Searching,
 ) {
-    let Some(vocabulary) = selects.get(activate.entity).ok().and_then(Select::searched) else {
+    let Ok(entity) = parents.get(activate.entity).map(ChildOf::parent) else {
         return;
     };
-    let picker = match vocabulary {
-        Vocabulary::Country => searches.countries,
-        Vocabulary::UsState => searches.states,
-        _ => return,
-    };
-    searches.target = Some(activate.entity);
-    picking.open(picker);
+    if let Ok(select) = selects.get(entity) {
+        searching.open(entity, select);
+    }
 }
 
 /// The offers by the words shown for them, each beside the value kept; the

@@ -25,8 +25,8 @@ use bevy_ecs::system::{SystemId, SystemParam};
 use bevy_input::keyboard::KeyboardInput;
 use bevy_input_focus::FocusedInput;
 use bevy_window::PrimaryWindow;
+use plurimus::term::HeldModifiers;
 use plurimus::term::KeyModifiers;
-use plurimus::term::bevy_compat::HeldModifiers;
 use plurimus::ui::KeyBinding;
 
 pub use table::COMMANDS;
@@ -44,6 +44,10 @@ use super::settings::Settings;
 pub const FOCUS_NEXT: &str = "focus-next";
 pub const PALETTE: &str = "palette";
 pub const HELP: &str = "help";
+/// The command that ends the session, which a window's close button runs
+/// too.
+pub const QUIT: &str = "quit";
+pub const BASIS: &str = "basis";
 
 /// The commands a page says the key of, in a hint or in its help.
 pub const DOMAINS: &str = "domains";

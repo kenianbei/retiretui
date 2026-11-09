@@ -1,3 +1,4 @@
+use crate::support::typed;
 use plurimus::ui::{ComputedWidgetArea, UiLabel};
 
 use super::*;
@@ -27,7 +28,7 @@ fn highlighting(text: &str) -> crate::support::Headless {
     let mut app = headless_app_at(dir.join("plan.toml"), SIZE);
     show(&mut app, Page::Compare);
     compare_with(&mut app, "changed");
-    press_key(&mut app, KeyCode::Down);
+    press_key(&mut app, Key::ArrowDown);
     redrawn(&mut app);
     app
 }
@@ -37,7 +38,7 @@ fn the_pane_follows_the_highlighted_plan_and_the_baseline() {
     let mut app = comparing_variant(SIZE);
     assert_eq!(rows(&mut app), [THE_BASELINE]);
     assert_eq!(changes_title(&mut app), "Changes · plan.toml");
-    press_key(&mut app, KeyCode::Down);
+    press_key(&mut app, Key::ArrowDown);
     redrawn(&mut app);
     assert_eq!(
         changes_title(&mut app),
@@ -48,10 +49,10 @@ fn the_pane_follows_the_highlighted_plan_and_the_baseline() {
         ["Settings › Plan name: test-plan →", "  variant"],
         "a change wider than the pane runs on to an indented row"
     );
-    press_key(&mut app, KeyCode::Char('b'));
+    press_key(&mut app, typed('b'));
     redrawn(&mut app);
     assert_eq!(rows(&mut app), [THE_BASELINE]);
-    press_key(&mut app, KeyCode::Up);
+    press_key(&mut app, Key::ArrowUp);
     redrawn(&mut app);
     assert_eq!(
         changes_title(&mut app),
@@ -109,19 +110,19 @@ fn the_pane_is_a_stop_the_arrows_move_through() {
         single::<PlansTable>(&mut app),
         single::<ChangesList>(&mut app),
     );
-    press_key(&mut app, KeyCode::Right);
+    press_key(&mut app, Key::ArrowRight);
     assert_eq!(
         focused(&app),
         Some(table),
         "→ walks the metric, not the row"
     );
-    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, Key::Tab);
     assert_eq!(focused(&app), Some(list));
-    press_key(&mut app, KeyCode::Left);
+    press_key(&mut app, Key::ArrowLeft);
     assert_eq!(focused(&app), Some(list), "and ← back");
     let cursor = |app: &App| app.world().get::<ActiveDescendant>(list).unwrap().0;
     let first = cursor(&app);
-    press_key(&mut app, KeyCode::Down);
+    press_key(&mut app, Key::ArrowDown);
     assert_ne!(cursor(&app), first);
 }
 
@@ -142,7 +143,7 @@ fn the_pane_takes_a_third_of_the_row() {
 #[test]
 fn a_wider_pane_joins_what_it_ran_on() {
     let mut app = comparing_variant(SIZE);
-    press_key(&mut app, KeyCode::Down);
+    press_key(&mut app, Key::ArrowDown);
     redrawn(&mut app);
     app.insert_resource(ROOMY);
     redrawn(&mut app);

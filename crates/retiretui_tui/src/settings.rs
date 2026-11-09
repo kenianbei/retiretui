@@ -16,6 +16,10 @@ use crate::session::Session;
 use crate::store::Store;
 
 const TUI_TABLE: &str = "tui";
+/// The file the settings are kept in, beside the user's other config.
+#[cfg(any(feature = "terminal", feature = "desktop", test))]
+pub const CONFIG_FILE: &str = "config.toml";
+
 /// The keys of `[tui]` that others write back.
 pub const THEME_KEY: &str = "theme";
 pub const MOTION_KEY: &str = "motion";

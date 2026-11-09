@@ -4,7 +4,7 @@
 
 use plurimus::core::ratatui_core::layout::Constraint;
 use plurimus::core::ratatui_core::text::Line;
-use plurimus::widgets::{TableColumns, TableLayout};
+use plurimus::widgets::TableLayout;
 
 use super::cells::Cell;
 use super::table::DomainTable;
@@ -62,9 +62,11 @@ impl Laid {
         Self(columns)
     }
 
-    pub fn columns(&self) -> TableColumns {
-        let widths = self.0.iter().map(|column| Constraint::Length(column.width));
-        TableColumns(widths.collect())
+    pub fn columns(&self) -> Vec<Constraint> {
+        self.0
+            .iter()
+            .map(|column| Constraint::Length(column.width))
+            .collect()
     }
 
     pub fn header(&self) -> Vec<Line<'static>> {

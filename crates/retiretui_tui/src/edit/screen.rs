@@ -14,11 +14,10 @@ use super::draft::Draft;
 use super::editing::{self, SessionFocus, Slot};
 use super::select;
 use super::sort;
-use super::table::{
-    DomainTable, cue_receipt, handle_row_select, handle_table_key, rebuild_rows, table_bundle,
-};
+use super::table::{DomainTable, cue_receipt, handle_row_click, handle_table_key, rebuild_rows};
 use super::trigger;
 use crate::command;
+use crate::grid;
 use crate::hints::{CommandHint, CommandHints, Hints};
 use crate::layout::{self, CURSOR_COLS, button_node, filling, placed};
 use crate::nav::{self, FocusStop};
@@ -36,7 +35,6 @@ pub fn plugin(app: &mut App) {
     );
     app.add_systems(Update, dress_add_buttons);
     app.add_systems(PostUpdate, cue_receipt.after(UiSystems::PostLayout));
-    app.add_observer(handle_row_select);
     app.add_observer(sort::handle_header_click);
 }
 
@@ -75,16 +73,17 @@ fn spawn_table(commands: &mut Commands, root: Entity, ops: Ops, list: ListOps) {
         .spawn((
             Node {
                 flex_direction: FlexDirection::Row,
-                column_gap: Val::Px(PANE_GAP),
+                column_gap: Val::Em(PANE_GAP),
                 ..filling()
             },
             ChildOf(root),
         ))
         .id();
     let pane = Pane::new(ops.title).sharing(1.0).spawn(commands, beside);
-    let table = commands
-        .spawn((
-            table_bundle(),
+    let table = grid::spawn(commands, pane);
+    commands
+        .entity(table)
+        .insert((
             DomainTable {
                 ops,
                 list,
@@ -96,12 +95,9 @@ fn spawn_table(commands: &mut Commands, root: Entity, ops: Ops, list: ListOps) {
             FocusStop,
             layout::Rests,
             (EDIT_HINTS, FROM_TABLE),
-            filling(),
-            placed(),
-            ChildOf(pane),
         ))
         .observe(handle_table_key)
-        .id();
+        .observe(handle_row_click);
     spawn_add_button(commands, pane, table, list);
     if retiretui_client::forms::details::has_details(&ops, list) {
         details::spawn_pane(commands, beside, table, ops);
@@ -114,7 +110,7 @@ fn spawn_table(commands: &mut Commands, root: Entity, ops: Ops, list: ListOps) {
 fn spawn_add_button(commands: &mut Commands, pane: Entity, table: Entity, list: ListOps) {
     let label = format!("+ Add {}", list.singular);
     let node = Node {
-        margin: UiRect::left(Val::Px(f32::from(CURSOR_COLS))),
+        margin: UiRect::left(Val::Em(f32::from(CURSOR_COLS))),
         ..button_node(&label)
     };
     commands

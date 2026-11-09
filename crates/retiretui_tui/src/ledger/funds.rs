@@ -11,18 +11,16 @@ use bevy_ecs::prelude::{Commands, Component, Entity, IntoScheduleConfigs, Query,
 use bevy_ui::{Node, Val};
 use plurimus::core::ratatui_core::layout::Constraint;
 use plurimus::core::ratatui_core::style::Style;
-use plurimus::ui::{ScrollArea, UiStyle};
-use plurimus::widgets::TableColumns;
+use plurimus::ui::UiStyle;
 use retiretui_client::ledger::{DetailLine, Funds, MONEY_IN, MONEY_OUT, TAX, Year};
 
 use super::arrange::{DetailStop, Part, Shape};
 use super::{Detail, LedgerSystems, shows_the_year};
-use crate::edit::table_bundle;
+use crate::grid::{self, Grid};
 use crate::hints::Hints;
-use crate::layout::{self, filling, placed};
+use crate::layout;
 use crate::nav::Page;
-use crate::pane::Pane;
-use crate::tabulate;
+use crate::pane::{FrameRows, Pane};
 use crate::theme::Theme;
 use crate::tools::{EnterRuns, handle_enter};
 
@@ -55,24 +53,17 @@ const FUNDS_LEAST: f32 = 7.0;
 pub(super) fn spawn_panes(commands: &mut Commands, year: Entity) {
     let money = Node {
         flex_grow: 1.0,
-        flex_basis: Val::Px(0.0),
-        min_width: Val::Px(0.0),
-        min_height: Val::Px(FUNDS_LEAST),
+        flex_basis: Val::ZERO,
+        min_width: Val::ZERO,
+        min_height: Val::Rem(FUNDS_LEAST),
         ..Node::default()
     };
     let money = commands.spawn((money, Part::Money, ChildOf(year))).id();
     for (said, title) in PANES {
         let pane = Pane::new(title).sharing(1.0).spawn(commands, money);
-        let mut table = commands.spawn((
-            table_bundle(),
-            said,
-            DetailStop,
-            Hints(&[("↑↓", "line")]),
-            layout::Rests,
-            filling(),
-            placed(),
-            ChildOf(pane),
-        ));
+        let root = grid::spawn(commands, pane);
+        let mut table = commands.entity(root);
+        table.insert((said, DetailStop, Hints(&[("↑↓", "line")]), layout::Rests));
         if said == Said::Tax {
             let tables = Page::TaxTables.label();
             table
@@ -144,17 +135,17 @@ impl Said {
 /// The label gives way to the amount, which is as wide as the widest of
 /// them.
 fn refresh(
-    (detail, shape): (Detail, Res<Shape>),
-    mut tables: Query<(Entity, &Said, &ChildOf, &mut ScrollArea)>,
+    (detail, shape, frame): (Detail, Res<Shape>, Res<FrameRows>),
+    tables: Query<(&Said, &ChildOf, &Grid)>,
     mut panes: Query<&mut Node>,
     mut commands: Commands,
 ) {
     let Some((year, theme)) = detail.due(shape.is_changed()) else {
         return;
     };
-    for (table, said, pane, mut scroll) in &mut tables {
+    for (said, pane, grid) in &tables {
         let rows = said.rows(year);
-        let basis = shape.money_basis(rows.len());
+        let basis = shape.money_basis(rows.len(), *frame);
         if let Ok(mut node) = panes.get_mut(pane.parent())
             && node.flex_basis != basis
         {
@@ -171,8 +162,7 @@ fn refresh(
         let widest = amounts.map(|amount| amount.chars().count()).max();
         let widest = u16::try_from(widest.unwrap_or(0)).unwrap_or(u16::MAX);
         let columns = vec![Constraint::Fill(1), Constraint::Length(widest)];
-        commands.entity(table).insert(TableColumns(columns));
-        let spawned = tabulate::refill(&mut commands, (table, &mut *scroll), (&[], &cells), &[0]);
+        let spawned = grid::refill(&mut commands, grid, columns, (&[], &cells), &[0]);
         for (row, entity) in rows.iter().zip(spawned) {
             if let Some(ink) = row.ink(theme) {
                 commands.entity(entity).insert(UiStyle(ink));
@@ -244,16 +234,13 @@ mod tests {
             label: "Spending".to_owned(),
             amount: "$1".to_owned(),
         };
-        let terminal = Theme::terminal_on(crate::theme::document::Variant::Dark);
-        assert_eq!(Row::Line(line.clone()).ink(&terminal), None);
-        let ground = Row::Gap.ink(&terminal).expect("a gap is unbanded");
-        assert_eq!(ground.bg, Some(Color::Reset), "the terminal's own ground");
-        assert_ne!(ground.bg, terminal.stripe);
-        let sum = Row::Sum(line).ink(&terminal).expect("a sum is unbanded");
-        assert_eq!((sum.bg, sum.fg), (ground.bg, terminal.dimmed().fg));
-        let mut painted = terminal;
-        painted.bg = Some(Color::Rgb(1, 2, 3));
-        let ground = Row::Gap.ink(&painted).expect("a gap is unbanded");
-        assert_eq!(ground.bg, painted.bg, "a theme's own ground");
+        let mut striped = Theme::default();
+        striped.bg = Color::Rgb(1, 2, 3);
+        striped.stripe = Some(Color::Rgb(9, 9, 9));
+        assert_eq!(Row::Line(line.clone()).ink(&striped), None);
+        let ground = Row::Gap.ink(&striped).expect("a gap is unbanded");
+        assert_eq!(ground.bg, Some(striped.bg), "the theme's own ground");
+        let sum = Row::Sum(line).ink(&striped).expect("a sum is unbanded");
+        assert_eq!((sum.bg, sum.fg), (ground.bg, striped.dimmed().fg));
     }
 }

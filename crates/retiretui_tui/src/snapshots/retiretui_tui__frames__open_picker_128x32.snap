@@ -1,5 +1,6 @@
 ---
 source: crates/retiretui_tui/src/frames.rs
+assertion_line: 45
 expression: composed_frame(app)
 ---
 ╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                              
@@ -33,4 +34,4 @@ expression: composed_frame(app)
 │   2026           retire 2037          2050                             2074││  Lives in       Oregon                         │
 │▓▓ taxable  ░░ pre-tax  ▒▒ Roth  ██ HSA  ── Net worth                       ││  Success is     Never running short            │
 ╰────────────────────────────────────────────────────────────────────────────╯╰────────────────────────────────────────────────╯
- ↑↓ move  ⏎ pick  ⇥ complete  ← parent  esc close
+ ↑↓ move  ⏎ pick  ⇥ complete  alt-↑ parent  esc close

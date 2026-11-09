@@ -46,9 +46,9 @@ impl Shelf<'_> {
     /// The user's choice naming the theme at `id`, so that what they paint
     /// over a theme is tried on with it, and the theme that resolves to.
     fn tried(&self, id: usize) -> Option<(Choice, Result<Theme, String>)> {
-        let (slug, _) = self.themes.listed().nth(id)?;
+        let listed = self.themes.listed().nth(id)?;
         let choice = Choice {
-            name: Some(slug.to_owned()),
+            name: Some(listed.slug.clone()),
             ..self.settings.theme.clone()
         };
         let theme = self.themes.resolve(&choice, self.wanted.0);
@@ -77,11 +77,11 @@ pub fn open(
 }
 
 fn list(In(query): In<String>, themes: Res<Themes>) -> Vec<Offered> {
-    let offered = themes.listed().enumerate().map(|(id, (slug, listed))| {
-        let offered = Offered::new(id, slug).badged(listed.map_or_else(String::new, badge));
-        match listed {
-            Some(Listed { read: None, .. }) => offered.dimmed(),
-            _ => offered,
+    let offered = themes.listed().enumerate().map(|(id, listed)| {
+        let offered = Offered::new(id, &listed.slug).badged(badge(listed));
+        match listed.read {
+            None => offered.dimmed(),
+            Some(_) => offered,
         }
     });
     ranked(&query, offered)

@@ -20,10 +20,11 @@ mod sorting;
 mod structured;
 mod triggers;
 
+use crate::support::typed;
 use bevy_app::App;
 use bevy_ecs::prelude::{Children, Entity};
+use bevy_input::keyboard::Key;
 use bevy_input_focus::InputFocus;
-use plurimus::term::KeyCode;
 use plurimus::widgets::ActiveDescendant;
 use retiretui_engine::plan::Plan;
 
@@ -33,8 +34,8 @@ use super::table::{DomainTable, Row};
 use super::{Draft, screens};
 use crate::nav::Page;
 use crate::support::{
-    self, Headless, ROOMY, SIZE, cell_fg, cell_of, commit_edit, composed_frame, headless_app,
-    headless_app_at, press_key, show, type_text,
+    self, Headless, ROOMY, SIZE, cell_fg, cell_of, click, commit_edit, composed_frame,
+    headless_app, headless_app_at, press_key, show, type_text,
 };
 use crate::theme::Theme;
 
@@ -46,7 +47,7 @@ pub(crate) fn fixture_app_sized(size: plurimus::core::TerminalSize) -> Headless 
     headless_app_at(support::scratch_full_plan(), size)
 }
 
-pub(super) fn draft_plan(app: &App) -> Plan {
+pub(crate) fn draft_plan(app: &App) -> Plan {
     app.world().resource::<Draft>().plan.clone()
 }
 
@@ -54,7 +55,7 @@ pub(super) fn is_editing(app: &App) -> bool {
     app.world().resource::<EditSession>().is_open()
 }
 
-pub(super) fn focused(app: &App) -> Entity {
+pub(crate) fn focused(app: &App) -> Entity {
     app.world().resource::<InputFocus>().get().unwrap()
 }
 
@@ -77,9 +78,9 @@ pub(crate) fn cursor(app: &mut App) -> Row {
 
 /// Backspaces the focused field empty so typing replaces its value.
 pub(crate) fn clear_field(app: &mut App) {
-    press_key(app, KeyCode::End);
+    press_key(app, Key::End);
     for _ in 0..40 {
-        press_key(app, KeyCode::Backspace);
+        press_key(app, Key::Backspace);
     }
 }
 
@@ -99,8 +100,8 @@ pub(crate) fn retype_balance(app: &mut App) {
 pub(super) fn open_travel(app: &mut App) {
     show(app, Page::Expenses);
     app.update();
-    press_key(app, KeyCode::Down);
-    press_key(app, KeyCode::Enter);
+    press_key(app, Key::ArrowDown);
+    press_key(app, Key::Enter);
 }
 
 /// Shows `page` and opens the item under its cursor: a table's first
@@ -108,7 +109,7 @@ pub(super) fn open_travel(app: &mut App) {
 pub(crate) fn open(app: &mut App, page: Page) {
     show(app, page);
     app.update();
-    press_key(app, KeyCode::Enter);
+    press_key(app, Key::Enter);
 }
 
 /// Stops along a brokerage account's form to the pick that says how it is
@@ -146,7 +147,7 @@ pub(super) fn tab_to_key(app: &mut App, key: &str) {
 
 pub(crate) fn tab_to_field(app: &mut App, row: usize) {
     for _ in 0..row {
-        press_key(app, KeyCode::Tab);
+        press_key(app, Key::Tab);
     }
 }
 #[test]
@@ -222,9 +223,9 @@ fn the_cursor_moves_within_a_table() {
     show(&mut app, Page::Accounts);
     app.update();
     assert_eq!(cursor(&mut app), Row(0));
-    press_key(&mut app, KeyCode::Down);
+    press_key(&mut app, Key::ArrowDown);
     assert_eq!(cursor(&mut app), Row(1));
-    press_key(&mut app, KeyCode::End);
+    press_key(&mut app, Key::End);
     let last = draft_plan(&app).accounts.len() - 1;
     assert_eq!(
         cursor(&mut app),
@@ -246,19 +247,19 @@ fn the_add_button_and_the_add_command_both_append() {
         2,
         "nothing added until apply"
     );
-    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, Key::Tab);
     clear_field(&mut app);
     type_text(&mut app, "brokerage");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     let plan = draft_plan(&app);
     assert_eq!(plan.accounts.len(), 3);
     assert_eq!(plan.accounts[2].id, "brokerage");
     assert_eq!(plan.accounts[2].owner, "me");
     app.update();
     assert_eq!(cursor(&mut app), Row(2));
-    press_key(&mut app, KeyCode::Char('a'));
+    press_key(&mut app, typed('a'));
     assert!(is_editing(&app), "the add command opens one too");
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     assert_eq!(draft_plan(&app).accounts.len(), 3);
 }
 
@@ -266,11 +267,11 @@ fn the_add_button_and_the_add_command_both_append() {
 fn a_delete_whose_item_moved_under_the_question_is_refused_and_said() {
     let mut app = headless_app(SIZE);
     show(&mut app, Page::Accounts);
-    press_key(&mut app, KeyCode::Char('d'));
+    press_key(&mut app, typed('d'));
     assert!(composed_frame(&app).contains("Delete cash?"));
     crate::support::commit_edit(&mut app, |plan| plan.accounts.swap(0, 1));
     let before = draft_plan(&app).accounts;
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert_eq!(draft_plan(&app).accounts, before, "nothing is removed");
     let warned = crate::support::said(&app)
         .last()
@@ -286,7 +287,7 @@ fn a_delete_whose_item_moved_under_the_question_is_refused_and_said() {
 fn delete_asks_before_it_removes_the_item() {
     let mut app = headless_app(SIZE);
     show(&mut app, Page::Accounts);
-    press_key(&mut app, KeyCode::Char('d'));
+    press_key(&mut app, typed('d'));
     let frame = composed_frame(&app);
     assert!(frame.contains("Delete cash?"), "{frame}");
     assert!(
@@ -296,26 +297,26 @@ fn delete_asks_before_it_removes_the_item() {
     let (column, row) = cell_of(&app, "[ Delete ]");
     let over = app.world().resource::<Theme>().over;
     assert_eq!(cell_fg(&app, column, row), Some(over), "and that it loses");
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     assert_eq!(draft_plan(&app).accounts.len(), 2, "esc leaves it undone");
-    press_key(&mut app, KeyCode::Down);
+    press_key(&mut app, Key::ArrowDown);
     assert_eq!(
         cursor(&mut app),
         Row(1),
         "and gives the table the keyboard back"
     );
 
-    press_key(&mut app, KeyCode::Char('d'));
-    press_key(&mut app, KeyCode::Tab);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, typed('d'));
+    press_key(&mut app, Key::Tab);
+    press_key(&mut app, Key::Enter);
     assert_eq!(
         draft_plan(&app).accounts.len(),
         2,
         "cancel leaves it undone"
     );
 
-    press_key(&mut app, KeyCode::Char('d'));
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, typed('d'));
+    press_key(&mut app, Key::Enter);
     let accounts = draft_plan(&app).accounts;
     assert_eq!(
         accounts.len(),
@@ -333,8 +334,8 @@ fn a_domain_emptied_of_items_says_what_it_is_for() {
     let mut app = headless_app(SIZE);
     show(&mut app, Page::Accounts);
     for _ in 0..draft_plan(&app).accounts.len() {
-        press_key(&mut app, KeyCode::Char('d'));
-        press_key(&mut app, KeyCode::Enter);
+        press_key(&mut app, typed('d'));
+        press_key(&mut app, Key::Enter);
     }
     app.update();
     assert_eq!(draft_plan(&app).accounts, []);
@@ -343,7 +344,7 @@ fn a_domain_emptied_of_items_says_what_it_is_for() {
         frame.contains(<retiretui_client::forms::accounts::Accounts as retiretui_client::forms::Domain>::PURPOSE),
         "an empty domain says what it is for: {frame}"
     );
-    press_key(&mut app, KeyCode::Char('d'));
+    press_key(&mut app, typed('d'));
     let frame = composed_frame(&app);
     assert!(
         frame.contains("nothing highlighted"),
@@ -487,11 +488,11 @@ fn a_statement_picked_on_the_people_page_is_recorded_on_the_highlighted_person()
     let statement = statement.to_str().unwrap();
     let mut app = fixture_app();
     show(&mut app, Page::People);
-    press_key(&mut app, KeyCode::Char('e'));
+    press_key(&mut app, typed('e'));
     let frame = composed_frame(&app);
     assert!(frame.contains("Import earnings from"), "{frame}");
     type_text(&mut app, statement);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     app.update();
     let plan = draft_plan(&app);
     assert_eq!(plan.household.people[0].earnings.len(), 3, "{plan:?}");
@@ -500,10 +501,10 @@ fn a_statement_picked_on_the_people_page_is_recorded_on_the_highlighted_person()
     assert!(frame.contains("1995-2024"), "{frame}");
     // The second person was born on another date, so the same statement
     // is refused and nothing changes.
-    press_key(&mut app, KeyCode::Down);
-    press_key(&mut app, KeyCode::Char('e'));
+    press_key(&mut app, Key::ArrowDown);
+    press_key(&mut app, typed('e'));
     type_text(&mut app, statement);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     app.update();
     assert!(draft_plan(&app).household.people[1].earnings.is_empty());
 }
@@ -517,11 +518,32 @@ fn body_rows(app: &mut App, page: Page) -> Vec<Entity> {
         .find(|(_, table)| table.ops.surface == Some(page))
         .map(|(entity, _)| entity)
         .unwrap();
-    let children = world.get::<Children>(table).unwrap().to_vec();
+    let body = world.get::<crate::grid::Grid>(table).unwrap().body;
+    let children = world.get::<Children>(body).unwrap().to_vec();
     children
         .into_iter()
         .filter(|&child| world.get::<Row>(child).is_some())
         .collect()
+}
+
+#[test]
+fn a_click_on_a_row_opens_its_item_over_the_table() {
+    let mut app = fixture_app();
+    show(&mut app, Page::Accounts);
+    app.update();
+    let table = focused(&app);
+    let (x, y) = cell_of(&app, "brokerage");
+    click(&mut app, x, y);
+    app.update();
+    assert!(is_editing(&app), "a click opens the row");
+    let frame = composed_frame(&app);
+    assert!(frame.contains("brokerage"), "{frame}");
+    press_key(&mut app, Key::Escape);
+    assert_eq!(
+        focused(&app),
+        table,
+        "the table is what the form hands back to"
+    );
 }
 
 #[test]

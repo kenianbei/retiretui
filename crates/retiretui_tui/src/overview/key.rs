@@ -2,24 +2,43 @@
 //! pointer what each reads that year.
 
 use bevy_ecs::change_detection::DetectChanges;
-use bevy_ecs::prelude::{Component, Query, Ref, Res, With};
-use plurimus::core::UiWidget;
+use bevy_ecs::prelude::{Commands, Component, Query, Ref, Res, Resource, With};
+use bevy_ui::ComputedNode;
 use plurimus::core::ratatui_core::style::Style;
 use plurimus::core::ratatui_core::text::{Line, Span};
-use plurimus::term::CursorCell;
 use plurimus::ui::ComputedWidgetArea;
-use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
 use retiretui_client::overview::ChartLine;
 use retiretui_client::present::money;
 use retiretui_engine::plan::Dollars;
 
 use super::charts::OverviewChart;
-use crate::chart::{LINE_KEY, SeriesChart};
+use crate::chart::{LINE_KEY, MouseCell, SeriesChart};
+use crate::layout::node_cols;
 use crate::present::compact_money;
-use crate::theme::Theme;
+use crate::theme::{Hung, Theme, say};
 
 /// How many of its glyph a mark is keyed by.
 const KEY_SWATCH: usize = 2;
+
+/// How a skin drawing its bands in colour marks them: a dot in the
+/// colour for a band, and a dash for a line.
+const DOT: &str = "●";
+const DASH: &str = "─";
+
+/// Whether the key marks its bands with dots rather than the glyphs the
+/// terminal shades them with; a skin that draws bands in colour sets it.
+#[derive(Resource, Default)]
+pub(crate) struct KeyMarks {
+    pub(crate) is_dotted: bool,
+}
+
+/// Marks each of `keyed` with a dot or a dash in its colour.
+pub(super) fn dot(keyed: &mut [Keyed]) {
+    for mark in keyed {
+        let is_line = mark.swatch.content == LINE_KEY;
+        mark.swatch.content = if is_line { DASH } else { DOT }.into();
+    }
+}
 
 /// A mark the key names, and what it reads each year: one figure, or the
 /// two a band lies between.
@@ -63,30 +82,31 @@ pub(crate) struct ChartKey {
     pub(super) waits_on: String,
 }
 
-/// Rewrites the key whenever what it names moves or the pointer does: its
-/// marks' names, and under the pointer what each reads that year, in full
-/// where the line holds them and compact where it does not.
+/// Says the key again whenever what it names moves or the pointer does:
+/// its marks' names, and under the pointer what each reads that year, in
+/// full where the line holds them and compact where it does not.
 pub(super) fn read_key(
-    cursor: Res<CursorCell>,
+    mut cursor: MouseCell,
     charts: Query<(&SeriesChart, &ComputedWidgetArea), With<OverviewChart>>,
-    mut keys: Query<(Ref<ChartKey>, &ComputedWidgetArea, &mut UiWidget)>,
+    keys: Query<(Ref<ChartKey>, &ComputedNode, &Hung)>,
     theme: Res<Theme>,
+    mut commands: Commands,
 ) {
-    let is_moved = cursor.is_changed() || theme.is_changed();
+    let is_moved = cursor.has_moved() || theme.is_changed();
     let year = charts.iter().next().and_then(|(chart, area)| {
-        let cell = cursor.0?;
+        let cell = cursor.get()?;
         chart.year_at(area.0, cell)
     });
-    for (key, area, mut widget) in &mut keys {
+    for (key, computed, Hung(hung)) in &keys {
         if !is_moved && !key.is_changed() {
             continue;
         }
         let line = if key.keyed.is_empty() {
             Line::styled(key.waits_on.clone(), theme.dimmed())
         } else {
-            fitted(&key.keyed, year, area.0.width)
+            fitted(&key.keyed, year, node_cols(computed))
         };
-        *widget = UiWidget::new(Paragraph::new(line));
+        say(&mut commands, *hung, line, &theme);
     }
 }
 
@@ -138,7 +158,7 @@ mod tests {
     #[test]
     fn the_key_names_each_mark_and_reads_it_at_the_pointer_s_year() {
         let projected = test_projected();
-        let theme = Theme::terminal();
+        let theme = Theme::default();
         let (_, keyed) = balances(&Chart::Balances.charted(&projected, true), &theme);
         assert_eq!(
             said(&key_line(&keyed, None, money)),
@@ -158,12 +178,18 @@ mod tests {
             said(&key_line(&keyed, None, money)),
             "a year the plan does not reach reads nothing"
         );
+        let mut dotted = keyed.clone();
+        dot(&mut dotted);
+        assert_eq!(
+            said(&key_line(&dotted, None, money)),
+            "● taxable  ● pre-tax  ─ Net worth  "
+        );
     }
 
     #[test]
     fn a_line_chart_is_keyed_by_its_lines() {
         let projected = test_projected();
-        let theme = Theme::terminal();
+        let theme = Theme::default();
         let charted = Chart::IncomeTaxes.charted(&projected, true);
         let (chart, keyed) = lines(&charted.lines, INCOME_SERIES, &theme);
         assert_eq!(chart.series.len(), 2);
@@ -187,7 +213,7 @@ mod tests {
         let (tables, history) = (TaxTables::embedded(), History::embedded());
         let found = monte_carlo(&projected.plan, &tables, history, &Progress::default());
         let runs = found.unwrap().runs;
-        let (chart, keyed) = markets(&runs.bands, &Theme::terminal());
+        let (chart, keyed) = markets(&runs.bands, &Theme::default());
         assert_eq!((chart.series.len(), chart.shades.len()), (1, 2));
         assert_eq!(
             said(&key_line(&keyed, None, compact_money)),

@@ -3,26 +3,24 @@
 //! beside exact text for a rate.
 //!
 //! Nothing here consumes Enter, so it reaches the form and applies the
-//! item: a flag's checkbox is bound to space alone rather than to the
-//! Enter its activation would otherwise take as well.
+//! item.
 
-use bevy_ecs::change_detection::DetectChanges;
+use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut, Mut, Ref};
 use bevy_ecs::hierarchy::{ChildOf, Children};
 use bevy_ecs::prelude::{
-    Bundle, Changed, Commands, Component, Entity, Has, Query, Ref, Res, With, Without,
+    Bundle, Changed, Commands, Component, Entity, Has, Query, Res, With, Without,
 };
 use bevy_ecs::system::SystemParam;
-use bevy_input::keyboard::Key;
 use bevy_input_focus::InputFocus;
+use bevy_input_focus::tab_navigation::TabIndex;
 use bevy_ui::{Node, UiRect, Val};
-use plurimus::core::UiWidget;
+use plurimus::bui::bevy_text::{EditableText, TextColor, TextEdit};
+use plurimus::bui::bevy_ui_widgets::SliderValue;
+use plurimus::bui::bevy_ui_widgets::TextInput as FieldInput;
+use plurimus::core::UiArea;
 use plurimus::core::ratatui_core::style::Style;
-use plurimus::ui::{Checked, KeyBinding};
-use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
-use plurimus::widgets::{
-    ActivateKeys, Checkbox, SliderStep, SliderValue, TextInput, checkbox, checkbox_self_update,
-    editable_text, slider,
-};
+use plurimus::core::ratatui_core::text::Line;
+use plurimus::ui::Checked;
 use retiretui_engine::plan::Plan;
 use toml::Value;
 
@@ -31,32 +29,19 @@ use super::cells::{field_text, parse_field};
 use super::codec::{get_path, share_left};
 use super::domain::{FieldKind, FieldSpec};
 use super::editing::{EditSession, Editing};
+use super::flag::{self, FlagBox};
 use super::select::{Select, spawn_select};
+use super::slider;
 use super::trigger::Slot;
 use crate::layout::{placed, sized};
 use crate::present;
-use crate::theme::Theme;
+use crate::theme::{Theme, say, text};
 use retiretui_client::forms::cells::{nth, nth_back};
 use retiretui_client::forms::offers::{candidates, offered};
 
-/// A widget activated by space alone, leaving Enter to apply the item.
-pub fn space() -> ActivateKeys {
-    ActivateKeys(vec![KeyBinding::new(Key::Character(" ".into()))])
-}
-
-/// The highest rate a slider offers; a higher one is still typable.
-const RATE_CEILING: f32 = 0.15;
-const RATE_STEP: f32 = 0.0025;
-/// A share's slider reaches the whole in these steps.
-const SHARE_CEILING: f32 = 1.0;
-const SHARE_STEP: f32 = 0.05;
-/// Cells the slider takes, leaving the rest of the field for the text.
-const SLIDER_WIDTH: f32 = 20.0;
-/// Cells kept clear between the slider and the text beside it.
-const SLIDER_GAP: f32 = 1.0;
 /// Where a remainder's text starts: level with the shares' text, past
 /// their slider and bracket.
-const REMAINDER_INDENT: f32 = SLIDER_WIDTH + SLIDER_GAP + BRACKETS[0].len() as f32;
+const REMAINDER_INDENT: f32 = slider::WIDTH as f32 + slider::GAP + BRACKETS[0].len() as f32;
 /// What a remainder is drawn with, and the share it last drew.
 #[derive(Component, Default)]
 pub struct Remaining {
@@ -68,7 +53,8 @@ pub struct Remaining {
 pub fn show_remainders(
     session: Res<EditSession>,
     theme: Res<Theme>,
-    mut shown: Query<(&mut Remaining, &FormField, &mut UiWidget)>,
+    mut shown: Query<(Entity, &mut Remaining, &FormField)>,
+    mut commands: Commands,
 ) {
     if !session.is_changed() && !theme.is_changed() {
         return;
@@ -76,7 +62,7 @@ pub fn show_remainders(
     let Some(editing) = session.0.as_ref() else {
         return;
     };
-    for (mut remaining, field, mut widget) in &mut shown {
+    for (entity, mut remaining, field) in &mut shown {
         let left = share_left(editing.snapshot(), field.spec.key);
         if remaining.left == left && !theme.is_changed() {
             continue;
@@ -87,56 +73,68 @@ pub fn show_remainders(
         } else {
             theme.exceeded()
         };
-        let text = left.map(present::rate).unwrap_or_default();
-        *widget = UiWidget::new(Paragraph::new(text).style(style));
-    }
-}
-
-/// Marks a flag's box, which is a component rather than a value.
-fn show_check(entity: Entity, wanted: bool, is_checked: bool, commands: &mut Commands) {
-    if wanted == is_checked {
-        return;
-    }
-    let mut widget = commands.entity(entity);
-    if wanted {
-        widget.insert(Checked);
-    } else {
-        widget.remove::<Checked>();
+        let said = left.map(present::rate).unwrap_or_default();
+        say(&mut commands, entity, Line::styled(said, style), &theme);
     }
 }
 
 /// Fills a text field, leaving the caret alone when the value it already
 /// shows is the wanted one - which is what stops the caret jumping while
 /// the draft moves under a field being typed into.
-pub fn show_text(text: &mut TextInput, wanted: String) {
-    if text.value() != wanted {
-        *text = TextInput::new(wanted);
-        text.move_start();
+pub fn show_text(text: &mut Mut<EditableText>, shown: &mut ShownText, wanted: String) {
+    if text.value() != wanted.as_str() {
+        text.editor_mut().set_text(&wanted);
+        text.queue_edit(TextEdit::TextStart(false));
+    }
+    shown.0 = wanted;
+}
+
+/// Every text field's text is in the theme's ink, in either skin: a form's
+/// and the file picker's.
+pub fn ink_fields(theme: Res<Theme>, mut fields: Query<(Ref<FieldInput>, &mut TextColor)>) {
+    for (spawned, mut colour) in &mut fields {
+        if theme.is_changed() || spawned.is_added() {
+            colour.set_if_neq(TextColor(theme.ink(Style::default())));
+        }
     }
 }
+
+/// What the form last showed in a field or read back from it, so that what
+/// the form writes there is not read back as typed.
+#[derive(Component, Debug, Default)]
+pub struct ShownText(pub(crate) String);
 
 /// A widget taking an even share of what its row has left.
 pub fn sharing() -> Node {
     Node {
         flex_grow: 1.0,
-        flex_basis: Val::Px(0.0),
-        min_width: Val::Px(0.0),
-        height: Val::Px(1.0),
+        flex_basis: Val::ZERO,
+        min_width: Val::ZERO,
+        height: Val::Rem(1.0),
         ..Node::default()
     }
 }
 
 /// What is drawn beside a text input and goes where it goes: one of its
 /// two brackets, which show it is there while it holds nothing, or a word
-/// of the sentence it is part of.
+/// of the sentence it is part of; and whether it was last drawn lit.
 #[derive(Component, Debug)]
 pub struct Bracket {
     input: Entity,
     drawn: &'static str,
+    drawn_lit: Option<bool>,
 }
 
 /// The closing one keeps a cell clear of whatever follows it on the row.
 const BRACKETS: [&str; 2] = ["[ ", " ] "];
+
+impl Bracket {
+    /// Whether this is one of the two brackets rather than a word.
+    #[cfg(any(feature = "desktop", test))]
+    pub(crate) fn is_bracket(&self) -> bool {
+        BRACKETS.contains(&self.drawn)
+    }
+}
 
 /// `drawn` along `row`, beside `input`, where there is anything to draw.
 /// It is ASCII, so bytes are cells.
@@ -145,13 +143,22 @@ pub fn spawn_beside(commands: &mut Commands, row: Entity, input: Entity, drawn: 
         return;
     }
     commands.spawn((
-        Bracket { input, drawn },
+        Bracket {
+            input,
+            drawn,
+            drawn_lit: None,
+        },
+        text(),
         sized(drawn.len() as f32, 1.0),
-        UiWidget::new(Paragraph::new(drawn)),
-        placed(),
         ChildOf(row),
     ));
 }
+
+/// A form's text field: upstream's text input in both skins, edited and
+/// drawn on a terminal's cells by plurimus and in a window by bevy.
+#[derive(Component, Debug, Default)]
+#[require(UiArea = placed(), FieldInput, ShownText)]
+pub struct TextField;
 
 /// A text input along `row`, carrying `field`, laid out as `node` between
 /// its brackets.
@@ -165,7 +172,7 @@ pub fn spawn_text_as(commands: &mut Commands, row: Entity, input: Entity, field:
     spawn_beside(commands, row, input, BRACKETS[0]);
     commands
         .entity(input)
-        .insert((editable_text(""), field, placed(), ChildOf(row)));
+        .insert((TextField, TabIndex(0), field, ChildOf(row)));
     spawn_beside(commands, row, input, BRACKETS[1]);
 }
 
@@ -174,23 +181,26 @@ pub fn spawn_text_as(commands: &mut Commands, row: Entity, input: Entity, field:
 pub fn light_brackets(
     focus: Res<InputFocus>,
     theme: Res<Theme>,
-    mut brackets: Query<(Ref<Bracket>, &mut UiWidget)>,
+    mut brackets: Query<(Entity, &mut Bracket)>,
+    mut commands: Commands,
 ) {
-    let is_stale = focus.is_changed() || theme.is_changed();
-    if !is_stale && !brackets.iter().any(|(bracket, _)| bracket.is_added()) {
-        return;
-    }
-    let lit = theme.ui_theme().focused;
-    for (bracket, mut widget) in &mut brackets {
-        if !is_stale && !bracket.is_added() {
+    for (entity, mut bracket) in &mut brackets {
+        let is_lit = focus.get() == Some(bracket.input);
+        if bracket.drawn_lit == Some(is_lit) && !theme.is_changed() {
             continue;
         }
-        let style = if focus.get() == Some(bracket.input) {
-            lit
+        bracket.drawn_lit = Some(is_lit);
+        let style = if is_lit {
+            theme.focused()
         } else {
             theme.dimmed()
         };
-        *widget = UiWidget::new(Paragraph::new(bracket.drawn).style(style));
+        say(
+            &mut commands,
+            entity,
+            Line::styled(bracket.drawn, style),
+            &theme,
+        );
     }
 }
 
@@ -221,29 +231,17 @@ pub fn spawn_field(commands: &mut Commands, row: Entity, spec: FieldSpec) {
         | FieldKind::Listed(_) => {
             spawn_text(commands, row, sharing(), field);
         }
-        FieldKind::Flag | FieldKind::Presence(_) => {
-            commands
-                .spawn((
-                    checkbox(""),
-                    space(),
-                    field,
-                    sharing(),
-                    placed(),
-                    ChildOf(row),
-                ))
-                .observe(checkbox_self_update);
-        }
-        FieldKind::Rate | FieldKind::Share => spawn_slider(commands, row, field),
+        FieldKind::Flag | FieldKind::Presence(_) => flag::spawn(commands, row, field),
+        FieldKind::Rate | FieldKind::Share => slider::spawn(commands, row, field),
         FieldKind::Remainder => {
             commands.spawn((
                 Remaining::default(),
                 field,
                 Node {
-                    margin: UiRect::left(Val::Px(REMAINDER_INDENT)),
+                    margin: UiRect::left(Val::Em(REMAINDER_INDENT)),
                     ..sharing()
                 },
-                UiWidget::new(Paragraph::new("")),
-                placed(),
+                text(),
                 ChildOf(row),
             ));
         }
@@ -255,28 +253,6 @@ pub fn spawn_field(commands: &mut Commands, row: Entity, spec: FieldSpec) {
             commands.entity(select).insert((sharing(), ChildOf(row)));
         }
     }
-}
-
-/// A rate's or a share's slider, and the text beside it that says it
-/// exactly.
-fn spawn_slider(commands: &mut Commands, row: Entity, field: FormField) {
-    let (ceiling, step) = if field.spec.kind == FieldKind::Share {
-        (SHARE_CEILING, SHARE_STEP)
-    } else {
-        (RATE_CEILING, RATE_STEP)
-    };
-    commands.spawn((
-        slider(0.0, ceiling, 0.0),
-        SliderStep(step),
-        field,
-        Node {
-            margin: UiRect::right(Val::Px(SLIDER_GAP)),
-            ..sized(SLIDER_WIDTH, 1.0)
-        },
-        placed(),
-        ChildOf(row),
-    ));
-    spawn_text(commands, row, sharing(), field);
 }
 
 /// A form's tree, for finding the widgets in it.
@@ -303,10 +279,19 @@ impl FormTree<'_, '_> {
 #[derive(SystemParam)]
 pub struct Fields<'w, 's> {
     pub tree: FormTree<'w, 's>,
-    texts: Query<'w, 's, (&'static FormField, &'static mut TextInput), Without<Slot>>,
+    texts: Query<
+        'w,
+        's,
+        (
+            &'static FormField,
+            &'static mut EditableText,
+            &'static mut ShownText,
+        ),
+        Without<Slot>,
+    >,
     selects: Query<'w, 's, (&'static FormField, &'static mut Select), Without<Slot>>,
-    sliders: Query<'w, 's, (&'static FormField, &'static mut SliderValue)>,
-    checks: Query<'w, 's, (&'static FormField, Has<Checked>), With<Checkbox>>,
+    sliders: Query<'w, 's, (&'static FormField, &'static SliderValue)>,
+    checks: Query<'w, 's, (&'static FormField, Has<Checked>), With<FlagBox>>,
     kinds: Query<'w, 's, (&'static FormField, &'static Slot, &'static ChildOf)>,
     slots: super::trigger::SlotsMut<'w, 's>,
     commands: Commands<'w, 's>,
@@ -324,16 +309,17 @@ impl Fields<'_, '_> {
     /// A field that does not yet make a value keeps its text, since no item
     /// holds it - dressed as its kind reads, where it parses.
     fn show_text_at(&mut self, widget: Entity, editing: &Editing, is_focused: bool) {
-        let Ok((field, mut text)) = self.texts.get_mut(widget) else {
+        let Ok((field, mut text, mut shown)) = self.texts.get_mut(widget) else {
             return;
         };
         if editing.is_incomplete(field.spec.key) {
             // A trigger's operand is typed as the file states it.
             let kind = field.spec.kind;
-            let read = parse_field(kind, text.value()).filter(|_| kind != FieldKind::Trigger);
+            let typed = text.value().to_string();
+            let read = parse_field(kind, &typed).filter(|_| kind != FieldKind::Trigger);
             if let Some(read) = read {
                 let own = field_text(kind, Some(&read), is_focused);
-                show_text(&mut text, own);
+                show_text(&mut text, &mut shown, own);
             }
             return;
         }
@@ -342,7 +328,8 @@ impl Fields<'_, '_> {
             FieldKind::Listed(back) => nth_back(value, back),
             _ => value,
         };
-        show_text(&mut text, field_text(field.spec.kind, value, is_focused));
+        let wanted = field_text(field.spec.kind, value, is_focused);
+        show_text(&mut text, &mut shown, wanted);
     }
 
     /// Shows each rate on both of its widgets, but for a text being typed
@@ -351,7 +338,7 @@ impl Fields<'_, '_> {
         let widgets: Vec<Entity> = self.tree.children.iter_descendants(form).collect();
         for widget in widgets {
             self.show_slider_at(widget, editing);
-            let is_rate = |(field, _): (&FormField, _)| {
+            let is_rate = |(field, ..): (&FormField, _, _)| {
                 matches!(field.spec.kind, FieldKind::Rate | FieldKind::Share)
             };
             if focused != Some(widget) && self.texts.get(widget).is_ok_and(is_rate) {
@@ -360,10 +347,14 @@ impl Fields<'_, '_> {
         }
     }
 
+    /// The stock slider's value is immutable, so a change is an insert.
     fn show_slider_at(&mut self, widget: Entity, editing: &Editing) {
-        if let Ok((field, mut value)) = self.sliders.get_mut(widget) {
+        if let Ok((field, shown)) = self.sliders.get(widget) {
             let rate = get_path(editing.snapshot(), field.spec.key).and_then(Value::as_float);
-            *value = SliderValue(rate.unwrap_or(0.0) as f32);
+            let wanted = SliderValue(rate.unwrap_or(0.0) as f32);
+            if *shown != wanted {
+                self.commands.entity(widget).insert(wanted);
+            }
         }
     }
 
@@ -390,7 +381,7 @@ impl Fields<'_, '_> {
                     FieldKind::Presence(_) => value.is_some_and(Value::is_table),
                     _ => value.and_then(Value::as_bool).unwrap_or(false),
                 };
-                show_check(widget, wanted, is_checked, &mut self.commands);
+                flag::show(widget, wanted, is_checked, &mut self.commands);
             }
             if let Ok((field, Slot::Kind, row)) = self.kinds.get(widget)
                 && let Ok(group) = self.tree.children.get(row.parent())
@@ -404,11 +395,4 @@ impl Fields<'_, '_> {
             }
         }
     }
-}
-
-/// A slider's rate reaches the field as a float, rounded to its own step
-/// so the text beside it reads as the slider moved.
-pub fn slider_value(value: f32) -> Value {
-    let stepped = f64::from((value / RATE_STEP).round() * RATE_STEP);
-    Value::Float((stepped * 1e6).round() / 1e6)
 }

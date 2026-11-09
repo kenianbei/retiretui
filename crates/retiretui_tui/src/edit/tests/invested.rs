@@ -1,7 +1,7 @@
 //! Headless tests for how an account is invested: the pick no file holds,
 //! and what a mix applied writes.
 
-use plurimus::term::KeyCode;
+use bevy_input::keyboard::Key;
 use retiretui_engine::plan::Allocation;
 
 use super::{
@@ -15,8 +15,8 @@ fn one_mix_shows_its_shares_in_place_of_a_return_and_applies_as_an_allocation() 
     let mut app = fixture_app();
     show(&mut app, Page::Accounts);
     app.update();
-    press_key(&mut app, KeyCode::Down);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::ArrowDown);
+    press_key(&mut app, Key::Enter);
     let frame = composed_frame(&app);
     assert!(frame.contains("[ Fixed return ▾ ]"), "{frame}");
     assert!(
@@ -24,7 +24,7 @@ fn one_mix_shows_its_shares_in_place_of_a_return_and_applies_as_an_allocation() 
         "{frame}"
     );
     tab_to_field(&mut app, INVESTED);
-    press_key(&mut app, KeyCode::Right);
+    press_key(&mut app, Key::ArrowRight);
     app.update();
     let frame = composed_frame(&app);
     assert!(frame.contains("[ One mix ▾ ]"), "{frame}");
@@ -37,7 +37,7 @@ fn one_mix_shows_its_shares_in_place_of_a_return_and_applies_as_an_allocation() 
     type_text(&mut app, "70");
     tab_to_field(&mut app, 2);
     type_text(&mut app, "20");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     let account = &draft_plan(&app).accounts[1];
     assert_eq!(account.expected_return, None, "{account:?}");
     let Some(Allocation::Mix(mix)) = account.allocation else {
@@ -55,11 +55,11 @@ fn a_glide_path_offers_its_first_step() {
     let mut app = fixture_app();
     show(&mut app, Page::Accounts);
     app.update();
-    press_key(&mut app, KeyCode::Down);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::ArrowDown);
+    press_key(&mut app, Key::Enter);
     tab_to_field(&mut app, INVESTED);
-    press_key(&mut app, KeyCode::Right);
-    press_key(&mut app, KeyCode::Right);
+    press_key(&mut app, Key::ArrowRight);
+    press_key(&mut app, Key::ArrowRight);
     app.update();
     let frame = composed_frame(&app);
     assert!(frame.contains("[ Glide path ▾ ]"), "{frame}");
@@ -85,8 +85,8 @@ fn open_glide_path() -> Headless {
     });
     show(&mut app, Page::Accounts);
     app.update();
-    press_key(&mut app, KeyCode::Down);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::ArrowDown);
+    press_key(&mut app, Key::Enter);
     app.update();
     app
 }
@@ -111,7 +111,7 @@ fn a_mix_shows_in_cash_what_its_stocks_and_bonds_leave_as_they_move() {
     };
     assert!(cash_of(&composed_frame(&app), "10%"));
     tab_to_key(&mut app, "allocation.0.stocks");
-    press_key(&mut app, KeyCode::Left);
+    press_key(&mut app, Key::ArrowLeft);
     app.update();
     let frame = composed_frame(&app);
     assert!(cash_of(&frame, "15%"), "{frame}");

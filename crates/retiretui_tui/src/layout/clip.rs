@@ -33,7 +33,7 @@ pub fn clipped_middle(text: String, width: u16) -> String {
 }
 
 /// As many of `characters` as fit in `width` cells.
-fn fitting(
+pub fn fitting(
     characters: impl DoubleEndedIterator<Item = char>,
     width: u16,
 ) -> impl DoubleEndedIterator<Item = char> {

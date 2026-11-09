@@ -1,5 +1,5 @@
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
-use bevy_ecs::prelude::{Changed, ChildOf, Component, Entity, Query, Res, ResMut, Resource, With};
+use bevy_ecs::prelude::{Changed, ChildOf, Component, Query, Res, ResMut, Resource, With};
 use bevy_ecs::system::SystemParam;
 use plurimus::widgets::ActiveDescendant;
 
@@ -51,19 +51,21 @@ pub struct RowYear(pub i16);
 /// the row it lands on, unless the cursor already resolves to it among the
 /// table's years, so a table pointed at the cursor never writes it back.
 pub fn track_cursor<T: Component>(
-    tables: Query<(Entity, &ActiveDescendant), (With<T>, Changed<ActiveDescendant>)>,
+    tables: Query<&ActiveDescendant, (With<T>, Changed<ActiveDescendant>)>,
     rows: Query<(&RowYear, &ChildOf)>,
     projected: Res<Projected>,
     today: Res<Today>,
     mut cursor: ResMut<YearCursor>,
 ) {
-    let Some((table, &ActiveDescendant(Some(on)))) = tables.iter().next() else {
+    let Some(&ActiveDescendant(Some(on))) = tables.iter().next() else {
         return;
     };
-    let Ok((&RowYear(year), _)) = rows.get(on) else {
+    let Ok((&RowYear(year), siblings)) = rows.get(on) else {
         return;
     };
-    let years = rows.iter().filter(|(_, parent)| parent.parent() == table);
+    let years = rows
+        .iter()
+        .filter(|(_, parent)| parent.parent() == siblings.parent());
     let shows = years.fold((year, year), |(first, last), (&RowYear(row), _)| {
         (first.min(row), last.max(row))
     });

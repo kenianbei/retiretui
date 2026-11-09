@@ -30,6 +30,13 @@ impl Band {
     pub fn at(beneath: usize) -> Self {
         Self(i32::try_from(beneath).unwrap_or(i32::MAX))
     }
+
+    /// How many overlays stand under the one this marks.
+    #[must_use]
+    #[cfg(any(feature = "desktop", test))]
+    pub const fn beneath(self) -> i32 {
+        self.0
+    }
 }
 
 pub fn plugin(app: &mut App) {

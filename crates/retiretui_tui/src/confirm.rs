@@ -9,17 +9,18 @@ use bevy_ecs::prelude::{
 };
 use bevy_input::keyboard::KeyboardInput;
 use bevy_input_focus::FocusedInput;
-use plurimus::core::UiWidget;
-use plurimus::term::bevy_compat::HeldModifiers;
+use bevy_ui::widget::Text;
+use plurimus::bui::bevy_text::TextColor;
+use plurimus::core::ratatui_core::style::Style;
+use plurimus::term::HeldModifiers;
 use plurimus::ui::{ModalDismiss, ModalOpen, first_bound};
-use plurimus::widgets::ratatui_widgets::paragraph::{Paragraph, Wrap};
 use plurimus::widgets::{Activate, button};
 
 use super::hints::Hints;
 use super::layout::{Emphasis, button_node, fixed, growing, placed, spawn_button_row, wrapped};
 use super::overlay::{self, Standing};
 use super::pane::Framed;
-use super::theme::Repainted;
+use super::theme::{Repainted, Theme};
 
 pub fn plugin(app: &mut App) {
     app.init_resource::<Confirm>();
@@ -131,6 +132,7 @@ impl Confirm {
 
 fn sync_confirm(
     confirm: Res<Confirm>,
+    theme: Res<Theme>,
     mut standing: Standing<ConfirmRoot>,
     mut commands: Commands,
 ) {
@@ -144,13 +146,20 @@ fn sync_confirm(
     let Some(root) = standing.open(&mut commands) else {
         return;
     };
-    if let Some(last) = spawn_dialog(&mut commands, root, asked) {
+    if let Some(last) = spawn_dialog(&mut commands, root, asked, &theme) {
         standing.focus(last);
     }
 }
 
-/// The dialog under `root`, answering with its last button.
-fn spawn_dialog(commands: &mut Commands, root: Entity, asked: &Asked) -> Option<Entity> {
+/// The dialog under `root`, answering with its last button. The question
+/// is said in the theme's ink of the moment; a dialog does not outlive a
+/// theme change by much.
+fn spawn_dialog(
+    commands: &mut Commands,
+    root: Entity,
+    asked: &Asked,
+    theme: &Theme,
+) -> Option<Entity> {
     let rows = wrapped_rows(&asked.message);
     commands
         .entity(root)
@@ -162,11 +171,10 @@ fn spawn_dialog(commands: &mut Commands, root: Entity, asked: &Asked) -> Option<
         ))
         .observe(handle_key)
         .observe(handle_dismiss);
-    let question = Paragraph::new(asked.message.clone()).wrap(Wrap { trim: true });
     commands.spawn((
         fixed(f32::from(rows)),
-        UiWidget::new(question),
-        placed(),
+        Text::new(asked.message.clone()),
+        TextColor(theme.ink(Style::default())),
         ChildOf(root),
     ));
     commands.spawn((growing(), ChildOf(root)));
@@ -233,33 +241,55 @@ fn handle_dismiss(_dismissed: On<ModalDismiss>, mut confirm: ResMut<Confirm>) {
 
 #[cfg(test)]
 mod tests {
-    use super::{TEXT_COLS, wrapped_rows};
+    use super::*;
+    use crate::support::typed;
+    use bevy_ecs::prelude::With;
+    use bevy_input::keyboard::Key;
     use bevy_input_focus::InputFocus;
-    use plurimus::term::KeyCode;
 
     use crate::edit::Draft;
     use crate::edit::tests::open;
+    use crate::layout::wrapped;
     use crate::nav::Page;
     use crate::support::{
         Headless, SIZE, click, composed_frame, headless_app, is_asking, press_ctrl, press_key,
-        type_text,
+        type_text, worn,
     };
 
     fn dirty_app() -> Headless {
         let mut app = headless_app(SIZE);
         open(&mut app, Page::Accounts);
-        press_key(&mut app, KeyCode::Tab);
+        press_key(&mut app, Key::Tab);
         type_text(&mut app, "x");
-        press_key(&mut app, KeyCode::Enter);
+        press_key(&mut app, Key::Enter);
         assert!(app.world().resource::<Draft>().is_dirty());
         app
+    }
+
+    #[test]
+    fn the_question_is_said_in_the_theme_s_ink() {
+        let mut app = dirty_app();
+        press_key(&mut app, typed('q'));
+        let ink = worn(&app).ink(Style::default());
+        let world = app.world_mut();
+        let root = world
+            .query_filtered::<Entity, With<ConfirmRoot>>()
+            .single(world)
+            .unwrap();
+        let said: Vec<_> = world
+            .query::<(&ChildOf, &TextColor)>()
+            .iter(world)
+            .filter(|(parent, _)| parent.parent() == root)
+            .map(|(_, colour)| colour.0)
+            .collect();
+        assert_eq!(said, vec![ink], "the question alone, in the ink");
     }
 
     #[test]
     fn an_open_item_keeps_the_chord_that_would_ask() {
         let mut app = headless_app(SIZE);
         open(&mut app, Page::Accounts);
-        press_ctrl(&mut app, KeyCode::Char('c'));
+        press_ctrl(&mut app, typed('c'));
         assert!(!is_asking(&app));
         assert!(app.should_exit().is_none());
     }
@@ -268,12 +298,12 @@ mod tests {
     fn an_unanswered_question_gives_the_keyboard_back_to_what_held_it() {
         let mut app = dirty_app();
         let table = app.world().resource::<InputFocus>().get();
-        press_key(&mut app, KeyCode::Char('q'));
+        press_key(&mut app, typed('q'));
         assert!(is_asking(&app));
         assert_ne!(app.world().resource::<InputFocus>().get(), table);
         let frame = composed_frame(&app);
         assert!(frame.contains("╭ Confirm"), "{frame}");
-        press_key(&mut app, KeyCode::Esc);
+        press_key(&mut app, Key::Escape);
         assert!(!is_asking(&app));
         assert_eq!(app.world().resource::<InputFocus>().get(), table);
     }
@@ -281,7 +311,7 @@ mod tests {
     #[test]
     fn a_press_outside_the_dialog_leaves_the_question_unanswered() {
         let mut app = dirty_app();
-        press_key(&mut app, KeyCode::Char('q'));
+        press_key(&mut app, typed('q'));
         assert!(is_asking(&app));
         click(&mut app, 1, 2);
         assert!(!is_asking(&app));
@@ -297,5 +327,21 @@ mod tests {
         let question =
             "Take the 24% ladder? 14 conversions, 2026–2038, in place of the ladder taken before.";
         assert_eq!(wrapped_rows(question), 3);
+    }
+
+    #[test]
+    fn the_terminal_draws_a_long_question_on_the_rows_it_was_sized_for() {
+        let mut app = headless_app(SIZE);
+        let question =
+            "Take the 24% ladder? 14 conversions, 2026–2038, in place of the ladder taken before.";
+        app.world_mut()
+            .resource_mut::<Confirm>()
+            .ask(question, "Take", |_| {});
+        app.update();
+        app.update();
+        let frame = composed_frame(&app);
+        for row in wrapped(question, TEXT_COLS, "") {
+            assert!(frame.contains(&row), "{row:?} is not on one row of {frame}");
+        }
     }
 }

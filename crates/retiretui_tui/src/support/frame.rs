@@ -1,6 +1,9 @@
 //! Reading what a headless app drew.
 
 use bevy_app::App;
+use bevy_ecs::hierarchy::Children;
+use bevy_ecs::prelude::{Entity, World};
+use plurimus::bui::bevy_text::TextSpan;
 use plurimus::core::ratatui_core::buffer::{Buffer, Cell};
 use plurimus::core::ratatui_core::style::{Color, Style};
 use plurimus::core::{FrameBuffer, TerminalRenderApp};
@@ -64,4 +67,15 @@ pub fn frame_to_string(buffer: &Buffer) -> String {
         lines.push(line);
     }
     lines.join("\n")
+}
+
+/// What `entity` says in the window: its spans' text joined.
+pub fn said_by(world: &World, entity: Entity) -> String {
+    world
+        .get::<Children>(entity)
+        .into_iter()
+        .flatten()
+        .filter_map(|&span| world.get::<TextSpan>(span))
+        .map(|span| span.0.as_str())
+        .collect()
 }

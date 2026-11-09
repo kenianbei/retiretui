@@ -1,6 +1,7 @@
+use crate::support::typed;
 use bevy_app::App;
+use bevy_input::keyboard::Key;
 use bevy_input_focus::InputFocus;
-use plurimus::term::KeyCode;
 
 use super::Sidebar;
 use crate::edit::DomainTable;
@@ -45,7 +46,7 @@ fn sidebar_row(app: &App, page: Page) -> String {
 #[test]
 fn the_sidebar_lists_every_domain_beside_the_one_on_show() {
     let mut app = headless_app(SIZE);
-    press_key(&mut app, KeyCode::Char(tab_digit(Group::Plan.tab())));
+    press_key(&mut app, typed(tab_digit(Group::Plan.tab())));
     let frame = redrawn(&mut app);
     for page in Page::ALL.into_iter().filter(|page| page.is_domain()) {
         assert!(frame.contains(page.title()), "{page:?}: {frame}");
@@ -61,14 +62,14 @@ fn the_sidebar_lists_every_domain_beside_the_one_on_show() {
 #[test]
 fn the_tab_lands_on_the_sidebar_over_the_domain_last_shown() {
     let mut app = headless_app(SIZE);
-    press_key(&mut app, KeyCode::Char(tab_digit(Group::Plan.tab())));
+    press_key(&mut app, typed(tab_digit(Group::Plan.tab())));
     assert_eq!(active_page(&app), Page::Accounts, "the first of them");
     assert!(is_on_sidebar(&app));
 
     show(&mut app, Page::Expenses);
     assert!(is_on_table(&app), "a domain's own command goes into it");
-    press_key(&mut app, KeyCode::Char(tab_digit(0)));
-    press_key(&mut app, KeyCode::Char(tab_digit(Group::Plan.tab())));
+    press_key(&mut app, typed(tab_digit(0)));
+    press_key(&mut app, typed(tab_digit(Group::Plan.tab())));
     assert_eq!(active_page(&app), Page::Expenses);
     assert!(is_on_sidebar(&app), "and the tab's digit does not");
     assert!(sidebar_row(&app, Page::Expenses).contains(HELD_BAR));
@@ -77,7 +78,7 @@ fn the_tab_lands_on_the_sidebar_over_the_domain_last_shown() {
 #[test]
 fn the_tools_tab_lands_on_its_sidebar_over_the_tool_last_shown() {
     let mut app = headless_app(SIZE);
-    press_key(&mut app, KeyCode::Char(tab_digit(Group::Tools.tab())));
+    press_key(&mut app, typed(tab_digit(Group::Tools.tab())));
     assert_eq!(
         active_page(&app),
         Page::RothConversions,
@@ -91,9 +92,9 @@ fn the_tools_tab_lands_on_its_sidebar_over_the_tool_last_shown() {
     );
     assert!(sidebar_row(&app, Page::RothConversions).contains(HELD_BAR));
 
-    press_key(&mut app, KeyCode::Right);
+    press_key(&mut app, Key::ArrowRight);
     assert!(is_on_form(&app), "the arrow goes into the tool");
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     assert!(is_on_sidebar(&app), "and esc comes back");
     assert_eq!(active_page(&app), Page::RothConversions);
 
@@ -119,8 +120,8 @@ fn the_tools_tab_lands_on_its_sidebar_over_the_tool_last_shown() {
 #[test]
 fn the_cursor_is_the_page_whichever_of_them_moves() {
     let mut app = headless_app(SIZE);
-    press_key(&mut app, KeyCode::Char(tab_digit(Group::Plan.tab())));
-    press_key(&mut app, KeyCode::Down);
+    press_key(&mut app, typed(tab_digit(Group::Plan.tab())));
+    press_key(&mut app, Key::ArrowDown);
     assert_eq!(
         active_page(&app),
         Page::Income,
@@ -141,16 +142,16 @@ fn the_cursor_is_the_page_whichever_of_them_moves() {
 #[test]
 fn arrows_and_esc_move_between_the_sidebar_and_the_domain() {
     let mut app = headless_app(SIZE);
-    press_key(&mut app, KeyCode::Char(tab_digit(Group::Plan.tab())));
+    press_key(&mut app, typed(tab_digit(Group::Plan.tab())));
     assert!(redrawn(&mut app).contains("→ into"));
-    press_key(&mut app, KeyCode::Right);
+    press_key(&mut app, Key::ArrowRight);
     assert!(is_on_table(&app));
     assert!(redrawn(&mut app).contains("← domains"));
-    press_key(&mut app, KeyCode::Left);
+    press_key(&mut app, Key::ArrowLeft);
     assert!(is_on_sidebar(&app));
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert!(is_on_table(&app));
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     assert!(is_on_sidebar(&app));
     assert_eq!(active_page(&app), Page::Accounts, "the page never turned");
 }
@@ -159,8 +160,8 @@ fn arrows_and_esc_move_between_the_sidebar_and_the_domain() {
 fn esc_on_a_page_that_is_not_a_domain_keeps_it() {
     let mut app = headless_app(SIZE);
     run_command(&mut app, "ledger");
-    press_key(&mut app, KeyCode::Esc);
-    press_key(&mut app, KeyCode::Left);
+    press_key(&mut app, Key::Escape);
+    press_key(&mut app, Key::ArrowLeft);
     assert_eq!(active_page(&app), Page::Ledger);
     assert!(!is_on_sidebar(&app));
 }
@@ -171,14 +172,14 @@ fn a_lone_form_is_never_a_dead_end() {
         let mut app = headless_app(SIZE);
         show(&mut app, page);
         assert!(redrawn(&mut app).contains("esc domains"), "{page:?}");
-        press_key(&mut app, KeyCode::Esc);
+        press_key(&mut app, Key::Escape);
         assert!(is_on_sidebar(&app), "{page:?} hands the keyboard back");
-        press_key(&mut app, KeyCode::Up);
+        press_key(&mut app, Key::ArrowUp);
         assert_ne!(active_page(&app), page, "and another domain is a key away");
 
         open(&mut app, page);
-        press_key(&mut app, KeyCode::Esc);
-        press_key(&mut app, KeyCode::Esc);
+        press_key(&mut app, Key::Escape);
+        press_key(&mut app, Key::Escape);
         assert!(is_on_sidebar(&app), "{page:?}: out of a field, then out");
     }
 }
@@ -186,12 +187,12 @@ fn a_lone_form_is_never_a_dead_end() {
 #[test]
 fn only_the_list_with_the_keyboard_draws_the_full_bar() {
     let mut app = headless_app(SIZE);
-    press_key(&mut app, KeyCode::Char(tab_digit(Group::Plan.tab())));
+    press_key(&mut app, typed(tab_digit(Group::Plan.tab())));
     let held = |frame: &str| frame.matches(HELD_BAR).count();
     let frame = redrawn(&mut app);
     assert_eq!(held(&frame), 1, "{frame}");
     assert!(sidebar_row(&app, Page::Accounts).contains(HELD_BAR));
-    press_key(&mut app, KeyCode::Right);
+    press_key(&mut app, Key::ArrowRight);
     let frame = redrawn(&mut app);
     assert_eq!(held(&frame), 1, "{frame}");
     assert!(sidebar_row(&app, Page::Accounts).contains('▏'), "{frame}");
@@ -222,12 +223,12 @@ fn a_lone_form_takes_the_keyboard_as_a_table_does() {
     ] {
         let mut app = headless_app(SIZE);
         show(&mut app, page);
-        press_key(&mut app, KeyCode::Esc);
+        press_key(&mut app, Key::Escape);
         assert!(is_on_sidebar(&app));
-        press_key(&mut app, KeyCode::Right);
+        press_key(&mut app, Key::ArrowRight);
         assert!(is_on_form(&app), "{page:?}: the arrow goes into it");
 
-        press_key(&mut app, KeyCode::Esc);
+        press_key(&mut app, Key::Escape);
         let (x, y) = cell_of(&app, label);
         click(&mut app, x, y);
         app.update();
@@ -238,16 +239,16 @@ fn a_lone_form_takes_the_keyboard_as_a_table_does() {
 #[test]
 fn tab_and_shift_tab_walk_between_the_sidebar_and_the_domain() {
     let mut app = headless_app(SIZE);
-    press_key(&mut app, KeyCode::Char(tab_digit(Group::Plan.tab())));
+    press_key(&mut app, typed(tab_digit(Group::Plan.tab())));
     assert!(
         redrawn(&mut app).contains("⇥ pane"),
         "the sidebar names the key"
     );
-    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, Key::Tab);
     assert!(is_on_table(&app), "tab goes on to the domain");
-    press_shift(&mut app, KeyCode::Tab);
+    press_shift(&mut app, Key::Tab);
     assert!(is_on_sidebar(&app), "shift-tab comes back");
-    press_shift(&mut app, KeyCode::Tab);
+    press_shift(&mut app, Key::Tab);
     assert!(!is_on_sidebar(&app), "and wraps to the page's last pane");
     assert_eq!(active_page(&app), Page::Accounts, "the page never turned");
 }
@@ -258,8 +259,8 @@ fn tab_is_quiet_on_a_page_of_one_pane_or_none() {
         let mut app = headless_app(SIZE);
         run_command(&mut app, command);
         let held = app.world().resource::<InputFocus>().get();
-        press_key(&mut app, KeyCode::Tab);
-        press_shift(&mut app, KeyCode::Tab);
+        press_key(&mut app, Key::Tab);
+        press_shift(&mut app, Key::Tab);
         let holder = app.world().resource::<InputFocus>().get();
         assert_eq!(holder, held, "{command}");
     }

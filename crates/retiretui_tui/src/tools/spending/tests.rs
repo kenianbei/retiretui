@@ -1,7 +1,8 @@
 use std::path::PathBuf;
 
+use crate::support::typed;
 use bevy_app::App;
-use plurimus::term::KeyCode;
+use bevy_input::keyboard::Key;
 
 use super::*;
 use crate::compare::Compared;
@@ -110,7 +111,7 @@ fn the_page_lists_both_ceilings_and_starts_on_the_one_at_the_target() {
 #[test]
 fn the_ceiling_in_the_plans_own_market_says_it_spends_everything_unless_some_is_held_back() {
     let (_, mut app) = workspace_app(RETIREE);
-    press_key(&mut app, KeyCode::Up);
+    press_key(&mut app, Key::ArrowUp);
     let frame = redrawn(&mut app);
     assert!(
         table_rows(&frame)[1].0,
@@ -123,12 +124,12 @@ fn the_ceiling_in_the_plans_own_market_says_it_spends_everything_unless_some_is_
         frame.contains(&format!("$30,000        {money}")),
         "its expenses follow the bar: {frame}"
     );
-    press_key(&mut app, KeyCode::Down);
+    press_key(&mut app, Key::ArrowDown);
     assert!(redrawn(&mut app).contains(ON_OPTIONS));
 
     let reserved = format!("{RETIREE}\n[market]\nleave_at_least = 100000\n");
     let (_, mut app) = workspace_app(&reserved);
-    press_key(&mut app, KeyCode::Up);
+    press_key(&mut app, Key::ArrowUp);
     let frame = redrawn(&mut app);
     assert!(
         frame.contains(ON_OPTIONS) && !frame.contains(spending::SPENDS_IT_ALL),
@@ -140,16 +141,16 @@ fn the_ceiling_in_the_plans_own_market_says_it_spends_everything_unless_some_is_
 fn applying_another_target_searches_again_and_leaves_the_draft_clean() {
     let (_, mut app) = workspace_app(RETIREE);
     let [_, at_ninety] = living_at(&app);
-    press_key(&mut app, KeyCode::Tab);
-    press_key(&mut app, KeyCode::Tab);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Tab);
+    press_key(&mut app, Key::Tab);
+    press_key(&mut app, Key::Enter);
     assert!(
         redrawn(&mut app).contains(spending::ABOUT),
         "the line fits beside the sidebar"
     );
-    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, Key::Tab);
     type_text(&mut app, "70%");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     let held = app.world().resource::<Draft>().answers::<Answers>();
     assert_eq!(held.get("success"), Some(&toml::Value::Float(0.7)));
     assert!(!app.world().resource::<Draft>().is_dirty());
@@ -167,10 +168,10 @@ fn applying_another_target_searches_again_and_leaves_the_draft_clean() {
 #[test]
 fn a_target_applied_from_the_question_a_press_outside_asks_is_searched_too() {
     let (_, mut app) = workspace_app(RETIREE);
-    press_key(&mut app, KeyCode::Tab);
-    press_key(&mut app, KeyCode::Tab);
-    press_key(&mut app, KeyCode::Enter);
-    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, Key::Tab);
+    press_key(&mut app, Key::Tab);
+    press_key(&mut app, Key::Enter);
+    press_key(&mut app, Key::Tab);
     type_text(&mut app, "70%");
     click(&mut app, 2, 20);
     assert!(is_asking(&app), "{}", redrawn(&mut app));
@@ -208,7 +209,7 @@ fn t_and_enter_ask_then_take_the_chosen_ceiling_as_one_step() {
         said(&app).last().cloned(),
         Some(format!("flexible spending is now {flexible} a year"))
     );
-    press_ctrl(&mut app, KeyCode::Char('z'));
+    press_ctrl(&mut app, typed('z'));
     assert_eq!(
         amounts(&app),
         named([30_000, 12_000, 25_000, 10_000]),
@@ -216,8 +217,8 @@ fn t_and_enter_ask_then_take_the_chosen_ceiling_as_one_step() {
     );
 
     settle(&mut app);
-    press_key(&mut app, KeyCode::Up);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::ArrowUp);
+    press_key(&mut app, Key::Enter);
     app.update();
     answer_yes(&mut app);
     assert_eq!(amounts(&app)[0], ("living".to_owned(), planned));
@@ -236,7 +237,7 @@ fn w_writes_the_highlighted_ceiling_and_compares_it() {
     assert_eq!(write, Outcome::Done);
     assert!(redrawn(&mut app).contains("Write overlay"));
     type_text(&mut app, "ceiling");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     app.update();
     let written = dir.join("ceiling.toml");
     assert_eq!(std::fs::read_to_string(&written).unwrap(), expected);

@@ -18,8 +18,9 @@ use std::sync::Arc;
 
 use bevy_app::App;
 use bevy_ecs::system::RunSystemOnce;
+use bevy_input::keyboard::Key;
 use plurimus::core::{CorePlugin, TerminalSize};
-use plurimus::term::{InputCapabilities, KeyCode};
+use plurimus::term::InputCapabilities;
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::Plan;
 use tracing::subscriber::DefaultGuard;
@@ -33,6 +34,7 @@ use crate::nav::{self, ActivePage, Page};
 use crate::session::{Session, Today};
 use crate::settings::Settings;
 use crate::store::{DiskStore, Store};
+use crate::theme::Theme;
 use crate::tools::Searches;
 use crate::watch;
 
@@ -86,9 +88,9 @@ pub fn is_browsing(app: &App) -> bool {
 /// steps toward the first.
 pub fn answer_back(app: &mut App, back: usize) {
     for _ in 0..back {
-        press_shift(app, KeyCode::Tab);
+        press_shift(app, Key::Tab);
     }
-    press_key(app, KeyCode::Enter);
+    press_key(app, Key::Enter);
 }
 
 /// A headless app, and the subscriber that carries what it says to its
@@ -125,6 +127,11 @@ pub fn searched_app(path: PathBuf, plan_text: &str, size: TerminalSize) -> Headl
 
 pub fn headless_app(size: TerminalSize) -> Headless {
     headless_app_at(scratch_plan(), size)
+}
+
+/// The theme the shell wears.
+pub fn worn(app: &App) -> &Theme {
+    app.world().resource::<Theme>()
 }
 
 /// Everything said to the user so far, oldest first.
@@ -193,7 +200,7 @@ fn headless_app_from(
     app.insert_resource(today);
     app.insert_resource(projected);
     app.insert_resource(watch::Watch::new(store, files));
-    crate::add_tui(&mut app);
+    crate::add_tui(&mut app, crate::cells::plugin);
     app.insert_resource(Searches(false));
     let inbox = app.world().resource::<Inbox>().clone();
     let subscriber = tracing_subscriber::registry().with(journal::layer(inbox));
@@ -213,7 +220,8 @@ pub const SETTLING_TICKS: usize = 3;
 pub fn lit_tab(app: &mut App) -> Option<usize> {
     let world = app.world_mut();
     let mut items = world
-        .query_filtered::<&super::tabbar::BarTab, bevy_ecs::prelude::With<plurimus::ui::Checked>>();
+        .query_filtered::<&super::tabbar::BarTab, bevy_ecs::prelude::With<plurimus::ui::Selected>>(
+        );
     items.iter(world).map(|tab| tab.0).next()
 }
 

@@ -5,20 +5,21 @@ use bevy_app::{App, Update};
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{
-    Component, FromWorld, Has, IntoScheduleConfigs, Local, Query, Res, With, World,
+    Commands, Component, Entity, FromWorld, Has, IntoScheduleConfigs, Local, Query, Res, With,
+    World,
 };
 use bevy_ecs::system::SystemParam;
 use bevy_input_focus::InputFocus;
+use bevy_ui::{Node, Val};
+use plurimus::core::TerminalSize;
 use plurimus::core::ratatui_core::text::{Line, Span};
-use plurimus::core::{TerminalSize, UiWidget};
 use plurimus::ui::ModalOpen;
-use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
 
 use super::command::{self, Keymap};
 use super::focus::Ring;
 use super::layout::HintRow;
 use super::scope::{KeyScope, Scoped};
-use super::theme::{Repainted, Theme};
+use super::theme::{Repainted, Theme, say};
 use super::tools::Idle;
 
 pub fn plugin(app: &mut App) {
@@ -101,7 +102,16 @@ impl FromWorld for ShellKeys {
 }
 
 const HINT_GAP: usize = 2;
-const EDGE: usize = 1;
+pub(crate) const EDGE: usize = 1;
+
+/// Cells the row's own padding keeps clear either side, which the hints
+/// are fitted short of: none in a terminal, a skin's margin in a window.
+fn inset(node: &Node) -> u16 {
+    match node.padding.left {
+        Val::Em(cells) => cells as u16,
+        _ => 0,
+    }
+}
 
 fn width_of(hints: &[Shown]) -> usize {
     let said: usize = hints
@@ -137,6 +147,7 @@ struct Held<'w, 's> {
             Option<&'static Hints>,
             Option<&'static CommandHints>,
             Has<ModalOpen>,
+            Option<&'static KeyScope>,
         ),
     >,
     scoped: Scoped<'w, 's>,
@@ -146,8 +157,8 @@ struct Held<'w, 's> {
 
 impl Held<'_, '_> {
     /// What the keyboard is in, walked up from the widget holding it to
-    /// the first modal ancestor, and whether it keeps every key from the
-    /// shell.
+    /// the first modal ancestor or whatever stands over the page, and
+    /// whether it keeps every key from the shell.
     fn hints(&self) -> (Vec<Shown>, bool) {
         let mut found = Vec::new();
         let Some(held) = self.focus.get() else {
@@ -155,14 +166,14 @@ impl Held<'_, '_> {
         };
         let owns_keys = self.scoped.of(held) == Some(KeyScope::All);
         for entity in std::iter::once(held).chain(self.parents.iter_ancestors(held)) {
-            let Ok((hints, commands, is_modal)) = self.hinted.get(entity) else {
+            let Ok((hints, commands, is_modal, scope)) = self.hinted.get(entity) else {
                 continue;
             };
             let typed = hints.into_iter().flat_map(|hints| hints.0);
             found.extend(typed.copied().map(shown));
             let bound = commands.into_iter().flat_map(|hints| hints.0);
             found.extend(bound.filter_map(|hint| hint.shown(&self.keymap)));
-            if is_modal {
+            if is_modal || scope == Some(&KeyScope::All) {
                 break;
             }
         }
@@ -185,11 +196,12 @@ struct Drawn {
 fn refresh_hints(
     held: Held,
     shell: (Ring, Idle, Res<TerminalSize>, Res<Theme>),
-    mut rows: Query<&mut UiWidget, With<HintRow>>,
+    rows: (Query<(Entity, &Node), With<HintRow>>, Commands),
     mut drawn: Local<Drawn>,
     mut has_many: Local<bool>,
 ) {
     let (ring, idle, size, theme) = shell;
+    let (rows, mut commands) = rows;
     let Held { keymap, own, .. } = &held;
     if ring.shown.is_changed() {
         *has_many = ring.has_many();
@@ -202,11 +214,13 @@ fn refresh_hints(
         leading.extend(page.map(shown));
     }
     let trailing: &[Shown] = if owns_keys { &[] } else { &own.finders };
-    let cols = usize::from(size.cols);
+    let inset = rows.iter().map(|(_, node)| inset(node)).next().unwrap_or(0);
+    let fitted_cols = size.cols.saturating_sub(2 * inset);
+    let cols = usize::from(fitted_cols);
     let wanted = Drawn {
         leading: fitted(leading, trailing, cols),
         has_finders: !owns_keys,
-        cols: size.cols,
+        cols: fitted_cols,
     };
     if *drawn == wanted && !theme.is_changed() {
         return;
@@ -216,8 +230,8 @@ fn refresh_hints(
     push_run(&mut spans, &wanted.leading, &theme);
     spans.push(Span::raw(" ".repeat(gap)));
     push_run(&mut spans, trailing, &theme);
-    for mut widget in &mut rows {
-        *widget = UiWidget::new(Paragraph::new(Line::from(spans.clone())));
+    for (row, _) in &rows {
+        say(&mut commands, row, Line::from(spans.clone()), &theme);
     }
     *drawn = wanted;
 }

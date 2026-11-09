@@ -1,7 +1,8 @@
 //! Headless tests for the fields that edit a table or a list the item holds.
 
+use crate::support::typed;
 use bevy_app::App;
-use plurimus::term::KeyCode;
+use bevy_input::keyboard::Key;
 use retiretui_engine::plan::{Medicare, TreatmentClass};
 
 use super::{draft_plan, fixture_app, focused, open, shows_row, tab_to_key};
@@ -15,7 +16,7 @@ const PRIOR_MAGI: &str = "medicare.prior_magi";
 
 fn tick(app: &mut App, key: &str) {
     tab_to_key(app, key);
-    press_key(app, KeyCode::Char(' '));
+    press_key(app, typed(' '));
     app.update();
 }
 
@@ -31,21 +32,21 @@ fn the_medicare_tick_makes_the_table_and_shows_its_rows_and_unticked_removes_bot
     tick(&mut app, MEDICARE);
     let frame = composed_frame(&app);
     assert!(frame.contains("Include Part D") && frame.contains("Income year before"));
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     let ticked = Medicare {
         prior_magi: Vec::new(),
         part_d: true,
     };
     assert_eq!(medicare(&app), Some(ticked));
     // Applying closed the form; open it again.
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     tick(&mut app, MEDICARE);
     assert!(!shows_row(&composed_frame(&app), "Include Part D"));
-    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, Key::Tab);
     let stop = app.world().get::<FormButton>(focused(&app));
     assert!(stop.is_some(), "a hidden row is no stop on the way round");
-    press_shift(&mut app, KeyCode::Tab);
-    press_key(&mut app, KeyCode::Enter);
+    press_shift(&mut app, Key::Tab);
+    press_key(&mut app, Key::Enter);
     assert_eq!(medicare(&app), None);
 }
 
@@ -55,20 +56,20 @@ fn an_earlier_income_alone_is_refused_and_both_are_written_oldest_first() {
     open(&mut app, Page::Household);
     tick(&mut app, MEDICARE);
     tab_to_key(&mut app, PRIOR_MAGI);
-    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, Key::Tab);
     type_text(&mut app, "180000");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     let heard = said(&app).join("\n");
     assert!(heard.contains("Income last year: is blank"), "{heard}");
     assert_eq!(medicare(&app), None, "nothing was applied");
-    press_shift(&mut app, KeyCode::Tab);
+    press_shift(&mut app, Key::Tab);
     let frame = composed_frame(&app);
     assert!(
         frame.contains("$180,000"),
         "left, it reads as money: {frame}"
     );
     type_text(&mut app, "185000");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     let held = medicare(&app).map(|held| held.prior_magi);
     assert_eq!(held, Some(vec![180_000, 185_000]));
 }
@@ -91,7 +92,7 @@ fn a_household_edited_beside_its_medicare_keeps_it_as_it_was() {
             .is_some_and(|before| before > last_year)
     );
     tick(&mut app, PART_D);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     let unticked = Medicare {
         part_d: false,
         ..wanted
@@ -104,8 +105,8 @@ fn a_household_without_medicare_gains_none_by_being_edited() {
     let mut app = fixture_app();
     let filing = draft_plan(&app).household.filing;
     open(&mut app, Page::Household);
-    press_key(&mut app, KeyCode::Right);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::ArrowRight);
+    press_key(&mut app, Key::Enter);
     assert_ne!(draft_plan(&app).household.filing, filing);
     assert_eq!(medicare(&app), None);
 }
@@ -116,13 +117,13 @@ fn unticking_medicare_lets_go_of_what_its_rows_left_unfinished() {
     open(&mut app, Page::Household);
     tick(&mut app, MEDICARE);
     tab_to_key(&mut app, PRIOR_MAGI);
-    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, Key::Tab);
     type_text(&mut app, "180000");
-    press_shift(&mut app, KeyCode::Tab);
-    press_shift(&mut app, KeyCode::Tab);
-    press_shift(&mut app, KeyCode::Tab);
+    press_shift(&mut app, Key::Tab);
+    press_shift(&mut app, Key::Tab);
+    press_shift(&mut app, Key::Tab);
     tick(&mut app, MEDICARE);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert!(
         !said(&app).join("\n").contains("is blank"),
         "nothing is refused"
@@ -148,15 +149,15 @@ fn a_place_offers_only_what_no_other_holds_and_a_skipped_one_closes_up() {
     let mut app = fixture_app();
     assert_eq!(order(&app), [Taxable, Deferred, Roth, Hsa]);
     open_settings(&mut app);
-    press_key(&mut app, KeyCode::Right);
+    press_key(&mut app, Key::ArrowRight);
     let frame = composed_frame(&app);
     assert!(
         frame.contains("[ Skip ▾ ]"),
         "every other kind is held: {frame}"
     );
-    press_key(&mut app, KeyCode::Tab);
-    press_key(&mut app, KeyCode::Left);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Tab);
+    press_key(&mut app, Key::ArrowLeft);
+    press_key(&mut app, Key::Enter);
     assert_eq!(
         order(&app),
         [Taxable, Roth, Hsa],
@@ -170,11 +171,11 @@ fn an_order_of_nothing_is_refused_rather_than_read_as_the_usual_one() {
     let before = order(&app);
     open_settings(&mut app);
     for _ in 0..before.len() {
-        press_key(&mut app, KeyCode::Right);
-        press_key(&mut app, KeyCode::Tab);
+        press_key(&mut app, Key::ArrowRight);
+        press_key(&mut app, Key::Tab);
     }
-    press_shift(&mut app, KeyCode::Tab);
-    press_key(&mut app, KeyCode::Enter);
+    press_shift(&mut app, Key::Tab);
+    press_key(&mut app, Key::Enter);
     let heard = said(&app).join("\n");
     assert!(
         heard.contains("Withdraw first: needs at least one"),
@@ -199,10 +200,10 @@ fn a_short_order_fills_the_first_places_and_survives_an_edit_beside_it() {
     assert_eq!(frame.matches("[ Skip ▾ ]").count(), 2, "{frame}");
     // Back over wage growth's input and slider to inflation's slider.
     for _ in 0..4 {
-        press_shift(&mut app, KeyCode::Tab);
+        press_shift(&mut app, Key::Tab);
     }
-    press_key(&mut app, KeyCode::Right);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::ArrowRight);
+    press_key(&mut app, Key::Enter);
     assert!(draft_plan(&app).plan.inflation > before, "the slider moved");
     assert_eq!(order(&app), [Roth, Taxable]);
 }

@@ -11,7 +11,7 @@ use bevy_ecs::system::SystemParam;
 use bevy_input::keyboard::KeyboardInput;
 use bevy_input_focus::FocusedInput;
 use plurimus::core::ratatui_core::text::Line;
-use plurimus::term::bevy_compat::HeldModifiers;
+use plurimus::term::HeldModifiers;
 use plurimus::ui::{ModalDismiss, ValueChange, first_bound};
 use plurimus::widgets::{ActiveDescendant, list_item};
 use retiretui_engine::plan::Issue;
@@ -169,8 +169,9 @@ fn handle_dismiss(_dismissed: On<ModalDismiss>, mut issues: ResMut<Issues>) {
 
 #[cfg(test)]
 mod tests {
+    use crate::support::typed;
     use bevy_app::App;
-    use plurimus::term::KeyCode;
+    use bevy_input::keyboard::Key;
     use plurimus::widgets::ActiveDescendant;
     use retiretui_engine::plan::Plan;
 
@@ -223,10 +224,10 @@ mod tests {
     #[test]
     fn the_panel_lists_every_issue_and_enter_jumps_to_the_item() {
         let mut app = headless_app(SIZE);
-        press_key(&mut app, KeyCode::Char('i'));
+        press_key(&mut app, typed('i'));
         let frame = composed_frame(&app);
         assert!(frame.contains(NO_ISSUES), "{frame}");
-        press_key(&mut app, KeyCode::Esc);
+        press_key(&mut app, Key::Escape);
         assert!(!is_open(&app));
 
         commit_edit(&mut app, |plan| plan.accounts[1].balance = -1);
@@ -235,7 +236,7 @@ mod tests {
         assert!(before > 1);
         let frame = redrawn(&mut app);
         assert!(frame.contains(&format!("{before} issues")), "{frame}");
-        press_key(&mut app, KeyCode::Char('i'));
+        press_key(&mut app, typed('i'));
         let frame = composed_frame(&app);
         assert!(frame.contains("Accounts › k › Balance: must"), "{frame}");
         assert!(frame.contains("Settings › Start year:"), "{frame}");
@@ -249,9 +250,9 @@ mod tests {
                 .unwrap()
         };
         for _ in 0..account_row {
-            press_key(&mut app, KeyCode::Down);
+            press_key(&mut app, Key::ArrowDown);
         }
-        press_key(&mut app, KeyCode::Enter);
+        press_key(&mut app, Key::Enter);
         assert!(!is_open(&app), "the jump closes the panel");
         assert_eq!(active(&app), Page::Accounts);
         app.update();
@@ -261,8 +262,8 @@ mod tests {
         assert_eq!(count(&app), before - 1);
         let frame = redrawn(&mut app);
         assert!(frame.contains(&format!("{} issue", before - 1)), "{frame}");
-        press_key(&mut app, KeyCode::Char('i'));
-        press_key(&mut app, KeyCode::Enter);
+        press_key(&mut app, typed('i'));
+        press_key(&mut app, Key::Enter);
         assert_eq!(active(&app), Page::Settings, "a single domain just turns");
     }
 
@@ -270,7 +271,7 @@ mod tests {
     fn the_list_follows_the_draft_while_open() {
         let mut app = headless_app(SIZE);
         commit_edit(&mut app, break_the_start_year);
-        press_key(&mut app, KeyCode::Char('i'));
+        press_key(&mut app, typed('i'));
         commit_edit(&mut app, |plan| plan.plan.start_year = 2026);
         let frame = redrawn(&mut app);
         assert!(frame.contains(NO_ISSUES), "{frame}");

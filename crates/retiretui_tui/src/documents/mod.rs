@@ -2,6 +2,7 @@
 //! pickers that name them.
 
 mod browse;
+mod field;
 mod pickers;
 #[cfg(test)]
 mod tests;

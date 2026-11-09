@@ -1,7 +1,9 @@
+use crate::support::typed;
 use bevy_app::App;
 use bevy_ecs::prelude::Entity;
+use bevy_input::keyboard::Key;
 use bevy_input_focus::InputFocus;
-use plurimus::term::KeyCode;
+use plurimus::core::ratatui_core::style::Modifier;
 
 use crate::edit::Row;
 use crate::edit::tests::cursor as table_row;
@@ -10,9 +12,9 @@ use crate::pane::Framed;
 use crate::session::{Basis, YearCursor};
 use crate::success::Successes;
 use crate::support::{
-    Headless, ROOMY, SIZE, TEST_PLAN, active_page, commit_edit, composed_frame, headless_app,
-    headless_app_at, ledger_year, press_key, redrawn, said, scratch_full_plan, scratch_plan,
-    searched_app, show, test_projected,
+    Headless, ROOMY, SIZE, TEST_PLAN, active_page, cell_of, cell_style, commit_edit,
+    composed_frame, headless_app, headless_app_at, ledger_year, press_key, redrawn, said,
+    scratch_full_plan, scratch_plan, searched_app, show, test_projected, worn,
 };
 use crate::tools::settle_all;
 
@@ -65,7 +67,7 @@ fn a_headless_overview_runs_nothing_by_itself() {
 fn enter_on_success_opens_monte_carlo() {
     let mut app = headless_app(SIZE);
     assert_eq!(held_title(&mut app), "Success", "the page is entered on it");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     app.update();
     assert_eq!(active_page(&app), Page::MonteCarlo);
 }
@@ -76,7 +78,7 @@ pub(super) fn hold(app: &mut App, title: &str) {
         if held_title(app) == title {
             return;
         }
-        press_key(app, KeyCode::Tab);
+        press_key(app, Key::Tab);
     }
     panic!("no pane is titled {title}");
 }
@@ -95,8 +97,8 @@ fn enter_on_a_milestone_opens_the_ledger_on_its_year() {
     hold(&mut app, "Milestones");
     let frame = redrawn(&mut app);
     assert!(frame.contains("2037 retire "), "{frame}");
-    press_key(&mut app, KeyCode::Down);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::ArrowDown);
+    press_key(&mut app, Key::Enter);
     assert_eq!(active_page(&app), Page::Ledger);
     assert_eq!(cursor(&app), Some(2037));
     show(&mut app, Page::Ledger);
@@ -113,7 +115,7 @@ fn e_opens_the_item_behind_a_milestone_on_its_page() {
     hold(&mut app, "Milestones");
     let frame = redrawn(&mut app);
     assert!(frame.contains("2032 inheritance arrives"), "{frame}");
-    press_key(&mut app, KeyCode::Char('e'));
+    press_key(&mut app, typed('e'));
     assert_eq!(active_page(&app), Page::Income);
     app.update();
     assert_eq!(table_row(&mut app), Row(3), "the inheritance is fourth");
@@ -126,7 +128,7 @@ fn e_on_a_person_s_milestone_opens_the_person() {
     hold(&mut app, "Milestones");
     let frame = redrawn(&mut app);
     assert!(frame.contains("2045 Medicare · me"), "{frame}");
-    press_key(&mut app, KeyCode::Char('e'));
+    press_key(&mut app, typed('e'));
     assert_eq!(active_page(&app), Page::People);
     app.update();
     assert_eq!(table_row(&mut app), Row(0));
@@ -148,7 +150,7 @@ fn an_issue_row_opens_its_item_on_enter() {
         frame.contains("The figures are the last the plan had"),
         "the figures predate the issue: {frame}"
     );
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert_eq!(active_page(&app), Page::Accounts);
     app.update();
     assert_eq!(table_row(&mut app), Row(1));
@@ -170,7 +172,7 @@ fn v_turns_the_chart_through_its_views_and_back_each_keyed() {
         ),
     ];
     for (title, key) in views {
-        press_key(&mut app, KeyCode::Char('v'));
+        press_key(&mut app, typed('v'));
         let frame = redrawn(&mut app);
         assert!(frame.contains(&format!("╭ {title}")), "{title}: {frame}");
         assert!(frame.contains(key), "{key}: {frame}");
@@ -181,7 +183,7 @@ fn v_turns_the_chart_through_its_views_and_back_each_keyed() {
 fn the_markets_chart_is_drawn_once_the_runs_answer() {
     let mut app = searched_app(scratch_plan(), TEST_PLAN, SIZE);
     for _ in 0..3 {
-        press_key(&mut app, KeyCode::Char('v'));
+        press_key(&mut app, typed('v'));
     }
     let frame = redrawn(&mut app);
     assert!(
@@ -200,8 +202,8 @@ fn the_markets_chart_is_drawn_once_the_runs_answer() {
 fn the_overview_holds_no_year() {
     let mut app = headless_app(SIZE);
     let before = redrawn(&mut app);
-    press_key(&mut app, KeyCode::Right);
-    press_key(&mut app, KeyCode::Left);
+    press_key(&mut app, Key::ArrowRight);
+    press_key(&mut app, Key::ArrowLeft);
     assert_eq!(cursor(&app), None, "no arrow walks a year here");
     app.world_mut().resource_mut::<YearCursor>().0 = Some(2040);
     assert_eq!(
@@ -216,7 +218,7 @@ fn tab_reaches_every_pane_in_drawn_order() {
     let mut app = headless_app(SIZE);
     let mut walked = vec![held_title(&mut app)];
     for _ in 0..6 {
-        press_key(&mut app, KeyCode::Tab);
+        press_key(&mut app, Key::Tab);
         walked.push(held_title(&mut app));
     }
     let expected = [
@@ -229,7 +231,7 @@ fn tab_reaches_every_pane_in_drawn_order() {
         "Rests on",
     ];
     assert_eq!(walked, expected);
-    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, Key::Tab);
     assert_eq!(held_title(&mut app), "Success", "and round again");
 }
 
@@ -237,9 +239,18 @@ fn tab_reaches_every_pane_in_drawn_order() {
 fn enter_on_the_chart_opens_the_ledger() {
     let mut app = headless_app(SIZE);
     hold(&mut app, "Balances by tax treatment");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     app.update();
     assert_eq!(active_page(&app), Page::Ledger);
+}
+
+#[test]
+fn the_tiles_are_said_bold() {
+    let mut app = headless_app(SIZE);
+    app.update();
+    let (column, row) = cell_of(&app, "Never short");
+    let style = cell_style(&app, column, row);
+    assert!(style.add_modifier.contains(Modifier::BOLD), "{style:?}");
 }
 
 #[test]
@@ -249,11 +260,17 @@ fn a_tight_pane_reads_the_highlighted_total_s_make_up_beneath_the_list() {
     hold(&mut app, "Over the plan");
     let frame = redrawn(&mut app);
     assert!(frame.contains(&totals[0].made_of), "{frame}");
+    let (column, row) = cell_of(&app, &totals[0].made_of);
+    assert_eq!(
+        cell_style(&app, column, row).fg,
+        worn(&app).dimmed().fg,
+        "read out quietly"
+    );
     assert!(
         !frame.contains(&totals[1].made_of),
         "one at a time: {frame}"
     );
-    press_key(&mut app, KeyCode::Down);
+    press_key(&mut app, Key::ArrowDown);
     let frame = redrawn(&mut app);
     assert!(frame.contains(&totals[1].made_of), "{frame}");
     assert!(!frame.contains(&totals[0].made_of), "{frame}");
@@ -273,12 +290,12 @@ fn a_roomy_pane_says_every_total_s_make_up_at_once() {
 fn enter_on_a_total_opens_its_page_or_its_tool() {
     let mut app = headless_app(SIZE);
     hold(&mut app, "Over the plan");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert_eq!(active_page(&app), Page::Income);
     show(&mut app, Page::Overview);
     hold(&mut app, "Over the plan");
-    press_key(&mut app, KeyCode::Down);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::ArrowDown);
+    press_key(&mut app, Key::Enter);
     assert_eq!(active_page(&app), Page::WithdrawalOrder);
 }
 
@@ -288,14 +305,14 @@ fn enter_on_an_assumption_opens_the_page_it_is_edited_on() {
     hold(&mut app, "Rests on");
     let frame = redrawn(&mut app);
     assert!(frame.contains("Runs through   2050 · to age 70"), "{frame}");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert_eq!(active_page(&app), Page::Settings);
 }
 
 #[test]
 fn e_with_no_item_behind_the_row_is_refused() {
     let mut app = headless_app(SIZE);
-    press_key(&mut app, KeyCode::Char('e'));
+    press_key(&mut app, typed('e'));
     assert_eq!(
         active_page(&app),
         Page::Overview,
@@ -304,7 +321,7 @@ fn e_with_no_item_behind_the_row_is_refused() {
     hold(&mut app, "Needs attention");
     let frame = redrawn(&mut app);
     assert!(frame.contains("No plan issues"), "{frame}");
-    press_key(&mut app, KeyCode::Char('e'));
+    press_key(&mut app, typed('e'));
     assert_eq!(active_page(&app), Page::Overview);
     let refusals = said(&app);
     let refusals = refusals
@@ -321,11 +338,11 @@ fn a_plan_that_runs_short_says_so_first_and_leads_to_the_year_and_the_spending()
     hold(&mut app, "Needs attention");
     let frame = redrawn(&mut app);
     assert!(frame.contains("▌ Runs short from 2026: "), "{frame}");
-    press_key(&mut app, KeyCode::Char('e'));
+    press_key(&mut app, typed('e'));
     assert_eq!(active_page(&app), Page::Expenses);
     show(&mut app, Page::Overview);
     hold(&mut app, "Needs attention");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert_eq!(active_page(&app), Page::Ledger);
     assert_eq!(ledger_year(&mut app), 2026);
 }
@@ -346,8 +363,8 @@ fn the_ceiling_row_leads_to_its_tool_which_takes_what_was_found() {
     hold(&mut app, "Could do better");
     let frame = redrawn(&mut app);
     assert!(frame.contains(" in 90% of markets"), "{frame}");
-    press_key(&mut app, KeyCode::End);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::End);
+    press_key(&mut app, Key::Enter);
     assert_eq!(active_page(&app), Page::SpendingCeiling);
     app.update();
     let tool = app.world().resource::<crate::tools::spending::Spending>();

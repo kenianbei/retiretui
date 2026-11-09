@@ -1,10 +1,11 @@
 //! Headless tests for the details pane beside a table: what it shows of
 //! the row under the cursor, and what ⏎ on it opens.
 
+use crate::support::typed;
 use bevy_ecs::hierarchy::Children;
 use bevy_ecs::prelude::{Entity, With};
+use bevy_input::keyboard::Key;
 use plurimus::core::ratatui_core::style::Modifier;
-use plurimus::term::KeyCode;
 use plurimus::ui::UiStyle;
 use retiretui_client::forms::{DOMAINS, DomainId, details};
 
@@ -31,7 +32,7 @@ fn the_details_show_the_row_under_the_cursor_in_the_forms_words() {
         !frame.contains("Basis"),
         "a field the item has no use for is left out: {frame}"
     );
-    press_key(&mut app, KeyCode::Down);
+    press_key(&mut app, Key::ArrowDown);
     let frame = redrawn(&mut app);
     assert!(frame.contains("$300,000"), "the next row: {frame}");
     assert!(frame.contains("Basis"), "and one it has is in: {frame}");
@@ -42,14 +43,14 @@ fn the_details_show_the_row_under_the_cursor_in_the_forms_words() {
 fn enter_on_the_details_opens_the_item_and_closing_gives_the_pane_back() {
     let mut app = fixture_app();
     show(&mut app, Page::Accounts);
-    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, Key::Tab);
     assert!(is_on::<DetailsTable>(&app));
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert!(is_editing(&app), "the item under the cursor opens");
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     assert!(is_on::<DetailsTable>(&app), "esc gives back what opened it");
-    press_key(&mut app, KeyCode::Enter);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
+    press_key(&mut app, Key::Enter);
     assert!(
         !is_editing(&app) && is_on::<DetailsTable>(&app),
         "and so does an apply"
@@ -75,10 +76,10 @@ fn a_persons_details_end_with_the_earnings_record_and_scroll() {
         "{frame}"
     );
     assert!(!frame.contains("$85,000"), "past the pane's foot: {frame}");
-    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, Key::Tab);
     assert!(is_on::<DetailsTable>(&app));
     for _ in 0..40 {
-        press_key(&mut app, KeyCode::Down);
+        press_key(&mut app, Key::ArrowDown);
     }
     let frame = redrawn(&mut app);
     assert!(frame.contains("$85,000"), "scrolled to the end: {frame}");
@@ -100,19 +101,19 @@ fn a_domain_emptied_can_still_be_added_to() {
     let mut app = fixture_app();
     show(&mut app, Page::Accounts);
     for _ in 0..draft_plan(&app).accounts.len() {
-        press_key(&mut app, KeyCode::Char('d'));
-        press_key(&mut app, KeyCode::Enter);
+        press_key(&mut app, typed('d'));
+        press_key(&mut app, Key::Enter);
     }
     app.update();
     assert_eq!(draft_plan(&app).accounts, []);
-    press_key(&mut app, KeyCode::Char('a'));
+    press_key(&mut app, typed('a'));
     app.update();
     let frame = composed_frame(&app);
     assert!(frame.contains("╭ New Account "), "{frame}");
-    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, Key::Tab);
     clear_field(&mut app);
     type_text(&mut app, "spare");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert_eq!(
         draft_plan(&app)
             .accounts
@@ -133,8 +134,8 @@ fn an_arrow_on_an_empty_domain_moves_no_cursor_onto_its_line() {
         <retiretui_client::forms::expenses::Cliffs as retiretui_client::forms::Domain>::PURPOSE;
     let before = composed_frame(&app);
     assert!(before.contains(said), "{before}");
-    press_key(&mut app, KeyCode::Down);
-    press_key(&mut app, KeyCode::Down);
+    press_key(&mut app, Key::ArrowDown);
+    press_key(&mut app, Key::ArrowDown);
     app.update();
     let after = composed_frame(&app);
     assert_eq!(
@@ -158,8 +159,8 @@ fn a_name_shows_in_place_of_the_id_wherever_the_item_is_named() {
     let frame = composed_frame(&app);
     assert!(frame.contains("Retirement"), "the event's own row: {frame}");
     show(&mut app, Page::Expenses);
-    press_key(&mut app, KeyCode::Down);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::ArrowDown);
+    press_key(&mut app, Key::Enter);
     let frame = composed_frame(&app);
     assert!(
         frame.contains("[ Retirement ▾"),
@@ -177,10 +178,15 @@ fn what_a_blank_field_stands_for_is_read_out_dimmed() {
     show(&mut app, Page::Accounts);
     app.update();
     let world = app.world_mut();
-    let rows: Vec<Entity> = world
-        .query_filtered::<&Children, With<DetailsTable>>()
+    let bodies: Vec<Entity> = world
+        .query_filtered::<&crate::grid::Grid, With<DetailsTable>>()
         .iter(world)
-        .flat_map(|children| children.iter().skip(1).copied())
+        .map(|grid| grid.body)
+        .collect();
+    let rows: Vec<Entity> = bodies
+        .iter()
+        .filter_map(|&body| world.get::<Children>(body))
+        .flat_map(|children| children.iter().copied())
         .collect();
     let is_dimmed = |row: &Entity| {
         world

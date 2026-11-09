@@ -4,43 +4,90 @@
 use std::time::Duration;
 
 use bevy_app::App;
+use bevy_ecs::prelude::{Entity, In, With};
+use bevy_input::ButtonState;
+use bevy_input::keyboard::Key;
+use bevy_math::Vec2;
 use bevy_time::TimeUpdateStrategy;
+use bevy_window::{PrimaryWindow, Window, WindowRef};
+use plurimus::core::bevy_camera::NormalizedRenderTarget;
 use plurimus::core::ratatui_core::layout::Position;
-use plurimus::term::{
-    KeyCode, KeyKind, KeyMessage, KeyModifiers, MouseButton, MouseKind, MouseMessage,
-};
+use plurimus::term::{KeyModifiers, MouseButton, TerminalInput, VirtualWindow};
+use plurimus::ui::bevy_picking::backend::HitData;
+use plurimus::ui::bevy_picking::events::{Pointer, PointerClick};
+use plurimus::ui::bevy_picking::pointer::{Location, PointerButton, PointerId};
 
 use crate::command::Registry;
 
-/// Presses and releases a key, ticking after each so resource changes made
-/// by key handlers reach the layout and render systems.
-pub fn press_key(app: &mut App, code: KeyCode) {
-    press_with(app, code, KeyModifiers::default());
+/// The key `character` is typed as.
+#[must_use]
+pub fn typed(character: char) -> Key {
+    Key::Character(character.encode_utf8(&mut [0; 4]).into())
 }
 
-pub fn press_ctrl(app: &mut App, code: KeyCode) {
-    press_with(app, code, KeyModifiers::default().with_ctrl(true));
+/// What a terminal reports, in the sink's terms.
+enum Report {
+    Key(Key, ButtonState),
+    Button(ButtonState, Position),
+    Moved(Position),
+    WheelDown(Position),
+}
+
+fn inject(In((report, modifiers)): In<(Report, KeyModifiers)>, mut input: TerminalInput) {
+    match report {
+        Report::Key(key, state) => input.key(key, state, false, modifiers),
+        Report::Button(state, at) => input.button(MouseButton::Left, state, at, modifiers),
+        Report::Moved(at) => input.moved(at, modifiers),
+        Report::WheelDown(at) => input.wheel(at, 0, -1, modifiers),
+    }
+}
+
+/// Queues `report` as a backend writes it, through one cached sink so the
+/// cell it last placed the pointer in carries across calls. The window it
+/// writes for is spawned on the first frame, so one written before any is
+/// spawned here.
+fn report(app: &mut App, report: Report, modifiers: KeyModifiers) {
+    let world = app.world_mut();
+    let has_window = world
+        .query_filtered::<(), With<PrimaryWindow>>()
+        .single(world)
+        .is_ok();
+    if !has_window {
+        world.spawn(VirtualWindow);
+    }
+    world
+        .run_system_cached_with(inject, (report, modifiers))
+        .expect("the sink runs against the terminal's resources");
+}
+
+/// Presses and releases a key, ticking after each so resource changes made
+/// by key handlers reach the layout and render systems.
+pub fn press_key(app: &mut App, key: Key) {
+    press_with(app, key, KeyModifiers::default());
+}
+
+pub fn press_ctrl(app: &mut App, key: Key) {
+    press_with(app, key, KeyModifiers::default().with_ctrl(true));
+}
+
+pub fn press_alt(app: &mut App, key: Key) {
+    press_with(app, key, KeyModifiers::default().with_alt(true));
 }
 
 /// A shifted press, which is how the terminal layer delivers back-tab.
-pub fn press_shift(app: &mut App, code: KeyCode) {
-    press_with(app, code, KeyModifiers::default().with_shift(true));
+pub fn press_shift(app: &mut App, key: Key) {
+    press_with(app, key, KeyModifiers::default().with_shift(true));
 }
 
-/// A key left held is released by plurimus on the real clock, in whatever
-/// later frame that falls.
-fn press_with(app: &mut App, code: KeyCode, modifiers: KeyModifiers) {
-    for kind in [KeyKind::Press, KeyKind::Release] {
-        app.world_mut()
-            .write_message(KeyMessage::new(code, modifiers, kind));
+fn press_with(app: &mut App, key: Key, modifiers: KeyModifiers) {
+    for state in [ButtonState::Pressed, ButtonState::Released] {
+        report(app, Report::Key(key.clone(), state), modifiers);
         app.update();
     }
 }
 
-fn point(app: &mut App, kind: MouseKind, column: u16, row: u16) {
-    let position = Position::new(column, row);
-    app.world_mut()
-        .write_message(MouseMessage::new(kind, position, KeyModifiers::default()));
+fn point(app: &mut App, pointing: Report) {
+    report(app, pointing, KeyModifiers::default());
     app.update();
     app.update();
 }
@@ -60,33 +107,56 @@ pub fn invoke(app: &mut App, name: &str) {
 
 /// Runs the command named `name` from the palette.
 pub fn run_command(app: &mut App, name: &str) {
-    press_key(app, KeyCode::Char(':'));
+    press_key(app, typed(':'));
     type_text(app, name);
-    press_key(app, KeyCode::Enter);
+    press_key(app, Key::Enter);
     app.update();
 }
 
 pub fn hover(app: &mut App, column: u16, row: u16) {
-    point(app, MouseKind::Moved, column, row);
+    point(app, Report::Moved(Position::new(column, row)));
+}
+
+/// One wheel tick down at a cell.
+pub fn scroll_down(app: &mut App, column: u16, row: u16) {
+    point(app, Report::WheelDown(Position::new(column, row)));
+}
+
+/// A click of the window's pointer on `entity`, at `position` in pixels.
+/// The event climbs to the root and then to the pointer's window, which
+/// has to be one, or it climbs from there again.
+pub fn click_entity(app: &mut App, entity: Entity, position: Vec2) {
+    let window = app.world_mut().spawn(Window::default()).id();
+    let target = WindowRef::Primary.normalize(Some(window)).unwrap();
+    let location = Location {
+        target: NormalizedRenderTarget::Window(target),
+        position,
+    };
+    app.world_mut().trigger(PointerClick {
+        entity,
+        pointer: Pointer::new(PointerId::Mouse, location),
+        button: PointerButton::Primary,
+        hit: HitData::new(entity, 0.0, None, None),
+        duration: Duration::ZERO,
+        count: 1,
+    });
 }
 
 pub fn click(app: &mut App, column: u16, row: u16) {
-    point(app, MouseKind::Down(MouseButton::Left), column, row);
-    point(app, MouseKind::Up(MouseButton::Left), column, row);
+    let at = Position::new(column, row);
+    point(app, Report::Button(ButtonState::Pressed, at));
+    point(app, Report::Button(ButtonState::Released, at));
 }
 
 /// A press and its release in one frame, as a tap sends them.
 pub fn tap(app: &mut App, column: u16, row: u16) {
-    let position = Position::new(column, row);
-    for kind in [
-        MouseKind::Down(MouseButton::Left),
-        MouseKind::Up(MouseButton::Left),
-    ] {
-        app.world_mut()
-            .write_message(MouseMessage::new(kind, position, KeyModifiers::default()));
-    }
-    app.update();
-    app.update();
+    let at = Position::new(column, row);
+    report(
+        app,
+        Report::Button(ButtonState::Pressed, at),
+        KeyModifiers::default(),
+    );
+    point(app, Report::Button(ButtonState::Released, at));
 }
 
 /// Lets `by` pass in one frame, then ticks once more at the clock's own
@@ -109,6 +179,6 @@ pub fn change_on_disk(app: &mut App, path: &std::path::Path, text: &str) {
 /// Types `text` one key press per character.
 pub fn type_text(app: &mut App, text: &str) {
     for character in text.chars() {
-        press_key(app, KeyCode::Char(character));
+        press_key(app, typed(character));
     }
 }

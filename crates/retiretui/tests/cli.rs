@@ -357,19 +357,18 @@ fn theme_list_names_the_built_in_themes_and_the_users_beside_them() {
         .map(|line| line.split_whitespace().collect())
         .collect();
     assert_eq!(rows[0], ["theme", "variant", "family", "from"]);
-    assert_eq!(rows[1][0], "terminal");
     let row = |slug: &str| rows.iter().find(|row| row[0] == slug).unwrap()[1..].join(" ");
     assert_eq!(row("dusk"), "dark mine user");
     assert_eq!(row("nord"), "dark mine user, over built in");
     assert_eq!(row("bad"), "does not read");
+    assert_eq!(row("terminal"), "dark mine user", "a name like any other");
     assert_eq!(row("gruvbox-light"), "light gruvbox built in");
     let built_in = stdout.lines().filter(|line| line.ends_with("  built in"));
     assert_eq!(built_in.count(), embedded_themes() - 1);
     assert_eq!(rows.len(), embedded_themes() + 4, "{stdout}");
     let stderr = text_of(&listed.stderr);
-    assert!(stderr.contains("terminal.toml: terminal is"), "{stderr}");
     assert!(stderr.contains("bad.toml: "), "{stderr}");
-    assert_eq!(stderr.lines().count(), 2, "{stderr}");
+    assert_eq!(stderr.lines().count(), 1, "{stderr}");
 }
 
 #[test]
@@ -380,7 +379,7 @@ fn theme_list_with_no_themes_of_the_users_is_the_built_in_ones_and_says_nothing(
     assert!(listed.status.success(), "{listed:?}");
     assert_eq!(
         text_of(&listed.stdout).lines().count(),
-        embedded_themes() + 2
+        embedded_themes() + 1
     );
     assert_eq!(text_of(&listed.stderr), "");
 }
@@ -419,15 +418,12 @@ fn theme_dump_prints_the_file_a_session_would_take_the_name_as() {
 }
 
 #[test]
-fn theme_dump_refuses_the_terminals_own_and_a_name_that_is_no_theme() {
+fn theme_dump_refuses_a_name_that_is_no_theme() {
     let home = config_home("refused", &[]);
-    for (name, said) in [("terminal", "have no file"), ("nrod", "\"nrod\"")] {
-        let refused = theme(&home, DARK_GROUND, &["dump", name]);
-        assert!(!refused.status.success(), "{name}");
-        assert_eq!(text_of(&refused.stdout), "");
-        let stderr = text_of(&refused.stderr);
-        assert!(stderr.contains(said), "{stderr}");
-    }
+    let refused = theme(&home, DARK_GROUND, &["dump", "nrod"]);
+    assert!(!refused.status.success());
+    assert_eq!(text_of(&refused.stdout), "");
+    assert!(text_of(&refused.stderr).contains("\"nrod\""));
 }
 
 const BANK_EXPORTS: &str = "../retiretui_engine/tests/fixtures/bank";

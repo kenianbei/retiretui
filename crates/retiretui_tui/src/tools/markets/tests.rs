@@ -3,9 +3,12 @@
 
 use std::time::Duration;
 
+use crate::support::typed;
 use bevy_app::App;
+use bevy_ecs::hierarchy::Children;
 use bevy_ecs::prelude::{Entity, With};
-use plurimus::term::KeyCode;
+use bevy_input::keyboard::Key;
+use plurimus::bui::bevy_text::TextColor;
 use retiretui_engine::market::{MonteCarlo, RunError, Runs};
 use retiretui_engine::plan::Market;
 
@@ -15,7 +18,7 @@ use crate::pane::Framed;
 use crate::session::{LedgerRun, Projected};
 use crate::support::{
     Headless, SIZE, active_page, assert_at_rest, click_year, commit_edit, headless_app,
-    ledger_year, press_key, redrawn, show,
+    ledger_year, press_key, redrawn, said_by, show,
 };
 use crate::theme::Theme;
 use crate::tools::{ResultPane, Tool, settle_all};
@@ -23,7 +26,7 @@ use retiretui_client::searches::markets::Markets;
 
 /// Hands the keyboard to the runs, from the assumptions the page opens on.
 fn to_runs(app: &mut Headless) {
-    press_key(app, KeyCode::Tab);
+    press_key(app, Key::Tab);
 }
 
 /// The shell, shown `page` once its search has answered.
@@ -74,13 +77,13 @@ fn an_edit_searches_again_under_it() {
 #[test]
 fn enter_on_an_assumption_turns_to_where_it_is_edited() {
     let mut app = app_on(Page::MonteCarlo);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert_eq!(active_page(&app), Page::Market);
     show(&mut app, Page::MonteCarlo);
     for _ in 0..8 {
-        press_key(&mut app, KeyCode::Down);
+        press_key(&mut app, Key::ArrowDown);
     }
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert_eq!(
         active_page(&app),
         Page::Accounts,
@@ -93,7 +96,7 @@ fn enter_on_a_run_opens_it_in_the_ledger_until_esc_or_an_edit() {
     let mut app = app_on(Page::MonteCarlo);
     let plan_before = app.world().resource::<Projected>().projection.clone();
     to_runs(&mut app);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert_eq!(active_page(&app), Page::Ledger);
     assert_eq!(
         ledger_run(&app).as_deref(),
@@ -105,7 +108,7 @@ fn enter_on_a_run_opens_it_in_the_ledger_until_esc_or_an_edit() {
             && frame.contains("esc the plan"),
         "the year names the run it is of: {frame}"
     );
-    press_key(&mut app, KeyCode::Char('t'));
+    press_key(&mut app, typed('t'));
     let frame = redrawn(&mut app);
     assert!(
         frame.contains("╭ Ledger · the 90th percentile market · today's dollars · "),
@@ -113,7 +116,7 @@ fn enter_on_a_run_opens_it_in_the_ledger_until_esc_or_an_edit() {
     );
     let projected = &app.world().resource::<Projected>().projection;
     assert_eq!(*projected, plan_before, "the overview still shows the plan");
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     assert_eq!(ledger_run(&app), None);
     assert!(
         !redrawn(&mut app).contains("esc the plan"),
@@ -121,7 +124,7 @@ fn enter_on_a_run_opens_it_in_the_ledger_until_esc_or_an_edit() {
     );
     show(&mut app, Page::MonteCarlo);
     to_runs(&mut app);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert!(ledger_run(&app).is_some());
     commit_edit(&mut app, |plan| plan.plan.inflation = 0.03);
     app.update();
@@ -136,17 +139,17 @@ fn enter_on_a_run_opens_it_in_the_ledger_until_esc_or_an_edit() {
 fn the_cursor_rests_on_as_planned_and_enter_opens_the_plan_s_own_ledger() {
     let mut app = app_on(Page::MonteCarlo);
     to_runs(&mut app);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert!(ledger_run(&app).is_some(), "a run to leave behind");
     show(&mut app, Page::MonteCarlo);
     to_runs(&mut app);
-    press_key(&mut app, KeyCode::Up);
+    press_key(&mut app, Key::ArrowUp);
     let tool = app.world().resource::<Tool<MonteCarlo>>();
     assert_eq!(
         tool.highlighted, 0,
         "on the plan's own row, not bounced off"
     );
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert_eq!(active_page(&app), Page::Ledger);
     assert_eq!(ledger_run(&app), None, "the plan's own projection");
 }
@@ -203,7 +206,7 @@ fn view_titles(app: &mut App) -> Vec<&'static str> {
     for _ in 0..TITLES.len() {
         let frame = redrawn(app);
         seen.extend(TITLES.iter().find(|title| frame.contains(**title)));
-        press_key(app, KeyCode::Char('v'));
+        press_key(app, typed('v'));
     }
     seen
 }
@@ -243,4 +246,54 @@ fn a_click_on_the_runs_chart_moves_the_ledger() {
     show(&mut app, Page::Ledger);
     assert_eq!(ledger_year(&mut app), 2040);
     assert_at_rest(&mut app);
+}
+
+#[test]
+fn the_help_is_said_dimmed_under_the_page() {
+    let mut app = app_on(Page::MonteCarlo);
+    let world = app.world_mut();
+    let mut lines = world.query_filtered::<&crate::theme::Hung, With<crate::tools::HelpLine>>();
+    let theme = world.resource::<Theme>();
+    let dimmed = theme.ink(theme.dimmed());
+    let said = lines
+        .iter(world)
+        .filter_map(|hung| {
+            let span = *world.get::<Children>(hung.0)?.first()?;
+            let colour = world.get::<TextColor>(span)?.0;
+            Some((said_by(world, hung.0), colour))
+        })
+        .find(|(text, _)| text == MonteCarlo::ABOUT);
+    assert_eq!(said, Some((MonteCarlo::ABOUT.to_owned(), dimmed)));
+}
+
+#[test]
+fn the_endings_are_said_as_rows_laid_out_as_bars() {
+    let mut app = app_on(Page::MonteCarlo);
+    for _ in 0..3 {
+        press_key(&mut app, typed('v'));
+    }
+    app.update();
+    app.update();
+    let world = app.world_mut();
+    let mut parts = world.query::<(&ViewPart, &crate::theme::Hung)>();
+    let hung = parts
+        .iter(world)
+        .find(|(part, _)| part.0 == Page::MonteCarlo && part.1 == View::Endings)
+        .map(|(_, hung)| hung.0)
+        .unwrap();
+    let said = said_by(world, hung);
+    let rows: Vec<&str> = said.lines().collect();
+    let runs = world.resource::<Tool<MonteCarlo>>().found().unwrap().runs();
+    let endings = retiretui_client::searches::markets::endings(runs);
+    assert_eq!(rows.len(), endings.len());
+    for (row, ending) in rows.iter().zip(&endings) {
+        assert!(row.starts_with(&ending.label), "{row:?}");
+        assert!(row.contains(&ending.count.to_string()), "{row:?}");
+    }
+    let widest = endings.iter().max_by_key(|ending| ending.count).unwrap();
+    let widest_row = rows[endings
+        .iter()
+        .position(|ending| ending.label == widest.label)
+        .unwrap()];
+    assert!(widest_row.ends_with('█'), "{widest_row:?}");
 }

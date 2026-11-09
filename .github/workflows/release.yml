@@ -3,12 +3,14 @@ name: release
 on:
   push:
     tags: [ "v*" ]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
   preflight:
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
 
     steps:
@@ -34,6 +36,7 @@ jobs:
 
   build:
     needs: preflight
+    if: ${{ !cancelled() && !failure() }}
     strategy:
       matrix:
         include:
@@ -41,6 +44,10 @@ jobs:
             runner: ubuntu-22.04
           - target: aarch64-unknown-linux-gnu
             runner: ubuntu-22.04-arm
+          - target: x86_64-pc-windows-msvc
+            runner: windows-latest
+          - target: universal-apple-darwin
+            runner: macos-latest
 
     runs-on: ${{ matrix.runner }}
     env:
@@ -55,22 +62,97 @@ jobs:
           cache: false
 
       - name: Build
-        run: cargo build --release --locked -p retiretui
+        if: runner.os != 'macOS'
+        run: cargo build --release --locked -p retiretui -p retiretui_desktop
+
+      - name: Build for both chips
+        if: runner.os == 'macOS'
+        run: |
+          rustup target add x86_64-apple-darwin aarch64-apple-darwin
+          for target in x86_64-apple-darwin aarch64-apple-darwin; do
+            cargo build --release --locked -p retiretui -p retiretui_desktop --target "$target"
+          done
+          mkdir -p target/release
+          for binary in retiretui retiretui-desktop; do
+            lipo -create -output "target/release/$binary" \
+              "target/x86_64-apple-darwin/release/$binary" \
+              "target/aarch64-apple-darwin/release/$binary"
+          done
 
       - name: Package
+        if: runner.os == 'Linux'
         run: |
           mkdir "$PACKAGE"
-          cp target/release/retiretui LICENSE-MIT LICENSE-APACHE README.md "$PACKAGE/"
+          cp target/release/retiretui target/release/retiretui-desktop \
+            LICENSE-MIT LICENSE-APACHE README.md "$PACKAGE/"
           tar czf "$PACKAGE.tar.gz" "$PACKAGE"
           sha256sum "$PACKAGE.tar.gz" > "$PACKAGE.tar.gz.sha256"
+
+      - name: Package
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory $env:PACKAGE
+          Copy-Item target/release/retiretui.exe, target/release/retiretui-desktop.exe, `
+            LICENSE-MIT, LICENSE-APACHE, README.md $env:PACKAGE
+          Compress-Archive -Path "$env:PACKAGE/*" -DestinationPath "$env:PACKAGE.zip"
+          "$((Get-FileHash "$env:PACKAGE.zip" -Algorithm SHA256).Hash.ToLower())  $env:PACKAGE.zip" `
+            | Out-File -Encoding ascii "$env:PACKAGE.zip.sha256"
+
+      - name: Package
+        if: runner.os == 'macOS'
+        env:
+          APP: RetireTui.app
+          BUNDLE_ID: io.github.kenianbei.retiretui
+        run: |
+          version=$(cargo metadata --format-version 1 --no-deps \
+            | jq -er '.packages[] | select(.name == "retiretui_desktop") | .version')
+          mkdir icon.iconset
+          for size in 16 32 128 256 512; do
+            sips -z "$size" "$size" web/public/icon-512.png --out "icon.iconset/icon_${size}x${size}.png"
+            double=$((size * 2))
+            sips -z "$double" "$double" web/public/icon-512.png --out "icon.iconset/icon_${size}x${size}@2x.png"
+          done
+          iconutil -c icns icon.iconset -o icon.icns
+          mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+          cp target/release/retiretui-desktop "$APP/Contents/MacOS/"
+          cp icon.icns "$APP/Contents/Resources/"
+          cat > "$APP/Contents/Info.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>CFBundleName</key><string>RetireTui</string>
+            <key>CFBundleDisplayName</key><string>RetireTui</string>
+            <key>CFBundleIdentifier</key><string>$BUNDLE_ID</string>
+            <key>CFBundleExecutable</key><string>retiretui-desktop</string>
+            <key>CFBundleIconFile</key><string>icon</string>
+            <key>CFBundlePackageType</key><string>APPL</string>
+            <key>CFBundleShortVersionString</key><string>$version</string>
+            <key>CFBundleVersion</key><string>$version</string>
+            <key>LSMinimumSystemVersion</key><string>11.0</string>
+            <key>NSHighResolutionCapable</key><true/>
+          </dict>
+          </plist>
+          PLIST
+          codesign --force --sign - "$APP"
+          codesign --force --sign - target/release/retiretui
+          mkdir "$PACKAGE"
+          cp -R "$APP" "$PACKAGE/"
+          cp target/release/retiretui LICENSE-MIT LICENSE-APACHE README.md "$PACKAGE/"
+          ditto -c -k --keepParent --sequesterRsrc "$PACKAGE" "$PACKAGE.zip"
+          shasum -a 256 "$PACKAGE.zip" > "$PACKAGE.zip.sha256"
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ env.PACKAGE }}
-          path: ${{ env.PACKAGE }}.tar.gz*
+          path: |
+            ${{ env.PACKAGE }}.tar.gz*
+            ${{ env.PACKAGE }}.zip*
 
   release:
     needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
       contents: write

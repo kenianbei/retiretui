@@ -1,3 +1,4 @@
+use crate::support::typed;
 use std::path::PathBuf;
 
 use bevy_ecs::prelude::Mut;
@@ -31,8 +32,8 @@ fn balance_of(app: &App, name: &str) -> Dollars {
 
 /// Opens the second row, the variant, with ⏎.
 fn open_variant(app: &mut App) {
-    press_key(app, KeyCode::Down);
-    press_key(app, KeyCode::Enter);
+    press_key(app, Key::ArrowDown);
+    press_key(app, Key::Enter);
     app.update();
 }
 
@@ -55,7 +56,7 @@ fn enter_opens_a_compared_plan_and_the_document_takes_its_place() {
 #[test]
 fn enter_on_the_document_says_it_is_open() {
     let mut app = comparing_variant(SIZE);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert_eq!(document(&app), "plan.toml");
     assert_eq!(compared(&app), ["variant.toml"]);
     assert!(said(&app).contains(&"plan.toml is open already".to_owned()));
@@ -65,11 +66,11 @@ fn enter_on_the_document_says_it_is_open() {
 /// an edit no one saved; ⏎ on the variant asks about it.
 fn asking_over_a_dirty_draft() -> crate::support::Headless {
     let mut app = comparing_variant(SIZE);
-    press_key(&mut app, KeyCode::Down);
-    press_key(&mut app, KeyCode::Char('b'));
-    press_key(&mut app, KeyCode::Char('d'));
+    press_key(&mut app, Key::ArrowDown);
+    press_key(&mut app, typed('b'));
+    press_key(&mut app, typed('d'));
     commit_edit(&mut app, |plan| plan.accounts[0].balance = RICH);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert!(is_asking(&app));
     app
 }

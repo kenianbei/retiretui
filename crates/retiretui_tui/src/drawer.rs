@@ -10,7 +10,7 @@ use bevy_ecs::prelude::{
 use bevy_input::keyboard::KeyboardInput;
 use bevy_input_focus::FocusedInput;
 use plurimus::core::ratatui_core::text::{Line, Span};
-use plurimus::term::bevy_compat::HeldModifiers;
+use plurimus::term::HeldModifiers;
 use plurimus::ui::{ModalDismiss, first_bound};
 use plurimus::widgets::{ActiveDescendant, list_item};
 use tracing::Level;

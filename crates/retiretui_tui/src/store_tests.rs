@@ -4,9 +4,11 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+use crate::support::typed;
 use bevy_app::App;
+use bevy_input::keyboard::Key;
 use plurimus::core::CorePlugin;
-use plurimus::term::{InputCapabilities, KeyCode};
+use plurimus::term::InputCapabilities;
 use retiretui_engine::market::History;
 use retiretui_engine::params::TaxTables;
 
@@ -56,7 +58,7 @@ fn the_workspace_lists_with_its_badges_and_a_scenario_opens_through_it() {
         assert!(rows.contains(&row), "{rows:?}");
     }
     type_text(&mut app, "variant");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     app.update();
     let session = app.world().resource::<Session>();
     assert_eq!(
@@ -72,7 +74,7 @@ fn a_save_is_written_into_the_store() {
     let store = workspace(&backend);
     let mut app = headless_app_over(Arc::clone(&store), file("plan.toml"), SIZE);
     commit_edit(&mut app, |plan| plan.plan.name = Some("renamed".to_owned()));
-    press_ctrl(&mut app, KeyCode::Char('s'));
+    press_ctrl(&mut app, typed('s'));
     let saved = store.read(&file("plan.toml")).unwrap();
     assert!(saved.contains("name = \"renamed\""), "{saved}");
 }

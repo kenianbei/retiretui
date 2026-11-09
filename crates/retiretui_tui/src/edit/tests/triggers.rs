@@ -1,6 +1,7 @@
 //! Headless tests for the composite trigger editor.
 
-use plurimus::term::KeyCode;
+use crate::support::typed;
+use bevy_input::keyboard::Key;
 
 use super::{clear_field, draft_plan, fixture_app, is_editing, open, open_travel, tab_to_field};
 
@@ -32,7 +33,7 @@ fn each_kind_keeps_the_operands_entered_for_it() {
     let mut app = fixture_app();
     open_travel(&mut app);
     tab_to_field(&mut app, START_KIND);
-    press_key(&mut app, KeyCode::Right);
+    press_key(&mut app, Key::ArrowRight);
     app.update();
     let frame = composed_frame(&app);
     assert!(
@@ -43,7 +44,7 @@ fn each_kind_keeps_the_operands_entered_for_it() {
         !frame.contains("[ retire ▾ ]"),
         "the operands of the old kind are hidden: {frame}"
     );
-    press_key(&mut app, KeyCode::Left);
+    press_key(&mut app, Key::ArrowLeft);
     app.update();
     let frame = composed_frame(&app);
     assert!(
@@ -58,7 +59,7 @@ fn the_arrows_on_a_kind_never_reach_no_trigger() {
     open_travel(&mut app);
     tab_to_field(&mut app, START_KIND);
     for _ in 0..5 {
-        press_key(&mut app, KeyCode::Right);
+        press_key(&mut app, Key::ArrowRight);
         app.update();
         let frame = composed_frame(&app);
         assert!(!frame.contains("[ Plan start ▾ ]"), "{frame}");
@@ -72,7 +73,7 @@ fn the_foot_says_what_the_operand_holding_the_keyboard_means() {
     tab_to_field(&mut app, START_KIND);
     app.update();
     assert!(composed_frame(&app).contains("When it begins."));
-    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, Key::Tab);
     app.update();
     let frame = composed_frame(&app);
     assert!(frame.contains("The event it follows."), "{frame}");
@@ -87,7 +88,7 @@ fn the_operands_compose_into_the_schema_s_own_trigger() {
     tab_to_field(&mut app, START_KIND + 4);
     clear_field(&mut app);
     type_text(&mut app, "85");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert!(!is_editing(&app));
     let end = draft_plan(&app).expenses[1].end.clone().expect("an end");
     assert_eq!(end.age, Some(85));
@@ -104,11 +105,11 @@ fn clearing_a_trigger_s_kind_clears_the_trigger() {
     tab_to_field(&mut app, START_KIND);
     // The menu opens on Event, the third of four kinds; the row that
     // empties the field is after the last.
-    press_key(&mut app, KeyCode::Char(' '));
-    press_key(&mut app, KeyCode::Down);
-    press_key(&mut app, KeyCode::Down);
-    press_key(&mut app, KeyCode::Enter);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, typed(' '));
+    press_key(&mut app, Key::ArrowDown);
+    press_key(&mut app, Key::ArrowDown);
+    press_key(&mut app, Key::Enter);
+    press_key(&mut app, Key::Enter);
     assert!(!is_editing(&app));
     assert_eq!(draft_plan(&app).expenses[1].start, None);
 }
@@ -124,16 +125,16 @@ fn stepping_to_a_kind_with_more_operands_shows_them() {
     );
     // No kind has no operands; a date has one, an age has two.
     tab_to_field(&mut app, START_KIND);
-    press_key(&mut app, KeyCode::Right);
+    press_key(&mut app, Key::ArrowRight);
     app.update();
     let frame = composed_frame(&app);
     assert!(frame.contains("[ Date ▾ ]"), "{frame}");
     assert!(frame.contains("] yyyy-mm-dd"), "{frame}");
-    press_key(&mut app, KeyCode::Right);
+    press_key(&mut app, Key::ArrowRight);
     app.update();
     let frame = composed_frame(&app);
     assert!(frame.contains("[ Age ▾ ]"), "{frame}");
-    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, Key::Tab);
     type_text(&mut app, "70");
     app.update();
     let frame = composed_frame(&app);
@@ -165,8 +166,8 @@ fn a_kind_chosen_without_its_operand_is_refused_rather_than_dropped() {
     let mut app = fixture_app();
     open_travel(&mut app);
     tab_to_field(&mut app, START_KIND);
-    press_key(&mut app, KeyCode::Right);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::ArrowRight);
+    press_key(&mut app, Key::Enter);
     assert!(is_editing(&app), "an income trigger naming no income");
     let heard = said(&app).join("\n");
     assert!(heard.contains("Starts: the trigger names"), "{heard}");
@@ -178,9 +179,9 @@ fn a_reference_s_menu_lists_what_the_kind_now_refers_to() {
     let mut app = fixture_app();
     open_travel(&mut app);
     tab_to_field(&mut app, START_KIND);
-    press_key(&mut app, KeyCode::Right);
-    press_key(&mut app, KeyCode::Tab);
-    press_key(&mut app, KeyCode::Char(' '));
+    press_key(&mut app, Key::ArrowRight);
+    press_key(&mut app, Key::Tab);
+    press_key(&mut app, typed(' '));
     app.update();
     let frame = composed_frame(&app);
     assert!(frame.contains("│ salary"), "an income's menu: {frame}");

@@ -20,15 +20,15 @@ use super::motion::Leaves;
 use super::pane::Framed;
 use super::theme::Repainted;
 use bevy_ecs::change_detection::{DetectChanges, Ref};
-use bevy_ecs::prelude::{Component, IntoScheduleConfigs, Mut, Query, With};
-use bevy_ui::{FlexDirection, Node, Overflow, PositionType, UiRect, UiSystems, Val};
-use plurimus::bui::ComputedNodeRect;
+use bevy_ecs::prelude::{Component, IntoScheduleConfigs, Mut, Query, Res, With};
+use bevy_ui::{ComputedNode, FlexDirection, Node, Overflow, PositionType, UiRect, UiSystems, Val};
 
 pub use band::Band;
 pub use focus::Focus;
 pub use standing::Standing;
 
-use super::layout::Body;
+use super::layout::{self, Body};
+use crate::pane::FrameRows;
 
 /// The overlays a choice can close opening and closing. An overlay a
 /// choice may open is drawn after them, so that it takes the keyboard from
@@ -55,8 +55,17 @@ pub const CLOSE_KEYS: &[(KeyBinding, ())] = &[(KeyBinding::new(Key::Escape), ())
 /// A box centred over the body, by its outer size in cells.
 #[derive(Component, Clone, Copy, Debug)]
 pub struct Centred {
-    cols: u16,
-    rows: u16,
+    pub(crate) cols: u16,
+    pub(crate) rows: u16,
+}
+
+impl Centred {
+    /// The rows the box takes with a frame of `frame` rows in place of
+    /// the terminal's.
+    #[must_use]
+    pub fn tall(self, frame: FrameRows) -> u16 {
+        self.rows.saturating_add(frame.0.saturating_sub(CHROME))
+    }
 }
 
 /// Makes a centred box as tall as the `rows` it holds inside its frame.
@@ -75,9 +84,9 @@ pub fn centred(cols: u16, rows: u16) -> (Node, Centred) {
     let rows = rows.saturating_add(CHROME);
     let node = Node {
         position_type: PositionType::Absolute,
-        width: Val::Px(f32::from(cols)),
+        width: Val::Em(f32::from(cols)),
         max_height: Val::Percent(100.0),
-        padding: UiRect::all(Val::Px(1.0)),
+        padding: UiRect::axes(Val::Em(1.0), Val::Rem(1.0)),
         flex_direction: FlexDirection::Column,
         overflow: Overflow::clip(),
         ..Node::default()
@@ -92,11 +101,11 @@ pub fn bottom_panel(commands: &mut Commands, root: Entity, title: &str, hints: H
     commands.entity(root).insert((
         Node {
             position_type: PositionType::Absolute,
-            left: Val::Px(0.0),
-            right: Val::Px(0.0),
-            bottom: Val::Px(0.0),
+            left: Val::ZERO,
+            right: Val::ZERO,
+            bottom: Val::ZERO,
             height: Val::Percent(BOTTOM_SHARE),
-            padding: UiRect::all(Val::Px(1.0)),
+            padding: UiRect::axes(Val::Em(1.0), Val::Rem(1.0)),
             flex_direction: FlexDirection::Column,
             ..Node::default()
         },
@@ -122,20 +131,27 @@ pub fn bottom_panel(commands: &mut Commands, root: Entity, title: &str, hints: H
 /// odd number of cells narrower than the body starts on half a cell, and
 /// what it holds is then rounded a cell past its border.
 fn centre_boxes(
-    bodies: Query<Ref<ComputedNodeRect>, With<Body>>,
+    bodies: Query<Ref<ComputedNode>, With<Body>>,
     mut boxes: Query<(Ref<Centred>, &mut Node)>,
+    frame: Res<FrameRows>,
 ) {
     let Ok(body) = bodies.single() else {
         return;
     };
-    let room = body.visible;
+    let room = (layout::node_cols(&body), layout::node_rows(&body));
     for (centred, mut node) in &mut boxes {
         if !body.is_changed() && !centred.is_changed() {
             continue;
         }
-        let rows = centred.rows.min(room.height);
-        node.height = Val::Px(f32::from(centred.rows));
-        node.left = Val::Px(f32::from(room.width.saturating_sub(centred.cols) / 2));
-        node.top = Val::Px(f32::from(room.height.saturating_sub(rows).div_ceil(2)));
+        let tall = centred.tall(*frame);
+        let rows = tall.min(room.1);
+        let placed = (
+            Val::Rem(f32::from(tall)),
+            Val::Em(f32::from(room.0.saturating_sub(centred.cols) / 2)),
+            Val::Rem(f32::from(room.1.saturating_sub(rows).div_ceil(2))),
+        );
+        if (node.height, node.left, node.top) != placed {
+            (node.height, node.left, node.top) = placed;
+        }
     }
 }

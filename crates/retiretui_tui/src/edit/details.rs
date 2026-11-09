@@ -4,21 +4,21 @@
 //! the page. A person's details end with their earnings record.
 
 use bevy_ecs::change_detection::{DetectChanges, Ref};
-use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Bundle, Commands, Component, Entity, On, Query, Res, With};
 use bevy_input::keyboard::KeyboardInput;
 use bevy_input_focus::FocusedInput;
 use plurimus::core::ratatui_core::style::{Modifier, Style};
-use plurimus::term::bevy_compat::HeldModifiers;
-use plurimus::ui::{ScrollArea, UiStyle, first_bound};
+use plurimus::term::HeldModifiers;
+use plurimus::ui::{UiStyle, first_bound};
 use plurimus::widgets::ActiveDescendant;
 
 use super::domain::Ops;
 use super::draft::Draft;
 use super::editing::{self, Slot};
-use super::table::{DomainTable, OPEN_KEYS, Row, cursor_row, table_bundle};
+use super::table::{DomainTable, OPEN_KEYS, Row, cursor_row};
+use crate::grid::{self, Grid};
 use crate::hints::Hints;
-use crate::layout::{self, filling, placed};
+use crate::layout;
 use crate::nav::{FocusStop, ShownSurface};
 use crate::pane::Pane;
 use crate::tabulate;
@@ -37,8 +37,6 @@ const TEXT_COLUMNS: [usize; 2] = [0, 1];
 const UNSTATED: Style = Style::new().add_modifier(Modifier::DIM);
 /// What sets a field in under the heading that gathers it.
 const GATHERED: &str = "  ";
-/// A heading over the fields it gathers.
-const HEADING: Style = Style::new().add_modifier(Modifier::BOLD);
 const BESIDE_HINTS: Hints = Hints(&[("↑↓", "scroll"), ("⏎", "edit")]);
 
 /// The table an item's details are rows of: of the domain `ops`, and of
@@ -67,17 +65,10 @@ pub fn spawn_into(
     table: Option<Entity>,
     hints: impl Bundle,
 ) {
+    let details = grid::spawn(commands, pane);
     commands
-        .spawn((
-            table_bundle(),
-            DetailsTable { ops, table },
-            FocusStop,
-            hints,
-            layout::Rests,
-            filling(),
-            placed(),
-            ChildOf(pane),
-        ))
+        .entity(details)
+        .insert((DetailsTable { ops, table }, FocusStop, hints, layout::Rests))
         .observe(handle_enter);
 }
 
@@ -88,11 +79,11 @@ pub fn refresh(
     (draft, shown): (Res<Draft>, ShownSurface),
     tables: Query<Ref<ActiveDescendant>, With<DomainTable>>,
     cursors: Query<&Row>,
-    mut details: Query<(Entity, &DetailsTable, &mut ScrollArea)>,
+    details: Query<(&DetailsTable, &Grid)>,
     mut commands: Commands,
 ) {
     let surface = shown.surface();
-    for (table, shown_of, mut scroll) in &mut details {
+    for (shown_of, grid) in &details {
         let cursor = shown_of.table.and_then(|table| tables.get(table).ok());
         let is_moved = match &cursor {
             Some(cursor) => cursor.is_changed(),
@@ -107,13 +98,12 @@ pub fn refresh(
             details::rows(&shown_of.ops, &item, &draft.plan)
         });
         let (rows, styles) = drawn(read);
-        commands
-            .entity(table)
-            .insert(tabulate::labelled(&rows, GAP));
+        let columns = tabulate::labelled(&rows, GAP);
         let header = HEADER.map(str::to_owned);
-        let spawned = tabulate::refill(
+        let spawned = grid::refill(
             &mut commands,
-            (table, &mut scroll),
+            grid,
+            columns,
             (&header, &rows),
             &TEXT_COLUMNS,
         );
@@ -134,7 +124,7 @@ fn drawn(read: Vec<ReadRow>) -> (Vec<Vec<String>>, Vec<Option<Style>>) {
     for row in read {
         if let Some(group) = heading(before, row.group) {
             rows.push(vec![group.to_owned(), String::new()]);
-            styles.push(Some(HEADING));
+            styles.push(Some(grid::HEADING));
         }
         before = row.group;
         let label = match row.group {
@@ -176,7 +166,7 @@ fn handle_enter(
 /// or the only item where they follow none.
 fn shown_row(cursor: Option<&ActiveDescendant>, rows: &Query<&Row>) -> Option<Row> {
     match cursor {
-        Some(cursor) => cursor_row(*cursor, rows),
+        Some(cursor) => cursor_row(cursor, rows),
         None => Some(Row(0)),
     }
 }

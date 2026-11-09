@@ -1,7 +1,8 @@
 use std::path::PathBuf;
 
+use crate::support::typed;
 use bevy_app::App;
-use plurimus::term::KeyCode;
+use bevy_input::keyboard::Key;
 
 use retiretui_client::estimate::{Listed, RowForm};
 use retiretui_engine::estimate::Unknown;
@@ -57,7 +58,7 @@ fn the_page_says_what_to_add_until_an_export_is_read() {
         frame.contains("f add file") && !frame.contains("t take"),
         "{frame}"
     );
-    press_key(&mut app, KeyCode::Char('t'));
+    press_key(&mut app, typed('t'));
     assert!(!is_asking(&app));
     add(&mut app, "chase.csv", CHASE);
     add(&mut app, "checking.ofx", OFX);
@@ -75,9 +76,9 @@ fn the_page_says_what_to_add_until_an_export_is_read() {
         frame.contains("t take") && frame.contains("w write"),
         "{frame}"
     );
-    press_key(&mut app, KeyCode::Down);
-    press_key(&mut app, KeyCode::Down);
-    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, Key::ArrowDown);
+    press_key(&mut app, Key::ArrowDown);
+    press_key(&mut app, Key::Tab);
     app.update();
     let frame = composed_frame(&app);
     assert!(frame.contains("CITY OF SAN JOSE WATER"), "{frame}");
@@ -93,7 +94,7 @@ fn the_page_says_what_to_add_until_an_export_is_read() {
 #[test]
 fn an_export_is_picked_by_its_extension_and_dropped_from_the_files() {
     let (_, mut app) = workspace_app();
-    press_key(&mut app, KeyCode::Char('f'));
+    press_key(&mut app, typed('f'));
     assert!(is_browsing(&app));
     let names: Vec<String> = picker_rows(&mut app)
         .into_iter()
@@ -108,7 +109,7 @@ fn an_export_is_picked_by_its_extension_and_dropped_from_the_files() {
         "{names:?}"
     );
     type_text(&mut app, "chase.csv");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     for _ in 0..4 {
         app.update();
     }
@@ -120,7 +121,7 @@ fn an_export_is_picked_by_its_extension_and_dropped_from_the_files() {
         said(&app)
     );
     assert!(composed_frame(&app).contains("Groceries"));
-    press_key(&mut app, KeyCode::Char('x'));
+    press_key(&mut app, typed('x'));
     app.update();
     app.update();
     let frame = composed_frame(&app);
@@ -130,7 +131,7 @@ fn an_export_is_picked_by_its_extension_and_dropped_from_the_files() {
         frame.contains("Add a bank's CSV, OFX or QFX export"),
         "{frame}"
     );
-    press_key(&mut app, KeyCode::Char('x'));
+    press_key(&mut app, typed('x'));
     assert!(
         said(&app).iter().any(|line| line.contains(NO_EXPORTS)),
         "{:?}",
@@ -143,7 +144,7 @@ fn taking_the_proposals_sets_and_adds_the_expenses_after_asking() {
     let (_, mut app) = workspace_app();
     add(&mut app, "chase.csv", CHASE);
     let before = expense_ids(&app);
-    press_key(&mut app, KeyCode::Char('t'));
+    press_key(&mut app, typed('t'));
     assert!(is_asking(&app));
     answer_back(&mut app, 0);
     app.update();
@@ -162,7 +163,7 @@ fn taking_the_proposals_sets_and_adds_the_expenses_after_asking() {
 fn the_highlighted_row_opens_its_form_and_the_edit_lasts() {
     let (_, mut app) = workspace_app();
     add(&mut app, "chase.csv", CHASE);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     app.update();
     let frame = composed_frame(&app);
     assert!(
@@ -170,7 +171,7 @@ fn the_highlighted_row_opens_its_form_and_the_edit_lasts() {
         "{frame}"
     );
     assert!(frame.contains("Groceries"), "{frame}");
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     app.update();
     let proposed = app.world().resource::<Held>().0.estimate().proposals[0].amount;
     assert!(proposed > 0);
@@ -180,10 +181,10 @@ fn the_highlighted_row_opens_its_form_and_the_edit_lasts() {
 fn writing_the_proposals_makes_a_scenario_over_the_document() {
     let (dir, mut app) = workspace_app();
     add(&mut app, "chase.csv", CHASE);
-    press_key(&mut app, KeyCode::Char('w'));
+    press_key(&mut app, typed('w'));
     assert!(is_browsing(&app));
     type_text(&mut app, "estimated.toml");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     for _ in 0..4 {
         app.update();
     }
@@ -263,7 +264,7 @@ fn a_named_payee_is_remembered_in_the_patterns_file_the_launch_names() {
 
 /// Puts the cursor on the row at `at` and the keyboard on the Records
 /// pane, then types `keys`.
-fn on_record(app: &mut App, at: usize, keys: &[KeyCode]) {
+fn on_record(app: &mut App, at: usize, keys: &[Key]) {
     app.world_mut().insert_resource(Cursor(at));
     for _ in 0..SETTLING_TICKS {
         app.update();
@@ -275,8 +276,8 @@ fn on_record(app: &mut App, at: usize, keys: &[KeyCode]) {
         .unwrap();
     app.world_mut()
         .insert_resource(InputFocus::from_entity(records));
-    for &key in keys {
-        press_key(app, key);
+    for key in keys {
+        press_key(app, key.clone());
         for _ in 0..SETTLING_TICKS {
             app.update();
         }
@@ -291,7 +292,7 @@ fn a_record_is_ignored_from_the_records_pane_and_counted_again() {
         .insert_resource(PatternsFile(Some(file.clone())));
     add(&mut app, "chase.csv", CHASE);
     let groceries = groceries_row(&app);
-    on_record(&mut app, groceries, &[KeyCode::Char('i')]);
+    on_record(&mut app, groceries, &[typed('i')]);
     let found = app.world().resource::<Held>().0.estimate().clone();
     assert_eq!(found.ignored_rows, 1);
     assert!(
@@ -301,7 +302,7 @@ fn a_record_is_ignored_from_the_records_pane_and_counted_again() {
     );
     assert!(composed_frame(&app).contains("Ignored"));
 
-    on_record(&mut app, listed(&found).count() - 1, &[KeyCode::Char('i')]);
+    on_record(&mut app, listed(&found).count() - 1, &[typed('i')]);
     assert_eq!(app.world().resource::<Held>().0.estimate().ignored_rows, 0);
     assert!(!std::fs::read_to_string(&file).unwrap().contains("ignore"));
 }
@@ -329,7 +330,7 @@ fn a_payee_is_moved_by_its_category_number_or_its_words_from_the_menu() {
         .insert_resource(PatternsFile(Some(file.clone())));
     add(&mut app, "chase.csv", CHASE);
     let at = groceries_row(&app);
-    on_record(&mut app, at, &[KeyCode::Char('c'), KeyCode::Char('3')]);
+    on_record(&mut app, at, &[typed('c'), typed('3')]);
     let written = std::fs::read_to_string(&file).unwrap();
     assert!(
         written.contains("category = \"utilities\""),
@@ -338,7 +339,7 @@ fn a_payee_is_moved_by_its_category_number_or_its_words_from_the_menu() {
     assert!(said(&app).iter().any(|line| line.contains("is Utilities")));
 
     let at = groceries_row(&app);
-    on_record(&mut app, at, &[KeyCode::Char('c'), KeyCode::Char('1')]);
+    on_record(&mut app, at, &[typed('c'), typed('1')]);
     assert!(is_picking(&app), "1 could still be 10 to 19");
     type_text(&mut app, "2");
     for _ in 0..SETTLING_TICKS {
@@ -349,11 +350,7 @@ fn a_payee_is_moved_by_its_category_number_or_its_words_from_the_menu() {
     assert!(written.contains("category = \"internet\""), "{written}");
 
     let at = groceries_row(&app);
-    on_record(
-        &mut app,
-        at,
-        &[KeyCode::Char('c'), KeyCode::Char('1'), KeyCode::Enter],
-    );
+    on_record(&mut app, at, &[typed('c'), typed('1'), Key::Enter]);
     let written = std::fs::read_to_string(&file).unwrap();
     assert!(
         written.contains("category = \"groceries\""),
@@ -369,7 +366,7 @@ fn c_0_sends_a_payee_to_the_bucket() {
         .insert_resource(PatternsFile(Some(file.clone())));
     add(&mut app, "chase.csv", CHASE);
     let at = groceries_row(&app);
-    on_record(&mut app, at, &[KeyCode::Char('c'), KeyCode::Char('0')]);
+    on_record(&mut app, at, &[typed('c'), typed('0')]);
     let written = std::fs::read_to_string(&file).unwrap();
     assert!(written.contains("bucket = true"), "0 is at once: {written}");
     assert!(
@@ -387,16 +384,16 @@ fn payees_containing_a_records_words_are_moved_from_its_menu() {
         .insert_resource(PatternsFile(Some(file.clone())));
     add(&mut app, "chase.csv", CHASE);
     let at = groceries_row(&app);
-    on_record(&mut app, at, &[KeyCode::Enter]);
+    on_record(&mut app, at, &[Key::Enter]);
     assert!(composed_frame(&app).contains("Payees containing…"));
     type_text(&mut app, "payees containing");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     for _ in 0..SETTLING_TICKS {
         app.update();
     }
     let frame = composed_frame(&app);
     assert!(frame.contains("1 payee, $1,706 a year"), "{frame}");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     for _ in 0..SETTLING_TICKS {
         app.update();
     }

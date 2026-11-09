@@ -1,14 +1,16 @@
 //! The frame every view is laid out in: one `bevy_ui` tree the terminal's
-//! size fills.
+//! size fills. Every size is in cells: `Val::Rem` is a cell's height and
+//! `Val::Em` a cell's width - one pixel each in the terminal, and a font's
+//! line height and advance width in a window - so a pixel is named nowhere.
 
-use bevy_app::{App, PostUpdate, Startup, Update};
+use bevy_app::{App, Startup, Update};
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{
-    Bundle, Changed, Commands, Component, Entity, IntoScheduleConfigs, Mut, Query, Ref, Res, With,
+    Bundle, Changed, Commands, Component, Entity, IntoScheduleConfigs, Mut, Query, Ref, Res,
 };
-use bevy_ui::{Display, FlexDirection, JustifyContent, Node, UiSystems, Val};
-use plurimus::bui::{BuiPlugin, ComputedNodeRect};
+use bevy_ui::{ComputedNode, Display, FlexDirection, JustifyContent, Node, Val};
+use plurimus::bui::ComputedNodeRect;
 use plurimus::core::ratatui_core::layout::{Position, Rect};
 use plurimus::core::ratatui_core::style::{Modifier, Style};
 use plurimus::core::{
@@ -24,11 +26,11 @@ mod clip;
 mod cursor;
 mod list;
 
-pub use clip::{cells_of, clipped, clipped_middle, wrapped};
-pub use cursor::{CURSOR_COLS, Rests, SCROLL_BAR_COLS, list_cursor, table_cursor};
+pub use clip::{cells_of, clipped, clipped_middle, fitting, wrapped};
+pub use cursor::{CURSOR_COLS, GUTTER, Rests, SCROLL_BAR_COLS, cursor_bar, list_cursor};
 pub use list::{CONTINUED, fill_lines, fill_wrapped, row_width, spawn_scrolled_list};
 
-use super::theme::{Repainted, Theme};
+use super::theme::{Repainted, Theme, text};
 
 /// Rows the frame spends on chrome: the tab row and the hint row.
 pub const CHROME_ROWS: u16 = TAB_ROW_ROWS + HINT_ROWS;
@@ -63,13 +65,12 @@ pub struct Body;
 pub struct HintRow;
 
 pub fn plugin(app: &mut App) {
-    app.add_plugins((BuiPlugin, cursor::plugin));
+    app.add_plugins(cursor::plugin);
     app.add_systems(Startup, spawn_frame);
     app.add_systems(
         Update,
         (hold_offsets, (draw_rules, emphasise).in_set(Repainted)),
     );
-    app.add_systems(PostUpdate, sync_areas.after(UiSystems::PostLayout));
 }
 
 /// Holds each scroll area's offset within what it can scroll once its area
@@ -95,7 +96,7 @@ pub fn filling() -> Node {
     Node {
         width: Val::Percent(100.0),
         height: Val::Percent(100.0),
-        min_height: Val::Px(0.0),
+        min_height: Val::ZERO,
         ..Node::default()
     }
 }
@@ -107,7 +108,7 @@ pub fn growing() -> Node {
     Node {
         flex_grow: 1.0,
         width: Val::Percent(100.0),
-        min_height: Val::Px(0.0),
+        min_height: Val::ZERO,
         ..Node::default()
     }
 }
@@ -118,7 +119,7 @@ pub fn growing() -> Node {
 pub fn fixed(height: f32) -> Node {
     Node {
         width: Val::Percent(100.0),
-        height: Val::Px(height),
+        height: Val::Rem(height),
         flex_shrink: 0.0,
         ..Node::default()
     }
@@ -128,8 +129,8 @@ pub fn fixed(height: f32) -> Node {
 #[must_use]
 pub fn sized(cols: f32, rows: f32) -> Node {
     Node {
-        width: Val::Px(cols),
-        height: Val::Px(rows),
+        width: Val::Em(cols),
+        height: Val::Rem(rows),
         flex_shrink: 0.0,
         ..Node::default()
     }
@@ -140,7 +141,9 @@ pub fn sized(cols: f32, rows: f32) -> Node {
 pub const NO_STOP: i32 = -1;
 
 /// The `[ ` and ` ]` plurimus paints a button's label between.
-const BUTTON_DECORATION: u16 = 4;
+/// What a button's label is said between.
+pub const BUTTON_BRACKETS: [&str; 2] = ["[ ", " ]"];
+const BUTTON_DECORATION: u16 = (BUTTON_BRACKETS[0].len() + BUTTON_BRACKETS[1].len()) as u16;
 pub const BUTTON_GAP: f32 = 1.0;
 
 /// The node of a button saying `label`, as wide as it is drawn.
@@ -158,7 +161,7 @@ pub fn spawn_button_row(commands: &mut Commands, parent: Entity) -> Entity {
     let row = Node {
         flex_direction: FlexDirection::Row,
         justify_content: JustifyContent::FlexEnd,
-        column_gap: Val::Px(BUTTON_GAP),
+        column_gap: Val::Em(BUTTON_GAP),
         ..fixed(1.0)
     };
     commands.spawn((row, ChildOf(parent))).id()
@@ -191,6 +194,17 @@ fn emphasise(theme: Res<Theme>, buttons: Query<(Entity, Ref<Emphasis>)>, mut com
 #[derive(Component, Debug)]
 pub struct Rule(&'static str);
 
+impl Rule {
+    /// The title along the line, a cell before the line goes on.
+    pub(crate) fn heading(&self) -> String {
+        if self.0.is_empty() {
+            String::new()
+        } else {
+            format!("{} ", self.0)
+        }
+    }
+}
+
 #[must_use]
 pub fn rule() -> impl Bundle {
     titled_rule("")
@@ -209,12 +223,7 @@ pub fn titled_rule(title: &'static str) -> impl Bundle {
 fn draw_rules(theme: Res<Theme>, mut rules: Query<(Ref<Rule>, &mut UiWidget)>) {
     for (rule, mut widget) in &mut rules {
         if theme.is_changed() || rule.is_added() {
-            let title = if rule.0.is_empty() {
-                String::new()
-            } else {
-                format!("{} ", rule.0)
-            };
-            let line = Block::new().borders(Borders::TOP).title(title);
+            let line = Block::new().borders(Borders::TOP).title(rule.heading());
             *widget = UiWidget::new(line.border_style(theme.dimmed()));
         }
     }
@@ -240,6 +249,21 @@ pub fn placed() -> UiArea {
     UiArea::Fixed(Rect::ZERO)
 }
 
+/// The columns a laid-out node spans: its width in logical pixels over
+/// its em, which is a cell's width in either target. The node's size is
+/// in physical pixels, a scale factor larger on a dense screen.
+#[must_use]
+pub fn node_cols(node: &ComputedNode) -> u16 {
+    (node.size.x * node.inverse_scale_factor / node.em_size.0).round() as u16
+}
+
+/// The rows a laid-out node spans: its height in logical pixels over its
+/// rem, a cell's height in either target.
+#[must_use]
+pub fn node_rows(node: &ComputedNode) -> u16 {
+    (node.size.y * node.inverse_scale_factor / node.rem_size.0).round() as u16
+}
+
 pub fn spawn_frame(mut commands: Commands) {
     commands.spawn(TerminalCamera::default());
     let root = commands
@@ -247,6 +271,7 @@ pub fn spawn_frame(mut commands: Commands) {
             Root,
             Node {
                 flex_direction: FlexDirection::Column,
+                min_width: Val::ZERO,
                 ..filling()
             },
         ))
@@ -260,32 +285,53 @@ pub fn spawn_frame(mut commands: Commands) {
         ChildOf(root),
     ));
     commands.spawn((Body, growing(), ChildOf(root)));
-    commands.spawn((
-        HintRow,
-        fixed(f32::from(HINT_ROWS)),
-        UiWidget::default(),
-        placed(),
-        ChildOf(root),
-    ));
+    commands.spawn((HintRow, fixed(f32::from(HINT_ROWS)), text(), ChildOf(root)));
 }
 
-// Layout speaks in screen cells and `UiArea::Fixed` in camera-local ones.
-fn sync_areas(
+/// Layout speaks in screen cells and `UiArea::Fixed` in camera-local ones.
+pub(crate) fn sync_areas(
     default_camera: Res<DefaultCamera>,
     cameras: Query<&ResolvedViewport>,
-    mut widgets: Query<
-        (&ComputedNodeRect, &mut UiArea),
-        (With<UiWidget>, Changed<ComputedNodeRect>),
-    >,
+    mut widgets: Query<(&ComputedNodeRect, &mut UiArea), Changed<ComputedNodeRect>>,
 ) {
-    let Some(viewport) = default_camera
-        .0
-        .and_then(|camera| cameras.get(camera).ok())
-        .map(|resolved| resolved.0)
-    else {
+    let Some(viewport) = default_viewport(*default_camera, &cameras) else {
         return;
     };
     for (node, mut area) in &mut widgets {
         area.set_if_neq(UiArea::Fixed(local_area(node.visible, viewport)));
+    }
+}
+
+/// The cells the default camera draws into, once it has resolved them.
+pub(crate) fn default_viewport(
+    default_camera: DefaultCamera,
+    cameras: &Query<&ResolvedViewport>,
+) -> Option<Rect> {
+    let camera = default_camera.0?;
+    cameras.get(camera).ok().map(|resolved| resolved.0)
+}
+
+#[cfg(test)]
+mod tests {
+    use bevy_math::Vec2;
+    use plurimus::bui::bevy_text::{EmSize, RemSize};
+
+    use super::*;
+
+    #[test]
+    fn a_node_s_cells_are_its_logical_size_over_its_em_and_rem() {
+        let dense = ComputedNode {
+            size: Vec2::new(1234.0, 291.0),
+            inverse_scale_factor: 1.0 / 1.5,
+            em_size: EmSize(8.0),
+            rem_size: RemSize(20.0),
+            ..ComputedNode::default()
+        };
+        assert_eq!((node_cols(&dense), node_rows(&dense)), (103, 10));
+        let plain = ComputedNode {
+            inverse_scale_factor: 1.0,
+            ..dense
+        };
+        assert_eq!((node_cols(&plain), node_rows(&plain)), (154, 15));
     }
 }

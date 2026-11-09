@@ -1,7 +1,8 @@
 use std::path::PathBuf;
 
+use crate::support::typed;
 use bevy_app::App;
-use plurimus::term::KeyCode;
+use bevy_input::keyboard::Key;
 use retiretui_engine::plan::Scenario;
 use retiretui_engine::plan::TreatmentClass::{Deferred, Roth, Taxable};
 
@@ -106,12 +107,12 @@ fn the_pane_says_why_there_is_nothing_to_order() {
 #[test]
 fn w_writes_the_highlighted_order_and_compares_it() {
     let (dir, mut app) = workspace_app(RETIREE);
-    press_key(&mut app, KeyCode::Down);
+    press_key(&mut app, Key::ArrowDown);
     let write = app.world_mut().run_system_cached(write_picker).unwrap();
     assert_eq!(write, Outcome::Done);
     assert!(redrawn(&mut app).contains("Write overlay"));
     type_text(&mut app, "order");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     app.update();
     let written = dir.join("order.toml");
     let text = std::fs::read_to_string(&written).unwrap();
@@ -148,7 +149,7 @@ fn t_and_enter_ask_then_take_the_chosen_order_as_one_step() {
         said(&app).last().map(String::as_str),
         Some("now withdrawing in the order taxable, Roth, deferred")
     );
-    press_ctrl(&mut app, KeyCode::Char('z'));
+    press_ctrl(&mut app, typed('z'));
     assert_eq!(
         stated_order(&app),
         [Roth, Deferred, Taxable],
@@ -156,8 +157,8 @@ fn t_and_enter_ask_then_take_the_chosen_order_as_one_step() {
     );
 
     settle(&mut app);
-    press_key(&mut app, KeyCode::Down);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::ArrowDown);
+    press_key(&mut app, Key::Enter);
     app.update();
     answer_yes(&mut app);
     assert_eq!(stated_order(&app), [Taxable, Deferred, Roth]);

@@ -2,7 +2,8 @@
 //! and the sidebar, and for a form, which is entered on purpose and only
 //! esc or an apply comes out of.
 
-use plurimus::term::KeyCode;
+use crate::support::typed;
+use bevy_input::keyboard::Key;
 
 use super::{Draft, fixture_app_sized, is_editing, is_on, retype_balance};
 use crate::edit::details::DetailsTable;
@@ -22,16 +23,16 @@ fn tab_walks_the_table_its_details_and_the_sidebar_round() {
     let mut app = fixture_app_sized(SIZE);
     show(&mut app, Page::Accounts);
     assert!(is_on::<DomainTable>(&app));
-    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, Key::Tab);
     assert!(
         is_on::<DetailsTable>(&app),
         "the details come after the table"
     );
-    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, Key::Tab);
     assert!(is_on::<Sidebar>(&app), "and wrap to the sidebar");
-    press_shift(&mut app, KeyCode::Tab);
+    press_shift(&mut app, Key::Tab);
     assert!(is_on::<DetailsTable>(&app));
-    press_shift(&mut app, KeyCode::Tab);
+    press_shift(&mut app, Key::Tab);
     assert!(is_on::<DomainTable>(&app));
     assert!(!is_editing(&app), "walking opens nothing");
 }
@@ -50,10 +51,10 @@ fn the_command_does_what_its_key_does() {
 fn tab_in_a_form_holding_edits_asks_nothing_and_stays_in_it() {
     let mut app = fixture_app_sized(SIZE);
     show(&mut app, Page::Accounts);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     retype_balance(&mut app);
     for _ in 0..ROUND_THE_FORM {
-        press_key(&mut app, KeyCode::Tab);
+        press_key(&mut app, Key::Tab);
         assert!(!is_asking(&app));
         assert!(!is_on::<DomainTable>(&app) && !is_on::<Sidebar>(&app));
     }
@@ -63,11 +64,11 @@ fn tab_in_a_form_holding_edits_asks_nothing_and_stays_in_it() {
 fn an_open_menu_keeps_the_chords_that_would_turn_the_page() {
     let mut app = fixture_app_sized(SIZE);
     show(&mut app, Page::Accounts);
-    press_key(&mut app, KeyCode::Enter);
-    press_key(&mut app, KeyCode::Tab);
-    press_key(&mut app, KeyCode::Tab);
-    press_key(&mut app, KeyCode::Char(' '));
-    press_ctrl(&mut app, KeyCode::Down);
+    press_key(&mut app, Key::Enter);
+    press_key(&mut app, Key::Tab);
+    press_key(&mut app, Key::Tab);
+    press_key(&mut app, typed(' '));
+    press_ctrl(&mut app, Key::ArrowDown);
     assert_eq!(support::active_page(&app), Page::Accounts);
 }
 
@@ -80,7 +81,7 @@ fn tab_in_a_read_only_session_reaches_the_details_and_says_nothing() {
     show(&mut app, Page::Accounts);
     app.update();
     let heard = said(&app);
-    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, Key::Tab);
     assert!(is_on::<DetailsTable>(&app));
     assert_eq!(said(&app), heard);
 }
@@ -90,11 +91,11 @@ fn a_single_items_page_is_its_details_and_enter_opens_its_form() {
     let mut app = fixture_app_sized(SIZE);
     show(&mut app, Page::Household);
     assert!(is_on::<DetailsTable>(&app), "the details have the keyboard");
-    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, Key::Tab);
     assert!(is_on::<Sidebar>(&app), "the page has the one pane");
-    press_key(&mut app, KeyCode::Tab);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Tab);
+    press_key(&mut app, Key::Enter);
     assert!(is_editing(&app), "in the form");
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     assert!(is_on::<DetailsTable>(&app), "esc comes back to the details");
 }

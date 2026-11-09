@@ -8,21 +8,21 @@ use std::sync::Arc;
 
 use bevy_app::{App, Update};
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
-use bevy_ecs::hierarchy::{ChildOf, Children};
 use bevy_ecs::prelude::{
     Changed, Commands, Component, Entity, IntoScheduleConfigs, Local, Query, Res, ResMut, Resource,
     With,
 };
-use plurimus::widgets::{ActiveDescendant, WidgetSystems};
+use plurimus::widgets::ActiveDescendant;
 use retiretui_client::searches::claims::{PEOPLE_COLUMNS, person_row};
 use retiretui_engine::optimize::benefit_estimates;
 use retiretui_engine::plan::{Dollars, Person, Plan};
 
 use super::super::{EnterRuns, Keyed, handle_enter};
 use super::guide;
-use crate::edit::{Draft, table_bundle};
+use crate::edit::Draft;
+use crate::grid::{self, Grid};
 use crate::hints::Hints;
-use crate::layout::{self, filling, placed};
+use crate::layout;
 use crate::nav::{self, FocusStop, Page, ShownSurface};
 use crate::pane::Pane;
 use crate::session::Session;
@@ -41,8 +41,7 @@ pub fn plugin(app: &mut App) {
                 follow_cursor,
             )
                 .chain()
-                .before(Repainted)
-                .before(WidgetSystems::Layout),
+                .before(Repainted),
         );
 }
 
@@ -99,17 +98,15 @@ struct PersonRow(usize);
 /// The pane, sharing the row with the claim options.
 pub fn spawn_pane(commands: &mut Commands, row: Entity) {
     let pane = Pane::new(TITLE).sharing(1.0).spawn(commands, row);
+    let table = grid::spawn(commands, pane);
     commands
-        .spawn((
-            table_bundle(),
+        .entity(table)
+        .insert((
             PeopleTable,
             FocusStop,
             EnterRuns(guide::PERSON_ACTIONS),
             Hints(&[("↑↓", "person"), ("⏎", "actions")]),
             layout::Rests,
-            filling(),
-            placed(),
-            ChildOf(pane),
         ))
         .observe(handle_enter);
 }
@@ -158,7 +155,7 @@ fn estimate(
 fn refresh_people(
     state: (Res<Draft>, Res<Estimates>, Res<HeldClaims>),
     cursor: Res<PersonCursor>,
-    tables: Query<Entity, With<PeopleTable>>,
+    tables: Query<&Grid, With<PeopleTable>>,
     mut commands: Commands,
 ) {
     let (draft, estimates, held) = state;
@@ -168,14 +165,13 @@ fn refresh_people(
     let header: Vec<String> = PEOPLE_COLUMNS.map(str::to_owned).to_vec();
     let rows = people_rows(&draft.plan, &estimates, &held);
     let at = cursor.index(&draft.plan);
-    for table in &tables {
-        commands.entity(table).despawn_related::<Children>();
-        let spawned = tabulate::fill(&mut commands, table, (&header, &rows), (GAP, u16::MAX));
+    for grid in &tables {
+        let spawned = tabulate::fill(&mut commands, grid, (&header, &rows), (GAP, u16::MAX));
         for (index, &row) in spawned.iter().enumerate() {
             commands.entity(row).insert(PersonRow(index));
         }
         let on = at.and_then(|at| spawned.get(at)).copied();
-        commands.entity(table).insert(ActiveDescendant(on));
+        commands.entity(grid.root).insert(ActiveDescendant(on));
     }
 }
 

@@ -1,5 +1,6 @@
+use crate::support::typed;
 use bevy_app::App;
-use plurimus::term::KeyCode;
+use bevy_input::keyboard::Key;
 use retiretui_engine::market::Progress;
 use retiretui_engine::optimize::{is_ladder, optimize_conversions, sweep_brackets};
 use toml::Value;
@@ -43,14 +44,14 @@ fn settle(app: &mut App) {
 /// opens on: back past the sidebar and the conversions.
 fn to_options(app: &mut App) {
     for _ in 0..3 {
-        press_shift(app, KeyCode::Tab);
+        press_shift(app, Key::Tab);
     }
 }
 
 /// Answers the question on show with the answer the keyboard opens on.
 fn answer_yes(app: &mut App) {
     assert!(app.world().resource::<Confirm>().is_open(), "nothing asked");
-    press_key(app, KeyCode::Enter);
+    press_key(app, Key::Enter);
     app.update();
 }
 
@@ -82,7 +83,7 @@ fn type_start_year(app: &mut App) {
     open(app, Page::RothConversions);
     tab_to_field(app, 3);
     type_text(app, "2030");
-    press_key(app, KeyCode::Enter);
+    press_key(app, Key::Enter);
 }
 
 #[test]
@@ -107,12 +108,12 @@ fn applying_the_form_stores_the_constraints_and_leaves_the_draft_clean() {
     assert!(!app.world().resource::<Draft>().is_dirty());
     let read_out = redrawn(&mut app);
     assert!(read_out.contains("First year    2030"), "{read_out}");
-    press_ctrl(&mut app, KeyCode::Char('z'));
+    press_ctrl(&mut app, typed('z'));
     assert_eq!(
         said(&app).last().map(String::as_str),
         Some("nothing to undo")
     );
-    press_key(&mut app, KeyCode::Char('r'));
+    press_key(&mut app, typed('r'));
     assert_eq!(
         tool(&app).get("start_year"),
         Some(&Value::Integer(2030)),
@@ -161,7 +162,7 @@ fn the_one_roth_account_is_the_destination_and_the_help_follows_the_keyboard() {
 fn without_a_destination_applying_searches_nothing() {
     let mut app = headless_app(SIZE);
     open(&mut app, Page::RothConversions);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     app.update();
     assert!(app.world().resource::<Ladders>().running.is_none());
     assert!(app.world().resource::<Ladders>().found().is_none());
@@ -248,15 +249,15 @@ fn a_search_arrives_ranked_best_first_and_arrows_step_over_the_plan_s_own_row() 
 
     assert_eq!(highlighted_rate(&app), expected[0]);
     to_options(&mut app);
-    press_key(&mut app, KeyCode::Down);
+    press_key(&mut app, Key::ArrowDown);
     assert_eq!(highlighted_rate(&app), expected[1]);
     let rows = table_rows(&redrawn(&mut app));
     assert!(
         rows[2].0 && !rows[1].0 && !rows[0].0,
         "one row is marked: {rows:?}"
     );
-    press_key(&mut app, KeyCode::Up);
-    press_key(&mut app, KeyCode::Up);
+    press_key(&mut app, Key::ArrowUp);
+    press_key(&mut app, Key::ArrowUp);
     app.update();
     assert_eq!(
         highlighted_rate(&app),
@@ -349,7 +350,7 @@ fn the_highlighted_option_lists_its_ladder_as_the_engine_searched_it() {
         );
     }
     to_options(&mut app);
-    press_key(&mut app, KeyCode::Down);
+    press_key(&mut app, Key::ArrowDown);
     let next = app
         .world()
         .resource::<Ladders>()
@@ -372,7 +373,7 @@ fn w_and_t_are_hinted_once_there_is_a_ladder_and_refuse_in_words_before() {
         !frame.contains("w write") && !frame.contains("t take"),
         "nothing found yet: {frame}"
     );
-    press_key(&mut app, KeyCode::Char('w'));
+    press_key(&mut app, typed('w'));
     app.update();
     assert_eq!(
         said(&app).last().map(String::as_str),
@@ -406,7 +407,7 @@ fn t_and_enter_ask_then_take_the_ladder_in_place_of_the_last_one() {
     hold::<Swept>(&mut app, true);
     show(&mut app, Page::RothConversions);
     assert!(!composed_frame(&app).contains("t take"), "nothing to take");
-    press_key(&mut app, KeyCode::Char('t'));
+    press_key(&mut app, typed('t'));
     app.update();
     assert_eq!(
         said(&app).last().map(String::as_str),
@@ -437,16 +438,16 @@ fn t_and_enter_ask_then_take_the_ladder_in_place_of_the_last_one() {
         "searched in place of the ladder taken, not on top of it"
     );
     to_options(&mut app);
-    press_key(&mut app, KeyCode::Down);
+    press_key(&mut app, Key::ArrowDown);
     let next = highlighted_steps(&app);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     let frame = redrawn(&mut app);
     assert!(frame.contains("in place of the"), "{frame}");
     answer_yes(&mut app);
     assert_eq!(conversions(&app), own + next, "replaced, not stacked");
-    press_ctrl(&mut app, KeyCode::Char('z'));
+    press_ctrl(&mut app, typed('z'));
     assert_eq!(conversions(&app), own + best);
-    press_ctrl(&mut app, KeyCode::Char('z'));
+    press_ctrl(&mut app, typed('z'));
     assert_eq!(conversions(&app), own);
 }
 
@@ -463,11 +464,11 @@ fn write_overlay_refuses_until_searched_on_a_saved_draft() {
     commit_edit(&mut app, |plan| plan.plan.name = Some("renamed".to_owned()));
     settle(&mut app);
     assert_eq!(run_write(&mut app), Outcome::Refused(SAVE_FIRST.to_owned()));
-    press_ctrl(&mut app, KeyCode::Char('s'));
+    press_ctrl(&mut app, typed('s'));
     assert_eq!(run_write(&mut app), Outcome::Done);
     assert!(redrawn(&mut app).contains("Write overlay"));
     type_text(&mut app, "ladder");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     app.update();
     let written = dir.join("ladder.toml");
     let text = std::fs::read_to_string(&written).unwrap();
@@ -485,10 +486,10 @@ fn write_overlay_refuses_until_searched_on_a_saved_draft() {
     assert_eq!(run_write(&mut app), Outcome::Done);
     app.update();
     type_text(&mut app, "ladder");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert!(is_asking(&app));
     assert!(composed_frame(&app).contains("Overwrite ladder.toml?"));
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     assert!(!is_asking(&app));
 }
 
