@@ -23,7 +23,9 @@ pub(crate) mod tests;
 mod trigger;
 mod widths;
 
+#[cfg(any(feature = "desktop", test))]
 pub(crate) use field::{Bracket, TextField};
+#[cfg(any(feature = "desktop", test))]
 pub(crate) use select::{CHEVRON, SelectBox};
 
 use retiretui_client::codec;

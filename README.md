@@ -42,17 +42,17 @@ the `retiretui` command and the `retiretui-desktop` window:
   tar xzf retiretui-x86_64-unknown-linux-gnu.tar.gz
   ```
 
-  The binaries are inside the `retiretui-x86_64-unknown-linux-gnu/` directory
-  it unpacks to.
+  The binaries are inside the `retiretui-x86_64-unknown-linux-gnu/` directory it
+  unpacks to.
 
-- Windows, x86_64, as `retiretui-x86_64-pc-windows-msvc.zip`: unzip it and
-  open `retiretui-desktop.exe`. The executable is not signed, so the first
-  run shows SmartScreen's warning; choose "More info", then "Run anyway".
+- Windows, x86_64, as `retiretui-x86_64-pc-windows-msvc.zip`: unzip it and open
+  `retiretui-desktop.exe`. The executable is not signed, so the first run shows
+  SmartScreen's warning; choose "More info", then "Run anyway".
 
 - macOS, Apple silicon or Intel, as `retiretui-universal-apple-darwin.zip`:
-  unzip it and open `RetireTui.app`. The app is not notarized, so the first
-  open is refused; open System Settings, Privacy & Security, and choose "Open
-  Anyway" beside the refusal, then open the app again.
+  unzip it and open `RetireTui.app`. The app is not notarized, so the first open
+  is refused; open System Settings, Privacy & Security, and choose "Open Anyway"
+  beside the refusal, then open the app again.
 
 ## Usage
 

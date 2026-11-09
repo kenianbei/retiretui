@@ -130,6 +130,7 @@ const BRACKETS: [&str; 2] = ["[ ", " ] "];
 
 impl Bracket {
     /// Whether this is one of the two brackets rather than a word.
+    #[cfg(any(feature = "desktop", test))]
     pub(crate) fn is_bracket(&self) -> bool {
         BRACKETS.contains(&self.drawn)
     }

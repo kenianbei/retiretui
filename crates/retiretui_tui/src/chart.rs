@@ -148,6 +148,7 @@ impl SeriesChart {
     /// x label less a character, at most a third of the width - and the axis.
     /// The cells the graph and its axis take of `area`: the column beside
     /// the graph and the row under it.
+    #[cfg(any(feature = "desktop", test))]
     pub(crate) fn plot(&self, area: Rect) -> Option<Rect> {
         let graph = self.graph(area)?;
         Some(Rect::new(

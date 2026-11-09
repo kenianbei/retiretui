@@ -41,8 +41,10 @@ pub use claims::Claims;
 pub use ladders::Ladders;
 pub use orders::Orders;
 pub use spending::Spending;
+pub(crate) use worker::Keyed;
 pub use worker::Searches;
-pub(crate) use worker::{Keyed, is_any_live};
+#[cfg(any(feature = "desktop", test))]
+pub(crate) use worker::is_any_live;
 pub use write::OVERLAY_OVER;
 
 use super::command::{self, Keymap};

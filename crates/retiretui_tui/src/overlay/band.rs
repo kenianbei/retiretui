@@ -33,6 +33,7 @@ impl Band {
 
     /// How many overlays stand under the one this marks.
     #[must_use]
+    #[cfg(any(feature = "desktop", test))]
     pub const fn beneath(self) -> i32 {
         self.0
     }

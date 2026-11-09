@@ -15,59 +15,55 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   unsaved draft, and its log in `desktop.log`. The window shows the shell's
   chrome in its own dress - the tabs as text over a baseline, the chosen one
   underlined, switched by digit or click, a pill at the row's end switching
-  between today's and future dollars, the status, the key row two rows tall
-  over a hairline with its keys in from the edge as far as the tabs, a margin
-  around the body, each pane's frame inset from its neighbours with its title
-  centred on a two-row header and what it holds padded in from its line, a
-  pane sized by what it holds grown by the header so it keeps its rows, the
-  sidebars, toasts, the message drawer, the dialog and the pickers as sheets
-  with a shadow - the whole frame dimmed under whichever of them stands
-  highest. No title says the dollar basis; the switch does. Of the pages, it
-  draws the Ledger: the years under their headers, the
-  flows, the money panes and the so-far table, each scrolled on the wheel with a
-  bar beside it, stepped by the keys, a row chosen by a click and banded under
-  the pointer. It draws the Plan tab's editing domains the same way: each
-  domain's table with its read-out beside it, a row opened by a click and a
-  column sorted by a click on its header, and the form over it - its labels,
-  headings and help, a text field typed into in a box ringed while it holds the
-  keyboard, a flag ticked by space or a click, a slider moved by the arrows or
-  a press on its track, a select as a box across its row with its menu opened
-  over the form and picked from by key or click, and the buttons as boxes,
-  the primary answer filled - scrolled with a bar as the terminal's is. It
-  draws what finds and makes a document: the file picker,
+  between today's and future dollars, the status, the key row two rows tall over
+  a hairline with its keys in from the edge as far as the tabs, a margin around
+  the body, each pane's frame inset from its neighbours with its title centred
+  on a two-row header and what it holds padded in from its line, a pane sized by
+  what it holds grown by the header so it keeps its rows, the sidebars, toasts,
+  the message drawer, the dialog and the pickers as sheets with a shadow - the
+  whole frame dimmed under whichever of them stands highest. No title says the
+  dollar basis; the switch does. Of the pages, it draws the Ledger: the years
+  under their headers, the flows, the money panes and the so-far table, each
+  scrolled on the wheel with a bar beside it, stepped by the keys, a row chosen
+  by a click and banded under the pointer. It draws the Plan tab's editing
+  domains the same way: each domain's table with its read-out beside it, a row
+  opened by a click and a column sorted by a click on its header, and the form
+  over it - its labels, headings and help, a text field typed into in a box
+  ringed while it holds the keyboard, a flag ticked by space or a click, a
+  slider moved by the arrows or a press on its track, a select as a box across
+  its row with its menu opened over the form and picked from by key or click,
+  and the buttons as boxes, the primary answer filled - scrolled with a bar as
+  the terminal's is. It draws what finds and makes a document: the file picker,
   its path typed, completed and climbed as in the terminal, its listing scrolled
   with the cursor and a row chosen by a double click; the new-plan form; and the
   issues panel, scrolled with its cursor. It draws the Overview: a raised card
   saying whether the money lasts, its mark on a disc of its colour, how surely
   and what the plan rests on first, four more cards - what it ends with, the
-  least it holds after the last salary, what it spends and what it pays in
-  tax, each a figure at twice the size under its title and over a line of
-  context - the three lists, and the chart, picked by name from a pill in its
-  pane's header, with a row and a cell kept clear around the plot - its labels
-  as text, its key dotted in each band's colour, its plot through bevy's
-  renderer, ruled across at each quarter, each band filled deeper than its
-  line under the lines, the salary's end and zero ruled - read out under the
-  pointer and opening the Ledger on a click, as in the terminal. Every list
-  the window scrolls shows the terminal's bar beside it, and the pointer
-  reaches every widget as in the terminal: what lights up under it lights up,
-  the wheel scrolls any list, and a press in a text field places its caret
-  and a drag selects. It draws the tools
-  and Compare: every table - the options a search ranks, the ladder, the
-  people, the expenses, the assumptions, the years, the proposals, the records,
-  the tax table and the compared plans - as the Ledger's, the help line under
-  each page, and the market tools' Ends With view as rows of bars. The window
-  draws every frame while a search runs and otherwise wakes for input and
-  once a second, for the file watch, focused or not. Known issue: under niri
-  the window stays blank while its height in pixels is fractional at the
-  output's scale, as at a scale of 1.6; fullscreen, or a height the scale
-  divides, draws.
+  least it holds after the last salary, what it spends and what it pays in tax,
+  each a figure at twice the size under its title and over a line of context -
+  the three lists, and the chart, picked by name from a pill in its pane's
+  header, with a row and a cell kept clear around the plot - its labels as text,
+  its key dotted in each band's colour, its plot through bevy's renderer, ruled
+  across at each quarter, each band filled deeper than its line under the lines,
+  the salary's end and zero ruled - read out under the pointer and opening the
+  Ledger on a click, as in the terminal. Every list the window scrolls shows the
+  terminal's bar beside it, and the pointer reaches every widget as in the
+  terminal: what lights up under it lights up, the wheel scrolls any list, and a
+  press in a text field places its caret and a drag selects. It draws the tools
+  and Compare: every table - the options a search ranks, the ladder, the people,
+  the expenses, the assumptions, the years, the proposals, the records, the tax
+  table and the compared plans - as the Ledger's, the help line under each page,
+  and the market tools' Ends With view as rows of bars. The window draws every
+  frame while a search runs and otherwise wakes for input and once a second, for
+  the file watch, focused or not. Known issue: under niri the window stays blank
+  while its height in pixels is fractional at the output's scale, as at a scale
+  of 1.6; fullscreen, or a height the scale divides, draws.
 
 - Releases for Windows and macOS: every release archive holds the `retiretui`
-  command and the `retiretui-desktop` window, the Linux tarballs beside a zip
-  of the two Windows executables, the window's with its icon, and a zip of a
+  command and the `retiretui-desktop` window, the Linux tarballs beside a zip of
+  the two Windows executables, the window's with its icon, and a zip of a
   universal `RetireTui.app` with the command, ad-hoc signed. Neither is signed
-  by a publisher, so the README says what each platform asks on the first
-  open.
+  by a publisher, so the README says what each platform asks on the first open.
 
 ### Changed
 
@@ -76,9 +72,9 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Windows executable.
 - A click anywhere in a pane hands it the keyboard: to the widget the click
   landed in, or the pane's first.
-- Lists wrap at their ends and move on Left and Right too, but for a
-  sidebar's Right, which still goes into the page. A list that loses the
-  keyboard draws no cursor, and a menu closes when the keyboard leaves it.
+- Lists wrap at their ends and move on Left and Right too, but for a sidebar's
+  Right, which still goes into the page. A list that loses the keyboard draws no
+  cursor, and a menu closes when the keyboard leaves it.
 - The file picker climbs to the parent on `alt+up`; left and right move the
   caret in its path.
 - The terminal wears the embedded `github` theme family by default,

@@ -147,6 +147,7 @@ mod deferred {
 /// window reads it to draw every frame while there is any.
 static LIVE: AtomicUsize = AtomicUsize::new(0);
 
+#[cfg(any(feature = "desktop", test))]
 pub(crate) fn is_any_live() -> bool {
     LIVE.load(Ordering::Relaxed) > 0
 }

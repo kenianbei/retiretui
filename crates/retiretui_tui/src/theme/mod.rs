@@ -17,7 +17,9 @@ use plurimus::core::ratatui_core::style::{Color, Modifier, Style};
 use plurimus::ui::UiTheme;
 use plurimus::widgets::{TableStripe, WidgetSystems};
 
-pub use said::{Hung, hang, row_line, said, say, say_lines, text};
+#[cfg(any(feature = "desktop", test))]
+pub use said::said;
+pub use said::{Hung, hang, row_line, say, say_lines, text};
 
 use super::journal;
 use super::settings::Settings;
