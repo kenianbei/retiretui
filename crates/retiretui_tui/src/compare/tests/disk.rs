@@ -1,3 +1,4 @@
+use crate::support::typed;
 use std::path::PathBuf;
 use std::time::Duration;
 
@@ -88,7 +89,7 @@ fn a_broken_rewrite_keeps_the_figures_and_marks_the_row_until_it_reads() {
 fn a_reload_that_fails_marks_the_row_as_the_watch_does() {
     let mut app = comparing_variant(SIZE);
     rewrite_variant(&app, BROKEN);
-    press_key(&mut app, KeyCode::Char('r'));
+    press_key(&mut app, typed('r'));
     redrawn(&mut app);
     assert!(is_marked(&app), "{}", composed_frame(&app));
     assert_eq!(plans_note(&mut app), BROKEN_NOTE);
@@ -107,6 +108,6 @@ fn a_failed_reread_is_said_once_while_it_stays_broken() {
     assert_eq!(warnings(&app), 1, "{:?}", said(&app));
     poll(&mut app);
     assert_eq!(warnings(&app), 1, "an unchanged file is not read again");
-    press_key(&mut app, KeyCode::Char('r'));
+    press_key(&mut app, typed('r'));
     assert_eq!(warnings(&app), 2, "a reload says it again");
 }

@@ -25,8 +25,8 @@ use bevy_ecs::system::{SystemId, SystemParam};
 use bevy_input::keyboard::KeyboardInput;
 use bevy_input_focus::FocusedInput;
 use bevy_window::PrimaryWindow;
+use plurimus::term::HeldModifiers;
 use plurimus::term::KeyModifiers;
-use plurimus::term::bevy_compat::HeldModifiers;
 use plurimus::ui::KeyBinding;
 
 pub use table::COMMANDS;

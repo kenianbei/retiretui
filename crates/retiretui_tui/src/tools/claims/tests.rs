@@ -1,7 +1,8 @@
 use std::path::PathBuf;
 
+use crate::support::typed;
 use bevy_app::App;
-use plurimus::term::KeyCode;
+use bevy_input::keyboard::Key;
 use retiretui_engine::market::Progress;
 use retiretui_engine::optimize::optimize_claims;
 use retiretui_engine::params::TaxTables;
@@ -67,13 +68,13 @@ fn name(app: &App, at: usize) -> String {
 
 /// Hands the keyboard to the strategies, from the people it opens on.
 fn to_strategies(app: &mut App) {
-    press_key(app, KeyCode::Tab);
+    press_key(app, Key::Tab);
 }
 
 /// Answers the question on show with the answer the keyboard opens on.
 fn answer_yes(app: &mut App) {
     assert!(app.world().resource::<Confirm>().is_open(), "nothing asked");
-    press_key(app, KeyCode::Enter);
+    press_key(app, Key::Enter);
     app.update();
 }
 
@@ -191,15 +192,15 @@ fn a_search_arrives_ranked_best_first_and_arrows_step_over_the_plan_s_own_row() 
 
     to_strategies(&mut app);
     assert_eq!(highlighted_ages(&app), ages_of(0));
-    press_key(&mut app, KeyCode::Down);
+    press_key(&mut app, Key::ArrowDown);
     assert_eq!(highlighted_ages(&app), ages_of(1));
     let rows = table_rows(&redrawn(&mut app));
     assert!(
         rows[2].0 && !rows[1].0 && !rows[0].0,
         "one row is marked: {rows:?}"
     );
-    press_key(&mut app, KeyCode::Up);
-    press_key(&mut app, KeyCode::Up);
+    press_key(&mut app, Key::ArrowUp);
+    press_key(&mut app, Key::ArrowUp);
     app.update();
     assert_eq!(
         highlighted_ages(&app),
@@ -225,7 +226,7 @@ fn a_couple_s_options_scroll_to_keep_the_cursor_in_view() {
     let found = app.world().resource::<Claims>().found().unwrap();
     assert_eq!(found.candidates.len(), 63);
     to_strategies(&mut app);
-    press_key(&mut app, KeyCode::End);
+    press_key(&mut app, Key::End);
     app.update();
     let frame = redrawn(&mut app);
     let panes: Vec<&str> = frame
@@ -280,12 +281,12 @@ fn the_pane_says_why_nothing_could_be_searched_and_an_edit_drops_a_search() {
 fn w_writes_the_highlighted_claims_and_compares_them() {
     let (dir, mut app) = workspace_app(&couple());
     to_strategies(&mut app);
-    press_key(&mut app, KeyCode::Down);
+    press_key(&mut app, Key::ArrowDown);
     let ages = highlighted_ages(&app);
     assert_eq!(run_write(&mut app), Outcome::Done);
     assert!(redrawn(&mut app).contains("Write overlay"));
     type_text(&mut app, "claims");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     app.update();
     let written = dir.join("claims.toml");
     let text = std::fs::read_to_string(&written).unwrap();
@@ -324,12 +325,12 @@ fn t_and_enter_ask_then_take_the_chosen_claims_as_one_step() {
         Some(best[0]),
         "the cursor opens on the best"
     );
-    press_ctrl(&mut app, KeyCode::Char('z'));
+    press_ctrl(&mut app, typed('z'));
     settle_claims(&mut app);
     to_strategies(&mut app);
-    press_key(&mut app, KeyCode::Down);
+    press_key(&mut app, Key::ArrowDown);
     let ages = highlighted_ages(&app);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     app.update();
     answer_yes(&mut app);
     assert_eq!(claim_age(&app, "ss"), Some(ages[0]));
@@ -343,7 +344,7 @@ fn t_and_enter_ask_then_take_the_chosen_claims_as_one_step() {
         said(&app).last().map(String::as_str),
         Some(claimed.as_str())
     );
-    press_ctrl(&mut app, KeyCode::Char('z'));
+    press_ctrl(&mut app, typed('z'));
     assert_eq!(
         claim_age(&app, "ss"),
         Some(67),
@@ -368,7 +369,7 @@ fn the_options_come_back_after_nothing_could_be_searched() {
         "{frame}"
     );
     assert!(!frame.contains("Current"), "no options: {frame}");
-    press_ctrl(&mut app, KeyCode::Char('z'));
+    press_ctrl(&mut app, typed('z'));
     settle_claims(&mut app);
     let frame = composed_frame(&app);
     assert_eq!(
@@ -385,7 +386,7 @@ fn the_options_come_back_after_nothing_could_be_searched() {
 #[test]
 fn a_held_claim_stays_out_of_the_search() {
     let (_, mut app) = workspace_app(&couple());
-    press_key(&mut app, KeyCode::Down);
+    press_key(&mut app, Key::ArrowDown);
     assert_eq!(
         app.world_mut().run_system_cached(hold_claim).unwrap(),
         Outcome::Done

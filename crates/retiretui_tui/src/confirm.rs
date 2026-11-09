@@ -12,7 +12,7 @@ use bevy_input_focus::FocusedInput;
 use bevy_ui::widget::Text;
 use plurimus::bui::bevy_text::TextColor;
 use plurimus::core::ratatui_core::style::Style;
-use plurimus::term::bevy_compat::HeldModifiers;
+use plurimus::term::HeldModifiers;
 use plurimus::ui::{ModalDismiss, ModalOpen, first_bound};
 use plurimus::widgets::{Activate, button};
 
@@ -242,9 +242,10 @@ fn handle_dismiss(_dismissed: On<ModalDismiss>, mut confirm: ResMut<Confirm>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::support::typed;
     use bevy_ecs::prelude::With;
+    use bevy_input::keyboard::Key;
     use bevy_input_focus::InputFocus;
-    use plurimus::term::KeyCode;
 
     use crate::edit::Draft;
     use crate::edit::tests::open;
@@ -258,9 +259,9 @@ mod tests {
     fn dirty_app() -> Headless {
         let mut app = headless_app(SIZE);
         open(&mut app, Page::Accounts);
-        press_key(&mut app, KeyCode::Tab);
+        press_key(&mut app, Key::Tab);
         type_text(&mut app, "x");
-        press_key(&mut app, KeyCode::Enter);
+        press_key(&mut app, Key::Enter);
         assert!(app.world().resource::<Draft>().is_dirty());
         app
     }
@@ -268,7 +269,7 @@ mod tests {
     #[test]
     fn the_question_is_said_in_the_theme_s_ink() {
         let mut app = dirty_app();
-        press_key(&mut app, KeyCode::Char('q'));
+        press_key(&mut app, typed('q'));
         let ink = worn(&app).ink(Style::default());
         let world = app.world_mut();
         let root = world
@@ -288,7 +289,7 @@ mod tests {
     fn an_open_item_keeps_the_chord_that_would_ask() {
         let mut app = headless_app(SIZE);
         open(&mut app, Page::Accounts);
-        press_ctrl(&mut app, KeyCode::Char('c'));
+        press_ctrl(&mut app, typed('c'));
         assert!(!is_asking(&app));
         assert!(app.should_exit().is_none());
     }
@@ -297,12 +298,12 @@ mod tests {
     fn an_unanswered_question_gives_the_keyboard_back_to_what_held_it() {
         let mut app = dirty_app();
         let table = app.world().resource::<InputFocus>().get();
-        press_key(&mut app, KeyCode::Char('q'));
+        press_key(&mut app, typed('q'));
         assert!(is_asking(&app));
         assert_ne!(app.world().resource::<InputFocus>().get(), table);
         let frame = composed_frame(&app);
         assert!(frame.contains("╭ Confirm"), "{frame}");
-        press_key(&mut app, KeyCode::Esc);
+        press_key(&mut app, Key::Escape);
         assert!(!is_asking(&app));
         assert_eq!(app.world().resource::<InputFocus>().get(), table);
     }
@@ -310,7 +311,7 @@ mod tests {
     #[test]
     fn a_press_outside_the_dialog_leaves_the_question_unanswered() {
         let mut app = dirty_app();
-        press_key(&mut app, KeyCode::Char('q'));
+        press_key(&mut app, typed('q'));
         assert!(is_asking(&app));
         click(&mut app, 1, 2);
         assert!(!is_asking(&app));

@@ -13,17 +13,17 @@ use bevy_ecs::prelude::{
     Changed, Commands, Component, Entity, In, IntoScheduleConfigs, IntoSystem, Local, On, Query,
     Res, ResMut, Resource, With, World,
 };
-use bevy_ecs::system::SystemId;
+use bevy_ecs::system::{SystemId, SystemParam};
 use bevy_input::keyboard::{Key, KeyboardInput};
 use bevy_input_focus::FocusedInput;
 use plurimus::core::ratatui_core::layout::Size;
 use plurimus::core::ratatui_core::text::{Line, Span};
+use plurimus::term::HeldModifiers;
 use plurimus::term::PasteMessage;
-use plurimus::term::bevy_compat::HeldModifiers;
-use plurimus::ui::{ModalDismiss, ModalOpen, ScrollArea, UiStyle, first_bound};
+use plurimus::ui::{KeyBinding, ModalDismiss, ModalOpen, ScrollArea, UiStyle, first_bound};
 use plurimus::widgets::{
-    ActiveDescendant, ListBoxAction, ListBoxKeys, ListItemTrailing, TextInput, TextInputAction,
-    TextInputKeys, ValueChange, list_item, listbox,
+    ActiveDescendant, ListItemTrailing, TextInput, TextInputAction, TextInputKeys, ValueChange,
+    list_item, listbox,
 };
 
 pub use matching::ranked;
@@ -242,20 +242,18 @@ fn sync_picker(
         text(),
         ChildOf(root),
     ));
-    let results = commands
+    commands
         .spawn((
             Results,
             listbox(),
             list_cursor(),
-            list_keys(),
             ScrollArea::new(Size::default()),
             growing(),
             placed(),
             ChildOf(root),
         ))
-        .observe(handle_chosen)
-        .id();
-    standing.focus(results);
+        .observe(handle_chosen);
+    standing.focus(root);
 }
 
 /// The query's keys without the selecting ones: the query row draws no
@@ -277,15 +275,35 @@ fn query_keys() -> TextInputKeys {
     keys
 }
 
-/// The list's keys without space, which belongs to the query.
-fn list_keys() -> ListBoxKeys {
-    ListBoxKeys(vec![
-        (Key::ArrowUp.into(), ListBoxAction::Up),
-        (Key::ArrowDown.into(), ListBoxAction::Down),
-        (Key::PageUp.into(), ListBoxAction::PageUp),
-        (Key::PageDown.into(), ListBoxAction::PageDown),
-        (Key::Enter.into(), ListBoxAction::Select),
-    ])
+/// How the list's keys move its cursor, said by the picker that holds the
+/// keyboard rather than by the list, which would take space and the arrows
+/// the query types with.
+#[derive(Clone, Copy, Debug)]
+enum Step {
+    Row(isize),
+    Page(isize),
+}
+
+const STEP_KEYS: &[(KeyBinding, Step)] = &[
+    (KeyBinding::new(Key::ArrowUp), Step::Row(-1)),
+    (KeyBinding::new(Key::ArrowDown), Step::Row(1)),
+    (KeyBinding::new(Key::PageUp), Step::Page(-1)),
+    (KeyBinding::new(Key::PageDown), Step::Page(1)),
+];
+
+const CHOOSE_KEYS: &[(KeyBinding, ())] = &[(KeyBinding::new(Key::Enter), ())];
+
+/// The row `step` takes the cursor to among `rows`, from `at`: a row wraps
+/// at either end as a list's does, a page stops there.
+fn stepped(rows: &[Entity], at: Option<usize>, step: Step) -> Option<Entity> {
+    let last = rows.len().checked_sub(1)?;
+    let at = at.unwrap_or(0);
+    let to = match step {
+        Step::Row(by) => (at as isize + by).rem_euclid(rows.len() as isize) as usize,
+        Step::Page(by) if by < 0 => at.saturating_sub(usize::from(LIST_ROWS)),
+        Step::Page(_) => (at + usize::from(LIST_ROWS)).min(last),
+    };
+    rows.get(to).copied()
 }
 
 fn is_relist_due(picking: Res<Picking>) -> bool {
@@ -402,17 +420,71 @@ fn try_on(
     }
 }
 
-/// Esc closes; a key the list did not take is typed into the query.
+/// The list under the query: its cursor, and the rows it offers.
+#[derive(SystemParam)]
+struct ResultsList<'w, 's> {
+    lists: Query<
+        'w,
+        's,
+        (Entity, &'static ActiveDescendant, Option<&'static Children>),
+        With<Results>,
+    >,
+    rows: Query<'w, 's, &'static Row>,
+}
+
+impl ResultsList<'_, '_> {
+    fn step(&self, step: Step, commands: &mut Commands) {
+        let Ok((list, cursor, children)) = self.lists.single() else {
+            return;
+        };
+        let offered: Vec<Entity> = children
+            .into_iter()
+            .flatten()
+            .copied()
+            .filter(|&row| self.rows.contains(row))
+            .collect();
+        let at = cursor
+            .0
+            .and_then(|row| offered.iter().position(|&each| each == row));
+        if let Some(to) = stepped(&offered, at, step)
+            && cursor.0 != Some(to)
+        {
+            commands.entity(list).insert(ActiveDescendant(Some(to)));
+        }
+    }
+
+    /// The row the cursor rests on.
+    fn chosen(&self) -> Option<&Row> {
+        let (_, cursor, _) = self.lists.single().ok()?;
+        self.rows.get(cursor.0?).ok()
+    }
+}
+
+/// Esc closes; the list's keys move its cursor or choose its row; any other
+/// key is typed into the query.
 fn handle_key(
     mut input: On<FocusedInput<KeyboardInput>>,
     held: HeldModifiers,
-    mut fields: Query<(&mut TextInput, &TextInputKeys), With<Field>>,
+    (mut fields, results): (
+        Query<(&mut TextInput, &TextInputKeys), With<Field>>,
+        ResultsList,
+    ),
     mut picking: ResMut<Picking>,
     mut commands: Commands,
 ) {
     if first_bound(overlay::CLOSE_KEYS, &input.input, held.get()).is_some() {
         input.propagate(false);
         picking.abandon(&mut commands);
+        return;
+    }
+    if let Some(step) = first_bound(STEP_KEYS, &input.input, held.get()) {
+        input.propagate(false);
+        results.step(step, &mut commands);
+        return;
+    }
+    if first_bound(CHOOSE_KEYS, &input.input, held.get()).is_some() {
+        input.propagate(false);
+        choose(&mut picking, &mut commands, results.chosen());
         return;
     }
     let Ok((mut field, keys)) = fields.single_mut() else {
@@ -448,19 +520,22 @@ fn handle_paste(
     follow(&mut picking, &field);
 }
 
+/// A row clicked is chosen, as Enter chooses the row under the cursor.
 fn handle_chosen(
     chosen: On<ValueChange<Entity>>,
     rows: Query<&Row>,
     mut picking: ResMut<Picking>,
     mut commands: Commands,
 ) {
-    let Some(picker) = picking.open else {
+    choose(&mut picking, &mut commands, rows.get(chosen.value).ok());
+}
+
+fn choose(picking: &mut ResMut<Picking>, commands: &mut Commands, row: Option<&Row>) {
+    let (Some(picker), Some(row)) = (picking.open, row) else {
         return;
     };
-    if let Ok(row) = rows.get(chosen.value) {
-        picking.close();
-        commands.run_system_with(picker.chosen, row.0);
-    }
+    picking.close();
+    commands.run_system_with(picker.chosen, row.0);
 }
 
 fn handle_dismiss(

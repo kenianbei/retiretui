@@ -5,7 +5,7 @@
 //! either way.
 
 use bevy_app::{App, Update};
-use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
+use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{
     Commands, Component, Entity, IntoScheduleConfigs, Local, Query, Res, With,
@@ -156,21 +156,24 @@ fn rebuild_rows(
 /// for the Ledger to be shown.
 fn follow_cursor(
     shown: Shown,
-    mut tables: Query<(&Grid, &mut ActiveDescendant), With<LedgerTable>>,
+    tables: Query<(Entity, &Grid, &ActiveDescendant), With<LedgerTable>>,
     rows: Query<(Entity, &RowYear, &ChildOf)>,
+    mut commands: Commands,
 ) {
     if !shown.is_changed() {
         return;
     }
-    let Ok((grid, mut active)) = tables.single_mut() else {
+    let Ok((table, grid, active)) = tables.single() else {
         return;
     };
     let year = shown.year();
     let row = rows
         .iter()
         .find(|(_, row_year, parent)| parent.parent() == grid.body && row_year.0 == year);
-    if let Some((row, ..)) = row {
-        active.set_if_neq(ActiveDescendant(Some(row)));
+    if let Some((row, ..)) = row
+        && active.0 != Some(row)
+    {
+        commands.entity(table).insert(ActiveDescendant(Some(row)));
     }
 }
 

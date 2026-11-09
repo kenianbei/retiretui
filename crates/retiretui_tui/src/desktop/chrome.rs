@@ -26,11 +26,12 @@ use retiretui_client::present::basis_name;
 
 /// The one pixel the window names: a line thinner than any cell, drawn
 /// where a terminal draws a cell of box glyphs.
+pub(super) const HAIRLINE_PX: f32 = 1.0;
 #[expect(
     clippy::disallowed_methods,
     reason = "a hairline is thinner than any cell"
 )]
-pub(super) const HAIRLINE: Val = Val::Px(1.0);
+pub(super) const HAIRLINE: Val = Val::Px(HAIRLINE_PX);
 pub(super) const HALF_CELL_WIDE: Val = Val::Em(0.5);
 const HALF_ROW: f32 = 0.5;
 const HALF_CELL_TALL: Val = Val::Rem(HALF_ROW);

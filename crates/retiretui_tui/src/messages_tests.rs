@@ -6,7 +6,8 @@ use bevy_app::App;
 use bevy_input_focus::InputFocus;
 use plurimus::core::ratatui_core::style::Color;
 
-use plurimus::term::KeyCode;
+use crate::support::typed;
+use bevy_input::keyboard::Key;
 use retiretui_engine::plan::Plan;
 
 use bevy_ecs::system::RunSystemOnce;
@@ -29,7 +30,7 @@ fn toasts(app: &App) -> Vec<String> {
 #[test]
 fn a_refusal_is_journaled_and_toasted_over_the_page() {
     let mut app = headless_app(SIZE);
-    press_key(&mut app, KeyCode::Char('a'));
+    press_key(&mut app, typed('a'));
     assert_eq!(said(&app), ["nothing to add or delete here"]);
     assert_eq!(toasts(&app), said(&app));
     let frame = composed_frame(&app);
@@ -98,9 +99,9 @@ fn the_drawer_lists_what_was_said_and_gives_the_keyboard_back() {
     let mut app = headless_app(SIZE);
     show(&mut app, Page::Accounts);
     let table = app.world().resource::<InputFocus>().get();
-    press_key(&mut app, KeyCode::Char('m'));
+    press_key(&mut app, typed('m'));
     assert!(composed_frame(&app).contains("nothing has been said yet"));
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     assert_eq!(app.world().resource::<InputFocus>().get(), table);
 
     let held = app
@@ -110,12 +111,12 @@ fn the_drawer_lists_what_was_said_and_gives_the_keyboard_back() {
         .accounts
         .len();
     for _ in 0..held {
-        press_key(&mut app, KeyCode::Char('d'));
-        press_key(&mut app, KeyCode::Enter);
+        press_key(&mut app, typed('d'));
+        press_key(&mut app, Key::Enter);
     }
-    press_key(&mut app, KeyCode::Char('d'));
+    press_key(&mut app, typed('d'));
     let_pass(&mut app, Duration::from_secs(10));
-    press_key(&mut app, KeyCode::Char('m'));
+    press_key(&mut app, typed('m'));
     let frame = composed_frame(&app);
     assert!(frame.contains("╭ Messages"), "{frame}");
     assert!(frame.contains("nothing highlighted to delete"), "{frame}");
@@ -123,12 +124,12 @@ fn the_drawer_lists_what_was_said_and_gives_the_keyboard_back() {
         frame.lines().last().unwrap().contains("esc close"),
         "{frame}"
     );
-    press_key(&mut app, KeyCode::Char('m'));
+    press_key(&mut app, typed('m'));
     assert!(
         composed_frame(&app).contains("╭ Messages"),
         "the drawer owns m"
     );
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     assert!(!composed_frame(&app).contains("╭ Messages"));
 }
 

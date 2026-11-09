@@ -4,10 +4,8 @@ use bevy_app::{App, Update};
 use bevy_ecs::bundle::Bundle;
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut, Mut, Ref};
 use bevy_ecs::hierarchy::ChildOf;
-use bevy_ecs::prelude::{
-    Commands, Component, Entity, Has, IntoScheduleConfigs, Query, Res, Resource,
-};
-use bevy_input_focus::InputFocus;
+use bevy_ecs::prelude::{Commands, Component, Entity, IntoScheduleConfigs, Query, Res, Resource};
+use bevy_input_focus::{IsFocused, IsFocusedHelper};
 use bevy_ui::{FlexDirection, Node, Overflow, UiRect, Val};
 use plurimus::core::ratatui_core::buffer::Buffer;
 use plurimus::core::ratatui_core::layout::Rect;
@@ -15,7 +13,6 @@ use plurimus::core::ratatui_core::style::Style;
 use plurimus::core::ratatui_core::text::Line;
 use plurimus::core::ratatui_core::widgets::Widget;
 use plurimus::core::{UiArea, UiOrder, UiWidget};
-use plurimus::ui::FocusWithin;
 use plurimus::widgets::ratatui_widgets::block::Block;
 use plurimus::widgets::ratatui_widgets::borders::BorderType;
 use plurimus::widgets::ratatui_widgets::clear::Clear;
@@ -144,12 +141,9 @@ impl Widget for &Cover {
 #[derive(Component, Default, Debug, PartialEq, Eq)]
 pub(crate) struct Lit(pub(crate) bool);
 
-/// `FocusWithin` marks what the keyboard's holder sits in, never the
-/// holder, and a form that is its page holds it itself.
-fn light_frames(focus: Res<InputFocus>, mut frames: Query<(Entity, Has<FocusWithin>, &mut Lit)>) {
-    let holder = focus.get();
-    for (frame, is_within, mut lit) in &mut frames {
-        lit.set_if_neq(Lit(is_within || holder == Some(frame)));
+fn light_frames(focus: IsFocusedHelper, mut frames: Query<(Entity, &mut Lit)>) {
+    for (frame, mut lit) in &mut frames {
+        lit.set_if_neq(Lit(focus.is_focus_within(frame)));
     }
 }
 

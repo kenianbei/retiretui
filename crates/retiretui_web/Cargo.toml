@@ -14,7 +14,7 @@ crate-type = ["cdylib"]
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 bevy_app = "0.20.0"
-plurimus = { version = "0.9.0", default-features = false, features = ["web"] }
+plurimus = { version = "0.10.0", default-features = false, features = ["web"] }
 retiretui_client.workspace = true
 retiretui_engine.workspace = true
 retiretui_tui.workspace = true

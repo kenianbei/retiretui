@@ -6,14 +6,13 @@ use bevy_ecs::prelude::{Commands, Component, Query, Ref, Res, Resource, With};
 use bevy_ui::ComputedNode;
 use plurimus::core::ratatui_core::style::Style;
 use plurimus::core::ratatui_core::text::{Line, Span};
-use plurimus::term::CursorCell;
 use plurimus::ui::ComputedWidgetArea;
 use retiretui_client::overview::ChartLine;
 use retiretui_client::present::money;
 use retiretui_engine::plan::Dollars;
 
 use super::charts::OverviewChart;
-use crate::chart::{LINE_KEY, SeriesChart};
+use crate::chart::{LINE_KEY, MouseCell, SeriesChart};
 use crate::layout::node_cols;
 use crate::present::compact_money;
 use crate::theme::{Hung, Theme, say};
@@ -87,15 +86,15 @@ pub(crate) struct ChartKey {
 /// its marks' names, and under the pointer what each reads that year, in
 /// full where the line holds them and compact where it does not.
 pub(super) fn read_key(
-    cursor: Res<CursorCell>,
+    mut cursor: MouseCell,
     charts: Query<(&SeriesChart, &ComputedWidgetArea), With<OverviewChart>>,
     keys: Query<(Ref<ChartKey>, &ComputedNode, &Hung)>,
     theme: Res<Theme>,
     mut commands: Commands,
 ) {
-    let is_moved = cursor.is_changed() || theme.is_changed();
+    let is_moved = cursor.has_moved() || theme.is_changed();
     let year = charts.iter().next().and_then(|(chart, area)| {
-        let cell = cursor.0?;
+        let cell = cursor.get()?;
         chart.year_at(area.0, cell)
     });
     for (key, computed, Hung(hung)) in &keys {

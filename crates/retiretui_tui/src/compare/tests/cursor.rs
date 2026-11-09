@@ -1,5 +1,6 @@
+use crate::support::typed;
 use bevy_app::App;
-use plurimus::term::KeyCode;
+use bevy_input::keyboard::Key;
 
 use super::*;
 use crate::session::{LedgerRun, Today};
@@ -9,13 +10,13 @@ use crate::support::{
 
 /// The By-year view, ↓ from the plan's first year.
 fn by_year_down(app: &mut App) {
-    press_key(app, KeyCode::Char('v'));
-    press_key(app, KeyCode::Char('v'));
+    press_key(app, typed('v'));
+    press_key(app, typed('v'));
     let table = single::<ByYearTable>(app);
     while focused(app) != Some(table) {
-        press_key(app, KeyCode::Tab);
+        press_key(app, Key::Tab);
     }
-    press_key(app, KeyCode::Down);
+    press_key(app, Key::ArrowDown);
     redrawn(app);
 }
 
@@ -49,7 +50,7 @@ fn comparing_longer(today: Today) -> crate::support::Headless {
 fn compare_reaches_years_the_document_does_not() {
     let mut app = comparing_longer(TODAY);
     by_year_down(&mut app);
-    press_key(&mut app, KeyCode::End);
+    press_key(&mut app, Key::End);
     let frame = redrawn(&mut app);
     assert_eq!(cursor_year(&app), Some(2055));
     assert!(frame.contains("dollars · 2055 ─"), "{frame}");

@@ -4,10 +4,11 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use crate::support::typed;
 use bevy_ecs::prelude::With;
+use bevy_input::keyboard::Key;
 use plurimus::core::TerminalSize;
 use plurimus::core::ratatui_core::style::Color;
-use plurimus::term::KeyCode;
 use plurimus::ui::{UiLabel, UiStyle};
 use plurimus::widgets::ListItem;
 
@@ -48,9 +49,9 @@ fn app_under(path: PathBuf, size: TerminalSize) -> Headless {
 }
 
 fn open_theme_picker(app: &mut Headless) {
-    press_key(app, KeyCode::Char(':'));
+    press_key(app, typed(':'));
     type_text(app, "theme");
-    press_key(app, KeyCode::Enter);
+    press_key(app, Key::Enter);
     app.update();
     assert!(composed_frame(app).contains("╭ Theme"));
 }
@@ -77,7 +78,7 @@ fn a_theme_is_tried_on_as_the_cursor_reaches_it_and_put_back_on_escape() {
     type_text(&mut app, "nord");
     app.update();
     assert_eq!(worn(&app).accent, NORD_ACCENT, "reaching it tries it on");
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     assert_eq!(worn(&app).accent, at_rest, "escape puts the first back");
     assert!(said(&app).is_empty(), "and keeps nothing");
 }
@@ -88,7 +89,7 @@ fn a_chosen_theme_is_kept_in_the_file_beside_what_was_there() {
     let mut app = app_under(path.clone(), SIZE);
     open_theme_picker(&mut app);
     type_text(&mut app, "nord");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert_eq!(
         worn(&app).accent,
         Color::Rgb(0xff, 0, 0),
@@ -110,7 +111,7 @@ fn a_theme_that_cannot_be_kept_is_worn_for_the_session_and_said_so() {
     std::fs::write(&path, "[tui\n").unwrap();
     open_theme_picker(&mut app);
     type_text(&mut app, "nord");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert_eq!(worn(&app).accent, NORD_ACCENT);
     assert!(
         said(&app)[0].contains("for this session only"),
@@ -157,12 +158,12 @@ fn a_theme_written_while_the_shell_runs_is_tried_on_by_opening_the_picker_again(
     type_text(&mut app, "dusk");
     app.update();
     assert_eq!(worn(&app).accent, USER_THEME_ACCENT);
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
 
     write_theme(&path, "dusk", &USER_THEME.replace("#010203", "#040506"));
     open_theme_picker(&mut app);
     type_text(&mut app, "dusk");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert_eq!(worn(&app).accent, Color::Rgb(4, 5, 6));
     assert_eq!(said(&app), ["theme dusk"]);
     let kept = std::fs::read_to_string(&path).unwrap();
@@ -178,12 +179,12 @@ fn the_theme_worn_is_read_again_as_the_picker_opens_and_is_what_escape_puts_back
     let mut app = app_under(path.clone(), SIZE);
     write_theme(&path, "dusk", &USER_THEME.replace("#010203", "#040506"));
     open_theme_picker(&mut app);
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     assert_eq!(worn(&app).accent, Color::Rgb(4, 5, 6));
 
     write_theme(&path, "dusk", BROKEN_THEME);
     open_theme_picker(&mut app);
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     assert_eq!(
         worn(&app).accent,
         Color::Rgb(4, 5, 6),
@@ -236,7 +237,7 @@ fn a_theme_of_the_users_that_does_not_read_is_offered_as_such_and_not_kept() {
         at_rest,
         "reaching it puts the first back"
     );
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert_eq!(worn(&app).accent, at_rest);
     assert_eq!(said(&app).last().unwrap(), DUSK_UNREAD);
     assert_eq!(std::fs::read_to_string(&path).unwrap(), "");
@@ -300,23 +301,23 @@ fn a_theme_with_its_own_grounds_leaves_no_cell_to_the_terminal() {
         assert_themed(&app, page.title());
     }
     show(&mut app, Page::Accounts);
-    press_key(&mut app, KeyCode::Tab);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Tab);
+    press_key(&mut app, Key::Enter);
     app.update();
     assert_themed(&app, "an open item");
-    press_key(&mut app, KeyCode::Esc);
-    press_key(&mut app, KeyCode::Char('d'));
+    press_key(&mut app, Key::Escape);
+    press_key(&mut app, typed('d'));
     app.update();
     assert_themed(&app, "the confirm dialog");
-    press_key(&mut app, KeyCode::Esc);
-    press_key(&mut app, KeyCode::Char(':'));
+    press_key(&mut app, Key::Escape);
+    press_key(&mut app, typed(':'));
     type_text(&mut app, "sa");
     app.update();
     assert_themed(&app, "the picker");
-    press_key(&mut app, KeyCode::Esc);
-    press_key(&mut app, KeyCode::Char('a'));
-    press_key(&mut app, KeyCode::Esc);
-    press_key(&mut app, KeyCode::Char('m'));
+    press_key(&mut app, Key::Escape);
+    press_key(&mut app, typed('a'));
+    press_key(&mut app, Key::Escape);
+    press_key(&mut app, typed('m'));
     app.update();
     assert_themed(&app, "the drawer and a toast");
 }

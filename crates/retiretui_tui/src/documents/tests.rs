@@ -3,8 +3,10 @@
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
+use crate::support::typed;
 use bevy_app::App;
-use plurimus::term::KeyCode;
+use bevy_ecs::prelude::With;
+use bevy_input::keyboard::Key;
 
 use crate::documents;
 use crate::edit::Draft;
@@ -12,8 +14,8 @@ use crate::nav::{ActivePage, Page};
 use crate::session::{Projected, Session, YearCursor};
 use crate::support::{
     SIZE, TEST_PLAN, answer_back, commit_edit as commit, composed_frame, headless_app,
-    headless_app_at, is_asking, is_browsing, let_pass, picker_rows, press_ctrl, press_key, said,
-    scenario_over, scratch_full_plan, scratch_workspace, show, type_text,
+    headless_app_at, is_asking, is_browsing, let_pass, picker_rows, press_alt, press_ctrl,
+    press_key, said, scenario_over, scratch_full_plan, scratch_workspace, show, type_text,
 };
 use crate::tools::claims::HeldClaims;
 
@@ -51,7 +53,7 @@ fn a_clean_switch_reseeds_every_page() {
     let mut app = headless_app(SIZE);
     let before = document(&app);
     commit(&mut app, |plan| plan.plan.name = Some("renamed".to_owned()));
-    press_ctrl(&mut app, KeyCode::Char('s'));
+    press_ctrl(&mut app, typed('s'));
     *app.world_mut().resource_mut::<YearCursor>() = YearCursor(Some(2030));
     show(&mut app, Page::Accounts);
     let held = &mut app.world_mut().resource_mut::<HeldClaims>().0;
@@ -73,7 +75,7 @@ fn a_clean_switch_reseeds_every_page() {
     );
     show(&mut app, Page::Accounts);
     assert!(composed_frame(&app).contains("fid-401k"), "rows rebuilt");
-    press_ctrl(&mut app, KeyCode::Char('z'));
+    press_ctrl(&mut app, typed('z'));
     assert_eq!(said(&app).last().unwrap(), "nothing to undo");
     assert!(std::fs::read_to_string(before).unwrap().contains("renamed"));
 }
@@ -169,9 +171,9 @@ fn read(path: &Path) -> String {
 
 /// Runs `save-as` from the palette, which has no key.
 fn save_as(app: &mut App) {
-    press_key(app, KeyCode::Char(':'));
+    press_key(app, typed(':'));
     type_text(app, "save-as");
-    press_key(app, KeyCode::Enter);
+    press_key(app, Key::Enter);
     app.update();
 }
 
@@ -191,7 +193,7 @@ fn a_directory_launch_offers_the_workspace_and_choosing_opens_a_file() {
     let frame = composed_frame(&app);
     assert!(!frame.contains("notes.txt"), "{frame}");
     type_text(&mut app, "brok");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert!(!is_browsing(&app));
     assert!(
         said(&app)
@@ -202,10 +204,10 @@ fn a_directory_launch_offers_the_workspace_and_choosing_opens_a_file() {
         said(&app)
     );
     assert!(app.world().resource::<Session>().plan_path.is_none());
-    press_ctrl(&mut app, KeyCode::Char('o'));
+    press_ctrl(&mut app, typed('o'));
     assert!(is_browsing(&app), "the open command asks again");
     type_text(&mut app, "plan");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     app.update();
     assert_eq!(document(&app), dir.join("plan.toml"));
     assert!(
@@ -221,18 +223,18 @@ fn the_picker_climbs_out_of_the_workspace_and_the_next_opens_beside_the_document
     std::fs::create_dir(&beside).unwrap();
     std::fs::write(beside.join("other.toml"), TEST_PLAN).unwrap();
     let mut app = headless_app_at(dir.join("plan.toml"), SIZE);
-    press_ctrl(&mut app, KeyCode::Char('o'));
+    press_ctrl(&mut app, typed('o'));
     type_text(&mut app, "beside/oth");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     app.update();
     assert_eq!(document(&app), beside.join("other.toml"));
-    press_ctrl(&mut app, KeyCode::Char('o'));
+    press_ctrl(&mut app, typed('o'));
     app.update();
     let frame = composed_frame(&app);
     assert!(frame.contains("other.toml"), "listed beside it: {frame}");
     assert!(!frame.contains("variant.toml"), "{frame}");
     type_text(&mut app, "../pl");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     app.update();
     assert_eq!(document(&app), dir.join("plan.toml"));
 }
@@ -242,17 +244,17 @@ fn compare_with_refuses_the_document_and_takes_another() {
     let dir = workspace();
     let mut app = headless_app_at(dir.join("plan.toml"), SIZE);
     show(&mut app, Page::Compare);
-    press_key(&mut app, KeyCode::Char('c'));
+    press_key(&mut app, typed('c'));
     assert!(is_browsing(&app));
     type_text(&mut app, "plan");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert_eq!(said(&app).last().unwrap(), "plan.toml is the document");
-    press_key(&mut app, KeyCode::Char('c'));
+    press_key(&mut app, typed('c'));
     type_text(&mut app, "variant");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     app.update();
     assert_eq!(said(&app).last().unwrap(), "compared variant.toml");
-    press_key(&mut app, KeyCode::Char('c'));
+    press_key(&mut app, typed('c'));
     app.update();
     assert_eq!(badge_of(&mut app, "variant.toml"), "compared");
     assert_eq!(badge_of(&mut app, "plan.toml"), "plan");
@@ -272,7 +274,7 @@ fn new_composes_a_plan_over_the_document_without_closing_it() {
     let dir = workspace();
     let mut app = headless_app_at(dir.join("plan.toml"), SIZE);
     commit(&mut app, |plan| plan.plan.horizon_age = 80);
-    press_ctrl(&mut app, KeyCode::Char('n'));
+    press_ctrl(&mut app, typed('n'));
     app.update();
     let frame = composed_frame(&app);
     assert!(frame.contains("New plan"), "the form is shown: {frame}");
@@ -292,19 +294,19 @@ fn save_as_writes_the_draft_under_a_new_name_and_keeps_the_history() {
     save_as(&mut app);
     assert!(composed_frame(&app).contains("Save as"));
     type_text(&mut app, "copy");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     let copy = dir.join("copy.toml");
     assert!(read(&copy).contains("renamed"));
     assert!(!read(&dir.join("plan.toml")).contains("renamed"));
     assert_eq!(document(&app), copy);
     assert!(!draft(&app).is_dirty());
-    press_ctrl(&mut app, KeyCode::Char('z'));
+    press_ctrl(&mut app, typed('z'));
     assert_eq!(draft(&app).plan.plan.name.as_deref(), Some("test-plan"));
     assert!(draft(&app).is_dirty(), "undone past the save");
 
     save_as(&mut app);
     type_text(&mut app, "again.toml");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     let again = dir.join("again.toml");
     assert!(again.exists(), "not appended twice");
     assert_eq!(document(&app), again);
@@ -326,15 +328,15 @@ fn save_as_over_a_file_asks_first() {
     commit(&mut app, |plan| plan.plan.name = Some("renamed".to_owned()));
     save_as(&mut app);
     type_text(&mut app, "variant");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     let frame = composed_frame(&app);
     assert!(frame.contains("Overwrite variant.toml?"), "{frame}");
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     assert_eq!(read(&dir.join("variant.toml")), scenario(), "esc leaves it");
     save_as(&mut app);
     type_text(&mut app, "variant");
-    press_key(&mut app, KeyCode::Enter);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
+    press_key(&mut app, Key::Enter);
     assert!(read(&dir.join("variant.toml")).contains("renamed"));
     assert_eq!(document(&app), dir.join("variant.toml"));
 }
@@ -345,7 +347,7 @@ fn save_as_of_a_scenario_over_its_own_file_is_refused_before_asking() {
     let mut app = headless_app_at(dir.join("variant.toml"), SIZE);
     save_as(&mut app);
     type_text(&mut app, "variant");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert!(!is_asking(&app), "nothing is asked");
     let warned = said(&app).last().cloned().unwrap_or_default();
     assert!(
@@ -367,7 +369,7 @@ fn save_as_of_a_scenario_writes_the_resolved_plan_and_opens_it_editable() {
     assert!(draft(&app).is_over_scenario());
     save_as(&mut app);
     type_text(&mut app, "flat");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     let flat = read(&dir.join("flat.toml"));
     assert!(flat.contains("name = \"variant\""), "{flat}");
     assert!(!flat.contains("base"), "resolved, not an overlay: {flat}");
@@ -381,4 +383,44 @@ fn save_as_of_a_scenario_writes_the_resolved_plan_and_opens_it_editable() {
         "an invalid draft is refused before asking"
     );
     assert!(said(&app).last().unwrap().starts_with("not saved"));
+}
+
+#[test]
+fn the_picker_steps_on_up_and_down_and_climbs_on_alt_up_while_left_and_right_edit_its_path() {
+    use plurimus::bui::bevy_text::EditableText;
+    use plurimus::widgets::ActiveDescendant;
+    use plurimus_filepicker::{FilePickerField, FilePickerList};
+
+    let dir = workspace();
+    let mut app = headless_app_at(dir.join("plan.toml"), SIZE);
+    press_ctrl(&mut app, typed('o'));
+    app.update();
+    let cursor = |app: &mut App| {
+        let world = app.world_mut();
+        let mut lists = world.query_filtered::<&ActiveDescendant, With<FilePickerList>>();
+        lists.single(world).unwrap().0
+    };
+    let first = cursor(&mut app);
+    press_key(&mut app, Key::ArrowDown);
+    assert_ne!(cursor(&mut app), first, "down steps a row");
+    press_key(&mut app, Key::ArrowUp);
+    assert_eq!(cursor(&mut app), first, "up steps back");
+
+    let path = |app: &mut App| {
+        let world = app.world_mut();
+        let mut fields = world.query_filtered::<&EditableText, With<FilePickerField>>();
+        fields.single(world).unwrap().value().to_string()
+    };
+    type_text(&mut app, "xy");
+    press_key(&mut app, Key::ArrowLeft);
+    type_text(&mut app, "z");
+    assert!(path(&mut app).ends_with("xzy"), "{}", path(&mut app));
+
+    press_alt(&mut app, Key::ArrowUp);
+    let parent = dir.parent().unwrap().to_string_lossy().into_owned();
+    assert_eq!(
+        path(&mut app).trim_end_matches('/'),
+        parent.trim_end_matches('/'),
+        "alt-↑ climbs to the workspace's parent"
+    );
 }

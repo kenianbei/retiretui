@@ -4,15 +4,17 @@
 use bevy_app::{App, Update};
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
 use bevy_ecs::hierarchy::ChildOf;
-use bevy_ecs::prelude::{Component, On, Query, Ref, Res, ResMut};
+use bevy_ecs::prelude::{Component, Local, On, Query, Ref, Res, ResMut};
+use bevy_ecs::system::SystemParam;
 use plurimus::core::ratatui_core::buffer::Buffer;
 use plurimus::core::ratatui_core::layout::{Position, Rect};
 use plurimus::core::ratatui_core::style::{Color, Style};
 use plurimus::core::ratatui_core::symbols::Marker;
 use plurimus::core::ratatui_core::widgets::Widget;
-use plurimus::core::{UiArea, UiWidget};
-use plurimus::term::CursorCell;
-use plurimus::ui::{ComputedWidgetArea, Hovered, PointerPress, PressFocusDisabled};
+use plurimus::core::{CellSize, UiArea, UiWidget};
+use plurimus::ui::bevy_picking::events::PointerPress;
+use plurimus::ui::bevy_picking::pointer::{PointerId, PointerLocation};
+use plurimus::ui::{ComputedWidgetArea, Hovered, PressFocusDisabled, pointer_cell};
 use plurimus::widgets::ratatui_widgets::chart::{Axis, Chart, Dataset, GraphType};
 use retiretui_engine::plan::Dollars;
 
@@ -268,14 +270,46 @@ pub(crate) fn draw_charts(mut charts: Query<(Ref<SeriesChart>, &mut UiWidget)>) 
     }
 }
 
+/// The cell under the mouse, where it is over the screen: bevy keeps the
+/// mouse in pixels, a cell [`CellSize`] of them. Each system reading it
+/// keeps the cell it last saw, so a move within a cell, which a window
+/// reports pixel by pixel, is no move.
+#[derive(SystemParam)]
+pub struct MouseCell<'w, 's> {
+    pointers: Query<'w, 's, (&'static PointerId, &'static PointerLocation)>,
+    cell: Res<'w, CellSize>,
+    seen: Local<'s, Option<Position>>,
+}
+
+impl MouseCell<'_, '_> {
+    /// The cell, where the mouse is anywhere.
+    pub fn get(&self) -> Option<Position> {
+        let (_, mouse) = self
+            .pointers
+            .iter()
+            .find(|(id, _)| **id == PointerId::Mouse)?;
+        let at = mouse.location.as_ref()?.position / self.cell.vec();
+        Some(Position::new(at.x as u16, at.y as u16))
+    }
+
+    /// Whether the mouse reached another cell since this system last
+    /// asked.
+    pub fn has_moved(&mut self) -> bool {
+        let now = self.get();
+        let has_moved = *self.seen != now;
+        *self.seen = now;
+        has_moved
+    }
+}
+
 /// The pane of the chart under the pointer notes the year and the values
 /// there; every other pane's note is cleared.
 fn read_out(
-    cursor: Res<CursorCell>,
+    mut cursor: MouseCell,
     charts: Query<(Ref<SeriesChart>, &ComputedWidgetArea, &ChildOf)>,
     mut frames: Query<&mut Framed>,
 ) {
-    if !cursor.is_changed() && !charts.iter().any(|(chart, ..)| chart.is_changed()) {
+    if !cursor.has_moved() && !charts.iter().any(|(chart, ..)| chart.is_changed()) {
         return;
     }
     for (chart, area, parent) in &charts {
@@ -286,7 +320,7 @@ fn read_out(
                 chart.read_at(area.0, cell)
             }
         };
-        let note = cursor.0.and_then(read).unwrap_or_default();
+        let note = cursor.get().and_then(read).unwrap_or_default();
         if let Ok(mut framed) = frames.get_mut(parent.parent()) {
             Framed::renote(&mut framed, &note);
         }
@@ -297,10 +331,11 @@ fn read_out(
 fn handle_press(
     press: On<PointerPress>,
     charts: Query<(&SeriesChart, &ComputedWidgetArea)>,
+    cell: Res<CellSize>,
     mut cursor: ResMut<YearCursor>,
 ) {
     if let Ok((chart, area)) = charts.get(press.entity)
-        && let Some(year) = chart.year_at(area.0, press.position)
+        && let Some(year) = chart.year_at(area.0, pointer_cell(&press.pointer, *cell))
     {
         cursor.set_if_neq(YearCursor(Some(year)));
     }

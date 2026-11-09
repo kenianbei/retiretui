@@ -3,8 +3,9 @@ use std::time::Duration;
 use bevy_time::TimeUpdateStrategy;
 use plurimus::core::ratatui_core::style::Color;
 
+use crate::support::typed;
 use crate::theme::Theme;
-use plurimus::term::KeyCode;
+use bevy_input::keyboard::Key;
 
 use super::*;
 use crate::layout;
@@ -84,10 +85,10 @@ fn the_backdrop_dims_under_a_dialog_and_comes_back_when_it_closes() {
     let mut app = moving_app(Motion::Full);
     let resting = cell_fg(&app, FIRST_ROW.0, FIRST_ROW.1);
     assert_ne!(resting, Some(worn(&app).dim));
-    press_key(&mut app, KeyCode::Down);
+    press_key(&mut app, Key::ArrowDown);
     let resting_unfocused = cell_fg(&app, FIRST_ROW.0, FIRST_ROW.1);
 
-    press_key(&mut app, KeyCode::Char('d'));
+    press_key(&mut app, typed('d'));
     let_pass(&mut app, WELL_PAST_ANY_EFFECT);
     let frame = composed_frame(&app);
     assert_eq!(
@@ -112,7 +113,7 @@ fn the_backdrop_dims_under_a_dialog_and_comes_back_when_it_closes() {
         "nor the hint row, which names its keys"
     );
 
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     let_pass(&mut app, WELL_PAST_ANY_EFFECT);
     assert_eq!(cell_fg(&app, FIRST_ROW.0, FIRST_ROW.1), resting_unfocused);
 }
@@ -121,8 +122,8 @@ fn the_backdrop_dims_under_a_dialog_and_comes_back_when_it_closes() {
 fn with_motion_off_nothing_dims() {
     let mut app = headless_app(SIZE);
     show(&mut app, Page::Accounts);
-    press_key(&mut app, KeyCode::Down);
-    press_key(&mut app, KeyCode::Char('d'));
+    press_key(&mut app, Key::ArrowDown);
+    press_key(&mut app, typed('d'));
     let_pass(&mut app, WELL_PAST_ANY_EFFECT);
     assert!(composed_frame(&app).contains("Delete"));
     assert_ne!(
@@ -134,10 +135,10 @@ fn with_motion_off_nothing_dims() {
 #[test]
 fn an_applied_row_fades_in_from_dim() {
     let mut app = moving_app(Motion::Full);
-    press_key(&mut app, KeyCode::Enter);
-    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, Key::Enter);
+    press_key(&mut app, Key::Tab);
     type_text(&mut app, "x");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert!(said(&app).is_empty(), "applied: {:?}", said(&app));
     assert_eq!(
         cell_fg(&app, FIRST_ROW.0, FIRST_ROW.1),
@@ -158,9 +159,9 @@ fn the_motion_command_steps_through_the_three_and_says_which() {
     let mut app = headless_app(SIZE);
     assert_eq!(app.world().resource::<Settings>().motion, Motion::Off);
     for wanted in [Motion::Full, Motion::Reduced, Motion::Off] {
-        press_key(&mut app, KeyCode::Char(':'));
+        press_key(&mut app, typed(':'));
         type_text(&mut app, "motion");
-        press_key(&mut app, KeyCode::Enter);
+        press_key(&mut app, Key::Enter);
         assert_eq!(app.world().resource::<Settings>().motion, wanted);
     }
     assert_eq!(said(&app), ["motion full", "motion reduced", "motion off"]);
@@ -194,14 +195,14 @@ fn the_backdrop_spares_the_overlay_standing_deepest() {
 #[test]
 fn a_closed_dialog_breaks_up_over_a_page_already_back() {
     let mut app = moving_app(Motion::Full);
-    press_key(&mut app, KeyCode::Down);
+    press_key(&mut app, Key::ArrowDown);
     let resting = cell_fg(&app, FIRST_ROW.0, FIRST_ROW.1);
-    press_key(&mut app, KeyCode::Char('d'));
+    press_key(&mut app, typed('d'));
     let_pass(&mut app, WELL_PAST_ANY_EFFECT);
     let stood = cell_of(&app, DIALOG);
 
     tick(&mut app, Duration::ZERO);
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     let whole = composed_frame(&app);
     assert_eq!(cell_of(&app, DIALOG), stood, "still drawn where it stood");
     assert_eq!(
@@ -222,12 +223,12 @@ fn a_closed_dialog_breaks_up_over_a_page_already_back() {
 #[test]
 fn a_closed_panel_slides_out_through_the_bottom_of_the_body() {
     let mut app = moving_app(Motion::Full);
-    press_key(&mut app, KeyCode::Char('m'));
+    press_key(&mut app, typed('m'));
     let_pass(&mut app, WELL_PAST_ANY_EFFECT);
     let stood = cell_of(&app, DRAWER);
 
     tick(&mut app, Duration::ZERO);
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     assert_eq!(cell_of(&app, DRAWER), stood, "still drawn where it stood");
 
     tick(&mut app, Duration::from_millis(60));
@@ -249,15 +250,15 @@ fn a_closed_panel_slides_out_through_the_bottom_of_the_body() {
 #[test]
 fn a_dialog_over_an_open_item_leaves_and_the_item_stays() {
     let mut app = moving_app(Motion::Full);
-    press_key(&mut app, KeyCode::Enter);
-    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, Key::Enter);
+    press_key(&mut app, Key::Tab);
     type_text(&mut app, "x");
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     let_pass(&mut app, WELL_PAST_ANY_EFFECT);
     let stood = cell_of(&app, DIALOG);
 
     tick(&mut app, Duration::ZERO);
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     assert_eq!(cell_of(&app, DIALOG), stood, "still drawn where it stood");
     tick(&mut app, WELL_PAST_ANY_EFFECT);
     let gone = composed_frame(&app);
@@ -269,13 +270,13 @@ fn a_dialog_over_an_open_item_leaves_and_the_item_stays() {
 fn with_motion_reduced_or_off_what_closes_is_gone_at_once() {
     for motion in [Motion::Reduced, Motion::Off] {
         let mut app = moving_app(motion);
-        press_key(&mut app, KeyCode::Down);
-        press_key(&mut app, KeyCode::Char('d'));
+        press_key(&mut app, Key::ArrowDown);
+        press_key(&mut app, typed('d'));
         let_pass(&mut app, WELL_PAST_ANY_EFFECT);
         assert!(composed_frame(&app).contains(DIALOG));
 
         tick(&mut app, Duration::ZERO);
-        press_key(&mut app, KeyCode::Esc);
+        press_key(&mut app, Key::Escape);
         let closed = composed_frame(&app);
         assert!(!closed.contains("Confirm"), "{motion:?}: {closed}");
     }

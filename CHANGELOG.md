@@ -48,9 +48,10 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   renderer, ruled across at each quarter, each band filled deeper than its
   line under the lines, the salary's end and zero ruled - read out under the
   pointer and opening the Ledger on a click, as in the terminal. Every list
-  the window scrolls shows the terminal's bar beside it, and the pointer's
-  moves reach the shell, so what
-  lights up under it in the terminal does in the window. It draws the tools
+  the window scrolls shows the terminal's bar beside it, and the pointer
+  reaches every widget as in the terminal: what lights up under it lights up,
+  the wheel scrolls any list, and a press in a text field places its caret
+  and a drag selects. It draws the tools
   and Compare: every table - the options a search ranks, the ladder, the
   people, the expenses, the assumptions, the years, the proposals, the records,
   the tax table and the compared plans - as the Ledger's, the help line under
@@ -75,6 +76,11 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Windows executable.
 - A click anywhere in a pane hands it the keyboard: to the widget the click
   landed in, or the pane's first.
+- Lists wrap at their ends and move on Left and Right too, but for a
+  sidebar's Right, which still goes into the page. A list that loses the
+  keyboard draws no cursor, and a menu closes when the keyboard leaves it.
+- The file picker climbs to the parent on `alt+up`; left and right move the
+  caret in its path.
 - The terminal wears the embedded `github` theme family by default,
   `github-light` or `github-dark` as the screen is. The terminal's own colours
   are no longer a theme: the picker and `retiretui theme` do not list

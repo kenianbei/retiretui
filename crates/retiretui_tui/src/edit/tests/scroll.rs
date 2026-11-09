@@ -2,8 +2,8 @@
 //! its rows on show, and what the body cannot hold scrolls.
 
 use bevy_ecs::prelude::With;
+use bevy_input::keyboard::Key;
 use bevy_ui::ScrollPosition;
-use plurimus::term::KeyCode;
 
 use super::{INVESTED, fixture_app, form_box, open, shows_row, tab_to_field, tab_to_key};
 use crate::edit::build::FormFields;
@@ -37,14 +37,14 @@ fn a_form_stands_as_tall_as_its_rows_on_show() {
     let mut app = fixture_app();
     show(&mut app, Page::Accounts);
     app.update();
-    press_key(&mut app, KeyCode::Down);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::ArrowDown);
+    press_key(&mut app, Key::Enter);
     let fixed = form_rows(&composed_frame(&app));
     // ID, name, type, owner, balance, basis, invested, return, locked,
     // drain; help and foot; the frame.
     assert_eq!(fixed, 10 + 6 + 2);
     tab_to_field(&mut app, INVESTED);
-    press_key(&mut app, KeyCode::Right);
+    press_key(&mut app, Key::ArrowRight);
     app.update();
     let mixed = form_rows(&composed_frame(&app));
     assert_eq!(

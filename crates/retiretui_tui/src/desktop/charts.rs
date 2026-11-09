@@ -6,25 +6,19 @@
 //! as the press and release it is, so the chart's own handlers answer.
 //! The Overview's chart is picked by name from its pane's header row.
 
-use bevy_app::{App, PreUpdate, Update};
+use bevy_app::{App, Update};
 use bevy_ecs::change_detection::{DetectChanges, Ref};
 use bevy_ecs::hierarchy::ChildOf;
-use bevy_ecs::message::{MessageReader, MessageWriter};
 use bevy_ecs::prelude::{
-    Added, Commands, Component, Entity, IntoScheduleConfigs, Local, On, Query, Res, ResMut, With,
-    Without,
+    Added, Commands, Component, Entity, IntoScheduleConfigs, On, Query, Res, ResMut, With, Without,
 };
-use bevy_math::Vec2;
 use bevy_ui::{BorderColor, ComputedNode, FlexDirection, Node, PositionType, UiRect, Val};
-use bevy_window::CursorMoved;
-use plurimus::bui::bevy_picking::events::PointerClick;
 use plurimus::core::ratatui_core::buffer::Buffer;
-use plurimus::core::ratatui_core::layout::{Position, Rect};
+use plurimus::core::ratatui_core::layout::Rect;
 use plurimus::core::ratatui_core::widgets::Widget;
-use plurimus::term::{KeyModifiers, MouseButton, MouseKind, MouseMessage};
+use plurimus::ui::bevy_picking::events::PointerClick;
 use retiretui_client::overview::Chart;
 
-use super::CELL;
 use super::chrome::{HAIRLINE, TITLE_AT};
 use super::pill::{lift, pill, segment};
 use crate::chart::SeriesChart;
@@ -33,10 +27,7 @@ use crate::overview::{ChartView, KeyMarks, OverviewChart};
 use crate::theme::{Hung, Repainted, Theme, hang, row_line, say_lines, text};
 
 pub fn plugin(app: &mut App) {
-    // The window's plugin sends it; a harness without a window does not.
-    app.add_message::<CursorMoved>();
     app.insert_resource(KeyMarks { is_dotted: true });
-    app.add_systems(PreUpdate, move_the_cursor);
     app.add_systems(
         Update,
         (frame_charts, paint_charts, offer_the_charts, paint_picks)
@@ -132,7 +123,6 @@ fn frame_charts(
                 },
                 ChildOf(chart),
             ))
-            .observe(press_the_chart)
             .id();
         commands.entity(chart).insert(Charted { plot, graph: None });
     }
@@ -174,62 +164,31 @@ fn paint_charts(
     }
 }
 
-/// The cell under a point of the window.
-fn cell_at(position: Vec2) -> Position {
-    let cell = (position.max(Vec2::ZERO) / CELL).floor();
-    Position::new(cell.x as u16, cell.y as u16)
-}
-
-/// bevy's cursor said to plurimus as the move it is, once for each cell it
-/// reaches, so what the terminal's widgets answer to the pointer's place -
-/// the chart's read-out among them - they answer in the window.
-fn move_the_cursor(
-    mut moved: MessageReader<CursorMoved>,
-    mut last: Local<Option<Position>>,
-    mut mouse: MessageWriter<MouseMessage>,
-) {
-    let Some(moved) = moved.read().last() else {
-        return;
-    };
-    let position = cell_at(moved.position);
-    if *last == Some(position) {
-        return;
-    }
-    *last = Some(position);
-    mouse.write(MouseMessage::new(
-        MouseKind::Moved,
-        position,
-        KeyModifiers::default(),
-    ));
-}
-
-/// A click on a plot said to plurimus as the press and release it is, at
-/// its cell, so the chart's own handlers answer it - the year cursor,
-/// the Ledger - as they answer a terminal's press.
-fn press_the_chart(click: On<PointerClick>, mut mouse: MessageWriter<MouseMessage>) {
-    let position = cell_at(click.pointer.position);
-    for kind in [
-        MouseKind::Down(MouseButton::Left),
-        MouseKind::Up(MouseButton::Left),
-    ] {
-        mouse.write(MouseMessage::new(kind, position, KeyModifiers::default()));
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use bevy_ecs::hierarchy::Children;
-    use plurimus::term::CursorCell;
+    use plurimus::core::CellSize;
     use plurimus::ui::ComputedWidgetArea;
 
     use super::*;
+    use crate::desktop::CELL;
     use crate::nav::Page;
     use crate::overview::ChartKey;
     use crate::pane::Framed;
     use crate::session::YearCursor;
     use crate::support::{
-        ROOMY, SIZE, active_page, click_entity, headless_app, overview_chart, said_by, show,
+        ROOMY, SIZE, active_page, click, headless_app, hover, overview_chart, said_by, show,
     };
+
+    /// A harness whose pointer is measured in the window's pixels, as
+    /// bevy's is there.
+    fn windowed(app: &mut bevy_app::App) {
+        app.add_plugins(plugin);
+        app.insert_resource(CellSize {
+            x: CELL.x,
+            y: CELL.y,
+        });
+    }
 
     #[test]
     fn the_chart_says_its_labels_around_a_blank_graph_the_plot_covers() {
@@ -278,27 +237,15 @@ mod tests {
     }
 
     #[test]
-    fn the_cursor_s_move_reaches_the_chart_as_the_terminal_s_does() {
+    fn the_mouse_over_the_chart_reads_its_year_out_at_the_window_s_cells() {
         let mut app = headless_app(SIZE);
-        app.add_plugins(plugin);
+        windowed(&mut app);
         app.update();
         let chart = overview_chart(&mut app);
         let area = app.world().get::<ComputedWidgetArea>(chart).unwrap().0;
         let drawn = app.world().get::<SeriesChart>(chart).unwrap().clone();
         let column = drawn.column_of(area, 2038).unwrap();
-        let row = area.y + 1;
-        let position = Vec2::new(f32::from(column) + 0.5, f32::from(row) + 0.5) * CELL;
-        app.world_mut().write_message(CursorMoved {
-            window: Entity::PLACEHOLDER,
-            position,
-            delta: None,
-        });
-        app.update();
-        app.update();
-        assert_eq!(
-            app.world().resource::<CursorCell>().0,
-            Some(Position::new(column, row))
-        );
+        hover(&mut app, column, area.y + 1);
         let pane = app.world().get::<ChildOf>(chart).unwrap().parent();
         let note = &app.world().get::<Framed>(pane).unwrap().note;
         assert_eq!(note, "2038");
@@ -307,18 +254,14 @@ mod tests {
     #[test]
     fn a_click_on_the_plot_opens_the_ledger_at_its_year() {
         let mut app = headless_app(ROOMY);
-        app.add_plugins(plugin);
+        windowed(&mut app);
         show(&mut app, Page::Overview);
         let chart = overview_chart(&mut app);
         app.update();
-        let plot = app.world().get::<Charted>(chart).unwrap().plot;
         let area = app.world().get::<ComputedWidgetArea>(chart).unwrap().0;
         let drawn = app.world().get::<SeriesChart>(chart).unwrap().clone();
         let column = drawn.column_of(area, 2040).unwrap();
-        let position = Vec2::new(f32::from(column) + 0.5, f32::from(area.y + 1) + 0.5) * CELL;
-        click_entity(&mut app, plot, position);
-        app.update();
-        app.update();
+        click(&mut app, column, area.y + 1);
         assert_eq!(active_page(&app), Page::Ledger, "the click turned to it");
         assert_eq!(
             app.world().resource::<YearCursor>(),
@@ -356,11 +299,5 @@ mod tests {
             .unwrap()
             .0;
         assert!(said_by(world, key).starts_with("● "), "the key is dotted");
-    }
-
-    #[test]
-    fn a_point_of_the_window_is_the_cell_it_falls_in() {
-        assert_eq!(cell_at(Vec2::new(5.5, 3.2) * CELL), Position::new(5, 3));
-        assert_eq!(cell_at(Vec2::new(-1.0, -1.0)), Position::new(0, 0));
     }
 }

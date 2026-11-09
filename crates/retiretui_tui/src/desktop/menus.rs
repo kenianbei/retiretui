@@ -15,12 +15,12 @@ use bevy_ui::{
     BackgroundColor, BorderColor, BorderRadius, ComputedNode, Display, FlexDirection, GlobalZIndex,
     Node, PositionType, UiGlobalTransform, UiRect, Val,
 };
-use plurimus::bui::bevy_picking::events::PointerClick;
-use plurimus::core::UiHidden;
+use plurimus::core::Hidden;
 use plurimus::core::ratatui_core::style::Style;
 use plurimus::core::ratatui_core::text::{Line, Span};
-use plurimus::ui::{ModalDismiss, ModalOpen, UiLabel};
-use plurimus::widgets::{Activate, MenuItem, MenuPopup};
+use plurimus::ui::bevy_picking::events::PointerClick;
+use plurimus::ui::{ModalOpen, UiLabel};
+use plurimus::widgets::{Activate, MenuAction, MenuEvent, MenuItem, MenuPopup};
 
 use super::chrome::{HAIRLINE, HALF_CELL_WIDE};
 use crate::layout::{self, Root};
@@ -135,23 +135,20 @@ fn unrow_the_item(removed: On<Remove<MenuItem>>, shadows: Query<&Shadow>, mut co
     }
 }
 
-/// A click on a row chooses its item and closes the menu, which is what
-/// a terminal's press does; the dismissal hands the keyboard back to the
-/// select.
-fn choose_on_click(
-    click: On<PointerClick>,
-    rows: Query<&Shadowed>,
-    parents: Query<&ChildOf>,
-    mut commands: Commands,
-) {
+/// A click on a row the window draws is a click on its item, as upstream
+/// answers one: the item chosen, the keyboard back on the menu's button,
+/// the menu closed.
+fn choose_on_click(click: On<PointerClick>, rows: Query<&Shadowed>, mut commands: Commands) {
     let Ok(row) = rows.get(click.entity) else {
         return;
     };
-    let Ok(popup) = parents.get(row.of).map(ChildOf::parent) else {
-        return;
-    };
     commands.trigger(Activate { entity: row.of });
-    commands.trigger(ModalDismiss { entity: popup });
+    for action in [MenuAction::FocusRoot, MenuAction::CloseAll] {
+        commands.trigger(MenuEvent {
+            source: row.of,
+            action,
+        });
+    }
 }
 
 /// An open popup's shadow hangs under its select's node, in the cells
@@ -161,7 +158,7 @@ fn choose_on_click(
 /// to the side or above when short of room.
 fn place_shadows(
     (theme, overlays): (Res<Theme>, Query<&Band, With<ModalOpen>>),
-    popups: Query<(&Shadow, &ChildOf, Has<UiHidden>), With<MenuPopup>>,
+    popups: Query<(&Shadow, &ChildOf, Has<Hidden>), With<MenuPopup>>,
     anchors: Query<(&ComputedNode, &UiGlobalTransform)>,
     mut shadows: Query<(&mut Node, &mut GlobalZIndex)>,
     mut commands: Commands,
@@ -228,8 +225,9 @@ fn paint_rows(
 
 #[cfg(test)]
 mod tests {
+    use crate::support::typed;
     use bevy_ecs::hierarchy::Children;
-    use plurimus::term::KeyCode;
+    use bevy_input::keyboard::Key;
 
     use super::*;
     use crate::edit::tests::{open, tab_to_field};
@@ -245,12 +243,12 @@ mod tests {
         app.add_plugins(plugin);
         open(&mut app, Page::Accounts);
         tab_to_field(&mut app, KIND_FIELD);
-        press_key(&mut app, KeyCode::Char(' '));
+        press_key(&mut app, typed(' '));
         let world = app.world_mut();
         let (popup, shadow) = world
             .query_filtered::<(Entity, &Shadow), With<MenuPopup>>()
             .iter(world)
-            .find(|(popup, _)| !world.entity(*popup).contains::<UiHidden>())
+            .find(|(popup, _)| !world.entity(*popup).contains::<Hidden>())
             .map(|(popup, shadow)| (popup, shadow.0))
             .expect("the kind's menu is open");
         let items = world
@@ -269,11 +267,43 @@ mod tests {
             world.get::<Node>(shadow).map(|node| node.display),
             Some(Display::Flex)
         );
-        press_key(&mut app, KeyCode::Esc);
+        press_key(&mut app, Key::Escape);
         let world = app.world();
         assert_eq!(
             world.get::<Node>(shadow).map(|node| node.display),
             Some(Display::None)
         );
+    }
+
+    #[test]
+    fn a_click_on_a_shadowed_row_picks_it_closes_the_menu_and_keeps_the_select() {
+        use crate::edit::tests::{draft_plan, focused};
+        use crate::support::click_entity;
+        use bevy_math::Vec2;
+        use retiretui_engine::plan::AccountKind;
+
+        let mut app = headless_app(SIZE);
+        app.add_plugins(plugin);
+        open(&mut app, Page::Accounts);
+        tab_to_field(&mut app, KIND_FIELD);
+        let select = focused(&app);
+        let before = draft_plan(&app).accounts[0].kind;
+        press_key(&mut app, typed(' '));
+        let world = app.world_mut();
+        let (popup, shadow) = world
+            .query_filtered::<(Entity, &Shadow), With<MenuPopup>>()
+            .iter(world)
+            .find(|(popup, _)| !world.entity(*popup).contains::<Hidden>())
+            .map(|(popup, shadow)| (popup, shadow.0))
+            .expect("the kind's menu is open");
+        let rows = world.get::<Children>(shadow).unwrap().to_vec();
+        click_entity(&mut app, rows[0], Vec2::ZERO);
+        app.update();
+        app.update();
+        assert!(app.world().entity(popup).contains::<Hidden>(), "closed");
+        assert_eq!(focused(&app), select, "the keyboard is back on the select");
+        press_key(&mut app, Key::Enter);
+        assert_ne!(before, AccountKind::ALL[0], "the first row is another kind");
+        assert_eq!(draft_plan(&app).accounts[0].kind, AccountKind::ALL[0]);
     }
 }

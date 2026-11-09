@@ -155,15 +155,16 @@ fn fill(
 /// cursor that lands on the plan's own row rests there where the tool
 /// opens it, and goes on to the first option where it does not.
 pub fn follow_cursor<R: Found>(
-    mut tables: Query<
-        (&mut ActiveDescendant, &Grid),
+    tables: Query<
+        (Entity, &ActiveDescendant, &Grid),
         (With<OptionsTable<R>>, Changed<ActiveDescendant>),
     >,
     bodies: Query<&Children>,
     rows: Query<(Has<CurrentRow>, Option<&OptionRow>)>,
     mut tool: ResMut<Tool<R>>,
+    mut commands: Commands,
 ) {
-    for (mut on, grid) in &mut tables {
+    for (table, on, grid) in &tables {
         let Some(row) = on.0 else {
             continue;
         };
@@ -178,7 +179,7 @@ pub fn follow_cursor<R: Found>(
                         .find(|&&child| rows.get(child).is_ok_and(|(_, option)| option.is_some()))
                         .copied()
                 });
-                on.0 = best;
+                commands.entity(table).insert(ActiveDescendant(best));
             }
             Ok((false, Some(&OptionRow(index)))) => {
                 tool.bypass_change_detection().highlighted = index + 1;

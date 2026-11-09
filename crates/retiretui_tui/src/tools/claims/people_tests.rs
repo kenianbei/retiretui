@@ -1,10 +1,11 @@
 use std::path::PathBuf;
 
+use crate::support::typed;
 use bevy_app::App;
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::system::IntoSystem;
+use bevy_input::keyboard::Key;
 use bevy_input_focus::InputFocus;
-use plurimus::term::KeyCode;
 use retiretui_engine::optimize::benefit_estimates;
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::Plan;
@@ -130,9 +131,9 @@ fn a_record_cleared_on_another_page_shows_when_the_page_is_turned_back_to() {
 fn the_page_opens_on_the_people_and_tab_walks_to_the_options() {
     let mut app = app_on(&fixture());
     assert_eq!(holder_title(&app), "People");
-    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, Key::Tab);
     assert_eq!(holder_title(&app), "Claim Options");
-    press_shift(&mut app, KeyCode::Tab);
+    press_shift(&mut app, Key::Tab);
     assert_eq!(holder_title(&app), "People");
 }
 
@@ -143,7 +144,7 @@ fn arrows_on_the_pane_move_the_person_the_keys_act_on() {
         fixture().replace("\"single\"", "\"married-joint\"")
     );
     let mut app = app_on(&couple);
-    press_key(&mut app, KeyCode::Down);
+    press_key(&mut app, Key::ArrowDown);
     let frame = redrawn(&mut app);
     let is_marked =
         |line: &str| person_cells(line).starts_with(&["▌".to_owned(), "you".to_owned()]);
@@ -172,7 +173,7 @@ fn k_computes_a_typed_benefit_as_one_step() {
         run(&mut app, compute_benefit),
         Outcome::Refused("me has no typed benefit to compute".to_owned())
     );
-    press_ctrl(&mut app, KeyCode::Char('z'));
+    press_ctrl(&mut app, crate::support::typed('z'));
     assert_eq!(plan(&app).income[0].amount, Some(24000));
 }
 
@@ -199,7 +200,7 @@ fn c_fills_a_career_only_where_there_is_no_record() {
             .unwrap()
             .contains("from a career at their salary")
     );
-    press_ctrl(&mut app, KeyCode::Char('z'));
+    press_ctrl(&mut app, typed('z'));
     assert!(plan(&app).person("me").unwrap().earnings.is_empty());
 }
 
@@ -209,7 +210,7 @@ fn t_adds_the_benefit_the_search_made_up_with_its_claim() {
     let frame = composed_frame(&app);
     assert!(frame.contains(" No benefit "), "{frame}");
     assert_eq!(run(&mut app, adopt), Outcome::Done);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     app.update();
     let added = &plan(&app).income[0];
     assert_eq!(added.id, "ss-me");
@@ -221,7 +222,7 @@ fn t_adds_the_benefit_the_search_made_up_with_its_claim() {
                 .is_some_and(|start| start.age.is_some())
     );
     assert_eq!(app.world().resource::<Draft>().issues(), []);
-    press_ctrl(&mut app, KeyCode::Char('z'));
+    press_ctrl(&mut app, typed('z'));
     assert!(
         plan(&app).income.is_empty(),
         "one step back is the plan's own"

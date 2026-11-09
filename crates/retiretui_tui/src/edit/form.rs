@@ -3,24 +3,27 @@
 
 use bevy_app::{App, Update};
 use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut, Ref};
-use bevy_ecs::prelude::{ChildOf, Commands, Entity, Local, Mut, On, Query, Res, ResMut, With};
+use bevy_ecs::prelude::{
+    Changed, ChildOf, Commands, Entity, Local, Mut, On, Query, Res, ResMut, With,
+};
 use bevy_ecs::schedule::IntoScheduleConfigs;
 use bevy_ecs::system::SystemParam;
 use bevy_input::keyboard::{Key, KeyboardInput};
 use bevy_input_focus::{FocusCause, FocusedInput, InputFocus};
 use bevy_ui::widget::Text;
+use plurimus::bui::bevy_text::EditableText;
 use plurimus::bui::bevy_text::TextColor;
 use plurimus::core::ratatui_core::text::Line;
-use plurimus::term::bevy_compat::HeldModifiers;
+use plurimus::term::HeldModifiers;
 use plurimus::ui::{KeyBinding, ModalDismiss, first_bound};
-use plurimus::widgets::{Activate, Submit, TextInput, ValueChange};
+use plurimus::widgets::{Activate, ValueChange};
 use toml::Value;
 
 use super::build::{EditForm, FieldLabel, FormButton, FormField, HelpFoot, Said};
 use super::domain::{FieldKind, FieldSpec};
 use super::draft::{Draft, DraftEditor};
 use super::editing::{self, EditSession, SessionFocus};
-use super::field::{self, Fields, FormTree};
+use super::field::{self, Fields, FormTree, ShownText, TextField};
 use super::group;
 use super::select::PickChanged;
 use super::table::Row;
@@ -64,8 +67,8 @@ pub fn plugin(app: &mut App) {
         )
             .in_set(super::EditSystems::Place),
     );
-    app.add_observer(handle_text_change);
-    app.add_observer(handle_text_submit);
+    app.add_systems(Update, read_typed.before(super::EditSystems::Place));
+    app.add_systems(Update, field::ink_fields.in_set(Repainted));
     app.add_observer(handle_check_change);
     app.add_observer(handle_pick_change);
     app.add_observer(handle_slider_change);
@@ -247,7 +250,7 @@ enum Entered<'a> {
 #[derive(SystemParam)]
 pub struct Items<'w, 's> {
     fields: Query<'w, 's, &'static FormField>,
-    texts: Query<'w, 's, (), With<TextInput>>,
+    texts: Query<'w, 's, &'static EditableText, With<TextField>>,
     slots: Query<'w, 's, &'static trigger::Slot>,
 }
 
@@ -339,29 +342,21 @@ fn seed_fields(
     }
 }
 
-fn handle_text_change(change: On<ValueChange<String>>, items: Items, mut state: SessionFocus) {
-    items.set(change.source, Entered::Text(&change.value), &mut state);
-}
-
-/// Submitting a field applies the whole item. It is the field's own event
-/// rather than a final change, which the blur that closing causes reports
-/// as well.
-fn handle_text_submit(
-    submit: On<Submit>,
+/// What is typed into a field reaches the item: its text, where it differs
+/// from what the form last showed there.
+fn read_typed(
+    mut fields: Query<(Entity, &EditableText, &mut ShownText), Changed<EditableText>>,
     items: Items,
     mut state: SessionFocus,
-    mut editor: DraftEditor,
-    mut commands: Commands,
 ) {
-    items.set(submit.entity, Entered::Text(&submit.value), &mut state);
-    let label = items.key_of(submit.entity);
-    act(
-        FormButton::Apply,
-        label,
-        &mut state,
-        &mut editor,
-        &mut commands,
-    );
+    for (field, text, mut shown) in &mut fields {
+        if text.value() == shown.0.as_str() {
+            continue;
+        }
+        let typed = text.value().to_string();
+        items.set(field, Entered::Text(&typed), &mut state);
+        shown.0 = typed;
+    }
 }
 
 /// A flag's box reports the state it moved to.
@@ -398,12 +393,11 @@ const FORM_KEYS: &[(KeyBinding, FormKey)] = &[
     (KeyBinding::new(Key::Tab), FormKey::Into),
 ];
 
-/// Esc leaves the item. Enter in a field that does not take the key
-/// itself - a pick, a slider, a box - applies it, and on the form itself
-/// goes into the fields. Observed on the form, which the focused widget
-/// bubbles to, so the widget is the event's original target. The new
-/// plan's form stands alone while the shell holds no document, with
-/// nothing to leave it for.
+/// Esc leaves the item. Enter in a field applies it, what a text field
+/// holds taken first, and on the form itself goes into the fields.
+/// Observed on the form, which the focused widget bubbles to, so the
+/// widget is the event's original target. The new plan's form stands
+/// alone while the shell holds no document, with nothing to leave it for.
 pub fn handle_form_key(
     mut input: On<FocusedInput<KeyboardInput>>,
     (targets, items, tree, mut commands): (FormTargets, Items, FormTree, Commands),
@@ -429,7 +423,10 @@ pub fn handle_form_key(
                 state.enter(first);
             }
         }
-        FormKey::Enter if !items.texts.contains(target) => {
+        FormKey::Enter => {
+            if let Ok(text) = items.texts.get(target) {
+                items.set(target, Entered::Text(&text.value().to_string()), &mut state);
+            }
             act(
                 FormButton::Apply,
                 items.key_of(target),
@@ -438,11 +435,16 @@ pub fn handle_form_key(
                 &mut commands,
             );
         }
-        FormKey::Enter | FormKey::Into => {}
+        FormKey::Into => {}
         // Nothing to leave the form for: the keyboard rests on it, where
         // the shell's keys reach.
         FormKey::Leave if is_alone => state.focus(form),
-        FormKey::Leave => state.leave(),
+        // A text field lets the keyboard go on Esc before the form sees it;
+        // put back, whatever asks before leaving gives it back there.
+        FormKey::Leave => {
+            state.enter(target);
+            state.leave();
+        }
     }
 }
 

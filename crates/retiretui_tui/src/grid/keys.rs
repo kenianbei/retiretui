@@ -2,13 +2,12 @@
 //! bindings, shared so the two cannot drift: the cursor stepped a row, a
 //! page or to either end, and passed on once it can move nothing.
 
-use bevy_ecs::change_detection::DetectChangesMut;
 use bevy_ecs::hierarchy::Children;
-use bevy_ecs::prelude::{On, Query, Without};
+use bevy_ecs::prelude::{Commands, On, Query, Without};
 use bevy_input::keyboard::KeyboardInput;
 use bevy_input_focus::FocusedInput;
 use bevy_ui::ComputedNode;
-use plurimus::term::bevy_compat::HeldModifiers;
+use plurimus::term::HeldModifiers;
 use plurimus::ui::first_bound;
 use plurimus::widgets::{ActiveDescendant, TableAction, TableKeys};
 
@@ -18,10 +17,12 @@ use crate::layout;
 pub(super) fn handle_key(
     mut input: On<FocusedInput<KeyboardInput>>,
     held: HeldModifiers,
-    mut grids: Query<(&Grid, &TableKeys, &mut ActiveDescendant), Without<Said>>,
+    grids: Query<(&Grid, &TableKeys, &ActiveDescendant), Without<Said>>,
     bodies: Query<(&ComputedNode, &Children)>,
+    mut commands: Commands,
 ) {
-    let Ok((grid, keys, mut cursor)) = grids.get_mut(input.focused_entity) else {
+    let table = input.focused_entity;
+    let Ok((grid, keys, cursor)) = grids.get(table) else {
         return;
     };
     let Some(action) = first_bound(&keys.0, &input.input, held.get()) else {
@@ -54,7 +55,10 @@ pub(super) fn handle_key(
         | (TableAction::RowFirst, _) => 0,
         _ => return,
     };
-    if cursor.set_if_neq(ActiveDescendant(Some(rows[to]))) {
+    if cursor.0 != Some(rows[to]) {
+        commands
+            .entity(table)
+            .insert(ActiveDescendant(Some(rows[to])));
         input.propagate(false);
     }
 }

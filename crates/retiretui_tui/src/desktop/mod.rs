@@ -45,22 +45,22 @@ use bevy_sprite_render::SpriteRenderPlugin;
 use bevy_text::{EmSize, Font, FontSize, LineHeight, RemSize, TextFont, TextPlugin};
 use bevy_time::TimePlugin;
 use bevy_transform::TransformPlugin;
-use bevy_ui::{Node, UiPlugin, UiSystems};
+use bevy_ui::{IsDefaultUiCamera, Node, UiPlugin, UiSystems};
 use bevy_ui_render::UiRenderPlugin;
 use bevy_window::{
     PrimaryWindow, Window, WindowCloseRequested, WindowPlugin, WindowResizeConstraints,
 };
 use bevy_winit::{UpdateMode, WinitPlugin, WinitSettings};
 use clap::Args;
-use plurimus::bui::bevy_picking::DefaultPickingPlugins;
 use plurimus::bui::bevy_ui_widgets::UiWidgetsPlugins;
-use plurimus::core::{CameraSystems, CorePlugin, TerminalSize};
+use plurimus::core::{CameraSystems, CellSize, CorePlugin, TerminalSize};
 use plurimus::ui::bevy_input_focus::tab_navigation::TabNavigationPlugin;
 use plurimus::ui::bevy_input_focus::{InputDispatchPlugin, InputFocusPlugin};
 use retiretui_client::environment::state_dir;
 
 use crate::TuiArgs;
 use crate::command::{self, defer_named};
+use crate::edit::TextField;
 use crate::theme::Theme;
 use crate::tools::is_any_live;
 use crate::watch::POLL_SECONDS;
@@ -158,7 +158,6 @@ fn add_window(app: &mut App) {
         TextPlugin,
         UiPlugin,
         UiRenderPlugin,
-        DefaultPickingPlugins,
         UiWidgetsPlugins,
         CorePlugin,
     ));
@@ -173,6 +172,10 @@ fn skin(app: &mut App) {
         .insert(&Handle::<Font>::default(), Font::from_bytes(FACE.to_vec()))
         .expect("the default font handle is live");
     app.insert_resource(RemSize(CELL.y));
+    app.insert_resource(CellSize {
+        x: CELL.x,
+        y: CELL.y,
+    });
     app.add_plugins((
         areas::plugin,
         bars::plugin,
@@ -205,8 +208,10 @@ fn skin(app: &mut App) {
     );
 }
 
+/// The window's camera draws its UI: the shell's terminal camera is a
+/// bevy camera too, at the same order, and draws nothing in a window.
 fn spawn_camera(mut commands: Commands) {
-    commands.spawn(Camera2d);
+    commands.spawn((Camera2d, IsDefaultUiCamera));
 }
 
 /// How often the window draws: every frame while work runs beside the
@@ -254,8 +259,10 @@ fn pin_fonts(mut fonts: Query<&mut TextFont, (Changed<TextFont>, Without<Figure>
     }
 }
 
-/// Every line but a figure's is a row tall.
-fn pin_line_heights(mut heights: Query<&mut LineHeight, (Changed<LineHeight>, Without<Figure>)>) {
+/// Every line but a figure's and a form field's is a row tall.
+fn pin_line_heights(
+    mut heights: Query<&mut LineHeight, (Changed<LineHeight>, Without<Figure>, Without<TextField>)>,
+) {
     for mut height in &mut heights {
         height.set_if_neq(LineHeight::Px(CELL.y));
     }
@@ -364,6 +371,41 @@ mod tests {
         assert!(
             strays.is_empty(),
             "widgets the window does not draw: {strays:?}"
+        );
+    }
+
+    #[test]
+    fn the_window_s_camera_draws_the_ui_beside_the_terminal_camera() {
+        use bevy_ui::DefaultUiCamera;
+        use bevy_window::PrimaryWindow;
+        use plurimus::core::TerminalCamera;
+
+        let mut world = World::new();
+        world.spawn((Window::default(), PrimaryWindow));
+        // The shell's frame spawns its camera first, which bevy_ui's
+        // tie-break between cameras of one order then favours.
+        world.spawn(TerminalCamera::default());
+        world.run_system_once(spawn_camera).unwrap();
+        let window_s = world
+            .query_filtered::<Entity, With<Camera2d>>()
+            .single(&world)
+            .unwrap();
+        let drawing = world
+            .run_system_once(|cameras: DefaultUiCamera| cameras.get())
+            .unwrap();
+        assert_eq!(drawing, Some(window_s));
+    }
+
+    #[test]
+    fn a_form_field_keeps_the_line_its_box_fits_when_every_other_line_is_a_row() {
+        let mut world = World::new();
+        let field = world.spawn((TextField, LineHeight::Px(1.0))).id();
+        let label = world.spawn(LineHeight::Px(1.0)).id();
+        world.run_system_once(pin_line_heights).unwrap();
+        assert_eq!(world.get::<LineHeight>(field), Some(&LineHeight::Px(1.0)));
+        assert_eq!(
+            world.get::<LineHeight>(label),
+            Some(&LineHeight::Px(CELL.y))
         );
     }
 }

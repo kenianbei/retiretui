@@ -13,9 +13,9 @@ use bevy_ecs::system::EntityCommands;
 use bevy_ui::{Node, Val};
 use plurimus::core::Edge;
 use plurimus::core::ratatui_core::text::{Line, Span};
-use plurimus::ui::{Checked, InteractionDisabled, PressFocusDisabled, UiLabel, ValueChange};
+use plurimus::ui::{InteractionDisabled, PressFocusDisabled, UiLabel, ValueChange};
 use plurimus::widgets::ratatui_widgets::borders::BorderType;
-use plurimus::widgets::{TabBarActiveStyle, TabBarLook, tab_bar, tab_item};
+use plurimus::widgets::{SelectedTab, TabBarActiveStyle, TabBarLook, tab_bar, tab_item};
 
 use super::command::Keymap;
 use super::layout::{self, TabRow, cells_of, placed};
@@ -94,14 +94,18 @@ fn spawn_tab_row(
             tab_bar(),
             look(),
             TabBarActiveStyle(theme.focused()),
-            PressFocusDisabled,
             placed(),
             ChildOf(row),
         ))
         .id();
     for tab in 0..TAB_COUNT {
         let label = tab_label(tab, &keymap, &theme);
-        commands.spawn((tab_item(label), BarTab(tab), ChildOf(bar)));
+        commands.spawn((
+            tab_item(label),
+            BarTab(tab),
+            PressFocusDisabled,
+            ChildOf(bar),
+        ));
     }
     status::spawn(&mut commands, row);
 }
@@ -140,15 +144,22 @@ fn repaint_tabs(
 /// stands.
 fn light_the_active_tab(
     shown: ShownSurface,
-    items: Query<(Entity, &BarTab, Has<Checked>)>,
+    bars: Query<(Entity, &SelectedTab), With<ShellTabs>>,
+    items: Query<(Entity, &BarTab)>,
     mut commands: Commands,
 ) {
     if !shown.is_changed() {
         return;
     }
     let lit = shown.surface().map_or(nav::Group::Plan.tab(), Page::tab);
-    for (entity, tab, is_marked) in &items {
-        mark(commands.entity(entity), Checked, tab.0 == lit, is_marked);
+    let item = items
+        .iter()
+        .find(|(_, tab)| tab.0 == lit)
+        .map(|(item, _)| item);
+    for (bar, selected) in &bars {
+        if selected.0 != item {
+            commands.entity(bar).insert(SelectedTab(item));
+        }
     }
 }
 
@@ -188,7 +199,7 @@ fn disable_the_dead_tabs(
 }
 
 fn handle_tab_chosen(
-    chosen: On<ValueChange<Entity>>,
+    chosen: On<ValueChange<Option<Entity>>>,
     bars: Query<(), With<ShellTabs>>,
     items: Query<&BarTab>,
     last: Res<LastShown>,
@@ -197,7 +208,7 @@ fn handle_tab_chosen(
     if !bars.contains(chosen.source) {
         return;
     }
-    let Ok(tab) = items.get(chosen.value) else {
+    let Some(Ok(tab)) = chosen.value.map(|item| items.get(item)) else {
         return;
     };
     turn.to(nav::entering(tab.0, *last));

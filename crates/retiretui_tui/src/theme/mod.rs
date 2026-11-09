@@ -9,10 +9,11 @@ mod said;
 
 use bevy_app::{App, PreStartup, Update};
 use bevy_ecs::change_detection::DetectChanges;
-use bevy_ecs::prelude::{Commands, IntoScheduleConfigs, Query, Res, ResMut, Resource};
+use bevy_ecs::prelude::{Commands, IntoScheduleConfigs, Query, Res, ResMut, Resource, With};
 use bevy_ecs::schedule::SystemSet;
+use plurimus::core::TerminalCamera;
+use plurimus::core::bevy_camera::{Camera, ClearColorConfig};
 use plurimus::core::ratatui_core::style::{Color, Modifier, Style};
-use plurimus::core::{Background, TerminalCamera};
 use plurimus::ui::UiTheme;
 use plurimus::widgets::{TableStripe, WidgetSystems};
 
@@ -238,14 +239,15 @@ fn wear_the_theme_set(settings: Res<Settings>, wanted: Res<WantedVariant>, mut c
 fn sync_look(
     theme: Res<Theme>,
     mut stock: ResMut<UiTheme>,
-    mut cameras: Query<&mut TerminalCamera>,
+    mut cameras: Query<&mut Camera, With<TerminalCamera>>,
 ) {
     if !theme.is_changed() {
         return;
     }
     *stock = theme.ui_theme();
     for mut camera in &mut cameras {
-        camera.background = Background::Clear(theme.bg);
+        camera.clear_color =
+            rgb(theme.bg).map_or(ClearColorConfig::Default, ClearColorConfig::Custom);
     }
 }
 

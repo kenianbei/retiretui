@@ -4,7 +4,8 @@
 use std::fs;
 use std::path::Path;
 
-use plurimus::term::KeyCode;
+use crate::support::typed;
+use bevy_input::keyboard::Key;
 use retiretui_client::files::load_plan_with_files;
 use retiretui_client::store::DiskStore;
 use retiretui_engine::plan::Scenario;
@@ -30,10 +31,10 @@ fn an_edit_is_saved_into_the_scenarios_own_overlay_over_its_base_as_it_is_now() 
     tab_to_field(&mut app, HORIZON_FIELD);
     clear_field(&mut app);
     type_text(&mut app, "80");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     let moved = fs::read_to_string(&base).unwrap().replace("0.025", "0.03");
     fs::write(&base, &moved).unwrap();
-    press_ctrl(&mut app, KeyCode::Char('s'));
+    press_ctrl(&mut app, typed('s'));
     let text = fs::read_to_string(&scenario).unwrap();
     let saved = Scenario::from_toml_str(&text)
         .unwrap()
@@ -68,7 +69,7 @@ fn clearing_what_the_base_states_is_refused_in_the_forms_words() {
     let mut app = headless_app_at(scenario, SIZE);
     open(&mut app, Page::Settings);
     clear_field(&mut app);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     let refused = said(&app).last().cloned().unwrap_or_default();
     let base = base.file_name().unwrap().to_string_lossy();
     assert!(
@@ -92,7 +93,7 @@ fn a_reload_reads_again_what_is_beneath_the_scenario() {
     run_command(&mut app, "reload");
     open(&mut app, Page::Settings);
     clear_field(&mut app);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert_eq!(
         draft_plan(&app).plan.name,
         None,

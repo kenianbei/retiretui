@@ -1,4 +1,5 @@
-use plurimus::term::KeyCode;
+use crate::support::typed;
+use bevy_input::keyboard::Key;
 use retiretui_client::setup::examples::named;
 
 use super::Tabled;
@@ -34,9 +35,9 @@ fn titles(app: &bevy_app::App) -> Vec<String> {
 }
 
 fn picked(app: &mut bevy_app::App, key: char, query: &str) {
-    press_key(app, KeyCode::Char(key));
+    press_key(app, typed(key));
     type_text(app, query);
-    press_key(app, KeyCode::Enter);
+    press_key(app, Key::Enter);
 }
 
 #[test]
@@ -48,18 +49,18 @@ fn the_tables_follow_the_year_and_the_picks() {
         "{frame}"
     );
     assert!(frame.contains("Oregon income tax"), "listed: {frame}");
-    press_key(&mut app, KeyCode::Char(']'));
+    press_key(&mut app, typed(']'));
     assert_eq!(
         app.world().resource::<YearCursor>().0,
         Some(2027),
         "the shared year moves"
     );
-    press_key(&mut app, KeyCode::Char('t'));
+    press_key(&mut app, typed('t'));
     let rows = picker_rows(&mut app);
     let own = "Where the plan lives (Oregon)";
     assert!(rows.iter().any(|(label, _)| label == own), "{rows:?}");
     type_text(&mut app, "texas");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     picked(&mut app, 'f', "single");
     let frame = redrawn(&mut app);
     assert!(
@@ -67,14 +68,14 @@ fn the_tables_follow_the_year_and_the_picks() {
         "{frame}"
     );
     assert!(frame.contains("Texas income tax"), "listed: {frame}");
-    press_key(&mut app, KeyCode::Char('t'));
+    press_key(&mut app, typed('t'));
     type_text(&mut app, "washington");
     redrawn(&mut app);
     assert!(
         titles(&app).contains(&"Washington brackets".to_owned()),
         "tried on"
     );
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     let frame = redrawn(&mut app);
     assert!(frame.contains("· Single · Texas"), "put back: {frame}");
     picked(&mut app, 't', "where");
@@ -92,7 +93,7 @@ fn a_year_moved_while_away_is_shown_on_return() {
     let mut app = moving_app();
     assert!(redrawn(&mut app).contains("Income tax brackets · 2026 ·"));
     show(&mut app, Page::Ledger);
-    press_key(&mut app, KeyCode::Down);
+    press_key(&mut app, Key::ArrowDown);
     show(&mut app, Page::TaxTables);
     let frame = redrawn(&mut app);
     assert!(frame.contains("Income tax brackets · 2027 ·"), "{frame}");
@@ -101,20 +102,20 @@ fn a_year_moved_while_away_is_shown_on_return() {
 #[test]
 fn the_highlighted_section_is_tabled_and_kept_across_a_year() {
     let mut app = moving_app();
-    press_key(&mut app, KeyCode::Down);
+    press_key(&mut app, Key::ArrowDown);
     let frame = redrawn(&mut app);
     assert!(
         frame.contains("Long-term capital gains · 2026 ·"),
         "{frame}"
     );
     assert!(frame.contains("$98,900"), "its rows: {frame}");
-    press_key(&mut app, KeyCode::Char(']'));
+    press_key(&mut app, typed(']'));
     let frame = redrawn(&mut app);
     assert!(
         frame.contains("Long-term capital gains · 2027 ·"),
         "{frame}"
     );
-    press_key(&mut app, KeyCode::End);
+    press_key(&mut app, Key::End);
     picked(&mut app, 't', "texas");
     let frame = redrawn(&mut app);
     assert!(frame.contains("Texas brackets · 2027 ·"), "{frame}");
@@ -122,7 +123,7 @@ fn the_highlighted_section_is_tabled_and_kept_across_a_year() {
         frame.contains("This state has no income tax."),
         "its note: {frame}"
     );
-    press_key(&mut app, KeyCode::Up);
+    press_key(&mut app, Key::ArrowUp);
     let frame = redrawn(&mut app);
     assert!(
         frame.contains("Taxes Social Security"),

@@ -1,8 +1,9 @@
 //! Headless tests for leaving an item whose edits no one applied.
 
 use crate::layout;
+use crate::support::typed;
+use bevy_input::keyboard::Key;
 use plurimus::core::ratatui_core::style::{Modifier, Style};
-use plurimus::term::KeyCode;
 
 use super::fields::{open_and_retype_balance, tab_to_button};
 use super::{
@@ -57,12 +58,12 @@ fn buttons_say_which_answer_is_meant_and_which_loses_the_edit() {
     assert!(is_bold(style_of(&app, "[ Apply ]")), "the form's own");
     assert!(!is_bold(style_of(&app, "[ Discard ]")));
 
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     app.update();
     let discard = style_of(&app, "[ Discard ]");
     assert_eq!(discard.fg, Some(over), "the dialog's loses the edit");
     assert!(!is_bold(discard));
-    press_shift(&mut app, KeyCode::Tab);
+    press_shift(&mut app, Key::Tab);
     app.update();
     let held = style_of(&app, "[ Discard ]");
     assert_eq!(held.fg, Some(over), "and says so under the keyboard");
@@ -74,7 +75,7 @@ fn esc_on_an_edited_item_asks_what_to_do_with_the_edit() {
     let mut app = fixture_app();
     open_and_retype_balance(&mut app);
     tab_to_button(&mut app, FormButton::Apply);
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     assert!(
         is_editing(&app) && is_asking(&app),
         "nothing is dropped yet"
@@ -91,7 +92,7 @@ fn answering_apply_stores_the_edit_and_cancel_goes_back_to_it() {
     let mut app = fixture_app();
     open_and_retype_balance(&mut app);
     let field = focused(&app);
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     answer(&mut app, Answers::Cancel);
     assert!(is_editing(&app) && !is_asking(&app));
     assert_eq!(focused(&app), field, "the keyboard is back where it was");
@@ -99,7 +100,7 @@ fn answering_apply_stores_the_edit_and_cancel_goes_back_to_it() {
         composed_frame(&app).contains("123456"),
         "and so is the edit"
     );
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     answer(&mut app, Answers::Apply);
     assert!(!is_editing(&app));
     assert_eq!(draft_plan(&app).accounts[1].balance, 123_456);
@@ -120,7 +121,7 @@ fn an_open_item_keeps_the_chord_that_would_quit() {
     tab_to_field(&mut app, 2);
     clear_field(&mut app);
     type_text(&mut app, "80");
-    press_ctrl(&mut app, KeyCode::Char('c'));
+    press_ctrl(&mut app, typed('c'));
     assert!(app.should_exit().is_none(), "the form has the keys");
     assert!(!is_asking(&app));
 }
@@ -129,7 +130,7 @@ fn an_open_item_keeps_the_chord_that_would_quit() {
 fn a_press_on_the_tab_bar_over_an_edit_asks_and_turns_no_page() {
     let mut app = headless_app(SIZE);
     show(&mut app, Page::Settings);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     tab_to_field(&mut app, 2);
     clear_field(&mut app);
     type_text(&mut app, "80");
@@ -149,7 +150,7 @@ fn a_press_on_the_tab_bar_over_an_edit_asks_and_turns_no_page() {
 fn applying_an_item_no_one_edited_leaves_the_draft_clean() {
     let mut app = fixture_app();
     open(&mut app, Page::Accounts);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert!(!is_editing(&app));
     assert!(!app.world().resource::<Draft>().is_dirty());
 }
@@ -158,7 +159,7 @@ fn applying_an_item_no_one_edited_leaves_the_draft_clean() {
 fn a_disk_change_waits_behind_an_item_being_edited() {
     let mut app = headless_app(SIZE);
     show(&mut app, Page::Settings);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     tab_to_field(&mut app, 2);
     clear_field(&mut app);
     type_text(&mut app, "80");
@@ -178,12 +179,12 @@ fn a_disk_change_waits_behind_an_item_being_edited() {
 fn reloading_over_an_edit_asks_about_the_edit_first() {
     let mut app = headless_app(SIZE);
     show(&mut app, Page::Settings);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     tab_to_field(&mut app, 2);
     clear_field(&mut app);
     type_text(&mut app, "80");
-    press_key(&mut app, KeyCode::Esc);
-    press_key(&mut app, KeyCode::Char('r'));
+    press_key(&mut app, Key::Escape);
+    press_key(&mut app, typed('r'));
     assert!(is_asking(&app));
     answer(&mut app, Answers::Cancel);
     assert!(
@@ -200,7 +201,7 @@ fn an_item_that_moved_under_its_edit_is_followed_rather_than_written_over_anothe
         plan.accounts.remove(0);
     });
     app.update();
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert!(!is_editing(&app), "applied: {:?}", said(&app));
     let accounts = draft_plan(&app).accounts;
     assert_eq!(accounts[0].id, "brokerage");
@@ -217,7 +218,7 @@ fn an_item_renamed_under_its_edit_is_refused() {
     open_and_retype_balance(&mut app);
     support::commit_edit(&mut app, |plan| plan.accounts[1].id = "renamed".to_owned());
     app.update();
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert!(is_editing(&app), "refused rather than applied");
     assert!(
         said(&app)
@@ -235,10 +236,10 @@ fn tab_walks_a_form_round_wherever_it_is_drawn() {
     ] {
         let mut app = fixture_app_sized(size);
         show(&mut app, page);
-        press_key(&mut app, KeyCode::Enter);
+        press_key(&mut app, Key::Enter);
         let first = focused(&app);
         tab_to_button(&mut app, FormButton::Apply);
-        press_key(&mut app, KeyCode::Tab);
+        press_key(&mut app, Key::Tab);
         assert_eq!(focused(&app), first, "{drawn}: apply is the last stop");
     }
 }

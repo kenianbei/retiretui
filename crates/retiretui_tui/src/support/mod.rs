@@ -18,8 +18,9 @@ use std::sync::Arc;
 
 use bevy_app::App;
 use bevy_ecs::system::RunSystemOnce;
+use bevy_input::keyboard::Key;
 use plurimus::core::{CorePlugin, TerminalSize};
-use plurimus::term::{InputCapabilities, KeyCode};
+use plurimus::term::InputCapabilities;
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::Plan;
 use tracing::subscriber::DefaultGuard;
@@ -87,9 +88,9 @@ pub fn is_browsing(app: &App) -> bool {
 /// steps toward the first.
 pub fn answer_back(app: &mut App, back: usize) {
     for _ in 0..back {
-        press_shift(app, KeyCode::Tab);
+        press_shift(app, Key::Tab);
     }
-    press_key(app, KeyCode::Enter);
+    press_key(app, Key::Enter);
 }
 
 /// A headless app, and the subscriber that carries what it says to its
@@ -219,7 +220,8 @@ pub const SETTLING_TICKS: usize = 3;
 pub fn lit_tab(app: &mut App) -> Option<usize> {
     let world = app.world_mut();
     let mut items = world
-        .query_filtered::<&super::tabbar::BarTab, bevy_ecs::prelude::With<plurimus::ui::Checked>>();
+        .query_filtered::<&super::tabbar::BarTab, bevy_ecs::prelude::With<plurimus::ui::Selected>>(
+        );
     items.iter(world).map(|tab| tab.0).next()
 }
 

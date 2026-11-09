@@ -1,7 +1,7 @@
 //! Headless tests for what a form says under its fields: the focused
 //! field's help, or the issue the draft holds against it.
 
-use plurimus::term::KeyCode;
+use bevy_input::keyboard::Key;
 
 use super::{BALANCE_FIELD, fixture_app, open, tab_to_field};
 use crate::nav::Page;
@@ -31,9 +31,9 @@ fn a_field_the_draft_holds_an_issue_against_says_so_in_its_form() {
     open(&mut app, Page::Accounts);
     let frame = composed_frame(&app);
     assert!(!frame.contains("Balance !"), "cash is sound: {frame}");
-    press_key(&mut app, KeyCode::Esc);
-    press_key(&mut app, KeyCode::Down);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Escape);
+    press_key(&mut app, Key::ArrowDown);
+    press_key(&mut app, Key::Enter);
     let frame = composed_frame(&app);
     assert!(frame.contains("Balance !"), "brokerage is marked: {frame}");
     assert!(

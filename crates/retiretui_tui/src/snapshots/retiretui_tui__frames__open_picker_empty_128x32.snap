@@ -1,6 +1,6 @@
 ---
 source: crates/retiretui_tui/src/frames.rs
-assertion_line: 26
+assertion_line: 45
 expression: composed_frame(app)
 ---
 ╭──────────╮╭────────╮╭─────────╮╭───────╮╭──────╮                                                                              
@@ -34,4 +34,4 @@ expression: composed_frame(app)
                                                                                                                                 
                                                                                                                                 
                                                                                                                                 
- ↑↓ move  ⏎ pick  ⇥ complete  ← parent  esc close
+ ↑↓ move  ⏎ pick  ⇥ complete  alt-↑ parent  esc close

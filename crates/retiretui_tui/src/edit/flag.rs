@@ -12,10 +12,10 @@ use bevy_input::keyboard::{Key, KeyboardInput};
 use bevy_input_focus::FocusedInput;
 use bevy_input_focus::InputFocus;
 use bevy_input_focus::tab_navigation::TabIndex;
-use plurimus::bui::bevy_picking::events::PointerClick;
 use plurimus::core::UiArea;
 use plurimus::core::ratatui_core::text::Line;
-use plurimus::term::bevy_compat::HeldModifiers;
+use plurimus::term::HeldModifiers;
+use plurimus::ui::bevy_picking::events::PointerClick;
 use plurimus::ui::{Checked, KeyBinding, ValueChange, first_bound};
 
 use super::build::FormField;

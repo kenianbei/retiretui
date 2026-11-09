@@ -10,7 +10,7 @@ use bevy_ui::ComputedNode;
 use plurimus::bui::ComputedNodeRect;
 use plurimus::core::ratatui_core::layout::{Constraint, Rect};
 use plurimus::core::ratatui_core::text::Line;
-use plurimus::term::bevy_compat::HeldModifiers;
+use plurimus::term::HeldModifiers;
 use plurimus::ui::{KeyBinding, UiStyle, first_bound};
 use plurimus::widgets::{ActiveDescendant, TableAction, TableKeys};
 
@@ -114,7 +114,7 @@ pub fn rebuild_rows(
         if !is_moved && domain_table.built_for == Some(given) {
             continue;
         }
-        let kept = cursor_row(*cursor, &rows);
+        let kept = cursor_row(cursor, &rows);
         let table_ref = domain_table.bypass_change_detection();
         table_ref.built_for = Some(given);
         let wanted = table_ref.wanted.take().or(kept);
@@ -185,7 +185,7 @@ pub fn cue_receipt(
 }
 
 /// The row `cursor` rests on, where it rests on one.
-pub fn cursor_row(cursor: ActiveDescendant, rows: &Query<&Row>) -> Option<Row> {
+pub fn cursor_row(cursor: &ActiveDescendant, rows: &Query<&Row>) -> Option<Row> {
     cursor.0.and_then(|row| rows.get(row).ok()).copied()
 }
 
@@ -205,7 +205,7 @@ pub fn handle_table_key(
         return;
     }
     input.propagate(false);
-    if let Some(row) = cursor_row(*cursor, &rows) {
+    if let Some(row) = cursor_row(cursor, &rows) {
         commands
             .run_system_cached_with(editing::open_item, (domain.ops, Some(table), Slot::At(row)));
     }

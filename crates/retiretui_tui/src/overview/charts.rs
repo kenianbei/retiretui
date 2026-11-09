@@ -6,9 +6,11 @@
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Component, Entity, On, Query, Res, ResMut, Resource, With};
+use plurimus::core::CellSize;
 use plurimus::core::ratatui_core::style::{Color, Style};
 use plurimus::core::ratatui_core::text::Span;
-use plurimus::ui::{ComputedWidgetArea, PointerPress};
+use plurimus::ui::bevy_picking::events::PointerPress;
+use plurimus::ui::{ComputedWidgetArea, pointer_cell};
 use retiretui_client::overview::{Chart, ChartLine, ChartMark, Charted, Spread, band_words};
 use retiretui_engine::market::Band;
 
@@ -74,13 +76,17 @@ pub(crate) fn cycle_chart(mut view: ResMut<ChartView>) -> Outcome {
 fn open_ledger(
     press: On<PointerPress>,
     charts: Query<(&SeriesChart, &ComputedWidgetArea)>,
+    cell: Res<CellSize>,
     mut run: ResMut<LedgerRun>,
     mut turn: Turn,
 ) {
     let Ok((chart, area)) = charts.get(press.entity) else {
         return;
     };
-    if chart.year_at(area.0, press.position).is_none() {
+    if chart
+        .year_at(area.0, pointer_cell(&press.pointer, *cell))
+        .is_none()
+    {
         return;
     }
     if run.0.is_some() {

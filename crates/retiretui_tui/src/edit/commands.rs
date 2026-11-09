@@ -53,10 +53,10 @@ pub struct FocusedTable<'w, 's> {
 
 impl FocusedTable<'_, '_> {
     /// The acting table, and its cursor.
-    pub(super) fn acting(&self) -> Option<(Entity, &DomainTable, ActiveDescendant)> {
+    pub(super) fn acting(&self) -> Option<(Entity, &DomainTable, &ActiveDescendant)> {
         let entity = self.session.editing_table().or_else(|| self.focus.get())?;
         let (table, cursor) = self.tables.get(entity).ok()?;
-        Some((entity, table, *cursor))
+        Some((entity, table, cursor))
     }
 
     /// The acting table and the item its cursor is on, where it is on one:

@@ -11,9 +11,7 @@ use bevy_ecs::prelude::{
     Add, Commands, Component, Entity, Has, IntoScheduleConfigs, On, Query, Res, With,
 };
 use bevy_ui::{BorderColor, FlexDirection, JustifyContent, Node, UiRect, Val};
-use plurimus::bui::bevy_picking::events::PointerClick;
-use plurimus::bui::bevy_ui_widgets::ValueChange;
-use plurimus::ui::{Checked, InteractionDisabled, UiLabel};
+use plurimus::ui::{InteractionDisabled, Selected, UiLabel};
 
 use super::chrome::{HAIRLINE, MARGIN, Ruled};
 use crate::hints::EDGE;
@@ -85,45 +83,21 @@ struct Underlined {
 fn underline_the_tab(added: On<Add<BarTab>>, mut commands: Commands) {
     let tab = added.entity;
     let label = commands.spawn((text(), ChildOf(tab))).id();
-    commands
-        .entity(tab)
-        .insert((
-            Node {
-                height: Val::Percent(100.0),
-                flex_direction: FlexDirection::Column,
-                justify_content: JustifyContent::Center,
-                margin: UiRect::left(Val::Em(TAB_GAP)),
-                border: UiRect::bottom(UNDERLINE),
-                ..Node::default()
-            },
-            Underlined {
-                label,
-                is_lit: false,
-                is_dead: false,
-            },
-        ))
-        .observe(choose_on_click);
-}
-
-/// A click on a live tab is the choice a terminal's click makes: the bar
-/// says which of its items was chosen, and the shell turns to it.
-fn choose_on_click(
-    click: On<PointerClick>,
-    tabs: Query<(&ChildOf, Has<InteractionDisabled>), With<BarTab>>,
-    mut commands: Commands,
-) {
-    let tab = click.entity;
-    let Ok((bar, is_dead)) = tabs.get(tab) else {
-        return;
-    };
-    if is_dead {
-        return;
-    }
-    commands.trigger(ValueChange {
-        source: bar.parent(),
-        value: tab,
-        is_final: true,
-    });
+    commands.entity(tab).insert((
+        Node {
+            height: Val::Percent(100.0),
+            flex_direction: FlexDirection::Column,
+            justify_content: JustifyContent::Center,
+            margin: UiRect::left(Val::Em(TAB_GAP)),
+            border: UiRect::bottom(UNDERLINE),
+            ..Node::default()
+        },
+        Underlined {
+            label,
+            is_lit: false,
+            is_dead: false,
+        },
+    ));
 }
 
 fn paint_tabs(
@@ -132,7 +106,7 @@ fn paint_tabs(
         (
             Entity,
             Ref<UiLabel>,
-            Has<Checked>,
+            Has<Selected>,
             Has<InteractionDisabled>,
             &mut Underlined,
         ),
@@ -223,7 +197,7 @@ mod tests {
             .spawn((
                 BarTab(0),
                 UiLabel(Line::from("1 Overview")),
-                Checked,
+                Selected,
                 ChildOf(bar),
             ))
             .id();

@@ -6,8 +6,8 @@
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{Commands, Entity, EntityEvent, On, Query, Without};
 use bevy_ui::ComputedNode;
-use plurimus::bui::bevy_picking::events::PointerClick;
 use plurimus::core::ratatui_core::layout::Constraint;
+use plurimus::ui::bevy_picking::events::PointerClick;
 use plurimus::widgets::ActiveDescendant;
 
 use super::{Grid, GridColumns, Said, solved};

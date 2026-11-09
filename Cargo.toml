@@ -65,19 +65,6 @@ cast_sign_loss = "allow"
 needless_pass_by_value = "allow"
 type_complexity = "allow"
 
-# The desktop work builds against the local plurimus parity branch and the
-# file picker over it until both are published.
-[patch.crates-io]
-plurimus = { path = "../plurimus" }
-plurimus_core = { path = "../plurimus/crates/plurimus_core" }
-plurimus_term = { path = "../plurimus/crates/plurimus_term" }
-plurimus_ui = { path = "../plurimus/crates/plurimus_ui" }
-plurimus_widgets = { path = "../plurimus/crates/plurimus_widgets" }
-plurimus_bui = { path = "../plurimus/crates/plurimus_bui" }
-plurimus_crossterm = { path = "../plurimus/crates/plurimus_crossterm" }
-plurimus_web = { path = "../plurimus/crates/plurimus_web" }
-plurimus_filepicker = { path = "../plurimus-filepicker" }
-
 # A debug window, and the engine's tests, run their dependencies optimised.
 [profile.dev.package."*"]
 opt-level = 3

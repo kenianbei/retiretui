@@ -1,8 +1,10 @@
 //! Headless tests for the form one item is edited in: opening and
 //! closing it, the tab ring, and its buttons.
 
+use crate::support::typed;
 use bevy_ecs::prelude::Entity;
-use plurimus::term::{KeyCode, LastCopied};
+use bevy_input::keyboard::Key;
+use plurimus::term::LastCopied;
 
 use super::{cursor, draft_plan, fixture_app, focused, is_editing, open, retype_balance};
 use crate::edit::Draft;
@@ -16,9 +18,9 @@ fn enter_opens_the_row_and_esc_closes_it() {
     let mut app = fixture_app();
     show(&mut app, Page::Accounts);
     app.update();
-    press_key(&mut app, KeyCode::Down);
+    press_key(&mut app, Key::ArrowDown);
     let table = focused(&app);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert!(is_editing(&app));
     let frame = composed_frame(&app);
     assert!(frame.contains("5%"), "the rate as a percent: {frame}");
@@ -34,7 +36,7 @@ fn enter_opens_the_row_and_esc_closes_it() {
         frame.contains("╭ Accounts ") && frame.contains("│  cash "),
         "the table stays visible around the overlay: {frame}"
     );
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     assert!(!is_editing(&app));
     assert_eq!(focused(&app), table, "focus returns to the table");
     let frame = composed_frame(&app);
@@ -61,7 +63,7 @@ pub(super) fn tab_until(
         if is_there(app) {
             return;
         }
-        press_key(app, KeyCode::Tab);
+        press_key(app, Key::Tab);
     }
     panic!("{named} was never reached");
 }
@@ -75,8 +77,8 @@ const TAB_LIMIT: usize = 40;
 pub(super) fn open_and_retype_balance(app: &mut bevy_app::App) {
     show(app, Page::Accounts);
     app.update();
-    press_key(app, KeyCode::Down);
-    press_key(app, KeyCode::Enter);
+    press_key(app, Key::ArrowDown);
+    press_key(app, Key::Enter);
     retype_balance(app);
 }
 
@@ -84,15 +86,15 @@ pub(super) fn open_and_retype_balance(app: &mut bevy_app::App) {
 fn the_tab_ring_ends_on_discard_then_apply() {
     let mut app = fixture_app();
     open(&mut app, Page::Accounts);
-    press_shift(&mut app, KeyCode::Tab);
+    press_shift(&mut app, Key::Tab);
     assert_eq!(
         focused_button(&app),
         Some(FormButton::Apply),
         "the ring wraps back onto the last widget, which applies"
     );
-    press_shift(&mut app, KeyCode::Tab);
+    press_shift(&mut app, Key::Tab);
     assert_eq!(focused_button(&app), Some(FormButton::Discard));
-    press_shift(&mut app, KeyCode::Tab);
+    press_shift(&mut app, Key::Tab);
     assert_eq!(focused_button(&app), None, "the fields come before them");
 }
 
@@ -101,7 +103,7 @@ fn the_apply_button_stores_the_open_item() {
     let mut app = fixture_app();
     open_and_retype_balance(&mut app);
     tab_to_button(&mut app, FormButton::Apply);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert!(!is_editing(&app), "applying closes the overlay");
     assert_eq!(draft_plan(&app).accounts[1].balance, 123_456);
     assert_eq!(cursor(&mut app), Row(1), "the applied row keeps the cursor");
@@ -112,7 +114,7 @@ fn the_discard_button_drops_the_open_item() {
     let mut app = fixture_app();
     open_and_retype_balance(&mut app);
     tab_to_button(&mut app, FormButton::Discard);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert!(!is_editing(&app), "discarding closes the overlay");
     assert_eq!(
         draft_plan(&app).accounts[1].balance,
@@ -126,11 +128,11 @@ fn shift_tab_steps_back_to_the_previous_field() {
     let mut app = fixture_app();
     open(&mut app, Page::Accounts);
     let first = focused(&app);
-    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, Key::Tab);
     assert_ne!(focused(&app), first, "tab moved forward");
-    press_shift(&mut app, KeyCode::Tab);
+    press_shift(&mut app, Key::Tab);
     assert_eq!(focused(&app), first, "shift-tab comes back");
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
 }
 
 #[test]
@@ -160,13 +162,13 @@ fn a_press_outside_the_overlay_discards_it() {
 fn applying_writes_the_whole_item_and_leaving_a_field_does_not() {
     let mut app = fixture_app();
     open_and_retype_balance(&mut app);
-    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, Key::Tab);
     assert_eq!(
         draft_plan(&app).accounts[1].balance,
         300_000,
         "leaving a field does not apply"
     );
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert!(!is_editing(&app));
     assert_eq!(draft_plan(&app).accounts[1].balance, 123_456);
     assert!(app.world().resource::<Draft>().is_dirty());
@@ -183,18 +185,18 @@ fn an_open_item_is_named_in_its_own_title() {
     app.update();
     let frame = composed_frame(&app);
     assert!(frame.contains("Edit cash"), "the item it opened: {frame}");
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     app.update();
     let frame = composed_frame(&app);
     assert!(
         !frame.contains("Edit cash"),
         "the closed pane names its domain again: {frame}"
     );
-    press_key(&mut app, KeyCode::Char('a'));
+    press_key(&mut app, typed('a'));
     app.update();
     let frame = composed_frame(&app);
     assert!(frame.contains("New Account"), "a new item: {frame}");
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     open(&mut app, Page::Transfers);
     app.update();
     let frame = composed_frame(&app);
@@ -207,18 +209,18 @@ fn an_open_item_is_named_in_its_own_title() {
         frame.contains("Edit dc-rollover"),
         "an unnamed item: {frame}"
     );
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
 }
 
 #[test]
 fn a_field_s_text_is_selected_cut_and_pasted_back() {
     let mut app = fixture_app();
     open_and_retype_balance(&mut app);
-    press_ctrl(&mut app, KeyCode::Char('a'));
-    press_ctrl(&mut app, KeyCode::Char('x'));
+    press_ctrl(&mut app, typed('a'));
+    press_ctrl(&mut app, typed('x'));
     let copied = app.world().resource::<LastCopied>();
     assert_eq!(copied.0.as_deref(), Some("123456"));
     assert!(!composed_frame(&app).contains("123456"), "cut");
-    press_ctrl(&mut app, KeyCode::Char('v'));
+    press_ctrl(&mut app, typed('v'));
     assert!(composed_frame(&app).contains("123456"), "pasted back");
 }

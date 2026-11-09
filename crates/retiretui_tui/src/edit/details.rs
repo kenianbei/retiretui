@@ -8,7 +8,7 @@ use bevy_ecs::prelude::{Bundle, Commands, Component, Entity, On, Query, Res, Wit
 use bevy_input::keyboard::KeyboardInput;
 use bevy_input_focus::FocusedInput;
 use plurimus::core::ratatui_core::style::{Modifier, Style};
-use plurimus::term::bevy_compat::HeldModifiers;
+use plurimus::term::HeldModifiers;
 use plurimus::ui::{UiStyle, first_bound};
 use plurimus::widgets::ActiveDescendant;
 
@@ -166,7 +166,7 @@ fn handle_enter(
 /// or the only item where they follow none.
 fn shown_row(cursor: Option<&ActiveDescendant>, rows: &Query<&Row>) -> Option<Row> {
     match cursor {
-        Some(cursor) => cursor_row(*cursor, rows),
+        Some(cursor) => cursor_row(cursor, rows),
         None => Some(Row(0)),
     }
 }

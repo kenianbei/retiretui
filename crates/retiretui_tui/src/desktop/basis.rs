@@ -9,7 +9,7 @@ use bevy_ecs::prelude::{
     Add, Commands, Component, Entity, IntoScheduleConfigs, On, Query, Res, With,
 };
 use bevy_ui::{AlignSelf, Node, UiRect, Val};
-use plurimus::bui::bevy_picking::events::PointerClick;
+use plurimus::ui::bevy_picking::events::PointerClick;
 
 use super::chrome::MARGIN;
 use super::pill::{SEGMENT_PADDING, lift, pill, segment};

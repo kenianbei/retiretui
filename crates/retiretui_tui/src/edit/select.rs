@@ -9,16 +9,17 @@ use bevy_app::{App, Startup, Update};
 use bevy_ecs::change_detection::{DetectChangesMut, Mut};
 use bevy_ecs::hierarchy::{ChildOf, Children};
 use bevy_ecs::prelude::{
-    Added, Changed, Commands, Component, Entity, EntityEvent, IntoScheduleConfigs, On, Query,
-    ResMut, With,
+    Changed, Commands, Component, Entity, EntityEvent, IntoScheduleConfigs, On, Query, ResMut, With,
 };
+use bevy_ecs::system::SystemParam;
 use bevy_input::keyboard::{Key, KeyboardInput};
+use bevy_input_focus::tab_navigation::{NavAction, TabIndex};
 use bevy_input_focus::{FocusCause, FocusedInput, InputFocus};
 use plurimus::core::ratatui_core::text::{Line, Span};
-use plurimus::term::bevy_compat::HeldModifiers;
+use plurimus::term::HeldModifiers;
 use plurimus::ui::{KeyBinding, UiLabel, first_bound};
 use plurimus::widgets::{
-    Activate, ActivateKeys, MenuOpen, MenuPopup, menu_button, menu_item, menu_popup,
+    Activate, MenuAction, MenuEvent, MenuFocusState, MenuPopup, menu_button, menu_item, menu_popup,
 };
 use retiretui_engine::plan::Plan;
 use toml::Value;
@@ -28,7 +29,7 @@ use super::domain::{BLANK, FieldKind};
 use super::offers::{Offer, PickOffers, Vocabulary, held_word, ref_offers};
 use super::search;
 use crate::hints::Hints;
-use crate::layout::placed;
+use crate::layout::{filling, placed};
 use crate::scope::KeyScope;
 
 pub fn plugin(app: &mut App) {
@@ -42,15 +43,17 @@ pub fn plugin(app: &mut App) {
 /// What a select's label ends with, a span of its own after the value.
 pub(crate) const CHEVRON: &str = "▾";
 
-/// The button opens its menu on space alone, leaving Enter to apply the
-/// item.
-fn space() -> ActivateKeys {
-    ActivateKeys(vec![KeyBinding::new(Key::Character(" ".into()))])
-}
 const STEP_KEYS: &[(KeyBinding, isize)] = &[
     (KeyBinding::new(Key::ArrowLeft), -1),
     (KeyBinding::new(Key::ArrowRight), 1),
 ];
+
+/// The box a select is drawn as, naming the select: upstream's menu button,
+/// which opens on a click and anchors the menu. The keyboard stays on the
+/// select around it, since the button would take Enter and every arrow
+/// for itself.
+#[derive(Component, Debug)]
+pub(crate) struct SelectBox(Entity);
 
 #[derive(Component)]
 pub struct Select {
@@ -202,34 +205,75 @@ impl Select {
 pub fn spawn_select(commands: &mut Commands, select: Select, field: FormField) -> Entity {
     let is_searched = select.searched().is_some();
     let select = commands
-        .spawn((menu_button(""), space(), select, field, placed()))
-        .observe(handle_step_key)
+        .spawn((select, field, TabIndex(0), placed()))
+        .observe(handle_select_key)
+        .id();
+    let button = commands
+        .spawn((
+            menu_button(""),
+            SelectBox(select),
+            filling(),
+            placed(),
+            ChildOf(select),
+        ))
+        .remove::<TabIndex>()
+        .observe(hand_back_the_keyboard)
         .id();
     if is_searched {
-        commands.entity(select).observe(search::handle_search);
+        commands.entity(button).observe(search::handle_search);
         return select;
     }
     commands.spawn((
-        menu_popup(select),
+        menu_popup(button),
         KeyScope::All,
         Hints(&[("↑↓", "move"), ("⏎", "pick"), ("esc", "close")]),
-        ChildOf(select),
+        ChildOf(button),
     ));
     select
 }
 
+/// The box a select is drawn as, among its children.
+fn box_of(children: Option<&Children>, is_box: impl Fn(Entity) -> bool) -> Option<Entity> {
+    children
+        .into_iter()
+        .flatten()
+        .copied()
+        .find(|&child| is_box(child))
+}
+
+/// A menu closing hands the keyboard to its button, as upstream does, and
+/// the button hands it on to the select it draws.
+fn hand_back_the_keyboard(
+    event: On<MenuEvent>,
+    boxes: Query<&SelectBox>,
+    mut focus: ResMut<InputFocus>,
+) {
+    if matches!(event.action, MenuAction::FocusRoot)
+        && let Ok(drawn) = boxes.get(event.source)
+    {
+        focus.set(drawn.0, FocusCause::Navigated);
+    }
+}
+
 pub fn sync_selects(
-    mut selects: Query<(&mut Select, &mut UiLabel, Option<&Children>), Changed<Select>>,
+    mut selects: Query<(&mut Select, Option<&Children>), Changed<Select>>,
+    mut boxes: Query<(&mut UiLabel, Option<&Children>), With<SelectBox>>,
     popups: Query<Option<&Children>, With<MenuPopup>>,
     mut commands: Commands,
 ) {
-    for (mut select, mut label, children) in &mut selects {
+    for (mut select, children) in &mut selects {
+        let Some(drawn) = box_of(children, |child| boxes.contains(child)) else {
+            continue;
+        };
+        let Ok((mut label, inside)) = boxes.get_mut(drawn) else {
+            continue;
+        };
         let shown = Span::raw(select.shown().to_owned());
         label.0 = Line::from(vec![shown, Span::raw(format!(" {CHEVRON}"))]).left_aligned();
         if select.is_listed {
             continue;
         }
-        let mut listed = children.into_iter().flatten().copied();
+        let mut listed = inside.into_iter().flatten().copied();
         let Some(popup) = listed.find(|&child| popups.contains(child)) else {
             continue;
         };
@@ -253,15 +297,21 @@ pub fn sync_selects(
     }
 }
 
-/// A menu opens on the row of the value the field holds.
+/// A menu opens on the row of the value the field holds, once upstream
+/// has put the keyboard on its first.
 fn open_on_the_chosen(
-    opened: Query<(&Children, &ChildOf), Added<MenuOpen>>,
+    opened: Query<(&Children, &ChildOf, &MenuFocusState), Changed<MenuFocusState>>,
+    boxes: Query<&SelectBox>,
     selects: Query<&Select>,
     rows: Query<&Choice>,
     mut focus: ResMut<InputFocus>,
 ) {
-    for (children, select) in &opened {
-        let Ok(select) = selects.get(select.parent()) else {
+    for (children, button, state) in &opened {
+        if *state != MenuFocusState::Open {
+            continue;
+        }
+        let drawn = boxes.get(button.parent());
+        let Ok(select) = drawn.and_then(|drawn| selects.get(drawn.0)) else {
             continue;
         };
         let held = children
@@ -277,14 +327,18 @@ fn open_on_the_chosen(
 fn handle_choice(
     chosen: On<Activate>,
     rows: Query<(&Choice, &ChildOf)>,
-    popups: Query<&ChildOf, With<MenuPopup>>,
+    (parents, boxes): (Query<&ChildOf>, Query<&SelectBox>),
     mut selects: Query<&mut Select>,
     mut commands: Commands,
 ) {
     let Ok((choice, popup)) = rows.get(chosen.entity) else {
         return;
     };
-    let Ok(entity) = popups.get(popup.parent()).map(ChildOf::parent) else {
+    let button = parents.get(popup.parent()).map(ChildOf::parent);
+    let Ok(entity) = button
+        .and_then(|button| boxes.get(button))
+        .map(|drawn| drawn.0)
+    else {
         return;
     };
     let Ok(mut select) = selects.get_mut(entity) else {
@@ -294,24 +348,54 @@ fn handle_choice(
     commands.trigger(PickChanged { entity, value });
 }
 
-/// Left and right step a closed select.
-fn handle_step_key(
+/// What opens a select: the menu its box anchors, or the picker of a set
+/// too long for one.
+#[derive(SystemParam)]
+struct Opening<'w, 's> {
+    boxes: Query<'w, 's, (), With<SelectBox>>,
+    searching: search::Searching<'w>,
+    commands: Commands<'w, 's>,
+}
+
+impl Opening<'_, '_> {
+    fn open(&mut self, entity: Entity, select: &Select, children: Option<&Children>) {
+        if self.searching.open(entity, select) {
+            return;
+        }
+        if let Some(button) = box_of(children, |child| self.boxes.contains(child)) {
+            self.commands.trigger(MenuEvent {
+                source: button,
+                action: MenuAction::Open(NavAction::First),
+            });
+        }
+    }
+}
+
+/// Space opens a select, leaving Enter to apply the item; left and right
+/// step a closed one.
+fn handle_select_key(
     mut input: On<FocusedInput<KeyboardInput>>,
     held: HeldModifiers,
-    mut selects: Query<&mut Select>,
-    mut commands: Commands,
+    mut selects: Query<(&mut Select, Option<&Children>)>,
+    mut opening: Opening,
 ) {
     let entity = input.focused_entity;
-    let Ok(mut select) = selects.get_mut(entity) else {
+    let Ok((mut select, children)) = selects.get_mut(entity) else {
         return;
     };
+    let open = [(KeyBinding::new(Key::Character(" ".into())), ())];
+    if first_bound(&open, &input.input, held.get()).is_some() {
+        input.propagate(false);
+        opening.open(entity, &select, children);
+        return;
+    }
     let Some(step) = first_bound(STEP_KEYS, &input.input, held.get()) else {
         return;
     };
     input.propagate(false);
     select.step(step);
     let value = select.value();
-    commands.trigger(PickChanged { entity, value });
+    opening.commands.trigger(PickChanged { entity, value });
 }
 
 #[cfg(test)]

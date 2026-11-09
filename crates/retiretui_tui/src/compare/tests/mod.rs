@@ -2,8 +2,8 @@ use bevy_app::App;
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::hierarchy::Children;
 use bevy_ecs::prelude::{Component, Or};
+use bevy_input::keyboard::Key;
 use bevy_input_focus::InputFocus;
-use plurimus::term::KeyCode;
 use plurimus::widgets::ActiveDescendant;
 
 use super::by_year::ByYearTable;
@@ -33,7 +33,7 @@ fn compared(app: &App) -> Vec<String> {
 fn compare_with(app: &mut App, name: &str) {
     run_command(app, "compare-with");
     type_text(app, name);
-    press_key(app, KeyCode::Enter);
+    press_key(app, Key::Enter);
     app.update();
 }
 

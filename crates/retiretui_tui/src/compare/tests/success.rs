@@ -1,3 +1,4 @@
+use crate::support::typed;
 use retiretui_engine::plan::{Market, Plan};
 
 use super::*;
@@ -51,8 +52,8 @@ fn every_row_answers_with_its_share_of_markets_survived() {
 fn an_answered_plan_is_not_run_again() {
     let mut app = comparing_variant(SIZE);
     settle_all(&mut app);
-    press_key(&mut app, KeyCode::Down);
-    press_key(&mut app, KeyCode::Char('b'));
+    press_key(&mut app, Key::ArrowDown);
+    press_key(&mut app, typed('b'));
     app.update();
     assert!(!is_running(&app), "the rows moved, their plans did not");
 }
@@ -102,7 +103,7 @@ fn a_difference_reads_in_points() {
 fn difference_turns_the_answered_success_to_points() {
     let mut app = comparing_variant(SIZE);
     settle_all(&mut app);
-    press_key(&mut app, KeyCode::Char('d'));
+    press_key(&mut app, typed('d'));
     let frame = redrawn(&mut app);
     assert!(frame.contains("same") || frame.contains(" pts"), "{frame}");
 }

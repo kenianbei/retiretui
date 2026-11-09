@@ -255,11 +255,11 @@ depends on UI.
   the window
   dimming the whole frame under whichever overlay stands highest, drawing
   every frame while a search runs and otherwise only on input and once a
-  beat, the file watch's, and saying the pointer's moves and a click on a
-  plot to the shell as the terminal's mouse says them, answering every other
-  click itself. Behind one feature it holds the launcher that runs it in a
-  terminal and the command that lists its themes; behind another, the
-  launcher that opens the window.
+  beat, the file watch's, its pointer reaching every widget as a terminal's
+  mouse does, measured in its cells, and a click answered by the window
+  itself only on what it alone draws. Behind one feature it holds the
+  launcher that runs it in a terminal and the command that lists its themes;
+  behind another, the launcher that opens the window.
 - `retiretui` - the user-facing binary, composing each interface's clap
   subcommands into one command: the command line's from `retiretui_cli`, `tui`
   and `theme` from `retiretui_tui`, and `mcp` from `retiretui_mcp`; each is a

@@ -1,6 +1,7 @@
 //! Headless tests for taking back applied items and putting them back.
 
-use plurimus::term::KeyCode;
+use crate::support::typed;
+use bevy_input::keyboard::Key;
 
 use super::fields::open_and_retype_balance;
 use super::{draft_plan, fixture_app};
@@ -30,18 +31,18 @@ fn last_said(app: &bevy_app::App) -> String {
 fn undo_takes_back_one_applied_item_and_redo_puts_it_back() {
     let mut app = fixture_app();
     open_and_retype_balance(&mut app);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert_eq!(balance(&app, 1), RETYPED);
-    press_ctrl(&mut app, KeyCode::Char('z'));
+    press_ctrl(&mut app, typed('z'));
     assert_eq!(balance(&app, 1), ORIGINAL);
     assert!(is_dirty(&app));
     let frame = composed_frame(&app);
     assert!(frame.contains("$300,000"), "the table follows: {frame}");
-    press_ctrl(&mut app, KeyCode::Char('z'));
+    press_ctrl(&mut app, typed('z'));
     assert_eq!(last_said(&app), "nothing to undo");
-    press_ctrl(&mut app, KeyCode::Char('y'));
+    press_ctrl(&mut app, typed('y'));
     assert_eq!(balance(&app, 1), RETYPED);
-    press_ctrl(&mut app, KeyCode::Char('y'));
+    press_ctrl(&mut app, typed('y'));
     assert_eq!(last_said(&app), "nothing to redo");
 }
 
@@ -49,16 +50,16 @@ fn undo_takes_back_one_applied_item_and_redo_puts_it_back() {
 fn deleting_and_adding_are_steps() {
     let mut app = headless_app(SIZE);
     show(&mut app, Page::Accounts);
-    press_key(&mut app, KeyCode::Char('d'));
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, typed('d'));
+    press_key(&mut app, Key::Enter);
     assert_eq!(draft_plan(&app).accounts.len(), 1);
-    press_ctrl(&mut app, KeyCode::Char('z'));
+    press_ctrl(&mut app, typed('z'));
     assert_eq!(draft_plan(&app).accounts.len(), 2);
-    press_key(&mut app, KeyCode::Char('a'));
+    press_key(&mut app, typed('a'));
     type_text(&mut app, "brokerage");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert_eq!(draft_plan(&app).accounts.len(), 3);
-    press_ctrl(&mut app, KeyCode::Char('z'));
+    press_ctrl(&mut app, typed('z'));
     assert_eq!(draft_plan(&app).accounts.len(), 2);
 }
 
@@ -66,12 +67,12 @@ fn deleting_and_adding_are_steps() {
 fn an_edit_after_undo_forgets_what_was_undone() {
     let mut app = headless_app(SIZE);
     commit(&mut app, |plan| plan.plan.name = Some("first".to_owned()));
-    press_ctrl(&mut app, KeyCode::Char('z'));
+    press_ctrl(&mut app, typed('z'));
     commit(&mut app, |plan| plan.plan.name = Some("second".to_owned()));
-    press_ctrl(&mut app, KeyCode::Char('y'));
+    press_ctrl(&mut app, typed('y'));
     assert_eq!(last_said(&app), "nothing to redo");
     assert_eq!(draft_plan(&app).plan.name.as_deref(), Some("second"));
-    press_ctrl(&mut app, KeyCode::Char('z'));
+    press_ctrl(&mut app, typed('z'));
     assert_eq!(
         draft_plan(&app).plan.name.as_deref(),
         Some("test-plan"),
@@ -88,10 +89,10 @@ fn history_reaches_back_a_hundred_items() {
         });
     }
     for _ in 0..100 {
-        press_ctrl(&mut app, KeyCode::Char('z'));
+        press_ctrl(&mut app, typed('z'));
     }
     assert_eq!(draft_plan(&app).plan.name.as_deref(), Some("1"));
-    press_ctrl(&mut app, KeyCode::Char('z'));
+    press_ctrl(&mut app, typed('z'));
     assert_eq!(last_said(&app), "nothing to undo");
 }
 
@@ -99,9 +100,9 @@ fn history_reaches_back_a_hundred_items() {
 fn undo_past_a_save_dirties_the_draft_again() {
     let mut app = headless_app(SIZE);
     commit(&mut app, |plan| plan.plan.name = Some("renamed".to_owned()));
-    press_ctrl(&mut app, KeyCode::Char('s'));
+    press_ctrl(&mut app, typed('s'));
     assert!(!is_dirty(&app), "{:?}", said(&app));
-    press_ctrl(&mut app, KeyCode::Char('z'));
+    press_ctrl(&mut app, typed('z'));
     assert!(is_dirty(&app));
     assert_eq!(draft_plan(&app).plan.name.as_deref(), Some("test-plan"));
 }
@@ -110,8 +111,8 @@ fn undo_past_a_save_dirties_the_draft_again() {
 fn a_reload_empties_the_history() {
     let mut app = headless_app(SIZE);
     commit(&mut app, |plan| plan.plan.name = Some("first".to_owned()));
-    press_key(&mut app, KeyCode::Char('r'));
-    press_ctrl(&mut app, KeyCode::Char('z'));
+    press_key(&mut app, typed('r'));
+    press_ctrl(&mut app, typed('z'));
     assert_eq!(last_said(&app), "nothing to undo");
     assert_eq!(draft_plan(&app).plan.name.as_deref(), Some("test-plan"));
 }

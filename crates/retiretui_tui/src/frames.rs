@@ -1,10 +1,11 @@
 //! Composed-frame snapshots: what each page draws, at the smallest
 //! terminal the shell lays out in and at a full-screen one.
 
+use crate::support::typed;
 use bevy_app::App;
 use bevy_ecs::prelude::Mut;
+use bevy_input::keyboard::Key;
 use plurimus::core::TerminalSize;
-use plurimus::term::KeyCode;
 
 use super::compare::Compared;
 use super::edit::tests::open;
@@ -64,7 +65,7 @@ fn drawing_ledger(size: TerminalSize) -> Headless {
     let mut app = fixture_app(size);
     show(&mut app, Page::Ledger);
     for _ in 0..16 {
-        press_key(&mut app, KeyCode::Down);
+        press_key(&mut app, Key::ArrowDown);
     }
     settle(&mut app);
     app
@@ -78,7 +79,7 @@ fn the_ledger_draws_a_drawing_year_in_each_shape_and_each_column_set() {
     let mut app = drawing_ledger(ROOMY);
     assert_frame("ledger_drawing", ROOMY, &app);
     for set in ["accounts", "tax"] {
-        press_key(&mut app, KeyCode::Char('c'));
+        press_key(&mut app, typed('c'));
         settle(&mut app);
         assert_frame(&format!("ledger_table_{set}"), ROOMY, &app);
     }
@@ -92,7 +93,7 @@ fn the_overview_draws_each_chart_view() {
         let mut app = searched_fixture(size);
         super::tools::settle_all(&mut app);
         for view in ["net_worth", "income_taxes", "markets"] {
-            press_key(&mut app, KeyCode::Char('v'));
+            press_key(&mut app, typed('v'));
             app.update();
             assert_frame(&format!("overview_{view}"), size, &app);
         }
@@ -118,7 +119,7 @@ fn the_overview_draws_what_needs_attention() {
 fn the_new_plan_form_draws_its_frame() {
     for size in [SIZE, ROOMY] {
         let mut app = headless_app_at(scratch_workspace(super::support::TEST_PLAN), size);
-        press_key(&mut app, KeyCode::Esc);
+        press_key(&mut app, Key::Escape);
         for _ in 0..SETTLING_TICKS {
             app.update();
         }
@@ -141,9 +142,9 @@ fn an_open_item_draws_its_overlay() {
 fn an_open_select_draws_its_menu_over_the_form() {
     let mut app = fixture_app(ROOMY);
     open(&mut app, Page::Accounts);
-    press_key(&mut app, KeyCode::Tab);
-    press_key(&mut app, KeyCode::Tab);
-    press_key(&mut app, KeyCode::Char(' '));
+    press_key(&mut app, Key::Tab);
+    press_key(&mut app, Key::Tab);
+    press_key(&mut app, typed(' '));
     app.update();
     let frame = composed_frame(&app);
     assert!(frame.contains(" SIMPLE IRA "), "the menu is open: {frame}");
@@ -154,7 +155,7 @@ fn an_open_select_draws_its_menu_over_the_form() {
 fn a_question_draws_its_dialog() {
     let mut app = fixture_app(SIZE);
     show(&mut app, Page::Accounts);
-    press_key(&mut app, KeyCode::Char('d'));
+    press_key(&mut app, typed('d'));
     app.update();
     assert_frame("accounts_delete", SIZE, &app);
 }
@@ -162,7 +163,7 @@ fn a_question_draws_its_dialog() {
 #[test]
 fn the_picker_draws_over_the_page() {
     let mut app = searched_fixture(SIZE);
-    press_key(&mut app, KeyCode::Char(':'));
+    press_key(&mut app, typed(':'));
     type_text(&mut app, "page");
     app.update();
     assert_frame("commands_picker", SIZE, &app);
@@ -179,12 +180,12 @@ fn the_workspace_picker_draws_over_the_empty_shell_and_over_a_page() {
         if size == SIZE {
             assert_frame("open_picker_empty", size, &app);
         }
-        press_key(&mut app, KeyCode::Esc);
+        press_key(&mut app, Key::Escape);
         assert_frame("empty_shell", size, &app);
     }
 
     let mut app = searched_app(dir.join("plan.toml"), &fixture_text(), SIZE);
-    press_ctrl(&mut app, KeyCode::Char('o'));
+    press_ctrl(&mut app, typed('o'));
     app.update();
     assert_frame("open_picker", SIZE, &app);
 }
@@ -196,7 +197,7 @@ fn the_issues_panel_draws_over_the_page() {
         plan.accounts[1].balance = -1;
         plan.plan.inflation = 9.0;
     });
-    press_key(&mut app, KeyCode::Char('i'));
+    press_key(&mut app, typed('i'));
     app.update();
     assert_frame("issues", SIZE, &app);
 }
@@ -205,7 +206,7 @@ fn the_issues_panel_draws_over_the_page() {
 fn the_statement_picker_draws_over_the_people_page() {
     let mut app = fixture_app(SIZE);
     show(&mut app, Page::People);
-    press_key(&mut app, KeyCode::Char('e'));
+    press_key(&mut app, typed('e'));
     app.update();
     assert_frame("people_import", SIZE, &app);
 }
@@ -225,10 +226,10 @@ fn every_market_view_draws_its_frame() {
             show(&mut app, page);
             super::tools::settle_all(&mut app);
             for view in views {
-                press_key(&mut app, KeyCode::Char('v'));
+                press_key(&mut app, typed('v'));
                 assert_frame(&format!("{}_{view}", page.label()), size, &app);
             }
-            press_key(&mut app, KeyCode::Char('v'));
+            press_key(&mut app, typed('v'));
         }
     }
 }
@@ -268,7 +269,7 @@ fn a_compared_plan_draws_its_row_and_line() {
         settle(&mut app);
         assert_frame("compare_one", size, &app);
         for view in ["grid", "by_year"] {
-            press_key(&mut app, KeyCode::Char('v'));
+            press_key(&mut app, typed('v'));
             assert_frame(&format!("compare_one_{view}"), size, &app);
         }
     }
@@ -281,7 +282,7 @@ fn a_poorer_plan_under_difference_draws_below_zero() {
     let poorer = "schema = 1\nbase = \"plan.toml\"\n\n[[accounts]]\nid = \"brokerage\"\nbalance = 100000\nbasis = 80000\n";
     for size in [SIZE, ROOMY] {
         let mut app = comparing(size, "poorer.toml", poorer);
-        press_key(&mut app, KeyCode::Char('d'));
+        press_key(&mut app, typed('d'));
         settle(&mut app);
         assert_frame("compare_difference", size, &app);
     }
@@ -331,7 +332,7 @@ fn a_compared_scenario_lists_what_it_changes() {
     for size in [SIZE, ROOMY] {
         let mut app = comparing(size, "changed.toml", CHANGED);
         app.update();
-        press_key(&mut app, KeyCode::Down);
+        press_key(&mut app, Key::ArrowDown);
         settle(&mut app);
         assert_frame("compare_changes", size, &app);
     }

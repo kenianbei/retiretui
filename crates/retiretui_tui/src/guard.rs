@@ -4,7 +4,7 @@ use bevy_app::{App, Startup, Update};
 use bevy_ecs::change_detection::DetectChanges;
 use bevy_ecs::prelude::{Commands, Component, Entity, Query, Res, With};
 use bevy_ui::Node;
-use plurimus::core::{TerminalSize, UiArea, UiHidden, UiWidget};
+use plurimus::core::{Hidden, Propagate, TerminalSize, UiArea, UiWidget};
 use plurimus::widgets::ratatui_widgets::paragraph::Paragraph;
 
 use super::layout::{self, Root};
@@ -46,7 +46,7 @@ fn spawn_notice(mut commands: Commands) {
         Notice,
         UiWidget::new(Paragraph::new(notice)),
         UiArea::Fill,
-        UiHidden,
+        Propagate(Hidden),
     ));
 }
 
@@ -69,9 +69,9 @@ fn guard_size(
     }
     for notice in &notices {
         if is_fitting {
-            commands.entity(notice).insert(UiHidden);
+            commands.entity(notice).insert(Propagate(Hidden));
         } else {
-            commands.entity(notice).remove::<UiHidden>();
+            commands.entity(notice).remove::<Propagate<Hidden>>();
         }
     }
 }

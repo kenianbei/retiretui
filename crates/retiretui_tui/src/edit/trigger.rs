@@ -5,14 +5,14 @@
 use bevy_ecs::hierarchy::{ChildOf, Children};
 use bevy_ecs::prelude::{Changed, Commands, Component, Entity, Query};
 use bevy_ui::{Node, UiRect, Val};
-use plurimus::widgets::TextInput;
+use plurimus::bui::bevy_text::EditableText;
 use retiretui_engine::plan::{Operand, Plan, TriggerBasis};
 use toml::Value;
 
 use super::build::FormField;
 use super::codec::to_text;
 use super::domain::{BLANK, FieldKind, FieldSpec};
-use super::field::{sharing, show_text, spawn_beside, spawn_text_as};
+use super::field::{ShownText, sharing, show_text, spawn_beside, spawn_text_as};
 use super::offers::{PickOffers, Vocabulary, trigger_bases};
 use super::select::{Select, spawn_select};
 use crate::layout::{set_display, sized};
@@ -147,7 +147,7 @@ pub type SlotsMut<'w, 's> = Query<
     's,
     (
         &'static Slot,
-        Option<&'static mut TextInput>,
+        Option<(&'static mut EditableText, &'static mut ShownText)>,
         Option<&'static mut Select>,
     ),
 >;
@@ -161,8 +161,9 @@ pub fn show_trigger(value: Option<&Value>, plan: &Plan, group: &[Entity], slots:
             Slot::Kind => kind_of(value).map(|kind| Value::String(kind.as_str().to_owned())),
             Slot::Part(operand) => operand_of(value, operand).cloned(),
         };
-        if let Some(mut text) = text {
-            show_text(&mut text, part.as_ref().map(to_text).unwrap_or_default());
+        if let Some((mut text, mut shown)) = text {
+            let wanted = part.as_ref().map(to_text).unwrap_or_default();
+            show_text(&mut text, &mut shown, wanted);
         }
         if let Some(mut select) = select {
             let options = select.referred(plan);

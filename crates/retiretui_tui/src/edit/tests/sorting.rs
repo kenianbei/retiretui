@@ -1,7 +1,8 @@
 //! Headless tests for a table shown in an order other than the plan's.
 
+use crate::support::typed;
 use bevy_app::App;
-use plurimus::term::KeyCode;
+use bevy_input::keyboard::Key;
 
 use super::{
     ADD_ACCOUNT, BALANCE_FIELD, clear_field, cursor, draft_plan, fixture_app, tab_to_field,
@@ -80,27 +81,27 @@ fn a_header_orders_the_table_up_then_down_then_as_the_plan_has_it() {
 #[test]
 fn the_sort_key_walks_the_columns() {
     let mut app = accounts_app();
-    press_key(&mut app, KeyCode::Char('s'));
+    press_key(&mut app, typed('s'));
     assert!(composed_frame(&app).contains("Account ▲"));
     assert_eq!(listed(&app)[0], "brokerage");
-    press_key(&mut app, KeyCode::Char('s'));
+    press_key(&mut app, typed('s'));
     assert!(composed_frame(&app).contains("Account ▼"));
-    press_key(&mut app, KeyCode::Char('s'));
+    press_key(&mut app, typed('s'));
     assert!(composed_frame(&app).contains("Type ▲"));
 }
 
 #[test]
 fn an_edit_under_a_sort_lands_in_the_item_the_row_stands_for() {
     let mut app = accounts_app();
-    press_key(&mut app, KeyCode::Char('s'));
+    press_key(&mut app, typed('s'));
     assert_eq!(cursor(&mut app), Row(0), "the cursor stays on cash");
-    press_key(&mut app, KeyCode::Home);
+    press_key(&mut app, Key::Home);
     assert_eq!(cursor(&mut app), Row(1), "brokerage leads by id");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     tab_to_field(&mut app, BALANCE_FIELD);
     clear_field(&mut app);
     crate::support::type_text(&mut app, "123456");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     let accounts = draft_plan(&app).accounts;
     assert_eq!(accounts[1].id, "brokerage", "the plan keeps its own order");
     assert_eq!(accounts[1].balance, 123_456);

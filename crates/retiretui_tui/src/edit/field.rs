@@ -5,7 +5,7 @@
 //! Nothing here consumes Enter, so it reaches the form and applies the
 //! item.
 
-use bevy_ecs::change_detection::DetectChanges;
+use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut, Mut, Ref};
 use bevy_ecs::hierarchy::{ChildOf, Children};
 use bevy_ecs::prelude::{
     Bundle, Changed, Commands, Component, Entity, Has, Query, Res, With, Without,
@@ -14,12 +14,13 @@ use bevy_ecs::system::SystemParam;
 use bevy_input_focus::InputFocus;
 use bevy_input_focus::tab_navigation::TabIndex;
 use bevy_ui::{Node, UiRect, Val};
+use plurimus::bui::bevy_text::{EditableText, TextColor, TextEdit};
 use plurimus::bui::bevy_ui_widgets::SliderValue;
+use plurimus::bui::bevy_ui_widgets::TextInput as FieldInput;
 use plurimus::core::UiArea;
 use plurimus::core::ratatui_core::style::Style;
 use plurimus::core::ratatui_core::text::Line;
 use plurimus::ui::Checked;
-use plurimus::widgets::TextInput;
 use retiretui_engine::plan::Plan;
 use toml::Value;
 
@@ -80,12 +81,28 @@ pub fn show_remainders(
 /// Fills a text field, leaving the caret alone when the value it already
 /// shows is the wanted one - which is what stops the caret jumping while
 /// the draft moves under a field being typed into.
-pub fn show_text(text: &mut TextInput, wanted: String) {
-    if text.value() != wanted {
-        *text = TextInput::new(wanted);
-        text.move_start();
+pub fn show_text(text: &mut Mut<EditableText>, shown: &mut ShownText, wanted: String) {
+    if text.value() != wanted.as_str() {
+        text.editor_mut().set_text(&wanted);
+        text.queue_edit(TextEdit::TextStart(false));
+    }
+    shown.0 = wanted;
+}
+
+/// Every text field's text is in the theme's ink, in either skin: a form's
+/// and the file picker's.
+pub fn ink_fields(theme: Res<Theme>, mut fields: Query<(Ref<FieldInput>, &mut TextColor)>) {
+    for (spawned, mut colour) in &mut fields {
+        if theme.is_changed() || spawned.is_added() {
+            colour.set_if_neq(TextColor(theme.ink(Style::default())));
+        }
     }
 }
+
+/// What the form last showed in a field or read back from it, so that what
+/// the form writes there is not read back as typed.
+#[derive(Component, Debug, Default)]
+pub struct ShownText(pub(crate) String);
 
 /// A widget taking an even share of what its row has left.
 pub fn sharing() -> Node {
@@ -136,10 +153,10 @@ pub fn spawn_beside(commands: &mut Commands, row: Entity, input: Entity, drawn: 
     ));
 }
 
-/// A form's text field: plurimus's `TextInput` state is the value both
-/// skins share, and each dresses the entity with what edits and draws it.
+/// A form's text field: upstream's text input in both skins, edited and
+/// drawn on a terminal's cells by plurimus and in a window by bevy.
 #[derive(Component, Debug, Default)]
-#[require(UiArea = placed())]
+#[require(UiArea = placed(), FieldInput, ShownText)]
 pub struct TextField;
 
 /// A text input along `row`, carrying `field`, laid out as `node` between
@@ -152,13 +169,9 @@ pub fn spawn_text(commands: &mut Commands, row: Entity, node: Node, field: impl 
 /// As [`spawn_text`], of an entity made before its place on the row came.
 pub fn spawn_text_as(commands: &mut Commands, row: Entity, input: Entity, field: impl Bundle) {
     spawn_beside(commands, row, input, BRACKETS[0]);
-    commands.entity(input).insert((
-        TextField,
-        TextInput::new(""),
-        TabIndex(0),
-        field,
-        ChildOf(row),
-    ));
+    commands
+        .entity(input)
+        .insert((TextField, TabIndex(0), field, ChildOf(row)));
     spawn_beside(commands, row, input, BRACKETS[1]);
 }
 
@@ -265,7 +278,16 @@ impl FormTree<'_, '_> {
 #[derive(SystemParam)]
 pub struct Fields<'w, 's> {
     pub tree: FormTree<'w, 's>,
-    texts: Query<'w, 's, (&'static FormField, &'static mut TextInput), Without<Slot>>,
+    texts: Query<
+        'w,
+        's,
+        (
+            &'static FormField,
+            &'static mut EditableText,
+            &'static mut ShownText,
+        ),
+        Without<Slot>,
+    >,
     selects: Query<'w, 's, (&'static FormField, &'static mut Select), Without<Slot>>,
     sliders: Query<'w, 's, (&'static FormField, &'static SliderValue)>,
     checks: Query<'w, 's, (&'static FormField, Has<Checked>), With<FlagBox>>,
@@ -286,16 +308,17 @@ impl Fields<'_, '_> {
     /// A field that does not yet make a value keeps its text, since no item
     /// holds it - dressed as its kind reads, where it parses.
     fn show_text_at(&mut self, widget: Entity, editing: &Editing, is_focused: bool) {
-        let Ok((field, mut text)) = self.texts.get_mut(widget) else {
+        let Ok((field, mut text, mut shown)) = self.texts.get_mut(widget) else {
             return;
         };
         if editing.is_incomplete(field.spec.key) {
             // A trigger's operand is typed as the file states it.
             let kind = field.spec.kind;
-            let read = parse_field(kind, text.value()).filter(|_| kind != FieldKind::Trigger);
+            let typed = text.value().to_string();
+            let read = parse_field(kind, &typed).filter(|_| kind != FieldKind::Trigger);
             if let Some(read) = read {
                 let own = field_text(kind, Some(&read), is_focused);
-                show_text(&mut text, own);
+                show_text(&mut text, &mut shown, own);
             }
             return;
         }
@@ -304,7 +327,8 @@ impl Fields<'_, '_> {
             FieldKind::Listed(back) => nth_back(value, back),
             _ => value,
         };
-        show_text(&mut text, field_text(field.spec.kind, value, is_focused));
+        let wanted = field_text(field.spec.kind, value, is_focused);
+        show_text(&mut text, &mut shown, wanted);
     }
 
     /// Shows each rate on both of its widgets, but for a text being typed
@@ -313,7 +337,7 @@ impl Fields<'_, '_> {
         let widgets: Vec<Entity> = self.tree.children.iter_descendants(form).collect();
         for widget in widgets {
             self.show_slider_at(widget, editing);
-            let is_rate = |(field, _): (&FormField, _)| {
+            let is_rate = |(field, ..): (&FormField, _, _)| {
                 matches!(field.spec.kind, FieldKind::Rate | FieldKind::Share)
             };
             if focused != Some(widget) && self.texts.get(widget).is_ok_and(is_rate) {

@@ -1,5 +1,5 @@
 use bevy_app::App;
-use plurimus::term::KeyCode;
+use bevy_input::keyboard::Key;
 use retiretui_engine::market::Progress;
 use retiretui_engine::optimize::{
     ClaimSearch, OptimizeOptions, OrderSearch, SweptBracket, apply_claims, apply_ladder,
@@ -193,7 +193,7 @@ fn enter_on_a_ladder_opens_its_search_with_the_same_best() {
         frame.contains(&format!("{row}, {}", ends(&app, &best.optimized))),
         "{frame}"
     );
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert_eq!(active_page(&app), Page::RothConversions);
     assert_page_best(&mut app, &best);
     let answers = app.world().resource::<Draft>().answers::<Constraints>();
@@ -272,7 +272,7 @@ fn a_held_constraint_is_searched_under_and_kept() {
     );
     let frame = redrawn(&mut app);
     assert!(frame.contains(&row), "{row}: {frame}");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert_page_best(&mut app, &best);
     let answers = app.world().resource::<Draft>().answers::<Constraints>();
     assert_eq!(answers["bracket"].as_integer(), Some(percent));
@@ -295,8 +295,8 @@ fn an_owner_refused_under_the_held_answers_keeps_a_row() {
     assert!(frame.contains("me: convert to "), "{frame}");
     let refused = "Sam: not searchable under the Roth Conversions answers";
     assert!(frame.contains(refused), "{frame}");
-    press_key(&mut app, KeyCode::Down);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::ArrowDown);
+    press_key(&mut app, Key::Enter);
     assert_eq!(active_page(&app), Page::RothConversions);
     let answers = app.world().resource::<Draft>().answers::<Constraints>();
     assert_eq!(answers["to"].as_str(), Some("you-roth"));
@@ -329,7 +329,7 @@ fn the_claim_search_shows_its_best_and_enter_opens_it() {
     hold(&mut app, "Could do better");
     let frame = redrawn(&mut app);
     assert!(frame.contains(&row), "{row}: {frame}");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert_eq!(active_page(&app), Page::SsaBenefits);
     settle_all(&mut app);
     let claims = app.world().resource::<Claims>();
@@ -381,8 +381,8 @@ fn the_order_search_shows_its_best_and_enter_opens_it() {
     let frame = redrawn(&mut app);
     assert!(frame.contains(&row), "{row}: {frame}");
     tools::hold::<OrderSearch>(&mut app, true);
-    press_key(&mut app, KeyCode::Down);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::ArrowDown);
+    press_key(&mut app, Key::Enter);
     assert_eq!(active_page(&app), Page::WithdrawalOrder);
     assert_taken::<OrderSearch>(&mut app);
 
@@ -454,11 +454,11 @@ fn a_failing_historical_start_leads_to_the_historical_page() {
         frame.contains("▌ Runs short from "),
         "it is said first: {frame}"
     );
-    press_key(&mut app, KeyCode::Down);
+    press_key(&mut app, Key::ArrowDown);
     let frame = redrawn(&mut app);
     let (_, rest) = frame.split_once("▌ Fails from a ").expect(&frame);
     let start = &rest[..4];
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert_eq!(active_page(&app), Page::Historical);
     for _ in 0..SETTLING_TICKS {
         app.update();
@@ -502,7 +502,7 @@ fn a_tool_opened_from_the_overview_takes_its_answer() {
     tools::hold::<Swept>(&mut app, true);
     tools::hold::<Runs>(&mut app, true);
     hold(&mut app, "Could do better");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert_eq!(active_page(&app), Page::RothConversions);
     assert_taken::<Swept>(&mut app);
     show(&mut app, Page::Overview);

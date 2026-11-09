@@ -1,8 +1,9 @@
 //! Headless tests for what a form's fields are entered with: text,
 //! picks, flags and sliders.
 
+use crate::support::typed;
+use bevy_input::keyboard::Key;
 use plurimus::bui::bevy_ui_widgets::{SliderRange, SliderValue};
-use plurimus::term::KeyCode;
 use retiretui_engine::plan::AccountKind;
 
 use super::{
@@ -32,11 +33,11 @@ fn an_input_is_bracketed_and_its_brackets_follow_the_keyboard() {
         cell_fg(app, column, row)
     };
     assert_eq!(bracket_fg(&app, "[ cash"), Some(dim), "at rest");
-    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, Key::Tab);
     app.update();
     assert_eq!(bracket_fg(&app, "[ cash"), Some(accent), "held");
     assert_eq!(bracket_fg(&app, "[ $40,000"), Some(dim), "the rest at rest");
-    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, Key::Tab);
     app.update();
     assert_eq!(bracket_fg(&app, "[ cash"), Some(dim), "and let go");
 }
@@ -46,19 +47,19 @@ fn closed_sets_are_picked_and_flags_are_ticked() {
     let mut app = fixture_app();
     open(&mut app, Page::Accounts);
     tab_to_field(&mut app, 2);
-    press_key(&mut app, KeyCode::Right);
+    press_key(&mut app, Key::ArrowRight);
     let frame = composed_frame(&app);
     assert!(
         frame.contains("[ 401(k) ▾ ]"),
         "past the last kind is the first: {frame}"
     );
-    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, Key::Tab);
     let frame = composed_frame(&app);
     assert!(frame.contains("[ ]"), "a flag is a box: {frame}");
-    press_key(&mut app, KeyCode::Char(' '));
+    press_key(&mut app, typed(' '));
     let frame = composed_frame(&app);
     assert!(frame.contains("[x]"), "space ticks it: {frame}");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert!(!is_editing(&app), "enter applies rather than toggling");
     let account = &draft_plan(&app).accounts[0];
     assert_eq!(account.kind, AccountKind::K401k);
@@ -72,12 +73,12 @@ fn an_expense_is_ticked_essential_from_the_last_field_of_its_form() {
     assert!(!draft_plan(&app).expenses[0].essential);
     // Back from the first field, past the two buttons.
     for _ in 0..3 {
-        press_shift(&mut app, KeyCode::Tab);
+        press_shift(&mut app, Key::Tab);
     }
-    press_key(&mut app, KeyCode::Char(' '));
+    press_key(&mut app, typed(' '));
     let frame = composed_frame(&app);
     assert!(frame.contains("Essential       [x]"), "{frame}");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert!(!is_editing(&app));
     let expense = &draft_plan(&app).expenses[0];
     assert!(expense.essential && !expense.medical);
@@ -93,13 +94,13 @@ fn a_reference_offers_the_plan_s_own_ids() {
     tab_to_field(&mut app, 3);
     let frame = composed_frame(&app);
     assert!(frame.contains("[ jordan ▾ ]"), "{frame}");
-    press_key(&mut app, KeyCode::Right);
+    press_key(&mut app, Key::ArrowRight);
     let frame = composed_frame(&app);
     assert!(
         frame.contains("[ alex ▾ ]"),
         "the household's other person: {frame}"
     );
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert_eq!(draft_plan(&app).accounts[0].owner, "alex");
 }
 
@@ -108,14 +109,14 @@ fn a_rate_moves_on_its_slider() {
     let mut app = fixture_app();
     show(&mut app, Page::Accounts);
     app.update();
-    press_key(&mut app, KeyCode::Down);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::ArrowDown);
+    press_key(&mut app, Key::Enter);
     tab_to_field(&mut app, RATE_FIELD);
-    press_key(&mut app, KeyCode::Right);
-    press_key(&mut app, KeyCode::Right);
+    press_key(&mut app, Key::ArrowRight);
+    press_key(&mut app, Key::ArrowRight);
     let frame = redrawn(&mut app);
     assert!(frame.contains("5.5%"), "the text beside it: {frame}");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert!(!is_editing(&app));
     let returns = draft_plan(&app).accounts[1]
         .expected_return
@@ -131,11 +132,11 @@ fn a_typed_rate_moves_its_slider() {
     let mut app = fixture_app();
     show(&mut app, Page::Accounts);
     app.update();
-    press_key(&mut app, KeyCode::Down);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::ArrowDown);
+    press_key(&mut app, Key::Enter);
     tab_to_field(&mut app, RATE_FIELD);
     let slider = focused(&app);
-    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, Key::Tab);
     clear_field(&mut app);
     type_text(&mut app, "7%");
     app.update();
@@ -153,7 +154,7 @@ fn a_rejected_value_keeps_the_item_open() {
     tab_to_field(&mut app, BALANCE_FIELD);
     clear_field(&mut app);
     type_text(&mut app, "lots");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert!(is_editing(&app));
     let frame = composed_frame(&app);
     assert!(frame.contains("balance:"), "{frame}");
@@ -166,7 +167,7 @@ fn a_kind_s_menu_lists_every_kind_the_schema_declares() {
     let mut app = fixture_app();
     open(&mut app, Page::Accounts);
     tab_to_field(&mut app, 2);
-    press_key(&mut app, KeyCode::Char(' '));
+    press_key(&mut app, typed(' '));
     app.update();
     let frame = composed_frame(&app);
     for kind in AccountKind::ALL {
@@ -182,13 +183,13 @@ fn a_menu_opens_on_the_value_held_and_enter_picks_the_row_reached() {
     let mut app = fixture_app();
     show(&mut app, Page::Accounts);
     app.update();
-    press_key(&mut app, KeyCode::Down);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::ArrowDown);
+    press_key(&mut app, Key::Enter);
     tab_to_field(&mut app, 2);
     let select = focused(&app);
-    press_key(&mut app, KeyCode::Char(' '));
-    press_key(&mut app, KeyCode::Down);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, typed(' '));
+    press_key(&mut app, Key::ArrowDown);
+    press_key(&mut app, Key::Enter);
     assert_eq!(focused(&app), select, "the keyboard is back on the select");
     assert!(is_editing(&app), "picking applies nothing");
     let frame = composed_frame(&app);
@@ -196,7 +197,7 @@ fn a_menu_opens_on_the_value_held_and_enter_picks_the_row_reached() {
         frame.contains("[ Cash ▾ ]"),
         "the row after brokerage: {frame}"
     );
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert_eq!(draft_plan(&app).accounts[1].kind, AccountKind::Cash);
 }
 
@@ -206,9 +207,9 @@ fn esc_closes_an_open_menu_and_not_the_item_under_it() {
     open(&mut app, Page::Accounts);
     tab_to_field(&mut app, 2);
     let select = focused(&app);
-    press_key(&mut app, KeyCode::Char(' '));
+    press_key(&mut app, typed(' '));
     assert_ne!(focused(&app), select, "the menu has the keyboard");
-    press_key(&mut app, KeyCode::Esc);
+    press_key(&mut app, Key::Escape);
     assert_eq!(focused(&app), select);
     assert!(is_editing(&app));
 }
@@ -218,8 +219,8 @@ fn a_field_reads_plainly_while_typed_in_and_dressed_once_left() {
     let mut app = fixture_app();
     show(&mut app, Page::Accounts);
     app.update();
-    press_key(&mut app, KeyCode::Down);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::ArrowDown);
+    press_key(&mut app, Key::Enter);
     let form_row = |app: &bevy_app::App, label: &str| {
         let frame = composed_frame(app);
         // The form's own cells, from its left border: the table and the
@@ -241,7 +242,7 @@ fn a_field_reads_plainly_while_typed_in_and_dressed_once_left() {
         typed_in.contains("300000") && !typed_in.contains('$'),
         "{typed_in}"
     );
-    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, Key::Tab);
     app.update();
     assert!(
         form_row(&app, "│Balance").contains("$300,000"),
@@ -252,7 +253,7 @@ fn a_field_reads_plainly_while_typed_in_and_dressed_once_left() {
     tab_to_field(&mut app, 3);
     clear_field(&mut app);
     type_text(&mut app, "7");
-    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, Key::Tab);
     app.update();
     assert!(
         form_row(&app, "│Expected return").contains("7%"),
@@ -265,15 +266,15 @@ fn a_slider_at_its_ceiling_keeps_the_keyboard() {
     let mut app = fixture_app();
     show(&mut app, Page::Accounts);
     app.update();
-    press_key(&mut app, KeyCode::Down);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::ArrowDown);
+    press_key(&mut app, Key::Enter);
     tab_to_field(&mut app, RATE_FIELD);
     let slider = focused(&app);
     let ceiling = app.world().get::<SliderRange>(slider).unwrap().end();
     app.world_mut()
         .entity_mut(slider)
         .insert(SliderValue(ceiling));
-    press_key(&mut app, KeyCode::Right);
+    press_key(&mut app, Key::ArrowRight);
     assert_eq!(focused(&app), slider);
 }
 
@@ -282,8 +283,8 @@ fn a_click_on_the_track_moves_the_slider_to_the_cell_clicked() {
     let mut app = fixture_app();
     show(&mut app, Page::Accounts);
     app.update();
-    press_key(&mut app, KeyCode::Down);
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::ArrowDown);
+    press_key(&mut app, Key::Enter);
     tab_to_field(&mut app, RATE_FIELD);
     let slider = focused(&app);
     let before = app.world().get::<SliderValue>(slider).unwrap().0;
@@ -306,6 +307,6 @@ fn a_click_on_a_flag_s_box_ticks_it() {
     click(&mut app, column + inside, row);
     let frame = composed_frame(&app);
     assert!(frame.contains("Essential       [x]"), "{frame}");
-    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, Key::Enter);
     assert!(draft_plan(&app).expenses[0].essential);
 }

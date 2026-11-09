@@ -31,7 +31,7 @@ use bevy_input::keyboard::{Key, KeyboardInput};
 use bevy_input_focus::FocusedInput;
 use bevy_ui::{FlexDirection, Node};
 use plurimus::core::ratatui_core::text::Line;
-use plurimus::term::bevy_compat::HeldModifiers;
+use plurimus::term::HeldModifiers;
 use plurimus::ui::{KeyBinding, first_bound};
 use retiretui_client::searches::page_refusal;
 use retiretui_engine::market::{Progress, RunError};

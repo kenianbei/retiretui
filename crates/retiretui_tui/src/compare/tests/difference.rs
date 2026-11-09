@@ -1,3 +1,4 @@
+use crate::support::typed;
 use plurimus::ui::UiStyle;
 use retiretui_engine::plan::Dollars;
 
@@ -71,18 +72,18 @@ fn b_makes_the_highlighted_plan_the_baseline_and_removing_it_returns_to_the_docu
     let mut app = comparing_poorer(SIZE);
     assert_eq!(baseline(&app), None);
     assert_eq!(dimmed(&mut app), [0], "the document to begin with");
-    press_key(&mut app, KeyCode::Down);
-    press_key(&mut app, KeyCode::Char('b'));
+    press_key(&mut app, Key::ArrowDown);
+    press_key(&mut app, typed('b'));
     redrawn(&mut app);
     assert_eq!(baseline(&app).as_deref(), Some("poorer.toml"));
     assert_eq!(dimmed(&mut app), [1]);
-    press_key(&mut app, KeyCode::Up);
-    press_key(&mut app, KeyCode::Char('b'));
+    press_key(&mut app, Key::ArrowUp);
+    press_key(&mut app, typed('b'));
     redrawn(&mut app);
     assert_eq!(baseline(&app), None, "b on the document");
-    press_key(&mut app, KeyCode::Down);
-    press_key(&mut app, KeyCode::Char('b'));
-    press_key(&mut app, KeyCode::Char('x'));
+    press_key(&mut app, Key::ArrowDown);
+    press_key(&mut app, typed('b'));
+    press_key(&mut app, typed('x'));
     redrawn(&mut app);
     assert_eq!(compared(&app), [] as [String; 0]);
     assert_eq!(baseline(&app), None);
@@ -94,7 +95,7 @@ fn d_reads_every_plan_but_the_baseline_as_its_difference_in_the_table() {
     let mut app = comparing_poorer(ROOMY);
     let [document, poorer] = net_worths(&app);
     let (ends, poorer_ends) = (document.last().unwrap().1, poorer.last().unwrap().1);
-    press_key(&mut app, KeyCode::Char('d'));
+    press_key(&mut app, typed('d'));
     let frame = redrawn(&mut app);
     assert!(
         frame.contains("Plans · against plan.toml · today's dollars"),
@@ -108,8 +109,8 @@ fn d_reads_every_plan_but_the_baseline_as_its_difference_in_the_table() {
     assert!(row.contains(&fell), "{fell}: {row}");
     assert!(row.contains("now short in 20"), "{row}");
 
-    press_key(&mut app, KeyCode::Down);
-    press_key(&mut app, KeyCode::Char('b'));
+    press_key(&mut app, Key::ArrowDown);
+    press_key(&mut app, typed('b'));
     redrawn(&mut app);
     assert!(composed_frame(&app).contains("Plans · against poorer.toml"));
     let own = line_of(&app, "── plan.toml");
@@ -118,7 +119,7 @@ fn d_reads_every_plan_but_the_baseline_as_its_difference_in_the_table() {
     let row = line_of(&app, "── poorer.toml");
     assert!(row.contains(&compact_money(poorer_ends)), "{row}");
 
-    press_key(&mut app, KeyCode::Char('d'));
+    press_key(&mut app, typed('d'));
     let frame = redrawn(&mut app);
     assert!(frame.contains("Plans · today's dollars"), "{frame}");
 }
@@ -127,7 +128,7 @@ fn d_reads_every_plan_but_the_baseline_as_its_difference_in_the_table() {
 fn d_charts_each_line_less_the_baselines_within_the_scale() {
     let mut app = comparing_poorer(SIZE);
     let [document, poorer] = net_worths(&app);
-    press_key(&mut app, KeyCode::Char('d'));
+    press_key(&mut app, typed('d'));
     redrawn(&mut app);
     let mut charts = app
         .world_mut()
@@ -157,9 +158,9 @@ fn d_charts_each_line_less_the_baselines_within_the_scale() {
 fn d_reads_the_by_year_table_as_differences_but_the_baselines_column() {
     let mut app = comparing_poorer(SIZE);
     let [document, poorer] = net_worths(&app);
-    press_key(&mut app, KeyCode::Char('d'));
-    press_key(&mut app, KeyCode::Char('v'));
-    press_key(&mut app, KeyCode::Char('v'));
+    press_key(&mut app, typed('d'));
+    press_key(&mut app, typed('v'));
+    press_key(&mut app, typed('v'));
     set_cursor(&mut app, 2040);
     let at = |years: &[(i16, Dollars)]| years.iter().find(|row| row.0 == 2040).unwrap().1;
     let row = line_of(&app, "▏ 2040 ");

@@ -9,26 +9,25 @@ use bevy_color::Color;
 use bevy_ecs::change_detection::{DetectChanges, Ref};
 use bevy_ecs::hierarchy::ChildOf;
 use bevy_ecs::prelude::{
-    Add, Changed, Commands, Component, Entity, IntoScheduleConfigs, On, Query, Res, ResMut, With,
+    Add, Changed, Commands, Component, Entity, IntoScheduleConfigs, On, Query, Res, With,
 };
 use bevy_input_focus::InputFocus;
 use bevy_ui::{
     BackgroundColor, BorderColor, BorderRadius, ComputedNode, FlexDirection, Node, Overflow,
     ScrollPosition, UiRect, Val,
 };
-use plurimus::bui::bevy_picking::events::PointerClick;
 use plurimus::core::ratatui_core::style::Style;
 use plurimus::core::ratatui_core::text::{Line, Span};
 use plurimus::ui::{ScrollOffset, UiLabel, UiStyle};
 use plurimus::widgets::{
-    Activate, ActiveDescendant, Button, ListBox, ListBoxCursor, ListItem, ListItemTrailing,
+    ActiveDescendant, Button, ListBox, ListBoxCursor, ListItem, ListItemTrailing,
 };
 
 use super::chrome::{HAIRLINE, HALF_CELL_WIDE, box_in};
-use crate::edit::{CHEVRON, Select};
+use crate::edit::{CHEVRON, SelectBox};
 use crate::layout::{BUTTON_BRACKETS, Emphasis, GUTTER};
 use crate::theme::{Repainted, Theme, say, text};
-use crate::toast::{Shown, Toasts};
+use crate::toast::Shown;
 
 /// Cells a button's box keeps either side of its label: what its
 /// brackets take in the terminal.
@@ -95,38 +94,19 @@ fn row_the_item(added: On<Add<ListItem>>, mut commands: Commands) {
         ))
         .id();
     let trailing = commands.spawn((text(), ChildOf(row))).id();
-    commands
-        .entity(row)
-        .insert((
-            Node {
-                width: Val::Percent(100.0),
-                height: Val::Rem(1.0),
-                flex_shrink: 0.0,
-                ..Node::default()
-            },
-            Rowed {
-                label,
-                trailing,
-                is_cursor: false,
-            },
-        ))
-        .observe(point_on_click);
-}
-
-/// A click on a row puts the list's cursor on it, which is what a
-/// terminal's press does.
-fn point_on_click(
-    click: On<PointerClick>,
-    rows: Query<&ChildOf, With<ListItem>>,
-    mut lists: Query<&mut ActiveDescendant>,
-) {
-    let row = click.entity;
-    if let Ok(parent) = rows.get(row)
-        && let Ok(mut cursor) = lists.get_mut(parent.parent())
-        && cursor.0 != Some(row)
-    {
-        cursor.0 = Some(row);
-    }
+    commands.entity(row).insert((
+        Node {
+            width: Val::Percent(100.0),
+            height: Val::Rem(1.0),
+            flex_shrink: 0.0,
+            ..Node::default()
+        },
+        Rowed {
+            label,
+            trailing,
+            is_cursor: false,
+        },
+    ));
 }
 
 fn paint_rows(
@@ -193,7 +173,7 @@ struct Labelled {
 /// a box across its row, its chevron at the far end.
 fn label_the_button(
     added: On<Add<Button>>,
-    selects: Query<(), With<Select>>,
+    selects: Query<(), With<SelectBox>>,
     mut commands: Commands,
 ) {
     let button = added.entity;
@@ -215,7 +195,6 @@ fn label_the_button(
     commands
         .entity(button)
         .insert(Labelled { label, chevron })
-        .observe(activate_on_click)
         .entry::<Node>()
         .or_default()
         .and_modify(move |mut node| {
@@ -224,12 +203,6 @@ fn label_the_button(
                 node.flex_grow = 1.0;
             }
         });
-}
-
-fn activate_on_click(click: On<PointerClick>, mut commands: Commands) {
-    commands.trigger(Activate {
-        entity: click.entity,
-    });
 }
 
 /// The label in its box: ringed in the ink while the keyboard is on it,
@@ -314,30 +287,22 @@ fn box_the_toast(
     };
     let edge = theme.ink(label.0.style);
     let line = commands.spawn((text(), ChildOf(toast))).id();
-    commands
-        .entity(toast)
-        .insert((
-            Node {
-                padding: UiRect::axes(Val::Em(1.0), Val::Rem(1.0)),
-                border: UiRect::all(HAIRLINE),
-                border_radius: BorderRadius::all(HALF_CELL_WIDE),
-                ..Node::default()
-            },
-            BorderColor::all(edge),
-            BackgroundColor(theme.ground()),
-        ))
-        .observe(dismiss_on_click);
+    commands.entity(toast).insert((
+        Node {
+            padding: UiRect::axes(Val::Em(1.0), Val::Rem(1.0)),
+            border: UiRect::all(HAIRLINE),
+            border_radius: BorderRadius::all(HALF_CELL_WIDE),
+            ..Node::default()
+        },
+        BorderColor::all(edge),
+        BackgroundColor(theme.ground()),
+    ));
     say(&mut commands, line, label.0.clone(), &theme);
-}
-
-fn dismiss_on_click(click: On<PointerClick>, shown: Query<&Shown>, mut toasts: ResMut<Toasts>) {
-    if let Ok(shown) = shown.get(click.entity) {
-        toasts.dismiss(shown.0);
-    }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::support::typed;
     use bevy_ecs::hierarchy::Children;
     use bevy_ecs::observer::Observer;
     use bevy_ecs::prelude::World;
@@ -345,7 +310,6 @@ mod tests {
     use bevy_ui::OverflowAxis;
     use plurimus::bui::bevy_text::RemSize;
     use plurimus::core::ratatui_core::layout::Position;
-    use plurimus::term::KeyCode;
     use plurimus::ui::{ModalOpen, ScrollArea};
 
     use super::*;
@@ -408,7 +372,7 @@ mod tests {
     fn the_issues_panel_s_list_stacks_its_rows_as_nodes_that_scroll() {
         let mut app = headless_app(SIZE);
         app.add_plugins(plugin);
-        press_key(&mut app, KeyCode::Char('i'));
+        press_key(&mut app, typed('i'));
         let world = app.world_mut();
         let (node, children) = world
             .query_filtered::<(&Node, &Children, &ChildOf), (With<ListBox>, With<ScrollArea>)>()

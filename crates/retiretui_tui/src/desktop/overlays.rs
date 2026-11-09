@@ -112,11 +112,12 @@ fn dim_the_frame(
 
 #[cfg(test)]
 mod tests {
+    use crate::support::typed;
     use bevy_ecs::system::RunSystemOnce;
-    use plurimus::term::KeyCode;
+    use bevy_input::keyboard::Key;
 
     use bevy_ecs::prelude::Has;
-    use plurimus::core::UiHidden;
+    use plurimus::core::Hidden;
     use plurimus::widgets::MenuPopup;
 
     use super::*;
@@ -159,12 +160,12 @@ mod tests {
         app.world_mut().run_system_once(spawn_dim).unwrap();
         open(&mut app, Page::Accounts);
         tab_to_field(&mut app, KIND_FIELD);
-        press_key(&mut app, KeyCode::Char(' '));
+        press_key(&mut app, typed(' '));
         app.update();
         let (dim, overlays) = layers(&mut app);
         let world = app.world_mut();
         let shadow = world
-            .query_filtered::<(&Shadow, Has<UiHidden>), With<MenuPopup>>()
+            .query_filtered::<(&Shadow, Has<Hidden>), With<MenuPopup>>()
             .iter(world)
             .find_map(|(shadow, is_hidden)| (!is_hidden).then_some(shadow.0))
             .expect("the kind's menu is open and shadowed");
@@ -183,7 +184,7 @@ mod tests {
         let (dim, overlays) = layers(&mut app);
         assert_eq!(overlays, vec![dim + 1], "the form alone, over the dim");
         retype_balance(&mut app);
-        press_key(&mut app, KeyCode::Esc);
+        press_key(&mut app, Key::Escape);
         app.update();
         let (dim, overlays) = layers(&mut app);
         assert_eq!(overlays.len(), 2, "the dialog asks over the form");

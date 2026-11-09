@@ -147,6 +147,7 @@ struct Held<'w, 's> {
             Option<&'static Hints>,
             Option<&'static CommandHints>,
             Has<ModalOpen>,
+            Option<&'static KeyScope>,
         ),
     >,
     scoped: Scoped<'w, 's>,
@@ -156,8 +157,8 @@ struct Held<'w, 's> {
 
 impl Held<'_, '_> {
     /// What the keyboard is in, walked up from the widget holding it to
-    /// the first modal ancestor, and whether it keeps every key from the
-    /// shell.
+    /// the first modal ancestor or whatever stands over the page, and
+    /// whether it keeps every key from the shell.
     fn hints(&self) -> (Vec<Shown>, bool) {
         let mut found = Vec::new();
         let Some(held) = self.focus.get() else {
@@ -165,14 +166,14 @@ impl Held<'_, '_> {
         };
         let owns_keys = self.scoped.of(held) == Some(KeyScope::All);
         for entity in std::iter::once(held).chain(self.parents.iter_ancestors(held)) {
-            let Ok((hints, commands, is_modal)) = self.hinted.get(entity) else {
+            let Ok((hints, commands, is_modal, scope)) = self.hinted.get(entity) else {
                 continue;
             };
             let typed = hints.into_iter().flat_map(|hints| hints.0);
             found.extend(typed.copied().map(shown));
             let bound = commands.into_iter().flat_map(|hints| hints.0);
             found.extend(bound.filter_map(|hint| hint.shown(&self.keymap)));
-            if is_modal {
+            if is_modal || scope == Some(&KeyScope::All) {
                 break;
             }
         }
