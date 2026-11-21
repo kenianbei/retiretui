@@ -11,8 +11,8 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Breaking:** the new-plan form takes each person's birth year or exact date,
   as `birth` and `partner_birth` in place of `birth_year` and
   `partner_birth_year`. A year alone now makes a 2 July birthday, not 1 January.
-- **Breaking:** a plan already made by the new-plan form gives everyone a
-  1 January birthday, which Social Security now treats as born the year before.
+- **Breaking:** a plan already made by the new-plan form gives everyone a 1
+  January birthday, which Social Security now treats as born the year before.
   Set the real date on the People page.
 - **Breaking:** in `retiretui_engine`, `tax::social_security_benefit`,
   `full_retirement_months` and `claim_year_age` take the birth date, and
@@ -20,13 +20,13 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- A computed Social Security benefit matches SSA's Detailed Calculator:
-  earnings are capped at each year's published wage base, which the wage index
-  alone got wrong for 1975-1991, 2010, 2011 and 2016 (the payroll tax's cap
-  too); someone born on 1 January is figured on the year before; and the benefit
-  rounds down to the dime after each COLA and before the dollar, not to the cent
-  first. A tax table file of the user's own takes the published wage bases it
-  leaves out from an earlier table.
+- A computed Social Security benefit matches SSA's Detailed Calculator: earnings
+  are capped at each year's published wage base, which the wage index alone got
+  wrong for 1975-1991, 2010, 2011 and 2016 (the payroll tax's cap too); someone
+  born on 1 January is figured on the year before; and the benefit rounds down
+  to the dime after each COLA and before the dollar, not to the cent first. A
+  tax table file of the user's own takes the published wage bases it leaves out
+  from an earlier table.
 
 ## [0.6.0] - 2026-11-08
 
