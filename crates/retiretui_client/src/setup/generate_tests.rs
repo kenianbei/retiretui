@@ -15,13 +15,13 @@ const START_YEAR: i16 = 2026;
 /// richest shape the form can build.
 const ANSWERED: &str = r#"
 name = "Jordan Example"
-birth_year = 1975
+birth = 1975
 retirement_age = 62
 salary = 150000
 social_security = 40000
 claim_age = 67
 partner_name = "Alex"
-partner_birth_year = 1979
+partner_birth = 1979
 partner_retirement_age = 65
 partner_salary = 90000
 partner_social_security = 30000
@@ -168,7 +168,7 @@ fn a_salary_stops_where_the_person_retires_and_a_retiree_has_none() {
         "a retiree short of the claim age claims at it"
     );
 
-    let older = ANSWERED.replace("birth_year = 1975", "birth_year = 1955");
+    let older = ANSWERED.replace("birth = 1975", "birth = 1955");
     let retired = generated(FilingStatus::Single, LifeStage::Retired, &older);
     let benefit = retired.income.first().expect("the benefit");
     let claimed = benefit.start.as_ref().expect("a benefit states its claim");
@@ -289,4 +289,20 @@ fn a_typed_name_is_kept_as_the_person_s_name_beside_the_id_made_of_it() {
     assert_eq!(partner.name.as_deref(), Some("Alex"));
     assert_eq!(partner.display_name(), "Alex");
     assert_eq!(partner.id, "alex-1");
+}
+
+#[test]
+fn a_birth_year_is_taken_as_mid_year_and_a_date_as_given() {
+    let births = |body: &str| {
+        let plan = generated(FilingStatus::MarriedJoint, LifeStage::Working, body);
+        plan.household
+            .people
+            .iter()
+            .map(|person| person.birth)
+            .collect::<Vec<_>>()
+    };
+    let on = |year, month, day| PlanDate(jiff::civil::date(year, month, day));
+    assert_eq!(births(ANSWERED), [on(1975, 7, 2), on(1979, 7, 2)]);
+    let dated = ANSWERED.replace("birth = 1975", "birth = 1975-01-01");
+    assert_eq!(births(&dated), [on(1975, 1, 1), on(1979, 7, 2)]);
 }

@@ -23,16 +23,16 @@ expression: composed_frame(app)
                                                                                                                                                                                                         
                                                                                                                                                                                                         
                                                                   ╭ New plan ───────────────────────────────────────────────────────╮                                                                   
-                                                                  │Start from                  [ My own answers ▾ ]                 │                                                                   
-                                                                  │Filing status               [ None ▾ ]                           │                                                                   
-                                                                  │Life stage                  [ None ▾ ]                           │                                                                   
-                                                                  │Your name                   [                                  ] │                                                                   
-                                                                  │Birth year                  [                                  ] │                                                                   
-                                                                  │Retirement age              [                                  ] │                                                                   
-                                                                  │Working since               [                                  ] │                                                                   
-                                                                  │Salary                      [                                  ] │                                                                   
-                                                                  │Social Security             [                                  ] │                                                                   
-                                                                  │Claim age                   [                                  ] │                                                                   
+                                                                  │Start from                     [ My own answers ▾ ]              │                                                                   
+                                                                  │Filing status                  [ None ▾ ]                        │                                                                   
+                                                                  │Life stage                     [ None ▾ ]                        │                                                                   
+                                                                  │Your name                      [                               ] │                                                                   
+                                                                  │Birth year or date             [                               ] │                                                                   
+                                                                  │Retirement age                 [                               ] │                                                                   
+                                                                  │Working since                  [                               ] │                                                                   
+                                                                  │Salary                         [                               ] │                                                                   
+                                                                  │Social Security                [                               ] │                                                                   
+                                                                  │Claim age                      [                               ] │                                                                   
                                                                   │─────────────────────────────────────────────────────────────────│                                                                   
                                                                   │                                                                 │                                                                   
                                                                   │                                                                 │                                                                   

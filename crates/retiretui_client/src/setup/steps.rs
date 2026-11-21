@@ -26,7 +26,7 @@ pub const STEPS: &[Step] = &[
         title: "About you",
         keys: &[
             "name",
-            "birth_year",
+            "birth",
             "retirement_age",
             "working_since",
             "salary",
@@ -39,7 +39,7 @@ pub const STEPS: &[Step] = &[
         title: "About your partner",
         keys: &[
             "partner_name",
-            "partner_birth_year",
+            "partner_birth",
             "partner_retirement_age",
             "partner_working_since",
             "partner_salary",

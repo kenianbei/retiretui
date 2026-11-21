@@ -10,11 +10,12 @@ use std::collections::BTreeMap;
 use std::fmt::Write as _;
 use std::ops::RangeInclusive;
 
+use jiff::civil::Date;
 use retiretui_engine::params::{BenefitParams, Inflation, TaxTables};
-use retiretui_engine::plan::{Dollars, FilingStatus, Plan, fresh_id};
+use retiretui_engine::plan::{Dollars, FilingStatus, Plan, PlanDate, fresh_id};
 use retiretui_engine::tax::{FIRST_WORKING_AGE, earnings_at_wage};
 
-use super::{Answered, LifeStage, SetupAnswers};
+use super::{Answered, Born, LifeStage, SetupAnswers};
 use super::{CASH_ID, HORIZON_AGE, INFLATION};
 
 /// What a person whose name writes nothing down has their id numbered from.
@@ -42,6 +43,10 @@ pub(crate) const DEFAULT_CLAIM_AGE: u8 = 67;
 /// date the schema can parse.
 const OLDEST: i16 = 120;
 
+/// The birthday of someone given only a year: neither January nor the
+/// 1st, so no rule of SSA's moves the year or the month they are figured on.
+const UNKNOWN_BIRTHDAY: (i8, i8) = (7, 2);
+
 const NOT_BUILT: &str = "the answers do not make a plan";
 
 /// How a person's Social Security benefit is written: the figure they
@@ -58,7 +63,7 @@ struct Member {
     id: String,
     /// The name as typed, where one was.
     name: Option<String>,
-    birth_year: i16,
+    birth: PlanDate,
     retirement_age: u8,
     salary: Dollars,
     claim_age: u8,
@@ -89,10 +94,16 @@ impl Answered<'_> {
     fn filled(self, household: &Household<'_>, taken: Option<&str>) -> Member {
         let start_year = household.start_year;
         let born = start_year.saturating_sub(DEFAULT_AGE);
-        let birth_year = self
-            .birth_year
-            .unwrap_or(born)
+        let birth_year = (self.born.map_or(born, Born::year))
             .clamp(start_year.saturating_sub(OLDEST), start_year - 1);
+        let birth = match self.born {
+            Some(Born::Date(date)) if date.year() == birth_year => date,
+            _ => PlanDate(Date::constant(
+                birth_year,
+                UNKNOWN_BIRTHDAY.0,
+                UNKNOWN_BIRTHDAY.1,
+            )),
+        };
         let salary = self.salary.unwrap_or_default().max(0);
         let retirement_age = self.retirement_age.unwrap_or(DEFAULT_RETIREMENT_AGE);
         let started =
@@ -115,7 +126,7 @@ impl Answered<'_> {
                 .map(str::trim)
                 .filter(|name| !name.is_empty())
                 .map(str::to_owned),
-            birth_year,
+            birth,
             retirement_age,
             salary,
             claim_age: self.claim_age.unwrap_or(DEFAULT_CLAIM_AGE),
@@ -211,8 +222,8 @@ fn write_household(toml: &mut String, filing: FilingStatus, members: &[Member]) 
     for member in members {
         let _ = write!(
             toml,
-            "\n[[household.people]]\nid = \"{}\"\nbirth = {:04}-01-01\n",
-            member.id, member.birth_year
+            "\n[[household.people]]\nid = \"{}\"\nbirth = {}\n",
+            member.id, member.birth.0
         );
         if let Some(name) = &member.name {
             let _ = writeln!(toml, "name = {}", toml::Value::String(name.clone()));
@@ -289,7 +300,7 @@ fn write_income(toml: &mut String, members: &[Member], stage: LifeStage, start_y
         if let Benefit::Stated(figure) = member.benefit {
             let _ = writeln!(toml, "amount = {figure}");
         }
-        let has_claimed = start_year - member.birth_year >= i16::from(member.claim_age);
+        let has_claimed = start_year - member.birth.year() >= i16::from(member.claim_age);
         let _ = if stage == LifeStage::Retired && has_claimed {
             writeln!(toml, "start = {{ date = {start_year:04}-01-01 }}")
         } else {
