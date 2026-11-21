@@ -234,7 +234,7 @@ const CASE_A_EARNINGS: [(i16, i64); 40] = [
 ];
 
 /// Someone born mid-`year`, whose benefit is figured on that year.
-fn born(year: i16) -> PlanDate {
+fn born_mid(year: i16) -> PlanDate {
     PlanDate(jiff::civil::date(year, 6, 15))
 }
 
@@ -246,7 +246,7 @@ fn benefit_params() -> retiretui_engine::params::BenefitParams {
 fn social_security_benefit_matches_ssa_case_a() {
     let params = benefit_params();
     let earnings = std::collections::BTreeMap::from(CASE_A_EARNINGS);
-    let at = |age| tax::social_security_benefit(&params, born(1964), age * 12, &earnings, &[]);
+    let at = |age| tax::social_security_benefit(&params, born_mid(1964), age * 12, &earnings, &[]);
     // 60 months early: 20% for the first 36, 10% for the rest of 2,609.80.
     assert_eq!(at(62), 1_826 * 12);
     assert_eq!(at(67), 2_609 * 12);
@@ -262,7 +262,7 @@ fn a_pia_is_truncated_to_the_dime_after_each_cola() {
     let colas = [0.087, 0.032, 0.025, 0.028];
     // 2,609.80 carried a step at a time is 3,084.60, credited 24% at 70;
     // truncated once at the end it would be 3,084.80 and pay 3,825.
-    let at_70 = tax::social_security_benefit(&params, born(1964), 70 * 12, &earnings, &colas);
+    let at_70 = tax::social_security_benefit(&params, born_mid(1964), 70 * 12, &earnings, &colas);
     assert_eq!(at_70, 3_824 * 12);
 }
 
@@ -282,7 +282,7 @@ fn social_security_benefit_caps_and_pads_the_record() {
     let params = benefit_params();
     let one_year = |amount| {
         let earnings = std::collections::BTreeMap::from([(2026, amount)]);
-        tax::social_security_benefit(&params, born(1964), 67 * 12, &earnings, &[])
+        tax::social_security_benefit(&params, born_mid(1964), 67 * 12, &earnings, &[])
     };
     // One year of 2026's 184,500 over 420 months: AIME 439, all in the 90%
     // band.
@@ -290,7 +290,7 @@ fn social_security_benefit_caps_and_pads_the_record() {
     assert_eq!(one_year(1_000_000), one_year(184_500));
     let empty = std::collections::BTreeMap::new();
     assert_eq!(
-        tax::social_security_benefit(&params, born(1964), 67 * 12, &empty, &[]),
+        tax::social_security_benefit(&params, born_mid(1964), 67 * 12, &empty, &[]),
         0
     );
 }
@@ -302,7 +302,7 @@ fn benefit_params_derive_the_published_amounts_from_the_index() {
     assert_eq!(params.bend_points(2026), [1_286, 7_749]);
     assert_eq!(params.bend_points(2022), [1_024, 6_172]);
     let mut derived = params.clone();
-    derived.wage_base.clear();
+    derived.wage_bases.clear();
     assert_eq!(derived.wage_base(2024), 168_600);
     assert_eq!(derived.wage_base(2025), 176_100);
     assert_eq!(derived.wage_base(2026), 184_500);
@@ -336,19 +336,23 @@ fn wage_bases_are_the_published_ones_and_derived_only_past_them() {
 }
 
 #[test]
-fn an_override_without_wage_bases_takes_the_earlier_tables() {
+fn an_override_takes_the_wage_bases_it_leaves_out_from_the_earlier_tables() {
+    const HEADING: &str = "[social-security.benefit.wage-base]";
     let embedded = include_str!("../tax/2026.toml");
-    let table = embedded
-        .find("[social-security.benefit.wage-base]")
-        .unwrap();
+    let table = embedded.find(HEADING).unwrap();
     let table_end = embedded[table..].find("\n\n").unwrap() + table;
-    let override_2027 = format!("{}{}", &embedded[..table], &embedded[table_end..])
-        .replace("year = 2026", "year = 2027");
+    let override_2027 = format!(
+        "{}{HEADING}\n2027 = 192300{}",
+        &embedded[..table],
+        &embedded[table_end..]
+    )
+    .replace("year = 2026", "year = 2027");
     let mut tables = TaxTables::embedded();
     tables.add_source(&override_2027, "2027").unwrap();
     let params = tables.params_for(2027, &Inflation::constant(INFLATION));
     let benefit = params.social_security.benefit.unwrap();
     assert_eq!(benefit.wage_base(1990), 51_300);
+    assert_eq!(benefit.wage_base(2027), 192_300);
 }
 
 #[test]
@@ -358,8 +362,8 @@ fn earnings_index_to_the_year_the_worker_turns_sixty() {
     // whose age-60 year is the published 2024.
     let params = benefit_params();
     let record = (1999..=2025).map(|year| (year, 50_000)).collect();
-    let born_1977 = tax::social_security_benefit(&params, born(1977), 67 * 12, &record, &[]);
-    let born_1964 = tax::social_security_benefit(&params, born(1964), 67 * 12, &record, &[]);
+    let born_1977 = tax::social_security_benefit(&params, born_mid(1977), 67 * 12, &record, &[]);
+    let born_1964 = tax::social_security_benefit(&params, born_mid(1964), 67 * 12, &record, &[]);
     assert!(
         born_1977 > born_1964 * 13 / 10,
         "{born_1977} vs {born_1964}"
@@ -379,8 +383,8 @@ fn earnings_at_wage_index_back_to_the_salary() {
     assert_eq!(record[&2023], 57_230);
     let career = tax::earnings_at_wage(&params, 60_000, 2024, 1990..=2024);
     let flat = (1990..=2024).map(|year| (year, 60_000)).collect();
-    let scaled = tax::social_security_benefit(&params, born(1964), 67 * 12, &career, &[]);
-    let at_face = tax::social_security_benefit(&params, born(1964), 67 * 12, &flat, &[]);
+    let scaled = tax::social_security_benefit(&params, born_mid(1964), 67 * 12, &career, &[]);
+    let at_face = tax::social_security_benefit(&params, born_mid(1964), 67 * 12, &flat, &[]);
     assert!(
         scaled < at_face,
         "{scaled} vs {at_face}: 1990's 60,000 indexed"
@@ -434,14 +438,14 @@ fn a_claim_at_62_is_early_by_the_months_to_full_retirement_age() {
 
 #[test]
 fn full_retirement_age_steps_by_birth_year() {
-    assert_eq!(tax::full_retirement_months(born(1937)), 65 * 12);
-    assert_eq!(tax::full_retirement_months(born(1940)), 65 * 12 + 6);
-    assert_eq!(tax::full_retirement_months(born(1943)), 66 * 12);
-    assert_eq!(tax::full_retirement_months(born(1954)), 66 * 12);
-    assert_eq!(tax::full_retirement_months(born(1957)), 66 * 12 + 6);
-    assert_eq!(tax::full_retirement_months(born(1959)), 66 * 12 + 10);
-    assert_eq!(tax::full_retirement_months(born(1960)), 67 * 12);
-    assert_eq!(tax::full_retirement_months(born(1990)), 67 * 12);
+    assert_eq!(tax::full_retirement_months(born_mid(1937)), 65 * 12);
+    assert_eq!(tax::full_retirement_months(born_mid(1940)), 65 * 12 + 6);
+    assert_eq!(tax::full_retirement_months(born_mid(1943)), 66 * 12);
+    assert_eq!(tax::full_retirement_months(born_mid(1954)), 66 * 12);
+    assert_eq!(tax::full_retirement_months(born_mid(1957)), 66 * 12 + 6);
+    assert_eq!(tax::full_retirement_months(born_mid(1959)), 66 * 12 + 10);
+    assert_eq!(tax::full_retirement_months(born_mid(1960)), 67 * 12);
+    assert_eq!(tax::full_retirement_months(born_mid(1990)), 67 * 12);
 }
 
 #[test]

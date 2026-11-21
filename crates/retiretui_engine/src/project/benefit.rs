@@ -78,7 +78,7 @@ impl Simulation<'_> {
         let earnings = self.claim_record(owner, &params, first_active_year);
         let claim = self.first_paid[index]
             .unwrap_or_else(|| tax::attained_month(owner.birth, owner.age_in(first_active_year)));
-        let claim_year = year_of(claim);
+        let claim_year = tax::year_of(claim);
         let age = tax::age_months(owner.birth, claim);
         let january = tax::age_months(owner.birth, tax::month_index(claim_year, 1));
         let claim_year_age = tax::claim_year_age(owner.birth, age, january);
@@ -172,10 +172,6 @@ pub(super) fn first_paid_months(plan: &Plan) -> Vec<Option<i32>> {
         )
     };
     plan.income.iter().map(first_paid).collect()
-}
-
-fn year_of(month: i32) -> i16 {
-    month.div_euclid(tax::MONTHS_PER_YEAR) as i16
 }
 
 /// The benefit formula's parameters for `plan`: the start year's table,
