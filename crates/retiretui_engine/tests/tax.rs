@@ -270,11 +270,12 @@ fn a_pia_is_truncated_to_the_dime_after_each_cola() {
 fn the_published_colas_are_embedded_by_the_year_they_took_effect() {
     let cola = benefit_params().cola;
     assert_eq!(cola.keys().next(), Some(&1975));
-    assert_eq!(cola.keys().next_back(), Some(&2025));
-    assert_eq!(cola.len(), 51);
+    assert_eq!(cola.keys().next_back(), Some(&2026));
+    assert_eq!(cola.len(), 52);
     assert!((cola[&1999] - 0.025).abs() < f64::EPSILON);
     assert!((cola[&2022] - 0.087).abs() < f64::EPSILON);
     assert!(cola[&2009].abs() < f64::EPSILON);
+    assert!((cola[&2026] - 0.036).abs() < f64::EPSILON);
 }
 
 #[test]
@@ -298,7 +299,8 @@ fn social_security_benefit_caps_and_pads_the_record() {
 #[test]
 fn benefit_params_derive_the_published_amounts_from_the_index() {
     let params = benefit_params();
-    assert_eq!(params.wage_index.keys().next_back(), Some(&2024));
+    assert_eq!(params.wage_index.keys().next_back(), Some(&2025));
+    assert_eq!(params.average_wage(2025), Some(72_800.33));
     assert_eq!(params.bend_points(2026), [1_286, 7_749]);
     assert_eq!(params.bend_points(2022), [1_024, 6_172]);
     let mut derived = params.clone();
@@ -306,10 +308,11 @@ fn benefit_params_derive_the_published_amounts_from_the_index() {
     assert_eq!(derived.wage_base(2024), 168_600);
     assert_eq!(derived.wage_base(2025), 176_100);
     assert_eq!(derived.wage_base(2026), 184_500);
-    // 69,846.57 grown thirteen years at 3.6%.
+    assert_eq!(derived.wage_base(2027), 192_300);
+    // 72,800.33 grown twelve years at 3.6%.
     let grown = params.average_wage(2037).unwrap();
     assert!(
-        (grown - 69_846.57 * 1.036_f64.powi(13)).abs() < 0.01,
+        (grown - 72_800.33 * 1.036_f64.powi(12)).abs() < 0.01,
         "{grown}"
     );
     assert_eq!(params.average_wage(1950), None);
@@ -328,11 +331,12 @@ fn wage_bases_are_the_published_ones_and_derived_only_past_them() {
     assert_eq!(params.wage_base(2010), 106_800);
     assert_eq!(params.wage_base(2011), 106_800);
     assert_eq!(params.wage_base(2016), 118_500);
-    // 60,600 × 72,361.05 / 22,935.42, to the nearest 300.
-    assert_eq!(params.wage_base(2027), 191_100);
+    assert_eq!(params.wage_base(2027), 192_300);
+    // 60,600 × 75,421.14 / 22,935.42, to the nearest 300.
+    assert_eq!(params.wage_base(2028), 199_200);
     let mut shrinking = params.clone();
     shrinking.wage_growth = -0.5;
-    assert_eq!(shrinking.wage_base(2027), 184_500);
+    assert_eq!(shrinking.wage_base(2028), 192_300);
 }
 
 /// The embedded table restated as `year`'s, its benefit formula `benefit`.
@@ -422,11 +426,11 @@ fn earnings_index_to_the_year_the_worker_turns_sixty() {
 fn earnings_at_wage_index_back_to_the_salary() {
     let params = benefit_params();
     let record = tax::earnings_at_wage(&params, 60_000, 2024, 1940..=2030);
-    // The index runs from 1951; past 2024 the salary grows with the wage.
+    // The index runs from 1951; past it the salary grows with the wage.
     assert_eq!(record.keys().next(), Some(&1951));
     assert_eq!(record.keys().next_back(), Some(&2030));
     assert_eq!(record[&2024], 60_000);
-    assert_eq!(record[&2030], 74_184);
+    assert_eq!(record[&2030], 74_634);
     // 60,000 x 66,621.80 / 69,846.57
     assert_eq!(record[&2023], 57_230);
     let career = tax::earnings_at_wage(&params, 60_000, 2024, 1990..=2024);
