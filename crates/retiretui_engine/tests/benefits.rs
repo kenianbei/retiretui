@@ -50,18 +50,18 @@ fn social_security_without_an_amount_is_computed_from_earnings() {
     let plan = head(&format!("{NOTHING_BEFORE}\n{SALARIED_CLAIM}"));
     let projection = run(&plan);
     // Born 1980-06-15: 21 nominal salary years 2026-2046 at 2.5%, nothing
-    // before, indexed to 2040's wage (2024's grown 3.6% a year) and bent
-    // at 2042's points [2,264, 13,646]: AIME 7,646, PIA 3,759.80, so
-    // 45,108 a year in 2042 dollars, 30,386 in 2026's; claimed at 67 it
+    // before, indexed to 2040's wage (2025's grown 3.6% a year) and bent
+    // at 2042's points [2,278, 13,729]: AIME 7,646, PIA 3,767.90, so
+    // 45,204 a year in 2042 dollars, 30,451 in 2026's; claimed at 67 it
     // carries six COLAs by 2048 and pays July on in 2047.
     let income = |year| {
         let row = projection.row(year);
         row.map_or(0, |row| row.income.get("ss").copied().unwrap_or(0))
     };
     assert_eq!(income(2046), 0);
-    assert_eq!(income(2047), 29_771);
-    assert_eq!(income(2048), 52_312);
-    assert_eq!(projection.deflate_in(2048, income(2048)), 30_386);
+    assert_eq!(income(2047), 29_835);
+    assert_eq!(income(2048), 52_424);
+    assert_eq!(projection.deflate_in(2048, income(2048)), 30_451);
 }
 
 #[test]
@@ -144,9 +144,9 @@ start = { age = 67, owner = "me" }
     // Frozen, the benefit is the eligibility-year amount itself; the
     // escalating income above pays it grown 2.5% for the six years from
     // 2042, not the 22 from the plan's start.
-    assert_eq!(paid(2048), 45_108);
-    assert_eq!(paid(2049), 45_108);
-    assert_eq!(paid(2047), 45_108 * 7 / 12);
+    assert_eq!(paid(2048), 45_204);
+    assert_eq!(paid(2049), 45_204);
+    assert_eq!(paid(2047), 45_204 * 7 / 12);
 }
 
 #[test]
@@ -235,7 +235,7 @@ start = { age = 60, owner = "me" }
 }
 
 #[test]
-fn a_computed_benefit_needs_the_formula_amounts() {
+fn a_computed_benefit_needs_a_table_with_the_formula_amounts() {
     let plan = head(
         r#"
 [[accounts]]
@@ -253,13 +253,21 @@ start = { age = 67, owner = "me" }
     )
     .replace("start_year = 2026", "start_year = 2027");
     let plan = Plan::from_toml_str(&plan).unwrap();
-    let issues = validate_plan(&plan, &common::with_override());
-    assert!(
-        issues
+    let is_refused = |tables: &TaxTables| {
+        validate_plan(&plan, tables)
             .iter()
-            .any(|issue| issue.path == "income[0].amount" && issue.message.contains("2027")),
-        "{issues:?}"
+            .any(|issue| issue.path == "income[0].amount" && issue.message.contains("2027"))
+    };
+    let mut tables = common::with_override();
+    assert!(
+        !is_refused(&tables),
+        "the 2027 override takes 2026's formula"
     );
+    let override_2027 = include_str!("fixtures/tax-override/2027.toml");
+    tables
+        .add_source(&override_2027.replace("year = 2027", "year = 2026"), "2026")
+        .unwrap();
+    assert!(is_refused(&tables), "no table holds one");
 }
 
 /// A frozen benefit computed from the salary to 66, started by `start`,
@@ -414,11 +422,11 @@ fn a_computed_benefit_under_a_rate_of_its_own_grows_at_it_from_the_age_62_year()
     );
     let projection = run(&plan);
     let paid = |year| projection.row(year).unwrap().income["ss"];
-    // 45,108 in 2042 dollars at 3% from 2042, not the plan's 2.5%, June on in
-    // 2047; kept as 28,110 whole 2026 dollars, so 2048 and 2049 are $1 over.
-    assert_eq!(paid(2047), 30_504);
-    assert_eq!(paid(2048), 53_862);
-    assert_eq!(paid(2049), 55_478);
+    // 45,204 in 2042 dollars at 3% from 2042, not the plan's 2.5%, June on in
+    // 2047; kept as 28,170 whole 2026 dollars, so 2048 and 2049 are $1 over.
+    assert_eq!(paid(2047), 30_569);
+    assert_eq!(paid(2048), 53_977);
+    assert_eq!(paid(2049), 55_596);
 }
 
 #[test]

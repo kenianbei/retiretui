@@ -138,6 +138,7 @@ wage-growth = 0.036
 2022 = 63795.13
 2023 = 66621.80
 2024 = 69846.57
+2025 = 72800.33
 
 # ssa.gov/oact/cola/colaseries.html, by the year each took effect: in
 # December from 1983, in June before. 1999's is the 2.5% Public Law 106-554
@@ -194,6 +195,7 @@ wage-growth = 0.036
 2023 = 0.032
 2024 = 0.025
 2025 = 0.028
+2026 = 0.036
 
 # ssa.gov/oact/cola/cbb.html: the contribution and benefit base, above which
 # covered earnings count for nothing. Past its last year it derives from the
@@ -289,6 +291,7 @@ wage-growth = 0.036
 2024 = 168600
 2025 = 176100
 2026 = 184500
+2027 = 192300
 
 [early-withdrawal]
 penalty = 0.10
