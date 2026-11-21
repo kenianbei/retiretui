@@ -3,7 +3,7 @@
 use plurimus::core::ratatui_core::text::Span;
 
 /// The cell a clipped text ends in.
-const ELLIPSIS: char = '…';
+pub const ELLIPSIS: &str = "…";
 
 /// What `text` takes to draw, in terminal cells.
 pub fn cells_of(text: &str) -> u16 {
@@ -16,7 +16,7 @@ pub fn clipped(text: String, width: u16) -> String {
         return text;
     }
     let mut kept: String = fitting(text.chars(), width.saturating_sub(1)).collect();
-    kept.push(ELLIPSIS);
+    kept.push_str(ELLIPSIS);
     kept
 }
 

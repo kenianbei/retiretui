@@ -26,7 +26,7 @@ mod clip;
 mod cursor;
 mod list;
 
-pub use clip::{cells_of, clipped, clipped_middle, fitting, wrapped};
+pub use clip::{ELLIPSIS, cells_of, clipped, clipped_middle, fitting, wrapped};
 pub use cursor::{CURSOR_COLS, GUTTER, Rests, SCROLL_BAR_COLS, cursor_bar, list_cursor};
 pub use list::{CONTINUED, fill_lines, fill_wrapped, row_width, spawn_scrolled_list};
 

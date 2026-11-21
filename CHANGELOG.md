@@ -17,6 +17,9 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Breaking:** in `retiretui_engine`, `tax::social_security_benefit`,
   `full_retirement_months` and `claim_year_age` take the birth date, and
   `BenefitParams` gains `wage_bases`.
+- In the terminal and the canvas page, text too long for a button, a tab or a
+  sidebar row ends in "…" rather than being cut off, and a sidebar row keeps its
+  count.
 
 ### Fixed
 
