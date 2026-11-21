@@ -11,7 +11,7 @@ pub use examples::EXAMPLES;
 pub use steps::{STEPS, Step};
 
 use retiretui_engine::params::TaxTables;
-use retiretui_engine::plan::{Dollars, FilingStatus, Plan};
+use retiretui_engine::plan::{Dollars, FilingStatus, Plan, PlanDate};
 use serde::Deserialize;
 use toml::Table;
 
@@ -54,6 +54,24 @@ impl LifeStage {
     }
 }
 
+/// When someone was born, as the form takes it: the year alone, or the
+/// date where they give it.
+#[derive(Clone, Copy, Deserialize)]
+#[serde(untagged)]
+enum Born {
+    Year(i16),
+    Date(PlanDate),
+}
+
+impl Born {
+    fn year(self) -> i16 {
+        match self {
+            Self::Year(year) => year,
+            Self::Date(date) => date.year(),
+        }
+    }
+}
+
 /// The answers as the form holds them. Every one is optional because a
 /// form is answered a field at a time, and the generator fills what was
 /// left blank.
@@ -64,14 +82,14 @@ pub struct SetupAnswers {
     filing: Option<FilingStatus>,
     stage: Option<LifeStage>,
     name: Option<String>,
-    birth_year: Option<i16>,
+    birth: Option<Born>,
     retirement_age: Option<u8>,
     working_since: Option<i16>,
     salary: Option<Dollars>,
     social_security: Option<Dollars>,
     claim_age: Option<u8>,
     partner_name: Option<String>,
-    partner_birth_year: Option<i16>,
+    partner_birth: Option<Born>,
     partner_retirement_age: Option<u8>,
     partner_working_since: Option<i16>,
     partner_salary: Option<Dollars>,
@@ -82,7 +100,7 @@ pub struct SetupAnswers {
 /// One person's answers, so the two are asked and read the same way.
 struct Answered<'a> {
     name: Option<&'a str>,
-    birth_year: Option<i16>,
+    born: Option<Born>,
     retirement_age: Option<u8>,
     working_since: Option<i16>,
     salary: Option<Dollars>,
@@ -102,7 +120,7 @@ impl SetupAnswers {
     fn first(&self) -> Answered<'_> {
         Answered {
             name: self.name.as_deref(),
-            birth_year: self.birth_year,
+            born: self.birth,
             retirement_age: self.retirement_age,
             working_since: self.working_since,
             salary: self.salary,
@@ -114,7 +132,7 @@ impl SetupAnswers {
     fn partner(&self) -> Answered<'_> {
         Answered {
             name: self.partner_name.as_deref(),
-            birth_year: self.partner_birth_year,
+            born: self.partner_birth,
             retirement_age: self.partner_retirement_age,
             working_since: self.partner_working_since,
             salary: self.partner_salary,
@@ -152,8 +170,8 @@ pub const FIELDS: &[FieldSpec] = &[
     FieldSpec::text("name", "Your name")
         .help("A first name is enough; it labels what is yours.")
         .shown_when(is_answered),
-    FieldSpec::whole("birth_year", "Birth year")
-        .help("The year you were born, such as 1975.")
+    FieldSpec::text("birth", "Birth year or date")
+        .help("The year you were born, such as 1975, or the date, such as 1975-06-14, which times Social Security exactly.")
         .shown_when(is_answered),
     FieldSpec::whole("retirement_age", "Retirement age")
         .help("The age you stop working, or stopped. Your salary ends that year.")
@@ -177,8 +195,8 @@ pub const FIELDS: &[FieldSpec] = &[
     FieldSpec::text("partner_name", "Partner's name")
         .help("Your partner's first name.")
         .shown_when(is_joint),
-    FieldSpec::whole("partner_birth_year", "Partner's birth year")
-        .help("The year your partner was born.")
+    FieldSpec::text("partner_birth", "Partner's birth year or date")
+        .help("The year your partner was born, or the date.")
         .shown_when(is_joint),
     FieldSpec::whole("partner_retirement_age", "Partner's retirement age")
         .help("The age your partner stops working, or stopped. Blank means the same age as you.")
@@ -264,7 +282,7 @@ filing = "single"
 
 [[household.people]]
 id = "me"
-birth = 1970-01-01
+birth = 1970-07-02
 
 [[accounts]]
 id = "{CASH_ID}"

@@ -32,7 +32,7 @@ impl Domain for People {
             .phrased(earnings_span),
     ];
     const BLANK: &'static str = "
-birth = 1980-01-01
+birth = 1980-07-02
 ";
     const RECORD: Option<fn(&Table) -> Vec<[String; 2]>> = Some(earnings_record);
 

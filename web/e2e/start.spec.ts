@@ -123,7 +123,7 @@ test("opening any plan but a compared one leaves nothing compared", async ({
   await page.waitForURL(/#\/new\/household/);
   await page.getByRole("button", { name: "Continue" }).click();
   await page.getByLabel("Your name").fill("Jordan");
-  await page.getByLabel("Birth year").fill("1975");
+  await page.getByLabel("Birth year or date").fill("1975");
   await page.getByLabel("Salary").fill("90000");
   await page.getByRole("button", { name: "Continue" }).click();
   await page.getByRole("button", { name: "Create plan" }).click();
