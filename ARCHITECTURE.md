@@ -303,15 +303,15 @@ depends on UI.
   nothing to view, so the four tabs with a page behind them are drawn dead and
   the form a new plan starts from stands over the empty shell: one of the
   example plans, or a household's filing status, where it is in life, and each
-  person's name, birth year, retirement age, when they started working, salary
-  and Social Security - which anyone may leave for the engine to compute, from a
-  career at that salary, a retiree's the last they earned. Creating it builds
-  the plan the example or the answers describe, names it through the picker that
-  saves under another name, and opens it, so nothing reaches disk until it is
-  named and everything after the first answers is edited in the plan's own
-  domains. The same form stands over an open document when a new plan is asked
-  for, the document staying open beneath it and taking no key while it does;
-  alone, it lets the shell's own keys through. Each command's scope states
+  person's name, birth year or date, retirement age, when they started working,
+  salary and Social Security - which anyone may leave for the engine to compute,
+  from a career at that salary, a retiree's the last they earned. Creating it
+  builds the plan the example or the answers describe, names it through the
+  picker that saves under another name, and opens it, so nothing reaches disk
+  until it is named and everything after the first answers is edited in the
+  plan's own domains. The same form stands over an open document when a new plan
+  is asked for, the document staying open beneath it and taking no key while it
+  does; alone, it lets the shell's own keys through. Each command's scope states
   whether it runs where no page is shown - what finds a document, ends the
   session, dresses the shell, or moves the keyboard between panes does, and the
   rest refuse. A page is a view of the projection (an overview of the plan as a
