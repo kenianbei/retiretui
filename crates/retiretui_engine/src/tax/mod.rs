@@ -149,9 +149,20 @@ pub fn taxable_social_security(
     (above_upper + from_lower_band).min((0.85 * benefit as f64).round() as Dollars)
 }
 
-/// Full retirement age in months, from the birth year.
+/// The birth year SSA figures a benefit on: the year before for someone
+/// born on 1 January, who attains every age on the 31st of December.
 #[must_use]
-pub fn full_retirement_months(birth_year: i16) -> i32 {
+pub fn benefit_birth_year(birth: PlanDate) -> i16 {
+    birth.year() - i16::from(birth.0.month() == 1 && birth.0.day() == 1)
+}
+
+/// Full retirement age in months, for someone born on `birth`.
+#[must_use]
+pub fn full_retirement_months(birth: PlanDate) -> i32 {
+    full_retirement_months_of(benefit_birth_year(birth))
+}
+
+fn full_retirement_months_of(birth_year: i16) -> i32 {
     let steps = |from: i16| FRA_STEP_MONTHS * i32::from(birth_year - from);
     if birth_year <= FRA_65_LAST_BIRTH_YEAR {
         65 * MONTHS_PER_YEAR
@@ -178,11 +189,12 @@ pub fn full_retirement_months(birth_year: i16) -> i32 {
 #[must_use]
 pub fn social_security_benefit(
     params: &BenefitParams,
-    birth_year: i16,
+    birth: PlanDate,
     age_months: i32,
     earnings: &BTreeMap<i16, Dollars>,
     colas: &[f64],
 ) -> Dollars {
+    let birth_year = benefit_birth_year(birth);
     let pia = (colas.iter()).fold(
         primary_insurance_amount(params, birth_year, earnings),
         |pia, cola| to_the_dime(pia * (1.0 + cola)),
@@ -235,8 +247,8 @@ pub fn career_before(
 /// year are paid from the next January, except for a claim at 70 or later,
 /// credited at once.
 #[must_use]
-pub fn claim_year_age(birth_year: i16, age_months: i32, january_months: i32) -> i32 {
-    let full = full_retirement_months(birth_year);
+pub fn claim_year_age(birth: PlanDate, age_months: i32, january_months: i32) -> i32 {
+    let full = full_retirement_months(birth);
     if age_months > full && age_months < LATEST_CREDIT_MONTHS {
         january_months.clamp(full, age_months)
     } else {
@@ -312,7 +324,7 @@ fn primary_insurance_amount(
 }
 
 fn claim_factor(birth_year: i16, age_months: i32) -> f64 {
-    let full = full_retirement_months(birth_year);
+    let full = full_retirement_months_of(birth_year);
     let claim = age_months.min(LATEST_CREDIT_MONTHS);
     if claim >= full {
         return 1.0 + f64::from(claim - full) * DELAYED_RATE;

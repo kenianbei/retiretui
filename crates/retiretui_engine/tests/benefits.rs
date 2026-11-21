@@ -3,7 +3,7 @@
 mod common;
 
 use retiretui_engine::params::TaxTables;
-use retiretui_engine::plan::Plan;
+use retiretui_engine::plan::{Plan, PlanDate};
 use retiretui_engine::project::{Projection, validate_plan};
 use retiretui_engine::tax::earnings_at_wage;
 
@@ -365,9 +365,37 @@ fn a_benefit_eligible_before_the_plan_carries_the_published_colas() {
     let paid = paid_by(&text);
     let params = common::benefit_params();
     let published = [0.087, 0.032, 0.025, 0.028];
-    let expected =
-        retiretui_engine::tax::social_security_benefit(&params, 1960, 67 * 12, &record, &published);
+    let born_1960 = PlanDate(jiff::civil::date(1960, 6, 15));
+    let expected = retiretui_engine::tax::social_security_benefit(
+        &params,
+        born_1960,
+        67 * 12,
+        &record,
+        &published,
+    );
     assert_near(paid(2028), expected as f64);
+}
+
+#[test]
+fn a_benefit_born_on_new_years_day_carries_the_colas_from_the_year_before() {
+    // Born 1 January 1960, SSA's 1959: 62 in 2021, so 2021's COLA too.
+    let record: std::collections::BTreeMap<i16, i64> =
+        (1982..=2021).map(|year| (year, 60_000)).collect();
+    let text = frozen_claim(r#"{ age = 67, owner = "me" }"#, "")
+        .replace(
+            "birth = 1980-06-15",
+            &format!("birth = 1960-01-01\n{}", record_line(&record)),
+        )
+        .replace("amount = 100000", "amount = 0");
+    let published = [0.059, 0.087, 0.032, 0.025, 0.028];
+    let expected = retiretui_engine::tax::social_security_benefit(
+        &common::benefit_params(),
+        PlanDate(jiff::civil::date(1960, 1, 1)),
+        67 * 12,
+        &record,
+        &published,
+    );
+    assert_near(paid_by(&text)(2028), expected as f64);
 }
 
 #[test]
@@ -384,7 +412,7 @@ fn a_benefit_claimed_before_the_plan_is_priced_at_the_age_it_was_claimed() {
     let published = [0.087, 0.032, 0.025, 0.028];
     let expected = retiretui_engine::tax::social_security_benefit(
         &common::benefit_params(),
-        1960,
+        PlanDate(jiff::civil::date(1960, 6, 15)),
         62 * 12 + 1,
         &record,
         &published,
