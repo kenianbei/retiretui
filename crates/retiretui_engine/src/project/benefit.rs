@@ -81,13 +81,13 @@ impl Simulation<'_> {
         let claim_year = year_of(claim);
         let age = tax::age_months(owner.birth, claim);
         let january = tax::age_months(owner.birth, tax::month_index(claim_year, 1));
-        let claim_year_age = tax::claim_year_age(owner.birth.year(), age, january);
+        let claim_year_age = tax::claim_year_age(owner.birth, age, january);
         let eligibility_year = owner.eligibility_year();
         let colas = self.colas_to_start(&params, income.cola, eligibility_year);
         let to_start = 1.0 / self.cola_factor(income.cola, eligibility_year.max(self.start_year));
         let in_start_dollars = |age| {
             let benefit =
-                tax::social_security_benefit(&params, owner.birth.year(), age, &earnings, &colas);
+                tax::social_security_benefit(&params, owner.birth, age, &earnings, &colas);
             scale(benefit, to_start)
         };
         Derived {

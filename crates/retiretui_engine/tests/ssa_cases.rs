@@ -32,12 +32,12 @@ fn case(birth: (i16, i8, i8), yearly: Dollars, claim: (i16, i8), ssa_monthly: Do
 fn monthly(case: &Case) -> Dollars {
     let params = common::benefit_params();
     let earnings: BTreeMap<i16, Dollars> = (1990..=2025).map(|year| (year, case.yearly)).collect();
-    let eligibility = case.birth.year() + tax::EARLIEST_CLAIM_AGE;
+    let eligibility = tax::benefit_birth_year(case.birth) + tax::EARLIEST_CLAIM_AGE;
     let colas: Vec<f64> = (eligibility..=LAST_COLA_YEAR)
         .map(|year| params.cola[&year])
         .collect();
     let age = tax::age_months(case.birth, tax::month_index(case.claim.0, case.claim.1));
-    tax::social_security_benefit(&params, case.birth.year(), age, &earnings, &colas)
+    tax::social_security_benefit(&params, case.birth, age, &earnings, &colas)
         / Dollars::from(tax::MONTHS_PER_YEAR)
 }
 
@@ -54,5 +54,17 @@ fn each_cola_and_the_reduced_benefit_round_down_to_the_dime() {
         case((1961, 6, 15), 32_000, (2026, 10), 2_019),
         // 1,282.10 × 0.95 = 1,217.995, down to 1,217.90.
         case((1959, 12, 20), 11_000, (2026, 1), 1_217),
+    ]);
+}
+
+#[test]
+fn someone_born_on_new_years_day_is_figured_on_the_year_before() {
+    assert_ssa(&[
+        // First eligible in 2021, full retirement age 66 and 10 months.
+        case((1960, 1, 1), 40_000, (2026, 1), 2_619),
+        case((1960, 1, 2), 40_000, (2026, 1), 2_493),
+        // First eligible in 2025: its bend points and December's COLA.
+        case((1964, 1, 1), 40_000, (2026, 1), 1_945),
+        case((1964, 1, 2), 40_000, (2026, 1), 1_971),
     ]);
 }
