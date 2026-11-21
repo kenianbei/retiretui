@@ -301,9 +301,11 @@ fn benefit_params_derive_the_published_amounts_from_the_index() {
     assert_eq!(params.wage_index.keys().next_back(), Some(&2024));
     assert_eq!(params.bend_points(2026), [1_286, 7_749]);
     assert_eq!(params.bend_points(2022), [1_024, 6_172]);
-    assert_eq!(params.wage_base(2024), 168_600);
-    assert_eq!(params.wage_base(2025), 176_100);
-    assert_eq!(params.wage_base(2026), 184_500);
+    let mut derived = params.clone();
+    derived.wage_base.clear();
+    assert_eq!(derived.wage_base(2024), 168_600);
+    assert_eq!(derived.wage_base(2025), 176_100);
+    assert_eq!(derived.wage_base(2026), 184_500);
     // 69,846.57 grown thirteen years at 3.6%.
     let grown = params.average_wage(2037).unwrap();
     assert!(
@@ -314,6 +316,39 @@ fn benefit_params_derive_the_published_amounts_from_the_index() {
     let mut faster = params.clone();
     faster.wage_growth = 0.05;
     assert!(faster.average_wage(2037) > params.average_wage(2037));
+}
+
+#[test]
+fn wage_bases_are_the_published_ones_and_derived_only_past_them() {
+    let params = benefit_params();
+    // Set by earlier law, held without a COLA, and the 1994 formula's
+    // misses before 1994.
+    assert_eq!(params.wage_base(1975), 14_100);
+    assert_eq!(params.wage_base(1990), 51_300);
+    assert_eq!(params.wage_base(2010), 106_800);
+    assert_eq!(params.wage_base(2011), 106_800);
+    assert_eq!(params.wage_base(2016), 118_500);
+    // 60,600 × 72,361.05 / 22,935.42, to the nearest 300.
+    assert_eq!(params.wage_base(2027), 191_100);
+    let mut shrinking = params.clone();
+    shrinking.wage_growth = -0.5;
+    assert_eq!(shrinking.wage_base(2027), 184_500);
+}
+
+#[test]
+fn an_override_without_wage_bases_takes_the_earlier_tables() {
+    let embedded = include_str!("../tax/2026.toml");
+    let table = embedded
+        .find("[social-security.benefit.wage-base]")
+        .unwrap();
+    let table_end = embedded[table..].find("\n\n").unwrap() + table;
+    let override_2027 = format!("{}{}", &embedded[..table], &embedded[table_end..])
+        .replace("year = 2026", "year = 2027");
+    let mut tables = TaxTables::embedded();
+    tables.add_source(&override_2027, "2027").unwrap();
+    let params = tables.params_for(2027, &Inflation::constant(INFLATION));
+    let benefit = params.social_security.benefit.unwrap();
+    assert_eq!(benefit.wage_base(1990), 51_300);
 }
 
 #[test]

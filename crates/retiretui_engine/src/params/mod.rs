@@ -161,8 +161,9 @@ pub struct SocialSecurityThresholds {
 }
 
 /// What a benefit is computed from: the published average wage index and
-/// the growth assumed past it. The wage base and the bend points of any
-/// year derive from the index by statute.
+/// the growth assumed past it, the published wage bases and COLAs. The bend
+/// points of any year, and the wage base past the last published, derive
+/// from the index by statute.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
@@ -177,10 +178,15 @@ pub struct BenefitParams {
     /// 62.
     #[serde(default)]
     pub cola: BTreeMap<i16, f64>,
+    /// Each published contribution and benefit base, by year; absent in an
+    /// override file, the latest earlier table's.
+    #[serde(default)]
+    pub wage_base: BTreeMap<i16, Dollars>,
 }
 
-/// The 1994 contribution and benefit base; later bases scale it by the
-/// average wage two years earlier over 1992's, to the nearest $300.
+/// The 1994 contribution and benefit base; a base past the published ones
+/// scales it by the average wage two years earlier over 1992's, to the
+/// nearest $300.
 const WAGE_BASE_1994: Dollars = 60_600;
 const WAGE_BASE_YEAR: i16 = 1994;
 const WAGE_BASE_STEP: Dollars = 300;
@@ -205,11 +211,19 @@ impl BenefitParams {
     }
 
     /// The contribution and benefit base of `year`, above which covered
-    /// earnings count for nothing.
+    /// earnings count for nothing: as published, or past the last published
+    /// derived from the wage index and never below the last.
     #[must_use]
     pub fn wage_base(&self, year: i16) -> Dollars {
+        if let Some(&base) = self.wage_base.get(&year) {
+            return base;
+        }
         let scaled = WAGE_BASE_1994 as f64 * self.index_ratio(year, WAGE_BASE_YEAR);
-        (scaled / WAGE_BASE_STEP as f64).round() as Dollars * WAGE_BASE_STEP
+        let derived = (scaled / WAGE_BASE_STEP as f64).round() as Dollars * WAGE_BASE_STEP;
+        match self.wage_base.last_key_value() {
+            Some((&last_year, &last)) if year > last_year => derived.max(last),
+            _ => derived,
+        }
     }
 
     /// The two monthly amounts the PIA formula bends at for a benefit first
@@ -419,8 +433,27 @@ impl TaxTables {
                 params.states.insert(code.to_owned(), state);
             }
         }
+        self.fill_wage_bases(&mut params, base_year);
         step_rates(&mut params, year);
         params
+    }
+
+    /// A benefit formula without published wage bases takes those of the
+    /// latest table before `base_year` that has them.
+    fn fill_wage_bases(&self, params: &mut TaxParams, base_year: i16) {
+        let Some(benefit) = (params.social_security.benefit.as_mut())
+            .filter(|benefit| benefit.wage_base.is_empty())
+        else {
+            return;
+        };
+        let mut earlier = self.years.range(..base_year).rev();
+        let published = earlier.find_map(|(_, table)| {
+            let bases = &table.social_security.benefit.as_ref()?.wage_base;
+            (!bases.is_empty()).then_some(bases)
+        });
+        if let Some(bases) = published {
+            benefit.wage_base.clone_from(bases);
+        }
     }
 
     /// `code`'s table as `year` reads it: from the latest table up to

@@ -58,6 +58,13 @@ fn each_cola_and_the_reduced_benefit_round_down_to_the_dime() {
 }
 
 #[test]
+fn earnings_are_capped_at_each_years_published_wage_base() {
+    // 1990's 51,300 and 1991's 53,400 count in full; 2010, 2011 and 2016
+    // count no more than the base held without a COLA.
+    assert_ssa(&[case((1962, 6, 15), 200_000, (2026, 10), 3_346)]);
+}
+
+#[test]
 fn someone_born_on_new_years_day_is_figured_on_the_year_before() {
     assert_ssa(&[
         // First eligible in 2021, full retirement age 66 and 10 months.
