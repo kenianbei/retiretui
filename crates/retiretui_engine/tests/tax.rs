@@ -321,8 +321,8 @@ fn benefit_params_derive_the_published_amounts_from_the_index() {
 #[test]
 fn wage_bases_are_the_published_ones_and_derived_only_past_them() {
     let params = benefit_params();
-    // Set by earlier law, held without a COLA, and the 1994 formula's
-    // misses before 1994.
+    // 1975 set by earlier law, 1990 a miss of the 1994 formula, and 2010,
+    // 2011 and 2016 held without a COLA.
     assert_eq!(params.wage_base(1975), 14_100);
     assert_eq!(params.wage_base(1990), 51_300);
     assert_eq!(params.wage_base(2010), 106_800);

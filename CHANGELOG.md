@@ -6,6 +6,18 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- A computed Social Security benefit now matches SSA's Detailed Calculator in
+  three cases it missed: earnings are capped at each year's published wage base
+  rather than one derived from the wage index, which was wrong for 1975-1991,
+  2010, 2011 and 2016 (the payroll tax's cap too); someone born on 1 January is
+  figured on the year before, as SSA does, for their eligibility year, COLAs and
+  full retirement age; and the benefit is rounded down to the dime after each
+  COLA and before the dollar, not first to the nearest cent. A tax table file of
+  the user's own takes any published wage base it leaves out from an earlier
+  table.
+
 ## [0.6.0] - 2026-11-08
 
 ### Added
