@@ -153,9 +153,9 @@ pub struct SocialSecurityThresholds {
     pub provisional_base: PerStatus<Dollars>,
     /// Above this, up to 85% is taxable.
     pub provisional_upper: PerStatus<Dollars>,
-    /// What computing a benefit from an earnings record needs; absent in
-    /// an override file that predates it, and a derived benefit is then
-    /// refused by validation.
+    /// What computing a benefit from an earnings record needs; a table
+    /// leaving it out takes another table's, and only where none has one is
+    /// a derived benefit refused by validation.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub benefit: Option<BenefitParams>,
 }
@@ -178,8 +178,9 @@ pub struct BenefitParams {
     /// 62.
     #[serde(default)]
     pub cola: BTreeMap<i16, f64>,
-    /// Each published contribution and benefit base, by year; a year an
-    /// override table leaves out is the latest earlier table's.
+    /// Each published contribution and benefit base, by year; like the
+    /// index and the COLAs, a year a table leaves out is the latest other
+    /// table's.
     #[serde(default, rename = "wage-base")]
     pub wage_bases: BTreeMap<i16, Dollars>,
 }
@@ -431,22 +432,29 @@ impl TaxTables {
                 params.states.insert(code.to_owned(), state);
             }
         }
-        self.fill_wage_bases(&mut params, base_year);
+        self.fill_benefit(&mut params, base_year);
         step_rates(&mut params, year);
         params
     }
 
-    /// Each published wage base the benefit formula leaves out, from the
-    /// latest table before `base_year` that has it.
-    fn fill_wage_bases(&self, params: &mut TaxParams, base_year: i16) {
-        let Some(benefit) = params.social_security.benefit.as_mut() else {
-            return;
-        };
-        let earlier = self.years.range(..base_year).rev();
-        for table in earlier.filter_map(|(_, table)| table.social_security.benefit.as_ref()) {
-            for (&year, &base) in &table.wage_bases {
-                benefit.wage_bases.entry(year).or_insert(base);
-            }
+    /// The benefit formula as `base_year`'s table states it, a section or
+    /// a published year it leaves out taken from the other tables, latest
+    /// first: SSA's series are history every table shares, while the wage
+    /// growth stays the assumption of the table stating it.
+    fn fill_benefit(&self, params: &mut TaxParams, base_year: i16) {
+        let others = self
+            .years
+            .iter()
+            .rev()
+            .filter(|&(&year, _)| year != base_year);
+        for other in others.filter_map(|(_, table)| table.social_security.benefit.as_ref()) {
+            let benefit = params
+                .social_security
+                .benefit
+                .get_or_insert_with(|| other.clone());
+            fill_years(&mut benefit.wage_index, &other.wage_index);
+            fill_years(&mut benefit.cola, &other.cola);
+            fill_years(&mut benefit.wage_bases, &other.wage_bases);
         }
     }
 
@@ -467,5 +475,12 @@ impl TaxTables {
             inflate_state(&mut state, inflation.factor(held_in, year));
         }
         Some(state)
+    }
+}
+
+/// Each year of `from` that `into` lacks.
+fn fill_years<V: Copy>(into: &mut BTreeMap<i16, V>, from: &BTreeMap<i16, V>) {
+    for (&year, &value) in from {
+        into.entry(year).or_insert(value);
     }
 }

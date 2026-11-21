@@ -235,7 +235,7 @@ start = { age = 60, owner = "me" }
 }
 
 #[test]
-fn a_computed_benefit_needs_the_formula_amounts() {
+fn a_computed_benefit_needs_a_table_with_the_formula_amounts() {
     let plan = head(
         r#"
 [[accounts]]
@@ -253,13 +253,21 @@ start = { age = 67, owner = "me" }
     )
     .replace("start_year = 2026", "start_year = 2027");
     let plan = Plan::from_toml_str(&plan).unwrap();
-    let issues = validate_plan(&plan, &common::with_override());
-    assert!(
-        issues
+    let is_refused = |tables: &TaxTables| {
+        validate_plan(&plan, tables)
             .iter()
-            .any(|issue| issue.path == "income[0].amount" && issue.message.contains("2027")),
-        "{issues:?}"
+            .any(|issue| issue.path == "income[0].amount" && issue.message.contains("2027"))
+    };
+    let mut tables = common::with_override();
+    assert!(
+        !is_refused(&tables),
+        "the 2027 override takes 2026's formula"
     );
+    let override_2027 = include_str!("fixtures/tax-override/2027.toml");
+    tables
+        .add_source(&override_2027.replace("year = 2027", "year = 2026"), "2026")
+        .unwrap();
+    assert!(is_refused(&tables), "no table holds one");
 }
 
 /// A frozen benefit computed from the salary to 66, started by `start`,

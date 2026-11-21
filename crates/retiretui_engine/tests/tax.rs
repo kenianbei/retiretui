@@ -335,24 +335,72 @@ fn wage_bases_are_the_published_ones_and_derived_only_past_them() {
     assert_eq!(shrinking.wage_base(2027), 184_500);
 }
 
-#[test]
-fn an_override_takes_the_wage_bases_it_leaves_out_from_the_earlier_tables() {
-    const HEADING: &str = "[social-security.benefit.wage-base]";
+/// The embedded table restated as `year`'s, its benefit formula `benefit`.
+fn restated_with_benefit(year: i16, benefit: &str) -> String {
     let embedded = include_str!("../tax/2026.toml");
-    let table = embedded.find(HEADING).unwrap();
-    let table_end = embedded[table..].find("\n\n").unwrap() + table;
-    let override_2027 = format!(
-        "{}{HEADING}\n2027 = 192300{}",
-        &embedded[..table],
-        &embedded[table_end..]
-    )
-    .replace("year = 2026", "year = 2027");
+    let start = embedded.find("[social-security.benefit]").unwrap();
+    let end = embedded.find("[early-withdrawal]").unwrap();
+    format!("{}{benefit}\n{}", &embedded[..start], &embedded[end..])
+        .replace("year = 2026", &format!("year = {year}"))
+}
+
+#[test]
+fn every_table_reads_the_published_years_the_others_hold() {
+    let later = "[social-security.benefit]\nwage-growth = 0.05\n\n\
+        [social-security.benefit.wage-index]\n2024 = 1.0\n2026 = 75000.0\n\n\
+        [social-security.benefit.wage-base]\n2028 = 200000\n";
     let mut tables = TaxTables::embedded();
-    tables.add_source(&override_2027, "2027").unwrap();
+    tables
+        .add_source(&restated_with_benefit(2027, later), "2027")
+        .unwrap();
+    let inflation = Inflation::constant(INFLATION);
+    let benefit = |year| {
+        tables
+            .params_for(year, &inflation)
+            .social_security
+            .benefit
+            .unwrap()
+    };
+    let (earlier, later) = (benefit(2026), benefit(2027));
+    assert_eq!(
+        earlier.average_wage(2026),
+        Some(75_000.0),
+        "a later table's year"
+    );
+    assert_eq!(earlier.wage_base(2028), 200_000);
+    assert_eq!(
+        earlier.average_wage(2024),
+        Some(69_846.57),
+        "its own year wins"
+    );
+    assert_eq!(later.average_wage(2024), Some(1.0), "and the later table's");
+    assert_eq!(
+        later.average_wage(2023),
+        Some(66_621.80),
+        "an earlier table's year"
+    );
+    assert_eq!(later.wage_base(1990), 51_300);
+    assert!(later.cola.contains_key(&2025), "the COLAs it leaves out");
+    let grown = |benefit: &retiretui_engine::params::BenefitParams| {
+        benefit.average_wage(2027).unwrap() / 75_000.0
+    };
+    assert!(
+        (grown(&earlier) - 1.036).abs() < 1e-9,
+        "each its own growth"
+    );
+    assert!((grown(&later) - 1.05).abs() < 1e-9);
+}
+
+#[test]
+fn a_table_without_the_benefit_formula_takes_another_tables() {
+    let mut tables = TaxTables::embedded();
+    tables
+        .add_source(&restated_with_benefit(2027, ""), "2027")
+        .unwrap();
     let params = tables.params_for(2027, &Inflation::constant(INFLATION));
     let benefit = params.social_security.benefit.unwrap();
-    assert_eq!(benefit.wage_base(1990), 51_300);
-    assert_eq!(benefit.wage_base(2027), 192_300);
+    assert_eq!(benefit.average_wage(2024), Some(69_846.57));
+    assert_eq!(benefit.wage_base(2026), 184_500);
 }
 
 #[test]
