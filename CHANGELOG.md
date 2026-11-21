@@ -28,8 +28,12 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   wrong for 1975-1991, 2010, 2011 and 2016 (the payroll tax's cap too); someone
   born on 1 January is figured on the year before; and the benefit rounds down
   to the dime after each COLA and before the dollar, not to the cent first. A
-  tax table file of the user's own takes the published wage bases it leaves out
-  from an earlier table.
+  tax table file of the user's own takes SSA's published wage index, COLAs and
+  wage bases it leaves out, or the whole benefit formula, from the other tables.
+- SSA's October 2026 figures are embedded: the 2025 average wage index
+  (72,800.33), the December 2026 COLA (3.6%) and the 2027 wage base ($192,300),
+  in place of estimates. Benefits computed for anyone born in 1965 or later
+  shift slightly, as does the payroll tax from 2027.
 
 ## [0.6.0] - 2026-11-08
 

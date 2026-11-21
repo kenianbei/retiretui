@@ -40,18 +40,19 @@ depends on UI.
   the kinds, statuses, trigger bases, and places a plan may name - so that no
   surface restates them. `params` holds per-year tax parameters: values are
   data, embedded as TOML tables for known years, overridable from user
-  directories - a year's table leaving out a state or a published wage base
-  takes it from the latest earlier table that has it, and a state's table says
-  what income it leaves untaxed, by where it came from and its owner's age, and
-  what it adjusts its tax by: federal tax subtracted, a credit for each person,
-  a deduction ended by income or added to by age, an excise on gains - and the
-  payroll rates, statutory where a table leaves them out - and extended past the
-  last known year by inflating indexed values by the inflation of the market
-  projected through, a rate the law has already set for a later year taken from
-  that year - and the national average wage index, grown past its last published
-  year at an assumed rate a plan may override, from which the benefit formula's
-  bend points derive by statute for any year and its wage base past the last SSA
-  has published, beside every wage base and cost-of-living adjustment SSA has
+  directories - a year's table leaving out a state takes it from the latest
+  earlier table that has it, and what it leaves out of SSA's published figures
+  from every other table, and a state's table says what income it leaves
+  untaxed, by where it came from and its owner's age, and what it adjusts its
+  tax by: federal tax subtracted, a credit for each person, a deduction ended by
+  income or added to by age, an excise on gains - and the payroll rates,
+  statutory where a table leaves them out - and extended past the last known
+  year by inflating indexed values by the inflation of the market projected
+  through, a rate the law has already set for a later year taken from that year -
+  and the national average wage index, grown past its last published year at an
+  assumed rate a plan may override, from which the benefit formula's bend points
+  derive by statute for any year and its wage base past the last SSA has
+  published, beside every wage base and cost-of-living adjustment SSA has
   published. `tax` holds the formulas: rule shapes are code, the Social Security
   benefit's among them - each year's covered earnings capped at its own base and
   indexed to the average wage of the year the worker turns 60 - the day before
