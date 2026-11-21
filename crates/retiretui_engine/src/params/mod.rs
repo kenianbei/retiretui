@@ -178,10 +178,10 @@ pub struct BenefitParams {
     /// 62.
     #[serde(default)]
     pub cola: BTreeMap<i16, f64>,
-    /// Each published contribution and benefit base, by year; absent in an
-    /// override file, the latest earlier table's.
-    #[serde(default)]
-    pub wage_base: BTreeMap<i16, Dollars>,
+    /// Each published contribution and benefit base, by year; a year an
+    /// override table leaves out is the latest earlier table's.
+    #[serde(default, rename = "wage-base")]
+    pub wage_bases: BTreeMap<i16, Dollars>,
 }
 
 /// The 1994 contribution and benefit base; a base past the published ones
@@ -215,15 +215,13 @@ impl BenefitParams {
     /// derived from the wage index and never below the last.
     #[must_use]
     pub fn wage_base(&self, year: i16) -> Dollars {
-        if let Some(&base) = self.wage_base.get(&year) {
+        if let Some(&base) = self.wage_bases.get(&year) {
             return base;
         }
         let scaled = WAGE_BASE_1994 as f64 * self.index_ratio(year, WAGE_BASE_YEAR);
         let derived = (scaled / WAGE_BASE_STEP as f64).round() as Dollars * WAGE_BASE_STEP;
-        match self.wage_base.last_key_value() {
-            Some((&last_year, &last)) if year > last_year => derived.max(last),
-            _ => derived,
-        }
+        let before = self.wage_bases.range(..year).next_back();
+        derived.max(before.map_or(0, |(_, &base)| base))
     }
 
     /// The two monthly amounts the PIA formula bends at for a benefit first
@@ -438,21 +436,17 @@ impl TaxTables {
         params
     }
 
-    /// A benefit formula without published wage bases takes those of the
-    /// latest table before `base_year` that has them.
+    /// Each published wage base the benefit formula leaves out, from the
+    /// latest table before `base_year` that has it.
     fn fill_wage_bases(&self, params: &mut TaxParams, base_year: i16) {
-        let Some(benefit) = (params.social_security.benefit.as_mut())
-            .filter(|benefit| benefit.wage_base.is_empty())
-        else {
+        let Some(benefit) = params.social_security.benefit.as_mut() else {
             return;
         };
-        let mut earlier = self.years.range(..base_year).rev();
-        let published = earlier.find_map(|(_, table)| {
-            let bases = &table.social_security.benefit.as_ref()?.wage_base;
-            (!bases.is_empty()).then_some(bases)
-        });
-        if let Some(bases) = published {
-            benefit.wage_base.clone_from(bases);
+        let earlier = self.years.range(..base_year).rev();
+        for table in earlier.filter_map(|(_, table)| table.social_security.benefit.as_ref()) {
+            for (&year, &base) in &table.wage_bases {
+                benefit.wage_bases.entry(year).or_insert(base);
+            }
         }
     }
 

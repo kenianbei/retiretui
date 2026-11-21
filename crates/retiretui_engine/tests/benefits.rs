@@ -2,6 +2,8 @@
 
 mod common;
 
+use std::collections::BTreeMap;
+
 use retiretui_engine::params::TaxTables;
 use retiretui_engine::plan::{Plan, PlanDate};
 use retiretui_engine::project::{Projection, validate_plan};
@@ -349,52 +351,48 @@ fn a_computed_benefit_claimed_before_the_month_62_is_attained_is_refused() {
     assert_eq!(issues("{ date = 2042-06-01 }"), []);
 }
 
+/// A plan whose owner, born on `birth` with 60,000 a year over 1982-2021,
+/// claims at `age` a benefit computed from that record; and the record.
+fn claimed_on_record(age: u8, birth: &str) -> (String, BTreeMap<i16, i64>) {
+    let record = (1982..=2021).map(|year| (year, 60_000)).collect();
+    let text = frozen_claim(&format!(r#"{{ age = {age}, owner = "me" }}"#), "")
+        .replace(
+            "birth = 1980-06-15",
+            &format!("birth = {birth}\n{}", record_line(&record)),
+        )
+        .replace("amount = 100000", "amount = 0");
+    (text, record)
+}
+
+/// The benefit someone born on `birth` is paid at `age_months` off
+/// [`claimed_on_record`]'s record, carried by `colas`.
+fn on_record(birth: PlanDate, age_months: i32, record: &BTreeMap<i16, i64>, colas: &[f64]) -> i64 {
+    retiretui_engine::tax::social_security_benefit(
+        &common::benefit_params(),
+        birth,
+        age_months,
+        record,
+        colas,
+    )
+}
+
 #[test]
 fn a_benefit_eligible_before_the_plan_carries_the_published_colas() {
     // Born 1960, 62 in 2022: 2022-2025's published COLAs carry the benefit
     // to the plan's 2026 dollars, frozen after.
-    let record: std::collections::BTreeMap<i16, i64> =
-        (1982..=2021).map(|year| (year, 60_000)).collect();
-    let stated = record_line(&record);
-    let text = frozen_claim(r#"{ age = 67, owner = "me" }"#, "")
-        .replace(
-            "birth = 1980-06-15",
-            &format!("birth = 1960-06-15\n{stated}"),
-        )
-        .replace("amount = 100000", "amount = 0");
-    let paid = paid_by(&text);
-    let params = common::benefit_params();
-    let published = [0.087, 0.032, 0.025, 0.028];
-    let born_1960 = PlanDate(jiff::civil::date(1960, 6, 15));
-    let expected = retiretui_engine::tax::social_security_benefit(
-        &params,
-        born_1960,
-        67 * 12,
-        &record,
-        &published,
-    );
-    assert_near(paid(2028), expected as f64);
+    let (text, record) = claimed_on_record(67, "1960-06-15");
+    let born = PlanDate(jiff::civil::date(1960, 6, 15));
+    let expected = on_record(born, 67 * 12, &record, &[0.087, 0.032, 0.025, 0.028]);
+    assert_near(paid_by(&text)(2028), expected as f64);
 }
 
 #[test]
 fn a_benefit_born_on_new_years_day_carries_the_colas_from_the_year_before() {
     // Born 1 January 1960, SSA's 1959: 62 in 2021, so 2021's COLA too.
-    let record: std::collections::BTreeMap<i16, i64> =
-        (1982..=2021).map(|year| (year, 60_000)).collect();
-    let text = frozen_claim(r#"{ age = 67, owner = "me" }"#, "")
-        .replace(
-            "birth = 1980-06-15",
-            &format!("birth = 1960-01-01\n{}", record_line(&record)),
-        )
-        .replace("amount = 100000", "amount = 0");
-    let published = [0.059, 0.087, 0.032, 0.025, 0.028];
-    let expected = retiretui_engine::tax::social_security_benefit(
-        &common::benefit_params(),
-        PlanDate(jiff::civil::date(1960, 1, 1)),
-        67 * 12,
-        &record,
-        &published,
-    );
+    let (text, record) = claimed_on_record(67, "1960-01-01");
+    let born = PlanDate(jiff::civil::date(1960, 1, 1));
+    let colas = [0.059, 0.087, 0.032, 0.025, 0.028];
+    let expected = on_record(born, 67 * 12, &record, &colas);
     assert_near(paid_by(&text)(2028), expected as f64);
 }
 
@@ -402,21 +400,9 @@ fn a_benefit_born_on_new_years_day_carries_the_colas_from_the_year_before() {
 fn a_benefit_claimed_before_the_plan_is_priced_at_the_age_it_was_claimed() {
     // Born 1960-06-15 and claimed at 62 in 2022: 59 months early, not the
     // 66 the owner is in the plan's first year.
-    let record = (1982..=2021).map(|year| (year, 60_000)).collect();
-    let text = frozen_claim(r#"{ age = 62, owner = "me" }"#, "")
-        .replace(
-            "birth = 1980-06-15",
-            &format!("birth = 1960-06-15\n{}", record_line(&record)),
-        )
-        .replace("amount = 100000", "amount = 0");
-    let published = [0.087, 0.032, 0.025, 0.028];
-    let expected = retiretui_engine::tax::social_security_benefit(
-        &common::benefit_params(),
-        PlanDate(jiff::civil::date(1960, 6, 15)),
-        62 * 12 + 1,
-        &record,
-        &published,
-    );
+    let (text, record) = claimed_on_record(62, "1960-06-15");
+    let born = PlanDate(jiff::civil::date(1960, 6, 15));
+    let expected = on_record(born, 62 * 12 + 1, &record, &[0.087, 0.032, 0.025, 0.028]);
     assert_near(paid_by(&text)(2026), expected as f64);
 }
 
