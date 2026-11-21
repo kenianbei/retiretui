@@ -55,6 +55,9 @@ const FRA_66_FIRST_BIRTH_YEAR: i16 = 1943;
 const FRA_66_LAST_BIRTH_YEAR: i16 = 1954;
 const FRA_67_FIRST_BIRTH_YEAR: i16 = 1960;
 const FRA_STEP_MONTHS: i32 = 2;
+/// What SSA's calculator adds, in dimes, before rounding down to the dime,
+/// so floating-point noise cannot drop an exact multiple to the one below.
+const DIME_TOLERANCE: f64 = 0.0005;
 
 /// Years between the MAGI that is measured and the premiums it prices.
 pub const IRMAA_LOOKBACK_YEARS: i16 = 2;
@@ -184,12 +187,12 @@ pub fn social_security_benefit(
         primary_insurance_amount(params, birth_year, earnings),
         |pia, cola| to_the_dime(pia * (1.0 + cola)),
     );
-    let monthly = (pia * claim_factor(birth_year, age_months) * 100.0).round() / 100.0;
+    let monthly = to_the_dime(pia * claim_factor(birth_year, age_months));
     monthly.floor() as Dollars * MONTHS_PER_YEAR as Dollars
 }
 
 fn to_the_dime(amount: f64) -> f64 {
-    ((amount * 100.0).round() / 10.0).floor() / 10.0
+    (amount * 10.0 + DIME_TOLERANCE).floor() / 10.0
 }
 
 /// A career at one real wage, as SSA's Quick Calculator fills a record
