@@ -176,7 +176,7 @@ pub(super) fn first_paid_months(plan: &Plan) -> Vec<Option<i32>> {
 
 /// The benefit formula's parameters for `plan`: the start year's table,
 /// its wage growth replaced by the plan's where the plan states one; none
-/// where that table carries no formula.
+/// where no table carries the formula.
 #[must_use]
 pub fn benefit_params(plan: &Plan, tables: &TaxTables) -> Option<BenefitParams> {
     let mut params = tables
@@ -190,8 +190,7 @@ pub fn benefit_params(plan: &Plan, tables: &TaxTables) -> Option<BenefitParams> 
 }
 
 /// What a computed benefit needs beyond the structural rules: a claim at 62
-/// or later, and a start-year table that carries the benefit formula's
-/// amounts.
+/// or later, and a table that carries the benefit formula's amounts.
 pub(super) fn check_derived_claims(plan: &Plan, tables: &TaxTables) -> Vec<Issue> {
     let mut issues = Vec::new();
     if !plan.income.iter().any(Income::is_derived) {

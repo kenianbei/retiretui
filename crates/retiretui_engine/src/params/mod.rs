@@ -382,7 +382,8 @@ impl TaxTables {
     /// Statutory unindexed values (Social Security thresholds, RMD divisors,
     /// rates) are never scaled. A state the answering table omits is taken
     /// from the latest earlier table holding it, carried from that table's
-    /// year alike, so an override year need not restate every state.
+    /// year alike, so an override year need not restate every state; SSA's
+    /// published series take what it omits from every other table.
     ///
     /// # Panics
     ///
