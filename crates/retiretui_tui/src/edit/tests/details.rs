@@ -163,7 +163,7 @@ fn a_name_shows_in_place_of_the_id_wherever_the_item_is_named() {
     press_key(&mut app, Key::Enter);
     let frame = composed_frame(&app);
     assert!(
-        frame.contains("[ Retirement ▾"),
+        frame.contains("[ Retiremen… ]"),
         "a trigger offers the event by name: {frame}"
     );
     assert!(

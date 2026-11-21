@@ -70,7 +70,7 @@ winit = { version = "0.30.13", default-features = false, features = ["wayland-dl
 clap = { version = "4.6.7", features = ["derive"], optional = true }
 jiff.workspace = true
 nucleo-matcher = "0.3.1"
-plurimus = { version = "0.10.0", default-features = false, features = ["ui", "widgets", "bevy-ui"] }
+plurimus = { version = "0.10.1", default-features = false, features = ["ui", "widgets", "bevy-ui"] }
 plurimus_filepicker = "0.4.0"
 retiretui_client = { workspace = true, features = ["bevy"] }
 retiretui_engine = { workspace = true, features = ["schemars"] }

@@ -14,7 +14,7 @@ use bevy_ecs::schedule::SystemSet;
 use plurimus::core::TerminalCamera;
 use plurimus::core::bevy_camera::{Camera, ClearColorConfig};
 use plurimus::core::ratatui_core::style::{Color, Modifier, Style};
-use plurimus::ui::UiTheme;
+use plurimus::ui::{TextOverflow, UiTheme};
 use plurimus::widgets::{TableStripe, WidgetSystems};
 
 #[cfg(any(feature = "desktop", test))]
@@ -22,6 +22,7 @@ pub use said::said;
 pub use said::{Hung, hang, row_line, say, say_lines, text};
 
 use super::journal;
+use super::layout::ELLIPSIS;
 use super::settings::Settings;
 
 pub fn plugin(app: &mut App) {
@@ -206,6 +207,7 @@ impl Theme {
             .with_disabled(normal.fg(self.dim))
             .with_focused(self.focused())
             .with_caret(self.caret())
+            .with_overflow(TextOverflow::Ellipsis(ELLIPSIS))
     }
 }
 
