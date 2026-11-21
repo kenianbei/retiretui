@@ -462,11 +462,17 @@ fn settle<R: Found>(app: &mut bevy_app::App) {
     app.update();
 }
 
+/// How long a test waits on a search before calling it hung: a deadline in
+/// time, since a frame count shrinks on a machine busy with other tests.
+#[cfg(test)]
+const SEARCH_PATIENCE: Duration = Duration::from_secs(120);
+
 /// Ticks until nothing `is_running` and the tick after starts nothing,
 /// or gives up.
 #[cfg(test)]
 fn settle_until_idle(app: &mut bevy_app::App, is_running: impl Fn(&bevy_app::App) -> bool) {
-    for _ in 0..500 {
+    let deadline = std::time::Instant::now() + SEARCH_PATIENCE;
+    while std::time::Instant::now() < deadline {
         app.update();
         if !is_running(app) {
             app.update();
