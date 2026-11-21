@@ -66,6 +66,17 @@ fn fica_is_the_employee_shares_to_the_wage_base_and_more_over_the_threshold() {
 }
 
 #[test]
+fn a_year_without_a_cola_keeps_the_wage_base_before_it() {
+    let params = TaxTables::embedded().params_for(2016, &Inflation::constant(0.0));
+    // 6.2% of 2015's 118,500, not of the 122,700 the index alone gives,
+    // and 1.45% of all 200,000.
+    assert_eq!(
+        paid(&params, FilingStatus::Single, &[wages(200_000)]),
+        7_347 + 2_900
+    );
+}
+
+#[test]
 fn self_employment_tax_is_twice_the_shares_over_the_wages() {
     let params = params_2026();
     let own = Earnings {

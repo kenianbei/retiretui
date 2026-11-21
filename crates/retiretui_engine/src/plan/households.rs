@@ -67,7 +67,7 @@ impl Person {
     /// and bend points their benefit is figured on.
     #[must_use]
     pub fn eligibility_year(&self) -> i16 {
-        self.birth.year() + tax::EARLIEST_CLAIM_AGE
+        tax::benefit_birth_year(self.birth) + tax::EARLIEST_CLAIM_AGE
     }
 }
 

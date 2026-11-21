@@ -55,6 +55,9 @@ const FRA_66_FIRST_BIRTH_YEAR: i16 = 1943;
 const FRA_66_LAST_BIRTH_YEAR: i16 = 1954;
 const FRA_67_FIRST_BIRTH_YEAR: i16 = 1960;
 const FRA_STEP_MONTHS: i32 = 2;
+/// What SSA's calculator adds, in dimes, before rounding down to the dime,
+/// so floating-point noise cannot drop an exact multiple to the one below.
+const DIME_TOLERANCE: f64 = 0.0005;
 
 /// Years between the MAGI that is measured and the premiums it prices.
 pub const IRMAA_LOOKBACK_YEARS: i16 = 2;
@@ -146,9 +149,17 @@ pub fn taxable_social_security(
     (above_upper + from_lower_band).min((0.85 * benefit as f64).round() as Dollars)
 }
 
-/// Full retirement age in months, from the birth year.
+/// The birth year SSA figures a benefit on: the year age 0 is attained, the
+/// year before for someone born on 1 January.
 #[must_use]
-pub fn full_retirement_months(birth_year: i16) -> i32 {
+pub fn benefit_birth_year(birth: PlanDate) -> i16 {
+    year_of(attained_month(birth, 0))
+}
+
+/// Full retirement age in months, for someone born on `birth`.
+#[must_use]
+pub fn full_retirement_months(birth: PlanDate) -> i32 {
+    let birth_year = benefit_birth_year(birth);
     let steps = |from: i16| FRA_STEP_MONTHS * i32::from(birth_year - from);
     if birth_year <= FRA_65_LAST_BIRTH_YEAR {
         65 * MONTHS_PER_YEAR
@@ -175,21 +186,22 @@ pub fn full_retirement_months(birth_year: i16) -> i32 {
 #[must_use]
 pub fn social_security_benefit(
     params: &BenefitParams,
-    birth_year: i16,
+    birth: PlanDate,
     age_months: i32,
     earnings: &BTreeMap<i16, Dollars>,
     colas: &[f64],
 ) -> Dollars {
+    let birth_year = benefit_birth_year(birth);
     let pia = (colas.iter()).fold(
         primary_insurance_amount(params, birth_year, earnings),
         |pia, cola| to_the_dime(pia * (1.0 + cola)),
     );
-    let monthly = (pia * claim_factor(birth_year, age_months) * 100.0).round() / 100.0;
+    let monthly = to_the_dime(pia * claim_factor(full_retirement_months(birth), age_months));
     monthly.floor() as Dollars * MONTHS_PER_YEAR as Dollars
 }
 
 fn to_the_dime(amount: f64) -> f64 {
-    ((amount * 100.0).round() / 10.0).floor() / 10.0
+    (amount * 10.0 + DIME_TOLERANCE).floor() / 10.0
 }
 
 /// A career at one real wage, as SSA's Quick Calculator fills a record
@@ -232,8 +244,8 @@ pub fn career_before(
 /// year are paid from the next January, except for a claim at 70 or later,
 /// credited at once.
 #[must_use]
-pub fn claim_year_age(birth_year: i16, age_months: i32, january_months: i32) -> i32 {
-    let full = full_retirement_months(birth_year);
+pub fn claim_year_age(birth: PlanDate, age_months: i32, january_months: i32) -> i32 {
+    let full = full_retirement_months(birth);
     if age_months > full && age_months < LATEST_CREDIT_MONTHS {
         january_months.clamp(full, age_months)
     } else {
@@ -245,6 +257,12 @@ pub fn claim_year_age(birth_year: i16, age_months: i32, january_months: i32) -> 
 #[must_use]
 pub fn month_index(year: i16, month: i8) -> i32 {
     i32::from(year) * MONTHS_PER_YEAR + i32::from(month) - 1
+}
+
+/// The year a [`month_index`] falls in.
+#[must_use]
+pub fn year_of(month: i32) -> i16 {
+    month.div_euclid(MONTHS_PER_YEAR) as i16
 }
 
 /// The month someone born on `birth` attains `age`: an age is attained the
@@ -308,8 +326,7 @@ fn primary_insurance_amount(
     to_the_dime(pia)
 }
 
-fn claim_factor(birth_year: i16, age_months: i32) -> f64 {
-    let full = full_retirement_months(birth_year);
+fn claim_factor(full: i32, age_months: i32) -> f64 {
     let claim = age_months.min(LATEST_CREDIT_MONTHS);
     if claim >= full {
         return 1.0 + f64::from(claim - full) * DELAYED_RATE;

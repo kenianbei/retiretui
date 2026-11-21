@@ -136,7 +136,10 @@ fn an_example_hides_the_questions_and_is_named_after_itself() {
     settle(&mut app);
     let frame = composed_frame(&app);
     assert!(frame.contains("Start from"), "{frame}");
-    assert!(!frame.contains("Birth year"), "nothing to answer: {frame}");
+    assert!(
+        !frame.contains("Birth year or date"),
+        "nothing to answer: {frame}"
+    );
     press_button(&mut app, CREATE);
     assert!(
         composed_frame(&app).contains("starter.toml"),

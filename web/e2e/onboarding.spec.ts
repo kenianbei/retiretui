@@ -21,7 +21,7 @@ test("a first plan is made from a few questions, read back to be changed", async
     "Blank is 65",
   );
   await page.getByLabel("Your name").fill("Jordan");
-  await page.getByLabel("Birth year").fill("1975");
+  await page.getByLabel("Birth year or date").fill("1975");
   await page.getByLabel("Salary").fill("90000");
   await page.getByLabel("Salary").blur();
   await page.reload();
@@ -39,10 +39,10 @@ test("a first plan is made from a few questions, read back to be changed", async
   );
   await expectAccessible(page);
 
-  await page.getByRole("link", { name: "Change Birth year" }).click();
-  await page.waitForURL(/#\/new\/you\?.*field=birth_year/);
-  await expect(page.getByLabel("Birth year")).toBeFocused();
-  await page.getByLabel("Birth year").fill("1976");
+  await page.getByRole("link", { name: "Change Birth year or date" }).click();
+  await page.waitForURL(/#\/new\/you\?.*field=birth/);
+  await expect(page.getByLabel("Birth year or date")).toBeFocused();
+  await page.getByLabel("Birth year or date").fill("1976");
   await page.getByRole("button", { name: "Continue" }).click();
   await page.waitForURL(/#\/new\/check/);
   await expect(page.getByText("1976", { exact: true })).toBeVisible();

@@ -26,7 +26,7 @@ pub fn benefit_estimates(plan: &Plan, tables: &TaxTables, person: &str) -> [Opti
     else {
         return [None; 3];
     };
-    let months = tax::full_retirement_months(owner.birth.year());
+    let months = tax::full_retirement_months(owner.birth);
     let full = (months + MONTHS_PER_YEAR - 1) / MONTHS_PER_YEAR;
     let mut estimating = plan.clone();
     let held = estimating
