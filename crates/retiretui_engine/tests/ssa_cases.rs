@@ -16,7 +16,8 @@ const LAST_COLA_YEAR: i16 = 2025;
 /// and the monthly benefit SSA's calculator pays them.
 type Case = ((i16, i8, i8), Dollars, (i16, i8), Dollars);
 
-/// Each case's monthly benefit, figured as a projection figures it.
+/// Checks each case's monthly benefit, figured as a projection figures it,
+/// against SSA's.
 fn assert_ssa(cases: &[Case]) {
     let params = common::benefit_params();
     for &((year, month, day), yearly, (claim_year, claim_month), ssa_monthly) in cases {
