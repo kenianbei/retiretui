@@ -112,9 +112,15 @@ jobs:
     defaults:
       run:
         working-directory: web
+    outputs:
+      playwright: ${{ steps.playwright.outputs.version }}
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: The Playwright the suite pins
+        id: playwright
+        run: echo "version=$(jq -r '.devDependencies["@playwright/test"]' package.json)" >> "$GITHUB_OUTPUT"
 
       - name: Install
         uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
@@ -159,7 +165,7 @@ jobs:
     runs-on: ubuntu-latest
     # The image's version is @playwright/test's, so its browsers are the ones the suite expects.
     container:
-      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      image: mcr.microsoft.com/playwright:v${{ needs.web.outputs.playwright }}-noble
       options: --ipc=host
     defaults:
       run:
