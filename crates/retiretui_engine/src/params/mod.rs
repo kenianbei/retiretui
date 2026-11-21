@@ -438,10 +438,8 @@ impl TaxTables {
         params
     }
 
-    /// The benefit formula as `base_year`'s table states it, a section or
-    /// a published year it leaves out taken from the other tables, latest
-    /// first: SSA's series are history every table shares, while the wage
-    /// growth stays the assumption of the table stating it.
+    /// The benefit formula as `base_year`'s table states it, what it leaves
+    /// out taken from the other tables, latest first; never their wage growth.
     fn fill_benefit(&self, params: &mut TaxParams, base_year: i16) {
         let others = self
             .years
@@ -479,7 +477,6 @@ impl TaxTables {
     }
 }
 
-/// Each year of `from` that `into` lacks.
 fn fill_years<V: Copy>(into: &mut BTreeMap<i16, V>, from: &BTreeMap<i16, V>) {
     for (&year, &value) in from {
         into.entry(year).or_insert(value);
