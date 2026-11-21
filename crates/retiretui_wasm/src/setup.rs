@@ -185,10 +185,7 @@ mod tests {
     fn answers_kept_as_text_read_back_as_they_were() {
         let mut first = NewPlan::new(None, TODAY).expect("blank");
         first.editor.set("name", None, "Jordan").expect("a field");
-        first
-            .editor
-            .set("birth_year", None, "1975")
-            .expect("a field");
+        first.editor.set("birth", None, "1975").expect("a field");
         let kept = first.answers().expect("serializes");
         let second = NewPlan::new(Some(&kept), TODAY).expect("reads");
         assert_eq!(second.answers().expect("serializes"), kept);
@@ -208,7 +205,7 @@ mod tests {
     }
 
     fn born_as_the_statement_says(text: &str) -> Document {
-        let text = text.replace("1970-01-01", "1975-06-14");
+        let text = text.replace("1970-07-02", "1975-06-14");
         Document::open("/plan.toml", &mut |_: &Path| Ok(text.clone())).expect("opens")
     }
 
@@ -233,7 +230,7 @@ mod tests {
     #[test]
     fn a_scenario_records_no_statement() {
         let scenario = "schema = 1\nbase = \"/base.toml\"\n";
-        let base = blank_plan(TODAY).replace("1970-01-01", "1975-06-14");
+        let base = blank_plan(TODAY).replace("1970-07-02", "1975-06-14");
         let mut read = |path: &Path| {
             Ok(if path == Path::new("/base.toml") {
                 base.clone()
