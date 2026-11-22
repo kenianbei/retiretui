@@ -79,6 +79,18 @@ jobs:
               "target/aarch64-apple-darwin/release/$binary"
           done
 
+      - name: Check the C runtime is linked in
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $dumpbin = @(& $vswhere -latest -products * -find 'VC\Tools\MSVC\**\bin\Hostx64\x64\dumpbin.exe')[0]
+          if (-not $dumpbin) { throw 'dumpbin.exe was not found' }
+          $imports = & $dumpbin /dependents target/release/retiretui.exe target/release/retiretui-desktop.exe
+          if ($LASTEXITCODE) { throw "dumpbin exited with $LASTEXITCODE" }
+          $runtime = @($imports) -match '^\s*(vcruntime|msvcp)'
+          if ($runtime) { throw "the exes import the C runtime: $($runtime.Trim() -join ', ')" }
+
       - name: Package
         if: runner.os == 'Linux'
         run: |

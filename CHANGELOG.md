@@ -6,6 +6,11 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- The Windows executables start on a machine without the Visual C++
+  Redistributable installed.
+
 ## [0.7.0] - 2026-11-21
 
 ### Changed
